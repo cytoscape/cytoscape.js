@@ -369,6 +369,20 @@
 				};
 				
 				
+				Collection.prototype.positions = function(fn){
+					rendererNotificationsEnabled(false);
+					this.each(function(i, element){
+						var positionOpts = fn(i, element);
+						element.position(positionOpts);
+					});
+					rendererNotificationsEnabled(true);
+					
+					notifyRenderer({
+						type: "position",
+						collection: this
+					});
+				};
+				
 				// what functions in CyElement update the renderer
 				var rendererFunctions = [ "data", "select", "unselect", "position", "restore" ];
 				
@@ -552,9 +566,13 @@
 				elements: elementsCollection(),
 				
 				layout: function(params){
+				
+					var name = params.name != null ? params.name : options.layout;
+				
 					reg.layout[name].run($.extend({}, params, {
 						nodes: cy.nodes(),
-						edges: cy.edges()
+						edges: cy.edges(),
+						renderer: renderer
 					});
 				},
 				

@@ -53,7 +53,7 @@
 	$.cytoscapeweb = function(opts){
 		
 		// create instance
-		if( typeof opts == typeof {} ){
+		if( $.isPlainObject(opts) ){
 			var defaults = {
 				layout: "forcedirected",
 				renderer: "svg",
@@ -110,26 +110,28 @@
 			// represents a node or an edge
 			var CyElement = function(){
 			
-				var _private = {
+				var fields = {
 					data: null, // data object
 					position: null, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 					listeners: null, // map ( type => array of functions )
 					group: null, // string; "nodes" or "edges"
-					active: null; // whether it's inside the vis; false if removed
+					removed: null; // whether it's inside the vis; true if removed
 				};
 			
 				function Element(params){
-					_private.listeners = {};
-					_private.position = copy( params.position );
-					_private.group = params.group;
+					fields.listeners = {};
+					fields.position = copy( params.position );
+					fields.group = params.group;
 					
-					_private.data = copy( data );
-					_private.data.id = idFactory.generate( _private.group, _private.data.id );
+					fields.data = copy( data );
+					fields.data.id = idFactory.generate( fields.group, fields.data.id );
 					
-					_private.bypass = copy( params.bypass );
-					structs.bypass[ _private.group ][ _private.data.id ] = _private.bypass;
+					fields.bypass = copy( params.bypass );
+					structs.bypass[ fields.group ][ fields.data.id ] = fields.bypass;
 					
-					structs[ _private.group ][ _private.data.id ] = this;
+					fields.removed = false;
+					
+					structs[ fields.group ][ fields.data.id ] = this;
 					
 					notifyRenderer({
 						type: "add",
@@ -138,18 +140,18 @@
 				}
 			
 				Element.prototype.group = function(){
-					return _private.group;
+					return fields.group;
 				}
 				
-				Element.prototype.active = function(){
-					return _private.active;
+				Element.prototype.removed = function(){
+					return fields.removed;
 				};
 				
 				// remove from cytoweb
 				Element.prototype.remove = function(){
-					if( _private.active ){
-						structs[ _private.group ][ _private.data.id ] = undefined;
-						_private.active = false;
+					if( !fields.removed ){
+						structs[ fields.group ][ fields.data.id ] = undefined;
+						fields.removed = true;
 						
 						notifyRenderer({
 							type: "remove",
@@ -161,9 +163,9 @@
 				};
 
 				Element.prototype.restore = function(){
-					if( !_private.active ){
-						structs[ _private.group ][ _private.data.id ] = this;
-						_private.active = true;
+					if( fields.removed ){
+						structs[ fields.group ][ fields.data.id ] = this;
+						fields.removed = false;
 						
 						notifyRenderer({
 							type: "restore",
@@ -177,9 +179,9 @@
 				// proxy to the bypass object				
 				Element.prototype.bypass = function(newBypass){	
 					if( newBypass === undefined ){
-						return copy( structs.bypass[ _private.group ][ _private.data.id ] );
+						return copy( structs.bypass[ fields.group ][ fields.data.id ] );
 					} else {
-						structs.bypass[ _private.group ][ _private.data.id ] = copy( newBypass );
+						structs.bypass[ fields.group ][ fields.data.id ] = copy( newBypass );
 					}
 				};
 				
@@ -188,10 +190,10 @@
 						var ret;
 						
 						if( val === undefined ){
-							ret = _private.[ params.name ][ attr ];
+							ret = fields.[ params.name ][ attr ];
 							ret =  ( typeof ret == "object" ? copy(ret) : ret );
 						} else {
-							_private.[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
+							fields.[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
 							ret = this;
 						}
 						
@@ -220,16 +222,16 @@
 				};
 				
 				Element.prototype.bind = function(event, callback){
-					if( _private.listeners[event] == null ){
-						_private.listeners[event] = [];
+					if( fields.listeners[event] == null ){
+						fields.listeners[event] = [];
 					}				
-					_private.listeners[event].push(callback);
+					fields.listeners[event].push(callback);
 					
 					return this;
 				};
 				
 				Element.prototype.unbind = function(event, callback){
-					var listeners = _private.listeners[event];
+					var listeners = fields.listeners[event];
 					
 					if( listeners != null ){
 						$.each(listeners, function(i, listener){
@@ -243,7 +245,7 @@
 				};
 				
 				Element.prototype.trigger = function(event, data){
-					var listeners = _private.listeners[event];
+					var listeners = fields.listeners[event];
 					
 					var eventData = data; 
 					if( listeners != null ){
@@ -258,7 +260,7 @@
 				};
 				
 				Element.prototype.select = function(){
-					_private.selected = true;
+					fields.selected = true;
 					
 					notifyRenderer({
 						type: "select",
@@ -267,7 +269,7 @@
 				};
 				
 				Element.prototype.unselect = function(){
-					_private.selected = false;
+					fields.selected = false;
 					
 					notifyRenderer({
 						type: "unselect",

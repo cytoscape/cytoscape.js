@@ -2,11 +2,43 @@
 
 	// registered modules to cytoweb, indexed by name
 	var reg = {
-		formats: {},
-		renderers: {},
-		layouts: {}
+		format: {},
+		renderer: {},
+		layout: {}
 	};
 
+	var quiet = false;
+	var console = {
+		log: function(){
+			if( quiet ){ return; }
+			
+			if( window.console != null && window.console.log != null ){
+				window.console.log.apply(window.console, arguments);
+			}
+		},
+		
+		warn: function(){
+			if( quiet ){ return; }
+			
+			if( window.console != null && window.console.warn != null ){
+				window.console.warn.apply(window.console, arguments);
+			} else {
+				console.log(arguments);
+			}
+		},
+		
+		error: function(){
+			if( quiet ){ return; }
+			
+			if( window.console != null && window.console.error != null ){
+				window.console.error.apply(window.console, arguments);
+			} else {
+				console.log(arguments);
+				throw "Cytoscape Web encountered the previously logged error";
+			}
+		}
+	};
+	
 	// allow calls on a jQuery selector by proxing calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
@@ -26,7 +58,7 @@
 		else {
 			var rets = [];
 			
-			$(this).each({
+			$(this).each(function(){
 				var cy = $(this).data("cytoscapeweb");
 				var fnName = opts;
 				var args = Array.prototype.slice.call( arguments, 1 );
@@ -55,17 +87,17 @@
 		// create instance
 		if( $.isPlainObject(opts) ){
 			var defaults = {
-				layout: "forcedirected",
-				renderer: "svg",
+				layout: {
+					name: "forcedirected"
+				},
+				renderer: {
+					name: "svg"
+				},
 				style: { // actual default style later specified by renderer
 					global: {},
 					nodes: {},
 					edges: {}
-				},
-				bypass: {
-					nodes: {},
-					edges: {}
-				} 
+				}
 			};
 			
 			var options = $.extend(true, {}, defaults, opts);
@@ -73,7 +105,6 @@
 			// structs to hold internal cytoweb model
 			var structs = {
 				style: options.style,
-				bypass: options.bypass,
 				nodes: {}, // id => node object
 				edges: {}  // id => edge object
 			};
@@ -107,341 +138,349 @@
 				}
 			};
 			
+			
+			// CyElement
+			////////////////////////////////////////////////////////////////////////////////////////////////////
+			
 			// represents a node or an edge
-			var CyElement = function(){
+			var CyElement = function(params){
 			
-				var fields = {
-					data: null, // data object
-					position: null, // fields x, y, etc (could be 3d or radial coords; renderer decides)
-					listeners: null, // map ( type => array of functions )
-					group: null, // string; "nodes" or "edges"
-					removed: null; // whether it's inside the vis; true if removed
+				if( params.group != "nodes" && params.group != "edges" ){
+					console.error("An element must be of type `nodes` or `edges`; you specified `" + params.group + "`");
+					return;
+				}
+				
+				this._private = {
+					data: copy( params.data ), // data object
+					position: copy( params.position ), // fields x, y, etc (could be 3d or radial coords; renderer decides)
+					listeners: {}, // map ( type => array of functions )
+					group: params.group, // string; "nodes" or "edges"
+					bypass: copy( params.bypass ),
+					removed: false // whether it's inside the vis; true if removed
 				};
+				
+				if( this._private.data.id == null ){
+					this._private.data.id = idFactory.generate( this._private.group );
+				} else if( structs[ this._private.group ][ this._private.data.id ] != null ){
+					console.error("Can not create element: an element in the visualisation in group `" + this._private.group + "` already has ID `" + this._private.data.id);
+					return;
+				}
+				  
+				structs[ this._private.group ][ this._private.data.id ] = this;
+				
+				notifyRenderer({
+					type: "add",
+					elements: [ this ]
+				});
+			};
+				
+			CyElement.prototype.group = function(){
+				return this._private.group;
+			}
 			
-				function Element(params){
-					fields.listeners = {};
-					fields.position = copy( params.position );
-					fields.group = params.group;
-					
-					fields.data = copy( data );
-					fields.data.id = idFactory.generate( fields.group, fields.data.id );
-					
-					fields.bypass = copy( params.bypass );
-					structs.bypass[ fields.group ][ fields.data.id ] = fields.bypass;
-					
-					fields.removed = false;
-					
-					structs[ fields.group ][ fields.data.id ] = this;
+			CyElement.prototype.removed = function(){
+				return this._private.removed;
+			};
+			
+			// remove from cytoweb
+			CyElement.prototype.remove = function(){
+				if( !this._private.removed ){
+					delete structs[ this._private.group ][ this._private.data.id ];
+					this._private.removed = true;
 					
 					notifyRenderer({
-						type: "add",
-						elements: new CyCollection([ this ])
+						type: "remove",
+						elements: [ this ]
 					});
 				}
-			
-				Element.prototype.group = function(){
-					return fields.group;
+				
+				return this;
+			};
+
+			// proxy to the bypass object				
+			CyElement.prototype.bypass = function(newBypass){	
+				if( newBypass === undefined ){
+					return copy( structs.bypass[ this._private.group ][ this._private.data.id ] );
+				} else {
+					structs.bypass[ this._private.group ][ this._private.data.id ] = copy( newBypass );
 				}
-				
-				Element.prototype.removed = function(){
-					return fields.removed;
-				};
-				
-				// remove from cytoweb
-				Element.prototype.remove = function(){
-					if( !fields.removed ){
-						structs[ fields.group ][ fields.data.id ] = undefined;
-						fields.removed = true;
-						
-						notifyRenderer({
-							type: "remove",
-							elements: new CyCollection([ this ])
-						});
-					}
+			};
+			
+			function attrGetterSetter(params){
+				return function(attr, val){
+					var ret;
 					
-					return this;
-				};
-
-				Element.prototype.restore = function(){
-					if( fields.removed ){
-						structs[ fields.group ][ fields.data.id ] = this;
-						fields.removed = false;
-						
-						notifyRenderer({
-							type: "restore",
-							elements: new CyCollection([ this ])
-						});
-					}
-					
-					return this;
-				};
-
-				// proxy to the bypass object				
-				Element.prototype.bypass = function(newBypass){	
-					if( newBypass === undefined ){
-						return copy( structs.bypass[ fields.group ][ fields.data.id ] );
+					if( val === undefined ){
+						ret = this._private[ params.name ][ attr ];
+						ret =  ( typeof ret == "object" ? copy(ret) : ret );
 					} else {
-						structs.bypass[ fields.group ][ fields.data.id ] = copy( newBypass );
-					}
-				};
-				
-				function attrGetterSetter(params){
-					return function(attr, val){
-						var ret;
+						 this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
+						ret = this;
 						
-						if( val === undefined ){
-							ret = fields.[ params.name ][ attr ];
-							ret =  ( typeof ret == "object" ? copy(ret) : ret );
-						} else {
-							fields.[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
-							ret = this;
-						}
-						
-						$.isFunction(params.callback) && params.callback();
-						return ret;
-					};
-				}
-				
-				Element.prototype.data = attrGetterSetter({ name: "data", callback: function(){
-					notifyRenderer({
-						type: "data",
-						elements: new CyCollection([ this ])
-					});
-				} });
-				
-				Element.prototype.position = attrGetterSetter({ name: "position", callback: function(){
-					notifyRenderer({
-						type: "position",
-						elements: new CyCollection([ this ])
-					});
-				} });
-				
-				Element.prototype.style = function(){
-					// ask renderer for computed style
-					return renderer.style(this);
-				};
-				
-				Element.prototype.bind = function(event, callback){
-					if( fields.listeners[event] == null ){
-						fields.listeners[event] = [];
-					}				
-					fields.listeners[event].push(callback);
-					
-					return this;
-				};
-				
-				Element.prototype.unbind = function(event, callback){
-					var listeners = fields.listeners[event];
-					
-					if( listeners != null ){
-						$.each(listeners, function(i, listener){
-							if( callback == null || callback == listener ){
-								listeners[i] = undefined;
-							}
+						notifyRenderer({
+							type: params.name,
+							collection: [ this ]
 						});
-					}
+					}		
 					
-					return this;
+					return ret;
 				};
-				
-				Element.prototype.trigger = function(event, data){
-					var listeners = fields.listeners[event];
-					
-					var eventData = data; 
-					if( listeners != null ){
-						$.each(listeners, function(i, listener){
-							if( $.isFunction(listener) ){
-								listener(eventData);
-							}
-						});
-					}
-					
-					return this;
-				};
-				
-				Element.prototype.select = function(){
-					fields.selected = true;
-					
-					notifyRenderer({
-						type: "select",
-						elements: new CyCollection([ this ])
-					});
-				};
-				
-				Element.prototype.unselect = function(){
-					fields.selected = false;
-					
-					notifyRenderer({
-						type: "unselect",
-						elements: new CyCollection([ this ])
-					});
-				};
-				
-				Element.prototype.firstNeighbors = function(){
-					// TODO
-					// note must check group()
-				};
+			}
 			
-				function listenerAlias(params){
-					return function(callback){
-						return this.bind(params.name, callback);
-					};
+			CyElement.prototype.data = attrGetterSetter({ name: "data" });
+			
+			CyElement.prototype.position = function(val){
+				if( val === undefined ){
+					return copy( this._private.position );
+				} else {
+					this._private.position = copy( val );
+				}
+			};
+			
+			CyElement.prototype.style = function(){
+				// ask renderer for computed style
+				return renderer.style(this);
+			};
+			
+			CyElement.prototype.bind = function(event, callback){
+				if( this._private.listeners[event] == null ){
+					this._private.listeners[event] = [];
+				}				
+				this._private.listeners[event].push(callback);
+				
+				return this;
+			};
+			
+			CyElement.prototype.unbind = function(event, callback){
+				var listeners = this._private.listeners[event];
+				
+				if( listeners != null ){
+					$.each(listeners, function(i, listener){
+						if( callback == null || callback == listener ){
+							listeners[i] = undefined;
+						}
+					});
 				}
 				
-				// aliases to listeners, e.g. node.click(fn) => node.bind("click", fn)
-				// TODO add more
-				Element.prototype.mousedown = listenerAlias("mousedown");
-				Element.prototype.mouseup = listenerAlias("mouseup");
-				Element.prototype.mousemove = listenerAlias("mousemove");
-				Element.prototype.click = listenerAlias("click");
-				Element.prototype.select = listenerAlias("select");
-				Element.prototype.unselect = listenerAlias("unselect");
+				return this;
+			};
+			
+			CyElement.prototype.trigger = function(event, data){
+				var listeners = this._private.listeners[event];
 				
-				return Element;
-			}();
+				var eventData = data; 
+				if( listeners != null ){
+					$.each(listeners, function(i, listener){
+						if( $.isFunction(listener) ){
+							listener(eventData);
+						}
+					});
+				}
+				
+				return this;
+			};
+			
+			CyElement.prototype.select = function(){
+				this._private.selected = true;
+				
+				notifyRenderer({
+					type: "select",
+					elements: [ this ]
+				});
+			};
+			
+			CyElement.prototype.unselect = function(){
+				this._private.selected = false;
+				
+				notifyRenderer({
+					type: "unselect",
+					elements: [ this ]
+				});
+			};
+			
+			CyElement.prototype.firstNeighbors = function(){
+				// TODO
+				// note must check group()
+			};
+		
+			function listenerAlias(params){
+				return function(callback){
+					return this.bind(params.name, callback);
+				};
+			}
+			
+			// aliases to listeners, e.g. node.click(fn) => node.bind("click", fn)
+			// TODO add more
+			CyElement.prototype.mousedown = listenerAlias("mousedown");
+			CyElement.prototype.mouseup = listenerAlias("mouseup");
+			CyElement.prototype.mousemove = listenerAlias("mousemove");
+			CyElement.prototype.click = listenerAlias("click");
+			
+			
+			// CyCollection
+			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
 			// represents a set of nodes, edges, or both together
-			var CyCollection = function(){
-			
-				function Collection(elements){
-					$.each(elements, function(i, element){
-						this[i] = element;
-					});
-					
-					this.length = elements.length;
-					this.size = function(){
-						return this.length;
-					}
+			function CyCollection(elements){
+				for(var i = 0; i < elements.length; i++){
+					this[i] = elements[i];
 				}
+				
+				this.length = elements.length;
+				this.size = function(){
+					return this.length;
+				}
+			}
 
-				Collection.prototype.toArray = function(){
-					var array = [];
-					
-					for(var i = 0; i < this.size(); i++){
-						array.push( this.eq(i) );
-					}
-					
-					return array;
-				};
+			CyCollection.prototype.toArray = function(){
+				var array = [];
 				
-				Collection.prototype.eq = function(i){
-					return this[i];
-				};
+				for(var i = 0; i < this.size(); i++){
+					array.push( this.eq(i) );
+				}
 				
-				Collection.prototype.each = function(fn){
-					for(var i = 0; i < this.size(); i++){
-						fn.apply( this.eq(i), [ i, this.eq(i) ] );
-					}
-					return this;
-				};
-				
-				Collection.prototype.add = function(toAdd){
-					var elements = [];
-				
-					// add own
-					this.each(function(i, element){
+				return array;
+			};
+			
+			CyCollection.prototype.eq = function(i){
+				return this[i];
+			};
+			
+			CyCollection.prototype.each = function(fn){
+				for(var i = 0; i < this.size(); i++){
+					fn.apply( this.eq(i), [ i, this.eq(i) ] );
+				}
+				return this;
+			};
+			
+			CyCollection.prototype.add = function(toAdd){
+				var elements = [];
+			
+				// add own
+				this.each(function(i, element){
+					elements.push(element);
+				});
+			
+				// add toAdd
+				if( $isFunction(toAdd.size) ){
+					// we have a collection
+					var collection = toAdd;
+					collection.each(function(i, element){
 						elements.push(element);
 					});
+				} else {
+					// we have one element
+					var element = toAdd;
+					elements.push(element);
+				}
 				
-					// add toAdd
-					if( $isFunction(toAdd.size) ){
-						// we have a collection
-						var collection = toAdd;
-						collection.each(function(i, element){
-							elements.push(element);
-						});
-					} else {
-						// we have one element
-						var element = toAdd;
+				return new CyCollection(elements);
+			};
+			
+			CyCollection.prototype.filter = function(filterFn){
+				var elements = [];
+				this.each(function(i, element){
+					if( !$.isFunction(filterFn) || filterFn.apply(element, [i, element]) ){
 						elements.push(element);
 					}
-					
-					return new Collection(elements);
-				};
-				
-				Collection.prototype.filter = function(filterFn){
-					var elements = [];
-					this.each(function(i, element){
-						if( !$.isFunction(filterFn) || filterFn(element) ){
-							elements.push(element);
-						}
-					});
-	
-					return new Collection(elements);
-				};
-				
-				
-				Collection.prototype.positions = function(fn){
-					rendererNotificationsEnabled(false);
-					this.each(function(i, element){
-						var positionOpts = fn(i, element);
-						element.position(positionOpts);
-					});
-					rendererNotificationsEnabled(true);
-					
-					notifyRenderer({
-						type: "position",
-						collection: this
-					});
-				};
-				
-				// what functions in CyElement update the renderer
-				var rendererFunctions = [ "data", "select", "unselect", "position", "restore" ];
-				
-				// functions in element can also be used on collections
-				$.each(CyElement.prototype, function(name, func){
-					Collection.prototype[name] = function(){
-						var rets = [];
-					
-						// disable renderer notifications during loop
-						// just notify at the end of the loop with the whole collection
-						var notifyRenderer = $.inArray(name, rendererFunctions) >= 0;
-						if( notifyRenderer ){
-							rendererNotificationsEnabled(false);
-						}
-					
-						for(var i = 0; i < this.size(); i++){
-							var element = this[i];
-							var ret = func.apply(element, arguments);
-							
-							if( ret !== undefined ){
-								rets.push(ret);
-							}
-						}
-						
-						// notify the renderer of the call on the whole collection
-						// (more efficient than sending each in a row---may have flicker?)
-						if( notifyRenderer ){
-							rendererNotificationsEnabled(true);
-							notifyRenderer({
-								type: name,
-								collection: this;
-							});
-						}
-						
-						if( rets.length == 0 ){
-							rets = this; // if function doesn't return a value, return this for chaining
-						}
-						
-						return rets;
-					};
 				});
 
-				return Collection;
-			}();
+				return new CyCollection(elements);
+			};
 			
-			var renderer = reg.renderers[ options.renderer.toLowerCase() ];
+			
+			CyCollection.prototype.positions = function(fn){
+				
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						var positionOpts = fn.apply(element, [i, element]);
+						element.position(positionOpts);
+					});
+				});
+
+				notifyRenderer({
+					type: "position",
+					collection: this
+				});
+			};
+			
+			// what functions in CyElement update the renderer
+			var rendererFunctions = [ "data", "select", "unselect", "position", "restore" ];
+			
+			// functions in element can also be used on collections
+			$.each(CyElement.prototype, function(name, func){
+				CyCollection.prototype[name] = function(){
+					var rets = [];
+					var collection = false;
+				
+					// disable renderer notifications during loop
+					// just notify at the end of the loop with the whole collection
+					var notifyRenderer = $.inArray(name, rendererFunctions) >= 0;
+					if( notifyRenderer ){
+						rendererNotificationsEnabled(false);
+					}
+				
+					for(var i = 0; i < this.size(); i++){
+						var element = this[i];
+						var ret = func.apply(element, arguments);
+						
+						if( ret !== undefined ){
+							rets.push(ret);
+						}
+						
+						if( ret == element ){
+							collection = true;
+						}
+					}
+					
+					// notify the renderer of the call on the whole collection
+					// (more efficient than sending each in a row---may have flicker?)
+					if( notifyRenderer ){
+						rendererNotificationsEnabled(true);
+						notifyRenderer({
+							type: name,
+							collection: this
+						});
+					}
+					
+					if( collection ) {
+						var elements = rets;
+						rets = new CyCollection(elements);
+					}
+					
+					if( rets.length == 0 ){
+						rets = this; // if function doesn't return a value, return this for chaining
+					} 
+					
+					return rets;
+				};
+			});
+			
+			// Cytoscape Web object and helper functions
+			////////////////////////////////////////////////////////////////////////////////////////////////////
+
+			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
+			
+			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( options.renderer );
 			var rendererNotifications = true;
 			
+			function noNotifications(fn){
+				rendererNotificationsEnabled(false);
+				fn();
+				rendererNotificationsEnabled(true);
+			}
+			
 			function rendererNotificationsEnabled(enabled){
-				rendererNotificationsEnabled = enabled;
+				rendererNotifications = enabled;
 			}
 			
 			function notifyRenderer(params){
 				rendererNotifications && renderer.notify(params);
 			}
 			
-			funciton jsonGetterSetter(params){
+			function jsonGetterSetter(params){
 				return function(val){
 					var ret;
 					
@@ -463,12 +502,12 @@
 					var elements = [];
 					
 					function filter(element){
-						if( !$.isFunction(filterFn) || filterFn(element) ){
+						if( !$.isFunction(filterFn) || filterFn.apply(element, [element]) ){
 							elements.push(element);
 						}
 					}
 					
-					if( params.group != null ){
+					if( params != null && params.group != null ){
 						$.each(structs[params.group], function(id, element){
 							filter(element);
 						});
@@ -490,45 +529,58 @@
 			function addElement(params){
 				return function(opts){
 				
-					// restore the element
-					if( opts instanceof CyElement ){
-						var element = opts;
-						element.restore();
-					} 
+					var elements = [];
 					
-					// restore the collection
-					else if( opts instanceof CyCollection ){
-						var elements = opts;
-						elements.restore();
-					} 
+					noNotifications(function(){
+						
+						// add the element
+						if( opts instanceof CyElement ){
+							var element = opts;
+							
+							elements.push( new CyElement({
+								group: element._private.group,
+								data: element._private.data,
+								bypass: element._private.bypass
+							}) );
+						} 
+						
+						// add the collection
+						else if( opts instanceof CyCollection ){
+							var collection = opts;
+							collection.each(function(i, element){
+								
+								elements.push( new CyElement({
+									group: element._private.group,
+									data: element._private.data,
+									bypass: element._private.bypass
+								}) );
+								
+							});
+						} 
+						
+						// specify an array of options
+						else if( $.isArray(opts) ){
+							$.each(opts, function(i, elementParams){
+								var element = new CyElement(elementParams);
+								elements.push(element);
+							});
+							
+						} 
+						
+						// specify options for one element
+						else {
+							elements.push( new CyElement({
+								group: params.group,
+								data: opts.data,
+								bypass: opts.bypass
+							}) );
+						}
+					});
 					
-					// specify an array of options
-					else if( $.isArray(opts) ){
-						rendererNotificationsEnabled(false);
-						var elements = [];
-						
-						$.each(opts, function(i, elementParams){
-							var element = new CyElement(elementParams);
-							elements.push(element);
-						});
-						
-						var collection = new CyCollection(elements);
-						rendererNotificationsEnabled(true);
-						
-						notifyRenderer({
-							type: "add",
-							collection: collection
-						});
-					} 
-					
-					// specify options for one element
-					else {
-						return new CyElement({
-							group: params.group,
-							data: opts.data.
-							bypass: opts.bypass
-						});
-					}
+					notifyRenderer({
+						type: "add",
+						collection: elements
+					});
 				}
 			}
 			
@@ -548,6 +600,10 @@
 				} }),
 				
 				add: addElement(),
+				
+				remove: function(collection){
+					collection.remove();
+				},
 				
 				addNode: addElement({ group: "nodes" }),
 				
@@ -569,13 +625,20 @@
 				
 				layout: function(params){
 				
-					var name = params.name != null ? params.name : options.layout;
+					if( params == null ){
+						params = options.layout;
+					}
+					
+					var name = params.name != null ? params.name : options.layout.name;
 				
-					reg.layout[name].run($.extend({}, params, {
+					// TODO don't create new instance if same type
+					layout = new reg.layout[name](params);
+					
+					layout.run( $.extend({}, params, {
 						nodes: cy.nodes(),
 						edges: cy.edges(),
 						renderer: renderer
-					});
+					}) );
 				},
 				
 				pan: function(params){
@@ -587,14 +650,17 @@
 				
 					if( data != null ){
 						
-						rendererNotificationsEnabled(false);
-						$.each(options.data, function(group, elements){
-							$.each(elements, function(i, params){
-								// add element
-								var element = new CyElement( $.extend({}, params, { group: group }) );
+						noNotifications(function(){
+							$.each(options.data, function(group, elements){
+								$.each(elements, function(i, params){
+									// add element
+									var element = new CyElement( {
+										group: group,
+										data: params
+									} );
+								});
 							});
 						});
-						rendererNotificationsEnabled(true);
 						
 					}
 					
@@ -609,8 +675,23 @@
 			};
 			
 			cy.load(options.data);
+			cy.layout();
 			return cy;
 		} 
+		
+		// logging functions
+		else if( typeof opts == typeof "" && $.isFunction(console[opts]) ){
+			var args = [];
+			for(var i = 1; i < arguments.length; i++){
+				args.push( arguments[i] );
+			}
+			
+			console[opts].apply(console, args);
+		}
+		
+		else if( opts == "quiet" ){
+			quiet = ( arguments[1] != null && arguments[1] != false );
+		}
 		
 		// allow for registration of extensions
 		// e.g. $.cytoscapeweb("renderer", "svg", { ... });
@@ -634,6 +715,6 @@
 		$.fn.cy = $.fn.cytoscapeweb;
 		$.cy = $.cytoscapeweb;
 	}
-
+	
 })(jQuery);
 

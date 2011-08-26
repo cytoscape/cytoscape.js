@@ -156,7 +156,8 @@
 					listeners: {}, // map ( type => array of functions )
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ),
-					removed: false // whether it's inside the vis; true if removed
+					removed: false, // whether it's inside the vis; true if removed
+					selected: false // whether it's selected
 				};
 				
 				if( this._private.data.id == null ){
@@ -180,6 +181,10 @@
 			
 			CyElement.prototype.removed = function(){
 				return this._private.removed;
+			};
+			
+			CyElement.prototype.selected = function(){
+				return this._private.selected;
 			};
 			
 			// remove from cytoweb
@@ -217,10 +222,12 @@
 						 this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
 						ret = this;
 						
-						notifyRenderer({
-							type: params.name,
-							collection: [ this ]
-						});
+						if( !this._private.removed ){
+							notifyRenderer({
+								type: params.name,
+								collection: [ this ]
+							});
+						}
 					}		
 					
 					return ret;
@@ -235,11 +242,18 @@
 				} else {
 					this._private.position = copy( val );
 				}
+				
+				if( !this._private.removed ){
+					notifyRenderer({
+						type: "position",
+						collection: [ this ]
+					});
+				}
 			};
 			
 			CyElement.prototype.style = function(){
 				// ask renderer for computed style
-				return renderer.style(this);
+				return copy( renderer.style(this) );
 			};
 			
 			CyElement.prototype.bind = function(event, callback){
@@ -287,6 +301,8 @@
 					type: "select",
 					elements: [ this ]
 				});
+				
+				this.trigger("select");
 			};
 			
 			CyElement.prototype.unselect = function(){
@@ -296,6 +312,8 @@
 					type: "unselect",
 					elements: [ this ]
 				});
+				
+				this.trigger("unselect");
 			};
 			
 			CyElement.prototype.firstNeighbors = function(){

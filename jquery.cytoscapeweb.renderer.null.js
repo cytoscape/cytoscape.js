@@ -12,6 +12,10 @@ $(function(){
 		$.cytoscapeweb("log", "Pan null renderer with params (%o)", params);
 	};
 	
+	NullRenderer.prototype.style = function(element){
+		return {};
+	};
+	
 	$.cytoscapeweb("renderer", "null", NullRenderer);
 	
 });

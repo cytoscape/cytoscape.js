@@ -23,7 +23,7 @@ $(function(){
 		}
 	});
 	
-	module("Null renderer", {
+	module("Null renderer & layout", {
 		setup: function(){
 			cy = $.cytoscapeweb({
 				selector: "#cytoscapeweb",
@@ -116,6 +116,71 @@ $(function(){
 		equal( cy.nodes().size(), 3, "Expected number of nodes after adding the node back" );
 		ok( cy.nodes(function(node){ return this.data("foo") == "one" }).size() == 1, "Node is indeed added back" );
 		
+	});
+	
+	asyncTest("Select a node", function(){
+		expect(4);
+		
+		var node = cy.nodes().eq(0);
+		
+		node.bind("select", function(){
+			ok(true, "Selection listener fired");
+			
+			ok( node.selected(), "Node state selected" );
+		});
+		
+		node.bind("unselect", function(){
+			ok(true, "Unselection listener fired");
+			
+			ok( !node.selected(), "Node state unselected" );
+			
+			start();
+		});
+		
+		setTimeout(function(){
+			node.select();
+		}, 100);
+		
+		setTimeout(function(){
+			node.unselect();
+		}, 200);
+		
+	});
+	
+	asyncTest("Test unbind selection", function(){
+		
+		var node = cy.nodes().eq(0);
+		var fired = false;
+				
+		node.bind("select", function(){
+			fired = true;
+		});
+		
+		setTimeout(function(){
+			node.select();
+		}, 100);
+		
+		setTimeout(function(){
+			ok( fired, "Listener was fired when bound" );
+			fired = false;
+			node.unbind("select");
+		}, 200);
+		
+		setTimeout(function(){
+			node.select();
+		}, 300);
+		
+		setTimeout(function(){
+			ok( !fired, "Listener was not fired when unbound" );
+			start();
+		}, 400);
+		
+	});
+	
+	test("Node's group is `node`", function(){
+		cy.nodes().each(function(i, node){
+			ok( node.group() == "nodes", "Node has proper group" );
+		});
 	});
 	
 });

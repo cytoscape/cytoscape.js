@@ -144,7 +144,8 @@
 			
 			// represents a node or an edge
 			var CyElement = function(params){
-			
+				
+				// validate group
 				if( params.group != "nodes" && params.group != "edges" ){
 					console.error("An element must be of type `nodes` or `edges`; you specified `" + params.group + "`");
 					return;
@@ -160,11 +161,32 @@
 					selected: false // whether it's selected
 				};
 				
+				// set id and validate
 				if( this._private.data.id == null ){
 					this._private.data.id = idFactory.generate( this._private.group );
 				} else if( structs[ this._private.group ][ this._private.data.id ] != null ){
-					console.error("Can not create element: an element in the visualisation in group `" + this._private.group + "` already has ID `" + this._private.data.id);
+					console.error("Can not create element: an element in the visualisation in group `" + this._private.group + "` already has ID `" + this._private.data.id + "`");
 					return;
+				}
+				
+				// validate source and target for edges
+				if( this._private.group == "edges" ){
+					
+					var fields = ["source", "target"];
+					for(var i = 0; i < fields.length; i++){
+						
+						var field = fields[i];
+						var val = this._private.data[field];
+						
+						if( val == null || val == "" ){
+							console.error("Can not create edge with id `" + this._private.data.id + "` since it has no `" + field + "` attribute set in `data` (must be non-empty value)");
+							return;
+						} else if( structs.nodes[val] == null ){ 
+							console.error("Can not create edge with id `" + this._private.data.id + "` since it specifies non-existant node as its `" + field + "` attribute with id `" + val + "`");
+							return;
+						} 
+					}
+					
 				}
 				  
 				structs[ this._private.group ][ this._private.data.id ] = this;
@@ -215,11 +237,26 @@
 				return function(attr, val){
 					var ret;
 					
-					if( val === undefined ){
+					// get whole field
+					if( attr === undefined ){
+						return copy( this._private[ params.name ] );
+					}
+					
+					// set whole field from obj
+					else if( $.isPlainObject(attr) ){
+						var newValObj = attr;
+						this._private[ params.name ] = copy( newValObj );
+					} 
+					
+					// get attr val by name
+					else if( val === undefined ){
 						ret = this._private[ params.name ][ attr ];
 						ret =  ( typeof ret == "object" ? copy(ret) : ret );
-					} else {
-						 this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
+					}
+					
+					// set attr val by name
+					else {
+						this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
 						ret = this;
 						
 						if( !this._private.removed ){
@@ -669,14 +706,18 @@
 					if( data != null ){
 						
 						noNotifications(function(){
-							$.each(options.data, function(group, elements){
-								$.each(elements, function(i, params){
-									// add element
-									var element = new CyElement( {
-										group: group,
-										data: params
-									} );
-								});
+							$.each(["nodes", "edges"], function(i, group){
+								
+								var elements = options.data[group];								
+								if( elements != null ){
+									$.each(elements, function(i, params){
+										// add element
+										var element = new CyElement( {
+											group: group,
+											data: params
+										} );
+									});
+								}
 							});
 						});
 						
@@ -707,6 +748,7 @@
 			console[opts].apply(console, args);
 		}
 		
+		// turn on/off logging
 		else if( opts == "quiet" ){
 			quiet = ( arguments[1] != null && arguments[1] != false );
 		}

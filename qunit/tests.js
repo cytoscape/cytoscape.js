@@ -5,26 +5,96 @@ $(function(){
 	}
 	
 	window.cy = null;
-
-	cy = $.cytoscapeweb({
-		selector: "#cytoscapeweb",
-		renderer: {
-			name: "null"
-		},
-		layout: {
-			name: "null"
-		},
-		data: {
-			nodes: [
-			    { foo: "one" },
-			    { foo: "two" },
-			    { foo: "three" }
-			]
-		}
+		
+	// Test invalid init options module
+	////////////////////////////////////////////////////////////////////////////////////////////
+	
+	module("Test invalid init options");
+	
+	test("Two nodes, same ID", function(){
+		cy = $.cytoscapeweb({
+			selector: "#cytoscapeweb",
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				nodes: [
+				    { id: "n1", foo: "one" },
+				    { id: "n2", foo: "two" },
+				    { id: "n1", foo: "what is this guy doing here" }
+				]
+			}
+		});
+		
+		equal( 2, cy.nodes().size(), "Number of nodes" );
+		equal( 1, cy.nodes(function(node){ if( node.data("id") == "n1" ) return true; }).size(), "Instances of node `n1`" );
+		ok( cy.node("n2") != null, "Node `n2` is there" );
 	});
+	
+	test("Edge specifies two bad IDs (no nodes)", function(){
+		cy = $.cytoscapeweb({
+			selector: "#cytoscapeweb",
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				edges: [ { source: "n1", target: "n2" } ]
+			}
+		});
+		
+		ok( cy.elements().size() == 0, "There are no elements" );
+	});
+	
+	test("Edge specifies one bad ID", function(){
+		cy = $.cytoscapeweb({
+			selector: "#cytoscapeweb",
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				nodes: [ { id: "n1" } ],
+				edges: [ { source: "n1", target: "n2" } ]
+			}
+		});
+		
+		ok( cy.edges().size() == 0, "There are no edges" );
+		ok( cy.nodes().size() == 1, "The node is still there" );
+	});
+	
+	test("Edge specifies good IDs", function(){
+		cy = $.cytoscapeweb({
+			selector: "#cytoscapeweb",
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				nodes: [ { id: "n1" }, { id: "n2" } ],
+				edges: [ { source: "n1", target: "n2" } ]
+			}
+		});
+		
+		ok( cy.edges().size() == 1, "The edge exists" );
+		ok( cy.nodes().size() == 2, "The nodes are still there" );
+	});
+	
+	// Null renderer & layout module
+	////////////////////////////////////////////////////////////////////////////////////////////
 	
 	module("Null renderer & layout", {
 		setup: function(){
+			
 			cy = $.cytoscapeweb({
 				selector: "#cytoscapeweb",
 				renderer: {
@@ -35,12 +105,18 @@ $(function(){
 				},
 				data: {
 					nodes: [
-					    { foo: "one" },
-					    { foo: "two" },
-					    { foo: "three" }
+					    { id: "n1", foo: "one" },
+					    { id: "n2", foo: "two" },
+					    { id: "n3", foo: "three" }
+					],
+					
+					edges: [
+					    { id: "n1n2", source: "n1", target: "n2" },
+					    { id: "n2n3", source: "n2", target: "n3" }
 					]
 				}
 			});
+			
 		},
 		
 		teardown: function(){

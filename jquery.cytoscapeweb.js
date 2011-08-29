@@ -8,7 +8,18 @@
 	};
 
 	var quiet = false;
+	var debug = false;
 	var console = {
+		debug: function(){
+			if( quiet || !debug ){ return; }
+			
+			if( window.console != null && window.console.debug != null ){
+				window.console.debug.apply(window.console, arguments);
+			} else if( window.console != null && window.console.log != null ){
+				window.console.log.apply(window.console, arguments);
+			}
+		},
+			
 		log: function(){
 			if( quiet ){ return; }
 			
@@ -39,6 +50,10 @@
 		}
 	};
 	
+	function isFunction(obj){
+		return typeof obj == typeof function(){};
+	}
+	
 	function isArray(obj){
 		return obj instanceof Array;
 	}
@@ -47,7 +62,7 @@
 		return typeof obj == typeof {} && !isArray(obj);
 	}
 	
-	// allow calls on a jQuery selector by proxing calls to $.cytoscapeweb
+	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
 
@@ -166,7 +181,8 @@
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ),
 					removed: false, // whether it's inside the vis; true if removed
-					selected: false // whether it's selected
+					selected: false, // whether it's selected
+					locked: false // whether the element is locked (cannot be moved)
 				};
 				
 				// set id and validate
@@ -199,12 +215,12 @@
 				  
 				structs[ this._private.group ][ this._private.data.id ] = this;
 				
-				notifyRenderer({
+				notify({
 					type: "add",
 					elements: [ this ]
 				});
 			};
-				
+			
 			CyElement.prototype.group = function(){
 				return this._private.group;
 			}
@@ -213,31 +229,47 @@
 				return this._private.removed;
 			};
 			
-			CyElement.prototype.selected = function(){
-				return this._private.selected;
-			};
-			
 			// remove from cytoweb
 			CyElement.prototype.remove = function(){
 				if( !this._private.removed ){
 					delete structs[ this._private.group ][ this._private.data.id ];
 					this._private.removed = true;
-					
-					notifyRenderer({
-						type: "remove",
-						elements: [ this ]
-					});
+										
+					this.trigger("remove");
 				}
 				
 				return this;
 			};
 
+			function switchFunction(params){
+				return function(fn){
+					if( isFunction(fn) ){
+						this.bind(params.event, fn);
+					} else if( this._private[params.field] != params.value ) {
+						this._private[params.field] = params.value;
+						
+						this.trigger(params.event);
+					}
+					
+					return this;
+				}
+			}
+			
+			CyElement.prototype.locked = function(){
+				return this._private.locked;
+			};
+			
+			CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
+			
+			CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
+			
 			// proxy to the bypass object				
 			CyElement.prototype.bypass = function(newBypass){	
 				if( newBypass === undefined ){
-					return copy( structs.bypass[ this._private.group ][ this._private.data.id ] );
+					return copy( this._private.bypass );
 				} else {
-					structs.bypass[ this._private.group ][ this._private.data.id ] = copy( newBypass );
+					this._private.bypass = copy( newBypass );
+					this.trigger("bypass");
 				}
 			};
 			
@@ -254,6 +286,8 @@
 					else if( isPlainObject(attr) ){
 						var newValObj = attr;
 						this._private[ params.name ] = copy( newValObj );
+						
+						this.trigger(params.name);
 					} 
 					
 					// get attr val by name
@@ -267,12 +301,7 @@
 						this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
 						ret = this;
 						
-						if( !this._private.removed ){
-							notifyRenderer({
-								type: params.name,
-								collection: [ this ]
-							});
-						}
+						this.trigger(params.name);
 					}		
 					
 					return ret;
@@ -282,18 +311,22 @@
 			CyElement.prototype.data = attrGetterSetter({ name: "data" });
 			
 			CyElement.prototype.position = function(val){
+				
 				if( val === undefined ){
 					return copy( this._private.position );
+				} else if( isFunction(val) ){
+					var fn = val;
+					this.bind("position", fn);
+				} else if( this._private.group == "edges" ){
+					console.warn("Can not move edge with ID `" + this._private.data.id + "`; edges can not be moved");
+				} else if( this.locked() ) {
+					console.warn("Can not move locked node with ID " + this._private.data.id);
 				} else {
 					this._private.position = copy( val );
+									
+					this.trigger("position");
 				}
 				
-				if( !this._private.removed ){
-					notifyRenderer({
-						type: "position",
-						collection: [ this ]
-					});
-				}
 			};
 			
 			CyElement.prototype.style = function(){
@@ -325,6 +358,14 @@
 			};
 			
 			CyElement.prototype.trigger = function(event, data){
+				// notify renderer unless removed
+				if( !this.removed() ){
+					notify({
+						type: event,
+						collection: [ this ]
+					});
+				}
+				
 				var listeners = this._private.listeners[event];
 				
 				var eventData = data; 
@@ -339,27 +380,13 @@
 				return this;
 			};
 			
-			CyElement.prototype.select = function(){
-				this._private.selected = true;
-				
-				notifyRenderer({
-					type: "select",
-					elements: [ this ]
-				});
-				
-				this.trigger("select");
+			CyElement.prototype.selected = function(){
+				return this._private.selected;
 			};
 			
-			CyElement.prototype.unselect = function(){
-				this._private.selected = false;
-				
-				notifyRenderer({
-					type: "unselect",
-					elements: [ this ]
-				});
-				
-				this.trigger("unselect");
-			};
+			CyElement.prototype.select = switchFunction({ event: "select", field: "selected", value: true });
+			
+			CyElement.prototype.unselect = switchFunction({ event: "unselect", field: "selected", value: false });
 			
 			CyElement.prototype.firstNeighbors = function(){
 				// TODO
@@ -368,16 +395,23 @@
 		
 			function listenerAlias(params){
 				return function(callback){
-					return this.bind(params.name, callback);
+					if( isFunction(callback) ){
+						return this.bind(params.name, callback);
+					} else {
+						var opts = callback;
+						return this.trigger(params.name, opts);
+					}
 				};
 			}
 			
 			// aliases to listeners, e.g. node.click(fn) => node.bind("click", fn)
 			// TODO add more
-			CyElement.prototype.mousedown = listenerAlias("mousedown");
-			CyElement.prototype.mouseup = listenerAlias("mouseup");
-			CyElement.prototype.mousemove = listenerAlias("mousemove");
-			CyElement.prototype.click = listenerAlias("click");
+			CyElement.prototype.mousedown = listenerAlias({ name : "mousedown"});
+			CyElement.prototype.mouseup = listenerAlias({ name : "mouseup"});
+			CyElement.prototype.mouseover = listenerAlias({ name : "mouseover"});
+			CyElement.prototype.mouseout = listenerAlias({ name : "mouseout"});
+			CyElement.prototype.mousemove = listenerAlias({ name : "mousemove"});
+			CyElement.prototype.click = listenerAlias({ name : "click"});
 			
 			
 			// CyCollection
@@ -463,26 +497,26 @@
 					});
 				});
 
-				notifyRenderer({
+				notify({
 					type: "position",
 					collection: this
 				});
 			};
 			
 			// what functions in CyElement update the renderer
-			var rendererFunctions = [ "data", "select", "unselect", "position", "restore" ];
+			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
 			
 			// functions in element can also be used on collections
 			$.each(CyElement.prototype, function(name, func){
 				CyCollection.prototype[name] = function(){
 					var rets = [];
-					var collection = false;
+					var collection = false; // whether the function returns the element itself
 				
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
-					var notifyRenderer = $.inArray(name, rendererFunctions) >= 0;
-					if( notifyRenderer ){
-						rendererNotificationsEnabled(false);
+					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
+					if( isRendererFn ){
+						notificationsEnabled(false);
 					}
 				
 					for(var i = 0; i < this.size(); i++){
@@ -500,17 +534,16 @@
 					
 					// notify the renderer of the call on the whole collection
 					// (more efficient than sending each in a row---may have flicker?)
-					if( notifyRenderer ){
-						rendererNotificationsEnabled(true);
-						notifyRenderer({
+					if( isRendererFn ){
+						notificationsEnabled(true);
+						notify({
 							type: name,
 							collection: this
 						});
 					}
 					
 					if( collection ) {
-						var elements = rets;
-						rets = new CyCollection(elements);
+						rets = this; // if fn returns the element, then return the same collection
 					}
 					
 					if( rets.length == 0 ){
@@ -521,26 +554,43 @@
 				};
 			});
 			
+			CyCollection.prototype.trigger = function(event, data){
+				
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.trigger(event, data);
+					});
+				});
+
+				notify({
+					type: event,
+					collection: this
+				});
+				
+			};
+			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 
 			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
 			
 			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( options.renderer );
-			var rendererNotifications = true;
+			var enableNotifications = true;
 			
 			function noNotifications(fn){
-				rendererNotificationsEnabled(false);
+				notificationsEnabled(false);
 				fn();
-				rendererNotificationsEnabled(true);
+				notificationsEnabled(true);
 			}
 			
-			function rendererNotificationsEnabled(enabled){
-				rendererNotifications = enabled;
+			function notificationsEnabled(enabled){
+				enableNotifications = enabled;
 			}
 			
-			function notifyRenderer(params){
-				rendererNotifications && renderer.notify(params);
+			function notify(params){
+				enableNotifications && renderer.notify(params);
 			}
 			
 			function jsonGetterSetter(params){
@@ -640,7 +690,7 @@
 						}
 					});
 					
-					notifyRenderer({
+					notify({
 						type: "add",
 						collection: elements
 					});
@@ -651,14 +701,8 @@
 			var cy = {
 				
 				style: jsonGetterSetter({ struct: "style", after: function(){
-					notifyRenderer({
+					notify({
 						style: structs.style
-					});
-				} }),
-				
-				bypass: jsonGetterSetter({ struct: "bypass", after: function(){
-					notifyRenderer({
-						bypass: structs.bypass
 					});
 				} }),
 				
@@ -694,8 +738,9 @@
 					
 					var name = params.name != null ? params.name : options.layout.name;
 				
-					// TODO don't create new instance if same type
-					layout = new reg.layout[name](params);
+					if( ! layout instanceof reg.layout[name] ){
+						layout = new reg.layout[name](params);
+					}
 					
 					layout.run( $.extend({}, params, {
 						nodes: cy.nodes(),
@@ -731,7 +776,7 @@
 						
 					}
 					
-					notifyRenderer({
+					notify({
 						type: "add", // TODO should this be a different type?
 						collection: cy.elements(),
 						style: structs.style,
@@ -747,7 +792,7 @@
 		} 
 		
 		// logging functions
-		else if( typeof opts == typeof "" && $.isFunction(console[opts]) ){
+		else if( typeof opts == typeof "" && isFunction(console[opts]) ){
 			var args = [];
 			for(var i = 1; i < arguments.length; i++){
 				args.push( arguments[i] );
@@ -759,6 +804,11 @@
 		// turn on/off logging
 		else if( opts == "quiet" ){
 			quiet = ( arguments[1] != null && arguments[1] != false );
+		}
+		
+		// turn on/off logging for debug statements
+		else if( opts == "debugging" ){
+			debug = ( arguments[1] != null && arguments[1] != false );
 		}
 		
 		// allow for registration of extensions

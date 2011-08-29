@@ -1,11 +1,30 @@
 $(function(){
 	
+	$.cytoscapeweb("quiet", false);
+	$.cytoscapeweb("debugging", true);
+	
 	function fail(msg){
 		ok(false, msg);
 	}
 	
 	window.cy = null;
-		
+	
+	QUnit.moduleStart = function(module){
+		console.groupCollapsed(module.name);
+	};
+	
+	QUnit.moduleDone = function(){
+		console.groupEnd();
+	};
+	
+	QUnit.testStart = function(test){
+		console.groupCollapsed(test.name);
+	};
+	
+	QUnit.testDone = function(){
+		console.groupEnd();
+	};
+	
 	// Test invalid init options module
 	////////////////////////////////////////////////////////////////////////////////////////////
 	

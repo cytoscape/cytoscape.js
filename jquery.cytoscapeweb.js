@@ -39,12 +39,20 @@
 		}
 	};
 	
+	function isArray(obj){
+		return obj instanceof Array;
+	}
+	
+	function isPlainObject(obj){
+		return typeof obj == typeof {} && !isArray(obj);
+	}
+	
 	// allow calls on a jQuery selector by proxing calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
 
 		// proxy to create instance
-		if( $.isPlainObject(opts) ){
+		if( isPlainObject(opts) ){
 			return $(this).each(function(){
 				var options = $.extend({}, opts, {
 					selector: $(this)
@@ -85,7 +93,7 @@
 	$.cytoscapeweb = function(opts){
 		
 		// create instance
-		if( $.isPlainObject(opts) ){
+		if( isPlainObject(opts) ){
 			var defaults = {
 				layout: {
 					name: "forcedirected"
@@ -111,7 +119,7 @@
 			
 			// return a deep copy of an object
 			function copy(obj){
-				if( $.isArray(obj) ){
+				if( isArray(obj) ){
 					return $.extend(true, [], obj);
 				} else {
 					return $.extend(true, {}, obj);
@@ -243,7 +251,7 @@
 					}
 					
 					// set whole field from obj
-					else if( $.isPlainObject(attr) ){
+					else if( isPlainObject(attr) ){
 						var newValObj = attr;
 						this._private[ params.name ] = copy( newValObj );
 					} 
@@ -614,7 +622,7 @@
 						} 
 						
 						// specify an array of options
-						else if( $.isArray(opts) ){
+						else if( isArray(opts) ){
 							$.each(opts, function(i, elementParams){
 								var element = new CyElement(elementParams);
 								elements.push(element);

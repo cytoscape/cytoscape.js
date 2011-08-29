@@ -182,7 +182,8 @@
 					bypass: copy( params.bypass ),
 					removed: false, // whether it's inside the vis; true if removed
 					selected: false, // whether it's selected
-					locked: false // whether the element is locked (cannot be moved)
+					locked: false, // whether the element is locked (cannot be moved)
+					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
 				};
 				
 				// set id and validate
@@ -219,6 +220,10 @@
 					type: "add",
 					elements: [ this ]
 				});
+			};
+			
+			CyElement.prototype.grabbed = function(){
+				return this._private.grabbed;
 			};
 			
 			CyElement.prototype.group = function(){

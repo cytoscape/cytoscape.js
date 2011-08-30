@@ -19,27 +19,32 @@ ZIPFILE = $(BUILDDIR)/jquery.cytoscapeweb-$(VERSION).zip
 ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(LICENSE)
 BUILDDIR = build
 LICENSE = LGPL-LICENSE.txt
+PREAMBLE = PREAMBLE
+TEMPFILE = /tmp/out
+MV = mv
 
 all : zip
 
 zip :  $(ZIPFILE) $(ZIPCONTENTS)
 	
-minify : copy $(JSMINFILES) $(JSALLMINFILE)
+minify : $(JSBUILDFILES) $(JSMINFILES) $(JSALLMINFILE)
 
 $(ZIPFILE) : minify
 	$(ZIP) $(ZIPFILE) $(ZIPCONTENTS)
 
-copy : $(BUILDDIR)
-	$(CP) $(JSFILES) $(BUILDDIR)
+$(JSBUILDFILES) : $(BUILDDIR)
+	$(CP) $(@:$(BUILDDIR)/%=%) $@
+	$(CAT) $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(JSALLFILE) : $(BUILDDIR)
-	$(CAT) $(JSFILES) > $@
+	$(CAT) $(PREAMBLE) $(JSFILES) > $@
 
 $(BUILDDIR) : 
 	mkdir $@
 
 %.min.js : %.js
 	$(YUI) $(YUIFLAGS) $? -o $@
+	$(CAT) $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 clean : 
 	$(RM) $(BUILDDIR)

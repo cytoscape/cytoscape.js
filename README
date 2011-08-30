@@ -1,0 +1,42 @@
+Build dependencies
+===============================================================================
+
+You need the following installed in order to build successfully.
+
+	* make
+	* java >= 1.5 (for YUI compressor)
+	* rm
+	* cat
+	* cp
+	* zip
+	* mv
+	
+Their paths are defined in `Makefile`, so you can revise the paths to these
+executables and still run `make` successfully.
+
+
+
+Build instructions
+===============================================================================
+
+Run `make` in the console.  The targets are:
+
+	all : build everything (default)
+	minify : build the production minified JS
+	zip : minify and make a ZIP file for release
+	clean : deletes built files
+
+A note to developers:
+
+For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
+actual release ZIP.
+
+
+
+Tests
+===============================================================================
+
+QUnit tests are found in the `qunit` directory.  Each HTML file shares the
+test suite but redefines which JS files are used.  In this way, you can test
+with different versions of jQuery or different falvours of the library
+(minified, plain, or combined and minified).

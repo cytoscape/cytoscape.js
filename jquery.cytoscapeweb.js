@@ -125,6 +125,14 @@
 			
 			var options = $.extend(true, {}, defaults, opts);
 			
+			if( options.selector == null ){
+				console.error("Cytoscape Web must be called on an element; specify `selector` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
+				return;
+			} else if( $(options.selector).size() > 0 ){
+				console.error("Cytoscape Web can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
+				return;
+			}
+			
 			// structs to hold internal cytoweb model
 			var structs = {
 				style: options.style,
@@ -581,7 +589,7 @@
 
 			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
 			
-			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( options.renderer );
+			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( $.extend({}, options.renderer, { selector: $(options.selector) }) );
 			var enableNotifications = true;
 			
 			function noNotifications(fn){
@@ -752,6 +760,7 @@
 						edges: cy.edges(),
 						renderer: renderer
 					}) );
+					
 				},
 				
 				pan: function(params){

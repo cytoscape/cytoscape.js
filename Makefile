@@ -4,7 +4,8 @@ YUIFLAGS = --line-break 500
 RM = rm -rf
 CAT = cat
 CP = cp
-ZIP = zip -Dr
+ZIP = zip
+MV = mv
 
 # version
 VERSION = 1.0-alpha
@@ -16,12 +17,12 @@ JSMINFILES = $(JSBUILDFILES:%.js=%.min.js)
 JSALLFILE = $(BUILDDIR)/jquery.cytoscapeweb.all.js
 JSALLMINFILE = $(JSALLFILE:%.js=%.min.js)
 ZIPFILE = $(BUILDDIR)/jquery.cytoscapeweb-$(VERSION).zip
-ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(LICENSE)
+ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(LICENSE) $(README)
 BUILDDIR = build
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = PREAMBLE
 TEMPFILE = /tmp/out
-MV = mv
+README = README
 
 all : zip
 

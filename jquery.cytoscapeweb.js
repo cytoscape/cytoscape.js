@@ -128,7 +128,7 @@
 			if( options.selector == null ){
 				console.error("Cytoscape Web must be called on an element; specify `selector` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
 				return;
-			} else if( $(options.selector).size() > 0 ){
+			} else if( $(options.selector).size() > 1 ){
 				console.error("Cytoscape Web can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
 				return;
 			}

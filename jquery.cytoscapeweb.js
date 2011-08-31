@@ -65,9 +65,15 @@
 	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
-
+		
+		// get object
+		if( opts == "object" ){
+			var cy = $(this).data("cytoscapeweb");
+			return cy;
+		}
+		
 		// proxy to create instance
-		if( isPlainObject(opts) ){
+		else if( isPlainObject(opts) ){
 			return $(this).each(function(){
 				var options = $.extend({}, opts, {
 					selector: $(this)
@@ -799,6 +805,7 @@
 				}
 				
 			};
+			$(options.selector).data("cytoscapeweb", cy);
 			
 			cy.load(options.data);
 			cy.layout();

@@ -3,10 +3,6 @@ $(function(){
 	$.cytoscapeweb("quiet", false);
 	$.cytoscapeweb("debugging", true);
 	
-	function fail(msg){
-		ok(false, msg);
-	}
-	
 	window.cy = null;
 	
 	QUnit.moduleStart = function(module){
@@ -25,10 +21,66 @@ $(function(){
 		console.groupEnd();
 	};
 	
+	// Test aliases
+	////////////////////////////////////////////////////////////////////////////////////////////
+	
+	module("Test aliases", {
+		setup: function(){
+		},
+		
+		teardown: function(){
+		}
+	});
+	
+	test("Test short `cy` notation", function(){
+		cy = $.cy({
+			selector: "#cytoscapeweb",
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				nodes: [
+				    { foo: "the node" }
+				]
+			}
+		});
+		
+		ok( cy != null, "Not null object" );
+		ok( cy.nodes().size() == 1, "Node is there" );
+	});
+	
+	test("Test jQuery selector style", function(){
+		$("#cytoscapeweb").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			data: {
+				nodes: [
+				    { foo: "the node" }
+				]
+			}
+		});
+		
+		cy = $("#cytoscapeweb").cy("object");
+		
+		ok( cy != null, "Not null object" );
+		ok( cy.nodes().size() == 1, "Node is there" );
+		ok( $("#cytoscapeweb").cy("nodes").size() == 1, "Node is there via jQuery style" );
+	});
+	
 	// Test invalid init options module
 	////////////////////////////////////////////////////////////////////////////////////////////
 	
-	module("Test invalid init options");
+	module("Test invalid init options", {
+		setup: function(){},
+		teardown: function(){}
+	});
 	
 	test("Two nodes, same ID", function(){
 		cy = $.cytoscapeweb({

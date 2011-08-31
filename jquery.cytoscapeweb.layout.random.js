@@ -22,10 +22,12 @@ $(function(){
 		var width = container.width();
 		var height = container.height();
 			
+		$.cytoscapeweb("debug", "Random layout found (w, h) = (%i, %i)", width, height);
+		
 		nodes.positions(function(){
 			return {
 				x: Math.round( Math.random() * width ),
-				y: Math.round( Math.random() * height );
+				y: Math.round( Math.random() * height )
 			};
 		});
 	};

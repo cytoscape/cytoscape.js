@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<script type="text/javascript" src="jquery/jquery-latest.min.js"></script>
+		<script type="text/javascript" src="qunit/qunit-git.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
+		
+		<link rel="stylesheet" href="qunit/qunit-git.css" />
+		
+		<title>Layout demos</title>
+		
+		<script type="text/javascript">
+			$(function(){
+				$("#cytoscapeweb").css({
+					position: "relative",
+					border: "1px solid #888"
+				});
+				
+				module("Layout", { 
+					setup: function(){
+						var width = Math.random() * 700 + 100;
+						var height = Math.random() * 700 + 100;
+						
+						$("#cytoscapeweb").width(width).height(height);
+						$("#cytoscapeweb").empty();
+						
+						cy = $.cytoscapeweb({
+							selector: "#cytoscapeweb",
+							renderer: {
+								name: "null"
+							},
+							layout: {
+								name: "null"
+							},
+							data: {
+								nodes: (function(){
+									var nodes = [];
+									var number = Math.random() * 50;
+									for(var i = 0; i < number; i++){
+										nodes.push({});
+									}
+									return nodes;
+								})()
+							}
+						});
+					}, 
+					teardown: function(){
+						// draw nodes as divs
+						$.each(cy.nodes().position(), function(i, position){
+							var div = $('<div></div>');
+							div.css({
+								position: "absolute",
+								left: position.x,
+								top: position.y,
+								height: 3,
+								width: 3,
+								background: "#000",
+								opacity: 0.5,
+								marginLeft: -1,
+								marginTop: -1
+							});
+							
+							$("#cytoscapeweb").append(div);
+						});
+					}
+				});
+				
+				test("Grid layout", function(){
+					cy.layout({
+						name: "grid"
+					});
+				});	
+				
+				test("Random layout", function(){
+					cy.layout({
+						name: "random"
+					});
+				});	
+			});
+		</script>
+	</head>
+
+	<body>
+		<div id="qunit_report">
+		    <h1 id="qunit-header">Layout demos using divs and null renderer</h1>
+		    <h2 id="qunit-banner"></h2>
+		    <h2 id="qunit-userAgent"></h2>
+		    <ol id="qunit-tests"></ol>
+		    <p id="qunit-testresult"></p>
+	    </div>
+	    
+	    <div id="cytoscapeweb"></div>
+	</body>
+
+</html>

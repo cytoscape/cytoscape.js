@@ -139,6 +139,9 @@
 				return;
 			}
 			
+			options.layout.selector = options.selector;
+			options.renderer.selector = options.selector;
+			
 			// structs to hold internal cytoweb model
 			var structs = {
 				style: options.style,
@@ -593,7 +596,18 @@
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 
+			if( reg.layout[ options.layout.name.toLowerCase() ] == null ){
+				console.error("Can not initialise: No such layout `" + options.layout.name.toLowerCase() + "` found; did you include its JS file?");
+				return;
+			}
+			
 			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
+			
+			
+			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
+				console.error("Can not initialise: No such renderer `" + options.renderer.name + "` found; did you include its JS file?" );
+				return;
+			}
 			
 			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( $.extend({}, options.renderer, { selector: $(options.selector) }) );
 			var enableNotifications = true;
@@ -716,6 +730,8 @@
 				}
 			}
 			
+			var prevLayoutName = options.layout.name;
+			
 			// this is the cytoweb object
 			var cy = {
 				
@@ -750,21 +766,31 @@
 				elements: elementsCollection(),
 				
 				layout: function(params){
-				
 					if( params == null ){
 						params = options.layout;
 					}
 					
 					var name = params.name != null ? params.name : options.layout.name;
-				
-					if( ! layout instanceof reg.layout[name] ){
-						layout = new reg.layout[name](params);
+					var name = name.toLowerCase();
+					
+					if( reg.layout[ name ] == null ){
+						console.error("Can not apply layout: No such layout `" + name + "` found; did you include its JS file?");
+						return;
+					}
+					
+					if( prevLayoutName != name ){
+						layout = new reg.layout[name]($.extend({}, params, { 
+							selector: options.selector,
+							name: name
+						}));
+						prevLayoutName = name;
 					}
 					
 					layout.run( $.extend({}, params, {
 						nodes: cy.nodes(),
 						edges: cy.edges(),
-						renderer: renderer
+						renderer: renderer,
+						selector: options.selector
 					}) );
 					
 				},

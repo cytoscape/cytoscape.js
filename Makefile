@@ -6,12 +6,13 @@ CAT = cat
 CP = cp
 ZIP = zip
 MV = mv
+PRINTF = printf
 
 # version
-VERSION = 1.0-alpha
+VERSION = 2.0-snapshot
 
 # targets
-JSFILES = jquery.cytoscapeweb.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.renderer.null.js
+JSFILES = jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
 JSBUILDFILES = $(JSFILES:%=$(BUILDDIR)/%)
 JSMINFILES = $(JSBUILDFILES:%.js=%.min.js)
 JSALLFILE = $(BUILDDIR)/jquery.cytoscapeweb.all.js
@@ -36,9 +37,11 @@ $(ZIPFILE) : minify
 $(JSBUILDFILES) : $(BUILDDIR)
 	$(CP) $(@:$(BUILDDIR)/%=%) $@
 	$(CAT) $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(JSALLFILE) : $(BUILDDIR)
 	$(CAT) $(PREAMBLE) $(JSFILES) > $@
+	$(PRINTF) "// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILDDIR) : 
 	mkdir $@
@@ -46,6 +49,7 @@ $(BUILDDIR) :
 %.min.js : %.js
 	$(YUI) $(YUIFLAGS) $? -o $@
 	$(CAT) $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 clean : 
 	$(RM) $(BUILDDIR)

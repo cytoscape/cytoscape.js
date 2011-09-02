@@ -269,9 +269,10 @@ $(function(){
 		deepEqual( vals, expected, "Expected values remaining" );
 		
 		cy.add(removedNode);
-		
+
 		equal( cy.nodes().size(), 3, "Expected number of nodes after adding the node back" );
 		ok( cy.nodes(function(node){ return this.data("foo") == "one" }).size() == 1, "Node is indeed added back" );
+		
 		
 	});
 	

@@ -256,8 +256,15 @@
 				if( !this._private.removed ){
 					delete structs[ this._private.group ][ this._private.data.id ];
 					this._private.removed = true;
-										
+					
+					notify({
+						type: "remove",
+						collection: [ this ]
+					});
 					this.trigger("remove");
+					
+				} else {
+					console.warn("Can not remove already removed element with group `" + this.group() + "` and ID `" + this.data("id") + "`");
 				}
 				
 				return this;
@@ -295,42 +302,43 @@
 				}
 			};
 			
-			function attrGetterSetter(params){
-				return function(attr, val){
-					var ret;
+			CyElement.prototype.data = function(attr, val){
+				var ret;
+				
+				// get whole field
+				if( attr === undefined ){
+					return copy( this._private.data );
+				} 
+				
+				if( attr == "id" && val !== undefined ){
+					console.error("Can not change ID of element with group `" + this._private.group + "` and ID `" + this._private.data.id + "`");
+					return;
+				}
+				
+				// set whole field from obj
+				else if( isPlainObject(attr) ){
+					var newValObj = attr;
+					this._private.data = copy( newValObj );
 					
-					// get whole field
-					if( attr === undefined ){
-						return copy( this._private[ params.name ] );
-					}
+					this.trigger("data");
+				} 
+				
+				// get attr val by name
+				else if( val === undefined ){
+					ret = this._private.data[ attr ];
+					ret =  ( typeof ret == "object" ? copy(ret) : ret );
+				}
+				
+				// set attr val by name
+				else {
+					this._private.data[ attr ] = ( typeof val == "object" ? copy(val) : val );
+					ret = this;
 					
-					// set whole field from obj
-					else if( isPlainObject(attr) ){
-						var newValObj = attr;
-						this._private[ params.name ] = copy( newValObj );
-						
-						this.trigger(params.name);
-					} 
-					
-					// get attr val by name
-					else if( val === undefined ){
-						ret = this._private[ params.name ][ attr ];
-						ret =  ( typeof ret == "object" ? copy(ret) : ret );
-					}
-					
-					// set attr val by name
-					else {
-						this._private[ params.name ][ attr ] = ( typeof val == "object" ? copy(val) : val );
-						ret = this;
-						
-						this.trigger(params.name);
-					}		
-					
-					return ret;
-				};
-			}
-			
-			CyElement.prototype.data = attrGetterSetter({ name: "data" });
+					this.trigger("data");
+				}		
+				
+				return ret;
+			};
 			
 			CyElement.prototype.position = function(val){
 				
@@ -623,6 +631,16 @@
 			}
 			
 			function notify(params){
+				
+				
+				if( params.collection instanceof CyElement ){
+					var element = params.collection;
+					params.collection = new CyCollection([ element ]);	
+				} else if( params.collection instanceof Array ){
+					var elements = params.collection;
+					params.collection = new CyCollection(elements);	
+				}
+			
 				enableNotifications && renderer.notify(params);
 			}
 			
@@ -683,24 +701,27 @@
 						if( opts instanceof CyElement ){
 							var element = opts;
 							
-							elements.push( new CyElement({
-								group: element._private.group,
-								data: element._private.data,
-								bypass: element._private.bypass
-							}) );
+							if( structs[ element._private.group ][ element._private.data.id ] == null ){							
+								elements.push( element );
+								element._private.removed = false;
+								structs[ element._private.group ][ element._private.data.id ] = element;
+							} else {
+								console.error("Can not create element: an element in the visualisation in group `" + element.group() + "` already has ID `" + element.data("id") + "`");
+							}
 						} 
 						
 						// add the collection
 						else if( opts instanceof CyCollection ){
 							var collection = opts;
 							collection.each(function(i, element){
-								
-								elements.push( new CyElement({
-									group: element._private.group,
-									data: element._private.data,
-									bypass: element._private.bypass
-								}) );
-								
+							
+								if( structs[ element._private.group ][ element._private.data.id ] == null ){
+									elements.push( element );
+									element._private.removed = false;
+									structs[ element._private.group ][ element._private.data.id ] = element;
+								} else {
+									console.error("Can not create element: an element in the visualisation in group `" + element.group() + "` already has ID `" + element.data("id") + "`");
+								}
 							});
 						} 
 						
@@ -715,11 +736,7 @@
 						
 						// specify options for one element
 						else {
-							elements.push( new CyElement({
-								group: params.group,
-								data: opts.data,
-								bypass: opts.bypass
-							}) );
+							elements.push(new CyElement( $.extend({}, opts, { group: params.group }) ));
 						}
 					});
 					
@@ -823,10 +840,9 @@
 					}
 					
 					notify({
-						type: "add", // TODO should this be a different type?
+						type: "load", // TODO should this be a different type?
 						collection: cy.elements(),
-						style: structs.style,
-						bypass: structs.bypass
+						style: structs.style
 					});
 				}
 				

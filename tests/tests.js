@@ -77,7 +77,7 @@ $(function(){
 			}
 		});
 		
-		cy = $("#cytoscapeweb").cy("object");
+		cy = $("#cytoscapeweb").cy("get");
 		
 		ok( cy != null, "Not null object" );
 		ok( cy.nodes().size() == 1, "Node is there" );

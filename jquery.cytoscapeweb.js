@@ -67,7 +67,7 @@
 	$.fn.cytoscapeweb = function(opts){
 		
 		// get object
-		if( opts == "object" ){
+		if( opts == "get" ){
 			var cy = $(this).data("cytoscapeweb");
 			return cy;
 		}
@@ -145,8 +145,9 @@
 			// structs to hold internal cytoweb model
 			var structs = {
 				style: options.style,
-				nodes: {}, // id => node object
-				edges: {}  // id => edge object
+				nodes: {},      // id => node object
+				edges: {},      // id => edge object
+				nodeToEdges: {} // id => array of edges
 			};
 			
 			// return a deep copy of an object
@@ -229,14 +230,27 @@
 						} 
 					}
 					
-				}
+				} 
 				  
 				structs[ this._private.group ][ this._private.data.id ] = this;
 				
-				notify({
-					type: "add",
-					elements: [ this ]
-				});
+				// add to map of edges belonging to nodes
+				if( this._private.group == "edges" ){
+					if( structs.nodeToEdges[ this._private.data.source ] == null ){
+						structs.nodeToEdges[this._private.data.source ] = {};
+					}
+					
+					if( structs.nodeToEdges[ this._private.data.target ] == null ){
+						structs.nodeToEdges[this._private.data.target ] = {};
+					}
+					
+					structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ] = this;
+					structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ] = this;
+				} else if( this._private.group == "nodes" ){
+					structs.nodeToEdges[ this._private.data.id ] = {};
+				}
+				
+				this.trigger("add");
 			};
 			
 			CyElement.prototype.grabbed = function(){
@@ -257,6 +271,22 @@
 					delete structs[ this._private.group ][ this._private.data.id ];
 					this._private.removed = true;
 					
+					// remove from map of edges belonging to nodes
+					if( this._private.group == "edges" ){
+						delete structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ];
+						delete structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ];
+					} 
+					
+					// remove connected edges
+					else if( this._private.group == "nodes" ){
+						$.each(structs.nodeToEdges[ this._private.data.id ], function(id, edge){
+							edge.remove();
+						});
+						
+						structs.nodeToEdges[ this._private.data.id ] = {};
+					}
+					
+					// must manually notify since trigger won't do this automatically once removed
 					notify({
 						type: "remove",
 						collection: [ this ]
@@ -318,9 +348,37 @@
 				// set whole field from obj
 				else if( isPlainObject(attr) ){
 					var newValObj = attr;
-					this._private.data = copy( newValObj );
 					
+					// update map of node => { edge id => edge }
+					if( this._private.group == "edges" ){
+						
+						if( newValObj.source === null ){
+							console.error("Can not change source of edge with ID `" + this._private.data.id + "` to null --- source must be non-null");
+							return;
+						}
+						
+						if( newValObj.target === null ){
+							console.error("Can not change target of edge with ID `" + this._private.data.id + "` to null --- target must be non-null");
+							return;
+						}
+						
+						var edgeId = this._private.data.id;
+						
+						if( newValObj.source != null ){
+							delete structs.nodeToEdges[ this._private.data.source ][ edgeId ];
+							structs.nodeToEdges[ newValObj.source ][ edgeId ] = this;
+						}
+						
+						if( newValObj.target != null ){
+							delete structs.nodeToEdges[ this._private.data.target ][ edgeId ];
+							structs.nodeToEdges[ newValObj.target ][ edgeId ] = this;
+						}
+						
+					}
+					
+					this._private.data = copy( newValObj );
 					this.trigger("data");
+					ret = this;
 				} 
 				
 				// get attr val by name
@@ -331,6 +389,23 @@
 				
 				// set attr val by name
 				else {
+					if( this._private.group == "edges" ){
+						if( attr == "source" || attr == "target" ){
+							
+							if( val === null ){
+								console.error("Can not change " + attr + " of edge with ID `" + this._private.data.id + "` to null --- " + attr + " must be non-null");
+								return;
+							}
+							
+							var oldNodeId = this._private.data[attr];
+							var newNodeId = val;
+							var edgeId = this._private.data.id;
+							
+							delete structs.nodeToEdges[ oldNodeId ][ edgeId ];
+							structs.nodeToEdges[ newNodeId ][ edgeId ] = this;
+						}
+					}
+					
 					this._private.data[ attr ] = ( typeof val == "object" ? copy(val) : val );
 					ret = this;
 					
@@ -418,9 +493,61 @@
 			
 			CyElement.prototype.unselect = switchFunction({ event: "unselect", field: "selected", value: false });
 			
+			CyElement.prototype.source = function(){
+				if( this._private.group == "nodes" ){
+					console.error("Can call `source` only on edges---tried to call on node `" + this._private.data.id + "`");
+					return;
+				}
+				
+				return structs.nodes[ this._private.data.source ];
+			};
+			
+			CyElement.prototype.target = function(){
+				if( this._private.group == "nodes" ){
+					console.error("Can call `target` only on edges---tried to call on node `" + this._private.data.id + "`");
+					return;
+				}
+				
+				return structs.nodes[ this._private.data.target ];
+			};
+			
 			CyElement.prototype.firstNeighbors = function(){
-				// TODO
-				// note must check group()
+				if( this.group() == "nodes" ) {
+					
+					var neighbors = [];
+					var nodes = {};
+					$.each(structs.nodeToEdges[ this._private.data.id ], function(id, edge){
+						neighbors.push(edge);
+						
+						$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
+							
+							if( nodes[nodeId] == null ){
+								nodes[nodeId] = true;
+								
+								neighbors.push( structs.nodes[nodeId] );
+							}
+							
+						});
+					});
+					return new CyCollection(neighbors);
+					
+				} else if( this.group() == "edges" ){
+					
+					var neighbors = [];
+					var nodes = {};
+					var edge = this;
+					$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
+						
+						if( nodes[nodeId] == null ){
+							nodes[nodeId] = true;
+							
+							neighbors.push( structs.nodes[nodeId] );
+						}
+						
+					});
+					return new CyCollection(neighbors);
+					
+				}
 			};
 		
 			function listenerAlias(params){
@@ -515,6 +642,17 @@
 				return new CyCollection(elements);
 			};
 			
+			CyCollection.prototype.nodes = function(){
+				return this.filter(function(i, element){
+					return element.group() == "nodes";
+				});
+			};
+			
+			CyCollection.prototype.edges = function(){
+				return this.filter(function(i, element){
+					return element.group() == "edges";
+				});
+			};
 			
 			CyCollection.prototype.positions = function(fn){
 				
@@ -604,20 +742,6 @@
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			if( reg.layout[ options.layout.name.toLowerCase() ] == null ){
-				console.error("Can not initialise: No such layout `" + options.layout.name.toLowerCase() + "` found; did you include its JS file?");
-				return;
-			}
-			
-			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
-			
-			
-			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
-				console.error("Can not initialise: No such renderer `" + options.renderer.name + "` found; did you include its JS file?" );
-				return;
-			}
-			
-			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( $.extend({}, options.renderer, { selector: $(options.selector) }) );
 			var enableNotifications = true;
 			
 			function noNotifications(fn){
@@ -848,6 +972,24 @@
 				
 			};
 			$(options.selector).data("cytoscapeweb", cy);
+			
+			if( reg.layout[ options.layout.name.toLowerCase() ] == null ){
+				console.error("Can not initialise: No such layout `" + options.layout.name.toLowerCase() + "` found; did you include its JS file?");
+				return;
+			}
+			
+			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
+			
+			
+			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
+				console.error("Can not initialise: No such renderer `" + options.renderer.name + "` found; did you include its JS file?" );
+				return;
+			}
+			
+			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( $.extend({}, options.renderer, {
+				selector: $(options.selector),
+				cytoscapeweb: cy
+			}) );
 			
 			cy.load(options.data);
 			cy.layout();

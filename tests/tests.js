@@ -394,4 +394,41 @@ $(function(){
 		notDeepEqual( oldPos, newPos, "Node position changed" );
 	});
 	
+	module("SVG renderer", {
+		setup: function(){
+			
+			cy = $.cytoscapeweb({
+				selector: "#cytoscapeweb",
+				renderer: {
+					name: "svg"
+				},
+				layout: {
+					name: "grid"
+				},
+				data: {
+					nodes: [
+					    { id: "n1", foo: "one" },
+					    { id: "n2", foo: "two" },
+					    { id: "n3", foo: "three" }
+					],
+					
+					edges: [
+					    { id: "n1n2", source: "n1", target: "n2" },
+					    { id: "n2n3", source: "n2", target: "n3" }
+					]
+				}
+			});
+			
+		},
+		
+		teardown: function(){
+		}
+	});
+	
+	test("Initial SVG test", function(){
+		
+		ok(true, "Yay");
+		
+	});
+	
 });

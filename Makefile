@@ -12,7 +12,7 @@ PRINTF = printf
 VERSION = 2.0-snapshot
 
 # targets
-JSFILES = lib/jquery.svg.js jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
+JSFILES = jquery.svg.js jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
 JSBUILDFILES = $(JSFILES:%=$(BUILDDIR)/%)
 JSMINFILES = $(JSBUILDFILES:%.js=%.min.js)
 JSALLFILE = $(BUILDDIR)/jquery.cytoscapeweb.all.js
@@ -22,8 +22,10 @@ ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(LICEN
 BUILDDIR = build
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = PREAMBLE
-TEMPFILE = /tmp/out
 README = README
+
+# better change TEMPFILE if you don't have a /tmp dir; sorry windows :(
+TEMPFILE = /tmp/cytowebtmp
 
 all : zip
 

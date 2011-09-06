@@ -1,3 +1,12 @@
+We'd like to thank the academy...
+===============================================================================
+
+A big thanks goes out to Keith Wood for his jQuery SVG library, which is used
+in Cytoscape Web's default SVG renderer implementation.  You can find out more
+about his library at his website (http://keith-wood.name/svg.html).
+
+
+
 Build dependencies
 ===============================================================================
 
@@ -33,6 +42,11 @@ A note to developers:
 
 For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
 actual release ZIP.
+
+In the `Makefile`, you can specify the JS files to include in the built ZIP in
+the `JSFILES` variable.  The order you specify there is the same as the order
+the files are included in the all.min.js file.  Order your dependencies 
+accordingly.
 
 
 

@@ -12,7 +12,7 @@ PRINTF = printf
 VERSION = 2.0-snapshot
 
 # targets
-JSFILES = jquery.svg.js jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
+JSFILES = jquery.svg.js jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.renderer.svg.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
 JSBUILDFILES = $(JSFILES:%=$(BUILDDIR)/%)
 JSMINFILES = $(JSBUILDFILES:%.js=%.min.js)
 JSALLFILE = $(BUILDDIR)/jquery.cytoscapeweb.all.js

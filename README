@@ -5,6 +5,11 @@ A big thanks goes out to Keith Wood for his jQuery SVG library, which is used
 in Cytoscape Web's default SVG renderer implementation.  You can find out more
 about his library at his website (http://keith-wood.name/svg.html).
 
+We would also like to thank Mark Gibson for his work on the jQuery color
+library, which is used in our continuous mapper calculations.  You can find out
+more about Mark's library at his website
+(http://www.adaptavist.com/display/jQuery/Colour+Library).
+
 
 
 Build dependencies
@@ -12,19 +17,21 @@ Build dependencies
 
 You need the following installed in order to build successfully.
 
-	* make
-	* java >= 1.5 (for YUI compressor)
-	* rm
 	* cat
 	* cp
-	* zip
+	* java 1.5 or newer (for YUI compressor)
+	* make
+	* mkdir
 	* mv
 	* printf
+	* rm
+	* sed
+	* zip (only for `zip` target)
 	
 Their paths are defined in `Makefile`, so you can revise the paths to these
 executables and still run `make` successfully.  You should be able to run
 `make` without modification on any well configured Unix-like machine, such as
-Linux or Mac OS X.
+Linux or Mac OS X---Mac needs XCode with command line tools installed.
 
 
 

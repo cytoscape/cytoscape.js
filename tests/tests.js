@@ -427,7 +427,7 @@ $(function(){
 	
 	test("Initial SVG test", function(){
 		
-		ok(true, "Yay");
+		
 		
 	});
 	

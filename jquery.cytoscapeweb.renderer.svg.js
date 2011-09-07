@@ -1,15 +1,72 @@
-$(function(){
+(function($){
+	
+	$.fn.svgattr = function(attrName, val){
 		
+		var container = $(this).parents("svg:first").parent();
+		var svg = container.svg('get'); 
+		
+		if( val !== undefined ){
+			// set
+			var obj = {};
+			obj[attrName] = val;
+			svg.change( $(this)[0], obj );
+		}
+		
+	};
+	
+})(jQuery);
+
+$(function(){
+	
+	var defaults = {
+		nodes: {
+			color: "#888",
+			borderColor: "#333",
+			borderWidth: 1,
+			size: 10
+		},
+		edges: {
+			color: "#bbb",
+			width: 1
+		},
+		global: {
+			
+		}
+	};
+	
+	function color(c){
+		if( c != null && typeof c == typeof "" && $.Color(c) != "" ){
+			return $.Color(c).toHEX();
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid colour", c);
+		}
+	}
+	
+	function number(n){
+		if( n != null && typeof n == typeof 1 && !isNaN(n) ){
+			return n;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid number", n);
+		}
+	}
+	
 	function SvgRenderer(options){
 		$.cytoscapeweb("debug", "Creating SVG renderer with options (%o)", options);
 		this.options = options;
+		this.style = $.extend(true, {}, defaults, options.style);
+		
+		$.cytoscapeweb("debug", "SVG renderer is using style (%o)", this.style);
 	}
 	
 	SvgRenderer.prototype.init = function(callback){
 		var container = $(this.options.selector);
 		var svg = container.svg('get'); 
 		var self = this;
-				
+		
+		this.container = container;
+		this.svg = svg;
+		this.cy = this.options.cytoscapeweb;
+		
 		if( svg != null ){
 			svg.clear(true);	
 		} else {		
@@ -21,36 +78,59 @@ $(function(){
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
 					
+					$(self.edgesGroup).svgattr("class", "cw-edges");
+					$(self.nodesGroup).svgattr("class", "cw-nodes");
+					
 					callback();
 				}
 			});
 		}
 	};
 	
-	SvgRenderer.prototype.makeSvgElement = function(element){
-		var container = $(this.options.selector);
-		var svg = container.svg('get');
-		var svgDomElement;
-		var cy = this.options.cytoscapeweb;
-		var nodesGroup = this.nodesGroup;
-		var edgesGroup = this.edgesGroup;
+	SvgRenderer.prototype.makeSvgNode = function(element){		
+		var p = element._private.position;
 		
-		if( element.group() == "nodes" ){
-			var p = element.position();
-			svgDomElement = svg.circle(nodesGroup, p.x, p.y, 10, { fill: 'black' });
-			$.cytoscapeweb("debug", "SVG renderer made node `" + element.data("id") + "` with position (%i, %i)", p.x, p.y);
-		} else if( element.group() == "edges" ){
-			var source = cy.node( element.data("source") );
-			var target = cy.node( element.data("target") );
-						
-			var ps = source.position();
-			var pt = target.position();
-			
-			svgDomElement = svg.line(edgesGroup, ps.x, ps.y, pt.x, pt.y, { stroke: "grey", strokeWidth: 2 });
-			$.cytoscapeweb("debug", "SVG renderer made edge `" + element.data("id") + "` with position (%i, %i, %i, %i)", ps.x, ps.y, pt.x, pt.y);
+		if( p.x == null || p.y == null ){
+			$.cytoscapeweb("debug", "SVG renderer is ignoring creating of node `%s` with position (%o, %o)", element._private.data.id, p.x, p.y);
+			return;
 		}
 		
+		var svgDomElement = this.svg.circle(this.nodesGroup, p.x, p.y, 10, { fill: 'black' });
 		element._private.svg = svgDomElement;
+		$.cytoscapeweb("debug", "SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);
+		
+		this.updateElementStyle(element);
+		return svgDomElement;
+	};
+	
+	SvgRenderer.prototype.makeSvgEdge = function(element){
+		var source = this.cy.node( element._private.data.source );
+		var target = this.cy.node( element._private.data.target );
+					
+		var ps = source._private.position;
+		var pt = target._private.position;
+		
+		if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
+			$.cytoscapeweb("debug", "SVG renderer is ignoring creating of edge `%s` with position (%o, %o, %o, %o)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
+			return;
+		}
+		
+		var svgDomElement = this.svg.line(this.edgesGroup, ps.x, ps.y, pt.x, pt.y, { stroke: "grey", strokeWidth: 2 });
+		element._private.svg = svgDomElement;
+		$.cytoscapeweb("debug", "SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
+		
+		this.updateElementStyle(element);
+		return svgDomElement;
+	};
+	
+	SvgRenderer.prototype.makeSvgElement = function(element){
+		var svgDomElement;
+		
+		if( element.group() == "nodes" ){
+			svgDomElement = this.makeSvgNode(element);
+		} else if( element.group() == "edges" ){
+			svgDomElement = this.makeSvgEdge(element);
+		}
 		
 		return svgDomElement;
 	};
@@ -63,43 +143,61 @@ $(function(){
 		}
 	};
 	
+	SvgRenderer.prototype.updateElementStyle = function(element){
+		if( element._private.group == "nodes" ){
+			this.updateNodeStyle(element);
+		} else if( element._private.group == "edges" ){
+			this.updateEdgeStyle(element);
+		}
+	};
+	
+	SvgRenderer.prototype.updateNodeStyle = function(element){
+		element._private.style = this.options.styleCalculator.calculate(element, this.style);
+		var style = element._private.style;
+		
+		if( element._private.svg == null ){
+			$.cytoscapeweb("error", "SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
+			return;
+		}
+		
+		this.svg.change(element._private.svg, {
+			fill: color(style.color),
+			stroke: color(style.borderColor),
+			strokeWidth: number(style.borderWidth),
+			r: number(style.size)
+		});
+		
+		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for node `%s` to %o", element._private.data.id, style);
+	};
+	
+	SvgRenderer.prototype.updateEdgeStyle = function(element){
+		element._private.style = this.options.styleCalculator.calculate(element, this.style);
+		var style = element._private.style;
+		
+		if( element._private.svg == null ){
+			$.cytoscapeweb("error", "SVG renderer can not update style for edge `%s` since it has no SVG element", element._private.data.id);
+			return;
+		}
+		
+		this.svg.change(element._private.svg, {
+			stroke: color(style.color),
+			strokeWidth: number(style.width)
+		});
+		
+		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);
+	};
+	
 	SvgRenderer.prototype.addElements = function(collection){
 		
-		var container = $(this.options.selector);
-		var svg = container.svg('get');
-		var cy = this.options.cytoscapeweb;
+		var self = this;
 		
 		collection.each(function(i, element){
 			if( element.group() == "nodes" ){
-			
-				var position = element.position();
-				var x = position.x;
-				var y = position.y;
-				
-				if( x == null || y == null ){
-					$.cytoscapeweb("debug", "SVG renderer is ignoring rendering of node `" + element.data("id") + "` with position (%o, %o)", x, y);
-					return;
-				}
-			
-				$.cytoscapeweb("debug", "SVG renderer is adding node `" + element.data("id") + "` with position (%i, %i)", x, y);
-				this.makeSvgElement(element);
+				self.makeSvgElement(element);
 			}
 			
 			else if( element.group() == "edges" ){
-				
-				var source = cy.node( element.data("source") );
-				var target = cy.node( element.data("target") );
-							
-				var ps = source.position();
-				var pt = target.position();
-				
-				if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
-					$.cytoscapeweb("debug", "SVG renderer is ignoring rendering of edge `" + element.data("id") + "` with position (%o, %o, %o, %o)", ps.x, ps.y, pt.x, pt.y);
-					return;
-				}
-				
-				$.cytoscapeweb("debug", "SVG renderer is adding edge `" + element.data("id") + "` with position (%i, %i, %i, %i)", ps.x, ps.y, pt.x, pt.y);
-				this.makeSvgElement(element);
+				self.makeSvgElement(element);
 			}
 		});
 
@@ -117,10 +215,10 @@ $(function(){
 		// update nodes
 		collection.nodes().each(function(i, element){
 			var svgEle = self.getSvgElement(element);			
-			var p = element.position();
+			var p = element._private.position;
 			
 			svg.change(svgEle, { cx: p.x, cy: p.y });
-			$.cytoscapeweb("debug", "SVG renderer is moving node `" + element.data("id") + "` to position (%o, %o)", p.x, p.y);
+			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});
 		
 		// update connected edges
@@ -129,11 +227,11 @@ $(function(){
 			edges.each(function(i, edge){
 				
 				var svgEle = self.getSvgElement(edge);			
-				var ps = cy.node( edge.data("source") ).position();
-				var pt = cy.node( edge.data("target") ).position();
+				var ps = cy.node( edge.data("source") )._private.position;
+				var pt = cy.node( edge.data("target") )._private.position;
 				
 				svg.change(svgEle, { x1: ps.x, y1: ps.y, x2: pt.x, y2: pt.y });
-				$.cytoscapeweb("debug", "SVG renderer is moving edge `" + edge.data("id") + "` to position (%o, %o, %o, %o)", ps.x, ps.y, pt.x, pt.y);
+				$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
 			});
 		});
 		
@@ -150,7 +248,7 @@ $(function(){
 				svg.remove(element._private.svg);
 				element._private.svg = null;
 			} else {
-				$.cytoscapeweb("debug", "Element with group `" + element.group() + "` and ID `" + element.data("id") + "` has no associated SVG element");
+				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
 			}
 		});
 	};
@@ -199,17 +297,13 @@ $(function(){
 				break;
 			
 			default:
-				$.cytoscapeweb("debug", "The SVG renderer doesn't consider the `" + params.type + "` event");
+				$.cytoscapeweb("debug", "The SVG renderer doesn't consider the `%s` event", params.type);
 				break;
 		}
 	};
 	
 	SvgRenderer.prototype.pan = function(params){
 		$.cytoscapeweb("debug", "Pan SVG renderer with params (%o)", params);
-	};
-	
-	SvgRenderer.prototype.style = function(element){
-		return {};
 	};
 	
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<script type="text/javascript" src="../tests/jquery/jquery-latest.min.js"></script>
+		<script type="text/javascript" src="../jquery.color.js"></script>
+		<script type="text/javascript" src="../jquery.svg.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
+		
+		<script type="text/javascript">
+			$(function(){
+				
+				$.cytoscapeweb("quiet", false);
+				$.cytoscapeweb("debugging", true);
+				
+				var options = {
+					selector: "#cytoscapeweb",
+					renderer: {
+						name: "svg"
+					},
+					layout: {
+						name: "grid"
+					},
+					style: {
+						edges: {
+							width: {
+								defaultValue: 1,
+								continuousMapper: {
+									attr: {
+										name: "weight",
+									},
+									mapped: {
+										min: 1,
+										max: 4
+									}
+								}
+							}
+						},
+						
+						nodes: {
+							size: {
+								defaultValue: 5,
+								continuousMapper: {
+									attr: {
+										name: "weight",
+									},
+									mapped: {
+										min: 5,
+										max: 20
+									}
+								}
+							}
+						}
+					},
+					data: {
+						nodes: [
+						],
+						
+						edges: [
+						]
+					}
+				};
+				
+				var numNodes = 10 + Math.random() * 20;
+				var numEdges = 10 + Math.random() * 30;
+				
+				function randNodeId(){
+					return "n" + Math.round( Math.random() * numNodes );
+				}
+				
+				for(var i = 0; i < numNodes; i++){
+					options.data.nodes.push({
+						id: "n" + i,
+						weight: Math.random() * 100
+					});
+				}
+				
+				for(var i = 0; i < numEdges; i++){
+					options.data.edges.push({
+						id: "e" + i,
+						source: randNodeId(),
+						target: randNodeId(),
+						weight: Math.random() * 100
+					});
+				}
+				
+				cy = $.cytoscapeweb(options);
+				
+			});
+		</script>
+		
+		<title>Cytoscape Web demo</title>
+		
+		<style>
+			body { font: 14pt arial; }	
+			#cytoscapeweb { border: 1px solid #888; height: 800px; width: 800px; }	
+		</style>
+	</head>
+
+	<body>
+		<h1>Cytoscape Web demo</h1>
+	    
+	    <div id="cytoscapeweb"></div>
+	</body>
+
+</html>

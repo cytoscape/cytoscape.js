@@ -18,6 +18,7 @@
 
 $(function(){
 	
+	// TODO add more styles
 	var defaults = {
 		nodes: {
 			color: "#888",
@@ -160,6 +161,7 @@ $(function(){
 			return;
 		}
 		
+		// TODO add more as more styles are added
 		this.svg.change(element._private.svg, {
 			fill: color(style.color),
 			stroke: color(style.borderColor),
@@ -179,6 +181,7 @@ $(function(){
 			return;
 		}
 		
+		// TODO add more as more styles are added
 		this.svg.change(element._private.svg, {
 			stroke: color(style.color),
 			strokeWidth: number(style.width)
@@ -286,6 +289,7 @@ $(function(){
 			
 			case "style":
 			case "bypass":
+				// TODO update styles OR recreate svg element if necessary (e.g. shape change)
 			case "data":
 			case "select":
 			case "unselect":
@@ -293,7 +297,7 @@ $(function(){
 			case "unlock":
 			case "mouseover":
 			case "mouseout":
-				$.cytoscapeweb("error", "TODO svg::" + params.type);
+				$.cytoscapeweb("error", "TODO svg::" + params.type); // TODO add these events
 				break;
 			
 			default:

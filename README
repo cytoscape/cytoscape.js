@@ -10,6 +10,10 @@ library, which is used in our continuous mapper calculations.  You can find out
 more about Mark's library at his website
 (http://www.adaptavist.com/display/jQuery/Colour+Library).
 
+We used Kevin Lindsey's SVG intersection library to calculate the positioning
+of some objects, like edges.  You can find his library at his website
+(http://www.kevlindev.com/gui/math/intersection).
+
 
 
 Build dependencies

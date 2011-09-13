@@ -7,6 +7,8 @@
 		<script type="text/javascript" src="../jquery.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
+		<script type="text/javascript" src="../2D.js"></script>
+		<script type="text/javascript" src="../Intersection.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
@@ -28,6 +30,7 @@
 					},
 					style: {
 						edges: {
+							style: "dot",
 							width: {
 								defaultValue: 1,
 								continuousMapper: {
@@ -43,6 +46,7 @@
 						},
 						
 						nodes: {
+							opacity: 0.5,
 							size: {
 								defaultValue: 5,
 								continuousMapper: {
@@ -66,11 +70,11 @@
 					}
 				};
 				
-				var numNodes = 10 + Math.random() * 20;
-				var numEdges = 10 + Math.random() * 30;
+				var numNodes = Math.round(10 + Math.random() * 20);
+				var numEdges = Math.round(10 + Math.random() * 30);
 				
 				function randNodeId(){
-					return "n" + Math.round( Math.random() * numNodes );
+					return "n" + Math.floor( Math.random() * numNodes );
 				}
 				
 				for(var i = 0; i < numNodes; i++){

@@ -11,7 +11,7 @@
 	var debug = false;
 	var console = {
 		debug: function(){
-			if( quiet || !debug ){ return; }
+			if( quiet || !debug || $.browser.msie ){ return; }
 			
 			if( window.console != null && window.console.debug != null ){
 				window.console.debug.apply(window.console, arguments);
@@ -21,7 +21,7 @@
 		},
 			
 		log: function(){
-			if( quiet ){ return; }
+			if( quiet || $.browser.msie ){ return; }
 			
 			if( window.console != null && window.console.log != null ){
 				window.console.log.apply(window.console, arguments);
@@ -29,22 +29,22 @@
 		},
 		
 		warn: function(){
-			if( quiet ){ return; }
+			if( quiet || $.browser.msie ){ return; }
 			
 			if( window.console != null && window.console.warn != null ){
 				window.console.warn.apply(window.console, arguments);
 			} else {
-				console.log(arguments);
+				console.log.apply(window.console, arguments);
 			}
 		},
 		
 		error: function(){
-			if( quiet ){ return; }
+			if( quiet || $.browser.msie ){ return; }
 			
 			if( window.console != null && window.console.error != null ){
 				window.console.error.apply(window.console, arguments);
 			} else {
-				console.log(arguments);
+				console.log.apply(window.console, arguments);
 				throw "Cytoscape Web encountered the previously logged error";
 			}
 		}
@@ -1078,8 +1078,8 @@
 									
 									var attrBounds = structs.continuousMapperBounds[entity._private.group][map.attr.name];
 									attrBounds = {
-										min: attrBounds.min,
-										max: attrBounds.max
+										min: attrBounds == null ? 0 : attrBounds.min,
+										max: attrBounds == null ? 0 : attrBounds.max
 									};
 									
 									// use defined attr min & max if set in mapper

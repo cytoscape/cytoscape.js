@@ -292,6 +292,10 @@
 				this.trigger("add");
 			};
 			
+			CyElement.prototype.collection = function(){
+				return new CyCollection([ this ]);
+			};
+			
 			CyElement.prototype.grabbed = function(){
 				return this._private.grabbed;
 			};
@@ -647,7 +651,9 @@
 			
 			CyCollection.prototype.each = function(fn){
 				for(var i = 0; i < this.size(); i++){
-					fn.apply( this.eq(i), [ i, this.eq(i) ] );
+					if( isFunction(fn) ){
+						fn.apply( this.eq(i), [ i, this.eq(i) ] );
+					}
 				}
 				return this;
 			};
@@ -767,6 +773,8 @@
 				};
 			});
 			
+			// NOTE: any functions with the same name in element and collection must go here for collection
+			
 			CyCollection.prototype.trigger = function(event, data){
 				
 				var collection = this;
@@ -782,6 +790,10 @@
 					collection: this
 				});
 				
+			};
+			
+			CyCollection.prototype.collection = function(){
+				return this;
 			};
 			
 			// Cytoscape Web object and helper functions

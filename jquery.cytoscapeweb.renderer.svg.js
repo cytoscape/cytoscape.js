@@ -257,6 +257,73 @@ $(function(){
 		return style;
 	};
 	
+	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
+		var style = element._private.style;
+		var group = element._private.svgGroup;
+		var position = element._private.position;
+		
+		nodeShape(style.shape).update(this.svg, group, element, position, style);
+	};
+	
+	SvgRenderer.prototype.makeSvgNodeClickable = function(element){
+		var svgDomElement = element._private.svg;
+		
+		// TODO update styles on mousedown, click, etc
+		// TODO update selection on click
+		
+		$(svgDomElement).bind("mousedown", function(e){
+			element.trigger("mousedown", e);
+		}).bind("mouseup", function(e){
+			element.trigger("mouseup", e);
+		}).bind("click", function(e){
+			element.trigger("click", e);
+		});
+	};
+	
+	SvgRenderer.prototype.makeSvgNodeDraggable = function(element){
+		var svgDomElement = element._private.svg;
+		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
+		var self = this;
+		
+		$(svgDomElement).bind("mousedown", function(mousedownEvent){
+			
+			var originX = mousedownEvent.pageX;
+			var originY = mousedownEvent.pageY;
+			
+			var dragStart = true;
+			var dragHandler = function(dragEvent){
+				var dx = dragEvent.pageX - originX;
+				var dy = dragEvent.pageY - originY;
+				
+				// new origin each event
+				originX = dragEvent.pageX;
+				originY = dragEvent.pageY;
+				
+				element._private.position.x += dx;
+				element._private.position.y += dy;
+				
+				self.updatePosition( element );
+				
+				if( dragStart ){
+					dragStart = false;
+					element.trigger("dragstart", $.extend({}, dragEvent, { type: "dragstart" }));
+				} else {
+					element.trigger("drag", $.extend({}, dragEvent, { type: "drag" }));
+				}
+			};
+			
+			$(svgCanvas).bind("mousemove", dragHandler);
+			$(svgCanvas).bind("mouseup", function(mouseupEvent){
+				$(svgCanvas).unbind("mousemove", dragHandler);
+				
+				if( !dragStart ){
+					element.trigger("dragstop", $.extend({}, dragEvent, { type: "dragstop" }));
+				}
+			});
+		});
+		
+	};
+	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
 		var p = element._private.position;
 		
@@ -268,11 +335,16 @@ $(function(){
 		var svgDomElement;
 		var style = this.calculateStyle(element);
 		
-		svgDomElement = nodeShape(style.shape).svg(this.svg, this.nodesGroup, element, p, style);
+		var svgDomGroup = this.svg.group(this.nodesGroup);
+		element._private.svgGroup = svgDomGroup;
+		
+		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
 		
 		element._private.svg = svgDomElement;
 		$.cytoscapeweb("debug", "SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);
 		
+		this.makeSvgNodeDraggable(element);
+		this.makeSvgNodeClickable(element);
 		this.updateElementStyle(element, style);
 		return svgDomElement;
 	};
@@ -409,6 +481,7 @@ $(function(){
 		
 		$.cytoscapeweb("debug", "SVG renderer is updating node positions");
 		
+		collection = collection.collection();
 		var container = $(this.options.selector);
 		var svg = container.svg('get');
 		var self = this;
@@ -419,13 +492,12 @@ $(function(){
 			var svgEle = self.getSvgElement(element);			
 			var p = element._private.position;
 			
-			svg.change(svgEle, { cx: p.x, cy: p.y });
+			self.updateNodePositionFromShape(element);
+			
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});
 		
-		// update connected edges
-		collection.nodes().each(function(i, element){
-			var edges = element.firstNeighbors().edges();
+		function updateEdges(edges){
 			edges.each(function(i, edge){
 				
 				var svgEle = self.getSvgElement(edge);
@@ -438,7 +510,7 @@ $(function(){
 				
 				var targetIntShape = nodeShape(target._private.style.shape).intersectionShape;
 				var targetIntersection = Intersection.intersectShapes(new targetIntShape(target._private.svg), new Line(edge._private.svg));
-				$.cytoscapeweb("debug", "Intersection for target edge %s at %o", element.data("id"), targetIntersection);
+				$.cytoscapeweb("debug", "Intersection for target edge %s at %o", target.data("id"), targetIntersection);
 				if( targetIntersection.points.length > 0 ){
 					self.svg.change(edge._private.svg, {
 						x2: targetIntersection.points[0].x,
@@ -448,7 +520,7 @@ $(function(){
 				
 				var sourceIntShape = nodeShape(source._private.style.shape).intersectionShape;
 				var sourceIntersection = Intersection.intersectShapes(new sourceIntShape(source._private.svg), new Line(edge._private.svg));
-				$.cytoscapeweb("debug", "Intersection for source edge %s at %o", element.data("id"), sourceIntersection);
+				$.cytoscapeweb("debug", "Intersection for source edge %s at %o", source.data("id"), sourceIntersection);
 				if( sourceIntersection.points.length > 0 ){
 					self.svg.change(edge._private.svg, {
 						x1: sourceIntersection.points[0].x,
@@ -458,6 +530,15 @@ $(function(){
 				
 				$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
 			});
+		}
+		
+		// update edges actually in the collection
+		updateEdges( collection.edges() );
+		
+		// update connected edges
+		collection.nodes().each(function(i, element){
+			var edges = element.firstNeighbors().edges();
+			updateEdges(edges);
 		});
 		
 	};

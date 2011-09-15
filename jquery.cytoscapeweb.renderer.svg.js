@@ -315,13 +315,22 @@ $(function(){
 			};
 			
 			$(svgCanvas).bind("mousemove", dragHandler);
-			$(svgCanvas).one("mouseup", function(mouseupEvent){
+			
+			var endHandler = function(mouseupEvent){
 				$(svgCanvas).unbind("mousemove", dragHandler);
 				
+				$(svgCanvas).unbind("mouseup", endHandler);
+				$(svgCanvas).unbind("mousedown", endHandler);
+				
 				if( !dragStart ){
-					element.trigger("dragstop", $.extend({}, dragEvent, { type: "dragstop" }));
+					element.trigger("dragstop", $.extend({}, mouseupEvent, { type: "dragstop" }));
 				}
-			});
+				
+				$(window).unbind("mouseup", endHandler);
+				$(window).unbind("blur", endHandler);
+			};
+			
+			$(window).bind("mouseup blur", endHandler);
 		});
 		
 	};

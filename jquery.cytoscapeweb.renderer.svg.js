@@ -289,6 +289,12 @@ $(function(){
 		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 			
+			if( element._private.grabbed ){
+				return;
+			}
+			 
+			element._private.grabbed = true;
+			
 			var originX = mousedownEvent.pageX;
 			var originY = mousedownEvent.pageY;
 			
@@ -314,23 +320,26 @@ $(function(){
 				}
 			};
 			
-			$(svgCanvas).bind("mousemove", dragHandler);
+			$(window).bind("mousemove", dragHandler);
 			
 			var endHandler = function(mouseupEvent){
-				$(svgCanvas).unbind("mousemove", dragHandler);
-				
-				$(svgCanvas).unbind("mouseup", endHandler);
-				$(svgCanvas).unbind("mousedown", endHandler);
-				
-				if( !dragStart ){
-					element.trigger("dragstop", $.extend({}, mouseupEvent, { type: "dragstop" }));
-				}
+				$(window).unbind("mousemove", dragHandler);
 				
 				$(window).unbind("mouseup", endHandler);
 				$(window).unbind("blur", endHandler);
+				$(svgDomElement).unbind("mouseup", endHandler);
+				
+				element._private.grabbed = false;
+				
+				if( !dragStart ){
+					element.trigger("dragstop", $.extend({}, mouseupEvent, { type: "dragstop" }));
+				}		
+				
 			};
 			
-			$(window).bind("mouseup blur", endHandler);
+			$(window).bind("mouseup", endHandler);
+			$(window).bind("blur", endHandler);
+			$(svgDomElement).bind("mouseup", endHandler);
 		});
 		
 	};

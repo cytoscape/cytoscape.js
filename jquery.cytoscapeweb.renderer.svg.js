@@ -28,12 +28,14 @@ $(function(){
 			opacity: 1,
 			size: 10,
 			shape: "ellipse",
+			cursor: "pointer"
 		},
 		edges: {
 			color: "#bbb",
 			opacity: 1,
 			width: 1,
-			style: "solid"
+			style: "solid",
+			cursor: "pointer"
 		},
 		global: {
 			
@@ -313,7 +315,7 @@ $(function(){
 			};
 			
 			$(svgCanvas).bind("mousemove", dragHandler);
-			$(svgCanvas).bind("mouseup", function(mouseupEvent){
+			$(svgCanvas).one("mouseup", function(mouseupEvent){
 				$(svgCanvas).unbind("mousemove", dragHandler);
 				
 				if( !dragStart ){
@@ -427,7 +429,8 @@ $(function(){
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
-			strokeOpacity: percent(style.borderOpacity)
+			strokeOpacity: percent(style.borderOpacity),
+			cursor: style.cursor
 		});
 		
 		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);

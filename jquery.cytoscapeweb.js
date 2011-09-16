@@ -512,21 +512,25 @@
 			};
 			
 			CyElement.prototype.trigger = function(event, data){
+				var self = this;
+				var type = isPlainObject(event) ? event.type : event;
+				
 				// notify renderer unless removed
 				if( !this.removed() ){
 					notify({
-						type: event,
+						type: type,
 						collection: [ this ]
 					});
 				}
 				
-				var listeners = this._private.listeners[event];
+				var listeners = this._private.listeners[type];
 				
-				var eventData = data; 
+				var eventData = isPlainObject(event) ? event : { type: type }; 
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
 						if( $.isFunction(listener) ){
-							listener(eventData);
+							var args = [eventData, data];
+							listener.apply(self, args);
 						}
 					});
 				}

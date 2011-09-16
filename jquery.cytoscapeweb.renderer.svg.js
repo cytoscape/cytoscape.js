@@ -206,6 +206,8 @@ $(function(){
 			container.svg({
 				onLoad: function(s){
 					
+					self.transformTouchEvent(window, "touchmove", "mousemove");
+					
 					svg = s;
 					self.svg = svg;
 					self.edgesGroup = svg.group();
@@ -267,27 +269,43 @@ $(function(){
 		nodeShape(style.shape).update(this.svg, group, element, position, style);
 	};
 	
-	SvgRenderer.prototype.makeSvgNodeClickable = function(element){
-		var svgDomElement = element._private.svg;
-		
-		// TODO update styles on mousedown, click, etc
-		// TODO update selection on click
-		
-		$(svgDomElement).bind("mousedown", function(e){
-			element.trigger("mousedown", e);
-		}).bind("mouseup", function(e){
-			element.trigger("mouseup", e);
-		}).bind("click", function(e){
-			element.trigger("click", e);
+	SvgRenderer.prototype.transformTouchEvent = function(domElement, fromEvent, toEvent){
+		domElement.addEventListener(fromEvent, function(e){
+			
+			var evt = $.extend(true, {}, e);
+			evt.type = toEvent;
+			
+			if( e.touches != null && e.touches[0] != null ){
+				evt.pageX = e.touches[0].pageX;
+				evt.pageY = e.touches[0].pageY;
+				evt.clientX = e.touches[0].clientX;
+				evt.clientY = e.touches[0].clientY;
+				evt.screenX = e.touches[0].screenX;
+				evt.screenY = e.touches[0].screenY;
+				evt.layerX = e.touches[0].layerX;
+				evt.layerY = e.touches[0].layerY;
+			}
+			
+			$(domElement).trigger(evt);
+			
+			e.preventDefault();
 		});
 	};
 	
-	SvgRenderer.prototype.makeSvgNodeDraggable = function(element){
+	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
 		var svgDomElement = element._private.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
+		var draggedAfterMouseDown;
+		
+		// you need to prevent default event handling to 
+		// prevent built-in browser drag-and-drop etc
 		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
+			mousedownEvent.preventDefault();
+			draggedAfterMouseDown = false;
+			
+			element.trigger(mousedownEvent);
 			
 			if( element._private.grabbed ){
 				return;
@@ -298,48 +316,67 @@ $(function(){
 			var originX = mousedownEvent.pageX;
 			var originY = mousedownEvent.pageY;
 			
-			var dragStart = true;
+			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
+				dragEvent.preventDefault();
+				
+				draggedAfterMouseDown = true;
+				
 				var dx = dragEvent.pageX - originX;
 				var dy = dragEvent.pageY - originY;
 				
 				// new origin each event
 				originX = dragEvent.pageX;
 				originY = dragEvent.pageY;
-				
+
 				element._private.position.x += dx;
 				element._private.position.y += dy;
 				
 				self.updatePosition( element );
 				
-				if( dragStart ){
-					dragStart = false;
-					element.trigger("dragstart", $.extend({}, dragEvent, { type: "dragstart" }));
+				if( justStartedDragging ){
+					justStartedDragging = false;
+					element.trigger($.extend({}, dragEvent, { type: "dragstart" }));
 				} else {
-					element.trigger("drag", $.extend({}, dragEvent, { type: "drag" }));
+					element.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
+				
 			};
 			
 			$(window).bind("mousemove", dragHandler);
 			
+			var finishedDragging = false;
 			var endHandler = function(mouseupEvent){
-				$(window).unbind("mousemove", dragHandler);
 				
+				mouseupEvent.preventDefault();
+				
+				if( !finishedDragging ){
+					finishedDragging = true;
+				} else {
+					return;
+				}
+				
+				$(window).unbind("mousemove", dragHandler);
+
 				$(window).unbind("mouseup", endHandler);
 				$(window).unbind("blur", endHandler);
 				$(svgDomElement).unbind("mouseup", endHandler);
 				
 				element._private.grabbed = false;
 				
-				if( !dragStart ){
-					element.trigger("dragstop", $.extend({}, mouseupEvent, { type: "dragstop" }));
-				}		
+				element.trigger($.extend({}, mouseupEvent, { type: "dragstop" }));
 				
 			};
 			
 			$(window).bind("mouseup", endHandler);
 			$(window).bind("blur", endHandler);
 			$(svgDomElement).bind("mouseup", endHandler);
+		}).bind("mouseup", function(e){
+			element.trigger($.extend({}, e));
+			
+			if( !draggedAfterMouseDown ){
+				element.trigger($.extend({}, e, { type: "click" }));
+			}
 		});
 		
 	};
@@ -360,11 +397,13 @@ $(function(){
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
 		
+		this.transformTouchEvent(svgDomElement, "touchstart", "mousedown");
+		this.transformTouchEvent(svgDomElement, "touchend", "mouseup");
+		
 		element._private.svg = svgDomElement;
 		$.cytoscapeweb("debug", "SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);
 		
-		this.makeSvgNodeDraggable(element);
-		this.makeSvgNodeClickable(element);
+		this.makeSvgNodeInteractive(element);
 		this.updateElementStyle(element, style);
 		return svgDomElement;
 	};

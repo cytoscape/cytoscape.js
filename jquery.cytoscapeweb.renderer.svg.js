@@ -307,7 +307,7 @@ $(function(){
 			
 			element.trigger(mousedownEvent);
 			
-			if( element._private.grabbed ){
+			if( element._private.grabbed || element._private.locked ){
 				return;
 			}
 			 
@@ -377,6 +377,8 @@ $(function(){
 			if( !draggedAfterMouseDown ){
 				element.trigger($.extend({}, e, { type: "click" }));
 			}
+		}).bind("mouseover mouseout mousemove", function(e){
+			element.trigger($.extend({}, e));
 		});
 		
 	};

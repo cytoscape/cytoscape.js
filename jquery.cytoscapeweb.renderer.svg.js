@@ -239,7 +239,7 @@ $(function(){
 
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
-			if( mousedownEvent.target == svgDomElement ){
+			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
 	
 				var originX = mousedownEvent.pageX;
 				var originY = mousedownEvent.pageY;

@@ -456,8 +456,8 @@ $(function(){
 				
 				draggedAfterMouseDown = true;
 				
-				var dx = dragEvent.pageX - originX;
-				var dy = dragEvent.pageY - originY;
+				var dx = (dragEvent.pageX - originX) / self.zoom();
+				var dy = (dragEvent.pageY - originY) / self.zoom();
 				
 				// new origin each event
 				originX = dragEvent.pageX;

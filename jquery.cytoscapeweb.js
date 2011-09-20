@@ -994,11 +994,11 @@
 				},
 				
 				pan: function(params){
-					renderer.pan(params);
+					return renderer.pan(params);
 				},
 				
 				zoom: function(params){
-					renderer.zoom(params);
+					return renderer.zoom(params);
 				},
 				
 				load: function(data){

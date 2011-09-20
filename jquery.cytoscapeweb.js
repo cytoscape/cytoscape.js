@@ -997,6 +997,10 @@
 					renderer.pan(params);
 				},
 				
+				zoom: function(params){
+					renderer.zoom(params);
+				},
+				
 				load: function(data){
 					// TODO delete old elements?
 				

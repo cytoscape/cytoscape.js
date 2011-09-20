@@ -95,7 +95,13 @@
 				
 				cy = $.cytoscapeweb(options);
 			
+				function log(msg){
+					$("#console").append('<p>' + msg + '</p>');
+				}
 				
+				cy.nodes().bind("click", function(e){ log("click " + this.data("id")); });
+				cy.nodes().bind("mousedown", function(e){ log("mousedown " + this.data("id")); });
+				cy.nodes().bind("mouseup", function(e){ log("mouseup " + this.data("id")); });
 			});
 		</script>
 		
@@ -104,6 +110,7 @@
 		<style>
 			body { font: 14pt arial; }	
 			#cytoscapeweb { border: 1px solid #888; height: 800px; width: 800px; }	
+			#console { font-size: 0.75em; max-height: 10em; overflow: auto; width: 800px; }
 		</style>
 	</head>
 
@@ -111,6 +118,9 @@
 		<h1>Cytoscape Web demo</h1>
 	    
 	    <div id="cytoscapeweb"></div>
+	    
+	    <h2>Console</h2>
+	    <div id="console"></div>
 	</body>
 
 </html>

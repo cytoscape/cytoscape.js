@@ -202,9 +202,11 @@ $(function(){
 		
 		if( svg != null ){
 			svg.clear(true);	
-		} else {		
+		} else {
 			container.svg({
 				onLoad: function(s){
+					
+					container.find("svg").css("overflow", "hidden"); // fixes ie overflow
 					
 					self.transformTouchEvent(window, "touchmove", "mousemove");
 					
@@ -212,11 +214,16 @@ $(function(){
 					self.svg = svg;
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
+					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
 					
 					$(self.edgesGroup).svgattr("class", "cw-edges");
 					$(self.nodesGroup).svgattr("class", "cw-nodes");
 					
 					self.defs = self.svg.defs();
+					
+					self.pan({ x: 0, y: 0 });
+					self.zoom(1);
+					self.addMousePanSupport();
 					
 					callback();
 				}
@@ -224,8 +231,127 @@ $(function(){
 		}
 	};
 	
+	SvgRenderer.prototype.addMousePanSupport = function(){
+		
+		var self = this;
+		
+		var svgDomElement = self.svgRoot;
+
+		$(svgDomElement).bind("mousedown", function(mousedownEvent){
+
+			if( mousedownEvent.target == svgDomElement ){
+	
+				var originX = mousedownEvent.pageX;
+				var originY = mousedownEvent.pageY;
+				
+				var dragHandler = function(dragEvent){
+					var dx = dragEvent.pageX - originX;
+					var dy = dragEvent.pageY - originY;
+					
+					// new origin each event
+					originX = dragEvent.pageX;
+					originY = dragEvent.pageY;
+	
+					self.translation.x += dx;
+					self.translation.y += dy;
+					
+					self.pan(self.translation);
+				};
+				
+				$(window).bind("mousemove", dragHandler);
+				
+				var endHandler = function(mouseupEvent){
+					$(window).unbind("mousemove", dragHandler);
+	
+					$(window).unbind("mouseup", endHandler);
+					$(window).unbind("blur", endHandler);
+					$(svgDomElement).unbind("mouseup", endHandler);
+				};
+				
+				$(window).bind("mouseup", endHandler);
+				$(window).bind("blur", endHandler);
+				$(svgDomElement).bind("mouseup", endHandler);
+			}
+		});
+		
+	};
+	
+	SvgRenderer.prototype.zoom = function(scale){
+		
+		if( scale === undefined ){
+			return this.scale;
+		}
+		
+		this.transform({
+			scale: scale
+		});
+	};
+	
+	SvgRenderer.prototype.pan = function(position){
+		$.cytoscapeweb("debug", "Pan SVG renderer with position (%o)", position);
+		
+		if( position === undefined ){
+			return {
+				x: this.translation.x,
+				y: this.translation.y
+			};
+		}
+		
+		this.transform({
+			translation: position
+		});
+	};
+	
+	SvgRenderer.prototype.transform = function(params){
+		var translation = params.translation;
+		var scale = params.scale;
+		var self = this;
+		
+		if( translation != null ){
+			self.translation = {
+				x: translation.x,
+				y: translation.y
+			};
+		}
+		
+		if( scale != null ){
+			self.scale = scale;
+		}
+		
+		function transform(svgElement){
+			self.svg.change(svgElement, {
+				transform: "translate(" + self.translation.x + "," + self.translation.y + ") scale(" + self.scale + ")"
+			});
+		}
+		
+		transform(self.nodesGroup);
+		transform(self.edgesGroup);
+	};
+	
 	SvgRenderer.prototype.calculateStyle = function(element){
-		var style = element._private.style = this.options.styleCalculator.calculate(element, this.style);
+		var style = this.options.styleCalculator.calculate(element, this.style);
+		
+		// TODO get each style field and override the normal field with
+		// the selection one if it's there and element is selected
+		
+		function fieldIsForSelection(fieldName){
+			return fieldName.substring(0, "selection".length) == "selection";
+		}
+		
+		function nonSelectionField(fieldName){
+			var ret = fieldName.substring("selection".length);
+			
+		}
+		
+		if( element._private.selected ){
+			$.each(style, function(fieldName, fieldVal){
+				if( fieldIsForSelection(fieldName) ){
+					// TODO
+				}
+			});
+		}
+		
+		element._private.style = style;
 		
 		if( element._private.group == "nodes" ){
 			// width and height are size unless at least one is defined
@@ -263,16 +389,15 @@ $(function(){
 	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
 		var style = element._private.style;
-		var group = element._private.svgGroup;
+		var parent = element._private.svgGroup;
 		var position = element._private.position;
 		
-		nodeShape(style.shape).update(this.svg, group, element, position, style);
+		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
 	
 	SvgRenderer.prototype.transformTouchEvent = function(domElement, fromEvent, toEvent){
 		domElement.addEventListener(fromEvent, function(e){
-			
-			var evt = $.extend(true, {}, e);
+			var evt = $.extend({}, e);
 			evt.type = toEvent;
 			
 			if( e.touches != null && e.touches[0] != null ){
@@ -286,9 +411,19 @@ $(function(){
 				evt.layerY = e.touches[0].layerY;
 			}
 			
-			$(domElement).trigger(evt);
-			
 			e.preventDefault();
+			$(domElement).trigger(evt);
+			return false;
+		});
+	};
+	
+	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
+		var svgDomElement = element._private.svg;
+		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
+		var self = this;
+		
+		$(svgDomElement).bind("mouseup mousedown click", function(e){
+			element.trigger(e);
 		});
 	};
 	
@@ -296,18 +431,18 @@ $(function(){
 		var svgDomElement = element._private.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
-		var draggedAfterMouseDown;
+		var draggedAfterMouseDown = null;
 		
 		// you need to prevent default event handling to 
 		// prevent built-in browser drag-and-drop etc
 		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
-			mousedownEvent.preventDefault();
 			draggedAfterMouseDown = false;
 			
 			element.trigger(mousedownEvent);
 			
 			if( element._private.grabbed || element._private.locked ){
+				mousedownEvent.preventDefault();
 				return;
 			}
 			 
@@ -318,7 +453,6 @@ $(function(){
 			
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
-				dragEvent.preventDefault();
 				
 				draggedAfterMouseDown = true;
 				
@@ -348,8 +482,6 @@ $(function(){
 			var finishedDragging = false;
 			var endHandler = function(mouseupEvent){
 				
-				mouseupEvent.preventDefault();
-				
 				if( !finishedDragging ){
 					finishedDragging = true;
 				} else {
@@ -365,16 +497,18 @@ $(function(){
 				element._private.grabbed = false;
 				
 				element.trigger($.extend({}, mouseupEvent, { type: "dragstop" }));
-				
 			};
 			
 			$(window).bind("mouseup", endHandler);
 			$(window).bind("blur", endHandler);
 			$(svgDomElement).bind("mouseup", endHandler);
+			
+			mousedownEvent.preventDefault();
 		}).bind("mouseup", function(e){
 			element.trigger($.extend({}, e));
 			
-			if( !draggedAfterMouseDown ){
+			if( draggedAfterMouseDown == false ){
+				draggedAfterMouseDown = null;
 				element.trigger($.extend({}, e, { type: "click" }));
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
@@ -424,9 +558,12 @@ $(function(){
 
 		var style = this.calculateStyle(element);
 		
+		var svgDomGroup = this.svg.group(this.edgesGroup);
+		element._private.svgGroup = svgDomGroup;
+		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
 		// TODO curve edge based on index in element.firstNeighbors().edges()
-		var svgDomElement = this.svg.line(this.edgesGroup, ps.x, ps.y, pt.x, pt.y);
+		var svgDomElement = this.svg.line(svgDomGroup, ps.x, ps.y, pt.x, pt.y);
 				
 		var targetMarkerId = "target_" + element._private.data.id;
 		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, 5, 5, { orient: "auto", markerUnits: "strokeWidth", refX: 5, refY: 2.5, strokeWidth: 0 });
@@ -439,6 +576,7 @@ $(function(){
 		element._private.svg = svgDomElement;
 		$.cytoscapeweb("debug", "SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
 		
+		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
 		return svgDomElement;
 	};
@@ -484,12 +622,16 @@ $(function(){
 		// generic styles go here
 		this.svg.change(element._private.svg, {
 			fill: color(style.fillColor),
-			fillOpacity: percent(style.fillOpacity),
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
 			cursor: style.cursor
+		});
+		
+		// styles to the group
+		this.svg.change(element._private.svgGroup, {
+			fillOpacity: percent(style.fillOpacity)
 		});
 		
 		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);
@@ -513,7 +655,8 @@ $(function(){
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "round",
-			opacity: percent(style.opacity)
+			opacity: percent(style.opacity),
+			cursor: style.cursor
 		});
 		
 		this.svg.change(element._private.targetSvg, {
@@ -555,7 +698,7 @@ $(function(){
 			var p = element._private.position;
 			
 			self.updateNodePositionFromShape(element);
-			
+
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});
 		
@@ -671,9 +814,6 @@ $(function(){
 		}
 	};
 	
-	SvgRenderer.prototype.pan = function(params){
-		$.cytoscapeweb("debug", "Pan SVG renderer with params (%o)", params);
-	};
 	
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);
 	

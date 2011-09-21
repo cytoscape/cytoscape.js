@@ -22,7 +22,7 @@ $(function(){
 	var defaults = {
 		nodes: {
 			fillColor: "#888",
-			borderColor: "#333",
+			borderColor: "#666",
 			borderWidth: 1,
 			borderStyle: "solid",
 			opacity: 1,
@@ -31,7 +31,7 @@ $(function(){
 			cursor: "pointer",
 			selected: {
 				fillColor: "#444",
-				borderColor: "#000"
+				borderColor: "#222"
 			}
 		},
 		edges: {

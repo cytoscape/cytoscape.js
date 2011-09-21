@@ -14,13 +14,18 @@ MKDIR = mkdir
 VERSION = 2.0-snapshot
 
 # targets
-JSFILES = jquery.color.js jquery.svg.js jquery.cytoscapeweb.js jquery.cytoscapeweb.renderer.null.js Intersection.js jquery.cytoscapeweb.renderer.svg.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
+DEPENDENCIES = jquery.color.js jquery.svg.js 2D.js Intersection.js
+LIB = jquery.cytoscapeweb.core.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.renderer.svg.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
+JSFILES = $(DEPENDENCIES) $(LIB)
 JSBUILDFILES = $(JSFILES:%=$(BUILDDIR)/%)
 JSMINFILES = $(JSBUILDFILES:%.js=%.min.js)
 JSALLFILE = $(BUILDDIR)/jquery.cytoscapeweb.all.js
 JSALLMINFILE = $(JSALLFILE:%.js=%.min.js)
+JSNODEPSFILE = $(BUILDDIR)/jquery.cytoscapeweb.js
+JSNODEPSMINFILE = $(JSNODEPSFILE:%.js=%.min.js)
+
 ZIPFILE = $(BUILDDIR)/jquery.cytoscapeweb-$(VERSION).zip
-ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(LICENSE) $(README)
+ZIPCONTENTS = $(JSBUILDFILES) $(JSMINFILES) $(JSALLFILE) $(JSALLMINFILE) $(JSNODEPSFILE) $(JSNODEPSMINFILE) $(LICENSE) $(README)
 BUILDDIR = build
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = PREAMBLE
@@ -32,9 +37,9 @@ TEMPFILE = /tmp/cytowebtmp
 
 all : zip
 
-zip :  $(ZIPFILE) $(ZIPCONTENTS)
+zip :  $(ZIPCONTENTS) $(ZIPFILE)
 	
-minify : $(JSBUILDFILES) $(JSMINFILES) $(JSALLMINFILE)
+minify : $(JSBUILDFILES) $(JSMINFILES) $(JSALLMINFILE) $(JSNODEPSMINFILE)
 
 $(ZIPFILE) : minify
 	$(ZIP) $(ZIPFILE) $(ZIPCONTENTS)
@@ -50,6 +55,10 @@ $(JSBUILDFILES) : $(BUILDDIR) $(BUILDPREAMBLE)
 
 $(JSALLFILE) : $(BUILDDIR)
 	$(CAT) $(BUILDPREAMBLE) $(JSFILES) > $@
+	$(PRINTF) "// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+
+$(JSNODEPSFILE) : $(BUILDDIR)
+	$(CAT) $(BUILDPREAMBLE) $(LIB) > $@
 	$(PRINTF) "// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILDDIR) : 

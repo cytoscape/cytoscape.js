@@ -1,3 +1,27 @@
+Usage dependencies
+===============================================================================
+
+To use Cytoscape Web in your HTML document, you must include the following JS:
+
+	* jQuery 1.3.2 or 1.6
+	* 2D.js
+	* Intersection.js
+	* jquery.color.js
+	* jquery.svg.js
+	* jquery.cytoscapeweb.all.js or
+		* jquery.cytoscapeweb.js
+		* at least 1 renderer (e.g. jquery.cytoscapeweb.renderer.svg.js)
+		* at least 1 layout (e.g. jquery.cytoscapeweb.layout.grid.js)
+		* any exporters you want to use
+		* any importers you want to use
+
+jquery.cytoscapeweb.all.js contains all Cytoscape Web code, including all
+layouts, renderers, and so on.  If you don't want to use a different version
+of the libraries used by Cytoscape Web, you can use
+jquery.cytoscapeweb.withdeps.min.js.
+
+
+
 We'd like to thank the academy...
 ===============================================================================
 

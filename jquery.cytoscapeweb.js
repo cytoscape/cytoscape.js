@@ -572,6 +572,10 @@
 				return this._private.group == "edges";
 			};
 			
+			CyElement.prototype.same = function(element){
+				return element._private.group == this._private.group && element._private.data.id == this._private.data.id;
+			};
+			
 			CyElement.prototype.adjacentTo = function(collection){
 				collection = collection.collection();
 				var adjacents = this.neighbors();
@@ -728,14 +732,16 @@
 			
 			// represents a set of nodes, edges, or both together
 			function CyCollection(elements){
+				
+				if( elements == null ){
+					elements = [];
+				}
+				
 				for(var i = 0; i < elements.length; i++){
 					this[i] = elements[i];
 				}
 				
 				this.length = elements.length;
-				this.size = function(){
-					return this.length;
-				}
 			}
 
 			CyCollection.prototype.toArray = function(){
@@ -746,6 +752,10 @@
 				}
 				
 				return array;
+			};
+			
+			CyCollection.prototype.size = function(){
+				return this.length;
 			};
 			
 			CyCollection.prototype.eq = function(i){
@@ -767,24 +777,53 @@
 			
 			CyCollection.prototype.add = function(toAdd){
 				var elements = [];
+				var ids = {
+					nodes: {},
+					edges: {}
+				};
 			
+				function add(element){
+					if( ids[element._private.group][element._private.data.id] == null ){
+						elements.push(element);
+						ids[element._private.group][element._private.data.id] = true;
+					}
+				}
+				
 				// add own
 				this.each(function(i, element){
-					elements.push(element);
+					add(element);
 				});
-			
+				
 				// add toAdd
-				if( isFunction(toAdd.size) ){
-					// we have a collection
-					var collection = toAdd;
-					collection.each(function(i, element){
+				var collection = toAdd.collection();
+				collection.each(function(i, element){
+					add(element);
+				});
+				
+				return new CyCollection(elements);
+			};
+			
+			CyCollection.prototype.remove = function(toRemove){
+				var elements = [];
+				var collection = toRemove.collection();
+				
+				this.each(function(i, element){
+					
+					var remove = false;
+					for(var j = 0; j < collection.size(); j++){
+						var c = collection.eq(j);
+						
+						if( c._private.group == element._private.group && c._private.data.id == element._private.data.id ){
+							remove = true;
+							break;
+						}
+					}
+					
+					if(!remove){
 						elements.push(element);
-					});
-				} else {
-					// we have one element
-					var element = toAdd;
-					elements.push(element);
-				}
+					}
+					
+				});
 				
 				return new CyCollection(elements);
 			};
@@ -956,6 +995,16 @@
 						break;
 					}
 				}
+				
+				return ret;
+			};
+			
+			CyCollection.prototype.neighbors = function(open){
+				var ret = new CyCollection();
+				
+				this.each(function(i, element){
+					ret.add( element.neighbors(open) );
+				});
 				
 				return ret;
 			};
@@ -1214,110 +1263,104 @@
 				style: options.style,
 				
 				styleCalculator: {
-					calculate: function(entity, styleObj){
-						var style = $.extend( {}, styleObj[entity._private.group], entity._private.bypass );
-						var computedStyle = {};
-						
-						$.each(style, function(styleName, styleVal){
-							if( isPlainObject(styleVal) ){
-								
-								var ret;
-								
-								if( styleVal.customMapper != null ){
-									
-									ret = styleVal.customMapper( element.data() );
-									
-								} else if( styleVal.passthroughMapper != null ){
-									
-									var attrName = styleVal.passthroughMapper;
-									ret = entity.data(attrName);
-									
-								} else if( styleVal.discreteMapper != null ){
-									
-									var attrName = styleVal.discreteMapper.attr;
-									var entries = styleVal.discreteMapper.entries;
-									var entityVal = entity.data(attrName);
-									
-									$.each(entries, function(i, entry){
-										var attrVal = entry.attrVal;
-										var mappedVal = entry.mappedVal;
-										
-										if( attrVal == entityVal ){
-											ret = mappedVal;
-										}
-									});
-									
-								} else if( styleVal.continuousMapper != null ){
-									
-									var map = styleVal.continuousMapper;
-									
-									if( map.attr.name == null || typeof map.attr.name != typeof "" ){
-										console.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", entity.group(), styleName);
-										return;
-									}
-									
-									var attrBounds = structs.continuousMapperBounds[entity._private.group][map.attr.name];
-									attrBounds = {
-										min: attrBounds == null ? 0 : attrBounds.min,
-										max: attrBounds == null ? 0 : attrBounds.max
-									};
-									
-									// use defined attr min & max if set in mapper
-									if( map.attr.min != null ){
-										attrBounds.min = map.attr.min;
-									}
-									if( map.attr.max != null ){
-										attrBounds.max = map.attr.max;
-									}
-									
-									if( attrBounds != null ){
-									
-										var percent = ( entity.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
-										
-										if( percent > 1 ){
-											percent = 1;
-										} else if( percent < 0 ){
-											percent = 0;
-										}
-											
-										if( isNumber(map.mapped.min) && isNumber(map.mapped.max) ){
-											ret = percent * (map.mapped.max - map.mapped.min) + map.mapped.min;
-										} else if( isColor(map.mapped.min) && isColor(map.mapped.max) ){
-											
-											var cmin = $.Color(map.mapped.min).fix().toRGB();
-											var cmax = $.Color(map.mapped.max).fix().toRGB();
-											
-											var red = cmin.red() * (1 - percent) + cmax.red() * percent;
-											var green  = cmin.green() * (1 - percent) + cmax.green() * percent;
-											var blue  = cmin.blue() * (1 - percent) + cmax.blue() * percent;
-											
-											ret = $.Color([red, green, blue], "RGB").toHEX().toString();
-										} else {
-											console.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", entity.group(), map.styleName, map.mapped.min, map.mapped.max);
-											return;
-										}
-									} else {
-										console.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", entity.group(), map.attr.name, entity.group(), styleName, entity.group(), entity.data("id"));
-										return;
-									}
-									
-								}
-								
-								computedStyle[ styleName ] = ret;
-								
-								var defaultValue = styleVal.defaultValue;
-								if( ret == null ){
-									computedStyle[ styleName ] = defaultValue;
-								}
-								
-							} else {
-								computedStyle[ styleName ] = styleVal;
-							}
-						});
+					calculate: function(entity, styleVal){
 
-						return computedStyle;
-					}
-				}
+						if( isPlainObject(styleVal) ){
+							
+							var ret;
+							
+							if( styleVal.customMapper != null ){
+								
+								ret = styleVal.customMapper( element.data() );
+								
+							} else if( styleVal.passthroughMapper != null ){
+								
+								var attrName = styleVal.passthroughMapper;
+								ret = entity.data(attrName);
+								
+							} else if( styleVal.discreteMapper != null ){
+								
+								var attrName = styleVal.discreteMapper.attr;
+								var entries = styleVal.discreteMapper.entries;
+								var entityVal = entity.data(attrName);
+								
+								$.each(entries, function(i, entry){
+									var attrVal = entry.attrVal;
+									var mappedVal = entry.mappedVal;
+									
+									if( attrVal == entityVal ){
+										ret = mappedVal;
+									}
+								});
+								
+							} else if( styleVal.continuousMapper != null ){
+								
+								var map = styleVal.continuousMapper;
+								
+								if( map.attr.name == null || typeof map.attr.name != typeof "" ){
+									console.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", entity.group(), styleName);
+									return;
+								}
+								
+								var attrBounds = structs.continuousMapperBounds[entity._private.group][map.attr.name];
+								attrBounds = {
+									min: attrBounds == null ? 0 : attrBounds.min,
+									max: attrBounds == null ? 0 : attrBounds.max
+								};
+								
+								// use defined attr min & max if set in mapper
+								if( map.attr.min != null ){
+									attrBounds.min = map.attr.min;
+								}
+								if( map.attr.max != null ){
+									attrBounds.max = map.attr.max;
+								}
+								
+								if( attrBounds != null ){
+								
+									var percent = ( entity.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
+									
+									if( percent > 1 ){
+										percent = 1;
+									} else if( percent < 0 ){
+										percent = 0;
+									}
+										
+									if( isNumber(map.mapped.min) && isNumber(map.mapped.max) ){
+										ret = percent * (map.mapped.max - map.mapped.min) + map.mapped.min;
+									} else if( isColor(map.mapped.min) && isColor(map.mapped.max) ){
+										
+										var cmin = $.Color(map.mapped.min).fix().toRGB();
+										var cmax = $.Color(map.mapped.max).fix().toRGB();
+										
+										var red = cmin.red() * (1 - percent) + cmax.red() * percent;
+										var green  = cmin.green() * (1 - percent) + cmax.green() * percent;
+										var blue  = cmin.blue() * (1 - percent) + cmax.blue() * percent;
+										
+										ret = $.Color([red, green, blue], "RGB").toHEX().toString();
+									} else {
+										console.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", entity.group(), map.styleName, map.mapped.min, map.mapped.max);
+										return;
+									}
+								} else {
+									console.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", entity.group(), map.attr.name, entity.group(), styleName, entity.group(), entity.data("id"));
+									return;
+								}
+								
+							} // end if
+							
+							var defaultValue = styleVal.defaultValue;
+							if( ret == null ){
+								ret = defaultValue;
+							}
+							
+						} else {
+							ret = styleVal;
+						} // end if
+						
+						return ret;
+					} // end calculate
+				} // end styleCalculator
 			}) );
 			
 			cy.load(options.data);

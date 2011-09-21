@@ -29,7 +29,7 @@ $(function(){
 			size: 10,
 			shape: "ellipse",
 			cursor: "pointer",
-			selection: {
+			selected: {
 				borderWidth: 4
 			}
 		},
@@ -306,6 +306,8 @@ $(function(){
 				$(window).bind("mousemove", dragHandler);
 				
 				var endHandler = function(mouseupEvent){
+					clearTimeout(panDelayTimeout);
+					
 					$(window).unbind("mousemove", dragHandler);
 	
 					$(window).unbind("mouseup", endHandler);
@@ -317,11 +319,16 @@ $(function(){
 							cursor: null
 						});
 					}
+					
 				};
 				
 				$(window).bind("mouseup", endHandler);
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
+			}
+		}).bind("click", function(e){
+			if( e.target == svgDomElement ){
+				self.unselectAll();
 			}
 		});
 		
@@ -380,27 +387,22 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.calculateStyle = function(element){
-		var style = this.options.styleCalculator.calculate(element, this.style);
+		var self = this;
+		var styleCalculator = self.options.styleCalculator;
+		var style = $.extend({}, this.style[element.group()], element._private.bypass);
 		
-		// TODO get each style field and override the normal field with
-		// the selection one if it's there and element is selected
-		
-		function fieldIsForSelection(fieldName){
-			return fieldName.substring(0, "selection".length) == "selection";
-		}
-		
-		function nonSelectionField(fieldName){
-			var ret = fieldName.substring("selection".length);
+		if( element.selected() ){
+			var selected = style.selected;
+			delete style.selected;
 			
+			style = $.extend({}, style, selected);
+		} else {
+			delete style.selected;
 		}
 		
-		if( element._private.selected ){
-			$.each(style, function(fieldName, fieldVal){
-				if( fieldIsForSelection(fieldName) ){
-					// TODO
-				}
-			});
-		}
+		$.each(style, function(styleName, styleVal){
+			style[styleName] = styleCalculator.calculate(element, styleVal);
+		});
 		
 		element._private.style = style;
 		
@@ -475,6 +477,8 @@ $(function(){
 		
 		$(svgDomElement).bind("mouseup mousedown click", function(e){
 			element.trigger(e);
+		}).bind("click", function(e){
+			element.select();
 		});
 	};
 	
@@ -561,11 +565,28 @@ $(function(){
 			if( draggedAfterMouseDown == false ){
 				draggedAfterMouseDown = null;
 				element.trigger($.extend({}, e, { type: "click" }));
+				self.selectElement(element);
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
 			element.trigger($.extend({}, e));
 		});
 		
+	};
+	
+	SvgRenderer.prototype.selectElement = function(element){
+		self.cy.elements().filter(function(i, e){
+			return e.selected() && !e.same(element);
+		}).unselect();
+		
+		if( !element.selected() ){
+			element.select();
+		}
+	};
+	
+	SvgRenderer.prototype.unselectAll = function(){
+		this.cy.elements().filter(function(i, element){
+			return element.selected();
+		}).unselect();
 	};
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
@@ -652,10 +673,63 @@ $(function(){
 		}
 	};
 	
+	SvgRenderer.prototype.updateSelection = function(collection){
+		this.updateElementsStyle(collection);
+	};
+	
+	SvgRenderer.prototype.updateData = function(collection){
+		this.updateElementsStyle(collection);
+	};
+	
+	SvgRenderer.prototype.updateElementsStyle = function(collection){
+		var self = this;
+		collection = collection.collection();
+		
+		// update nodes
+		collection.nodes().each(function(i, element){
+			self.updateElementStyle(element);
+		});
+		
+		// update edges
+		collection.edges().each(function(i, element){
+			self.updateElementStyle(element);
+		});
+		
+		// update positions of connected edges but not those already covered by the update for edges above
+		collection.nodes().neighbors().edges().remove( collection.edges() ).each(function(i, element){
+			self.updatePosition(element);
+		});
+	}
+	
+	SvgRenderer.prototype.updateStyle = function(style){
+		var collection = this.cy.elements();
+		var self = this;
+		
+		if( style !== undefined ){
+			self.style = style;
+		}
+		
+		this.updateElementsStyle(collection);
+	};
+	
+	SvgRenderer.prototype.updateBypass = function(collection){
+		collection = collection.collection();
+		
+		// update nodes
+		collection.nodes().each(function(i, element){
+			self.updateElementStyle(element);
+		});
+		
+		// update connected edges
+		collection.edges().add( collection.neighbors(false).edges() ).each(function(i, edge){
+			self.updateElementStyle(edge);
+		});
+	};
+	
 	SvgRenderer.prototype.updateElementStyle = function(element, newStyle){
-		if( element._private.group == "nodes" ){
+		if( element.isNode() ){
 			this.updateNodeStyle(element, newStyle);
-		} else if( element._private.group == "edges" ){
+		} else if( element.isEdge() ){
 			this.updateEdgeStyle(element, newStyle);
 		}
 	};
@@ -847,16 +921,20 @@ $(function(){
 				break;
 			
 			case "style":
+				this.updateStyle( params.style );
+				break;
+				
 			case "bypass":
-				// TODO update styles OR recreate svg element if necessary (e.g. shape change)
+				this.updateBypass( params.collection );
+				break;
+				
 			case "data":
+				this.updateData( params.collection );
+				break;
+				
 			case "select":
 			case "unselect":
-			case "lock":
-			case "unlock":
-			case "mouseover":
-			case "mouseout":
-				$.cytoscapeweb("error", "TODO svg::" + params.type); // TODO add these events
+				this.updateSelection( params.collection );
 				break;
 			
 			default:

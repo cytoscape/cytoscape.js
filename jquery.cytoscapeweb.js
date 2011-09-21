@@ -4,7 +4,8 @@
 	var reg = {
 		format: {},
 		renderer: {},
-		layout: {}
+		layout: {},
+		exporter: {}
 	};
 
 	var quiet = false;
@@ -467,11 +468,16 @@
 			CyElement.prototype.position = function(val){
 				
 				if( val === undefined ){
-					return copy( this._private.position );
+					if( this.isNode() ){
+						return copy( this._private.position );
+					} else {
+						console.warn("Can not get position for edge with ID `%s`; edges have no position", this._private.data.id);
+						return null;
+					}
 				} else if( isFunction(val) ){
 					var fn = val;
 					this.bind("position", fn);
-				} else if( this._private.group == "edges" ){
+				} else if( this.isEdge() ){
 					console.warn("Can not move edge with ID `%s`; edges can not be moved", this._private.data.id);
 				} else if( this.locked() ) {
 					console.warn("Can not move locked node with ID `%s`", this._private.data.id);
@@ -481,6 +487,19 @@
 					this.trigger("position");
 				}
 				
+			};
+			
+			CyElement.prototype.renderedPosition = function(){
+				if( this.isEdge() ){
+					$.cytoscapeweb("warn", "Can not get rendered position for edge `" + element._private.data.id + "`; edges have no position");
+					return null;
+				}
+				
+				return renderer.renderedPosition(this);
+			};
+			
+			CyElement.prototype.renderedDimensions = function(){
+				return renderer.renderedDimensions(this);
 			};
 			
 			CyElement.prototype.style = function(){
@@ -1238,6 +1257,21 @@
 						collection: cy.elements(),
 						style: structs.style
 					});
+				},
+				
+				toFormat: function(format){
+					var exporterDefn = reg.exporter[format];
+					
+					if( exporterDefn == null ){
+						console.error("No exporter with name `%s` found; did you remember to register it?");
+					} else {
+						var exporter = new exporterDefn({
+							selector: options.selector,
+							cytoscapeweb: cy,
+						});
+						
+						return exporter.run();
+					}
 				}
 				
 			};

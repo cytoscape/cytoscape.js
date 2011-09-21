@@ -573,6 +573,31 @@ $(function(){
 		
 	};
 	
+	SvgRenderer.prototype.renderedPosition = function(element){
+		var self = this;
+		
+		return {
+			x: element._private.position.x * self.zoom() + self.pan().x,
+			y: element._private.position.y * self.zoom() + self.pan().y
+		};
+	};
+	
+	SvgRenderer.prototype.renderedDimensions = function(element){
+		var self = this;
+		
+		if( element.isNode() ){
+			return {
+				height: element._private.style.height * self.zoom(),
+				width: element._private.style.width * self.zoom(),
+				size: element._private.style.size * self.zoom()
+			};
+		} else {
+			return {
+				width: element._private.style.width * self.zoom()
+			};
+		}
+	};
+	
 	SvgRenderer.prototype.selectElement = function(element){
 		self.cy.elements().filter(function(i, e){
 			return e.selected() && !e.same(element);
@@ -943,7 +968,16 @@ $(function(){
 		}
 	};
 	
+	function SvgExporter(options){
+		this.options = options;
+		this.cy = options.cytoscapeweb;
+	}
+	
+	SvgExporter.prototype.run = function(){
+		return $(this.options.selector).svg("get").toSVG();
+	};
 	
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);
+	$.cytoscapeweb("exporter", "svg", SvgExporter);
 	
 });

@@ -564,6 +564,51 @@
 				return structs.nodes[ this._private.data.target ];
 			};
 			
+			CyElement.prototype.isNode = function(){
+				return this._private.group == "nodes";
+			};
+			
+			CyElement.prototype.isEdge = function(){
+				return this._private.group == "edges";
+			};
+			
+			CyElement.prototype.adjacentTo = function(collection){
+				collection = collection.collection();
+				var adjacents = this.neighbors();
+				
+				if( this.isNode() ){
+					var self = this;
+					adjacents.edges().each(function(i, edge){
+						if( edge._private.data.source == edge._private.data.target ){
+							adjacents = adjacents.add(self);
+						}
+					});
+				}
+				
+				var ret = true;
+				
+				for(var i = 0; i < collection.size(); i++){
+					var element = collection[i];
+					var inCollection = false;
+					
+					for(var j = 0; j < adjacents.size(); j++){
+						var adjacent = adjacents[j];
+						
+						if( element.group() == adjacent.group() && element._private.data.id == adjacent._private.data.id ){
+							inCollection = true;
+							break;
+						}
+					}
+					
+					ret = ret && inCollection;
+					if(ret == false){
+						break;
+					}
+				}
+				
+				return ret;
+			};
+			
 			CyElement.prototype.neighbors = function(open){
 				
 				if(open === undefined){
@@ -571,7 +616,7 @@
 				}
 				
 				if( this.group() == "nodes" ) {
-					var self = this;
+					var node = this;
 					var neighbors = [];
 					var nodes = {};
 					$.each(structs.nodeToEdges[ this._private.data.id ], function(id, edge){
@@ -580,7 +625,7 @@
 						$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
 							
 							if( nodes[nodeId] == null ){
-								if( (open && nodeId != self._private.data.id) || !open ){
+								if( (open && nodeId != node._private.data.id) || !open ){
 									nodes[nodeId] = true;
 									neighbors.push( structs.nodes[nodeId] );
 								}
@@ -601,6 +646,10 @@
 							nodes[nodeId] = true;
 							
 							neighbors.push( structs.nodes[nodeId] );
+						}
+						
+						if( !open ){
+							neighbors.push(edge);
 						}
 						
 					});
@@ -703,6 +752,10 @@
 				return this[i];
 			};
 			
+			CyCollection.prototype.empty = function(){
+				return this.size() == 0;
+			};
+			
 			CyCollection.prototype.each = function(fn){
 				for(var i = 0; i < this.size(); i++){
 					if( isFunction(fn) ){
@@ -721,7 +774,7 @@
 				});
 			
 				// add toAdd
-				if( $isFunction(toAdd.size) ){
+				if( isFunction(toAdd.size) ){
 					// we have a collection
 					var collection = toAdd;
 					collection.each(function(i, element){
@@ -886,6 +939,26 @@
 			CyCollection.prototype.maxOutdegree = degreeBoundsFunction("outdegree", function(outdegree, max){
 				return outdegree > max;
 			});
+			
+			CyCollection.prototype.totalDegree = function(){
+				return 2 * this.edges().size();
+			};
+			
+			CyCollection.prototype.adjacentTo = function(collection){
+				collection = collection.collection();
+				var ret = true;
+				
+				for(var i = 0; i < this.size(); i++){
+					var element = this.eq(i);
+					ret = ret && element.adjacentTo(collection);
+					
+					if( ret == false ){
+						break;
+					}
+				}
+				
+				return ret;
+			};
 			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////

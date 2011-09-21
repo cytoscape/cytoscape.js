@@ -564,9 +564,14 @@
 				return structs.nodes[ this._private.data.target ];
 			};
 			
-			CyElement.prototype.firstNeighbors = function(){
+			CyElement.prototype.neighbors = function(open){
+				
+				if(open === undefined){
+					open = true;
+				}
+				
 				if( this.group() == "nodes" ) {
-					
+					var self = this;
 					var neighbors = [];
 					var nodes = {};
 					$.each(structs.nodeToEdges[ this._private.data.id ], function(id, edge){
@@ -575,9 +580,10 @@
 						$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
 							
 							if( nodes[nodeId] == null ){
-								nodes[nodeId] = true;
-								
-								neighbors.push( structs.nodes[nodeId] );
+								if( (open && nodeId != self._private.data.id) || !open ){
+									nodes[nodeId] = true;
+									neighbors.push( structs.nodes[nodeId] );
+								}
 							}
 							
 						});
@@ -843,6 +849,43 @@
 			CyCollection.prototype.collection = function(){
 				return this;
 			};
+			
+			function degreeBoundsFunction(degreeFn, callback){
+				return function(){
+					var ret = null;
+					var degrees = this[degreeFn]();
+					$.each(degrees, function(i, degree){
+						if( degree != null && (ret == null || callback(degree, ret)) ){
+							ret = degree;
+						}
+					});
+					return ret;
+				};
+			}
+			
+			CyCollection.prototype.minDegree = degreeBoundsFunction("degree", function(degree, min){
+				return degree < min;
+			});
+			
+			CyCollection.prototype.maxDegree = degreeBoundsFunction("degree", function(degree, max){
+				return degree > max;
+			});
+
+			CyCollection.prototype.minIndegree = degreeBoundsFunction("indegree", function(indegree, min){
+				return indegree < min;
+			});
+			
+			CyCollection.prototype.maxIndegree = degreeBoundsFunction("indegree", function(indegree, max){
+				return indegree > max;
+			});
+			
+			CyCollection.prototype.minOutdegree = degreeBoundsFunction("outdegree", function(outdegree, min){
+				return outdegree < min;
+			});
+			
+			CyCollection.prototype.maxOutdegree = degreeBoundsFunction("outdegree", function(outdegree, max){
+				return outdegree > max;
+			});
 			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////

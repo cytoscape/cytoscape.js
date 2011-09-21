@@ -613,7 +613,7 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
-		// TODO curve edge based on index in element.firstNeighbors().edges()
+		// TODO curve edge based on index in element.neighbors().edges()
 		var svgDomElement = this.svg.line(svgDomGroup, ps.x, ps.y, pt.x, pt.y);
 				
 		var targetMarkerId = "target_" + element._private.data.id;
@@ -793,7 +793,7 @@ $(function(){
 		
 		// update connected edges
 		collection.nodes().each(function(i, element){
-			var edges = element.firstNeighbors().edges();
+			var edges = element.neighbors().edges();
 			updateEdges(edges);
 		});
 		

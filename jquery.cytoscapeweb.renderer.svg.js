@@ -30,7 +30,8 @@ $(function(){
 			shape: "ellipse",
 			cursor: "pointer",
 			selected: {
-				borderWidth: 4
+				fillColor: "#444",
+				borderColor: "#000"
 			}
 		},
 		edges: {
@@ -38,7 +39,10 @@ $(function(){
 			opacity: 1,
 			width: 1,
 			style: "solid",
-			cursor: "pointer"
+			cursor: "pointer",
+			selected: {
+				color: "#888"
+			}
 		},
 		global: {
 			panCursor: "grabbing"
@@ -263,7 +267,12 @@ $(function(){
 		
 		var svgDomElement = self.svgRoot;
 		var panDelay = 250;
-
+		
+		self.shiftDown = false;
+		$(window).bind("keydown keyup", function(e){
+			self.shiftDown = e.shiftKey;
+		});
+		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
 			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
@@ -599,9 +608,14 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.selectElement = function(element){
-		self.cy.elements().filter(function(i, e){
-			return e.selected() && !e.same(element);
-		}).unselect();
+		
+		var self = this;
+		
+		if( !self.shiftDown ){
+			self.cy.elements().filter(function(i, e){
+				return e.selected() && !e.same(element);
+			}).unselect();
+		}
 		
 		if( !element.selected() ){
 			element.select();

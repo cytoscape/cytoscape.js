@@ -603,6 +603,50 @@
 				}
 			};
 		
+			function degreeFunction(callback){
+				return function(){
+					if( this._private.group == "nodes" && !this._private.removed ){
+						var degree = 0;
+						var edges = structs.nodeToEdges[this._private.data.id];
+						var node = this;
+						
+						if( edges != null ){
+							$.each(edges, function(i, edge){
+								degree += callback(node, edge);
+							});
+						}
+						
+						return degree;
+					} else {
+						return null;
+					}
+				};
+			}
+			
+			CyElement.prototype.degree = degreeFunction(function(node, edge){
+				if( edge._private.data.source == edge._private.data.target ){
+					return 2;
+				} else {
+					return 1;
+				}
+			});
+			
+			CyElement.prototype.indegree = degreeFunction(function(node, edge){
+				if( node._private.data.id == edge._private.data.target ){
+					return 1;
+				} else {
+					return 0;
+				}
+			});
+			
+			CyElement.prototype.outdegree = degreeFunction(function(node, edge){
+				if( node._private.data.id == edge._private.data.source ){
+					return 1;
+				} else {
+					return 0;
+				}
+			});
+			
 			function listenerAlias(params){
 				return function(callback){
 					if( isFunction(callback) ){

@@ -28,7 +28,10 @@ $(function(){
 			opacity: 1,
 			size: 10,
 			shape: "ellipse",
-			cursor: "pointer"
+			cursor: "pointer",
+			selection: {
+				borderWidth: 4
+			}
 		},
 		edges: {
 			color: "#bbb",
@@ -38,7 +41,7 @@ $(function(){
 			cursor: "pointer"
 		},
 		global: {
-			
+			panCursor: "grabbing"
 		}
 	};
 	
@@ -182,7 +185,29 @@ $(function(){
 		
 		return ret;
 	}
-		
+	
+	function cursor(name){
+		if( name == "grab" ){
+			if( $.browser.webkit ){
+				return "-webkit-grab";
+			} else if( $.browser.mozilla ){
+				return "-moz-grab";
+			} else {
+				return "move";
+			}
+		} else if( name == "grabbing" ){
+			if( $.browser.webkit ){
+				return "-webkit-grabbing";
+			} else if( $.browser.mozilla ){
+				return "-moz-grabbing";
+			} else {
+				return "move";
+			}
+		} else {
+			return name;
+		}
+	}
+	
 	function SvgRenderer(options){
 		$.cytoscapeweb("debug", "Creating SVG renderer with options (%o)", options);
 		this.options = options;
@@ -212,6 +237,7 @@ $(function(){
 					
 					svg = s;
 					self.svg = svg;
+					
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
@@ -223,7 +249,7 @@ $(function(){
 					
 					self.pan({ x: 0, y: 0 });
 					self.zoom(1);
-					self.addMousePanSupport();
+					self.makeBackgroundInteractive();
 					
 					callback();
 				}
@@ -231,31 +257,50 @@ $(function(){
 		}
 	};
 	
-	SvgRenderer.prototype.addMousePanSupport = function(){
+	SvgRenderer.prototype.makeBackgroundInteractive = function(){
 		
 		var self = this;
 		
 		var svgDomElement = self.svgRoot;
+		var panDelay = 250;
 
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
 			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
-	
+				mousedownEvent.preventDefault();
+				
+				var panning = false;
+				var selecting = true;
+				
 				var originX = mousedownEvent.pageX;
 				var originY = mousedownEvent.pageY;
 				
+				var panDelayTimeout = setTimeout(function(){
+					panning = true;
+					selecting = false;
+					
+					self.svg.change(svgDomElement, {
+						cursor: cursor(self.style.global.panCursor)
+					});
+					
+				}, panDelay);
+				
 				var dragHandler = function(dragEvent){
-					var dx = dragEvent.pageX - originX;
-					var dy = dragEvent.pageY - originY;
+					clearTimeout(panDelayTimeout);
 					
-					// new origin each event
-					originX = dragEvent.pageX;
-					originY = dragEvent.pageY;
-	
-					self.translation.x += dx;
-					self.translation.y += dy;
-					
-					self.pan(self.translation);
+					if( panning ){
+						var dx = dragEvent.pageX - originX;
+						var dy = dragEvent.pageY - originY;
+						
+						// new origin each event
+						originX = dragEvent.pageX;
+						originY = dragEvent.pageY;
+		
+						self.translation.x += dx;
+						self.translation.y += dy;
+						
+						self.pan(self.translation);
+					}
 				};
 				
 				$(window).bind("mousemove", dragHandler);
@@ -266,6 +311,12 @@ $(function(){
 					$(window).unbind("mouseup", endHandler);
 					$(window).unbind("blur", endHandler);
 					$(svgDomElement).unbind("mouseup", endHandler);
+					
+					if( panning ){
+						self.svg.change(svgDomElement, {
+							cursor: null
+						});
+					}
 				};
 				
 				$(window).bind("mouseup", endHandler);
@@ -626,7 +677,7 @@ $(function(){
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
-			cursor: style.cursor
+			cursor: cursor(style.cursor)
 		});
 		
 		// styles to the group
@@ -656,7 +707,7 @@ $(function(){
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "round",
 			opacity: percent(style.opacity),
-			cursor: style.cursor
+			cursor: cursor(style.cursor)
 		});
 		
 		this.svg.change(element._private.targetSvg, {

@@ -795,6 +795,11 @@
 			};
 			
 			CyCollection.prototype.add = function(toAdd){
+				
+				if(toAdd == null){
+					return this;
+				}
+				
 				var elements = [];
 				var ids = {
 					nodes: {},
@@ -822,7 +827,12 @@
 				return new CyCollection(elements);
 			};
 			
-			CyCollection.prototype.remove = function(toRemove){
+			CyCollection.prototype.not = function(toRemove){
+				
+				if(toRemove == null){
+					return this;
+				}
+				
 				var elements = [];
 				var collection = toRemove.collection();
 				
@@ -1295,6 +1305,8 @@
 				selector: $(options.selector),
 				cytoscapeweb: cy,
 				style: options.style,
+				CyElement: CyElement,
+				CyCollection: CyCollection,
 				
 				styleCalculator: {
 					calculate: function(entity, styleVal){

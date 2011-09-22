@@ -246,6 +246,8 @@ $(function(){
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
 					
+					self.selectedElements = new self.options.CyCollection();
+					
 					$(self.edgesGroup).svgattr("class", "cw-edges");
 					$(self.nodesGroup).svgattr("class", "cw-nodes");
 					
@@ -518,6 +520,7 @@ $(function(){
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
 				
+				self.moveToFront(element);
 				draggedAfterMouseDown = true;
 				
 				var dx = (dragEvent.pageX - originX) / self.zoom();
@@ -526,11 +529,21 @@ $(function(){
 				// new origin each event
 				originX = dragEvent.pageX;
 				originY = dragEvent.pageY;
-
-				element._private.position.x += dx;
-				element._private.position.y += dy;
 				
-				self.updatePosition( element );
+				var elements;
+				
+				if( element.selected() ){
+					elements = self.selectedElements.add(element);
+				} else {
+					elements = element.collection();
+				}
+				
+				elements.each(function(i, e){
+					e._private.position.x += dx;
+					e._private.position.y += dy;
+				});			
+				
+				self.updatePosition( elements );
 				
 				if( justStartedDragging ){
 					justStartedDragging = false;
@@ -612,14 +625,32 @@ $(function(){
 		var self = this;
 		
 		if( !self.shiftDown ){
-			self.cy.elements().filter(function(i, e){
+			var unselectedElements = self.cy.elements().filter(function(i, e){
 				return e.selected() && !e.same(element);
 			}).unselect();
+			
+			self.selectedElements = self.selectedElements.not(unselectedElements);
 		}
 		
 		if( !element.selected() ){
 			element.select();
+			self.selectedElements = self.selectedElements.add(element);
+			self.moveToFront(element);
+		} else {
+			element.unselect();
+			self.selectedElements = self.selectedElements.not(element);
 		}
+		
+	};
+	
+	SvgRenderer.prototype.moveToFront = function(collection){
+		collection = collection.collection();
+		var self = this;
+		
+		collection.each(function(i, element){
+			self.svg.remove(element._private.svgGroup);
+			self.makeSvgElement(element);
+		});
 	};
 	
 	SvgRenderer.prototype.unselectAll = function(){
@@ -735,7 +766,7 @@ $(function(){
 		});
 		
 		// update positions of connected edges but not those already covered by the update for edges above
-		collection.nodes().neighbors().edges().remove( collection.edges() ).each(function(i, element){
+		collection.nodes().neighbors().edges().not( collection.edges() ).each(function(i, element){
 			self.updatePosition(element);
 		});
 	}

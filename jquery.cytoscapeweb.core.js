@@ -465,6 +465,24 @@
 				return ret;
 			};
 			
+			CyElement.prototype.target = function(){
+				if( this.isNode() ){
+					console.error("Can not call `target` on node `%s`; only edges have targets", this._private.data.id);
+					return;
+				}
+				
+				return structs.nodes[ this._private.data.target ];
+			};
+			
+			CyElement.prototype.source = function(){
+				if( this.isNode() ){
+					console.error("Can not call `source` on node `%s`; only edges have sources", this._private.data.id);
+					return;
+				}
+				
+				return structs.nodes[ this._private.data.source ];
+			};
+			
 			CyElement.prototype.position = function(val){
 				
 				if( val === undefined ){
@@ -897,6 +915,44 @@
 				});
 			};
 			
+			CyCollection.prototype.hasAll = function(collection){
+				collection = collection.collection();
+				
+				var ret = true;
+				for(var i = 0; i < collection.size(); i++){
+					var collectionElement = collection.eq(i);
+					
+					for(var j = 0; j < this.size(); j++){
+						var thisElement = this.eq(j);
+						
+						ret = ret && thisElement.same(collectionElement);
+						if(!ret) break;
+					}
+					if(!ret) break;
+				}
+				
+				return ret;
+			};
+			
+			CyCollection.prototype.hasAny = function(collection){
+				collection = collection.collection();
+				
+				var ret = false;
+				for(var i = 0; i < collection.size(); i++){
+					var collectionElement = collection.eq(i);
+					
+					for(var j = 0; j < this.size(); j++){
+						var thisElement = this.eq(j);
+						
+						ret = ret || thisElement.same(collectionElement);
+						if(ret) break;
+					}
+					if(ret) break;
+				}
+				
+				return ret;
+			};
+			
 			// what functions in CyElement update the renderer
 			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
 			
@@ -1032,7 +1088,7 @@
 				var ret = new CyCollection();
 				
 				this.each(function(i, element){
-					ret.add( element.neighbors(open) );
+					ret = ret.add( element.neighbors(open) );
 				});
 				
 				return ret;
@@ -1201,6 +1257,10 @@
 				
 				elements: elementsCollection(),
 				
+				collection: function(){
+					return new CyCollection();
+				},
+				
 				layout: function(params){
 					if( params == null ){
 						params = options.layout;
@@ -1305,8 +1365,6 @@
 				selector: $(options.selector),
 				cytoscapeweb: cy,
 				style: options.style,
-				CyElement: CyElement,
-				CyCollection: CyCollection,
 				
 				styleCalculator: {
 					calculate: function(entity, styleVal){

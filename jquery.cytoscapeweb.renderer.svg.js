@@ -30,22 +30,23 @@ $(function(){
 			shape: "ellipse",
 			cursor: "pointer",
 			selected: {
-				fillColor: "#444",
-				borderColor: "#222"
+				borderWidth: 3,
+				borderColor: "#000"
 			}
 		},
 		edges: {
-			color: "#bbb",
+			color: "#ccc",
 			opacity: 1,
 			width: 1,
 			style: "solid",
-			cursor: "pointer",
-			selected: {
-				color: "#888"
-			}
+			cursor: "pointer"
 		},
 		global: {
-			panCursor: "grabbing"
+			panCursor: "grabbing",
+			selectionFillColor: "#ccc",
+			selectionOpacity: 0.5,
+			selectionBorderColor: "#888",
+			selectionBorderWidth: 1
 		}
 	};
 	
@@ -246,7 +247,7 @@ $(function(){
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
 					
-					self.selectedElements = new self.options.CyCollection();
+					self.selectedElements = self.cy.collection();
 					
 					$(self.edgesGroup).svgattr("class", "cw-edges");
 					$(self.nodesGroup).svgattr("class", "cw-nodes");
@@ -280,11 +281,19 @@ $(function(){
 			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
 				mousedownEvent.preventDefault();
 				
+				var selectionSquare = null;
+				var selectionBounds = {};
+				
 				var panning = false;
 				var selecting = true;
 				
 				var originX = mousedownEvent.pageX;
 				var originY = mousedownEvent.pageY;
+
+				var selectOriginX = mousedownEvent.offsetX;
+				var selectOriginY = mousedownEvent.offsetY;
+				var selectDx = 0;
+				var selectDy = 0;
 				
 				var panDelayTimeout = setTimeout(function(){
 					panning = true;
@@ -299,18 +308,52 @@ $(function(){
 				var dragHandler = function(dragEvent){
 					clearTimeout(panDelayTimeout);
 					
-					if( panning ){
-						var dx = dragEvent.pageX - originX;
-						var dy = dragEvent.pageY - originY;
-						
-						// new origin each event
-						originX = dragEvent.pageX;
-						originY = dragEvent.pageY;
-		
+					var dx = dragEvent.pageX - originX;
+					var dy = dragEvent.pageY - originY;
+					
+					// new origin each event
+					originX = dragEvent.pageX;
+					originY = dragEvent.pageY;
+					
+					selectDx += dx;
+					selectDy += dy;
+					
+					if( panning ){	
 						self.translation.x += dx;
 						self.translation.y += dy;
 						
 						self.pan(self.translation);
+					}
+					
+					if( selecting ){
+						if( selectionSquare == null ){
+							selectionSquare = self.svg.rect(selectOriginX, selectOriginY, 0, 0, {
+								fill: color(self.style.global.selectionFillColor),
+								opacity: percent(self.style.global.selectionOpacity),
+								stroke: color(self.style.global.selectionBorderColor),
+								strokeWidth: number(self.style.global.selectionBorderWidth)
+							});
+						} else {
+							
+							var width = Math.abs(selectDx);
+							var height = Math.abs(selectDy);
+							var x = selectDx >= 0 ? selectOriginX : selectOriginX + selectDx;
+							var y = selectDy >= 0 ? selectOriginY : selectOriginY + selectDy;
+							
+							selectionBounds = {
+								x1: x,
+								y1: y,
+								x2: x + width,
+								y2: y + height
+							};
+							
+							self.svg.change(selectionSquare, {
+								x: x,
+								y: y,
+								width: width,
+								height: height
+							});
+						}
 					}
 				};
 				
@@ -331,6 +374,13 @@ $(function(){
 						});
 					}
 					
+					if( selecting ){
+						if( selectionSquare != null ){
+							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
+							self.svg.remove(selectionSquare);
+						}
+					}
+					
 				};
 				
 				$(window).bind("mouseup", endHandler);
@@ -341,6 +391,22 @@ $(function(){
 			if( e.target == svgDomElement ){
 				self.unselectAll();
 			}
+		}).bind("mousewheel", function(e){
+			var factor = self.zoom() + e.wheelDelta/100;
+			
+			var centerPoint = self.modelPoint({x: e.offsetX, y: e.offsetY});
+			var centerX = centerPoint.x;
+			var centerY = centerPoint.y;
+			
+			console.log(centerX, centerY);
+			
+			self.transform({
+				translation: {
+					x: - centerX * (factor-1),
+					y: - centerY * (factor-1)
+				},
+				scale: factor
+			});		
 		});
 		
 	};
@@ -353,6 +419,17 @@ $(function(){
 		
 		this.transform({
 			scale: scale
+		});
+	};
+	
+	SvgRenderer.prototype.panBy = function(position){
+		$.cytoscapeweb("debug", "Relatively pan SVG renderer with position (%o)", position);
+		
+		this.transform({
+			translation: {
+				x: this.translation.x + position.x,
+				y: this.translation.y + position.y
+			}
 		});
 	};
 	
@@ -587,7 +664,7 @@ $(function(){
 			if( draggedAfterMouseDown == false ){
 				draggedAfterMouseDown = null;
 				element.trigger($.extend({}, e, { type: "click" }));
-				self.selectElement(element);
+				self.selectElements(element);
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
 			element.trigger($.extend({}, e));
@@ -595,13 +672,26 @@ $(function(){
 		
 	};
 	
+	SvgRenderer.prototype.modelPoint = function(position){
+		var self = this;
+		return {
+			x: (position.x - self.pan().x) / self.zoom(),
+			y: (position.y - self.pan().y) / self.zoom()
+		};
+	}
+	
+	SvgRenderer.prototype.renderedPoint = function(position){
+		var self = this;
+		return {
+			x: position.x * self.zoom() + self.pan().x,
+			y: position.y * self.zoom() + self.pan().y
+		};
+	}
+	
 	SvgRenderer.prototype.renderedPosition = function(element){
 		var self = this;
 		
-		return {
-			x: element._private.position.x * self.zoom() + self.pan().x,
-			y: element._private.position.y * self.zoom() + self.pan().y
-		};
+		return self.renderedPoint(element._private.position);
 	};
 	
 	SvgRenderer.prototype.renderedDimensions = function(element){
@@ -620,27 +710,126 @@ $(function(){
 		}
 	};
 	
-	SvgRenderer.prototype.selectElement = function(element){
+	SvgRenderer.prototype.unselectElements = function(collection){
+		collection = collection.collection();
 		
+		collection.unselect();
+		this.selectedElements = this.selectedElements.not(collection);
+	};
+	
+	// by drag select
+	SvgRenderer.prototype.selectElementsFromIntersection = function(svgSelectionShape, selectionBounds){
+		var self = this;
+		var toSelect = this.cy.collection();
+		var toUnselect = this.cy.collection();
+		
+		function nodeInside(element){
+			// node
+			var x = element.renderedPosition().x;
+			var y = element.renderedPosition().y;
+			var w = element.renderedDimensions().width;
+			var h = element.renderedDimensions().height;
+			
+			// selection square
+			var x1 = selectionBounds.x1;
+			var y1 = selectionBounds.y1;
+			var x2 = selectionBounds.x2;
+			var y2 = selectionBounds.y2;
+			
+			if( x1 <= x + w/2 && x - w/2 <= x2 &&
+				y1 <= y + h/2 && y - h/2 <= y2 ){
+				
+				return true;
+			} 
+			
+			return false;
+		}
+		
+		function positionInside(position){
+			var x = position.x;
+			var y = position.y;
+			
+			// selection square
+			var x1 = selectionBounds.x1;
+			var y1 = selectionBounds.y1;
+			var x2 = selectionBounds.x2;
+			var y2 = selectionBounds.y2;
+			
+			if( x1 <= x && x <= x2 &&
+				y1 <= y && y <= y2 ){
+				
+				return true;
+			} 
+			
+			return false;
+		}
+		
+		this.cy.elements().each(function(i, element){
+			if( element.isNode() ){
+				if( nodeInside(element) ){
+					toSelect = toSelect.add(element);
+				}
+			} else {
+				// if both node center points are inside, then the edge is inside
+				if( positionInside( element.source()._private.position ) &&
+					positionInside( element.target()._private.position ) ){
+					
+					toSelect = toSelect.add(element);
+				}
+				
+				// edge isn't totally inside, so check for intersections
+				else {
+					var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Line(element._private.svg));
+					if( intersection.points.length > 0 ){
+						toSelect = toSelect.add(element);
+					}
+				}
+			}
+		});
+		
+		toUnselect = toUnselect.add(
+			this.cy.elements().filter(function(i, e){
+				return e.selected() && !toSelect.hasAll(e);
+			})
+		);
+		
+		toUnselect.unselect();
+		toSelect.select();
+		
+		self.selectedElements = self.selectedElements.not(toUnselect);
+		self.selectedElements = self.selectedElements.add(toSelect);
+		self.moveToFront(toSelect);
+		
+	};
+	
+	// by clicking
+	SvgRenderer.prototype.selectElements = function(collection){
+		collection = collection.collection();
 		var self = this;
 		
+		var toUnselect = self.cy.collection();
+		var toSelect = self.cy.collection();
+		
 		if( !self.shiftDown ){
-			var unselectedElements = self.cy.elements().filter(function(i, e){
-				return e.selected() && !e.same(element);
-			}).unselect();
-			
-			self.selectedElements = self.selectedElements.not(unselectedElements);
+			toUnselect = toUnselect.add(
+				self.cy.elements().filter(function(i, e){
+					return e.selected() && !collection.hasAll(e);
+				})
+			);
 		}
 		
-		if( !element.selected() ){
-			element.select();
-			self.selectedElements = self.selectedElements.add(element);
-			self.moveToFront(element);
-		} else {
-			element.unselect();
-			self.selectedElements = self.selectedElements.not(element);
-		}
+		toSelect = toSelect.add(
+			collection.filter(function(i, element){
+				return !element.selected();
+			})
+		);
 		
+		toUnselect.unselect();
+		toSelect.select();
+		
+		self.selectedElements = self.selectedElements.not(toUnselect);
+		self.selectedElements = self.selectedElements.add(toSelect);
+		self.moveToFront(toSelect);
 	};
 	
 	SvgRenderer.prototype.moveToFront = function(collection){
@@ -650,13 +839,12 @@ $(function(){
 		collection.each(function(i, element){
 			self.svg.remove(element._private.svgGroup);
 			self.makeSvgElement(element);
+			self.updatePosition(collection.neighbors().edges());
 		});
 	};
 	
 	SvgRenderer.prototype.unselectAll = function(){
-		this.cy.elements().filter(function(i, element){
-			return element.selected();
-		}).unselect();
+		this.unselectElements(this.cy.elements());
 	};
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
@@ -932,14 +1120,8 @@ $(function(){
 			});
 		}
 		
-		// update edges actually in the collection
-		updateEdges( collection.edges() );
-		
 		// update connected edges
-		collection.nodes().each(function(i, element){
-			var edges = element.neighbors().edges();
-			updateEdges(edges);
-		});
+		updateEdges( collection.neighbors(false).edges() );
 		
 	};
 	

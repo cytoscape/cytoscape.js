@@ -44,9 +44,18 @@
 			
 			if( window.console != null && window.console.error != null ){
 				window.console.error.apply(window.console, arguments);
+				
+				if( window.console.trace != null ){
+					window.console.trace();
+				}
+				
 			} else {
 				console.log.apply(window.console, arguments);
 				throw "Cytoscape Web encountered the previously logged error";
+				
+				if( window.console.trace != null ){
+					window.console.trace();
+				}
 			}
 		}
 	};

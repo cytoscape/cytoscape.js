@@ -104,8 +104,8 @@ $(function(){
 			svg.change(node._private.svg, {
 				cx: position.x,
 				cy: position.y,
-				rx: style.width,
-				ry: style.height
+				rx: style.width / 2,
+				ry: style.height / 2
 			});
 		},
 		
@@ -116,12 +116,12 @@ $(function(){
 	registerNodeShape({
 		name: "rectangle",
 		svg: function(svg, parent, node, position, style){
-			return svg.rect(parent, position.x - style.size/2, position.y - style.size/2, style.width, style.height);
+			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height);
 		},
 		update: function(svg, parent, node, position, style){
 			svg.change(node._private.svg, {
-				cx: position.x,
-				cy: position.y,
+				x: position.x - style.width/2,
+				y: position.y - style.height/2,
 				width: style.width,
 				height: style.height
 			});
@@ -133,12 +133,12 @@ $(function(){
 	registerNodeShape({
 		name: "roundrectangle",
 		svg: function(svg, parent, node, position, style){
-			return svg.rect(parent, position.x - style.size/2, position.y - style.size/2, style.width, style.height, style.width/4, style.height/4);
+			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height, style.width/4, style.height/4);
 		},
 		update: function(svg, parent, node, position, style){
 			svg.change(node._private.svg, {
-				cx: position.x,
-				cy: position.y,
+				x: position.x - style.width/2,
+				y: position.y - style.height/2,
 				width: style.width,
 				height: style.height
 			});
@@ -379,6 +379,10 @@ $(function(){
 							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
 							self.svg.remove(selectionSquare);
 						}
+						
+						if( mouseupEvent.target == svgDomElement ){
+							self.unselectAll();
+						}
 					}
 					
 				};
@@ -386,10 +390,6 @@ $(function(){
 				$(window).bind("mouseup", endHandler);
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
-			}
-		}).bind("click", function(e){
-			if( e.target == svgDomElement ){
-				self.unselectAll();
 			}
 		}).bind("mousewheel", function(e){
 			var point = {
@@ -410,6 +410,8 @@ $(function(){
 				translation: pan2,
 				scale: zoom2
 			});	
+			
+			e.preventDefault();
 		});
 		
 	};
@@ -430,8 +432,8 @@ $(function(){
 		
 		this.transform({
 			translation: {
-				x: this.translation.x + position.x,
-				y: this.translation.y + position.y
+				x: this.translation.x + number(position.x),
+				y: this.translation.y + number(position.y)
 			}
 		});
 	};
@@ -446,8 +448,16 @@ $(function(){
 			};
 		}
 		
+		if( position == null || typeof position != typeof {} ){
+			$.cytoscapeweb("error", "You can not pan without specifying a proper position object; `%o` is invalid", position);
+			return;
+		}
+		
 		this.transform({
-			translation: position
+			translation: {
+				x: number(position.x),
+				y: number(position.y)
+			}
 		});
 	};
 	
@@ -728,10 +738,11 @@ $(function(){
 		
 		function nodeInside(element){
 			// node
+			var zoom = self.zoom();
 			var x = element.renderedPosition().x;
 			var y = element.renderedPosition().y;
-			var w = element.renderedDimensions().width;
-			var h = element.renderedDimensions().height;
+			var w = element.renderedDimensions().width + element._private.style.borderWidth * zoom;
+			var h = element.renderedDimensions().height + element._private.style.borderWidth * zoom;
 			
 			// selection square
 			var x1 = selectionBounds.x1;

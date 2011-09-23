@@ -392,21 +392,24 @@ $(function(){
 				self.unselectAll();
 			}
 		}).bind("mousewheel", function(e){
-			var factor = self.zoom() + e.wheelDelta/100;
+			var point = {
+				x: e.offsetX,
+				y: e.offsetY
+			};
 			
-			var centerPoint = self.modelPoint({x: e.offsetX, y: e.offsetY});
-			var centerX = centerPoint.x;
-			var centerY = centerPoint.y;
+			var pan1 = self.pan();
+			var zoom1 = self.zoom();
+			var zoom2 = zoom1 * (1 + e.wheelDelta/500);
 			
-			console.log(centerX, centerY);
+			var pan2 = {
+				x: -zoom2/zoom1 * (point.x - pan1.x) + point.x,
+				y: -zoom2/zoom1 * (point.y - pan1.y) + point.y
+			};
 			
 			self.transform({
-				translation: {
-					x: - centerX * (factor-1),
-					y: - centerY * (factor-1)
-				},
-				scale: factor
-			});		
+				translation: pan2,
+				scale: zoom2
+			});	
 		});
 		
 	};
@@ -672,19 +675,19 @@ $(function(){
 		
 	};
 	
-	SvgRenderer.prototype.modelPoint = function(position){
+	SvgRenderer.prototype.modelPoint = function(screenPoint){
 		var self = this;
 		return {
-			x: (position.x - self.pan().x) / self.zoom(),
-			y: (position.y - self.pan().y) / self.zoom()
+			x: (screenPoint.x - self.pan().x) / self.zoom(),
+			y: (screenPoint.y - self.pan().y) / self.zoom()
 		};
 	}
 	
-	SvgRenderer.prototype.renderedPoint = function(position){
+	SvgRenderer.prototype.renderedPoint = function(modelPoint){
 		var self = this;
 		return {
-			x: position.x * self.zoom() + self.pan().x,
-			y: position.y * self.zoom() + self.pan().y
+			x: modelPoint.x * self.zoom() + self.pan().x,
+			y: modelPoint.y * self.zoom() + self.pan().y
 		};
 	}
 	
@@ -839,7 +842,7 @@ $(function(){
 		collection.each(function(i, element){
 			self.svg.remove(element._private.svgGroup);
 			self.makeSvgElement(element);
-			self.updatePosition(collection.neighbors().edges());
+			self.updatePosition(collection.neighbors(false).edges());
 		});
 	};
 	

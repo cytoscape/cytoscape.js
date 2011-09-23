@@ -62,9 +62,12 @@
 					},
 					data: {
 						nodes: [
+						        { id: "n1", weight: 100 }, { id: "n2", weight: 100 }
 						],
 						
 						edges: [
+						     	{ source: "n1", target: "n2", weight: 50 },
+						     	{ source: "n2", target: "n1", weight: 100 }
 						]
 					}
 				};
@@ -76,21 +79,21 @@
 					return "n" + Math.floor( Math.random() * numNodes );
 				}
 				
-				for(var i = 0; i < numNodes; i++){
-					options.data.nodes.push({
-						id: "n" + i,
-						weight: Math.random() * 100
-					});
-				}
+// 				for(var i = 0; i < numNodes; i++){
+// 					options.data.nodes.push({
+// 						id: "n" + i,
+// 						weight: Math.random() * 100
+// 					});
+// 				}
 				
-				for(var i = 0; i < numEdges; i++){
-					options.data.edges.push({
-						id: "e" + i,
-						source: randNodeId(),
-						target: randNodeId(),
-						weight: Math.random() * 100
-					});
-				}
+// 				for(var i = 0; i < numEdges; i++){
+// 					options.data.edges.push({
+// 						id: "e" + i,
+// 						source: randNodeId(),
+// 						target: randNodeId(),
+// 						weight: Math.random() * 100
+// 					});
+// 				}
 				
 				cy = $.cytoscapeweb(options);
 			

@@ -166,11 +166,59 @@
 				nodes: {}, // id => node object
 				edges: {}, // id => edge object
 				nodeToEdges: {}, // id => array of edges
+				edgeSiblings: {}, // id => array of edges
 				continuousMapperBounds: { // data attr name => { min, max }
 					nodes: {},
 					edges: {}
 				} 
 			};
+			
+			function siblingIds(element){
+				var sourceId = element._private.data.source;
+				var targetId = element._private.data.target;
+				
+				var id1 = sourceId < targetId ? sourceId : targetId;
+				var id2 = id1 == sourceId ? targetId : sourceId;
+				
+				return {
+					id1: id2,
+					id2: id2
+				};
+			}
+			
+			function addSibling(element){
+				var ids = siblingIds(element);
+				var id1 = ids.id1;
+				var id2 = ids.id2;
+				
+				if( structs.edgeSiblings[id1] == null ){
+					structs.edgeSiblings[id1] = {};
+				}
+				
+				if( structs.edgeSiblings[id1][id2] == null ){
+					structs.edgeSiblings[id1][id2] = {};
+				}
+				
+				structs.edgeSiblings[id1][id2][element._private.data.id] = element;
+			}
+			
+			function removeSibling(element){
+				var ids = siblingIds(element);
+				var id1 = ids.id1;
+				var id2 = ids.id2;
+				
+				if( structs.edgeSiblings[id1] != null && structs.edgeSiblings[id1][id2] != null ){
+					delete structs.edgeSiblings[id1][id2][element._private.data.id];
+				}
+			}
+			
+			function getSiblings(element){
+				var ids = siblingIds(element);
+				var id1 = ids.id1;
+				var id2 = ids.id2;
+				
+				return structs.edgeSiblings[id1][id2];
+			}
 			
 			// return a deep copy of an object
 			function copy(obj){
@@ -256,7 +304,7 @@
 				}
 				
 				// validate source and target for edges
-				if( this._private.group == "edges" ){
+				if( this.isEdge() ){
 					
 					var fields = ["source", "target"];
 					for(var i = 0; i < fields.length; i++){
@@ -272,6 +320,8 @@
 							return;
 						} 
 					}
+					
+					addSibling(this);
 					
 				} 
 				  
@@ -490,6 +540,22 @@
 				}
 				
 				return structs.nodes[ this._private.data.source ];
+			};
+			
+			CyElement.prototype.siblings = function(){
+				if( this.isNode() ){
+					console.error("Can not call `siblings` on node `%s`; only edges have sources", this._private.data.id);
+					return;
+				}
+				
+				var siblingsMap = getSiblings(this);
+				var elements = [];
+				for(var i in siblingsMap){
+					var element = siblingsMap[i];
+					elements.push(element);
+				}
+				
+				return new CyCollection(elements);
 			};
 			
 			CyElement.prototype.position = function(val){
@@ -1432,6 +1498,10 @@
 								if( attrBounds != null ){
 								
 									var percent = ( entity.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
+									
+									if( attrBounds.max == attrBounds.min ){
+										percent = 1;
+									}
 									
 									if( percent > 1 ){
 										percent = 1;

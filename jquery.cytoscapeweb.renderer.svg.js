@@ -233,8 +233,15 @@ $(function(){
 		if( svg != null ){
 			svg.clear(true);	
 		} else {
+			container.css({
+				padding: "0 !important"
+			});
+			
 			container.svg({
 				onLoad: function(s){
+					
+					self.scale = 1;
+					self.translation = { x: 0, y: 0 };
 					
 					container.find("svg").css("overflow", "hidden"); // fixes ie overflow
 					
@@ -254,8 +261,7 @@ $(function(){
 					
 					self.defs = self.svg.defs();
 					
-					self.pan({ x: 0, y: 0 });
-					self.zoom(1);
+					
 					self.makeBackgroundInteractive();
 					
 					callback();
@@ -264,12 +270,22 @@ $(function(){
 		}
 	};
 	
+	SvgRenderer.prototype.offsetFix = function(e){
+		var self = this;
+		
+		// firefox fix :(
+		if( e.offsetX == null || e.offsetY == null ){
+			e.offsetX = e.clientX - $(self.options.selector).offset().left;
+			e.offsetY = e.clientY - $(self.options.selector).offset().top;
+		}
+	};
+	
 	SvgRenderer.prototype.makeBackgroundInteractive = function(){
 		
 		var self = this;
 		
 		var svgDomElement = self.svgRoot;
-		var panDelay = 250;
+		var panDelay = 150;
 		
 		self.shiftDown = false;
 		$(window).bind("keydown keyup", function(e){
@@ -281,6 +297,8 @@ $(function(){
 			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
 				mousedownEvent.preventDefault();
 				
+				self.offsetFix(mousedownEvent);
+				
 				var selectionSquare = null;
 				var selectionBounds = {};
 				
@@ -289,7 +307,7 @@ $(function(){
 				
 				var originX = mousedownEvent.pageX;
 				var originY = mousedownEvent.pageY;
-
+				
 				var selectOriginX = mousedownEvent.offsetX;
 				var selectOriginY = mousedownEvent.offsetY;
 				var selectDx = 0;
@@ -302,6 +320,8 @@ $(function(){
 					self.svg.change(svgDomElement, {
 						cursor: cursor(self.style.global.panCursor)
 					});
+					
+					$(self.options.selector).scrollLeft(100);
 					
 				}, panDelay);
 				
@@ -378,9 +398,7 @@ $(function(){
 						if( selectionSquare != null ){
 							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
 							self.svg.remove(selectionSquare);
-						}
-						
-						if( mouseupEvent.target == svgDomElement ){
+						} else if( mouseupEvent.target == svgDomElement ){
 							self.unselectAll();
 						}
 					}
@@ -391,7 +409,10 @@ $(function(){
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
-		}).bind("mousewheel", function(e){
+		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
+			
+			self.offsetFix(e);
+			
 			var point = {
 				x: e.offsetX,
 				y: e.offsetY
@@ -399,7 +420,7 @@ $(function(){
 			
 			var pan1 = self.pan();
 			var zoom1 = self.zoom();
-			var zoom2 = zoom1 * (1 + e.wheelDelta/500);
+			var zoom2 = zoom1 * (1 + delta);
 			
 			var pan2 = {
 				x: -zoom2/zoom1 * (point.x - pan1.x) + point.x,
@@ -677,7 +698,7 @@ $(function(){
 			if( draggedAfterMouseDown == false ){
 				draggedAfterMouseDown = null;
 				element.trigger($.extend({}, e, { type: "click" }));
-				self.selectElements(element);
+				self.selectElement(element);
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
 			element.trigger($.extend({}, e));
@@ -801,11 +822,13 @@ $(function(){
 			}
 		});
 		
-		toUnselect = toUnselect.add(
-			this.cy.elements().filter(function(i, e){
-				return e.selected() && !toSelect.hasAll(e);
-			})
-		);
+		if( !self.shiftDown ){
+			toUnselect = toUnselect.add(
+				this.cy.elements().filter(function(i, e){
+					return e.selected() && !toSelect.hasAll(e);
+				})
+			);
+		}
 		
 		toUnselect.unselect();
 		toSelect.select();
@@ -817,8 +840,7 @@ $(function(){
 	};
 	
 	// by clicking
-	SvgRenderer.prototype.selectElements = function(collection){
-		collection = collection.collection();
+	SvgRenderer.prototype.selectElement = function(element){
 		var self = this;
 		
 		var toUnselect = self.cy.collection();
@@ -827,16 +849,20 @@ $(function(){
 		if( !self.shiftDown ){
 			toUnselect = toUnselect.add(
 				self.cy.elements().filter(function(i, e){
-					return e.selected() && !collection.hasAll(e);
+					return e.selected() && !element.same(e);
 				})
 			);
 		}
 		
-		toSelect = toSelect.add(
-			collection.filter(function(i, element){
-				return !element.selected();
-			})
-		);
+		if( self.shiftDown ){
+			if( element.selected() ){
+				toUnselect = toUnselect.add(element);
+			} else {
+				toSelect = toSelect.add(element);
+			}
+		} else if( !element.selected() ){
+			toSelect = toSelect.add(element);
+		}
 		
 		toUnselect.unselect();
 		toSelect.select();

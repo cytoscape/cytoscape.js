@@ -14,7 +14,7 @@ MKDIR = mkdir
 VERSION = 2.0-snapshot
 
 # targets
-DEPENDENCIES = jquery.color.js jquery.svg.js 2D.js Intersection.js
+DEPENDENCIES = jquery.color.js jquery.svg.js 2D.js Intersection.js jquery.mousewheel.js
 LIB = jquery.cytoscapeweb.core.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.renderer.svg.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js
 JSFILES = $(DEPENDENCIES) $(LIB)
 JSBUILDFILES = $(JSFILES:%=$(BUILDDIR)/%)

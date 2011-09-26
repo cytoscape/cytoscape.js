@@ -147,6 +147,29 @@ $(function(){
 		intersectionShape: Rectangle
 	});
 	
+	registerNodeShape({
+		name: "triangle",
+		svg: function(svg, parent, node, position, style){
+			return svg.polygon(parent,
+					           [ 
+					             [position.x,                 position.y - style.height/2], 
+					             [position.x + style.width/2, position.y + style.height/2],
+					             [position.x - style.width/2, position.y + style.height/2]
+					           ]);
+		},
+		update: function(svg, parent, node, position, style){
+			svg.change(node._private.svg, {
+				points: [ 
+			             [position.x,                 position.y - style.height/2], 
+			             [position.x + style.width/2, position.y + style.height/2],
+			             [position.x - style.width/2, position.y + style.height/2]
+			           ]
+			});
+		},
+		
+		intersectionShape: Polygon
+	});
+	
 	function percent(p){
 		if( number(p) && 0 <= p && p <= 1 ){
 			return p;
@@ -814,7 +837,7 @@ $(function(){
 				
 				// edge isn't totally inside, so check for intersections
 				else {
-					var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Line(element._private.svg));
+					var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
 					if( intersection.points.length > 0 ){
 						toSelect = toSelect.add(element);
 					}
@@ -889,6 +912,7 @@ $(function(){
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
 		var p = element._private.position;
+		var self = this;
 		
 		if( p.x == null || p.y == null ){
 			$.cytoscapeweb("debug", "SVG renderer is ignoring creating of node `%s` with position (%o, %o)", element._private.data.id, p.x, p.y);
@@ -914,7 +938,93 @@ $(function(){
 		return svgDomElement;
 	};
 	
+	SvgRenderer.prototype.makeSvgEdgePath = function(element){
+		var self = this;
+		var tgt = element.target();
+		var src = element.source();
+		var loop = tgt._private.data.id == src._private.data.id;
+		
+		var x1 = src._private.position.x;
+		var y1 = src._private.position.y;
+		var x2 = tgt._private.position.x;
+		var y2 = tgt._private.position.y;
+		
+		var parallelEdges = element.parallelEdges();
+		var size = parallelEdges.size();
+		var index = element._private.index;
+		var curveIndex;
+		var curveDistance = 20;
+		
+		
+		if( loop ){
+			var sh = src._private.style.height;
+			var sw = src._private.style.width;
+			curveDistance += Math.max(sw, sh);
+			
+			var h = curveDistance;
+	        var cp1 = { x: x1, y: y1 - sh/2 - h };
+	        var cp2 = { x: x1 - sw/2 - h, y: y1 };
+			
+			curveIndex = index;
+			var path = self.svg.createPath();
+			return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+		} else {
+			// edge between 2 nodes
+			
+			var even = size % 2 == 0;
+			if( even ){
+				// even
+				curveIndex = index - size/2 + (index < size/2 ? 0 : 1); // add one if on positive size (skip 0)
+				
+				if( curveIndex > 0 ){
+					curveIndex -= 0.5;
+				} else {
+					curveIndex += 0.5;
+				}
+			} else {
+				// odd
+				curveIndex = index - Math.floor(size/2);
+			}
+			
+			var curved = curveIndex != 0;
+			var path = self.svg.createPath();
+			
+			if( src._private.data.id > tgt._private.data.id ){
+				curveIndex *= -1;
+			}
+			
+			if( curved ){
+				var cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
+				return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+			} else {
+				return self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+			}
+		}
+	};
+	
+	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
+		
+		var diff = { x: p1.x-p2.x, y: p1.y-p2.y };
+	    var normal = this.getNormalizedPoint({ x: diff.y, y: -diff.x }, 1);
+	    
+	    var mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
+	    
+	    return {x: mid.x + normal.x * h, y: mid.y + normal.y * h};
+	
+	};
+	
+	SvgRenderer.prototype.getNormalizedPoint = function(p, newLength){
+		var currentLength = Math.sqrt(p.x*p.x + p.y*p.y);
+		var factor = newLength / currentLength;
+		
+		return {
+			x: p.x * factor,
+			y: p.y * factor
+		};
+	};
+	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
+		var self = this;
 		var source = this.cy.node( element._private.data.source );
 		var target = this.cy.node( element._private.data.target );
 					
@@ -925,7 +1035,7 @@ $(function(){
 			$.cytoscapeweb("debug", "SVG renderer is ignoring creating of edge `%s` with position (%o, %o, %o, %o)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
 			return;
 		}
-
+		
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.edgesGroup);
@@ -933,17 +1043,17 @@ $(function(){
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
 		// TODO curve edge based on index in element.neighbors().edges()
-		var svgDomElement = this.svg.line(svgDomGroup, ps.x, ps.y, pt.x, pt.y);
-				
-		var targetMarkerId = "target_" + element._private.data.id;
-		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, 5, 5, { orient: "auto", markerUnits: "strokeWidth", refX: 5, refY: 2.5, strokeWidth: 0 });
-		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [5, 2.5], [0, 5]], { fill: "red" });
-		
-		this.svg.change(svgDomElement, {
-			markerEnd: "url(#" + targetMarkerId + ")"
-		});
-		
+		var svgDomElement = this.makeSvgEdgePath(element);
 		element._private.svg = svgDomElement;
+				
+//		var targetMarkerId = "target_" + element._private.data.id;
+//		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, 5, 5, { orient: "auto", markerUnits: "strokeWidth", refX: 5, refY: 2.5, strokeWidth: 0 });
+//		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [5, 2.5], [0, 5]], { fill: "red" });
+//		
+//		this.svg.change(svgDomElement, {
+//			markerEnd: "url(#" + targetMarkerId + ")"
+//		});
+		
 		$.cytoscapeweb("debug", "SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
 		
 		this.makeSvgEdgeInteractive(element);
@@ -1079,7 +1189,8 @@ $(function(){
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "round",
 			opacity: percent(style.opacity),
-			cursor: cursor(style.cursor)
+			cursor: cursor(style.cursor),
+			fill: "none"
 		});
 		
 		this.svg.change(element._private.targetSvg, {
@@ -1127,34 +1238,13 @@ $(function(){
 		
 		function updateEdges(edges){
 			edges.each(function(i, edge){
-				
-				var svgEle = self.getSvgElement(edge);
-				var target = cy.node( edge.data("target") );
-				var source = cy.node( edge.data("source") );
-				var ps = source._private.position;
-				var pt = target._private.position;
-				
-				svg.change(svgEle, { x1: ps.x, y1: ps.y, x2: pt.x, y2: pt.y });
-				
-				var targetIntShape = nodeShape(target._private.style.shape).intersectionShape;
-				var targetIntersection = Intersection.intersectShapes(new targetIntShape(target._private.svg), new Line(edge._private.svg));
-				$.cytoscapeweb("debug", "Intersection for target edge %s at %o", target.data("id"), targetIntersection);
-				if( targetIntersection.points.length > 0 ){
-					self.svg.change(edge._private.svg, {
-						x2: targetIntersection.points[0].x,
-						y2: targetIntersection.points[0].y
-					});
+				if( edge._private.svgGroup != null ){
+					self.svg.remove(edge._private.svgGroup);
 				}
+				self.makeSvgEdge(edge);
 				
-				var sourceIntShape = nodeShape(source._private.style.shape).intersectionShape;
-				var sourceIntersection = Intersection.intersectShapes(new sourceIntShape(source._private.svg), new Line(edge._private.svg));
-				$.cytoscapeweb("debug", "Intersection for source edge %s at %o", source.data("id"), sourceIntersection);
-				if( sourceIntersection.points.length > 0 ){
-					self.svg.change(edge._private.svg, {
-						x1: sourceIntersection.points[0].x,
-						y1: sourceIntersection.points[0].y
-					});
-				}
+				var ps = edge.source()._private.position;
+				var pt = edge.target()._private.position;
 				
 				$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
 			});
@@ -1172,9 +1262,11 @@ $(function(){
 		var svg = container.svg('get');
 		
 		collection.each(function(i, element){
-			if( element._private.svg != null ){
-				svg.remove(element._private.svg);
-				element._private.svg = null;
+			if( element._private.svgGroup != null ){
+				svg.remove(element._private.svgGroup);
+				delete element._private.svg;
+				delete element._private.svgGroup;
+				// TODO add delete arrow for edges
 			} else {
 				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
 			}

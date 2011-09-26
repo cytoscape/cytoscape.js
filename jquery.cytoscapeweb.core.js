@@ -196,7 +196,15 @@
 					structs.edgeSiblings[id1][id2] = {};
 				}
 				
-				structs.edgeSiblings[id1][id2][element._private.data.id] = element;
+				var siblings = structs.edgeSiblings[id1][id2];
+				siblings[element._private.data.id] = element;
+				
+				var length = 0;
+				for(var i in siblings){
+					length++;
+				}
+				
+				element._private.index = length - 1;
 			}
 			
 			function removeParallelEdgeFromMap(element){

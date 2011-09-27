@@ -30,6 +30,19 @@ $(function(){
 			shape: "ellipse",
 			cursor: "pointer",
 			visibility: "visible",
+			labelValign: "middle",
+			labelHalign: "middle",
+			labelFillColor: "#fff",
+			labelOutlineColor: "#666",
+			labelOutlineWidth: 1,
+			labelFontStyle: "normal",
+			labelFontDecoration: "none", 
+			labelFontVariant: "italic", 
+			labelFontFamily: "Arial",
+			labelFontWeight: "bold",
+			labelOpacity: 1,
+			labelOutlineOpacity: 1,
+			labelFillOpacity: 1,
 			selected: {
 				borderWidth: 3,
 				borderColor: "#000"
@@ -222,6 +235,22 @@ $(function(){
 		}
 		
 		return ret;
+	}
+	
+	function labelHalign(a){
+		if( a != null && typeof a == typeof "" && ( a == "left" || a == "right" || a == "middle" ) ){
+			return a;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid label horizonal alignment", a);
+		}	
+	}
+	
+	function labelValign(a){
+		if( a != null && typeof a == typeof "" && ( a == "top" || a == "bottom" || a == "middle" ) ){
+			return a;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid label vertical alignment", a);
+		}	
 	}
 	
 	function cursor(name){
@@ -979,11 +1008,7 @@ $(function(){
 		var x = element._private.position.x;
 		var y = element._private.position.y;
 		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label", {
-			"text-anchor": "middle",
-			"alignment-baseline": "middle",
-			"pointer-events": "none"
-		});
+		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "labelLABELlabel");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
@@ -1222,7 +1247,66 @@ $(function(){
 		});
 		
 		this.svg.change(element._private.svgLabel, {
-			"visibility": visibility(style.visibility)
+			"visibility": visibility(style.visibility),
+			"pointer-events": "none",
+			fill: color(style.labelFillColor),
+			fillOpacity: percent(style.labelFillOpacity),
+			stroke: color(style.labelOutlineColor),
+			strokeWidth: number(style.labelOutlineWidth),
+			strokeOpacity: percent(style.labelOutlineOpacity),
+			"font-family": style.labelFontFamily,
+			"font-weight": style.labelFontWeight,
+			"font-style": style.labelFontStyle,
+			"text-decoration": style.labelFontDecoration,
+			"font-variant": style.labelFontVariant,
+			opacity: percent(style.labelOpacity)
+		});
+		
+		var valign = labelValign(style.labelValign);
+		var halign = labelHalign(style.labelHalign);
+		var spacing = 3;
+		var dx = 0;
+		var dy = 0;
+		
+		if( halign == "middle" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "middle"
+			});
+		} else if( halign == "right" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "start"
+			});
+			dx = style.width/2 + spacing;
+		} else if( halign == "left" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "end"
+			});
+			dx = -style.width/2 - spacing;
+		}
+		
+		// TODO remove this hack to fix IE when it supports baseline properties properly
+		var fontSize = parseInt(window.getComputedStyle(element._private.svgLabel)["fontSize"]);
+		var ieFix = $.browser.msie ? fontSize/3 : 0;
+	
+		if( valign == "middle" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: central; dominant-baseline: central;"
+			});
+			dy = 0 + ieFix;
+		} else if( valign == "top" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: normal; dominant-baseline: normal;"	
+			});
+			dy = -style.height/2 - spacing;
+		} else if( valign == "bottom" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: normal; dominant-baseline: normal;"
+			});
+			dy = style.height/2 + fontSize;
+		}
+		
+		this.svg.change(element._private.svgLabel, {
+			transform: "translate("+ dx +","+ dy +")"
 		});
 		
 		// styles to the group

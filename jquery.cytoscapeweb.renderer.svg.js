@@ -627,6 +627,23 @@ $(function(){
 		});
 	};
 	
+	SvgRenderer.prototype.makeSvgNodeLabelInteractive = function(element){
+		var svgDomElement = element._private.svgLabel;
+		var self = this;
+		
+		$(svgDomElement).bind("click", function(clickEvent){
+			self.offsetFix(clickEvent);
+			
+			var position = self.modelPoint({
+				x: clickEvent.offsetX,
+				y: clickEvent.offsetY
+			});
+			
+			//var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
+			
+		});
+	};
+	
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
 		var svgDomElement = element._private.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
@@ -781,26 +798,32 @@ $(function(){
 		var toUnselect = this.cy.collection();
 		
 		function nodeInside(element){
-			// node
+			
+			// intersect rectangle in the model with the actual node shape in the model
+			var shape = nodeShape(element._private.style.shape).intersectionShape;
+			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
+			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
+			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
+			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape(element._private.svg));
+			self.svg.remove(modelRectangle);
+			
+			// rendered node
 			var zoom = self.zoom();
 			var x = element.renderedPosition().x;
 			var y = element.renderedPosition().y;
 			var w = element.renderedDimensions().width + element._private.style.borderWidth * zoom;
 			var h = element.renderedDimensions().height + element._private.style.borderWidth * zoom;
 			
-			// selection square
+			// rendered selection square
 			var x1 = selectionBounds.x1;
 			var y1 = selectionBounds.y1;
 			var x2 = selectionBounds.x2;
 			var y2 = selectionBounds.y2;
 			
-			if( x1 <= x + w/2 && x - w/2 <= x2 &&
-				y1 <= y + h/2 && y - h/2 <= y2 ){
-				
-				return true;
-			} 
+			var centerPointInside = x1 <= x && x <= x2 && y1 <= y && y <= y2;
+			var intersects = intersection.points.length > 0;
 			
-			return false;
+			return centerPointInside || intersects;
 		}
 		
 		function positionInside(position){
@@ -926,6 +949,7 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
+		this.makeSvgNodeLabel(element);
 		
 		this.transformTouchEvent(svgDomElement, "touchstart", "mousedown");
 		this.transformTouchEvent(svgDomElement, "touchend", "mouseup");
@@ -936,6 +960,27 @@ $(function(){
 		this.makeSvgNodeInteractive(element);
 		this.updateElementStyle(element, style);
 		return svgDomElement;
+	};
+	
+	SvgRenderer.prototype.makeSvgNodeLabel = function(element){
+		var self = this;
+		
+		var x = element._private.position.x;
+		var y = element._private.position.y;
+		
+		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label", {
+			"text-anchor": "middle",
+			"alignment-baseline": "middle"
+		});
+	};
+	
+	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
+		var self = this;
+
+		self.svg.change(element._private.svgLabel, {
+			x: element._private.position.x,
+			y: element._private.position.y
+		});
 	};
 	
 	SvgRenderer.prototype.makeSvgEdgePath = function(element){
@@ -1232,6 +1277,7 @@ $(function(){
 			var p = element._private.position;
 			
 			self.updateNodePositionFromShape(element);
+			self.positionSvgNodeLabel(element);
 
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});

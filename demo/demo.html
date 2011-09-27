@@ -46,6 +46,7 @@
 						},
 						
 						nodes: {
+							shape: "triangle",
 							size: {
 								defaultValue: 5,
 								continuousMapper: {
@@ -69,8 +70,8 @@
 					}
 				};
 				
-				var numNodes = Math.round(10 + Math.random() * 20);
-				var numEdges = Math.round(10 + Math.random() * 30);
+				var numNodes = 5; //Math.round(10 + Math.random() * 10);
+				var numEdges = 15; //Math.round(10 + Math.random() * 300);
 				
 				function randNodeId(){
 					return "n" + Math.floor( Math.random() * numNodes );

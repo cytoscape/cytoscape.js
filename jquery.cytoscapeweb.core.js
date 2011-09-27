@@ -173,21 +173,18 @@
 				} 
 			};
 			
-			function siblingIds(element){
-				var sourceId = element._private.data.source;
-				var targetId = element._private.data.target;
-				
-				var id1 = sourceId < targetId ? sourceId : targetId;
-				var id2 = id1 == sourceId ? targetId : sourceId;
+			function parallelEdgeIds(node1Id, node2Id){				
+				var id1 = node1Id < node2Id ? node1Id : node2Id;
+				var id2 = id1 == node1Id ? node2Id : node1Id;
 				
 				return {
-					id1: id2,
+					id1: id1,
 					id2: id2
 				};
 			}
 			
-			function addSibling(element){
-				var ids = siblingIds(element);
+			function addParallelEdgeToMap(element){
+				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
 				var id1 = ids.id1;
 				var id2 = ids.id2;
 				
@@ -199,11 +196,19 @@
 					structs.edgeSiblings[id1][id2] = {};
 				}
 				
-				structs.edgeSiblings[id1][id2][element._private.data.id] = element;
+				var siblings = structs.edgeSiblings[id1][id2];
+				siblings[element._private.data.id] = element;
+				
+				var length = 0;
+				for(var i in siblings){
+					length++;
+				}
+				
+				element._private.index = length - 1;
 			}
 			
-			function removeSibling(element){
-				var ids = siblingIds(element);
+			function removeParallelEdgeFromMap(element){
+				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
 				var id1 = ids.id1;
 				var id2 = ids.id2;
 				
@@ -212,8 +217,16 @@
 				}
 			}
 			
-			function getSiblings(element){
-				var ids = siblingIds(element);
+			function getParallelEdgesForEdge(element){
+				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
+				var id1 = ids.id1;
+				var id2 = ids.id2;
+				
+				return structs.edgeSiblings[id1][id2];
+			}
+			
+			function getEdgesBetweenNodes(node1, node2){
+				var ids = parallelEdgeIds(node1._private.data.id, node2._private.data.id);
 				var id1 = ids.id1;
 				var id2 = ids.id2;
 				
@@ -321,7 +334,7 @@
 						} 
 					}
 					
-					addSibling(this);
+					addParallelEdgeToMap(this);
 					
 				} 
 				  
@@ -542,16 +555,32 @@
 				return structs.nodes[ this._private.data.source ];
 			};
 			
-			CyElement.prototype.siblings = function(){
-				if( this.isNode() ){
-					console.error("Can not call `siblings` on node `%s`; only edges have sources", this._private.data.id);
+			CyElement.prototype.edgesWith = function(otherNode){
+				if( otherNode.isEdge() ){
+					console.error("Can not call `edgesWith` on edge `%s`; only nodes have edges", this._private.data.id);
 					return;
 				}
 				
-				var siblingsMap = getSiblings(this);
+				var map = getEdgesBetweenNodes(this, otherNode);
 				var elements = [];
-				for(var i in siblingsMap){
-					var element = siblingsMap[i];
+				for(var i in map){
+					var element = map[i];
+					elements.push(element);
+				}
+				
+				return new CyCollection(elements);
+			}
+			
+			CyElement.prototype.parallelEdges = function(){
+				if( this.isNode() ){
+					console.error("Can not call `parallelEdges` on node `%s`; only edges have sources", this._private.data.id);
+					return;
+				}
+				
+				var map = getParallelEdgesForEdge(this);
+				var elements = [];
+				for(var i in map){
+					var element = map[i];
 					elements.push(element);
 				}
 				

@@ -1263,7 +1263,7 @@
 							});
 						} 
 						
-						// specify an array of options
+						// specify an array of elements
 						else if( isArray(opts) ){
 							$.each(opts, function(i, elementParams){
 								var element = new CyElement(elementParams);

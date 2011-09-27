@@ -29,6 +29,20 @@ $(function(){
 			size: 10,
 			shape: "ellipse",
 			cursor: "pointer",
+			visibility: "visible",
+			labelValign: "middle",
+			labelHalign: "middle",
+			labelFillColor: "#fff",
+			labelOutlineColor: "#666",
+			labelOutlineWidth: 1,
+			labelFontStyle: "normal",
+			labelFontDecoration: "none", 
+			labelFontVariant: "italic", 
+			labelFontFamily: "Arial",
+			labelFontWeight: "bold",
+			labelOpacity: 1,
+			labelOutlineOpacity: 1,
+			labelFillOpacity: 1,
 			selected: {
 				borderWidth: 3,
 				borderColor: "#000"
@@ -39,7 +53,8 @@ $(function(){
 			opacity: 1,
 			width: 1,
 			style: "solid",
-			cursor: "pointer"
+			cursor: "pointer",
+			visibility: "visible"
 		},
 		global: {
 			panCursor: "grabbing",
@@ -170,8 +185,16 @@ $(function(){
 		intersectionShape: Polygon
 	});
 	
+	function visibility(v){
+		if( v != null && typeof v == typeof "" && ( v == "hidden" || v == "visible" ) ){
+			return v;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid visibility", v);
+		}
+	};
+	
 	function percent(p){
-		if( number(p) && 0 <= p && p <= 1 ){
+		if( p != null && typeof p == typeof 1 && !isNaN(p) &&  0 <= p && p <= 1 ){
 			return p;
 		} else {
 			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
@@ -212,6 +235,22 @@ $(function(){
 		}
 		
 		return ret;
+	}
+	
+	function labelHalign(a){
+		if( a != null && typeof a == typeof "" && ( a == "left" || a == "right" || a == "middle" ) ){
+			return a;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid label horizonal alignment", a);
+		}	
+	}
+	
+	function labelValign(a){
+		if( a != null && typeof a == typeof "" && ( a == "top" || a == "bottom" || a == "middle" ) ){
+			return a;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid label vertical alignment", a);
+		}	
 	}
 	
 	function cursor(name){
@@ -644,6 +683,7 @@ $(function(){
 		});
 	};
 	
+
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
 		var svgDomElement = element._private.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
@@ -798,7 +838,7 @@ $(function(){
 		var toUnselect = this.cy.collection();
 		
 		function nodeInside(element){
-			
+
 			// intersect rectangle in the model with the actual node shape in the model
 			var shape = nodeShape(element._private.style.shape).intersectionShape;
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
@@ -968,10 +1008,7 @@ $(function(){
 		var x = element._private.position.x;
 		var y = element._private.position.y;
 		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label", {
-			"text-anchor": "middle",
-			"alignment-baseline": "middle"
-		});
+		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "labelLABELlabel");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
@@ -1199,12 +1236,77 @@ $(function(){
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element._private.svg, {
+			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
-			cursor: cursor(style.cursor)
+			cursor: cursor(style.cursor),
+			"visibility": visibility(style.visibility)
+		});
+		
+		this.svg.change(element._private.svgLabel, {
+			"visibility": visibility(style.visibility),
+			"pointer-events": "none",
+			fill: color(style.labelFillColor),
+			fillOpacity: percent(style.labelFillOpacity),
+			stroke: color(style.labelOutlineColor),
+			strokeWidth: number(style.labelOutlineWidth),
+			strokeOpacity: percent(style.labelOutlineOpacity),
+			"font-family": style.labelFontFamily,
+			"font-weight": style.labelFontWeight,
+			"font-style": style.labelFontStyle,
+			"text-decoration": style.labelFontDecoration,
+			"font-variant": style.labelFontVariant,
+			opacity: percent(style.labelOpacity)
+		});
+		
+		var valign = labelValign(style.labelValign);
+		var halign = labelHalign(style.labelHalign);
+		var spacing = 3;
+		var dx = 0;
+		var dy = 0;
+		
+		if( halign == "middle" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "middle"
+			});
+		} else if( halign == "right" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "start"
+			});
+			dx = style.width/2 + spacing;
+		} else if( halign == "left" ){
+			this.svg.change(element._private.svgLabel, {
+				"text-anchor": "end"
+			});
+			dx = -style.width/2 - spacing;
+		}
+		
+		// TODO remove this hack to fix IE when it supports baseline properties properly
+		var fontSize = parseInt(window.getComputedStyle(element._private.svgLabel)["fontSize"]);
+		var ieFix = $.browser.msie ? fontSize/3 : 0;
+	
+		if( valign == "middle" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: central; dominant-baseline: central;"
+			});
+			dy = 0 + ieFix;
+		} else if( valign == "top" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: normal; dominant-baseline: normal;"	
+			});
+			dy = -style.height/2 - spacing;
+		} else if( valign == "bottom" ){
+			this.svg.change(element._private.svgLabel, {
+				"style": "alignment-baseline: normal; dominant-baseline: normal;"
+			});
+			dy = style.height/2 + fontSize;
+		}
+		
+		this.svg.change(element._private.svgLabel, {
+			transform: "translate("+ dx +","+ dy +")"
 		});
 		
 		// styles to the group
@@ -1229,13 +1331,15 @@ $(function(){
 		// TODO add more as more styles are added
 		// generic edge styles go here
 		this.svg.change(element._private.svg, {
+			"pointer-events": "visible", // on visibility:hidden, no events
 			stroke: color(style.color),
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "round",
 			opacity: percent(style.opacity),
 			cursor: cursor(style.cursor),
-			fill: "none"
+			fill: "none",
+			visibility: visibility(style.visibility)
 		});
 		
 		this.svg.change(element._private.targetSvg, {

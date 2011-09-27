@@ -654,6 +654,7 @@ $(function(){
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
 				
+				self.moveToFront(element);
 				draggedAfterMouseDown = true;
 				
 				var dx = (dragEvent.pageX - originX) / self.zoom();
@@ -676,14 +677,10 @@ $(function(){
 					e._private.position.y += dy;
 				});			
 				
-				if( justStartedDragging ){
-					self.moveToFront(element);
-				}
-				
 				self.updatePosition( elements );
 				
 				if( justStartedDragging ){
-					justStartedDragging = false;					
+					justStartedDragging = false;
 					element.trigger($.extend({}, dragEvent, { type: "dragstart" }));
 				} else {
 					element.trigger($.extend({}, dragEvent, { type: "drag" }));
@@ -929,7 +926,6 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
-		this.makeSvgNodeLabel(element);
 		
 		this.transformTouchEvent(svgDomElement, "touchstart", "mousedown");
 		this.transformTouchEvent(svgDomElement, "touchend", "mouseup");
@@ -942,28 +938,6 @@ $(function(){
 		return svgDomElement;
 	};
 	
-<<<<<<< HEAD
-	SvgRenderer.prototype.makeSvgNodeLabel = function(element){
-		var self = this;
-		
-		var x = element._private.position.x;
-		var y = element._private.position.y;
-		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label", {
-			"text-anchor": "middle",
-			"alignment-baseline": "middle"
-		});
-	};
-	
-	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
-		var self = this;
-
-		self.svg.change(element._private.svgLabel, {
-			x: element._private.position.x,
-			y: element._private.position.y
-		});
-		
-=======
 	SvgRenderer.prototype.makeSvgEdgePath = function(element){
 		var self = this;
 		var tgt = element.target();
@@ -1047,7 +1021,6 @@ $(function(){
 			x: p.x * factor,
 			y: p.y * factor
 		};
->>>>>>> 826e69ded489e0ffaac956321e721b9fbc3bbb5f
 	};
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
@@ -1259,7 +1232,6 @@ $(function(){
 			var p = element._private.position;
 			
 			self.updateNodePositionFromShape(element);
-			self.positionSvgNodeLabel(element);
 
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});

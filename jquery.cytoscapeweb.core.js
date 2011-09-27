@@ -437,17 +437,28 @@
 			CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
 			
 			CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
-			
-			// proxy to the bypass object				
-			CyElement.prototype.bypass = function(newBypass){	
-				if( newBypass === undefined ){
-					return copy( this._private.bypass );
+							
+			CyElement.prototype.bypass = function(newBypass, newBypassVal){
+				
+				if( newBypassVal === undefined ){
+					// set whole object
+					
+					if( newBypass === undefined ){
+						return copy( this._private.bypass );
+					} else {
+						this._private.bypass = copy( newBypass );
+						this.trigger("bypass");
+						return this;
+					}
+				
 				} else {
-					this._private.bypass = copy( newBypass );
+					// set only one
+					this._private.bypass[newBypass] = copy(newBypassVal);
 					this.trigger("bypass");
+					return this;
 				}
 			};
-			
+						
 			CyElement.prototype.data = function(attr, val){
 				var ret;
 				
@@ -622,6 +633,11 @@
 			
 			CyElement.prototype.renderedDimensions = function(){
 				return renderer.renderedDimensions(this);
+			};
+			
+			CyElement.prototype.style = function(){
+				// the renderer should populate this field and keep it up-to-date
+				return copy( this._private.style );
 			};
 			
 			CyElement.prototype.style = function(){

@@ -29,6 +29,7 @@ $(function(){
 			size: 10,
 			shape: "ellipse",
 			cursor: "pointer",
+			visibility: "visible",
 			selected: {
 				borderWidth: 3,
 				borderColor: "#000"
@@ -39,7 +40,8 @@ $(function(){
 			opacity: 1,
 			width: 1,
 			style: "solid",
-			cursor: "pointer"
+			cursor: "pointer",
+			visibility: "visible"
 		},
 		global: {
 			panCursor: "grabbing",
@@ -170,8 +172,16 @@ $(function(){
 		intersectionShape: Polygon
 	});
 	
+	function visibility(v){
+		if( v != null && typeof v == typeof "" && ( v == "hidden" || v == "visible" ) ){
+			return v;
+		} else {
+			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid visibility", v);
+		}
+	};
+	
 	function percent(p){
-		if( number(p) && 0 <= p && p <= 1 ){
+		if( p != null && typeof p == typeof 1 && !isNaN(p) &&  0 <= p && p <= 1 ){
 			return p;
 		} else {
 			$.cytoscapeweb("error", "SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
@@ -644,6 +654,7 @@ $(function(){
 		});
 	};
 	
+
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
 		var svgDomElement = element._private.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
@@ -798,7 +809,7 @@ $(function(){
 		var toUnselect = this.cy.collection();
 		
 		function nodeInside(element){
-			
+
 			// intersect rectangle in the model with the actual node shape in the model
 			var shape = nodeShape(element._private.style.shape).intersectionShape;
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
@@ -970,7 +981,8 @@ $(function(){
 		
 		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label", {
 			"text-anchor": "middle",
-			"alignment-baseline": "middle"
+			"alignment-baseline": "middle",
+			"pointer-events": "none"
 		});
 	};
 	
@@ -1199,12 +1211,18 @@ $(function(){
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element._private.svg, {
+			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
-			cursor: cursor(style.cursor)
+			cursor: cursor(style.cursor),
+			"visibility": visibility(style.visibility)
+		});
+		
+		this.svg.change(element._private.svgLabel, {
+			"visibility": visibility(style.visibility)
 		});
 		
 		// styles to the group
@@ -1229,13 +1247,15 @@ $(function(){
 		// TODO add more as more styles are added
 		// generic edge styles go here
 		this.svg.change(element._private.svg, {
+			"pointer-events": "visible", // on visibility:hidden, no events
 			stroke: color(style.color),
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "round",
 			opacity: percent(style.opacity),
 			cursor: cursor(style.cursor),
-			fill: "none"
+			fill: "none",
+			visibility: visibility(style.visibility)
 		});
 		
 		this.svg.change(element._private.targetSvg, {

@@ -175,7 +175,8 @@
 					nodes: {},
 					edges: {}
 				},
-				live: {} // event name => array of selectors
+				live: {}, // event name => selector string => array of callbacks
+				selectors: {} // selector string => selector for live
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -709,12 +710,28 @@
 				
 				var listeners = this._private.listeners[type];
 				
+				function fire(listener, eventData, data){
+					if( $.isFunction(listener) ){
+						var args = [eventData, data];
+						listener.apply(self, args);
+					}
+				}
+				
 				var eventData = isPlainObject(event) ? event : { type: type }; 
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
-						if( $.isFunction(listener) ){
-							var args = [eventData, data];
-							listener.apply(self, args);
+						fire(listener, eventData, data);
+					});
+				}
+				
+				if( structs.live[type] != null ){
+					$.each(structs.live[type], function(key, callbacks){
+						
+						var selector = structs.selectors[key];
+						if( selector.filter( self.collection() ).size() > 0 ){
+							$.each(callbacks, function(i, listener){
+								fire(listener, eventData, data);
+							});
 						}
 					});
 				}
@@ -1431,34 +1448,40 @@
 				
 				var filteredCollection = collection.filter(selectorFunction);
 				
-				if(false && addLiveFunction){
+				if(addLiveFunction){
+					
+					var key = self.selector();
+					structs.selectors[key] = self;
+					
 					filteredCollection.live = function(event, callback){
-						var key = self.selector();
-						
-						if( structs.live[key] == null ){
-							structs.live[key] = {};
+						if( structs.live[event] == null ){
+							structs.live[event] = {};
 						}
 						
-						if( structs.live[key][event] == null ){
-							structs.live[key][event] = [];
+						if( structs.live[event][key] == null ){
+							structs.live[event][key] = [];
 						}
 						
-						structs.live[key][event].push(callback);
+						structs.live[event][key].push(callback);
 					};
 					
 					filteredCollection.die = function(event, callback){
-						var key = self.selector();
-						
 						if( event == null ){
-							delete structs.live[key];
-						} else if( callback == null ){
-							if( structs.live[key] != null ){
-								delete structs.live[key][event];
+							if( structs.live[event] != null ){
+								$.each(structs.live[event], function(k, selector){
+									if( k == key ){
+										delete structs.live[event][k];
+									}
+								});
 							}
-						} else if( structs.live[key] != null && structs.live[key][event] != null ) {
-							for(var i = 0; i < structs.live[key][event].length; i++){
-								if( structs.live[key][event][i] == callback ){
-									structs.live[key][event].splice(i, 1);
+						} else if( callback == null ){
+							if( structs.live[event] != null ){
+								delete structs.live[event][key];
+							}
+						} else if( structs.live[event] != null && structs.live[event][key] != null ) {
+							for(var i = 0; i < structs.live[event][key].length; i++){
+								if( structs.live[event][key][i] == callback ){
+									structs.live[event][key].splice(i, 1);
 									i--;
 								}
 							}
@@ -1655,9 +1678,9 @@
 				
 				filter: function(selector){
 					if( isString(selector) ){
-						elementsCollection()(selector);
-					} else {
-						elementsCollection()().filter(selector);
+						return elementsCollection()(selector);
+					} else if( isFunction(selector) ) {
+						return elementsCollection()().filter(selector);
 					}
 				},
 				

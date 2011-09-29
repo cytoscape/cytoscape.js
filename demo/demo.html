@@ -8,7 +8,6 @@
 		<script type="text/javascript" src="../jquery.cytoscapeweb.core.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
 		<script type="text/javascript" src="../2D.js"></script>
-		<script type="text/javascript" src="../Intersection.js"></script>
 		<script type="text/javascript" src="../jquery.mousewheel.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
@@ -38,14 +37,20 @@
 										name: "weight",
 									},
 									mapped: {
-										min: 1,
-										max: 4
+										min: 4,
+										max: 1
 									}
 								}
 							}
 						},
 						
 						nodes: {
+							labelText: {
+								defaultValue: "",
+								passthroughMapper: "id"
+							},
+							labelHalign: "middle",
+							labelValign: "top",
 							shape: "ellipse",
 							size: {
 								defaultValue: 5,
@@ -70,8 +75,8 @@
 					}
 				};
 				
-				var numNodes = 1;
-				var numEdges = 1;
+				var numNodes = 10;
+				var numEdges = 20;
 				
 				function randNodeId(){
 					return "n" + Math.floor( Math.random() * numNodes );

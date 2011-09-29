@@ -682,7 +682,7 @@ $(function(){
 		$(svgDomElement).bind("mouseup mousedown click", function(e){
 			element.trigger(e);
 		}).bind("click", function(e){
-			element.select();
+			self.selectElement(element);
 		});
 	};
 	

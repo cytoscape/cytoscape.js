@@ -60,20 +60,24 @@
 		}
 	};
 	
+	function isString(obj){
+		return obj != null && typeof obj == typeof "";
+	}
+	
 	function isFunction(obj){
-		return typeof obj == typeof function(){};
+		return obj != null && typeof obj == typeof function(){};
 	}
 	
 	function isArray(obj){
-		return obj instanceof Array;
+		return obj != null && obj instanceof Array;
 	}
 	
 	function isPlainObject(obj){
-		return typeof obj == typeof {} && !isArray(obj);
+		return obj != null && typeof obj == typeof {} && !isArray(obj);
 	}
 	
 	function isNumber(obj){
-		return typeof obj == typeof 1 && !isNaN(obj);
+		return obj != null && typeof obj == typeof 1 && !isNaN(obj);
 	}
 	
 	function isColor(obj){
@@ -170,7 +174,8 @@
 				continuousMapperBounds: { // data attr name => { min, max }
 					nodes: {},
 					edges: {}
-				} 
+				},
+				live: {} // event name => array of selectors
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -282,6 +287,9 @@
 				}
 			};
 			
+			function isElementOrCollection(e){
+				return e instanceof CyElement || e instanceof CyCollection;
+			};
 			
 			// CyElement
 			////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -582,7 +590,7 @@
 				return new CyCollection(elements);
 			}
 			
-			CyElement.prototype.parallelEdges = function(){
+			CyElement.prototype.parallelEdges = function(selector){
 				if( this.isNode() ){
 					console.error("Can not call `parallelEdges` on node `%s`; only edges have sources", this._private.data.id);
 					return;
@@ -595,7 +603,13 @@
 					elements.push(element);
 				}
 				
-				return new CyCollection(elements);
+				var collection = new CyCollection(elements);
+				
+				if( isString(selector) ){
+					collection = new CySelector(selector).filter(collection);
+				}
+				
+				return collection;
 			};
 			
 			CyElement.prototype.position = function(val){
@@ -620,6 +634,24 @@
 					this.trigger("position");
 				}
 				
+				return this;
+				
+			};
+			
+			CyElement.prototype.show = function(){
+				renderer.showElements(this.collection());
+				
+				return this;
+			};
+			
+			CyElement.prototype.hide = function(){
+				renderer.hideElements(this.collection());
+				
+				return this;
+			};
+			
+			CyElement.prototype.visible = function(){
+				return renderer.elementIsVisible(this);
 			};
 			
 			CyElement.prototype.renderedPosition = function(){
@@ -633,11 +665,6 @@
 			
 			CyElement.prototype.renderedDimensions = function(){
 				return renderer.renderedDimensions(this);
-			};
-			
-			CyElement.prototype.style = function(){
-				// the renderer should populate this field and keep it up-to-date
-				return copy( this._private.style );
 			};
 			
 			CyElement.prototype.style = function(){
@@ -733,7 +760,7 @@
 				return element._private.group == this._private.group && element._private.data.id == this._private.data.id;
 			};
 			
-			CyElement.prototype.adjacentTo = function(collection){
+			CyElement.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
 				var adjacents = this.neighbors();
 				
@@ -770,11 +797,17 @@
 				return ret;
 			};
 			
-			CyElement.prototype.neighbors = function(open){
+			CyElement.prototype.closedNeighborhood = function(selector){
+				return new CySelector(selector).filter( this.neighborhood().add(this) );
+			};
+			
+			CyElement.prototype.openNeighborhood = function(selector){
+				return this.neighborhood(selector);
+			};
+			
+			CyElement.prototype.neighborhood = function(selector){
 				
-				if(open === undefined){
-					open = true;
-				}
+				var collection;
 				
 				if( this.group() == "nodes" ) {
 					var node = this;
@@ -786,7 +819,7 @@
 						$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
 							
 							if( nodes[nodeId] == null ){
-								if( (open && nodeId != node._private.data.id) || !open ){
+								if( (nodeId != node._private.data.id) ){
 									nodes[nodeId] = true;
 									neighbors.push( structs.nodes[nodeId] );
 								}
@@ -794,7 +827,7 @@
 							
 						});
 					});
-					return new CyCollection(neighbors);
+					collection = new CyCollection(neighbors);
 					
 				} else if( this.group() == "edges" ){
 					
@@ -809,14 +842,16 @@
 							neighbors.push( structs.nodes[nodeId] );
 						}
 						
-						if( !open ){
-							neighbors.push(edge);
-						}
-						
 					});
-					return new CyCollection(neighbors);
+					collection = new CyCollection(neighbors);
 					
 				}
+				
+				if( isString(selector) ){
+					collection = CySelector(selector).filter(collection);
+				} 
+				
+				return collection;
 			};
 		
 			function degreeFunction(callback){
@@ -886,7 +921,7 @@
 			
 			// CyCollection
 			////////////////////////////////////////////////////////////////////////////////////////////////////
-			
+						
 			// represents a set of nodes, edges, or both together
 			function CyCollection(elements){
 				
@@ -923,6 +958,14 @@
 				return this.size() == 0;
 			};
 			
+			CyCollection.prototype.live = function(){
+				console.error("`live` can be called only on collections made from top-level selectors");
+			};
+			
+			CyCollection.prototype.die = function(){
+				console.error("`die` can be called only on collections made from top-level selectors");
+			};
+			
 			CyCollection.prototype.each = function(fn){
 				for(var i = 0; i < this.size(); i++){
 					if( isFunction(fn) ){
@@ -936,6 +979,10 @@
 				
 				if(toAdd == null){
 					return this;
+				}
+				
+				if( isString(toAdd) ){
+					toAdd = elementsCollection()(toAdd);
 				}
 				
 				var elements = [];
@@ -969,53 +1016,68 @@
 				
 				if(toRemove == null){
 					return this;
-				}
+				} else {
 				
-				var elements = [];
-				var collection = toRemove.collection();
-				
-				this.each(function(i, element){
+					if( isString(toRemove) ){
+						toRemove = new CySelector(toRemove).filter(this);
+					}
 					
-					var remove = false;
-					for(var j = 0; j < collection.size(); j++){
-						var c = collection.eq(j);
+					var elements = [];
+					var collection = toRemove.collection();
+					
+					this.each(function(i, element){
 						
-						if( c._private.group == element._private.group && c._private.data.id == element._private.data.id ){
-							remove = true;
-							break;
+						var remove = false;
+						for(var j = 0; j < collection.size(); j++){
+							var c = collection.eq(j);
+							
+							if( c._private.group == element._private.group && c._private.data.id == element._private.data.id ){
+								remove = true;
+								break;
+							}
 						}
-					}
+						
+						if(!remove){
+							elements.push(element);
+						}
+						
+					});
 					
-					if(!remove){
-						elements.push(element);
-					}
-					
-				});
-				
-				return new CyCollection(elements);
+					return new CyCollection(elements);
+				} 
 			};
 			
 			CyCollection.prototype.filter = function(filterFn){
-				var elements = [];
-				this.each(function(i, element){
-					if( !$.isFunction(filterFn) || filterFn.apply(element, [i, element]) ){
-						elements.push(element);
-					}
-				});
+				if( isFunction(filterFn) ){
+					var elements = [];
+					this.each(function(i, element){
+						if( !$.isFunction(filterFn) || filterFn.apply(element, [i, element]) ){
+							elements.push(element);
+						}
+					});
+					
+					return new CyCollection(elements);
+				} else if( isString(filterFn) ){
+					return new CySelection(filterFn).filter(this);
+				}
 
-				return new CyCollection(elements);
+				console.error("You must pass a function or a selector to `filter`");
 			};
 			
-			CyCollection.prototype.nodes = function(){
-				return this.filter(function(i, element){
+			CyCollection.prototype.nodes = function(selector){
+				var nodes = this.filter(function(i, element){
 					return element.group() == "nodes";
 				});
+				
+				return new CySelector(selector).filter(nodes);
 			};
 			
-			CyCollection.prototype.edges = function(){
-				return this.filter(function(i, element){
+			CyCollection.prototype.edges = function(selector){
+				var edges = this.filter(function(i, element){
 					return element.group() == "edges";
 				});
+				
+				return new CySelector(selector).filter(edges);
 			};
 			
 			CyCollection.prototype.positions = function(fn){
@@ -1035,7 +1097,7 @@
 				});
 			};
 			
-			CyCollection.prototype.hasAll = function(collection){
+			CyCollection.prototype.allSame = function(collection){
 				collection = collection.collection();
 				
 				var ret = true;
@@ -1054,7 +1116,7 @@
 				return ret;
 			};
 			
-			CyCollection.prototype.hasAny = function(collection){
+			CyCollection.prototype.anySame = function(collection){
 				collection = collection.collection();
 				
 				var ret = false;
@@ -1080,7 +1142,9 @@
 			$.each(CyElement.prototype, function(name, func){
 				CyCollection.prototype[name] = function(){
 					var rets = [];
-					var collection = false; // whether the function returns the element itself
+					var returnsSelf = true; // whether the function returns itself
+					var returnsCollection = true; // whether the function returns a collection
+					var collection = new CyCollection();
 				
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
@@ -1097,8 +1161,11 @@
 							rets.push(ret);
 						}
 						
-						if( ret == element ){
-							collection = true;
+						returnsSelf = returnsSelf && (ret == element);
+						returnsCollection = returnsCollection && (element instanceof CyCollection || element instanceof CyElement);
+						
+						if(returnsCollection){
+							collection = collection.add(ret);
 						}
 					}
 					
@@ -1112,19 +1179,31 @@
 						});
 					}
 					
-					if( collection ) {
-						rets = this; // if fn returns the element, then return the same collection
+					if( returnsSelf || rets.length == 0 ) {
+						return this; // if fn returns the element, then return the same collection
+					} else if( returnsCollection ){
+						return collection;
 					}
-					
-					if( rets.length == 0 ){
-						rets = this; // if function doesn't return a value, return this for chaining
-					} 
 					
 					return rets;
 				};
 			});
 			
 			// NOTE: any functions with the same name in element and collection must go here for collection
+			//       if the implementation differs
+			
+			
+			CyCollection.prototype.show = function(){
+				renderer.showElements(this);
+				
+				return this;
+			};
+			
+			CyCollection.prototype.hide = function(){
+				renderer.hideElements(this);
+				
+				return this;
+			};
 			
 			CyCollection.prototype.trigger = function(event, data){
 				
@@ -1188,13 +1267,13 @@
 				return 2 * this.edges().size();
 			};
 			
-			CyCollection.prototype.adjacentTo = function(collection){
+			CyCollection.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
 				var ret = true;
 				
 				for(var i = 0; i < this.size(); i++){
 					var element = this.eq(i);
-					ret = ret && element.adjacentTo(collection);
+					ret = ret && element.allAreNeighbors(collection);
 					
 					if( ret == false ){
 						break;
@@ -1203,16 +1282,213 @@
 				
 				return ret;
 			};
-			
-			CyCollection.prototype.neighbors = function(open){
-				var ret = new CyCollection();
-				
-				this.each(function(i, element){
-					ret = ret.add( element.neighbors(open) );
-				});
-				
-				return ret;
+						
+			CyCollection.prototype.allAre = function(selector){
+				return new CySelector(selector).filter(this).size() > this.size();
 			};
+			
+			CyCollection.prototype.is = function(selector){
+				return new CySelector(selector).filter(this).size() > 0;
+			};
+			
+			// CySelector
+			////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+			function CySelector(selector){
+				
+				var self = this;
+				
+				self._private = {
+					selectorText: null
+				}
+				
+				if( selector == null ){
+					// ignore
+				} else if( isString(selector) ){
+				
+					var str = selector;
+					self._private.selectorText = selector;
+					
+					var queries = str.split(/,\s*/);
+					
+					self.length = queries.length;
+					for(var i = 0; i < queries.length; i++){
+						var query = queries[i];
+						var q = query.match(/^(node|edge|)(\[.+\])*$/);
+						self[i] = {};
+						
+						if( q == null ){
+							console.error("Invalid selector `%s` in parent selector `%s`", query, str);
+							return;
+						}
+						
+						var group = q[1] == "" ? "" : q[1] + "s";
+						self[i].group = group;
+						
+						var bracketsText = q[2];
+						self[i].data = [];
+						
+						if( bracketsText != null ){
+							var brackets = bracketsText.split("][");
+							
+							for(var j = 0; j < brackets.length; j++){
+								var bracket = brackets[j];
+								var b = bracket.replace("[", "").replace("]", "");
+								
+								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=)\s*(.+)\s*$/);
+								var field = match[1];
+								var operator = match[2];
+								var value = match[3];
+								
+								for(var s = 0; s < value.length; s++){
+									var ch = value.charAt(s);
+									
+									if( ch == "'" || ch == '"' ){
+										if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
+											// matching beginning & end quotes
+										} else if( s != 0 && value.charAt(s - 1) == "\\" ){
+											// quote escaped by backslash
+										} else {
+											console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+										}
+									}
+								}
+																
+								self[i].data.push({
+									field: field,
+									operator: operator,
+									value: value
+								});
+							} // each bracket text
+						} // brackets text populated
+					} // each query
+				} else {
+					console.error("A selector must be created from a string; found %o", selector);
+				}
+			}
+			
+			CySelector.prototype.size = function(){
+				return this.length;
+			};
+			
+			CySelector.prototype.eq = function(i){
+				return this[i];
+			};
+			
+			CySelector.prototype.filter = function(collection, addLiveFunction){
+				var self = this;
+				
+				var selectorFunction = function(i, element){
+					for(var j = 0; j < self.length; j++){
+						var query = self[j];
+						
+						if( query.group != element._private.group ){
+							continue;
+						}
+						
+						var allDataMatches = true;
+						for(var k = 0; k < query.data.length; k++){
+							var data = query.data[k];
+							
+							var operator = data.operator;
+							if( operator == "=" ){
+								operator = "==";
+							}
+							
+							var value = data.value;
+							if( isString(value) ){
+								var firstChar = value.charAt(0);
+								var lastChar = value.charAt(value.length - 1);
+								
+								if( value.length > 1 && firstChar == lastChar && (firstChar == '"' || firstChar == "'") ){
+									value = value;
+								} else {
+									value = '"' + value + '"';
+								}
+							}
+							
+							var expr = "element._private.data." + data.field + " " + operator + " " + value;
+							
+							var matches = eval(expr);
+							
+							if( !matches ){
+								allDataMatches = false;
+								break;
+							}
+						}
+						
+						if( allDataMatches ){
+							return true;
+						}
+					}
+					
+					return false;
+				};
+				
+				if( self._private.selectorText == null ){
+					selectorFunction = function(){ return true; };
+				}
+				
+				var filteredCollection = collection.filter(selectorFunction);
+				
+				if(false && addLiveFunction){
+					filteredCollection.live = function(event, callback){
+						var key = self.selector();
+						
+						if( structs.live[key] == null ){
+							structs.live[key] = {};
+						}
+						
+						if( structs.live[key][event] == null ){
+							structs.live[key][event] = [];
+						}
+						
+						structs.live[key][event].push(callback);
+					};
+					
+					filteredCollection.die = function(event, callback){
+						var key = self.selector();
+						
+						if( event == null ){
+							delete structs.live[key];
+						} else if( callback == null ){
+							if( structs.live[key] != null ){
+								delete structs.live[key][event];
+							}
+						} else if( structs.live[key] != null && structs.live[key][event] != null ) {
+							for(var i = 0; i < structs.live[key][event].length; i++){
+								if( structs.live[key][event][i] == callback ){
+									structs.live[key][event].splice(i, 1);
+									i--;
+								}
+							}
+						}
+					};
+				}
+				
+				return filteredCollection;
+			};
+			
+			// ith query to string
+			CySelector.prototype.selector = function(){
+				var str = "";
+				
+				for(var i = 0; i < this.length; i++){
+					var query = this[i];
+					str += query.group;
+					
+					for(var j = 0; j < query.data.length; i++){
+						str += "[" + query.field + query.operator + query.value + "]"
+					}
+					
+					if( this.length > 1 && i < this.length - 1 ){
+						str += ", ";
+					}
+				}
+				
+				return str;
+			};
+			
 			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1245,30 +1521,30 @@
 			
 			// getting nodes/edges with a filter function to select which ones to include
 			function elementsCollection(params){
-				return function(filterFn){
+				return function(selector){
 					var elements = [];
-					
-					function filter(element){
-						if( !$.isFunction(filterFn) || filterFn.apply(element, [element]) ){
-							elements.push(element);
-						}
-					}
 					
 					if( params != null && params.group != null ){
 						$.each(structs[params.group], function(id, element){
-							filter(element);
+							elements.push(element);
 						});
 					} else {
 						$.each(structs["nodes"], function(id, element){
-							filter(element);
+							elements.push(element);
 						});
 						$.each(structs["edges"], function(id, element){
-							filter(element);
+							elements.push(element);
 						});
 					}
 					
 					var collection = new CyCollection(elements);
-					return collection;
+					var addLiveFunction = (selector == null || params == null || params.group == null);
+					
+					if( selector == null && params != null && params.group != null ){
+						return new CySelector(params.group.substring(0, params.group.length - 1)).filter(collection, addLiveFunction);
+					} else {
+						return new CySelector(selector).filter(collection, addLiveFunction);
+					}
 				};
 			}
 			
@@ -1376,6 +1652,14 @@
 				edges: elementsCollection({ group: "edges" }),
 				
 				elements: elementsCollection(),
+				
+				filter: function(selector){
+					if( isString(selector) ){
+						elementsCollection()(selector);
+					} else {
+						elementsCollection()().filter(selector);
+					}
+				},
 				
 				collection: function(){
 					return new CyCollection();
@@ -1487,7 +1771,7 @@
 				style: options.style,
 				
 				styleCalculator: {
-					calculate: function(entity, styleVal){
+					calculate: function(element, styleVal){
 
 						if( isPlainObject(styleVal) ){
 							
@@ -1495,24 +1779,24 @@
 							
 							if( styleVal.customMapper != null ){
 								
-								ret = styleVal.customMapper( element.data() );
+								ret = styleVal.customMapper( element._private.data );
 								
 							} else if( styleVal.passthroughMapper != null ){
 								
 								var attrName = styleVal.passthroughMapper;
-								ret = entity.data(attrName);
+								ret = element._private.data[attrName];
 								
 							} else if( styleVal.discreteMapper != null ){
 								
 								var attrName = styleVal.discreteMapper.attr;
 								var entries = styleVal.discreteMapper.entries;
-								var entityVal = entity.data(attrName);
+								var elementVal = element.data(attrName);
 								
 								$.each(entries, function(i, entry){
 									var attrVal = entry.attrVal;
 									var mappedVal = entry.mappedVal;
 									
-									if( attrVal == entityVal ){
+									if( attrVal == elementVal ){
 										ret = mappedVal;
 									}
 								});
@@ -1522,11 +1806,11 @@
 								var map = styleVal.continuousMapper;
 								
 								if( map.attr.name == null || typeof map.attr.name != typeof "" ){
-									console.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", entity.group(), styleName);
+									console.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", element.group(), styleName);
 									return;
 								}
 								
-								var attrBounds = structs.continuousMapperBounds[entity._private.group][map.attr.name];
+								var attrBounds = structs.continuousMapperBounds[element._private.group][map.attr.name];
 								attrBounds = {
 									min: attrBounds == null ? 0 : attrBounds.min,
 									max: attrBounds == null ? 0 : attrBounds.max
@@ -1542,7 +1826,7 @@
 								
 								if( attrBounds != null ){
 								
-									var percent = ( entity.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
+									var percent = ( element.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
 									
 									if( attrBounds.max == attrBounds.min ){
 										percent = 1;
@@ -1560,18 +1844,18 @@
 										
 										var cmin = $.Color(map.mapped.min).fix().toRGB();
 										var cmax = $.Color(map.mapped.max).fix().toRGB();
-										
-										var red = cmin.red() * (1 - percent) + cmax.red() * percent;
-										var green  = cmin.green() * (1 - percent) + cmax.green() * percent;
-										var blue  = cmin.blue() * (1 - percent) + cmax.blue() * percent;
-										
+
+										var red = Math.round( cmin.red() * (1 - percent) + cmax.red() * percent );
+										var green  = Math.round( cmin.green() * (1 - percent) + cmax.green() * percent );
+										var blue  = Math.round( cmin.blue() * (1 - percent) + cmax.blue() * percent );
+
 										ret = $.Color([red, green, blue], "RGB").toHEX().toString();
 									} else {
-										console.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", entity.group(), map.styleName, map.mapped.min, map.mapped.max);
+										console.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", element.group(), map.styleName, map.mapped.min, map.mapped.max);
 										return;
 									}
 								} else {
-									console.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", entity.group(), map.attr.name, entity.group(), styleName, entity.group(), entity.data("id"));
+									console.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", element.group(), map.attr.name, element.group(), styleName, element.group(), element.data("id"));
 									return;
 								}
 								

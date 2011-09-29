@@ -23,7 +23,7 @@ $(function(){
 		nodes: {
 			fillColor: "#888",
 			borderColor: "#666",
-			borderWidth: 1,
+			borderWidth: 0,
 			borderStyle: "solid",
 			opacity: 1,
 			size: 10,
@@ -32,9 +32,11 @@ $(function(){
 			visibility: "visible",
 			labelValign: "middle",
 			labelHalign: "middle",
-			labelFillColor: "#fff",
+			labelText: "",
+			labelFillColor: "#000",
 			labelOutlineColor: "#666",
-			labelOutlineWidth: 1,
+			labelOutlineWidth: 0,
+			labelFontSize: "inherit",
 			labelFontStyle: "normal",
 			labelFontDecoration: "none", 
 			labelFontVariant: "italic", 
@@ -44,7 +46,7 @@ $(function(){
 			labelOutlineOpacity: 1,
 			labelFillOpacity: 1,
 			selected: {
-				borderWidth: 3,
+				fillColor: "#222",
 				borderColor: "#000"
 			}
 		},
@@ -54,7 +56,10 @@ $(function(){
 			width: 1,
 			style: "solid",
 			cursor: "pointer",
-			visibility: "visible"
+			visibility: "visible",
+			selected: {
+				color: "#666"
+			}
 		},
 		global: {
 			panCursor: "grabbing",
@@ -621,6 +626,21 @@ $(function(){
 			}
 		}
 		
+		if( element._private.group == "edges" ){
+			var source = element.source();
+			var target = element.target();
+			
+			function calculateVisibility(){
+				if( source._private.style.visibility == "visible" && target._private.style.visibility == "visible" ){
+					return visibility(style.visibility);
+				} else {
+					return "hidden";
+				}
+			}
+			
+			style.visibility = calculateVisibility();
+		}
+		
 		return style;
 	};
 	
@@ -808,6 +828,26 @@ $(function(){
 		return self.renderedPoint(element._private.position);
 	};
 	
+	SvgRenderer.prototype.hideElements = function(collection){
+		collection.each(function(i, element){
+			element._private.bypass.visibility = "hidden";
+		});
+		
+		this.updateBypass(collection);
+	};
+	
+	SvgRenderer.prototype.showElements = function(collection){
+		collection.each(function(i, element){
+			element._private.bypass.visibility = "visible";
+		});
+		
+		this.updateBypass(collection);
+	};
+	
+	SvgRenderer.prototype.elementIsVisible = function(element){
+		return element._private.bypass.visibility != "hidden";
+	};
+	
 	SvgRenderer.prototype.renderedDimensions = function(element){
 		var self = this;
 		
@@ -911,7 +951,7 @@ $(function(){
 		if( !self.shiftDown ){
 			toUnselect = toUnselect.add(
 				this.cy.elements().filter(function(i, e){
-					return e.selected() && !toSelect.hasAll(e);
+					return e.selected() && !toSelect.allSame(e);
 				})
 			);
 		}
@@ -965,7 +1005,7 @@ $(function(){
 		collection.each(function(i, element){
 			self.svg.remove(element._private.svgGroup);
 			self.makeSvgElement(element);
-			self.updatePosition(collection.neighbors(false).edges());
+			self.updatePosition(collection.closedNeighborhood().edges());
 		});
 	};
 	
@@ -1008,7 +1048,7 @@ $(function(){
 		var x = element._private.position.x;
 		var y = element._private.position.y;
 		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "labelLABELlabel");
+		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label init");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
@@ -1124,7 +1164,6 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
-		// TODO curve edge based on index in element.neighbors().edges()
 		var svgDomElement = this.makeSvgEdgePath(element);
 		element._private.svg = svgDomElement;
 				
@@ -1186,7 +1225,7 @@ $(function(){
 		});
 		
 		// update positions of connected edges but not those already covered by the update for edges above
-		collection.nodes().neighbors().edges().not( collection.edges() ).each(function(i, element){
+		collection.nodes().neighborhood().edges().not( collection.edges() ).each(function(i, element){
 			self.updatePosition(element);
 		});
 	}
@@ -1203,6 +1242,7 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.updateBypass = function(collection){
+		var self = this;
 		collection = collection.collection();
 		
 		// update nodes
@@ -1211,7 +1251,7 @@ $(function(){
 		});
 		
 		// update connected edges
-		collection.edges().add( collection.neighbors(false).edges() ).each(function(i, edge){
+		collection.edges().add( collection.closedNeighborhood().edges() ).each(function(i, edge){
 			self.updateElementStyle(edge);
 		});
 	};
@@ -1233,6 +1273,10 @@ $(function(){
 			return;
 		}
 		
+		this.svg.change(element._private.svgGroup, {
+			opacity: percent(style.opacity)
+		});
+		
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element._private.svg, {
@@ -1243,9 +1287,11 @@ $(function(){
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
 			cursor: cursor(style.cursor),
-			"visibility": visibility(style.visibility)
+			"visibility": visibility(style.visibility),
+			opacity: percent(style.fillOpacity)
 		});
 		
+		// styles for label
 		this.svg.change(element._private.svgLabel, {
 			"visibility": visibility(style.visibility),
 			"pointer-events": "none",
@@ -1259,8 +1305,11 @@ $(function(){
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
+			"font-size": style.labelFontSize,
 			opacity: percent(style.labelOpacity)
 		});
+		
+		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
@@ -1401,7 +1450,7 @@ $(function(){
 		}
 		
 		// update connected edges
-		updateEdges( collection.neighbors(false).edges() );
+		updateEdges( collection.closedNeighborhood().edges() );
 		
 	};
 	

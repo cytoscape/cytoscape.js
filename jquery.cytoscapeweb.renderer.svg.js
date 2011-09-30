@@ -502,6 +502,33 @@ $(function(){
 			e.preventDefault();
 		});
 		
+		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout", function(e){
+			var event = $.extend({}, e, { cyTarget: self.cy });
+			
+			self.cy.background().trigger(event);
+			
+			if( e.type == "mouseover" && e.target != svgDomElement ){
+				return;
+			}
+			
+			if( e.type == "mouseout" ){
+				var parents = $(e.toElement).parents();
+				
+				if( e.toElement == svgDomElement ){
+					return;
+				}
+				
+				for(var i = 0; i < parents.size(); i++){
+					var parent = parents.eq(i);
+					if( parent[0] == svgDomElement ){
+						return;
+					}
+				}
+			}
+			
+			self.cy.trigger(event);
+		});
+		
 	};
 	
 	SvgRenderer.prototype.zoom = function(scale){

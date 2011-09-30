@@ -176,7 +176,8 @@
 					edges: {}
 				},
 				live: {}, // event name => selector string => array of callbacks
-				selectors: {} // selector string => selector for live
+				selectors: {}, // selector string => selector for live
+				listeners: {} // cy || background => event name => array of callback functions
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -1654,9 +1655,101 @@
 			
 			var prevLayoutName = options.layout.name;
 			
+			function cybind(target, event, handler){
+				if( structs.listeners[target] == null ){
+					structs.listeners[target] = {};
+				}
+				
+				if( structs.listeners[target][event] == null ){
+					structs.listeners[target][event] = [];
+				}
+				
+				structs.listeners[target][event].push(handler);
+			}
+			
+			function cyunbind(target, event, handler){
+				if( structs.listeners[target] == null ){
+					return;
+				}
+				
+				if( event == null ){
+					if( structs.listeners[target] == null ){
+						return;
+					}
+					
+					delete structs.listeners[target];
+					return;
+				}
+				
+				if( handler == null ){
+					if( structs.listeners[target][event] == null ){
+						return;
+					}
+					
+					delete structs.listeners[target][event];
+					return;
+				}
+				
+				for(var i = 0; i < structs.listeners[target][event].length; i++){
+					var listener = structs.listeners[target][event][i];
+					
+					if( listener == handler ){
+						structs.listeners[target][event].splice(i, 1);
+						i--;
+					}
+				}
+			}
+			
+			function cytrigger(target, event, data){
+				
+				var eventObj;
+				if( isPlainObject(event) ){
+					eventObj = event;
+					event = eventObj.type;
+				} else {
+					eventObj = {
+						type: event
+					};
+				}
+				
+				if( structs.listeners[target] == null || structs.listeners[target][event] == null ){
+					return;
+				}
+				
+				$.each(structs.listeners[target][event], function(i, handler){
+					handler.apply(cy, [ eventObj, data ]);
+				});
+			}
+			
+			var background = {
+				bind: function(event, handler){
+					cybind("background", event, handler);
+				},
+				
+				unbind: function(event, handler){
+					cyunbind("background", event, handler);
+				},
+				
+				trigger: function(event){
+					cytrigger("background", event);
+				}
+			};
+			
 			// this is the cytoweb object
 			var cy = {
 				
+				bind: function(event, handler){
+					cybind("cy", event, handler);
+				},
+				
+				unbind: function(event, handler){
+					cyunbind("cy", event, handler);
+				},
+				
+				trigger: function(event){
+					cytrigger("cy", event);
+				},
+					
 				style: function(val){
 					var ret;
 					
@@ -1673,6 +1766,10 @@
 					}
 					
 					return ret;
+				},
+				
+				background: function(){
+					return background;
 				},
 				
 				add: addElement(),

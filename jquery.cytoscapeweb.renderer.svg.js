@@ -1092,6 +1092,7 @@ $(function(){
 		var tgt = element.target();
 		var src = element.source();
 		var loop = tgt._private.data.id == src._private.data.id;
+		var svgPath;
 		
 		var x1 = src._private.position.x;
 		var y1 = src._private.position.y;
@@ -1125,7 +1126,7 @@ $(function(){
 			
 			curveIndex = index;
 			var path = self.svg.createPath();
-			return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+			svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
 		} else {
 			// edge between 2 nodes
 			
@@ -1153,11 +1154,13 @@ $(function(){
 			
 			if( curved ){
 				var cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
-				return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
-				return self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
 			}
 		}
+		
+		element._private.svg = svgPath;
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
@@ -1200,22 +1203,13 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
-		var svgDomElement = this.makeSvgEdgePath(element);
-		element._private.svg = svgDomElement;
-				
-//		var targetMarkerId = "target_" + element._private.data.id;
-//		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, 5, 5, { orient: "auto", markerUnits: "strokeWidth", refX: 5, refY: 2.5, strokeWidth: 0 });
-//		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [5, 2.5], [0, 5]], { fill: "red" });
-//		
-//		this.svg.change(svgDomElement, {
-//			markerEnd: "url(#" + targetMarkerId + ")"
-//		});
+		this.makeSvgEdgePath(element);
 		
 		$.cytoscapeweb("debug", "SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
-		return svgDomElement;
+		return element._private.svg;
 	};
 	
 	SvgRenderer.prototype.makeSvgElement = function(element){

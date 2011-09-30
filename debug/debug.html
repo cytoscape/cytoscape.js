@@ -2,36 +2,43 @@
 <html>
 
 	<head>
-		<script type="text/javascript" src="jquery/jquery-latest.min.js"></script>
-		<script type="text/javascript" src="qunit/qunit-git.js"></script>
+		<script type="text/javascript" src="../tests/jquery/jquery-latest.min.js"></script>
 		<script type="text/javascript" src="../jquery.color.js"></script>
 		<script type="text/javascript" src="../jquery.svg.js"></script>
-		<script type="text/javascript" src="../2D.js"></script>
-		<script type="text/javascript" src="../jquery.mousewheel.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.core.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
+		<script type="text/javascript" src="../2D.js"></script>
+		<script type="text/javascript" src="../jquery.mousewheel.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.preset.js"></script>
-		<script type="text/javascript" src="tests.js"></script>
 		
-		<link rel="stylesheet" href="qunit/qunit-git.css" />
+		<script type="text/javascript" src="debug.js"></script>
 		
-		<title>Lastest jQuery tests</title>
+		<link rel="stylesheet" href="debug.css" />
+		
+		<title>Cytoscape Web debug page</title>
 	</head>
 
 	<body>
-		<div id="qunit_report">
-		    <h1 id="qunit-header">Cytoscape Web tests for latest jQuery</h1>
-		    <h2 id="qunit-banner"></h2>
-		    <h2 id="qunit-userAgent"></h2>
-		    <ol id="qunit-tests"></ol>
-		    <p id="qunit-testresult"></p>
-	    </div>
+		<h1>Cytoscape Web debug page</h1>
 	    
 	    <div id="cytoscapeweb"></div>
+	    
+	    <div id="commands">
+	    	
+	    	<h2>Layout</h2>
+	    	<select id="layout-select">
+	    		<option value="grid">Grid layout</option>
+	    		<option value="random">Random layout</option>
+	    	</select>
+	    	<button id="layout-button">Apply</button>
+	    	
+	    	<h2>Add & remove elements</h2>
+	    	
+	    </div>
 	</body>
 
 </html>

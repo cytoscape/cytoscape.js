@@ -37,6 +37,9 @@ We used Kevin Lindsey's SVG intersection library to calculate the positioning
 of some objects, like edges.  You can find his library at his website
 (http://www.kevlindev.com/gui/math/intersection).
 
+We used Brandon Aaron's mouse wheel library for providing easy cross-browser
+support for zooming with the mouse wheel in the SVG renderer.  You can find out
+more about his library at his website (http://brandonaaron.net).
 
 
 Build dependencies

@@ -674,25 +674,38 @@
 				return copy( this._private.style );
 			};
 			
-			CyElement.prototype.bind = function(event, callback){
-				if( this._private.listeners[event] == null ){
-					this._private.listeners[event] = [];
-				}				
-				this._private.listeners[event].push(callback);
+			CyElement.prototype.bind = function(events, callback){
+				var self = this;
+				
+				$.each(events.split(/\s+/), function(i, event){
+					if(event == "") return;
+					
+					if( self._private.listeners[event] == null ){
+						self._private.listeners[event] = [];
+					}				
+					self._private.listeners[event].push(callback);
+				});
 				
 				return this;
 			};
 			
 			CyElement.prototype.unbind = function(event, callback){
-				var listeners = this._private.listeners[event];
+				var self = this;
 				
-				if( listeners != null ){
-					$.each(listeners, function(i, listener){
-						if( callback == null || callback == listener ){
-							listeners[i] = undefined;
-						}
-					});
-				}
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+				
+					var listeners = self._private.listeners[event];
+					
+					if( listeners != null ){
+						$.each(listeners, function(i, listener){
+							if( callback == null || callback == listener ){
+								listeners[i] = undefined;
+							}
+						});
+					}
+				
+				});
 				
 				return this;
 			};
@@ -1655,24 +1668,28 @@
 			
 			var prevLayoutName = options.layout.name;
 			
-			function cybind(target, event, handler){
+			function cybind(target, events, handler){
 				if( structs.listeners[target] == null ){
 					structs.listeners[target] = {};
 				}
 				
-				if( structs.listeners[target][event] == null ){
-					structs.listeners[target][event] = [];
-				}
-				
-				structs.listeners[target][event].push(handler);
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+					
+					if( structs.listeners[target][event] == null ){
+						structs.listeners[target][event] = [];
+					}
+					
+					structs.listeners[target][event].push(handler);
+				});
 			}
 			
-			function cyunbind(target, event, handler){
+			function cyunbind(target, events, handler){
 				if( structs.listeners[target] == null ){
 					return;
 				}
 				
-				if( event == null ){
+				if( events == null ){
 					if( structs.listeners[target] == null ){
 						return;
 					}
@@ -1681,23 +1698,28 @@
 					return;
 				}
 				
-				if( handler == null ){
-					if( structs.listeners[target][event] == null ){
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+					
+					if( handler == null ){
+						if( structs.listeners[target][event] == null ){
+							return;
+						}
+						
+						delete structs.listeners[target][event];
 						return;
 					}
 					
-					delete structs.listeners[target][event];
-					return;
-				}
-				
-				for(var i = 0; i < structs.listeners[target][event].length; i++){
-					var listener = structs.listeners[target][event][i];
-					
-					if( listener == handler ){
-						structs.listeners[target][event].splice(i, 1);
-						i--;
+					for(var i = 0; i < structs.listeners[target][event].length; i++){
+						var listener = structs.listeners[target][event][i];
+						
+						if( listener == handler ){
+							structs.listeners[target][event].splice(i, 1);
+							i--;
+						}
 					}
-				}
+				});
+
 			}
 			
 			function cytrigger(target, event, data){

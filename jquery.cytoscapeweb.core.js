@@ -176,7 +176,8 @@
 					edges: {}
 				},
 				live: {}, // event name => selector string => array of callbacks
-				selectors: {} // selector string => selector for live
+				selectors: {}, // selector string => selector for live
+				listeners: {} // cy || background => event name => array of callback functions
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -312,8 +313,8 @@
 					bypass: copy( params.bypass ),
 					style: {}, // the rendered style populated by the renderer
 					removed: false, // whether it's inside the vis; true if removed
-					selected: false, // whether it's selected
-					locked: false, // whether the element is locked (cannot be moved)
+					selected: params.selected ? true : false, // whether it's selected
+					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
 				};
 				
@@ -673,25 +674,38 @@
 				return copy( this._private.style );
 			};
 			
-			CyElement.prototype.bind = function(event, callback){
-				if( this._private.listeners[event] == null ){
-					this._private.listeners[event] = [];
-				}				
-				this._private.listeners[event].push(callback);
+			CyElement.prototype.bind = function(events, callback){
+				var self = this;
+				
+				$.each(events.split(/\s+/), function(i, event){
+					if(event == "") return;
+					
+					if( self._private.listeners[event] == null ){
+						self._private.listeners[event] = [];
+					}				
+					self._private.listeners[event].push(callback);
+				});
 				
 				return this;
 			};
 			
 			CyElement.prototype.unbind = function(event, callback){
-				var listeners = this._private.listeners[event];
+				var self = this;
 				
-				if( listeners != null ){
-					$.each(listeners, function(i, listener){
-						if( callback == null || callback == listener ){
-							listeners[i] = undefined;
-						}
-					});
-				}
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+				
+					var listeners = self._private.listeners[event];
+					
+					if( listeners != null ){
+						$.each(listeners, function(i, listener){
+							if( callback == null || callback == listener ){
+								listeners[i] = undefined;
+							}
+						});
+					}
+				
+				});
 				
 				return this;
 			};
@@ -1104,7 +1118,10 @@
 				noNotifications(function(){
 					collection.each(function(i, element){
 						var positionOpts = fn.apply(element, [i, element]);
-						element.position(positionOpts);
+						
+						if( isPlainObject(positionOpts) ){
+							element.position(positionOpts);
+						}
 					});
 				});
 
@@ -1331,7 +1348,7 @@
 					self.length = queries.length;
 					for(var i = 0; i < queries.length; i++){
 						var query = queries[i];
-						var q = query.match(/^(node|edge|)(\[.+\])*$/);
+						var q = query.match(/^(node|edge|)(\[.+\])*(:[a-z]+)*$/);
 						self[i] = {};
 						
 						if( q == null ){
@@ -1339,7 +1356,7 @@
 							return;
 						}
 						
-						var group = q[1] == "" ? "" : q[1] + "s";
+						var group = q[1] == "" ? undefined : q[1] + "s";
 						self[i].group = group;
 						
 						var bracketsText = q[2];
@@ -1352,21 +1369,35 @@
 								var bracket = brackets[j];
 								var b = bracket.replace("[", "").replace("]", "");
 								
-								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=)\s*(.+)\s*$/);
+								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=){0,1}\s*(.+){0,1}\s*$/);
+								
 								var field = match[1];
 								var operator = match[2];
 								var value = match[3];
 								
-								for(var s = 0; s < value.length; s++){
-									var ch = value.charAt(s);
-									
-									if( ch == "'" || ch == '"' ){
-										if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
-											// matching beginning & end quotes
-										} else if( s != 0 && value.charAt(s - 1) == "\\" ){
-											// quote escaped by backslash
-										} else {
-											console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+								if( operator == null && value != null ){
+									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
+									return;
+								}
+								
+								if( value == null && operator != null ){
+									console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
+									return;
+								}
+								
+								if( value != null && operator != null ){
+									for(var s = 0; s < value.length; s++){
+										var ch = value.charAt(s);
+										
+										if( ch == "'" || ch == '"' ){
+											if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
+												// matching beginning & end quotes
+											} else if( s != 0 && value.charAt(s - 1) == "\\" ){
+												// quote escaped by backslash
+											} else {
+												console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+												return;
+											}
 										}
 									}
 								}
@@ -1399,7 +1430,7 @@
 					for(var j = 0; j < self.length; j++){
 						var query = self[j];
 						
-						if( query.group != element._private.group ){
+						if( query.group != null && query.group != element._private.group ){
 							continue;
 						}
 						
@@ -1424,9 +1455,16 @@
 								}
 							}
 							
-							var expr = "element._private.data." + data.field + " " + operator + " " + value;
+							var field = data.field;
 							
-							var matches = eval(expr);
+							var matches;
+							
+							if( operator != null && value != null ){
+								var expr = "element._private.data." + field + " " + operator + " " + value;
+								matches = eval(expr);
+							} else {
+								matches = element._private.data[field] != null;
+							}
 							
 							if( !matches ){
 								allDataMatches = false;
@@ -1511,7 +1549,6 @@
 				
 				return str;
 			};
-			
 			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1631,9 +1668,110 @@
 			
 			var prevLayoutName = options.layout.name;
 			
+			function cybind(target, events, handler){
+				if( structs.listeners[target] == null ){
+					structs.listeners[target] = {};
+				}
+				
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+					
+					if( structs.listeners[target][event] == null ){
+						structs.listeners[target][event] = [];
+					}
+					
+					structs.listeners[target][event].push(handler);
+				});
+			}
+			
+			function cyunbind(target, events, handler){
+				if( structs.listeners[target] == null ){
+					return;
+				}
+				
+				if( events == null ){
+					if( structs.listeners[target] == null ){
+						return;
+					}
+					
+					delete structs.listeners[target];
+					return;
+				}
+				
+				$.each(events.split(/\s+/), function(j, event){
+					if(event == "") return;
+					
+					if( handler == null ){
+						if( structs.listeners[target][event] == null ){
+							return;
+						}
+						
+						delete structs.listeners[target][event];
+						return;
+					}
+					
+					for(var i = 0; i < structs.listeners[target][event].length; i++){
+						var listener = structs.listeners[target][event][i];
+						
+						if( listener == handler ){
+							structs.listeners[target][event].splice(i, 1);
+							i--;
+						}
+					}
+				});
+
+			}
+			
+			function cytrigger(target, event, data){
+				
+				var eventObj;
+				if( isPlainObject(event) ){
+					eventObj = event;
+					event = eventObj.type;
+				} else {
+					eventObj = {
+						type: event
+					};
+				}
+				
+				if( structs.listeners[target] == null || structs.listeners[target][event] == null ){
+					return;
+				}
+				
+				$.each(structs.listeners[target][event], function(i, handler){
+					handler.apply(cy, [ eventObj, data ]);
+				});
+			}
+			
+			var background = {
+				bind: function(event, handler){
+					cybind("background", event, handler);
+				},
+				
+				unbind: function(event, handler){
+					cyunbind("background", event, handler);
+				},
+				
+				trigger: function(event){
+					cytrigger("background", event);
+				}
+			};
+			
 			// this is the cytoweb object
 			var cy = {
 				
+				bind: function(event, handler){
+					cybind("cy", event, handler);
+				},
+				
+				unbind: function(event, handler){
+					cyunbind("cy", event, handler);
+				},
+				
+				trigger: function(event){
+					cytrigger("cy", event);
+				},
+					
 				style: function(val){
 					var ret;
 					
@@ -1652,6 +1790,10 @@
 					return ret;
 				},
 				
+				background: function(){
+					return background;
+				},
+				
 				add: addElement(),
 				
 				remove: function(collection){
@@ -1661,14 +1803,6 @@
 				addNode: addElement({ group: "nodes" }),
 				
 				addEdge: addElement({ group: "edges" }),
-				
-				node: function(id){
-					return structs.nodes[id];
-				},
-				
-				edge: function(id){
-					return structs.edges[id];
-				},
 				
 				nodes: elementsCollection({ group: "nodes" }),
 				
@@ -1737,10 +1871,21 @@
 								var elements = options.data[group];								
 								if( elements != null ){
 									$.each(elements, function(i, params){
+										
+										var data = params.data;
+										var position = params.position;
+										var bypass = params.bypass;
+										var selected = params.selected;
+										var locked = params.locked;
+										
 										// add element
 										var element = new CyElement( {
 											group: group,
-											data: params
+											data: data,
+											bypass: bypass,
+											position: position,
+											selected: selected,
+											locked: locked
 										} );
 									});
 								}

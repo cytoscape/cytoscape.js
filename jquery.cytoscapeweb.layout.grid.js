@@ -110,7 +110,11 @@ $(function(){
 		
 		var row = 0;
 		var col = 0;
-		nodes.positions(function(){
+		nodes.positions(function(i, element){
+			
+			if( element.locked() ){
+				return false;
+			}
 			
 			var x = col * cellWidth + cellWidth/2;
 			var y = row * cellHeight + cellHeight/2;
@@ -122,6 +126,7 @@ $(function(){
 			}
 			
 			return { x: x, y: y };
+			
 		});
 	};
 	

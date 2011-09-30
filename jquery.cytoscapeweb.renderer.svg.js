@@ -502,6 +502,33 @@ $(function(){
 			e.preventDefault();
 		});
 		
+		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout", function(e){
+			var event = $.extend({}, e, { cyTarget: self.cy });
+			
+			self.cy.background().trigger(event);
+			
+			if( e.type == "mouseover" && e.target != svgDomElement ){
+				return;
+			}
+			
+			if( e.type == "mouseout" ){
+				var parents = $(e.toElement).parents();
+				
+				if( e.toElement == svgDomElement ){
+					return;
+				}
+				
+				for(var i = 0; i < parents.size(); i++){
+					var parent = parents.eq(i);
+					if( parent[0] == svgDomElement ){
+						return;
+					}
+				}
+			}
+			
+			self.cy.trigger(event);
+		});
+		
 	};
 	
 	SvgRenderer.prototype.zoom = function(scale){
@@ -682,7 +709,7 @@ $(function(){
 		$(svgDomElement).bind("mouseup mousedown click", function(e){
 			element.trigger(e);
 		}).bind("click", function(e){
-			element.select();
+			self.selectElement(element);
 		});
 	};
 	
@@ -1065,11 +1092,21 @@ $(function(){
 		var tgt = element.target();
 		var src = element.source();
 		var loop = tgt._private.data.id == src._private.data.id;
+		var svgPath;
 		
 		var x1 = src._private.position.x;
 		var y1 = src._private.position.y;
 		var x2 = tgt._private.position.x;
 		var y2 = tgt._private.position.y;
+		
+		// if the nodes are directly on top of each other, just make a small difference
+		// so we don't get bad calculation states (e.g. divide by zero)
+		if( x1 == x2 ){
+			x2++;
+		}
+		if( y1 == y2 ){
+			y2++;
+		}
 		
 		var parallelEdges = element.parallelEdges();
 		var size = parallelEdges.size();
@@ -1089,7 +1126,7 @@ $(function(){
 			
 			curveIndex = index;
 			var path = self.svg.createPath();
-			return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+			svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
 		} else {
 			// edge between 2 nodes
 			
@@ -1117,11 +1154,13 @@ $(function(){
 			
 			if( curved ){
 				var cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
-				return self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
-				return self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
 			}
 		}
+		
+		element._private.svg = svgPath;
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
@@ -1147,8 +1186,8 @@ $(function(){
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
 		var self = this;
-		var source = this.cy.node( element._private.data.source );
-		var target = this.cy.node( element._private.data.target );
+		var source = element.source();
+		var target = element.target();
 					
 		var ps = source._private.position;
 		var pt = target._private.position;
@@ -1164,22 +1203,13 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
-		var svgDomElement = this.makeSvgEdgePath(element);
-		element._private.svg = svgDomElement;
-				
-//		var targetMarkerId = "target_" + element._private.data.id;
-//		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, 5, 5, { orient: "auto", markerUnits: "strokeWidth", refX: 5, refY: 2.5, strokeWidth: 0 });
-//		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [5, 2.5], [0, 5]], { fill: "red" });
-//		
-//		this.svg.change(svgDomElement, {
-//			markerEnd: "url(#" + targetMarkerId + ")"
-//		});
+		this.makeSvgEdgePath(element);
 		
 		$.cytoscapeweb("debug", "SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
-		return svgDomElement;
+		return element._private.svg;
 	};
 	
 	SvgRenderer.prototype.makeSvgElement = function(element){

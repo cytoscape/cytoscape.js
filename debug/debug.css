@@ -1,0 +1,4 @@
+body { font: 14pt arial; }	
+#cytoscapeweb { border: 1px solid #888; height: 800px; width: 800px; }	
+#commands { position: absolute; right: 0; top: 3em; margin: 0.5em; }
+#commands h2 { font-size: 1em; margin-top: 2em; }

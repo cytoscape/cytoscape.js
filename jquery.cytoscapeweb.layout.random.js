@@ -24,7 +24,12 @@ $(function(){
 			
 		$.cytoscapeweb("debug", "Random layout found (w, h) = (%i, %i)", width, height);
 		
-		nodes.positions(function(){
+		nodes.positions(function(i, element){
+			
+			if( element.locked() ){
+				return false;
+			}
+			
 			return {
 				x: Math.round( Math.random() * width ),
 				y: Math.round( Math.random() * height )

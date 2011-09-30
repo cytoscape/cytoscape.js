@@ -1071,6 +1071,15 @@ $(function(){
 		var x2 = tgt._private.position.x;
 		var y2 = tgt._private.position.y;
 		
+		// if the nodes are directly on top of each other, just make a small difference
+		// so we don't get bad calculation states (e.g. divide by zero)
+		if( x1 == x2 ){
+			x2++;
+		}
+		if( y1 == y2 ){
+			y2++;
+		}
+		
 		var parallelEdges = element.parallelEdges();
 		var size = parallelEdges.size();
 		var index = element._private.index;
@@ -1147,8 +1156,8 @@ $(function(){
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
 		var self = this;
-		var source = this.cy.node( element._private.data.source );
-		var target = this.cy.node( element._private.data.target );
+		var source = element.source();
+		var target = element.target();
 					
 		var ps = source._private.position;
 		var pt = target._private.position;

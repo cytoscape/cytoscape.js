@@ -13,6 +13,7 @@
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.preset.js"></script>
 		
 		<script type="text/javascript">
 			$(function(){
@@ -84,17 +85,22 @@
 				
 				for(var i = 0; i < numNodes; i++){
 					options.data.nodes.push({
-						id: "n" + i,
-						weight: Math.random() * 100
+						data: {
+							id: "n" + i,
+							weight: Math.random() * 100
+						},
+						position: { x: Math.random()*500, y: Math.random()*500 }
 					});
 				}
 				
 				for(var i = 0; i < numEdges; i++){
 					options.data.edges.push({
-						id: "e" + i,
-						source: randNodeId(),
-						target: randNodeId(),
-						weight: Math.random() * 100
+						data: {
+							id: "e" + i,
+							source: randNodeId(),
+							target: randNodeId(),
+							weight: Math.random() * 100
+						}
 					});
 				}
 				

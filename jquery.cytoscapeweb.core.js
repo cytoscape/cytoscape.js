@@ -312,8 +312,8 @@
 					bypass: copy( params.bypass ),
 					style: {}, // the rendered style populated by the renderer
 					removed: false, // whether it's inside the vis; true if removed
-					selected: false, // whether it's selected
-					locked: false, // whether the element is locked (cannot be moved)
+					selected: params.selected ? true : false, // whether it's selected
+					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
 				};
 				
@@ -1104,7 +1104,10 @@
 				noNotifications(function(){
 					collection.each(function(i, element){
 						var positionOpts = fn.apply(element, [i, element]);
-						element.position(positionOpts);
+						
+						if( isPlainObject(positionOpts) ){
+							element.position(positionOpts);
+						}
 					});
 				});
 
@@ -1331,7 +1334,7 @@
 					self.length = queries.length;
 					for(var i = 0; i < queries.length; i++){
 						var query = queries[i];
-						var q = query.match(/^(node|edge|)(\[.+\])*$/);
+						var q = query.match(/^(node|edge|)(\[.+\])*(:[a-z]+)*$/);
 						self[i] = {};
 						
 						if( q == null ){
@@ -1339,7 +1342,7 @@
 							return;
 						}
 						
-						var group = q[1] == "" ? "" : q[1] + "s";
+						var group = q[1] == "" ? undefined : q[1] + "s";
 						self[i].group = group;
 						
 						var bracketsText = q[2];
@@ -1352,21 +1355,35 @@
 								var bracket = brackets[j];
 								var b = bracket.replace("[", "").replace("]", "");
 								
-								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=)\s*(.+)\s*$/);
+								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=){0,1}\s*(.+){0,1}\s*$/);
+								
 								var field = match[1];
 								var operator = match[2];
 								var value = match[3];
 								
-								for(var s = 0; s < value.length; s++){
-									var ch = value.charAt(s);
-									
-									if( ch == "'" || ch == '"' ){
-										if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
-											// matching beginning & end quotes
-										} else if( s != 0 && value.charAt(s - 1) == "\\" ){
-											// quote escaped by backslash
-										} else {
-											console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+								if( operator == null && value != null ){
+									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
+									return;
+								}
+								
+								if( value == null && operator != null ){
+									console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
+									return;
+								}
+								
+								if( value != null && operator != null ){
+									for(var s = 0; s < value.length; s++){
+										var ch = value.charAt(s);
+										
+										if( ch == "'" || ch == '"' ){
+											if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
+												// matching beginning & end quotes
+											} else if( s != 0 && value.charAt(s - 1) == "\\" ){
+												// quote escaped by backslash
+											} else {
+												console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+												return;
+											}
 										}
 									}
 								}
@@ -1399,7 +1416,7 @@
 					for(var j = 0; j < self.length; j++){
 						var query = self[j];
 						
-						if( query.group != element._private.group ){
+						if( query.group != null && query.group != element._private.group ){
 							continue;
 						}
 						
@@ -1424,9 +1441,16 @@
 								}
 							}
 							
-							var expr = "element._private.data." + data.field + " " + operator + " " + value;
+							var field = data.field;
 							
-							var matches = eval(expr);
+							var matches;
+							
+							if( operator != null && value != null ){
+								var expr = "element._private.data." + field + " " + operator + " " + value;
+								matches = eval(expr);
+							} else {
+								matches = element._private.data[field] != null;
+							}
 							
 							if( !matches ){
 								allDataMatches = false;
@@ -1511,7 +1535,6 @@
 				
 				return str;
 			};
-			
 			
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1662,14 +1685,6 @@
 				
 				addEdge: addElement({ group: "edges" }),
 				
-				node: function(id){
-					return structs.nodes[id];
-				},
-				
-				edge: function(id){
-					return structs.edges[id];
-				},
-				
 				nodes: elementsCollection({ group: "nodes" }),
 				
 				edges: elementsCollection({ group: "edges" }),
@@ -1737,10 +1752,21 @@
 								var elements = options.data[group];								
 								if( elements != null ){
 									$.each(elements, function(i, params){
+										
+										var data = params.data;
+										var position = params.position;
+										var bypass = params.bypass;
+										var selected = params.selected;
+										var locked = params.locked;
+										
 										// add element
 										var element = new CyElement( {
 											group: group,
-											data: params
+											data: data,
+											bypass: bypass,
+											position: position,
+											selected: selected,
+											locked: locked
 										} );
 									});
 								}

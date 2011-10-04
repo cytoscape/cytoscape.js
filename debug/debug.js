@@ -3,6 +3,9 @@ $(function(){
 	$.cytoscapeweb("quiet", false);
 	$.cytoscapeweb("debugging", false);
 	
+	var height = $("#cytoscapeweb").height();
+	var width = $("#cytoscapeweb").width();
+	
 	var options = {
 		selector: "#cytoscapeweb",
 		renderer: {
@@ -36,7 +39,6 @@ $(function(){
 				labelValign: "top",
 				shape: "ellipse",
 				size: {
-					defaultValue: 5,
 					continuousMapper: {
 						attr: {
 							name: "weight",
@@ -49,7 +51,7 @@ $(function(){
 				}
 			}
 		},
-		data: {
+		elements: {
 			nodes: [
 			], 
 			
@@ -66,17 +68,16 @@ $(function(){
 	}
 	
 	for(var i = 0; i < numNodes; i++){
-		options.data.nodes.push({
+		options.elements.nodes.push({
 			data: {
 				id: "n" + i,
 				weight: Math.random() * 100
-			},
-			position: { x: Math.random()*500, y: Math.random()*500 }
+			}
 		});
 	}
 	
 	for(var i = 0; i < numEdges; i++){
-		options.data.edges.push({
+		options.elements.edges.push({
 			data: {
 				id: "e" + i,
 				source: randNodeId(),
@@ -92,6 +93,64 @@ $(function(){
 		cy.layout({
 			name: $("#layout-select").val()
 		});
+	});
+	
+	function number(group){
+		var input = $("#" + group + "-number");
+		var val = parseInt( input.val() );
+		
+		if( isNaN(val) ){
+			return 0;
+		}
+		
+		return val;
+	}
+	
+	$("#add-elements-button").click(function(){
+		var n = number("nodes");
+		var e = number("edges");
+		
+		var nodes = [];
+		for(var i = 0; i < n; i++){
+			nodes.push({
+				group: "nodes",
+				data: { id: "n" + (i + numNodes), weight: Math.random() * 100 },
+				position: { x: Math.random() * width, y: Math.random() * height }
+			});
+		}
+		numNodes += n;
+		
+		cy.add(nodes);
+		
+		var nodesCollection = cy.nodes();
+		function nodeId(){
+			var index = Math.round((nodesCollection.size() - 1) * Math.random());
+			return nodesCollection.eq(index).data("id");
+		}
+		
+		var edges = [];
+		for(var i = 0; i < e; i++){
+			edges.push({
+				group: "edges",
+				data: {
+					id: "e" + (i + numEdges), 
+					weight: Math.random() * 100,
+					source: nodeId(),
+					target: nodeId()
+				},
+			});
+		}
+		numEdges += e;
+		
+		cy.add(edges);
+	});
+	
+	$("#remove-elements-button").click(function(){
+		var n = number("nodes");
+		var e = number("edges");
+		
+		cy.nodes().slice(0, n).remove();
+		cy.edges().slice(0, e).remove();
 	});
 	
 });

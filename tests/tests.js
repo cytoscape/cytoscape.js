@@ -51,7 +51,7 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
+			elements: {
 				nodes: [
 				    { foo: "the node" }
 				]
@@ -70,9 +70,9 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
+			elements: {
 				nodes: [
-				    { foo: "the node" }
+				    { data : { foo: "the node" } }
 				]
 			}
 		});
@@ -101,17 +101,17 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
+			elements: {
 				nodes: [
-				    { id: "n1", foo: "one" },
-				    { id: "n2", foo: "two" },
-				    { id: "n1", foo: "what is this guy doing here" }
+				    { data: { id: "n1", foo: "one" } },
+				    { data: { id: "n2", foo: "two" } },
+			    	{ data: { id: "n1", foo: "what is this guy doing here" } }
 				]
 			}
 		});
 		
 		equal( 2, cy.nodes().size(), "Number of nodes" );
-		equal( 1, cy.nodes(function(node){ if( node.data("id") == "n1" ) return true; }).size(), "Instances of node `n1`" );
+		equal( 1, cy.nodes("[id=n1]").size(), "Instances of node `n1`" );
 		ok( cy.node("n2") != null, "Node `n2` is there" );
 	});
 	
@@ -124,8 +124,8 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
-				edges: [ { source: "n1", target: "n2" } ]
+			elements: {
+				edges: [ { data: { source: "n1", target: "n2" } } ]
 			}
 		});
 		
@@ -141,9 +141,9 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
-				nodes: [ { id: "n1" } ],
-				edges: [ { source: "n1", target: "n2" } ]
+			elements: {
+				nodes: [ { data: { id: "n1" } } ],
+				edges: [ { data: { source: "n1", target: "n2" } } ]
 			}
 		});
 		
@@ -160,9 +160,9 @@ $(function(){
 			layout: {
 				name: "null"
 			},
-			data: {
-				nodes: [ { id: "n1" }, { id: "n2" } ],
-				edges: [ { source: "n1", target: "n2" } ]
+			elements: {
+				nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
+				edges: [ { data: { source: "n1", target: "n2" } } ]
 			}
 		});
 		
@@ -170,10 +170,10 @@ $(function(){
 		ok( cy.nodes().size() == 2, "The nodes are still there" );
 	});
 	
-	// Null renderer & layout module
+	// Elements module
 	////////////////////////////////////////////////////////////////////////////////////////////
 	
-	module("Null renderer & layout", {
+	module("Elements", {
 		setup: function(){
 			
 			cy = $.cytoscapeweb({
@@ -184,16 +184,16 @@ $(function(){
 				layout: {
 					name: "null"
 				},
-				data: {
+				elements: {
 					nodes: [
-					    { id: "n1", foo: "one" },
-					    { id: "n2", foo: "two" },
-					    { id: "n3", foo: "three" }
+					    { data: { id: "n1", foo: "one", weight: 0.25 } },
+				    	{ data: { id: "n2", foo: "two", weight: 0.5 } },
+				    	{ data: { id: "n3", foo: "three", weight: 0.75 } }
 					],
 					
 					edges: [
-					    { id: "n1n2", source: "n1", target: "n2" },
-					    { id: "n2n3", source: "n2", target: "n3" }
+					    { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 } },
+				    	{ data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 } }
 					]
 				}
 			});
@@ -204,8 +204,10 @@ $(function(){
 		}
 	});
 	
-	test("Verify all nodes are there", function(){
-		ok( cy.nodes().size() == 3, "There are 3 nodes" );
+	test("Verify all elements are there", function(){
+		equal( cy.nodes().size(), 3, "There are 3 nodes" );
+		equal( cy.elements().size(), 5, "There are 5 elements" );
+		equal( cy.edges().size(), 2, "There are 2 edges" );
 	});
 	
 	test("Verify the data for the nodes is there", function(){
@@ -232,29 +234,23 @@ $(function(){
 		
 	});
 	
-	test("Get a node with the cy.nodes function using a filter function", function(){
+	test("Get a node with the cy.nodes function using a selector", function(){
 		
-		equal( cy.nodes(function(node){
-			if( node.data("foo") == "one" ){
-				return true;
-			}
-		}).size(), 1, "Expected number of matching nodes");
+		var n = cy.nodes("[foo=one]").size();
+		equal(n , 1, "Expected number of matching nodes");
 		
 	});
 
-	test("Filter with this reference for node", function(){
+	test("Selector with this reference for node", function(){
 		
-		ok( cy.nodes(function(){ return this.data("foo") == "one"; }).size() == 1, "cy.nodes works" );
+		ok( cy.nodes("[foo=one]").size() == 1, "cy.nodes works" );
 		
-		ok( cy.nodes().filter(function(){ return this.data("foo") == "one"; }).size() == 1, "node.filter works" );
-		
+		ok( cy.nodes().filter("[foo=one]").size() == 1, "node.filter works" );
 	});
 	
 	test("Remove a node", function(){
 		
-		var removedNode = cy.nodes(function(node){
-			return node.data("foo") == "one";
-		}).remove().eq(0);
+		var removedNode = cy.nodes().filter("[foo=one]").remove().eq(0);
 		
 		equal( cy.nodes().size(), 2, "Expected number of nodes" );
 		
@@ -271,7 +267,7 @@ $(function(){
 		cy.add(removedNode);
 
 		equal( cy.nodes().size(), 3, "Expected number of nodes after adding the node back" );
-		ok( cy.nodes(function(node){ return this.data("foo") == "one" }).size() == 1, "Node is indeed added back" );
+		ok( cy.nodes("[foo=one]").size() == 1, "Node is indeed added back" );
 		
 		
 	});
@@ -335,10 +331,119 @@ $(function(){
 		
 	});
 	
-	test("Node's group is `node`", function(){
+	asyncTest("Test manual event binding & triggering", function(){
+		
+		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
+		var triggered = {};
+		
+		var node = cy.nodes()[0];
+		$.each(events, function(i, event){
+			node.bind(event, function(e, d){
+				triggered[event] = true;
+			});
+			
+			setTimeout(function(){
+				node.trigger(event);
+			}, 100);
+		});
+		
+		setTimeout(function(){
+			
+			$.each(events, function(i, event){
+				ok(triggered[event], "Handler fired for `" + event + "`");
+			});
+			
+			start();
+		}, 500);
+		
+	});
+	
+	test("Node's group is `nodes`", function(){
 		cy.nodes().each(function(i, node){
 			ok( node.group() == "nodes", "Node has proper group" );
 		});
+	});
+	
+	test("Edge's group is `edges`", function(){
+		cy.edges().each(function(i, edge){
+			ok( edge.group() == "edges", "Edge has proper group" );
+		});
+	});
+	
+	test("Collection add", function(){
+		var n1 = cy.node("n1");
+		var n2 = cy.node("n2");
+		var n3 = cy.node("n3");
+		
+		var collection = n1.collection().add(n2);
+		equal(collection[0].data("id"), "n1", "1st is n1");
+		equal(collection[1].data("id"), "n2", "2nd is n2");
+		
+		collection = collection.add(n3);
+		equal(collection[2].data("id"), "n3", "3rd is n3");
+		
+		collection = collection.add(n2);
+		equal(collection.size(), 3, "Adding n2 again doesn't change the collection");
+		
+		collection = collection.add( n2.collection().add(n3) );
+		equal(collection.size(), 3, "Adding (n2, n3) again doesn't change the collection");
+	});
+	
+	test("Same", function(){
+		var n1 = cy.node("n1");
+		var n2 = cy.node("n2");
+		var n3 = cy.node("n3");
+		
+		ok(n1.same(n1), "n1 is same as self");
+		ok(!n1.same(n2), "n2 is not same as n1");
+		ok(n1.collection().add(n2).anySame(n1), "(n1, n2) is anySame to n1");
+		ok(n1.collection().add(n2).allSame(n2.collection().add(n1)), "(n1, n2) allSame as (n2, n1)");
+		ok(!n1.collection().add(n2).allSame(n2.collection().add(n3)), "(n1, n2) not allSame as (n2, n3)");
+	});
+	
+	test("Neighborhood", function(){
+		var n1 = cy.node("n1");
+		var n2 = cy.node("n2");
+		var n3 = cy.node("n3");
+		var n1n2 = cy.edge("n1n2");
+		var n2n3 = cy.edge("n2n3");
+		
+		equal( n2.neighborhood().nodes().size(), 2, "number of n2 neighbour nodes" );
+		equal( n2.neighborhood().edges().size(), 2, "number of n2 neighbour edges" );
+		ok( n2.neighborhood().anySame(n1), "neighbourhood of n2 has n1" );
+		ok( n2.neighborhood().anySame(n3), "neighbourhood of n2 has n3" );
+		ok( n2.neighborhood().anySame(n1n2), "neighbourhood of n2 has n1n2" );
+		ok( n2.neighborhood().anySame(n2n3), "neighbourhood of n2 has n2n3" );
+		
+		equal( n2.collection().add(n1).neighborhood().nodes().size(), 3, "number of (n2, n1) neighbour nodes" );
+		equal( n1.collection().add(n2).add(n3).neighborhood().size(), 5, "number of (n1, n2, n3) neighbour elements" );
+		equal( n2.openNeighborhood().size(), 4, "number of n2 open neighbourhood elements" );
+		equal( n2.closedNeighborhood().size(), 5, "number of n2 closed neighbourhood elements" );
+	});
+	
+	test("Test selectors", function(){
+		var n1 = cy.node("n1");     // 0.25
+		var n2 = cy.node("n2");     // 0.5
+		var n3 = cy.node("n3");     // 0.75
+		var n1n2 = cy.edge("n1n2"); // 0.33 
+		var n2n3 = cy.edge("n2n3"); // 0.66
+		
+		ok( cy.filter("[weight=0.5]").allSame( n2 ), "n2 weight = 0.5" );
+		ok( cy.filter("[weight>=0.5]").allSame( n2.collection().add(n3).add(n2n3) ), "n2 weight >= 0.5" );
+		ok( cy.filter("node").allSame( cy.nodes() ), "filter node same as nodes()" );
+		ok( cy.filter("node").allSame( cy.elements("node") ), "filter node same as nodes()" );
+		equal( cy.nodes("[foo]").size(), 3, "nodes that have foo defined" );
+		equal( cy.edges("[foo]").size(), 0, "edges that have foo defined" );
+		ok( cy.filter("node[foo=one]").allSame( n1 ), "node[foo=one]" );
+		ok( cy.filter("node[foo=one][id=n1]").allSame( n1 ), "node[foo=one][id=n1]" );
+		ok( cy.filter("node[ foo = one ][ id = n1 ]").allSame( n1 ), "node[ foo = one ][ id = n1 ]" );
+		ok( cy.filter("node[foo= one ][ id =n1]").allSame( n1 ), "node[foo= one ][ id =n1]" );
+		ok( cy.filter("node[foo=one][id!=n2]").allSame( n1 ), "node[foo=one][id!=n2]" );
+		ok( cy.filter("node[foo=one][id!=n2], edge[weight<0.5]").allSame( n1.collection().add(n1n2) ), "node[foo=one][id!=n2], edge[weight<0.5]" );
+		ok( cy.filter("node[foo!=one][weight<1]").allSame( n2.collection().add(n3) ), "node[foo!=one][weight<1]" );
+		ok( cy.filter("node[foo!=two][weight>0.3]").allSame( n3 ), "node[foo!=two][weight>0.3]" );
+		ok( cy.filter("node[foo='one']").allSame( n1 ), "node[foo='one']" );
+		ok( cy.filter("node[foo=\"one\"]").allSame( n1 ), "node[foo=\"one\"]" );
 	});
 	
 	// Random layout
@@ -355,16 +460,16 @@ $(function(){
 				layout: {
 					name: "random"
 				},
-				data: {
+				elements: {
 					nodes: [
-					    { id: "n1", foo: "one" },
-					    { id: "n2", foo: "two" },
-					    { id: "n3", foo: "three" }
+					    { data: { id: "n1", foo: "one" } },
+				    	{ data: { id: "n2", foo: "two" } },
+				    	{ data: { id: "n3", foo: "three" } }
 					],
 					
 					edges: [
-					    { id: "n1n2", source: "n1", target: "n2" },
-					    { id: "n2n3", source: "n2", target: "n3" }
+					    { data: { id: "n1n2", source: "n1", target: "n2" } },
+				    	{ data: { id: "n2n3", source: "n2", target: "n3" } }
 					]
 				}
 			});
@@ -394,41 +499,41 @@ $(function(){
 		notDeepEqual( oldPos, newPos, "Node position changed" );
 	});
 	
-	module("SVG renderer", {
-		setup: function(){
-			
-			cy = $.cytoscapeweb({
-				selector: "#cytoscapeweb",
-				renderer: {
-					name: "svg"
-				},
-				layout: {
-					name: "grid"
-				},
-				data: {
-					nodes: [
-					    { id: "n1", foo: "one" },
-					    { id: "n2", foo: "two" },
-					    { id: "n3", foo: "three" }
-					],
-					
-					edges: [
-					    { id: "n1n2", source: "n1", target: "n2" },
-					    { id: "n2n3", source: "n2", target: "n3" }
-					]
-				}
-			});
-			
-		},
-		
-		teardown: function(){
-		}
-	});
-	
-	test("Initial SVG test", function(){
-		
-		
-		
-	});
+//	module("SVG renderer", {
+//		setup: function(){
+//			
+//			cy = $.cytoscapeweb({
+//				selector: "#cytoscapeweb",
+//				renderer: {
+//					name: "svg"
+//				},
+//				layout: {
+//					name: "grid"
+//				},
+//				elements: {
+//					nodes: [
+//					    { data: { id: "n1", foo: "one" } },
+//				    	{ data: { id: "n2", foo: "two" } },
+//				    	{ data: { id: "n3", foo: "three" } }
+//					],
+//					
+//					edges: [
+//					    { data: { id: "n1n2", source: "n1", target: "n2" } },
+//				    	{ data: { id: "n2n3", source: "n2", target: "n3" } }
+//					]
+//				}
+//			});
+//			
+//		},
+//		
+//		teardown: function(){
+//		}
+//	});
+//	
+//	test("Initial SVG test", function(){
+//		
+//		
+//		
+//	});
 	
 });

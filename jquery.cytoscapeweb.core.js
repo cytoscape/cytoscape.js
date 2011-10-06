@@ -108,13 +108,16 @@
 		// proxy a function call
 		else {
 			var rets = [];
+			var args = [];
+			for(var i = 1; i < arguments.length; i++){
+				args[i - 1] = arguments[i];
+			}
 			
 			$(this).each(function(){
 				var cy = $(this).data("cytoscapeweb");
 				var fnName = opts;
-				var args = Array.prototype.slice.call( arguments, 1 );
 				
-				if( cy != null && $.isFunction( cy[fnName] ) ){
+				if( cy != null && isFunction( cy[fnName] ) ){
 					var ret = cy[fnName].apply(cy, args);
 					rets.push(ret);
 				}
@@ -123,6 +126,8 @@
 			// if only one instance, don't need to return array
 			if( rets.length == 1 ){
 				rets = rets[0];
+			} else if( rets.length == 0 ){
+				rets = $(this);
 			}
 			
 			return rets;
@@ -630,10 +635,20 @@
 					console.warn("Can not move edge with ID `%s`; edges can not be moved", this._private.data.id);
 				} else if( this.locked() ) {
 					console.warn("Can not move locked node with ID `%s`", this._private.data.id);
-				} else {
-					this._private.position = copy( val );
-									
+				} else if( isString(val) ) {
+					var param = arguments[0];
+					var value = arguments[1];
+					
+					if( value === undefined ){
+						 return this._private.position[param];
+					} else {
+						this._private.position[param] = copy(value);
+					}
+				} else if( isPlainObject(val) ) {
+					this._private.position = copy( val );									
 					this.trigger("position");
+				} else {
+					console.error("Can not set position on node `%s` with non-object `%o`", this._private.data.id, val);
 				}
 				
 				return this;
@@ -689,7 +704,7 @@
 				return this;
 			};
 			
-			CyElement.prototype.unbind = function(event, callback){
+			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
 				
 				$.each(events.split(/\s+/), function(j, event){
@@ -788,7 +803,7 @@
 			};
 			
 			CyElement.prototype.same = function(element){
-				return element._private.group == this._private.group && element._private.data.id == this._private.data.id;
+				return this == element;
 			};
 			
 			CyElement.prototype.allAreNeighbors = function(collection){
@@ -954,7 +969,7 @@
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 						
 			// represents a set of nodes, edges, or both together
-			function CyCollection(elements){
+			var CyCollection = function(elements){
 				
 				if( elements == null ){
 					elements = [];
@@ -965,7 +980,7 @@
 				}
 				
 				this.length = elements.length;
-			}
+			};
 
 			CyCollection.prototype.toArray = function(){
 				var array = [];
@@ -975,6 +990,24 @@
 				}
 				
 				return array;
+			};
+			
+			CyCollection.prototype.slice = function(start, end){
+				var array = [];
+				
+				if( end == null ){
+					end = this.size();
+				}
+				
+				if( start < 0 ){
+					start = this.size() + start;
+				}
+				
+				for(var i = start; i >= 0 && i < end && i < this.size(); i++){
+					array.push( this.eq(i) );
+				}
+				
+				return new CyCollection(array);
 			};
 			
 			CyCollection.prototype.size = function(){
@@ -1013,7 +1046,8 @@
 				}
 				
 				if( isString(toAdd) ){
-					toAdd = elementsCollection()(toAdd);
+					var selector = toAdd;
+					toAdd = elementsCollection({ selector: selector });
 				}
 				
 				var elements = [];
@@ -1089,7 +1123,7 @@
 					
 					return new CyCollection(elements);
 				} else if( isString(filterFn) ){
-					return new CySelection(filterFn).filter(this);
+					return new CySelector(filterFn).filter(this);
 				}
 
 				console.error("You must pass a function or a selector to `filter`");
@@ -1138,12 +1172,15 @@
 				for(var i = 0; i < collection.size(); i++){
 					var collectionElement = collection.eq(i);
 					
+					hasCollectionElement = false;
 					for(var j = 0; j < this.size(); j++){
 						var thisElement = this.eq(j);
 						
-						ret = ret && thisElement.same(collectionElement);
-						if(!ret) break;
+						hasCollectionElement = thisElement.same(collectionElement);
+						if(hasCollectionElement) break;
 					}
+					
+					ret = ret && hasCollectionElement;
 					if(!ret) break;
 				}
 				
@@ -1171,10 +1208,12 @@
 			
 			// what functions in CyElement update the renderer
 			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
+			var getters = [ "data", "bypass", "position" ];
 			
 			// functions in element can also be used on collections
 			$.each(CyElement.prototype, function(name, func){
 				CyCollection.prototype[name] = function(){
+					
 					var rets = [];
 					var returnsSelf = true; // whether the function returns itself
 					var returnsCollection = true; // whether the function returns a collection
@@ -1183,7 +1222,10 @@
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
 					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
-					if( isRendererFn ){
+					var isListener = isFunction(arguments[0]);
+					var isGetter = $.inArray(name, getters) >= 0 && arguments[0] == null || arguments[1] == null;
+					
+					if( isRendererFn && !isListener && !isGetter ){
 						notificationsEnabled(false);
 					}
 				
@@ -1196,7 +1238,7 @@
 						}
 						
 						returnsSelf = returnsSelf && (ret == element);
-						returnsCollection = returnsCollection && (element instanceof CyCollection || element instanceof CyElement);
+						returnsCollection = returnsCollection && (ret instanceof CyCollection || ret instanceof CyElement);
 						
 						if(returnsCollection){
 							collection = collection.add(ret);
@@ -1205,7 +1247,7 @@
 					
 					// notify the renderer of the call on the whole collection
 					// (more efficient than sending each in a row---may have flicker?)
-					if( isRendererFn ){
+					if( isRendererFn && !isListener && !isGetter ){
 						notificationsEnabled(true);
 						notify({
 							type: name,
@@ -1318,7 +1360,7 @@
 			};
 						
 			CyCollection.prototype.allAre = function(selector){
-				return new CySelector(selector).filter(this).size() > this.size();
+				return new CySelector(selector).filter(this).size() == this.size();
 			};
 			
 			CyCollection.prototype.is = function(selector){
@@ -1328,7 +1370,12 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			function CySelector(selector){
+			var CySelector = function(onlyThisGroup, selector){
+				
+				if( selector === undefined && onlyThisGroup !== undefined ){
+					selector = onlyThisGroup;
+					onlyThisGroup = undefined;
+				}
 				
 				var self = this;
 				
@@ -1338,6 +1385,7 @@
 				
 				if( selector == null ){
 					// ignore
+					self.length = 0;					
 				} else if( isString(selector) ){
 				
 					var str = selector;
@@ -1348,7 +1396,7 @@
 					self.length = queries.length;
 					for(var i = 0; i < queries.length; i++){
 						var query = queries[i];
-						var q = query.match(/^(node|edge|)(\[.+\])*(:[a-z]+)*$/);
+						var q = query.match(/^(node|edge|)(:[a-z]+)*(\[.+\])*(:[a-z]+)*$/);
 						self[i] = {};
 						
 						if( q == null ){
@@ -1359,7 +1407,38 @@
 						var group = q[1] == "" ? undefined : q[1] + "s";
 						self[i].group = group;
 						
-						var bracketsText = q[2];
+						if( onlyThisGroup == null ){
+							// valid
+						} else if( onlyThisGroup != null && (group == null || group == onlyThisGroup) ){
+							// valid
+							self[i].group = onlyThisGroup.substring();
+						} else {
+							console.error("Invalid group `%s` in selector `%s` in parent selector `%s` with implicit group `%s`", group, query, str, onlyThisGroup);
+							return;
+						}
+						
+						var colonSelectors = [];
+						$.each([ q[2], q[4] ], function(i, selectors){
+							if( selectors == null ) return;
+							
+							$.each(selectors.split(":"), function(i, sel){
+								if(sel == "") return;
+									
+								colonSelectors.push(":" + sel);
+							});
+						});
+						
+						for(var j = 0; j < colonSelectors.length; j++){
+							var selector = colonSelectors[j];
+							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free$/) ){
+								// valid
+							} else {
+								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
+							}
+						}
+						self[i].colonSelectors = colonSelectors;
+						
+						var bracketsText = q[3];
 						self[i].data = [];
 						
 						if( bracketsText != null ){
@@ -1369,7 +1448,12 @@
 								var bracket = brackets[j];
 								var b = bracket.replace("[", "").replace("]", "");
 								
-								var match = b.match(/^\s*(\w+)\s*(=|!=|>|>=|<|<=){0,1}\s*(.+){0,1}\s*$/);
+								var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
+								
+								if(match == null){
+									console.error("Invalid attribute selector `%s` in parent selector `%s`", bracket, str);
+									return;
+								}
 								
 								var field = match[1];
 								var operator = match[2];
@@ -1392,8 +1476,12 @@
 										if( ch == "'" || ch == '"' ){
 											if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
 												// matching beginning & end quotes
-											} else if( s != 0 && value.charAt(s - 1) == "\\" ){
-												// quote escaped by backslash
+											} else if( ch == '"' && value.charAt(0) == "'" && value.charAt(value.length - 1) == "'" ){
+												// enclosed like 'foo"bar'
+											} else if( s >= 1 && value.charAt(s - 1) == "\\" ){
+												// escaped like "foo\"bar"
+											} else if( ch == "'" && value.charAt(0) == '"' && value.charAt(value.length - 1) == '"' ){
+												// enclosed like "foo'bar"
 											} else {
 												console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
 												return;
@@ -1413,7 +1501,7 @@
 				} else {
 					console.error("A selector must be created from a string; found %o", selector);
 				}
-			}
+			};
 			
 			CySelector.prototype.size = function(){
 				return this.length;
@@ -1434,6 +1522,46 @@
 							continue;
 						}
 						
+						var allColonSelectorsMatch = true;
+						for(var k = 0; k < query.colonSelectors.length; k++){
+							var sel = query.colonSelectors[k];
+							
+							switch(sel){
+							case ":selected":
+								allColonSelectorsMatch = element.selected();
+								break;
+							case ":unselected":
+								allColonSelectorsMatch = !element.selected();
+								break;
+							case ":locked":
+								allColonSelectorsMatch = element.locked();
+								break;
+							case ":unlocked":
+								allColonSelectorsMatch = !element.locked();
+								break;
+							case ":visible":
+								allColonSelectorsMatch = renderer.isElementVisible(element); // TODO add function to renderer
+								break;
+							case ":hidden":
+								allColonSelectorsMatch = !renderer.isElementVisible(element);
+								break;
+							case "grabbed":
+								allColonSelectorsMatch = element.grabbed();
+								break;
+							case "free":
+								allColonSelectorsMatch = !element.grabbed();
+								break;
+							}
+							
+							if( !allColonSelectorsMatch ){
+								break;
+							}
+						}
+						
+						if( !allColonSelectorsMatch ){
+							continue;
+						}
+						
 						var allDataMatches = true;
 						for(var k = 0; k < query.data.length; k++){
 							var data = query.data[k];
@@ -1444,7 +1572,9 @@
 							}
 							
 							var value = data.value;
-							if( isString(value) ){
+							if( !isNaN( parseFloat(value) ) ){
+								// got a number
+							} else if( isString(value) ){
 								var firstChar = value.charAt(0);
 								var lastChar = value.charAt(value.length - 1);
 								
@@ -1463,7 +1593,7 @@
 								var expr = "element._private.data." + field + " " + operator + " " + value;
 								matches = eval(expr);
 							} else {
-								matches = element._private.data[field] != null;
+								matches = element._private.data[field] !== undefined;
 							}
 							
 							if( !matches ){
@@ -1532,14 +1662,23 @@
 			
 			// ith query to string
 			CySelector.prototype.selector = function(){
+				
 				var str = "";
+				
+				function clean(obj){
+					if( isString(obj) ){
+						return obj;
+					} 
+					return "";
+				}
 				
 				for(var i = 0; i < this.length; i++){
 					var query = this[i];
-					str += query.group;
+					str += clean(query.group);
 					
-					for(var j = 0; j < query.data.length; i++){
-						str += "[" + query.field + query.operator + query.value + "]"
+					for(var j = 0; j < query.data.length; j++){
+						var data = query.data[j];
+						str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
 					}
 					
 					if( this.length > 1 && i < this.length - 1 ){
@@ -1581,31 +1720,35 @@
 			
 			// getting nodes/edges with a filter function to select which ones to include
 			function elementsCollection(params){
-				return function(selector){
-					var elements = [];
-					
-					if( params != null && params.group != null ){
-						$.each(structs[params.group], function(id, element){
-							elements.push(element);
-						});
-					} else {
-						$.each(structs["nodes"], function(id, element){
-							elements.push(element);
-						});
-						$.each(structs["edges"], function(id, element){
-							elements.push(element);
-						});
-					}
+				var elements = [];
+				
+				var p = $.extend({}, {
+					group: null,
+					selector: null,
+					addLiveFunction: false
+				}, params);
+				
+				var group = p.group;
+				var selector = p.selector;
+				var addLiveFunction = p.addLiveFunction;
+				
+				if( group == "nodes" || group == "edges" ){
+					$.each(structs[group], function(id, element){
+						elements.push(element);
+					});
 					
 					var collection = new CyCollection(elements);
-					var addLiveFunction = (selector == null || params == null || params.group == null);
-					
-					if( selector == null && params != null && params.group != null ){
-						return new CySelector(params.group.substring(0, params.group.length - 1)).filter(collection, addLiveFunction);
-					} else {
-						return new CySelector(selector).filter(collection, addLiveFunction);
-					}
-				};
+					return new CySelector(group, selector).filter(collection, addLiveFunction);
+				} else {
+					$.each(structs["nodes"], function(id, element){
+						elements.push(element);
+					});
+					$.each(structs["edges"], function(id, element){
+						elements.push(element);
+					});
+					var collection = new CyCollection(elements);
+					return new CySelector(selector).filter(collection, addLiveFunction);
+				}
 			}
 			
 			// add node/edge to cytoweb
@@ -1647,15 +1790,21 @@
 						// specify an array of options
 						else if( isArray(opts) ){
 							$.each(opts, function(i, elementParams){
-								var element = new CyElement(elementParams);
-								elements.push(element);
+								if( params != null && params.group != null ){
+									elements.push(new CyElement( $.extend({}, elementParams, { group: params.group }) ));
+								} else {
+									elements.push(new CyElement( elementParams ));
+								}
 							});
-							
 						} 
 						
 						// specify options for one element
 						else {
-							elements.push(new CyElement( $.extend({}, opts, { group: params.group }) ));
+							if( params != null && params.group != null ){
+								elements.push(new CyElement( $.extend({}, opts, { group: params.group }) ));
+							} else {
+								elements.push(new CyElement( opts ));
+							}
 						}
 					});
 					
@@ -1804,17 +1953,31 @@
 				
 				addEdge: addElement({ group: "edges" }),
 				
-				nodes: elementsCollection({ group: "nodes" }),
+				node: function(id){
+					return structs.nodes[id];
+				},
 				
-				edges: elementsCollection({ group: "edges" }),
+				edge: function(id){
+					return structs.edges[id];
+				},
 				
-				elements: elementsCollection(),
+				nodes: function(selector){
+					return elementsCollection({ group: "nodes", selector: selector, addLiveFunction: true });
+				},
+				
+				edges: function(selector){
+					return elementsCollection({ group: "edges", selector: selector, addLiveFunction: true });
+				},
+				
+				elements: function(selector){
+					return elementsCollection({ selector: selector, addLiveFunction: true });
+				},
 				
 				filter: function(selector){
 					if( isString(selector) ){
-						return elementsCollection()(selector);
+						return elementsCollection({ selector: selector, addLiveFunction: true });
 					} else if( isFunction(selector) ) {
-						return elementsCollection()().filter(selector);
+						return elementsCollection().filter(selector);
 					}
 				},
 				
@@ -1860,17 +2023,17 @@
 					return renderer.zoom(params);
 				},
 				
-				load: function(data){
+				load: function(elements){
 					// TODO delete old elements?
 				
-					if( data != null ){
+					if( elements != null ){
 						
 						noNotifications(function(){
 							$.each(["nodes", "edges"], function(i, group){
 								
-								var elements = options.data[group];								
-								if( elements != null ){
-									$.each(elements, function(i, params){
+								var elementsInGroup = elements[group];								
+								if( elementsInGroup != null ){
+									$.each(elementsInGroup, function(i, params){
 										
 										var data = params.data;
 										var position = params.position;
@@ -1994,7 +2157,8 @@
 								
 								if( attrBounds != null ){
 								
-									var percent = ( element.data(map.attr.name) - attrBounds.min ) / (attrBounds.max - attrBounds.min);
+									var data = element.data(map.attr.name);
+									var percent = ( data - attrBounds.min ) / (attrBounds.max - attrBounds.min);
 									
 									if( attrBounds.max == attrBounds.min ){
 										percent = 1;
@@ -2002,11 +2166,13 @@
 									
 									if( percent > 1 ){
 										percent = 1;
-									} else if( percent < 0 ){
+									} else if( percent < 0 || data == null || isNaN(percent) ){
 										percent = 0;
 									}
-										
-									if( isNumber(map.mapped.min) && isNumber(map.mapped.max) ){
+									
+									if( data == null && styleVal.defaultValue != null ){
+										ret = styleVal.defaultValue;
+									} else if( isNumber(map.mapped.min) && isNumber(map.mapped.max) ){
 										ret = percent * (map.mapped.max - map.mapped.min) + map.mapped.min;
 									} else if( isColor(map.mapped.min) && isColor(map.mapped.max) ){
 										
@@ -2043,7 +2209,7 @@
 				} // end styleCalculator
 			}) );
 			
-			cy.load(options.data);
+			cy.load(options.elements);
 			cy.layout();
 			return cy;
 		} 

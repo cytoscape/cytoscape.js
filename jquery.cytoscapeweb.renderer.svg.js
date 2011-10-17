@@ -1110,10 +1110,15 @@ $(function(){
 		
 		var parallelEdges = element.parallelEdges();
 		var size = parallelEdges.size();
-		var index = element._private.index;
+		var index;
 		var curveIndex;
 		var curveDistance = 20;
 		
+		parallelEdges.each(function(i, e){
+			if( e == element ){
+				index = i;
+			}
+		});
 		
 		if( loop ){
 			var sh = src._private.style.height;
@@ -1441,6 +1446,8 @@ $(function(){
 				self.makeSvgElement(element);
 			}
 		});
+		
+		self.positionEdges( collection.edges().parallelEdges() );
 
 	};
 	
@@ -1465,23 +1472,25 @@ $(function(){
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});
 		
-		function updateEdges(edges){
-			edges.each(function(i, edge){
-				if( edge._private.svgGroup != null ){
-					self.svg.remove(edge._private.svgGroup);
-				}
-				self.makeSvgEdge(edge);
-				
-				var ps = edge.source()._private.position;
-				var pt = edge.target()._private.position;
-				
-				$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
-			});
-		}
-		
 		// update connected edges
-		updateEdges( collection.closedNeighborhood().edges() );
+		self.positionEdges( collection.closedNeighborhood().edges() );
 		
+	};
+	
+	SvgRenderer.prototype.positionEdges = function(edges){
+		var self = this;
+		
+		edges.each(function(i, edge){
+			if( edge._private.svgGroup != null ){
+				self.svg.remove(edge._private.svgGroup);
+			}
+			self.makeSvgEdge(edge);
+			
+			var ps = edge.source()._private.position;
+			var pt = edge.target()._private.position;
+			
+			$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
+		});
 	};
 	
 	SvgRenderer.prototype.removeElements = function(collection){

@@ -414,11 +414,19 @@ $(function(){
 		ok( n2.neighborhood().anySame(n3), "neighbourhood of n2 has n3" );
 		ok( n2.neighborhood().anySame(n1n2), "neighbourhood of n2 has n1n2" );
 		ok( n2.neighborhood().anySame(n2n3), "neighbourhood of n2 has n2n3" );
+		ok( !n2.neighborhood().anySame(n2), "default neighbourhood does not contain self" );
+		ok( !n2.openNeighborhood().anySame(n2), "open neighbourhood does not contain self" );
+		ok( n2.closedNeighborhood().anySame(n2), "closed neighbourhood does contain self" );
+		ok( n2.neighborhood().allSame( n2.openNeighborhood() ), "default neighbourhood is open" );
 		
 		equal( n2.collection().add(n1).neighborhood().nodes().size(), 3, "number of (n2, n1) neighbour nodes" );
 		equal( n1.collection().add(n2).add(n3).neighborhood().size(), 5, "number of (n1, n2, n3) neighbour elements" );
 		equal( n2.openNeighborhood().size(), 4, "number of n2 open neighbourhood elements" );
 		equal( n2.closedNeighborhood().size(), 5, "number of n2 closed neighbourhood elements" );
+		equal( n2.allAreNeighbors(n1), true, "n1 neighbour of n2" );
+		equal( n2.allAreNeighbors( n1.collection().add(n3) ), true, "n1 and n3 neighbours of n2" );
+		equal( n1.allAreNeighbors(n3), false, "n1 and n3 neighbours" );
+		equal( n1.allAreNeighbors( n2.collection().add(n3) ), false, "(n2, n3) all neighbours of n1" );
 	});
 	
 	test("Test selectors", function(){
@@ -444,6 +452,83 @@ $(function(){
 		ok( cy.filter("node[foo!=two][weight>0.3]").allSame( n3 ), "node[foo!=two][weight>0.3]" );
 		ok( cy.filter("node[foo='one']").allSame( n1 ), "node[foo='one']" );
 		ok( cy.filter("node[foo=\"one\"]").allSame( n1 ), "node[foo=\"one\"]" );
+	});
+	
+	asyncTest("Test bypass", function(){
+		var n1 = cy.node("n1");
+		
+		n1.one("bypass", function(){
+			deepEqual( this.bypass(), {
+				foo: 1
+			}, "bypass has foo" );
+		});
+		n1.bypass({
+			foo: 1
+		});
+		
+		n1.one("bypass", function(){
+			deepEqual( this.bypass(), {
+				bar: 2
+			}, "bypass has bar" );
+		});
+		n1.bypass({
+			bar: 2
+		});
+		
+		n1.one("bypass", function(){
+			deepEqual( this.bypass(), {
+				foo: 1,
+				bar: 2
+			}, "bypass has foo & bar" );
+		});
+		n1.bypass("foo", 1);
+		
+		n1.one("bypass", function(){
+			deepEqual( this.bypass(), {
+				foo: 1
+			}, "bypass has only foo" );
+			
+			start();
+		});
+		n1.removeBypass("bar");
+	});
+	
+	asyncTest("Test data", function(){
+		var n1 = cy.node("n1");
+		
+		n1.one("data", function(){
+			equal( this.data("foo"), 1, "foo" );
+		});
+		n1.data("foo", 1);
+		
+		n1.one("data", function(){
+			equal( this.data("foo"), null, "foo" );
+			
+			var d = this.data();
+			for(var i in d){
+				ok( i != "foo", i + " is not `foo` attribute" )
+			}
+		});
+		n1.removeData("foo");
+		
+		n1.one("data", function(){
+			equal( n1.data("foo"), 2, "foo" );
+			equal( n1.data("id"), "n1", "id didn't change" );
+			start();
+		});
+		n1.data({
+			foo: 2,
+			id: "should-not-be-this"
+		});
+		
+		n1.one("data", function(){
+			ok( n1.data("weight") == null, "n1 no weight" );
+			start();
+		});
+		cy.nodes().removeData("weight").each(function(){
+			ok( this.data("weight") == null, "no weight " + this.data("id") );
+			ok( this.data("id") != null, "has id " + this.data("id") );
+		});
 	});
 	
 	// Random layout

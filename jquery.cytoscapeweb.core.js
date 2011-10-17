@@ -210,13 +210,6 @@
 				
 				var siblings = structs.edgeSiblings[id1][id2];
 				siblings[element._private.data.id] = element;
-				
-				var length = 0;
-				for(var i in siblings){
-					length++;
-				}
-				
-				element._private.index = length - 1;
 			}
 			
 			function removeParallelEdgeFromMap(element){
@@ -249,8 +242,10 @@
 			function copy(obj){
 				if( isArray(obj) ){
 					return $.extend(true, [], obj);
-				} else {
+				} else if( isPlainObject(obj) || obj == null ){
 					return $.extend(true, {}, obj);
+				} else {
+					return obj;
 				}
 			}
 			
@@ -314,6 +309,7 @@
 					data: copy( params.data ), // data object
 					position: copy( params.position ), // fields x, y, etc (could be 3d or radial coords; renderer decides)
 					listeners: {}, // map ( type => array of functions )
+					one: {}, // map ( type => array of functions )
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ),
 					style: {}, // the rendered style populated by the renderer
@@ -405,7 +401,7 @@
 					// remove from map of edges belonging to nodes
 					if( this._private.group == "edges" ){
 						delete structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ];
-						delete structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ];
+						removeParallelEdgeFromMap(this);
 					} 
 					
 					// remove connected edges
@@ -424,8 +420,6 @@
 					});
 					this.trigger("remove");
 					
-				} else {
-					console.warn("Can not remove already removed element with group `%s` and ID `%s`", this.group(), this.data("id"));
 				}
 				
 				return this;
@@ -452,7 +446,22 @@
 			CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
 			
 			CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
-							
+			
+			CyElement.prototype.removeBypass = function(field){
+				
+				if( field == null ){
+					// delete whole object
+					this._private.bypass = {};
+					this.trigger("bypass");
+				} else {
+					// delete only one
+					delete this._private.bypass[field];
+					this.trigger("bypass");
+				}
+				
+				return this;
+			};
+			
 			CyElement.prototype.bypass = function(newBypass, newBypassVal){
 				
 				if( newBypassVal === undefined ){
@@ -491,38 +500,26 @@
 				else if( isPlainObject(attr) ){
 					var newValObj = attr;
 					
-					// update map of node => { edge id => edge }
-					if( this._private.group == "edges" ){
+					for(var field in newValObj){
+						var val = newValObj[field];
 						
-						if( newValObj.source === null ){
-							console.error("Can not change source of edge with ID `%s` to null --- source must be non-null", this._private.data.id);
-							return;
+						if( field == "id" || ( this._private.group == "edges" && ( field == "source" || field == "target" ) ) ){
+							console.error("Can not change immutable field `%s` for element with group `%s` and ID `%s` to `%o`", field, this._private.group, this._private.data.id, val);
+						} else {
+							updateContinuousMapperBounds(this._private.group, field, val);
 						}
-						
-						if( newValObj.target === null ){
-							console.error("Can not change target of edge with ID `%s` to null --- target must be non-null", this._private.data.id);
-							return;
-						}
-						
-						var edgeId = this._private.data.id;
-						
-						if( newValObj.source != null ){
-							delete structs.nodeToEdges[ this._private.data.source ][ edgeId ];
-							structs.nodeToEdges[ newValObj.source ][ edgeId ] = this;
-						}
-						
-						if( newValObj.target != null ){
-							delete structs.nodeToEdges[ this._private.data.target ][ edgeId ];
-							structs.nodeToEdges[ newValObj.target ][ edgeId ] = this;
-						}
-						
 					}
 					
-					$.each(newValObject, function(name, val){
-						updateContinuousMapperBounds(this._private.group, name, val);
-					});
+					var oldValObj = this._private.data;
 					
-					this._private.data = copy( newValObj );
+					this._private.data = copy(newValObj);
+					this._private.data.id = oldValObj.id;
+					
+					if( this._private.group == "edges" ){
+						this._private.data.target = oldValObj.target;
+						this._private.data.source = oldValObj.source;
+					}
+					
 					this.trigger("data");
 					ret = this;
 				} 
@@ -561,6 +558,42 @@
 				}		
 				
 				return ret;
+			};
+			
+			CyElement.prototype.removeData = function(field){
+				if( field == undefined ){
+					// delete all non-essential data
+					var oldData = this._private.data;
+					
+					if( this._private.group == "nodes" ){
+						this._private.data = {
+							id: oldData.id
+						};
+					} else if( this._private.group == "edges" ){
+						this._private.data = {
+							id: oldData.id,
+							source: oldData.source,
+							target: oldData.target
+						};
+					}
+				} else {
+					// delete only one field
+					
+					if( field == "id" ){
+						console.error("You can not delete the `id` data field; tried to delete on element with group `%s` and ID `%s`", this._private.group, this._private.data.id);
+						return;
+					}
+					
+					if( this._private.group == "edges" && ( field == "source" || field == "target" ) ){
+						console.error("You can not delete the `%s` data field; tried to delete on edge `%s`", field, this._private.data.id);
+						return;
+					}
+					
+					delete this._private.data[field];
+				}
+				
+				this.trigger("data");
+				return this;
 			};
 			
 			CyElement.prototype.target = function(){
@@ -689,20 +722,30 @@
 				return copy( this._private.style );
 			};
 			
-			CyElement.prototype.bind = function(events, callback){
-				var self = this;
-				
-				$.each(events.split(/\s+/), function(i, event){
-					if(event == "") return;
+			function bind(once){
+				return function(events, callback){
+					var self = this;
 					
-					if( self._private.listeners[event] == null ){
-						self._private.listeners[event] = [];
-					}				
-					self._private.listeners[event].push(callback);
-				});
-				
-				return this;
-			};
+					$.each(events.split(/\s+/), function(i, event){
+						if(event == "") return;
+						
+						if( self._private.one[event] == null ){
+							self._private.one[event] = [];
+						}
+						self._private.one[event].push(once);
+						
+						if( self._private.listeners[event] == null ){
+							self._private.listeners[event] = [];
+						}				
+						self._private.listeners[event].push(callback);
+					});
+					
+					return this;
+				};
+			}
+			
+			CyElement.prototype.bind = bind(false);
+			CyElement.prototype.one = bind(true);
 			
 			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
@@ -711,11 +754,13 @@
 					if(event == "") return;
 				
 					var listeners = self._private.listeners[event];
+					var one = self._private.one[event];
 					
 					if( listeners != null ){
 						$.each(listeners, function(i, listener){
 							if( callback == null || callback == listener ){
-								listeners[i] = undefined;
+								delete listeners[i]
+								delete one[i];
 							}
 						});
 					}
@@ -738,6 +783,7 @@
 				}
 				
 				var listeners = this._private.listeners[type];
+				var one = this._private.one[type];
 				
 				function fire(listener, eventData, data){
 					if( $.isFunction(listener) ){
@@ -750,6 +796,11 @@
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
 						fire(listener, eventData, data);
+						
+						if( one[i] ){
+							delete listeners[i];
+							delete one[i];
+						}
 					});
 				}
 				
@@ -808,7 +859,7 @@
 			
 			CyElement.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
-				var adjacents = this.neighbors();
+				var adjacents = this.neighborhood();
 				
 				if( this.isNode() ){
 					var self = this;
@@ -1367,6 +1418,32 @@
 				return new CySelector(selector).filter(this).size() > 0;
 			};
 			
+			CyCollection.prototype.removeData = function(field){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.removeData(field);
+					});
+				});
+
+				this.trigger("data");
+				return this;
+			};
+			
+			CyCollection.prototype.removeBypass = function(field){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.removeBypass(field);
+					});
+				});
+
+				this.trigger("bypass");
+				return this;
+			};
+			
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
@@ -1768,7 +1845,7 @@
 								element._private.removed = false;
 								structs[ element._private.group ][ element._private.data.id ] = element;
 							} else {
-								console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element.group(), element.data("id"));
+								console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element._private.group, element._private.data.id);
 							}
 						} 
 						
@@ -1782,7 +1859,7 @@
 									element._private.removed = false;
 									structs[ element._private.group ][ element._private.data.id ] = element;
 								} else {
-									console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element.group(), element.data("id"));
+									console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element._private.group, element._private.data.id);
 								}
 							});
 						} 
@@ -1949,9 +2026,9 @@
 					collection.remove();
 				},
 				
-				addNode: addElement({ group: "nodes" }),
+				addNodes: addElement({ group: "nodes" }),
 				
-				addEdge: addElement({ group: "edges" }),
+				addEdges: addElement({ group: "edges" }),
 				
 				node: function(id){
 					return structs.nodes[id];
@@ -2024,7 +2101,8 @@
 				},
 				
 				load: function(elements){
-					// TODO delete old elements?
+					// remove old elements
+					cy.elements().remove();
 				
 					if( elements != null ){
 						

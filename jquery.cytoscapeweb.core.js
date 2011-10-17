@@ -2096,6 +2096,14 @@
 					return renderer.pan(params);
 				},
 				
+				panBy: function(params){
+					return renderer.panBy(params);
+				},
+				
+				fit: function(){
+					renderer.fit();
+				},
+				
 				zoom: function(params){
 					return renderer.zoom(params);
 				},

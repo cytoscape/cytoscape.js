@@ -542,6 +542,55 @@ $(function(){
 		});
 	};
 	
+	SvgRenderer.prototype.fit = function(){
+		$.cytoscapeweb("debug", "Fit SVG renderer to view bounds");
+		
+		var n = this.nodesGroup.getBBox();
+		var e = this.edgesGroup.getBBox();
+		
+		var x1 = Math.min(n.x, e.x);
+		var y1 = Math.min(n.y, e.y);
+		var x2 = Math.max(n.x + n.width, e.x + e.width);
+		var y2 = Math.max(n.y + n.height, e.y + e.height);
+		
+		// fix for loop edges (their bounding boxes are 2x width and height of path
+		// they push the bb up and left
+		this.cy.edges().each(function(){
+			var src = this._private.data.source;
+			var tgt = this._private.data.target;
+			var bb = this._private.svg.getBBox();
+			
+			if( src == tgt ){
+				if( bb.x == x1 ){
+					x1 = Math.min(x1 + bb.width/2, n.x);
+				}
+				
+				if( bb.y == y1 ){
+					y1 = Math.min(y1 + bb.height/2, n.y);
+				}
+				
+				// TODO check edge labels when added
+			}
+		});
+		
+		var w = x2 - x1;
+		var h = y2 - y1;
+		
+		var width = this.container.width();
+		var height = this.container.height();
+		
+		var scale = Math.min( width/w, height/h );
+		
+		this.transform({
+			translation: {
+				x: -x1 * scale - (w*scale - width)/2,
+				y: -y1 * scale - (h*scale - height)/2
+			},
+			scale: scale
+		});
+		
+	};
+	
 	SvgRenderer.prototype.panBy = function(position){
 		$.cytoscapeweb("debug", "Relatively pan SVG renderer with position (%o)", position);
 		

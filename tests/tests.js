@@ -531,6 +531,20 @@ $(function(){
 		});
 	});
 	
+	test("Test parallel edges", function(){
+		cy.addEdges([
+		    { data: { source: "n1", target: "n2", id: "ep1" } },
+		    { data: { source: "n1", target: "n2", id: "ep2" } }
+		]);
+		
+		var edges = cy.edge("ep1").parallelEdges();
+		
+		equal( edges.size(), 3, "number of parallel edges" );
+		ok( edges.anySame( cy.edge("ep1") ), "has ep1" );
+		ok( edges.anySame( cy.edge("ep2") ), "has ep2" );
+		ok( edges.anySame( cy.edge("n1n2") ), "has n1n2" );
+	});
+	
 	// Random layout
 	////////////////////////////////////////////////////////////////////////////////////////////
 	

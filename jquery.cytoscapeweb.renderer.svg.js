@@ -27,8 +27,8 @@ $(function(){
 			borderOpacity: 1,
 			borderWidth: 0,
 			borderStyle: "solid",
-			opacity: 1,
-			size: 10,
+			height: 10,
+			width: 10,
 			shape: "ellipse",
 			cursor: "pointer",
 			visibility: "visible",
@@ -44,7 +44,6 @@ $(function(){
 			labelFontVariant: "italic", 
 			labelFontFamily: "Arial",
 			labelFontWeight: "bold",
-			labelOpacity: 1,
 			labelOutlineOpacity: 1,
 			labelFillOpacity: 1,
 			selected: {
@@ -59,7 +58,6 @@ $(function(){
 			style: "solid",
 			cursor: "pointer",
 			visibility: "visible",
-			targetArrowShape: "triangle",
 			selected: {
 				color: "#666"
 			}
@@ -100,52 +98,6 @@ $(function(){
 	registerLineStyle({
 		name: "dash",
 		array: [5, 5]
-	});
-	
-	var arrowShapes = {};
-	
-	var registerArrowShape = SvgRenderer.prototype.registerArrowShape = function(shape){
-		arrowShapes[ shape.name.toLowerCase() ] = shape;
-		shape.name = shape.name.toLowerCase();
-		
-		$.cytoscapeweb("debug", "SVG renderer registered edge arrow shape with name `%s` and definition %o", shape.name, shape);
-	};
-	
-	// use this as an example for adding more node shapes
-	registerArrowShape({
-		// name of the shape
-		name: "triangle",
-		
-		// generate the shape svg
-		svg: function(svg, parent, edge, nodeInterP, controlPoint, style){
-		
-			console.log(svg, parent, edge, nodeInterP, controlPoint, style);
-		
-			var lineWidth = edge._private.style.width;
-			var arrowWidth = 5;
-			
-			var width = Math.max(arrowWidth, arrowWidth * Math.sqrt(lineWidth));
-            width = Math.max(width, 1.5 * lineWidth);
-            var height = 2 * width;
-            
-            var orth1 = geometry.getOrthogonalPoint(nodeInterP, controlPoint, width/2, height);
-            var orth2 = geometry.getOrthogonalPoint(nodeInterP, controlPoint, -width/2, height);
-            
-			var pointByNode = controlPoint;
-			var leftPoint = [orth1.x, orth1.y];
-			var rightPoint = [orth2.x, orth2.y];
-		
-			return svg.polygon(edge._private.svgGroup, [ pointByNode, leftPoint, rightPoint ]);
-		},
-		
-		// update unique style attributes for this shape
-		// see http://keith-wood.name/svgRef.html for api reference
-		update: function(svg, parent, node, position, style){
-			// TODO
-		},
-		
-		// 2D shape in intersection lib
-		intersectionShape: Polygon
 	});
 	
 	var nodeShapes = {};
@@ -276,16 +228,6 @@ $(function(){
 		
 		if( ret == null ){
 			$.cytoscapeweb("error", "SVG renderer does not recognise %s as a valid node shape", name);
-		}
-		
-		return ret;
-	}
-	
-	function arrowShape(name){
-		var ret = arrowShapes[ name.toLowerCase() ];
-		
-		if( ret == null ){
-			$.cytoscapeweb("error", "SVG renderer does not recognise %s as a valid edge arrow shape", name);
 		}
 		
 		return ret;
@@ -537,10 +479,6 @@ $(function(){
 			}
 		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
 			
-			if( $.browser.msie ){
-				return; // TODO fix IE bug
-			}
-			
 			self.offsetFix(e);
 			
 			var point = {
@@ -603,6 +541,106 @@ $(function(){
 		this.transform({
 			scale: scale
 		});
+	};
+	
+	SvgRenderer.prototype.fit = function(params){
+		var elements = params.elements;
+		var zoom = params.zoom;
+		
+		if( elements == null || elements.size() == 0 ){
+			elements = this.cy.elements();
+		}
+		
+		if( elements.is(":removed") ){
+			$.cytoscapeweb("debug", "SVG renderer does not take into account removed elements when fitting");
+			elements = elements.filter(":inside");
+		}
+		
+		$.cytoscapeweb("debug", "Fit SVG renderer to view bounds");
+		
+		var n = this.nodesGroup.getBBox();
+		var e = this.edgesGroup.getBBox();
+		
+		var x1, y1, x2, y2;
+		
+		function update(bb){
+			var left = bb.x;
+			var right = left + bb.width;
+			var top = bb.y;
+			var bottom = top + bb.height;
+			
+			if( left < x1 || x1 == null ){
+				x1 = left;
+			}
+			
+			if( right > x2 || x2 == null ){
+				x2 = right;
+			}
+			
+			if( top < y1 || y1 == null ){
+				y1 = top;
+			}
+			
+			if( bottom > y2 || y2 == null ){
+				y2 = bottom;
+			}
+		}
+		
+		elements.nodes().each(function(){
+			var bb = this._private.svgGroup.getBBox();
+			update(bb);
+		});
+		
+		// fix for loop edges (their bounding boxes are 2x width and height of path
+		// they push the bb up and left
+		elements.edges().each(function(){
+			var src = this._private.data.source;
+			var tgt = this._private.data.target;
+			var bb = this._private.svg.getBBox();
+			
+			if( src == tgt ){
+				if( bb.x == e.x ){
+					x1 = Math.min(x1 + bb.width/2, n.x);
+				}
+				
+				if( bb.y == e.y ){
+					y1 = Math.min(y1 + bb.height/2, n.y);
+				}
+				
+				// TODO check edge labels when added
+			} else {
+				bb = this._private.svgGroup.getBBox();
+				update(bb);
+			}
+		});
+		
+		var w = x2 - x1;
+		var h = y2 - y1;
+		
+		var width = this.container.width();
+		var height = this.container.height();
+		
+		var scale = Math.min( width/w, height/h );
+		
+		if( zoom ){
+			this.transform({
+				translation: {
+					x: -x1 * scale - (w*scale - width)/2,
+					y: -y1 * scale - (h*scale - height)/2
+				},
+				scale: scale
+			});
+		} else {
+			var z = this.scale;
+			
+			this.transform({
+				translation: {
+					x: -x1*z + width/2 - (x2-x1)/2*z,
+					y: -y1*z + height/2 - (y2-y1)/2*z
+				}
+			});
+		}
+		
 	};
 	
 	SvgRenderer.prototype.panBy = function(position){
@@ -685,38 +723,15 @@ $(function(){
 		
 		element._private.style = style;
 		
-		if( element._private.group == "nodes" ){
-			// width and height are size unless at least one is defined
-			if( style.width == null && style.height == null ){
-				style.width = style.size;
-				style.height = style.size;
-			} else {
-				
-				// use the size for undefined other field
-				
-				if( style.height != null ){
-					if( style.width == null ){
-						style.width = style.size;
-					}
-				}
-				
-				if( style.width != null ){
-					if( style.height == null ){
-						style.height = style.size;
-					}
-				}
-			}
-			
-			// opacity defaults to overall opacity if not set
-			if( style.borderOpacity == null ){
-				style.borderOpacity = style.opacity;
-			}
-			if( style.fillOpacity == null ){
-				style.fillOpacity = style.opacity;
+		function nullassign(field, replacementField){
+			if( style[field] == null ){
+				style[field] = style[replacementField];
 			}
 		}
 		
-		if( element._private.group == "edges" ){
+		if( element._private.group == "nodes" ){
+		
+		} if( element._private.group == "edges" ){
 			var source = element.source();
 			var target = element.target();
 			
@@ -787,7 +802,9 @@ $(function(){
 				x: clickEvent.offsetX,
 				y: clickEvent.offsetY
 			});
-
+			
+			//var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
+			
 		});
 	};
 	
@@ -994,25 +1011,6 @@ $(function(){
 			return centerPointInside || intersects;
 		}
 		
-		function positionInside(position){
-			var x = position.x;
-			var y = position.y;
-			
-			// selection square
-			var x1 = selectionBounds.x1;
-			var y1 = selectionBounds.y1;
-			var x2 = selectionBounds.x2;
-			var y2 = selectionBounds.y2;
-			
-			if( x1 <= x && x <= x2 &&
-				y1 <= y && y <= y2 ){
-				
-				return true;
-			} 
-			
-			return false;
-		}
-		
 		this.cy.elements().each(function(i, element){
 			if( element.isNode() ){
 				if( nodeInside(element) ){
@@ -1020,19 +1018,12 @@ $(function(){
 				}
 			} else {
 				// if both node center points are inside, then the edge is inside
-				if( positionInside( element.source()._private.position ) &&
-					positionInside( element.target()._private.position ) ){
+				if( nodeInside( element.source() ) &&
+					nodeInside( element.target() ) ){
 					
 					toSelect = toSelect.add(element);
 				}
 				
-				// edge isn't totally inside, so check for intersections
-				else {
-					var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
-					if( intersection.points.length > 0 ){
-						toSelect = toSelect.add(element);
-					}
-				}
 			}
 		});
 		
@@ -1162,112 +1153,92 @@ $(function(){
 		
 		// if the nodes are directly on top of each other, just make a small difference
 		// so we don't get bad calculation states (e.g. divide by zero)
-		if( x1 == x2 && y1 == y2 ){
+		if( x1 == x2 ){
 			x2++;
+		}
+		if( y1 == y2 ){
 			y2++;
 		}
 		
 		var parallelEdges = element.parallelEdges();
 		var size = parallelEdges.size();
-		var index = element._private.index;
+		var index;
 		var curveIndex;
 		var curveDistance = 20;
 		
-		var cp1, cp2;
+		parallelEdges.each(function(i, e){
+			if( e == element ){
+				index = i;
+			}
+		});
 		
-		function intersection(node){
-			var shape = nodeShape(node._private.style.shape).intersectionShape;
-			var intersection = Intersection.intersectShapes(new Path(element._private.svg), new shape(node._private.svg));
-			return intersection;
-		}
-		
-		function draw(){
-			if( loop ){
-				var sh = src._private.style.height;
-				var sw = src._private.style.width;
-				curveDistance += Math.max(sw, sh);
+		if( loop ){
+			var sh = src._private.style.height;
+			var sw = src._private.style.width;
+			curveDistance += Math.max(sw, sh);
+			
+			var h = curveDistance;
+	        var cp1 = { x: x1, y: y1 - sh/2 - h };
+	        var cp2 = { x: x1 - sw/2 - h, y: y1 };
+			
+			curveIndex = index;
+			var path = self.svg.createPath();
+			svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+		} else {
+			// edge between 2 nodes
+			
+			var even = size % 2 == 0;
+			if( even ){
+				// even
+				curveIndex = index - size/2 + (index < size/2 ? 0 : 1); // add one if on positive size (skip 0)
 				
-				var h = curveDistance;
-		        cp1 = { x: x1, y: y1 - sh/2 - h };
-		        cp2 = { x: x1 - sw/2 - h, y: y1 };
-				
-				curveIndex = index;
-				var path = self.svg.createPath();
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
-			} else {
-				// edge between 2 nodes
-				
-				var even = size % 2 == 0;
-				if( even ){
-					// even
-					curveIndex = index - size/2 + (index < size/2 ? 0 : 1); // add one if on positive size (skip 0)
-					
-					if( curveIndex > 0 ){
-						curveIndex -= 0.5;
-					} else {
-						curveIndex += 0.5;
-					}
+				if( curveIndex > 0 ){
+					curveIndex -= 0.5;
 				} else {
-					// odd
-					curveIndex = index - Math.floor(size/2);
+					curveIndex += 0.5;
 				}
-				
-				var curved = curveIndex != 0;
-				var path = self.svg.createPath();
-				
-				if( src._private.data.id > tgt._private.data.id ){
-					curveIndex *= -1;
-				}
-				
-				if( curved ){
-					cp1 = cp2 = geometry.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
-					svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp1.x, cp1.y, x2, y2) );
-				} else {
-					cp1 = { x: x1, y: y1 };
-					cp2 = { x: x2, y: y2 };
-					
-					svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
-				}
-			}
-			
-			element._private.svg = svgPath;
-		}
-		
-		function adjustPosition(){
-			
-			if( srcInter.points == null || srcInter.points.length == 0 ||  tgtInter.points == null || tgtInter.points.length == 0 ){
-				return false;
-			}
-			
-			if( loop ){
-				x1 = srcInter.points[0].x;
-				y1 = srcInter.points[0].y;
-				x2 = tgtInter.points[1].x;
-				y2 = tgtInter.points[1].y;
 			} else {
-				x1 = srcInter.points[0].x;
-				y1 = srcInter.points[0].y;
-				x2 = tgtInter.points[0].x;
-				y2 = tgtInter.points[0].y;
+				// odd
+				curveIndex = index - Math.floor(size/2);
 			}
 			
-			return true;
+			var curved = curveIndex != 0;
+			var path = self.svg.createPath();
+			
+			if( src._private.data.id > tgt._private.data.id ){
+				curveIndex *= -1;
+			}
+			
+			if( curved ){
+				var cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+			} else {
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+			}
 		}
 		
-		draw();
-		var tgtInter = intersection(tgt);
-		var srcInter = intersection(src);
+		element._private.svg = svgPath;
+	};
+	
+	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
 		
-		var tgtShape = arrowShape(element._private.style.targetArrowShape).svg(self.svg, element._private.svgGroup, element, tgtInter.points[0], cp1, element._private.style);
-		element._private.targetSvg = tgtShape;
-			
-		var positionAdjusted = adjustPosition();
+		var diff = { x: p1.x-p2.x, y: p1.y-p2.y };
+	    var normal = this.getNormalizedPoint({ x: diff.y, y: -diff.x }, 1);
+	    
+	    var mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
+	    
+	    return {x: mid.x + normal.x * h, y: mid.y + normal.y * h};
+	
+	};
+	
+	SvgRenderer.prototype.getNormalizedPoint = function(p, newLength){
+		var currentLength = Math.sqrt(p.x*p.x + p.y*p.y);
+		var factor = newLength / currentLength;
 		
-		self.svg.remove(element._private.svg);
-		if( positionAdjusted ){
-			draw();
-		}	
-		
+		return {
+			x: p.x * factor,
+			y: p.y * factor
+		};
 	};
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
@@ -1326,6 +1297,15 @@ $(function(){
 		this.updateElementsStyle(collection);
 	};
 	
+	SvgRenderer.prototype.updateMapperBounds = function(collection){
+		
+		var elements = cy.elements().filter(function(){
+			return this.group() == collection[0].group();
+		}).not(collection);
+		
+		this.updateElementsStyle( elements );
+	};
+	
 	SvgRenderer.prototype.updateElementsStyle = function(collection){
 		var self = this;
 		collection = collection.collection();
@@ -1344,7 +1324,7 @@ $(function(){
 		collection.nodes().neighborhood().edges().not( collection.edges() ).each(function(i, element){
 			self.updatePosition(element);
 		});
-	}
+	};
 	
 	SvgRenderer.prototype.updateStyle = function(style){
 		var collection = this.cy.elements();
@@ -1388,23 +1368,19 @@ $(function(){
 			$.cytoscapeweb("error", "SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
 			return;
 		}
-		
-		this.svg.change(element._private.svgGroup, {
-			opacity: percent(style.opacity)
-		});
-		
+			
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element._private.svg, {
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
+			fillOpacity: percent(style.fillOpacity),
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
 			cursor: cursor(style.cursor),
-			"visibility": visibility(style.visibility),
-			opacity: percent(style.fillOpacity)
+			"visibility": visibility(style.visibility)
 		});
 		
 		// styles for label
@@ -1421,8 +1397,7 @@ $(function(){
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
-			"font-size": style.labelFontSize,
-			opacity: percent(style.labelOpacity)
+			"font-size": style.labelFontSize
 		});
 		
 		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;
@@ -1518,15 +1493,15 @@ $(function(){
 		
 		var self = this;
 		
-		collection.each(function(i, element){
-			if( element.group() == "nodes" ){
-				self.makeSvgElement(element);
-			}
-			
-			else if( element.group() == "edges" ){
-				self.makeSvgElement(element);
-			}
+		collection.nodes().each(function(i, element){
+			self.makeSvgElement(element);
 		});
+		
+		collection.edges().each(function(i, element){
+			self.makeSvgElement(element);
+		});
+		
+		self.positionEdges( collection.edges().parallelEdges() );
 
 	};
 	
@@ -1551,23 +1526,25 @@ $(function(){
 			$.cytoscapeweb("debug", "SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
 		});
 		
-		function updateEdges(edges){
-			edges.each(function(i, edge){
-				if( edge._private.svgGroup != null ){
-					self.svg.remove(edge._private.svgGroup);
-				}
-				self.makeSvgEdge(edge);
-				
-				var ps = edge.source()._private.position;
-				var pt = edge.target()._private.position;
-				
-				$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
-			});
-		}
-		
 		// update connected edges
-		updateEdges( collection.closedNeighborhood().edges() );
+		self.positionEdges( collection.closedNeighborhood().edges() );
 		
+	};
+	
+	SvgRenderer.prototype.positionEdges = function(edges){
+		var self = this;
+		
+		edges.each(function(i, edge){
+			if( edge._private.svgGroup != null ){
+				self.svg.remove(edge._private.svgGroup);
+			}
+			self.makeSvgEdge(edge);
+			
+			var ps = edge.source()._private.position;
+			var pt = edge.target()._private.position;
+			
+			$.cytoscapeweb("debug", "SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
+		});
 	};
 	
 	SvgRenderer.prototype.removeElements = function(collection){
@@ -1630,60 +1607,42 @@ $(function(){
 			case "data":
 				this.updateData( params.collection );
 				break;
+			
+			case "mapperbounds":
+				this.updateMapperBounds( params.collection );
+				break;
 				
 			case "select":
 			case "unselect":
 				this.updateSelection( params.collection );
 				break;
-			
+				
 			default:
 				$.cytoscapeweb("debug", "The SVG renderer doesn't consider the `%s` event", params.type);
 				break;
 		}
 	};
 	
+	SvgRenderer.prototype.coordinateSystem = function(){
+		return "cartesian";
+	};
+	
+	SvgRenderer.prototype.dimensions = function(){
+		return 2;
+	};
+	
 	function SvgExporter(options){
 		this.options = options;
-		this.cy = options.cytoscapeweb;
+		this.cy = options.cy;
+		this.renderer = options.renderer;
+		
+		if( this.renderer.name() != "svg" ){
+			$.cytoscapeweb("error", "The SVG exporter can be used only if the SVG renderer is used");
+		}
 	}
 	
 	SvgExporter.prototype.run = function(){
 		return $(this.options.selector).svg("get").toSVG();
-	};
-	
-
-	var geometry = {};
-	
-	geometry.getOrthogonalPoint = function(p1, p2, h, d){
-		
-		var diff = { x: p1.x-p2.x, y: p1.y-p2.y };
-	    var normal = geometry.getNormalizedPoint({ x: diff.y, y: -diff.x }, 1);
-	    
-	    var ratio;
-	    if( d == undefined ){
-	    	ratio = 0.5;
-	    } else {
-	    	ratio = d/geometry.distance(p1, p2);
-	    }
-	    
-	    var mid = { x: (p1.x + p2.x)*ratio, y: (p1.y + p2.y)*ratio };
-	    
-	    return {x: mid.x + normal.x * h, y: mid.y + normal.y * h};
-	
-	};
-	
-	geometry.distance = function(p1, p2){
-		return Math.sqrt( (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y) );
-	};
-	
-	geometry.getNormalizedPoint = function(p, newLength){
-		var currentLength = Math.sqrt(p.x*p.x + p.y*p.y);
-		var factor = newLength / currentLength;
-		
-		return {
-			x: p.x * factor,
-			y: p.y * factor
-		};
 	};
 	
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);

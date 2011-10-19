@@ -23,8 +23,8 @@ $(function(){
 							name: "weight",
 						},
 						mapped: {
-							min: 4,
-							max: 1
+							min: 1,
+							max: 4
 						}
 					}
 				}
@@ -39,7 +39,18 @@ $(function(){
 				labelHalign: "middle",
 				labelValign: "top",
 				shape: "ellipse",
-				size: {
+				height: {
+					continuousMapper: {
+						attr: {
+							name: "weight",
+						},
+						mapped: {
+							min: 10,
+							max: 30
+						}
+					}
+				},
+				width: {
 					continuousMapper: {
 						attr: {
 							name: "weight",
@@ -152,6 +163,23 @@ $(function(){
 		
 		cy.nodes().slice(0, n).remove();
 		cy.edges().slice(0, e).remove();
+	});
+	
+	$("#zoom-pan-button").click(function(){
+		cy.zoom(1);
+		cy.pan({ x: 0, y: 0 });
+	});
+	
+	$("#fit-button").click(function(){
+		cy.fit();
+	});
+	
+	$("#fit-selected-button").click(function(){
+		cy.fit( cy.elements(":selected") );
+	});
+	
+	$("#center-selected-button").click(function(){
+		cy.center( cy.elements(":selected") );
 	});
 	
 });

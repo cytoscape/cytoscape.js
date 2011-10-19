@@ -171,6 +171,7 @@
 			
 			// structs to hold internal cytoweb model
 			var structs = {
+				renderer: null, // populated on creation
 				style: options.style,
 				nodes: {}, // id => node object
 				edges: {}, // id => edge object
@@ -210,13 +211,6 @@
 				
 				var siblings = structs.edgeSiblings[id1][id2];
 				siblings[element._private.data.id] = element;
-				
-				var length = 0;
-				for(var i in siblings){
-					length++;
-				}
-				
-				element._private.index = length - 1;
 			}
 			
 			function removeParallelEdgeFromMap(element){
@@ -249,28 +243,118 @@
 			function copy(obj){
 				if( isArray(obj) ){
 					return $.extend(true, [], obj);
-				} else {
+				} else if( isPlainObject(obj) || obj == null ){
 					return $.extend(true, {}, obj);
+				} else {
+					return obj;
 				}
 			}
 			
-			function updateContinuousMapperBounds(group, name, val){
+			function addContinuousMapperBounds(element, name, val){
+				var group = element._private.group;
+				
 				if( isNumber(val) ){
-					
 					if( structs.continuousMapperBounds[ group ][ name ] == null ){
 						structs.continuousMapperBounds[ group ][ name ] = {
 							min: val,
-							max: val
+							max: val,
+							vals: []
 						};
 					}
 					
-					if( val < structs.continuousMapperBounds[ group ][ name ].min ){
-						structs.continuousMapperBounds[ group ][ name ].min = val;
+					var bounds = structs.continuousMapperBounds[ group ][ name ];
+					var vals = bounds.vals;
+					var inserted = false;
+					var oldMin = null, oldMax = null;
+					
+					if( vals.length > 0 ){
+						oldMin = vals[0];
+						oldMax = vals[ vals.length - 1 ];
 					}
 					
-					if( val > structs.continuousMapperBounds[ group ][ name ].max ){
-						structs.continuousMapperBounds[ group ][ name ].max = val;
+					for(var i = 0; i < vals.length; i++){
+						if( val <= vals[i] ){
+							vals.splice(i, 0, val);
+							inserted = true;
+							break;
+						}
 					}
+					
+					if(!inserted){
+						vals.push(val);
+					}
+					
+					bounds.min = vals[0];
+					bounds.max = vals[vals.length - 1];
+					
+					if( oldMin != bounds.min || oldMax != bounds.max ){
+						notify({
+							type: "mapperbounds",
+							collection: [ element ]
+						});
+					}
+				}
+			}
+			
+			function updateContinuousMapperBounds(element, name, oldVal, newVal){
+				var group = element._private.group;
+				var bounds = structs.continuousMapperBounds[ group ][ name ];
+				var vals = bounds.vals;
+				var oldMin = null, oldMax = null;
+				
+				if( vals.length > 0 ){
+					oldMin = vals[0];
+					oldMax = vals[ vals.length - 1 ];
+				}
+				
+				removeContinuousMapperBounds(element, name, oldVal);
+				addContinuousMapperBounds(element, name, newVal);
+				
+				if( oldMin != bounds.min || oldMax != bounds.max ){
+					notify({
+						type: "mapperbounds",
+						collection: [ element ]
+					});
+				}
+			}
+			
+			function removeContinuousMapperBounds(element, name, val){
+				var group = element._private.group;
+				var bounds = structs.continuousMapperBounds[ group ][ name ];
+				
+				if( bounds == null ){
+					return;
+				}
+				
+				var oldMin = null, oldMax = null;
+				var vals = bounds.vals;
+				
+				if( vals.length > 0 ){
+					oldMin = vals[0];
+					oldMax = vals[ vals.length - 1 ];
+				}
+				
+				
+				for(var i = 0; i < vals.length; i++){
+					if( val == vals[i] ){
+						vals.splice(i, 1);
+						break;
+					}
+				}
+				
+				if( vals.length > 0 ){
+					bounds.min = vals[0];
+					bounds.max = vals[vals.length - 1];
+				} else {
+					bounds.min = null;
+					bounds.max = null;
+				}
+			
+				if( oldMin != bounds.min || oldMax != bounds.max ){
+					notify({
+						type: "mapperbounds",
+						collection: [ element ]
+					});
 				}
 			}
 			
@@ -314,14 +398,40 @@
 					data: copy( params.data ), // data object
 					position: copy( params.position ), // fields x, y, etc (could be 3d or radial coords; renderer decides)
 					listeners: {}, // map ( type => array of functions )
+					one: {}, // map ( type => array of functions )
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ),
 					style: {}, // the rendered style populated by the renderer
-					removed: false, // whether it's inside the vis; true if removed
+					removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 					selected: params.selected ? true : false, // whether it's selected
 					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
 				};
+				
+				this.restore();
+			};
+			
+			CyElement.prototype.collection = function(){
+				return new CyCollection([ this ]);
+			};
+			
+			CyElement.prototype.grabbed = function(){
+				return this._private.grabbed;
+			};
+			
+			CyElement.prototype.group = function(){
+				return this._private.group;
+			}
+			
+			CyElement.prototype.removed = function(){
+				return this._private.removed;
+			};
+			
+			CyElement.prototype.restore = function(){
+				if( !this.removed() ){
+					// don't need to do anything
+				}
+				this._private.removed = false;
 				
 				// set id and validate
 				if( this._private.data.id == null ){
@@ -374,26 +484,10 @@
 				// update mapper structs
 				var self = this;
 				$.each(this._private.data, function(name, val){
-					updateContinuousMapperBounds(self._private.group, name, val);
+					addContinuousMapperBounds(self, name, val);
 				});
 				
 				this.trigger("add");
-			};
-			
-			CyElement.prototype.collection = function(){
-				return new CyCollection([ this ]);
-			};
-			
-			CyElement.prototype.grabbed = function(){
-				return this._private.grabbed;
-			};
-			
-			CyElement.prototype.group = function(){
-				return this._private.group;
-			}
-			
-			CyElement.prototype.removed = function(){
-				return this._private.removed;
 			};
 			
 			// remove from cytoweb
@@ -401,11 +495,13 @@
 				if( !this._private.removed ){
 					delete structs[ this._private.group ][ this._private.data.id ];
 					this._private.removed = true;
+					var group = this._private.group;
+					var self = this;
 					
 					// remove from map of edges belonging to nodes
 					if( this._private.group == "edges" ){
 						delete structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ];
-						delete structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ];
+						removeParallelEdgeFromMap(this);
 					} 
 					
 					// remove connected edges
@@ -417,6 +513,10 @@
 						structs.nodeToEdges[ this._private.data.id ] = {};
 					}
 					
+					$.each(this._private.data, function(attr, val){
+						removeContinuousMapperBounds(self, attr, val);
+					});
+					
 					// must manually notify since trigger won't do this automatically once removed
 					notify({
 						type: "remove",
@@ -424,8 +524,6 @@
 					});
 					this.trigger("remove");
 					
-				} else {
-					console.warn("Can not remove already removed element with group `%s` and ID `%s`", this.group(), this.data("id"));
 				}
 				
 				return this;
@@ -452,7 +550,22 @@
 			CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
 			
 			CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
-							
+			
+			CyElement.prototype.removeBypass = function(field){
+				
+				if( field == null ){
+					// delete whole object
+					this._private.bypass = {};
+					this.trigger("bypass");
+				} else {
+					// delete only one
+					delete this._private.bypass[field];
+					this.trigger("bypass");
+				}
+				
+				return this;
+			};
+			
 			CyElement.prototype.bypass = function(newBypass, newBypassVal){
 				
 				if( newBypassVal === undefined ){
@@ -476,6 +589,7 @@
 						
 			CyElement.prototype.data = function(attr, val){
 				var ret;
+				var self = this;
 				
 				// get whole field
 				if( attr === undefined ){
@@ -491,38 +605,26 @@
 				else if( isPlainObject(attr) ){
 					var newValObj = attr;
 					
-					// update map of node => { edge id => edge }
-					if( this._private.group == "edges" ){
+					for(var field in newValObj){
+						var val = newValObj[field];
 						
-						if( newValObj.source === null ){
-							console.error("Can not change source of edge with ID `%s` to null --- source must be non-null", this._private.data.id);
-							return;
+						if( field == "id" || ( this._private.group == "edges" && ( field == "source" || field == "target" ) ) ){
+							console.error("Can not change immutable field `%s` for element with group `%s` and ID `%s` to `%o`", field, this._private.group, this._private.data.id, val);
+						} else {
+							updateContinuousMapperBounds(self, field, self._private.data[field], val);
 						}
-						
-						if( newValObj.target === null ){
-							console.error("Can not change target of edge with ID `%s` to null --- target must be non-null", this._private.data.id);
-							return;
-						}
-						
-						var edgeId = this._private.data.id;
-						
-						if( newValObj.source != null ){
-							delete structs.nodeToEdges[ this._private.data.source ][ edgeId ];
-							structs.nodeToEdges[ newValObj.source ][ edgeId ] = this;
-						}
-						
-						if( newValObj.target != null ){
-							delete structs.nodeToEdges[ this._private.data.target ][ edgeId ];
-							structs.nodeToEdges[ newValObj.target ][ edgeId ] = this;
-						}
-						
 					}
 					
-					$.each(newValObject, function(name, val){
-						updateContinuousMapperBounds(this._private.group, name, val);
-					});
+					var oldValObj = this._private.data;
 					
-					this._private.data = copy( newValObj );
+					this._private.data = copy(newValObj);
+					this._private.data.id = oldValObj.id;
+					
+					if( this._private.group == "edges" ){
+						this._private.data.target = oldValObj.target;
+						this._private.data.source = oldValObj.source;
+					}
+					
 					this.trigger("data");
 					ret = this;
 				} 
@@ -537,30 +639,63 @@
 				else {
 					if( this._private.group == "edges" ){
 						if( attr == "source" || attr == "target" ){
-							
-							if( val === null ){
-								console.error("Can not change `%s` of edge with ID `%s` to null --- `%s` must be non-null", attr, this._private.data.id, attr);
-								return;
-							}
-							
-							var oldNodeId = this._private.data[attr];
-							var newNodeId = val;
-							var edgeId = this._private.data.id;
-							
-							delete structs.nodeToEdges[ oldNodeId ][ edgeId ];
-							structs.nodeToEdges[ newNodeId ][ edgeId ] = this;
+							console.error("Can not change `%s` of edge with ID --- you can not move edges", attr, this._private.data.id);
+							return;
 						}
 					}
 					
+					var oldVal = this._private.data[ attr ];
 					this._private.data[ attr ] = ( typeof val == "object" ? copy(val) : val );
 					ret = this;
 					
-					updateContinuousMapperBounds(this._private.group, attr, val);
+					updateContinuousMapperBounds(this, attr, oldVal, val);
 					
 					this.trigger("data");
 				}		
 				
 				return ret;
+			};
+			
+			CyElement.prototype.removeData = function(field){
+				if( field == undefined ){
+					// delete all non-essential data
+					var oldData = this._private.data;
+					var self = this;
+					
+					$.each(this._private.data, function(attr, val){
+						removeContinuousMapperBounds(self, attr, val);
+					});
+					
+					if( this._private.group == "nodes" ){
+						this._private.data = {
+							id: oldData.id
+						};
+					} else if( this._private.group == "edges" ){
+						this._private.data = {
+							id: oldData.id,
+							source: oldData.source,
+							target: oldData.target
+						};
+					}
+				} else {
+					// delete only one field
+					
+					if( field == "id" ){
+						console.error("You can not delete the `id` data field; tried to delete on element with group `%s` and ID `%s`", this._private.group, this._private.data.id);
+						return;
+					}
+					
+					if( this._private.group == "edges" && ( field == "source" || field == "target" ) ){
+						console.error("You can not delete the `%s` data field; tried to delete on edge `%s`", field, this._private.data.id);
+						return;
+					}
+					
+					removeContinuousMapperBounds(this, field, this._private.data[field]);
+					delete this._private.data[field];
+				}
+				
+				this.trigger("data");
+				return this;
 			};
 			
 			CyElement.prototype.target = function(){
@@ -689,20 +824,30 @@
 				return copy( this._private.style );
 			};
 			
-			CyElement.prototype.bind = function(events, callback){
-				var self = this;
-				
-				$.each(events.split(/\s+/), function(i, event){
-					if(event == "") return;
+			function bind(once){
+				return function(events, callback){
+					var self = this;
 					
-					if( self._private.listeners[event] == null ){
-						self._private.listeners[event] = [];
-					}				
-					self._private.listeners[event].push(callback);
-				});
-				
-				return this;
-			};
+					$.each(events.split(/\s+/), function(i, event){
+						if(event == "") return;
+						
+						if( self._private.one[event] == null ){
+							self._private.one[event] = [];
+						}
+						self._private.one[event].push(once);
+						
+						if( self._private.listeners[event] == null ){
+							self._private.listeners[event] = [];
+						}				
+						self._private.listeners[event].push(callback);
+					});
+					
+					return this;
+				};
+			}
+			
+			CyElement.prototype.bind = bind(false);
+			CyElement.prototype.one = bind(true);
 			
 			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
@@ -711,11 +856,13 @@
 					if(event == "") return;
 				
 					var listeners = self._private.listeners[event];
+					var one = self._private.one[event];
 					
 					if( listeners != null ){
 						$.each(listeners, function(i, listener){
 							if( callback == null || callback == listener ){
-								listeners[i] = undefined;
+								delete listeners[i]
+								delete one[i];
 							}
 						});
 					}
@@ -738,6 +885,7 @@
 				}
 				
 				var listeners = this._private.listeners[type];
+				var one = this._private.one[type];
 				
 				function fire(listener, eventData, data){
 					if( $.isFunction(listener) ){
@@ -750,6 +898,11 @@
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
 						fire(listener, eventData, data);
+						
+						if( one[i] ){
+							delete listeners[i];
+							delete one[i];
+						}
 					});
 				}
 				
@@ -808,7 +961,7 @@
 			
 			CyElement.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
-				var adjacents = this.neighbors();
+				var adjacents = this.neighborhood();
 				
 				if( this.isNode() ){
 					var self = this;
@@ -1367,6 +1520,45 @@
 				return new CySelector(selector).filter(this).size() > 0;
 			};
 			
+			CyCollection.prototype.removeData = function(field){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.removeData(field);
+					});
+				});
+
+				this.trigger("data");
+				return this;
+			};
+			
+			CyCollection.prototype.removeBypass = function(field){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.removeBypass(field);
+					});
+				});
+
+				this.trigger("bypass");
+				return this;
+			};
+			
+			CyCollection.prototype.restore = function(){
+				var collection = this.filter(":removed");
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.restore();
+					});
+				});
+
+				collection.trigger("add");
+				return this;
+			};
+			
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
@@ -1430,7 +1622,7 @@
 						
 						for(var j = 0; j < colonSelectors.length; j++){
 							var selector = colonSelectors[j];
-							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free$/) ){
+							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside$/) ){
 								// valid
 							} else {
 								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
@@ -1540,16 +1732,22 @@
 								allColonSelectorsMatch = !element.locked();
 								break;
 							case ":visible":
-								allColonSelectorsMatch = renderer.isElementVisible(element); // TODO add function to renderer
+								allColonSelectorsMatch = renderer.elementIsVisible(element);
 								break;
 							case ":hidden":
-								allColonSelectorsMatch = !renderer.isElementVisible(element);
+								allColonSelectorsMatch = !renderer.elementIsVisible(element);
 								break;
-							case "grabbed":
+							case ":grabbed":
 								allColonSelectorsMatch = element.grabbed();
 								break;
-							case "free":
+							case ":free":
 								allColonSelectorsMatch = !element.grabbed();
+								break;
+							case ":removed":
+								allColonSelectorsMatch = element.removed();
+								break;
+							case ":inside":
+								allColonSelectorsMatch = !element.removed();
 								break;
 							}
 							
@@ -1715,7 +1913,7 @@
 					params.collection = new CyCollection(elements);	
 				}
 			
-				enableNotifications && renderer.notify(params);
+				if(enableNotifications) renderer.notify(params);
 			}
 			
 			// getting nodes/edges with a filter function to select which ones to include
@@ -1762,29 +1960,17 @@
 						// add the element
 						if( opts instanceof CyElement ){
 							var element = opts;
+							elements.add(element);
 							
-							if( structs[ element._private.group ][ element._private.data.id ] == null ){							
-								elements.push( element );
-								element._private.removed = false;
-								structs[ element._private.group ][ element._private.data.id ] = element;
-							} else {
-								console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element.group(), element.data("id"));
-							}
+							element.restore();
 						} 
 						
 						// add the collection
 						else if( opts instanceof CyCollection ){
 							var collection = opts;
-							collection.each(function(i, element){
+							elements.add(collection);
 							
-								if( structs[ element._private.group ][ element._private.data.id ] == null ){
-									elements.push( element );
-									element._private.removed = false;
-									structs[ element._private.group ][ element._private.data.id ] = element;
-								} else {
-									console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element.group(), element.data("id"));
-								}
-							});
+							collection.restore();
 						} 
 						
 						// specify an array of options
@@ -1949,9 +2135,9 @@
 					collection.remove();
 				},
 				
-				addNode: addElement({ group: "nodes" }),
+				addNodes: addElement({ group: "nodes" }),
 				
-				addEdge: addElement({ group: "edges" }),
+				addEdges: addElement({ group: "edges" }),
 				
 				node: function(id){
 					return structs.nodes[id];
@@ -1998,19 +2184,20 @@
 						return;
 					}
 					
-					if( prevLayoutName != name ){
+					if( prevLayoutName != name || layout == null ){
+												
 						layout = new reg.layout[name]($.extend({}, params, { 
 							selector: options.selector,
-							name: name
+							cy: cy
 						}));
+						
 						prevLayoutName = name;
 					}
 					
 					layout.run( $.extend({}, params, {
 						nodes: cy.nodes(),
 						edges: cy.edges(),
-						renderer: renderer,
-						selector: options.selector
+						renderer: renderer
 					}) );
 					
 				},
@@ -2019,12 +2206,31 @@
 					return renderer.pan(params);
 				},
 				
+				panBy: function(params){
+					return renderer.panBy(params);
+				},
+				
+				fit: function(elements){
+					renderer.fit({
+						elements: elements,
+						zoom: true
+					});
+				},
+				
 				zoom: function(params){
 					return renderer.zoom(params);
 				},
 				
+				center: function(elements){
+					renderer.fit({
+						elements: elements,
+						zoom: false
+					});
+				},
+				
 				load: function(elements){
-					// TODO delete old elements?
+					// remove old elements
+					cy.elements().remove();
 				
 					if( elements != null ){
 						
@@ -2072,7 +2278,8 @@
 					} else {
 						var exporter = new exporterDefn({
 							selector: options.selector,
-							cytoscapeweb: cy,
+							cy: cy,
+							renderer: renderer
 						});
 						
 						return exporter.run();
@@ -2081,14 +2288,6 @@
 				
 			};
 			$(options.selector).data("cytoscapeweb", cy);
-			
-			if( reg.layout[ options.layout.name.toLowerCase() ] == null ){
-				console.error("Can not initialise: No such layout `%s` found; did you include its JS file?",  options.layout.name);
-				return;
-			}
-			
-			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
-			
 			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
@@ -2209,6 +2408,8 @@
 				} // end styleCalculator
 			}) );
 			
+			var layout;
+			
 			cy.load(options.elements);
 			cy.layout();
 			return cy;
@@ -2235,7 +2436,7 @@
 		}
 		
 		// allow for registration of extensions
-		// e.g. $.cytoscapeweb("renderer", "svg", { ... });
+		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
 		else if( typeof opts == typeof "" ) {
 			var registrant = arguments[0].toLowerCase(); // what to register (e.g. "renderer")
 			var name = arguments[1].toLowerCase(); // name of the module (e.g. "svg")
@@ -2247,6 +2448,14 @@
 			} else {
 				// set the module; e.g. $.cytoscapeweb("renderer", "svg", { ... });
 				reg[registrant][name] = module;
+				
+				module.prototype.name = function(){
+					return name;
+				};
+				
+				module.prototype.registrant = function(){
+					return registrant;
+				};
 			}
 		}
 	};

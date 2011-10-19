@@ -1,7 +1,7 @@
 $(function(){
 	
 	var defaults = {
-		
+		fit: false
 	};
 	
 	function GridLayout(options){
@@ -16,6 +16,7 @@ $(function(){
 		var renderer = params.renderer;
 		var options = this.options;
 		var container = $(options.selector);
+		var cy = options.cy;
 		
 		$.cytoscapeweb("debug", "Running grid layout with options (%o)", params);
 		
@@ -128,6 +129,10 @@ $(function(){
 			return { x: x, y: y };
 			
 		});
+		
+		if( options.fit ){
+			cy.fit();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);

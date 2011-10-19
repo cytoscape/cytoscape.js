@@ -162,5 +162,12 @@ $(function(){
 		cy.fit();
 	});
 	
+	$("#fit-selected-button").click(function(){
+		cy.fit( cy.elements(":selected") );
+	});
+	
+	$("#center-selected-button").click(function(){
+		cy.center( cy.elements(":selected") );
+	});
 	
 });

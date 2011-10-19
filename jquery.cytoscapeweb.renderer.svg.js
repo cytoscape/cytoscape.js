@@ -542,34 +542,70 @@ $(function(){
 		});
 	};
 	
-	SvgRenderer.prototype.fit = function(){
+	// TODO fix (need to iterate all edges)
+	SvgRenderer.prototype.fit = function(params){
+		var elements = params.elements;
+		var zoom = params.zoom;
+		
+		if( elements == null ){
+			elements = this.cy.elements();
+		}
+		
 		$.cytoscapeweb("debug", "Fit SVG renderer to view bounds");
 		
 		var n = this.nodesGroup.getBBox();
 		var e = this.edgesGroup.getBBox();
 		
-		var x1 = Math.min(n.x, e.x);
-		var y1 = Math.min(n.y, e.y);
-		var x2 = Math.max(n.x + n.width, e.x + e.width);
-		var y2 = Math.max(n.y + n.height, e.y + e.height);
+		var x1, y1, x2, y2;
+		
+		function update(bb){
+			var left = bb.x;
+			var right = left + bb.width;
+			var top = bb.y;
+			var bottom = top + bb.height;
+			
+			if( left < x1 || x1 == null ){
+				x1 = left;
+			}
+			
+			if( right > x2 || x2 == null ){
+				x2 = right;
+			}
+			
+			if( top < y1 || y1 == null ){
+				y1 = top;
+			}
+			
+			if( bottom > y2 || y2 == null ){
+				y2 = bottom;
+			}
+		}
+		
+		elements.nodes().each(function(){
+			var bb = this._private.svgGroup.getBBox();
+			update(bb);
+		});
 		
 		// fix for loop edges (their bounding boxes are 2x width and height of path
 		// they push the bb up and left
-		this.cy.edges().each(function(){
+		elements.edges().each(function(){
 			var src = this._private.data.source;
 			var tgt = this._private.data.target;
 			var bb = this._private.svg.getBBox();
 			
 			if( src == tgt ){
-				if( bb.x == x1 ){
+				if( bb.x == e.x ){
 					x1 = Math.min(x1 + bb.width/2, n.x);
 				}
 				
-				if( bb.y == y1 ){
+				if( bb.y == e.y ){
 					y1 = Math.min(y1 + bb.height/2, n.y);
 				}
 				
 				// TODO check edge labels when added
+			} else {
+				bb = this._private.svgGroup.getBBox();
+				update(bb);
 			}
 		});
 		
@@ -581,13 +617,24 @@ $(function(){
 		
 		var scale = Math.min( width/w, height/h );
 		
-		this.transform({
-			translation: {
-				x: -x1 * scale - (w*scale - width)/2,
-				y: -y1 * scale - (h*scale - height)/2
-			},
-			scale: scale
-		});
+		if( zoom ){
+			this.transform({
+				translation: {
+					x: -x1 * scale - (w*scale - width)/2,
+					y: -y1 * scale - (h*scale - height)/2
+				},
+				scale: scale
+			});
+		} else {
+			var z = this.zoom();
+			
+			this.transform({
+				translation: {
+					x: -x1*z + width/2 - (x2-x1)/2*z,
+					y: -y1*z + height/2 - (y2-y1)/2*z
+				}
+			});
+		}
 		
 	};
 	
@@ -1614,9 +1661,22 @@ $(function(){
 		}
 	};
 	
+	SvgRenderer.prototype.coordinateSystem = function(){
+		return "cartesian";
+	};
+	
+	SvgRenderer.prototype.dimensions = function(){
+		return 2;
+	};
+	
 	function SvgExporter(options){
 		this.options = options;
-		this.cy = options.cytoscapeweb;
+		this.cy = options.cy;
+		this.renderer = options.renderer;
+		
+		if( this.renderer.name() != "svg" ){
+			$.cytoscapeweb("error", "The SVG exporter can be used only if the SVG renderer is used");
+		}
 	}
 	
 	SvgExporter.prototype.run = function(){

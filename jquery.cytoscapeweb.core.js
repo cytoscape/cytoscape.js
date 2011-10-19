@@ -1507,7 +1507,7 @@
 						
 						for(var j = 0; j < colonSelectors.length; j++){
 							var selector = colonSelectors[j];
-							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free$/) ){
+							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside$/) ){
 								// valid
 							} else {
 								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
@@ -1617,16 +1617,22 @@
 								allColonSelectorsMatch = !element.locked();
 								break;
 							case ":visible":
-								allColonSelectorsMatch = renderer.isElementVisible(element); // TODO add function to renderer
+								allColonSelectorsMatch = renderer.elementIsVisible(element);
 								break;
 							case ":hidden":
-								allColonSelectorsMatch = !renderer.isElementVisible(element);
+								allColonSelectorsMatch = !renderer.elementIsVisible(element);
 								break;
-							case "grabbed":
+							case ":grabbed":
 								allColonSelectorsMatch = element.grabbed();
 								break;
-							case "free":
+							case ":free":
 								allColonSelectorsMatch = !element.grabbed();
+								break;
+							case ":removed":
+								allColonSelectorsMatch = element.removed();
+								break;
+							case ":inside":
+								allColonSelectorsMatch = !element.removed();
 								break;
 							}
 							
@@ -2075,19 +2081,20 @@
 						return;
 					}
 					
-					if( prevLayoutName != name ){
+					if( prevLayoutName != name || layout == null ){
+												
 						layout = new reg.layout[name]($.extend({}, params, { 
 							selector: options.selector,
-							name: name
+							cy: cy
 						}));
+						
 						prevLayoutName = name;
 					}
 					
 					layout.run( $.extend({}, params, {
 						nodes: cy.nodes(),
 						edges: cy.edges(),
-						renderer: renderer,
-						selector: options.selector
+						renderer: renderer
 					}) );
 					
 				},
@@ -2100,12 +2107,22 @@
 					return renderer.panBy(params);
 				},
 				
-				fit: function(){
-					renderer.fit();
+				fit: function(elements){
+					renderer.fit({
+						elements: elements,
+						zoom: true
+					});
 				},
 				
 				zoom: function(params){
 					return renderer.zoom(params);
+				},
+				
+				center: function(elements){
+					renderer.fit({
+						elements: elements,
+						zoom: false
+					});
 				},
 				
 				load: function(elements){
@@ -2158,7 +2175,8 @@
 					} else {
 						var exporter = new exporterDefn({
 							selector: options.selector,
-							cytoscapeweb: cy,
+							cy: cy,
+							renderer: renderer
 						});
 						
 						return exporter.run();
@@ -2167,14 +2185,6 @@
 				
 			};
 			$(options.selector).data("cytoscapeweb", cy);
-			
-			if( reg.layout[ options.layout.name.toLowerCase() ] == null ){
-				console.error("Can not initialise: No such layout `%s` found; did you include its JS file?",  options.layout.name);
-				return;
-			}
-			
-			var layout = new reg.layout[ options.layout.name.toLowerCase() ]( options.layout );
-			
 			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
@@ -2295,6 +2305,8 @@
 				} // end styleCalculator
 			}) );
 			
+			var layout;
+			
 			cy.load(options.elements);
 			cy.layout();
 			return cy;
@@ -2321,7 +2333,7 @@
 		}
 		
 		// allow for registration of extensions
-		// e.g. $.cytoscapeweb("renderer", "svg", { ... });
+		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
 		else if( typeof opts == typeof "" ) {
 			var registrant = arguments[0].toLowerCase(); // what to register (e.g. "renderer")
 			var name = arguments[1].toLowerCase(); // name of the module (e.g. "svg")
@@ -2333,6 +2345,14 @@
 			} else {
 				// set the module; e.g. $.cytoscapeweb("renderer", "svg", { ... });
 				reg[registrant][name] = module;
+				
+				module.prototype.name = function(){
+					return name;
+				};
+				
+				module.prototype.registrant = function(){
+					return registrant;
+				};
 			}
 		}
 	};

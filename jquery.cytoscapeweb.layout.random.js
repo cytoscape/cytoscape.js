@@ -1,7 +1,7 @@
 $(function(){
 	
 	var defaults = {
-		
+		fit: true
 	};
 	
 	function RandomLayout(options){
@@ -16,25 +16,34 @@ $(function(){
 		var renderer = params.renderer;
 		var options = this.options;
 		var container = $(options.selector);
+		var cy = options.cy;
 		
 		$.cytoscapeweb("debug", "Running random layout with options (%o)", params);
 		
 		var width = container.width();
 		var height = container.height();
 			
-		$.cytoscapeweb("debug", "Random layout found (w, h) = (%i, %i)", width, height);
+		$.cytoscapeweb("debug", "Random layout found (w, h, d) = (%i, %i)", width, height);
 		
-		nodes.positions(function(i, element){
+		if( renderer.coordinateSystem() != "cartesian" ){
+			$.cytoscapeweb("error", "Random layout supports only Cartesian coordinates");
+		} else {
+			nodes.positions(function(i, element){
+				
+				if( element.locked() ){
+					return false;
+				}
+
+				return {
+					x: Math.round( Math.random() * width ),
+					y: Math.round( Math.random() * height )
+				};
+			});
 			
-			if( element.locked() ){
-				return false;
+			if( options.fit ){
+				cy.fit();
 			}
-			
-			return {
-				x: Math.round( Math.random() * width ),
-				y: Math.round( Math.random() * height )
-			};
-		});
+		}
 	};
 	
 	$.cytoscapeweb("layout", "random", RandomLayout);

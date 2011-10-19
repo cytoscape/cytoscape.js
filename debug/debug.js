@@ -38,7 +38,18 @@ $(function(){
 				labelHalign: "middle",
 				labelValign: "top",
 				shape: "ellipse",
-				size: {
+				height: {
+					continuousMapper: {
+						attr: {
+							name: "weight",
+						},
+						mapped: {
+							min: 10,
+							max: 30
+						}
+					}
+				},
+				width: {
 					continuousMapper: {
 						attr: {
 							name: "weight",

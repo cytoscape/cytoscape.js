@@ -22,11 +22,13 @@ $(function(){
 	var defaults = {
 		nodes: {
 			fillColor: "#888",
+			fillOpacity: 1,
 			borderColor: "#666",
+			borderOpacity: 1,
 			borderWidth: 0,
 			borderStyle: "solid",
-			opacity: 1,
-			size: 10,
+			height: 10,
+			width: 10,
 			shape: "ellipse",
 			cursor: "pointer",
 			visibility: "visible",
@@ -42,7 +44,6 @@ $(function(){
 			labelFontVariant: "italic", 
 			labelFontFamily: "Arial",
 			labelFontWeight: "bold",
-			labelOpacity: 1,
 			labelOutlineOpacity: 1,
 			labelFillOpacity: 1,
 			selected: {
@@ -546,7 +547,7 @@ $(function(){
 		var elements = params.elements;
 		var zoom = params.zoom;
 		
-		if( elements == null ){
+		if( elements == null || elements.size() == 0 ){
 			elements = this.cy.elements();
 		}
 		
@@ -722,38 +723,15 @@ $(function(){
 		
 		element._private.style = style;
 		
-		if( element._private.group == "nodes" ){
-			// width and height are size unless at least one is defined
-			if( style.width == null && style.height == null ){
-				style.width = style.size;
-				style.height = style.size;
-			} else {
-				
-				// use the size for undefined other field
-				
-				if( style.height != null ){
-					if( style.width == null ){
-						style.width = style.size;
-					}
-				}
-				
-				if( style.width != null ){
-					if( style.height == null ){
-						style.height = style.size;
-					}
-				}
-			}
-			
-			// opacity defaults to overall opacity if not set
-			if( style.borderOpacity == null ){
-				style.borderOpacity = style.opacity;
-			}
-			if( style.fillOpacity == null ){
-				style.fillOpacity = style.opacity;
+		function nullassign(field, replacementField){
+			if( style[field] == null ){
+				style[field] = style[replacementField];
 			}
 		}
 		
-		if( element._private.group == "edges" ){
+		if( element._private.group == "nodes" ){
+		
+		} if( element._private.group == "edges" ){
 			var source = element.source();
 			var target = element.target();
 			
@@ -1390,23 +1368,19 @@ $(function(){
 			$.cytoscapeweb("error", "SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
 			return;
 		}
-		
-		this.svg.change(element._private.svgGroup, {
-			opacity: percent(style.opacity)
-		});
-		
+			
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element._private.svg, {
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
+			fillOpacity: percent(style.fillOpacity),
 			stroke: color(style.borderColor),
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),
 			cursor: cursor(style.cursor),
-			"visibility": visibility(style.visibility),
-			opacity: percent(style.fillOpacity)
+			"visibility": visibility(style.visibility)
 		});
 		
 		// styles for label
@@ -1423,8 +1397,7 @@ $(function(){
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
-			"font-size": style.labelFontSize,
-			opacity: percent(style.labelOpacity)
+			"font-size": style.labelFontSize
 		});
 		
 		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;

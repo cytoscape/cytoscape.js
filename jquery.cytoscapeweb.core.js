@@ -171,6 +171,7 @@
 			
 			// structs to hold internal cytoweb model
 			var structs = {
+				renderer: null, // populated on creation
 				style: options.style,
 				nodes: {}, // id => node object
 				edges: {}, // id => edge object
@@ -249,23 +250,111 @@
 				}
 			}
 			
-			function updateContinuousMapperBounds(group, name, val){
+			function addContinuousMapperBounds(element, name, val){
+				var group = element._private.group;
+				
 				if( isNumber(val) ){
-					
 					if( structs.continuousMapperBounds[ group ][ name ] == null ){
 						structs.continuousMapperBounds[ group ][ name ] = {
 							min: val,
-							max: val
+							max: val,
+							vals: []
 						};
 					}
 					
-					if( val < structs.continuousMapperBounds[ group ][ name ].min ){
-						structs.continuousMapperBounds[ group ][ name ].min = val;
+					var bounds = structs.continuousMapperBounds[ group ][ name ];
+					var vals = bounds.vals;
+					var inserted = false;
+					var oldMin = null, oldMax = null;
+					
+					if( vals.length > 0 ){
+						oldMin = vals[0];
+						oldMax = vals[ vals.length - 1 ];
 					}
 					
-					if( val > structs.continuousMapperBounds[ group ][ name ].max ){
-						structs.continuousMapperBounds[ group ][ name ].max = val;
+					for(var i = 0; i < vals.length; i++){
+						if( val <= vals[i] ){
+							vals.splice(i, 0, val);
+							inserted = true;
+							break;
+						}
 					}
+					
+					if(!inserted){
+						vals.push(val);
+					}
+					
+					bounds.min = vals[0];
+					bounds.max = vals[vals.length - 1];
+					
+					if( oldMin != bounds.min || oldMax != bounds.max ){
+						notify({
+							type: "mapperbounds",
+							collection: [ element ]
+						});
+					}
+				}
+			}
+			
+			function updateContinuousMapperBounds(element, name, oldVal, newVal){
+				var group = element._private.group;
+				var bounds = structs.continuousMapperBounds[ group ][ name ];
+				var vals = bounds.vals;
+				var oldMin = null, oldMax = null;
+				
+				if( vals.length > 0 ){
+					oldMin = vals[0];
+					oldMax = vals[ vals.length - 1 ];
+				}
+				
+				removeContinuousMapperBounds(element, name, oldVal);
+				addContinuousMapperBounds(element, name, newVal);
+				
+				if( oldMin != bounds.min || oldMax != bounds.max ){
+					notify({
+						type: "mapperbounds",
+						collection: [ element ]
+					});
+				}
+			}
+			
+			function removeContinuousMapperBounds(element, name, val){
+				var group = element._private.group;
+				var bounds = structs.continuousMapperBounds[ group ][ name ];
+				
+				if( bounds == null ){
+					return;
+				}
+				
+				var oldMin = null, oldMax = null;
+				var vals = bounds.vals;
+				
+				if( vals.length > 0 ){
+					oldMin = vals[0];
+					oldMax = vals[ vals.length - 1 ];
+				}
+				
+				
+				for(var i = 0; i < vals.length; i++){
+					if( val == vals[i] ){
+						vals.splice(i, 1);
+						break;
+					}
+				}
+				
+				if( vals.length > 0 ){
+					bounds.min = vals[0];
+					bounds.max = vals[vals.length - 1];
+				} else {
+					bounds.min = null;
+					bounds.max = null;
+				}
+				
+				if( oldMin != bounds.min || oldMax != bounds.max ){
+					notify({
+						type: "mapperbounds",
+						collection: [ element ]
+					});
 				}
 			}
 			
@@ -313,11 +402,36 @@
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ),
 					style: {}, // the rendered style populated by the renderer
-					removed: false, // whether it's inside the vis; true if removed
+					removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 					selected: params.selected ? true : false, // whether it's selected
 					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
 				};
+				
+				this.restore();
+			};
+			
+			CyElement.prototype.collection = function(){
+				return new CyCollection([ this ]);
+			};
+			
+			CyElement.prototype.grabbed = function(){
+				return this._private.grabbed;
+			};
+			
+			CyElement.prototype.group = function(){
+				return this._private.group;
+			}
+			
+			CyElement.prototype.removed = function(){
+				return this._private.removed;
+			};
+			
+			CyElement.prototype.restore = function(){
+				if( !this.removed() ){
+					// don't need to do anything
+				}
+				this._private.removed = false;
 				
 				// set id and validate
 				if( this._private.data.id == null ){
@@ -370,26 +484,10 @@
 				// update mapper structs
 				var self = this;
 				$.each(this._private.data, function(name, val){
-					updateContinuousMapperBounds(self._private.group, name, val);
+					addContinuousMapperBounds(self, name, val);
 				});
 				
 				this.trigger("add");
-			};
-			
-			CyElement.prototype.collection = function(){
-				return new CyCollection([ this ]);
-			};
-			
-			CyElement.prototype.grabbed = function(){
-				return this._private.grabbed;
-			};
-			
-			CyElement.prototype.group = function(){
-				return this._private.group;
-			}
-			
-			CyElement.prototype.removed = function(){
-				return this._private.removed;
 			};
 			
 			// remove from cytoweb
@@ -397,6 +495,8 @@
 				if( !this._private.removed ){
 					delete structs[ this._private.group ][ this._private.data.id ];
 					this._private.removed = true;
+					var group = this._private.group;
+					var self = this;
 					
 					// remove from map of edges belonging to nodes
 					if( this._private.group == "edges" ){
@@ -412,6 +512,10 @@
 						
 						structs.nodeToEdges[ this._private.data.id ] = {};
 					}
+					
+					$.each(this._private.data, function(attr, val){
+						removeContinuousMapperBounds(self, attr, val);
+					});
 					
 					// must manually notify since trigger won't do this automatically once removed
 					notify({
@@ -485,6 +589,7 @@
 						
 			CyElement.prototype.data = function(attr, val){
 				var ret;
+				var self = this;
 				
 				// get whole field
 				if( attr === undefined ){
@@ -506,7 +611,7 @@
 						if( field == "id" || ( this._private.group == "edges" && ( field == "source" || field == "target" ) ) ){
 							console.error("Can not change immutable field `%s` for element with group `%s` and ID `%s` to `%o`", field, this._private.group, this._private.data.id, val);
 						} else {
-							updateContinuousMapperBounds(this._private.group, field, val);
+							updateContinuousMapperBounds(self, field, self._private.data[field], val);
 						}
 					}
 					
@@ -534,25 +639,16 @@
 				else {
 					if( this._private.group == "edges" ){
 						if( attr == "source" || attr == "target" ){
-							
-							if( val === null ){
-								console.error("Can not change `%s` of edge with ID `%s` to null --- `%s` must be non-null", attr, this._private.data.id, attr);
-								return;
-							}
-							
-							var oldNodeId = this._private.data[attr];
-							var newNodeId = val;
-							var edgeId = this._private.data.id;
-							
-							delete structs.nodeToEdges[ oldNodeId ][ edgeId ];
-							structs.nodeToEdges[ newNodeId ][ edgeId ] = this;
+							console.error("Can not change `%s` of edge with ID --- you can not move edges", attr, this._private.data.id);
+							return;
 						}
 					}
 					
+					var oldVal = this._private.data[ attr ];
 					this._private.data[ attr ] = ( typeof val == "object" ? copy(val) : val );
 					ret = this;
 					
-					updateContinuousMapperBounds(this._private.group, attr, val);
+					updateContinuousMapperBounds(this, attr, oldVal, val);
 					
 					this.trigger("data");
 				}		
@@ -564,6 +660,11 @@
 				if( field == undefined ){
 					// delete all non-essential data
 					var oldData = this._private.data;
+					var self = this;
+					
+					$.each(this._private.data, function(attr, val){
+						removeContinuousMapperBounds(self, attr, val);
+					});
 					
 					if( this._private.group == "nodes" ){
 						this._private.data = {
@@ -589,6 +690,7 @@
 						return;
 					}
 					
+					removeContinuousMapperBounds(this, field, this._private.data[field]);
 					delete this._private.data[field];
 				}
 				
@@ -1444,6 +1546,19 @@
 				return this;
 			};
 			
+			CyCollection.prototype.restore = function(){
+				var collection = this.filter(":removed");
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.restore();
+					});
+				});
+
+				collection.trigger("add");
+				return this;
+			};
+			
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
@@ -1798,7 +1913,7 @@
 					params.collection = new CyCollection(elements);	
 				}
 			
-				enableNotifications && renderer.notify(params);
+				if(enableNotifications) renderer.notify(params);
 			}
 			
 			// getting nodes/edges with a filter function to select which ones to include
@@ -1845,29 +1960,17 @@
 						// add the element
 						if( opts instanceof CyElement ){
 							var element = opts;
+							elements.add(element);
 							
-							if( structs[ element._private.group ][ element._private.data.id ] == null ){							
-								elements.push( element );
-								element._private.removed = false;
-								structs[ element._private.group ][ element._private.data.id ] = element;
-							} else {
-								console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element._private.group, element._private.data.id);
-							}
+							element.restore();
 						} 
 						
 						// add the collection
 						else if( opts instanceof CyCollection ){
 							var collection = opts;
-							collection.each(function(i, element){
+							elements.add(collection);
 							
-								if( structs[ element._private.group ][ element._private.data.id ] == null ){
-									elements.push( element );
-									element._private.removed = false;
-									structs[ element._private.group ][ element._private.data.id ] = element;
-								} else {
-									console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", element._private.group, element._private.data.id);
-								}
-							});
+							collection.restore();
 						} 
 						
 						// specify an array of options

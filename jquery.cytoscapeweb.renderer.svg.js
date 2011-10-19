@@ -1319,6 +1319,15 @@ $(function(){
 		this.updateElementsStyle(collection);
 	};
 	
+	SvgRenderer.prototype.updateMapperBounds = function(collection){
+		
+		var elements = cy.elements().filter(function(){
+			return this.group() == collection[0].group();
+		}).not(collection);
+		
+		this.updateElementsStyle( elements );
+	};
+	
 	SvgRenderer.prototype.updateElementsStyle = function(collection){
 		var self = this;
 		collection = collection.collection();
@@ -1337,7 +1346,7 @@ $(function(){
 		collection.nodes().neighborhood().edges().not( collection.edges() ).each(function(i, element){
 			self.updatePosition(element);
 		});
-	}
+	};
 	
 	SvgRenderer.prototype.updateStyle = function(style){
 		var collection = this.cy.elements();
@@ -1511,14 +1520,12 @@ $(function(){
 		
 		var self = this;
 		
-		collection.each(function(i, element){
-			if( element.group() == "nodes" ){
-				self.makeSvgElement(element);
-			}
-			
-			else if( element.group() == "edges" ){
-				self.makeSvgElement(element);
-			}
+		collection.nodes().each(function(i, element){
+			self.makeSvgElement(element);
+		});
+		
+		collection.edges().each(function(i, element){
+			self.makeSvgElement(element);
 		});
 		
 		self.positionEdges( collection.edges().parallelEdges() );
@@ -1627,12 +1634,16 @@ $(function(){
 			case "data":
 				this.updateData( params.collection );
 				break;
+			
+			case "mapperbounds":
+				this.updateMapperBounds( params.collection );
+				break;
 				
 			case "select":
 			case "unselect":
 				this.updateSelection( params.collection );
 				break;
-			
+				
 			default:
 				$.cytoscapeweb("debug", "The SVG renderer doesn't consider the `%s` event", params.type);
 				break;

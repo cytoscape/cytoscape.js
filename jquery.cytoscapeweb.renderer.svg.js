@@ -542,13 +542,17 @@ $(function(){
 		});
 	};
 	
-	// TODO fix (need to iterate all edges)
 	SvgRenderer.prototype.fit = function(params){
 		var elements = params.elements;
 		var zoom = params.zoom;
 		
 		if( elements == null ){
 			elements = this.cy.elements();
+		}
+		
+		if( elements.is(":removed") ){
+			$.cytoscapeweb("debug", "SVG renderer does not take into account removed elements when fitting");
+			elements = elements.filter(":inside");
 		}
 		
 		$.cytoscapeweb("debug", "Fit SVG renderer to view bounds");
@@ -626,7 +630,7 @@ $(function(){
 				scale: scale
 			});
 		} else {
-			var z = this.zoom();
+			var z = this.scale;
 			
 			this.transform({
 				translation: {
@@ -1029,25 +1033,6 @@ $(function(){
 			return centerPointInside || intersects;
 		}
 		
-		function positionInside(position){
-			var x = position.x;
-			var y = position.y;
-			
-			// selection square
-			var x1 = selectionBounds.x1;
-			var y1 = selectionBounds.y1;
-			var x2 = selectionBounds.x2;
-			var y2 = selectionBounds.y2;
-			
-			if( x1 <= x && x <= x2 &&
-				y1 <= y && y <= y2 ){
-				
-				return true;
-			} 
-			
-			return false;
-		}
-		
 		this.cy.elements().each(function(i, element){
 			if( element.isNode() ){
 				if( nodeInside(element) ){
@@ -1055,19 +1040,12 @@ $(function(){
 				}
 			} else {
 				// if both node center points are inside, then the edge is inside
-				if( positionInside( element.source()._private.position ) &&
-					positionInside( element.target()._private.position ) ){
+				if( nodeInside( element.source() ) &&
+					nodeInside( element.target() ) ){
 					
 					toSelect = toSelect.add(element);
 				}
 				
-				// edge isn't totally inside, so check for intersections
-				else {
-					var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
-					if( intersection.points.length > 0 ){
-						toSelect = toSelect.add(element);
-					}
-				}
 			}
 		});
 		

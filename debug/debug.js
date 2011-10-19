@@ -23,8 +23,8 @@ $(function(){
 							name: "weight",
 						},
 						mapped: {
-							min: 4,
-							max: 1
+							min: 1,
+							max: 4
 						}
 					}
 				}

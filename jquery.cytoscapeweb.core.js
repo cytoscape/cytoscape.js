@@ -349,7 +349,7 @@
 					bounds.min = null;
 					bounds.max = null;
 				}
-				
+			
 				if( oldMin != bounds.min || oldMax != bounds.max ){
 					notify({
 						type: "mapperbounds",

@@ -31,7 +31,6 @@ $(function(){
 			},
 			
 			nodes: {
-				opacity: 0.5,
 				labelText: {
 					defaultValue: "",
 					passthroughMapper: "id"
@@ -72,8 +71,8 @@ $(function(){
 		}
 	};
 	
-	var numNodes = 5;
-	var numEdges = 10;
+	var numNodes = 10;
+	var numEdges = 20;
 	
 	function randNodeId(){
 		return "n" + Math.floor( Math.random() * numNodes );

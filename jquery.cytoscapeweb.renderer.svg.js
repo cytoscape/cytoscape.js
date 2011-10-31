@@ -703,6 +703,25 @@ $(function(){
 		transform(self.edgesGroup);
 	};
 	
+	SvgRenderer.prototype.calculateStyleField = function(element, fieldName){
+		var self = this;
+		var styleCalculator = self.options.styleCalculator;
+		
+		var field = this.style[element.group()][fieldName];
+		var bypassField = element._private.bypass[fieldName];
+		var selectedField = this.style[element.group()].selected != null ? this.style[element.group()].selected[fieldName] : undefined;
+		
+		if( bypassField !== undefined ){
+			field = bypassField;
+		}
+		
+		if( element.selected() && selectedField !== undefined ){
+			field = selectedField;
+		}
+		
+		return styleCalculator.calculate(element, field);
+	};
+	
 	SvgRenderer.prototype.calculateStyle = function(element){
 		var self = this;
 		var styleCalculator = self.options.styleCalculator;
@@ -722,12 +741,6 @@ $(function(){
 		});
 		
 		element._private.style = style;
-		
-		function nullassign(field, replacementField){
-			if( style[field] == null ){
-				style[field] = style[replacementField];
-			}
-		}
 		
 		if( element._private.group == "nodes" ){
 		
@@ -1153,10 +1166,8 @@ $(function(){
 		
 		// if the nodes are directly on top of each other, just make a small difference
 		// so we don't get bad calculation states (e.g. divide by zero)
-		if( x1 == x2 ){
+		if( x1 == x2 && y1 == y2 ){
 			x2++;
-		}
-		if( y1 == y2 ){
 			y2++;
 		}
 		
@@ -1165,12 +1176,28 @@ $(function(){
 		var index;
 		var curveIndex;
 		var curveDistance = 20;
+		var cp, cp1, cp2;
 		
 		parallelEdges.each(function(i, e){
 			if( e == element ){
 				index = i;
 			}
 		});
+		
+		function makePath(){
+			var curved = curveIndex != 0;
+			var path = self.svg.createPath();
+			
+			if( svgPath != null ){
+				self.svg.remove(svgPath);
+			}
+			
+			if( curved ){
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+			} else {
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+			}
+		}
 		
 		if( loop ){
 			var sh = src._private.style.height;
@@ -1203,32 +1230,80 @@ $(function(){
 			}
 			
 			var curved = curveIndex != 0;
-			var path = self.svg.createPath();
 			
 			if( src._private.data.id > tgt._private.data.id ){
 				curveIndex *= -1;
 			}
 			
-			if( curved ){
-				var cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+			if(curved){
+				cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
 			} else {
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+				cp = {
+					x: x1,
+					y: y1
+				};
 			}
+			
+			makePath();
 		}
 		
+		var markerFactor = 5;
+		var f = markerFactor;
+		var targetMarkerId = "target-" + element._private.data.id;
+		var edgeWidth = self.calculateStyleField(element, "width");
+		var targetShape = self.calculateStyleField(tgt, "shape");
+		var targetMarkerHeight = f * edgeWidth;
+		var targetShape = nodeShape(targetShape).intersectionShape;
+		
+		var tgtInt = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.svg)).points[0];
+		var end = self.getPointAlong(tgtInt, cp, targetMarkerHeight/2, tgtInt);
+		x2 = end.x;
+		y2 = end.y;
+		makePath();
+		
+		if( element._private.targetMarker != null ){
+			this.svg.remove(element._private.targetMarker);
+		}
+		
+		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, f, f, {
+			orient: "auto",
+			markerUnits: "strokeWidth",
+			refX: f/2,
+			refY: f/2,
+			strokeWidth: 0
+		});
+		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [f, f/2], [0, f]]);
+		element._private.targetMarker = targetMarker;
+		
+		this.svg.change(svgPath, {
+			markerEnd: "url(#" + targetMarkerId + ")"
+		});
+		
 		element._private.svg = svgPath;
+		return svgPath;
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
-		
 		var diff = { x: p1.x-p2.x, y: p1.y-p2.y };
 	    var normal = this.getNormalizedPoint({ x: diff.y, y: -diff.x }, 1);
 	    
 	    var mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
 	    
 	    return {x: mid.x + normal.x * h, y: mid.y + normal.y * h};
+	};
 	
+	SvgRenderer.prototype.getPointAlong = function(p1, p2, h, p0){
+		var slope = { x: p2.x-p1.x, y: p2.y-p1.y };
+	    var normalSlope = this.getNormalizedPoint({ x: slope.x, y: slope.y }, 1);
+	    
+	    if( p0 == null ){
+	    	p0 = p2;
+	    }
+	    
+	    return {
+	    	x: p0.x + normalSlope.x * h,
+	    	y: p0.y + normalSlope.y * h
+	    };
 	};
 	
 	SvgRenderer.prototype.getNormalizedPoint = function(p, newLength){
@@ -1475,7 +1550,7 @@ $(function(){
 			stroke: color(style.color),
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
-			"stroke-linecap": "round",
+			"stroke-linecap": "butt", // disable for now for markers to line up nicely
 			opacity: percent(style.opacity),
 			cursor: cursor(style.cursor),
 			fill: "none",
@@ -1483,7 +1558,7 @@ $(function(){
 		});
 		
 		this.svg.change(element._private.targetSvg, {
-			fill: color("red")
+			fill: color("blue")
 		});
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);

@@ -16,6 +16,8 @@ $(function(){
 		},
 		style: {
 			edges: {
+				color: "red",
+				opacity: 1,
 				width: {
 					defaultValue: 1,
 					continuousMapper: {
@@ -38,6 +40,7 @@ $(function(){
 				labelHalign: "middle",
 				labelValign: "top",
 				shape: "ellipse",
+				fillOpacity: 0.5,
 				height: {
 					continuousMapper: {
 						attr: {
@@ -71,8 +74,8 @@ $(function(){
 		}
 	};
 	
-	var numNodes = 10;
-	var numEdges = 20;
+	var numNodes = 2;
+	var numEdges = 2;
 	
 	function randNodeId(){
 		return "n" + Math.floor( Math.random() * numNodes );
@@ -91,8 +94,8 @@ $(function(){
 		options.elements.edges.push({
 			data: {
 				id: "e" + i,
-				source: randNodeId(),
-				target: randNodeId(),
+				source: 'n0',
+				target: 'n1',
 				weight: Math.random() * 100
 			}
 		});

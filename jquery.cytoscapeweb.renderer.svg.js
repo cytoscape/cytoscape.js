@@ -318,6 +318,11 @@ $(function(){
 					svg = s;
 					self.svg = svg;
 					
+					self.bg = svg.rect(0, 0, "100%", "100%", {
+						fill: "white",
+						opacity: 0.000000000000000001
+					});
+					
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
@@ -328,7 +333,6 @@ $(function(){
 					$(self.nodesGroup).svgattr("class", "cw-nodes");
 					
 					self.defs = self.svg.defs();
-					
 					
 					self.makeBackgroundInteractive();
 					
@@ -352,7 +356,7 @@ $(function(){
 		
 		var self = this;
 		
-		var svgDomElement = self.svgRoot;
+		var svgDomElement = self.bg;
 		var panDelay = 150;
 		
 		self.shiftDown = false;
@@ -1177,6 +1181,11 @@ $(function(){
 		var curveIndex;
 		var curveDistance = 20;
 		var cp, cp1, cp2;
+		var pDistance = self.getDistance({ x: x1, y: y1 }, { x: x2, y: y2 });
+		var maxCurveDistance = 200;
+		
+		curveDistance = Math.min(20 + 4000/pDistance, maxCurveDistance);
+		console.log(curveDistance, pDistance);
 		
 		parallelEdges.each(function(i, e){
 			if( e == element ){
@@ -1247,11 +1256,17 @@ $(function(){
 			makePath();
 		}
 		
-		var markerFactor = 5;
-		var f = markerFactor;
 		var targetMarkerId = "target-" + element._private.data.id;
 		var edgeWidth = self.calculateStyleField(element, "width");
 		var targetShape = self.calculateStyleField(tgt, "shape");
+		var markerFactor = 5;
+		var minArrowSize = 15;
+		
+		while(markerFactor * edgeWidth < minArrowSize){
+			markerFactor++;
+		}
+		
+		var f = markerFactor;
 		var targetMarkerHeight = f * edgeWidth;
 		var targetShape = nodeShape(targetShape).intersectionShape;
 		
@@ -1272,7 +1287,7 @@ $(function(){
 			refY: f/2,
 			strokeWidth: 0
 		});
-		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, 0], [f, f/2], [0, f]]);
+		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, f/5], [f, f/2], [0, 4/5*f]]);
 		element._private.targetMarker = targetMarker;
 		
 		this.svg.change(svgPath, {
@@ -1314,6 +1329,10 @@ $(function(){
 			x: p.x * factor,
 			y: p.y * factor
 		};
+	};
+	
+	SvgRenderer.prototype.getDistance = function(p1, p2){
+		return Math.sqrt( (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y) );
 	};
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){

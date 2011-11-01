@@ -7,6 +7,13 @@
 		layout: {},
 		exporter: {}
 	};
+	
+	var subreg = {
+		format: {},
+		renderer: {},
+		layout: {},
+		exporter: {}
+	};
 
 	var quiet = false;
 	var debug = false;
@@ -2437,12 +2444,25 @@
 		
 		// allow for registration of extensions
 		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
+		// e.g. $.cytoscapeweb("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
 		else if( typeof opts == typeof "" ) {
 			var registrant = arguments[0].toLowerCase(); // what to register (e.g. "renderer")
 			var name = arguments[1].toLowerCase(); // name of the module (e.g. "svg")
 			var module = arguments[2]; // the module object
+			var componentType = arguments[2];
+			var componentName = arguments[3];
+			var component = arguments[4];
 			
-			if( module == null ){
+			var haveModule = module != null && typeof module == typeof function(){}.prototype;
+			var haveComponent = component != null;
+			
+			if( componentType !== undefined && isString(componentType) ){
+				if( componentName === undefined ){
+					return subreg[registrant][name][componentType];
+				} else if( component === undefined ) {
+					return subreg[registrant][name][componentType][componentName];
+				}
+			} else if( module === undefined ){
 				// get the module by name; e.g. $.cytoscapeweb("renderer", "svg");
 				return reg[registrant][name];
 			} else {

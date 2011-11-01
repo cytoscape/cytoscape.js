@@ -318,11 +318,6 @@ $(function(){
 					svg = s;
 					self.svg = svg;
 					
-					self.bg = svg.rect(0, 0, "100%", "100%", {
-						fill: "white",
-						opacity: 0.000000000000000001
-					});
-					
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
@@ -356,7 +351,7 @@ $(function(){
 		
 		var self = this;
 		
-		var svgDomElement = self.bg;
+		var svgDomElement = self.svgRoot;
 		var panDelay = 150;
 		
 		self.shiftDown = false;
@@ -1185,7 +1180,6 @@ $(function(){
 		var maxCurveDistance = 200;
 		
 		curveDistance = Math.min(20 + 4000/pDistance, maxCurveDistance);
-		console.log(curveDistance, pDistance);
 		
 		parallelEdges.each(function(i, e){
 			if( e == element ){
@@ -1294,8 +1288,17 @@ $(function(){
 			markerEnd: "url(#" + targetMarkerId + ")"
 		});
 		
+		this.markerDrawFix();
+		
 		element._private.svg = svgPath;
 		return svgPath;
+	};
+	
+	SvgRenderer.prototype.markerDrawFix = function(){
+		var scale = this.zoom();
+		this.zoom(0.1);
+		this.zoom(10);
+		this.zoom(scale);
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){

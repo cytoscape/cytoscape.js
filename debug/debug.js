@@ -39,7 +39,7 @@ $(function(){
 				},
 				labelHalign: "middle",
 				labelValign: "top",
-				shape: "ellipse",
+				shape: "rectangle",
 				fillOpacity: 0.5,
 				height: {
 					continuousMapper: {

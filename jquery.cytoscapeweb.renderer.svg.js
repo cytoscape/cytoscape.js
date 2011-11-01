@@ -1295,10 +1295,24 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.markerDrawFix = function(){
-		var scale = this.zoom();
-		this.zoom(0.1);
-		this.zoom(10);
-		this.zoom(scale);
+		this.forceRedraw();
+	};
+	
+	SvgRenderer.prototype.forceRedraw = function(){
+		this.svg.change(this.svgRoot, {
+			opacity: 0
+		});
+		
+		this.svg.change(this.svgRoot, {
+			opacity: Math.random()
+		});
+		
+		this.svg.change(this.svgRoot, {
+			opacity: 1
+		});
+		
+		var rect = this.svg.rect(0, 0, this.container.width(), this.container.height());
+		this.svg.remove(rect);
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){

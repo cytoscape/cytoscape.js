@@ -52,7 +52,11 @@ $(function(){
 			}
 		},
 		edges: {
-			color: "#ccc",
+			lineColor: "#ccc",
+			targetArrowColor: "#ccc",
+			sourceArrowColor: "#ccc",
+			targetArrowShape: "none",
+			sourceArrowShape: "none",
 			opacity: 1,
 			width: 1,
 			style: "solid",
@@ -73,11 +77,9 @@ $(function(){
 	
 	var lineStyles = {};
 	
-	var registerLineStyle = SvgRenderer.prototype.registerLineStyle = function(style){
-		lineStyles[ style.name.toLowerCase() ] = style;
-		style.name = style.name.toLowerCase();
-		
-		$.cytoscapeweb("debug", "SVG renderer registered line style with name `%s` and definition %o", style.name, style);
+	var registerLineStyle = function(style){
+		$.cytoscapeweb("renderer", "svg", "linestyle", style.name, style);
+		delete style.name;
 	};
 	
 	registerLineStyle({
@@ -100,13 +102,45 @@ $(function(){
 		array: [5, 5]
 	});
 	
-	var nodeShapes = {};
+	var registerEdgeArrowShape = function(shape){
+		$.cytoscapeweb("renderer", "svg", "edgearrowshape", shape.name, shape);
+		delete shape.name;
+	};
 	
-	var registerNodeShape = SvgRenderer.prototype.registerNodeShape = function(shape){
-		nodeShapes[ shape.name.toLowerCase() ] = shape;
-		shape.name = shape.name.toLowerCase();
+	registerEdgeArrowShape({
+		name: "triangle",
 		
-		$.cytoscapeweb("debug", "SVG renderer registered shape with name `%s` and definition %o", shape.name, shape);
+		// generate the shape svg
+		svg: function(svg, marker, f, d){
+			if( d == "source" ){
+				return svg.polygon(marker, [[f, 0], [0, f/2], [f, f]]);
+			} else {
+				return svg.polygon(marker, [[0, 0], [f, f/2], [0, f]]);
+			}
+		}
+	});
+	
+	registerEdgeArrowShape({
+		name: "square",
+		
+		// generate the shape svg
+		svg: function(svg, marker, f, d){
+			return svg.polygon(marker, [[0, 0], [0, f], [f, f], [f, 0]]);
+		}
+	});
+	
+	registerEdgeArrowShape({
+		name: "circle",
+		
+		// generate the shape svg
+		svg: function(svg, marker, f, d){
+			return svg.circle(marker, f/2, f/2, f/2);
+		}
+	});
+	
+	var registerNodeShape = function(shape){
+		$.cytoscapeweb("renderer", "svg", "nodeshape", shape.name, shape);
+		delete shape.name;
 	};
 	
 	// use this as an example for adding more node shapes
@@ -224,7 +258,7 @@ $(function(){
 	}
 	
 	function nodeShape(name){
-		var ret = nodeShapes[ name.toLowerCase() ];
+		var ret = $.cytoscapeweb("renderer", "svg", "nodeshape", name);
 		
 		if( ret == null ){
 			$.cytoscapeweb("error", "SVG renderer does not recognise %s as a valid node shape", name);
@@ -234,13 +268,21 @@ $(function(){
 	}
 	
 	function lineStyle(name){
-		var ret = lineStyles[ name.toLowerCase() ];
+		var ret = $.cytoscapeweb("renderer", "svg", "linestyle", name);
 		
 		if( ret == null ){
 			$.cytoscapeweb("error", "SVG renderer does not recognise %s as a valid line style", name);
 		}
 		
 		return ret;
+	}
+	
+	function edgeArrowShape(name){
+		if( name == "none" || name == null ){
+			return null;
+		}
+		
+		return $.cytoscapeweb("renderer", "svg", "edgearrowshape", name);
 	}
 	
 	function labelHalign(a){
@@ -1250,24 +1292,46 @@ $(function(){
 			makePath();
 		}
 		
+		var sourceMarkerId = "source-" + element._private.data.id;
 		var targetMarkerId = "target-" + element._private.data.id;
 		var edgeWidth = self.calculateStyleField(element, "width");
 		var targetShape = self.calculateStyleField(tgt, "shape");
-		var markerFactor = 5;
-		var minArrowSize = 15;
+		var sourceShape = self.calculateStyleField(src, "shape");
+		var targetArrowShape = self.calculateStyleField(element, "targetArrowShape");
+		var sourceArrowShape = self.calculateStyleField(element, "sourceArrowShape");
+		var markerFactor = 3;
+		var minArrowSize = 10;
 		
 		while(markerFactor * edgeWidth < minArrowSize){
 			markerFactor++;
 		}
 		
 		var f = markerFactor;
-		var targetMarkerHeight = f * edgeWidth;
+		var markerHeight = f * edgeWidth;
 		var targetShape = nodeShape(targetShape).intersectionShape;
+		var sourceShape = nodeShape(sourceShape).intersectionShape;
 		
 		var tgtInt = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.svg)).points[0];
-		var end = self.getPointAlong(tgtInt, cp, targetMarkerHeight/2, tgtInt);
-		x2 = end.x;
-		y2 = end.y;
+		var srcInt = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.svg)).points[0];
+		
+		if( targetArrowShape != "none" ){
+			var end = self.getPointAlong(tgtInt, cp, markerHeight/2, tgtInt);
+			x2 = end.x;
+			y2 = end.y;
+		} else {
+			x2 = tgtInt.x;
+			y2 = tgtInt.y;
+		}
+		
+		if( sourceArrowShape != "none" ){
+			var start = self.getPointAlong(srcInt, cp, markerHeight/2, srcInt);
+			x1 = start.x;
+			y1 = start.y;
+		} else {
+			x1 = srcInt.x;
+			y1 = srcInt.y;
+		}
+		
 		makePath();
 		
 		if( element._private.targetMarker != null ){
@@ -1281,11 +1345,28 @@ $(function(){
 			refY: f/2,
 			strokeWidth: 0
 		});
-		element._private.targetSvg = this.svg.polygon(targetMarker, [[0, f/5], [f, f/2], [0, 4/5*f]]);
+		tgtShapeObj = edgeArrowShape(targetArrowShape);
+		element._private.targetSvg = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, targetMarker, f, "target");
 		element._private.targetMarker = targetMarker;
 		
+		if( element._private.sourcetMarker != null ){
+			this.svg.remove(element._private.sourcetMarker);
+		}
+		
+		var sourceMarker = this.svg.marker(this.defs, sourceMarkerId, 0, 0, f, f, {
+			orient: "auto",
+			markerUnits: "strokeWidth",
+			refX: f/2,
+			refY: f/2,
+			strokeWidth: 0
+		});
+		srcShapeObj = edgeArrowShape(sourceArrowShape);
+		element._private.sourceSvg = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, sourceMarker, f, "source");
+		element._private.sourceMarker = sourceMarker;
+		
 		this.svg.change(svgPath, {
-			markerEnd: "url(#" + targetMarkerId + ")"
+			markerEnd: "url(#" + targetMarkerId + ")",
+			markerStart: "url(#" + sourceMarkerId + ")"
 		});
 		
 		this.markerDrawFix();
@@ -1583,7 +1664,7 @@ $(function(){
 		// generic edge styles go here
 		this.svg.change(element._private.svg, {
 			"pointer-events": "visible", // on visibility:hidden, no events
-			stroke: color(style.color),
+			stroke: color(style.lineColor),
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "butt", // disable for now for markers to line up nicely
@@ -1594,7 +1675,11 @@ $(function(){
 		});
 		
 		this.svg.change(element._private.targetSvg, {
-			fill: color("blue")
+			fill: color(style.targetArrowColor)
+		});
+		
+		this.svg.change(element._private.sourceSvg, {
+			fill: color(style.sourceArrowColor)
 		});
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);

@@ -16,8 +16,8 @@ $(function(){
 		},
 		style: {
 			edges: {
-				color: "red",
-				opacity: 1,
+				targetArrowShape: "circle",
+				sourceArrowShape: "triangle",
 				width: {
 					defaultValue: 1,
 					continuousMapper: {
@@ -39,8 +39,7 @@ $(function(){
 				},
 				labelHalign: "middle",
 				labelValign: "top",
-				shape: "rectangle",
-				fillOpacity: 0.5,
+				shape: "ellipse",
 				height: {
 					continuousMapper: {
 						attr: {

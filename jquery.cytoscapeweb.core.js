@@ -2456,11 +2456,25 @@
 			var haveModule = module != null && typeof module == typeof function(){}.prototype;
 			var haveComponent = component != null;
 			
-			if( componentType !== undefined && isString(componentType) ){
-				if( componentName === undefined ){
-					return subreg[registrant][name][componentType];
-				} else if( component === undefined ) {
-					return subreg[registrant][name][componentType][componentName];
+			if( isString(componentType) ){
+				componentType = componentType.toLowerCase();
+				
+				if( isString(componentName) ){
+					componentName = componentName.toLowerCase();
+					
+					if( component !== undefined ){
+						if( subreg[registrant][name] == null ){
+							subreg[registrant][name] = {};
+						}
+						
+						if( subreg[registrant][name][componentType] == null ){
+							subreg[registrant][name][componentType] = {};
+						}
+						
+						subreg[registrant][name][componentType][componentName] = component;
+					} else {
+						return subreg[registrant][name][componentType][componentName];
+					}
 				}
 			} else if( module === undefined ){
 				// get the module by name; e.g. $.cytoscapeweb("renderer", "svg");

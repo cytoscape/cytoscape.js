@@ -73,8 +73,8 @@ $(function(){
 		}
 	};
 	
-	var numNodes = 2;
-	var numEdges = 2;
+	var numNodes = 10;
+	var numEdges = 20;
 	
 	function randNodeId(){
 		return "n" + Math.floor( Math.random() * numNodes );
@@ -93,8 +93,8 @@ $(function(){
 		options.elements.edges.push({
 			data: {
 				id: "e" + i,
-				source: 'n0',
-				target: 'n1',
+				source: randNodeId(),
+				target: randNodeId(),
 				weight: Math.random() * 100
 			}
 		});

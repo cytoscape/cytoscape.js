@@ -132,6 +132,8 @@ $(function(){
 		
 		if( options.fit ){
 			cy.fit();
+		} else {
+			cy.reset();
 		}
 	};
 	

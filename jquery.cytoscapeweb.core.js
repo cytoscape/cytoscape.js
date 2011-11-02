@@ -2235,6 +2235,11 @@
 					});
 				},
 				
+				reset: function(){
+					renderer.pan({ x: 0, y: 0 });
+					renderer.zoom(1);
+				},
+				
 				load: function(elements){
 					// remove old elements
 					cy.elements().remove();

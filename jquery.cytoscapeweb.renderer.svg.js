@@ -403,6 +403,11 @@ $(function(){
 		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
+			// ignore right clicks
+			if( mousedownEvent.button != 0 ){
+				return;
+			}
+			
 			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
 				mousedownEvent.preventDefault();
 				
@@ -489,6 +494,12 @@ $(function(){
 				$(window).bind("mousemove", dragHandler);
 				
 				var endHandler = function(mouseupEvent){
+					
+					// ignore right clicks
+					if( mouseupEvent.type == "mouseup" && mouseupEvent.button != 0 ){
+						return;
+					}
+					
 					clearTimeout(panDelayTimeout);
 					
 					$(window).unbind("mousemove", dragHandler);

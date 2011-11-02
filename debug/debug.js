@@ -74,7 +74,7 @@ $(function(){
 	};
 	
 	var numNodes = 4;
-	var numEdges = 8;
+	var numEdges = 10;
 	
 	function randNodeId(){
 		return "n" + Math.floor( Math.random() * numNodes );

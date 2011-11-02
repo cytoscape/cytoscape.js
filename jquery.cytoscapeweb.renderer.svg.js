@@ -62,6 +62,18 @@ $(function(){
 			style: "solid",
 			cursor: "pointer",
 			visibility: "visible",
+			labelText: "",
+			labelFillColor: "#000",
+			labelOutlineColor: "#666",
+			labelOutlineWidth: 0,
+			labelFontSize: "inherit",
+			labelFontStyle: "normal",
+			labelFontDecoration: "none", 
+			labelFontVariant: "italic", 
+			labelFontFamily: "Arial",
+			labelFontWeight: "bold",
+			labelOutlineOpacity: 1,
+			labelFillOpacity: 1,
 			selected: {
 				lineColor: "#666",
 				targetArrowColor: "#666",
@@ -666,13 +678,15 @@ $(function(){
 			var tgt = this._private.data.target;
 			var bb = this._private.svg.getBBox();
 			
+			// TODO fix loops
 			if( src == tgt ){
+			console.log(bb);
 				if( bb.x == e.x ){
-					x1 = Math.min(x1 + bb.width/2, n.x);
+					x1 = Math.min(bb.x + bb.width*0.4, n.x);
 				}
 				
 				if( bb.y == e.y ){
-					y1 = Math.min(y1 + bb.height/2, n.y);
+					y1 = Math.min(bb.y + bb.height*0.4, n.y);
 				}
 				
 				// TODO check edge labels when added
@@ -1421,9 +1435,30 @@ $(function(){
 			});
 		}
 		
+		var labelPosition;
+		if( loop ){
+			labelPosition = {
+				x: (cp1.x + cp2.x)/2*0.85 + tgt._private.position.x*0.15,
+				y: (cp1.y + cp2.y)/2*0.85 + tgt._private.position.y*0.15
+			};
+		} else if( curved ) {
+			labelPosition = {
+				x: ( cp.x + (x1+x2)/2 )/2,
+				y: ( cp.y + (y1+y2)/2 )/2
+			};
+		} else {
+			labelPosition = {
+				x: (x1 + x2)/2,
+				y: (y1 + y2)/2
+			};
+		}
+		
+		element._private.svgLabel = self.svg.text(element._private.svgGroup, labelPosition.x, labelPosition.y, "label init");
+		
 		element._private.svg = svgPath;
 		return svgPath;
 	};
+	
 	
 	SvgRenderer.prototype.markerDrawFix = function(){
 		this.forceRedraw();
@@ -1665,9 +1700,35 @@ $(function(){
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
+		
+		this.updateLabelPosition(element, valign, halign);
+		
+		// styles to the group
+		this.svg.change(element._private.svgGroup, {
+			fillOpacity: percent(style.fillOpacity)
+		});
+		
+		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);
+		
+		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for node `%s` to %o", element._private.data.id, style);
+	};
+	
+	SvgRenderer.prototype.updateLabelPosition = function(element, valign, halign){
 		var spacing = 3;
 		var dx = 0;
 		var dy = 0;
+		var height = 0;
+		var width = 0;
+		var text = element._private.svgLabel.textContent;
+		
+		if( text == null || text == "" ){
+			return;
+		}
+		
+		if( element.isNode() ){
+			height = element._private.style.height;
+			width = element._private.style.width;
+		}
 		
 		if( halign == "middle" ){
 			this.svg.change(element._private.svgLabel, {
@@ -1677,12 +1738,12 @@ $(function(){
 			this.svg.change(element._private.svgLabel, {
 				"text-anchor": "start"
 			});
-			dx = style.width/2 + spacing;
+			dx = width/2 + spacing;
 		} else if( halign == "left" ){
 			this.svg.change(element._private.svgLabel, {
 				"text-anchor": "end"
 			});
-			dx = -style.width/2 - spacing;
+			dx = -width/2 - spacing;
 		}
 		
 		// TODO remove this hack to fix IE when it supports baseline properties properly
@@ -1698,26 +1759,17 @@ $(function(){
 			this.svg.change(element._private.svgLabel, {
 				"style": "alignment-baseline: normal; dominant-baseline: normal;"	
 			});
-			dy = -style.height/2 - spacing;
+			dy = -height/2 - spacing;
 		} else if( valign == "bottom" ){
 			this.svg.change(element._private.svgLabel, {
 				"style": "alignment-baseline: normal; dominant-baseline: normal;"
 			});
-			dy = style.height/2 + fontSize;
+			dy = height/2 + fontSize;
 		}
 		
 		this.svg.change(element._private.svgLabel, {
 			transform: "translate("+ dx +","+ dy +")"
 		});
-		
-		// styles to the group
-		this.svg.change(element._private.svgGroup, {
-			fillOpacity: percent(style.fillOpacity)
-		});
-		
-		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);
-		
-		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for node `%s` to %o", element._private.data.id, style);
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
@@ -1745,13 +1797,34 @@ $(function(){
 		
 		this.svg.change(element._private.targetSvg, {
 			fill: color(style.targetArrowColor),
-			cursor: cursor(style.cursor)
+			cursor: cursor(style.cursor),
+			visibility: visibility(style.visibility)
 		});
 		
 		this.svg.change(element._private.sourceSvg, {
 			fill: color(style.sourceArrowColor),
-			cursor: cursor(style.cursor)
+			cursor: cursor(style.cursor),
+			visibility: visibility(style.visibility)
 		});
+		
+		this.svg.change(element._private.svgLabel, {
+			"visibility": visibility(style.visibility),
+			"pointer-events": "none",
+			fill: color(style.labelFillColor),
+			fillOpacity: percent(style.labelFillOpacity),
+			stroke: color(style.labelOutlineColor),
+			strokeWidth: number(style.labelOutlineWidth),
+			strokeOpacity: percent(style.labelOutlineOpacity),
+			"font-family": style.labelFontFamily,
+			"font-weight": style.labelFontWeight,
+			"font-style": style.labelFontStyle,
+			"text-decoration": style.labelFontDecoration,
+			"font-variant": style.labelFontVariant,
+			"font-size": style.labelFontSize
+		});
+		
+		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;
+		this.updateLabelPosition(element, "middle", "middle");
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);
 	};

@@ -306,6 +306,12 @@
 			function updateContinuousMapperBounds(element, name, oldVal, newVal){
 				var group = element._private.group;
 				var bounds = structs.continuousMapperBounds[ group ][ name ];
+				
+				if( bounds == null ){
+					addContinuousMapperBounds(element, name, newVal);
+					return;
+				}
+				
 				var vals = bounds.vals;
 				var oldMin = null, oldMax = null;
 				
@@ -1979,7 +1985,7 @@
 						// add the element
 						if( opts instanceof CyElement ){
 							var element = opts;
-							elements.add(element);
+							elements.push(element);
 							
 							element.restore();
 						} 
@@ -1987,7 +1993,7 @@
 						// add the collection
 						else if( opts instanceof CyCollection ){
 							var collection = opts;
-							elements.add(collection);
+							elements.push(collection);
 							
 							collection.restore();
 						} 

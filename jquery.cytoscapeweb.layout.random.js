@@ -25,24 +25,20 @@ $(function(){
 			
 		$.cytoscapeweb("debug", "Random layout found (w, h, d) = (%i, %i)", width, height);
 		
-		if( renderer.coordinateSystem() != "cartesian" ){
-			$.cytoscapeweb("error", "Random layout supports only Cartesian coordinates");
-		} else {
-			nodes.positions(function(i, element){
-				
-				if( element.locked() ){
-					return false;
-				}
-
-				return {
-					x: Math.round( Math.random() * width ),
-					y: Math.round( Math.random() * height )
-				};
-			});
+		nodes.positions(function(i, element){
 			
-			if( options.fit ){
-				cy.fit();
+			if( element.locked() ){
+				return false;
 			}
+
+			return {
+				x: Math.round( Math.random() * width ),
+				y: Math.round( Math.random() * height )
+			};
+		});
+		
+		if( options.fit ){
+			cy.fit();
 		}
 	};
 	

@@ -13,8 +13,9 @@ $(function(){
 		console.groupEnd();
 	};
 	
+	var testCount = 1;
 	QUnit.testStart = function(test){
-		console.group(test.name);
+		console.group((testCount++) + ". " + test.name);
 	};
 	
 	QUnit.testDone = function(){

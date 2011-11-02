@@ -1961,15 +1961,7 @@ $(function(){
 				break;
 		}
 	};
-	
-	SvgRenderer.prototype.coordinateSystem = function(){
-		return "cartesian";
-	};
-	
-	SvgRenderer.prototype.dimensions = function(){
-		return 2;
-	};
-	
+
 	function SvgExporter(options){
 		this.options = options;
 		this.cy = options.cy;

@@ -63,7 +63,9 @@ $(function(){
 			cursor: "pointer",
 			visibility: "visible",
 			selected: {
-				color: "#666"
+				lineColor: "#666",
+				targetArrowColor: "#666",
+				sourceArrowColor: "#666"
 			}
 		},
 		global: {
@@ -111,12 +113,16 @@ $(function(){
 		name: "triangle",
 		
 		// generate the shape svg
-		svg: function(svg, marker, f, d){
-			if( d == "source" ){
-				return svg.polygon(marker, [[f, 0], [0, f/2], [f, f]]);
-			} else {
-				return svg.polygon(marker, [[0, 0], [f, f/2], [0, f]]);
-			}
+		// the top points towards the node
+		svg: function(svg, parent, edge, position, style){
+			return svg.polygon(parent, [[0, 1], [0.5, 0], [1, 1]]);
+		},
+		
+		// the point within the 1x1 box to line up with the center point at the
+		// end of the edge
+		centerPoint: {
+			x: 0.5,
+			y: 0.5
 		}
 	});
 	
@@ -124,8 +130,13 @@ $(function(){
 		name: "square",
 		
 		// generate the shape svg
-		svg: function(svg, marker, f, d){
-			return svg.polygon(marker, [[0, 0], [0, f], [f, f], [f, 0]]);
+		svg: function(svg, parent, edge, position, style){
+			return svg.polygon(parent, [[0, 0], [0, 1], [1, 1], [1, 0]]);
+		},
+		
+		centerPoint: {
+			x: 0.5,
+			y: 0.5
 		}
 	});
 	
@@ -133,8 +144,13 @@ $(function(){
 		name: "circle",
 		
 		// generate the shape svg
-		svg: function(svg, marker, f, d){
-			return svg.circle(marker, f/2, f/2, f/2);
+		svg: function(svg, parent, edge, position, style){
+			return svg.circle(parent, 0.5, 0.5, 0.5);
+		},
+		
+		centerPoint: {
+			x: 0.5,
+			y: 0.5
 		}
 	});
 	
@@ -515,7 +531,7 @@ $(function(){
 					}
 					
 					if( selecting ){
-						if( selectionSquare != null ){
+						if( selectionSquare != null && selectionBounds.x1 != null && !isNaN(selectionBounds.x1) ){
 							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
 							self.svg.remove(selectionSquare);
 						} else if( mouseupEvent.target == svgDomElement ){
@@ -846,10 +862,12 @@ $(function(){
 	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
 		var svgDomElement = element._private.svg;
+		var targetArrow = element._private.targetSvg;
+		var sourceArrow = element._private.sourceSvg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
-		$(svgDomElement).bind("mouseup mousedown click", function(e){
+		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click", function(e){
 			element.trigger(e);
 		}).bind("click", function(e){
 			self.selectElement(element);
@@ -1300,7 +1318,12 @@ $(function(){
 			if(curved){
 				cp = cp1 = cp2 = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
 			} else {
-				cp = cp1 = cp2 = {
+				cp = cp1 = {
+					x: x2,
+					y: y2
+				};
+				
+				cp2 = {
 					x: x1,
 					y: y1
 				};
@@ -1309,8 +1332,6 @@ $(function(){
 			makePath();
 		}
 		
-		var sourceMarkerId = "source-" + element._private.data.id;
-		var targetMarkerId = "target-" + element._private.data.id;
 		var edgeWidth = self.calculateStyleField(element, "width");
 		var targetShape = self.calculateStyleField(tgt, "shape");
 		var sourceShape = self.calculateStyleField(src, "shape");
@@ -1334,62 +1355,71 @@ $(function(){
 		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.svg));
 		var srcInt = intersection.points[0];
 		
-		if( targetArrowShape != "none" ){
-			var end = self.getPointAlong(tgtInt, cp2, markerHeight/2, tgtInt);
-			x2 = end.x;
-			y2 = end.y;
-		} else {
-			x2 = tgtInt.x;
-			y2 = tgtInt.y;
+		var scale = f * edgeWidth;
+		var sourceRotation = -1*(this.getAngle(cp1, { x: x1, y: y1 }) - 90);
+		var targetRotation = -1*(this.getAngle(cp2, { x: x2, y: y2 }) - 90);
+		
+		if( tgtInt != null ){
+			if( targetArrowShape != "none" ){
+				var end = self.getPointAlong(tgtInt, cp2, markerHeight/2, tgtInt);
+				x2 = end.x;
+				y2 = end.y;
+			} else if( tgtInt != null ){
+				x2 = tgtInt.x;
+				y2 = tgtInt.y;
+			}
 		}
 		
-		if( sourceArrowShape != "none" ){
-			var start = self.getPointAlong(srcInt, cp1, markerHeight/2, srcInt);
-			x1 = start.x;
-			y1 = start.y;
-		} else {
-			x1 = srcInt.x;
-			y1 = srcInt.y;
+		if( srcInt != null ){
+			if( sourceArrowShape != "none" ){
+				var start = self.getPointAlong(srcInt, cp1, markerHeight/2, srcInt);
+				x1 = start.x;
+				y1 = start.y;
+			} else {
+				x1 = srcInt.x;
+				y1 = srcInt.y;
+			}
 		}
 		
 		makePath();
 		
-		if( element._private.targetMarker != null ){
-			this.svg.remove(element._private.targetMarker);
+		if( element._private.targetArrow != null ){
+			this.svg.remove(element._private.targetArrow);
 		}
 		
-		var targetMarker = this.svg.marker(this.defs, targetMarkerId, 0, 0, f, f, {
-			orient: "auto",
-			markerUnits: "strokeWidth",
-			refX: f/2,
-			refY: f/2,
-			strokeWidth: 0
-		});
-		tgtShapeObj = edgeArrowShape(targetArrowShape);
-		element._private.targetSvg = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, targetMarker, f, "target");
-		element._private.targetMarker = targetMarker;
-		
-		if( element._private.sourcetMarker != null ){
-			this.svg.remove(element._private.sourcetMarker);
+		if( targetArrowShape != "none" ){
+			var tgtShapeObj = edgeArrowShape(targetArrowShape);
+			var tgtArrowTranslation = {
+				x: x2 - tgtShapeObj.centerPoint.x * scale,
+				y: y2 - tgtShapeObj.centerPoint.y * scale,
+			};
+			var targetCenter = tgtShapeObj.centerPoint;
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, element._private.svgGroup, element, element._private.position, element._private.style);
+			element._private.targetSvg = targetArrow;
+
+			this.svg.change(targetArrow, {
+				transform: "translate(" + tgtArrowTranslation.x + " " + tgtArrowTranslation.y + ") scale(" + scale + ") rotate(" + targetRotation + " " + targetCenter.x + " " + targetCenter.y + ")"
+			});
 		}
 		
-		var sourceMarker = this.svg.marker(this.defs, sourceMarkerId, 0, 0, f, f, {
-			orient: "auto",
-			markerUnits: "strokeWidth",
-			refX: f/2,
-			refY: f/2,
-			strokeWidth: 0
-		});
-		srcShapeObj = edgeArrowShape(sourceArrowShape);
-		element._private.sourceSvg = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, sourceMarker, f, "source");
-		element._private.sourceMarker = sourceMarker;
-		
-		this.svg.change(svgPath, {
-			markerEnd: "url(#" + targetMarkerId + ")",
-			markerStart: "url(#" + sourceMarkerId + ")"
-		});
-		
-		this.markerDrawFix();
+		if( sourceArrowShape != "none" ){
+			if( element._private.sourceArrow != null ){
+				this.svg.remove(element._private.sourceArrow);
+			}
+			
+			var srcShapeObj = edgeArrowShape(sourceArrowShape);
+			var srcArrowTranslation = {
+				x: x1 - srcShapeObj.centerPoint.x * scale,
+				y: y1 - srcShapeObj.centerPoint.y * scale,
+			};
+			var sourceCenter = srcShapeObj.centerPoint;
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element._private.svgGroup, element, element._private.position, element._private.style);
+			element._private.sourceSvg = sourceArrow;
+			
+			this.svg.change(sourceArrow, {
+				transform: "translate(" + srcArrowTranslation.x + " " + srcArrowTranslation.y + ") scale(" + scale + ") rotate(" + sourceRotation + " " + sourceCenter.x + " " + sourceCenter.y + ")"
+			});
+		}
 		
 		element._private.svg = svgPath;
 		return svgPath;
@@ -1414,6 +1444,24 @@ $(function(){
 		
 		var rect = this.svg.rect(0, 0, this.container.width(), this.container.height());
 		this.svg.remove(rect);
+	};
+	
+	SvgRenderer.prototype.getAngle = function(p1, p2){
+		var rad2deg = function(rad){
+			return rad * 180/Math.PI;
+		};
+		
+		var h = this.getDistance(p1, p2);
+		var dx = p2.x - p1.x;
+		var dy = -1*(p2.y - p1.y);
+		var acos = rad2deg( Math.acos( dx/h ) );
+		
+		if( dy < 0 ){
+			return 360 - acos;
+		} else {
+			return acos;
+		}
+
 	};
 	
 	SvgRenderer.prototype.getOrthogonalPoint = function(p1, p2, h){
@@ -1470,6 +1518,7 @@ $(function(){
 		
 		var svgDomGroup = this.svg.group(this.edgesGroup);
 		element._private.svgGroup = svgDomGroup;
+		this.svg.change(svgDomGroup);
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
 		this.makeSvgEdgePath(element);
@@ -1695,11 +1744,13 @@ $(function(){
 		});
 		
 		this.svg.change(element._private.targetSvg, {
-			fill: color(style.targetArrowColor)
+			fill: color(style.targetArrowColor),
+			cursor: cursor(style.cursor)
 		});
 		
 		this.svg.change(element._private.sourceSvg, {
-			fill: color(style.sourceArrowColor)
+			fill: color(style.sourceArrowColor),
+			cursor: cursor(style.cursor)
 		});
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);

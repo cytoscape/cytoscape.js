@@ -723,6 +723,18 @@
 				return structs.nodes[ this._private.data.source ];
 			};
 			
+			CyElement.prototype.connectedNodes = function(){
+				if( this.isNode() ){
+					console.error("Can not call `connectedNodes` on node `%s`; only edges have a source and target", this._private.data.id);
+					return;
+				}
+				
+				var source = structs.nodes[ this._private.data.source ];
+				var target = structs.nodes[ this._private.data.target ];
+				
+				return source.collection().add(target);
+			};
+			
 			CyElement.prototype.edgesWith = function(otherNode){
 				if( otherNode.isEdge() ){
 					console.error("Can not call `edgesWith` on edge `%s`; only nodes have edges", this._private.data.id);

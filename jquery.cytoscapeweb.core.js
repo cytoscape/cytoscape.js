@@ -514,6 +514,7 @@
 					// remove from map of edges belonging to nodes
 					if( this._private.group == "edges" ){
 						delete structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ];
+						delete structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ];
 						removeParallelEdgeFromMap(this);
 					} 
 					
@@ -1235,6 +1236,10 @@
 				};
 			
 				function add(element){
+					if( element == null ){
+						return;
+					}
+					
 					if( ids[element._private.group][element._private.data.id] == null ){
 						elements.push(element);
 						ids[element._private.group][element._private.data.id] = true;
@@ -1554,7 +1559,11 @@
 					});
 				});
 
-				this.trigger("data");
+				notify({
+					type: "data",
+					collection: collection
+				});
+				
 				return this;
 			};
 			
@@ -1567,7 +1576,32 @@
 					});
 				});
 
-				this.trigger("bypass");
+				notify({
+					type: "bypass",
+					collection: collection
+				});
+				return this;
+			};
+			
+			CyCollection.prototype.remove = function(){
+				var collection = this;
+				
+				var elementsRemoved = collection.add( collection.neighborhood().edges() );
+				
+				noNotifications(function(){
+					collection.edges().each(function(i, element){
+						element.remove();
+					});
+					
+					collection.nodes().each(function(i, element){
+						element.remove();
+					});
+				});
+				
+				notify({
+					type: "remove",
+					collection: elementsRemoved
+				});
 				return this;
 			};
 			
@@ -1575,12 +1609,19 @@
 				var collection = this.filter(":removed");
 				
 				noNotifications(function(){
-					collection.each(function(i, element){
+					collection.nodes().each(function(i, element){
+						element.restore();
+					});
+					
+					collection.edges().each(function(i, element){
 						element.restore();
 					});
 				});
 
-				collection.trigger("add");
+				notify({
+					type: "add",
+					collection: collection
+				});
 				return this;
 			};
 			
@@ -1928,15 +1969,13 @@
 			}
 			
 			function notify(params){
-				
-				
 				if( params.collection instanceof CyElement ){
 					var element = params.collection;
 					params.collection = new CyCollection([ element ]);	
 				} else if( params.collection instanceof Array ){
 					var elements = params.collection;
 					params.collection = new CyCollection(elements);	
-				}
+				} 
 			
 				if(enableNotifications) renderer.notify(params);
 			}

@@ -545,6 +545,7 @@ $(function(){
 		ok( edges.anySame( cy.edge("ep2") ), "has ep2" );
 		ok( edges.anySame( cy.edge("n1n2") ), "has n1n2" );
 	});
+
 	
 	// Random layout
 	////////////////////////////////////////////////////////////////////////////////////////////

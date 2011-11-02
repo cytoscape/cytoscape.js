@@ -183,4 +183,8 @@ $(function(){
 		cy.center( cy.elements(":selected") );
 	});
 	
+	$("#remove-selected-button").click(function(){
+		cy.remove( cy.elements(":selected") );
+	});
+	
 });

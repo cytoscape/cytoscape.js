@@ -1831,6 +1831,7 @@ $(function(){
 	SvgRenderer.prototype.addElements = function(collection){
 		
 		var self = this;
+		var cy = this.cy;
 		
 		collection.nodes().each(function(i, element){
 			self.makeSvgElement(element);
@@ -1842,6 +1843,7 @@ $(function(){
 		
 		self.positionEdges( collection.edges().parallelEdges() );
 
+		self.updateElementsStyle( cy.nodes().not(collection) );
 	};
 	
 	SvgRenderer.prototype.updatePosition = function(collection){
@@ -1891,6 +1893,7 @@ $(function(){
 		
 		var container = $(this.options.selector);
 		var svg = container.svg('get');
+		var cy = this.options.cytoscapeweb;
 		
 		collection.each(function(i, element){
 			if( element._private.svgGroup != null ){
@@ -1902,6 +1905,8 @@ $(function(){
 				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
 			}
 		});
+		
+		this.updateElementsStyle( cy.nodes() );
 	};
 	
 	SvgRenderer.prototype.notify = function(params){

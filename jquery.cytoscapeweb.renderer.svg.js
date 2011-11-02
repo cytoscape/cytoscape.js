@@ -678,9 +678,8 @@ $(function(){
 			var tgt = this._private.data.target;
 			var bb = this._private.svg.getBBox();
 			
-			// TODO fix loops
 			if( src == tgt ){
-			console.log(bb);
+			
 				if( bb.x == e.x ){
 					x1 = Math.min(bb.x + bb.width*0.4, n.x);
 				}
@@ -1784,7 +1783,7 @@ $(function(){
 		// TODO add more as more styles are added
 		// generic edge styles go here
 		this.svg.change(element._private.svg, {
-			"pointer-events": "visible", // on visibility:hidden, no events
+			"pointer-events": "visibleStroke", // on visibility:hidden, no events
 			stroke: color(style.lineColor),
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,

@@ -1228,12 +1228,15 @@ $(function(){
 		var index;
 		var curveIndex;
 		var curveDistance = 20;
+		var betweenLoopsDistance = 20;
 		var cp, cp1, cp2;
 		var pDistance = self.getDistance({ x: x1, y: y1 }, { x: x2, y: y2 });
 		var maxCurveDistance = 200;
 		
-		curveDistance = Math.min(20 + 4000/pDistance, maxCurveDistance);
-		
+		if( !loop && curved ){
+			curveDistance = Math.min(20 + 4000/pDistance, maxCurveDistance);
+		}
+	
 		parallelEdges.each(function(i, e){
 			if( e == element ){
 				index = i;
@@ -1248,7 +1251,9 @@ $(function(){
 				self.svg.remove(svgPath);
 			}
 			
-			if( curved ){
+			if( loop ){
+				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+			} else if( curved ){
 				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
 				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
@@ -1260,13 +1265,14 @@ $(function(){
 			var sw = src._private.style.width;
 			curveDistance += Math.max(sw, sh);
 			
-			var h = curveDistance;
-	        var cp1 = { x: x1, y: y1 - sh/2 - h };
-	        var cp2 = { x: x1 - sw/2 - h, y: y1 };
-			
 			curveIndex = index;
-			var path = self.svg.createPath();
-			svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+			curveDistance += betweenLoopsDistance * (curveIndex);
+			
+			var h = curveDistance;
+	        cp1 = { x: x1, y: y1 - sh/2 - h };
+	        cp2 = { x: x1 - sw/2 - h, y: y1 };
+			
+			makePath();
 		} else {
 			// edge between 2 nodes
 			
@@ -1292,9 +1298,9 @@ $(function(){
 			}
 			
 			if(curved){
-				cp = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
+				cp = cp1 = cp2 = self.getOrthogonalPoint({ x: x1, y: y1 }, { x: x2, y: y2 }, curveDistance * curveIndex);
 			} else {
-				cp = {
+				cp = cp1 = cp2 = {
 					x: x1,
 					y: y1
 				};
@@ -1322,11 +1328,14 @@ $(function(){
 		var targetShape = nodeShape(targetShape).intersectionShape;
 		var sourceShape = nodeShape(sourceShape).intersectionShape;
 		
-		var tgtInt = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.svg)).points[0];
-		var srcInt = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.svg)).points[0];
+		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.svg));
+		var tgtInt = intersection.points[ intersection.points.length - 1 ];
+		
+		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.svg));
+		var srcInt = intersection.points[0];
 		
 		if( targetArrowShape != "none" ){
-			var end = self.getPointAlong(tgtInt, cp, markerHeight/2, tgtInt);
+			var end = self.getPointAlong(tgtInt, cp2, markerHeight/2, tgtInt);
 			x2 = end.x;
 			y2 = end.y;
 		} else {
@@ -1335,7 +1344,7 @@ $(function(){
 		}
 		
 		if( sourceArrowShape != "none" ){
-			var start = self.getPointAlong(srcInt, cp, markerHeight/2, srcInt);
+			var start = self.getPointAlong(srcInt, cp1, markerHeight/2, srcInt);
 			x1 = start.x;
 			y1 = start.y;
 		} else {

@@ -16,8 +16,8 @@ $(function(){
 		},
 		style: {
 			edges: {
-				targetArrowShape: "circle",
-				sourceArrowShape: "triangle",
+				targetArrowShape: "triangle",
+				sourceArrowShape: "circle",
 				width: {
 					defaultValue: 1,
 					continuousMapper: {
@@ -73,8 +73,8 @@ $(function(){
 		}
 	};
 	
-	var numNodes = 10;
-	var numEdges = 20;
+	var numNodes = 4;
+	var numEdges = 10;
 	
 	function randNodeId(){
 		return "n" + Math.floor( Math.random() * numNodes );

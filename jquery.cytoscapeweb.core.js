@@ -1957,7 +1957,32 @@
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 
 			var enableNotifications = true;
+			var batchingNotifications = 0;
+			var batchedNotifications = [];
+			var batchedNotificationsTypeToIndex = {};
 			
+			// Use this to batch notifications of events together into a collection.
+			// This makes rendering more efficient.
+			function batchNotifications(fn){
+				batchingNotifications++;
+				fn();
+				batchingNotifications--;
+				
+				if( batchingNotifications == 0 ){
+					console.log(batchedNotifications);
+					
+					$.each(batchedNotifications, function(i, params){
+						renderer.notify(params);
+					});
+					
+					batchedNotifications = [];
+					batchedNotificationsTypeToIndex = {};
+				}
+			}
+			
+			// Use only in special cases like the load event where we definitely don't
+			// want any other events in parallel.  This could kill some events if they
+			// come in on another thread.
 			function noNotifications(fn){
 				notificationsEnabled(false);
 				fn();
@@ -1968,7 +1993,7 @@
 				enableNotifications = enabled;
 			}
 			
-			function notify(params){
+			function notify(params){				
 				if( params.collection instanceof CyElement ){
 					var element = params.collection;
 					params.collection = new CyCollection([ element ]);	
@@ -1977,7 +2002,35 @@
 					params.collection = new CyCollection(elements);	
 				} 
 			
-				if(enableNotifications) renderer.notify(params);
+				if( !enableNotifications ){
+					return;
+				} else if( batchingNotifications > 0 ){
+					
+					if( batchedNotificationsTypeToIndex[params.type] != null ){
+						// merge the notifications
+						
+						var index = batchedNotificationsTypeToIndex[params.type];
+						var batchedParams = batchedNotifications[index];
+						var batchedCollection = batchedParams.collection;
+						
+						if( batchedCollection != null ){
+							batchedCollection = batchedCollection.add( params.collection );
+						}
+						
+						batchedParams = $.extend({}, batchedParams, params);
+						batchedParams.collection = batchedCollection;
+						batchedNotifications[index] = batchedParams;
+					} else {
+						// put the notification in the array
+						
+						var index = batchedNotifications.length;
+						batchedNotifications.push(params);
+						batchedNotificationsTypeToIndex[params.type] = index;
+					}
+					
+				} else {
+					renderer.notify(params);
+				}
 			}
 			
 			// getting nodes/edges with a filter function to select which ones to include
@@ -2062,6 +2115,7 @@
 						type: "add",
 						collection: elements
 					});
+					
 				}
 			}
 			

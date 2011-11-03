@@ -832,17 +832,29 @@
 				return renderer.elementIsVisible(this);
 			};
 			
-			CyElement.prototype.renderedPosition = function(){
+			CyElement.prototype.renderedPosition = function(coord){
 				if( this.isEdge() ){
 					$.cytoscapeweb("warn", "Can not get rendered position for edge `" + element._private.data.id + "`; edges have no position");
 					return null;
 				}
 				
-				return renderer.renderedPosition(this);
+				var pos = renderer.renderedPosition(this);
+				
+				if( coord === undefined ){
+					return pos;
+				} else {
+					return pos[coord];
+				}
 			};
 			
-			CyElement.prototype.renderedDimensions = function(){
-				return renderer.renderedDimensions(this);
+			CyElement.prototype.renderedDimensions = function(dimension){
+				var dim = renderer.renderedDimensions(this);
+				
+				if( dimension === undefined ){
+					return dim;
+				} else {
+					return dim[dimension];
+				}
 			};
 			
 			CyElement.prototype.style = function(){
@@ -936,7 +948,9 @@
 					$.each(structs.live[type], function(key, callbacks){
 						
 						var selector = structs.selectors[key];
-						if( selector.filter( self.collection() ).size() > 0 ){
+						var filtered = selector.filter( self.collection() );
+	
+						if( filtered.size() > 0 ){
 							$.each(callbacks, function(i, listener){
 								fire(listener, eventData, data);
 							});
@@ -1664,6 +1678,7 @@
 						}
 						
 						var group = q[1] == "" ? undefined : q[1] + "s";
+						
 						self[i].group = group;
 						
 						if( onlyThisGroup == null ){
@@ -1970,8 +1985,6 @@
 				batchingNotifications--;
 				
 				if( batchingNotifications == 0 ){
-					console.log(batchedNotifications);
-					
 					$.each(batchedNotifications, function(i, params){
 						renderer.notify(params);
 					});
@@ -2052,6 +2065,10 @@
 					$.each(structs[group], function(id, element){
 						elements.push(element);
 					});
+					
+					if( selector == null ){
+						selector = "";
+					}
 					
 					var collection = new CyCollection(elements);
 					return new CySelector(group, selector).filter(collection, addLiveFunction);
@@ -2323,10 +2340,14 @@
 				
 				pan: function(params){
 					return renderer.pan(params);
+					
+					cy.trigger("pan");
 				},
 				
 				panBy: function(params){
 					return renderer.panBy(params);
+					
+					cy.trigger("pan");
 				},
 				
 				fit: function(elements){
@@ -2334,10 +2355,14 @@
 						elements: elements,
 						zoom: true
 					});
+					
+					cy.trigger("zoom");
+					cy.trigger("pan");
 				},
 				
 				zoom: function(params){
 					return renderer.zoom(params);
+					cy.trigger("zoom");
 				},
 				
 				center: function(elements){
@@ -2345,11 +2370,16 @@
 						elements: elements,
 						zoom: false
 					});
+					
+					cy.trigger("pan");
 				},
 				
 				reset: function(){
 					renderer.pan({ x: 0, y: 0 });
 					renderer.zoom(1);
+					
+					cy.trigger("zoom");
+					cy.trigger("pan");
 				},
 				
 				load: function(elements){

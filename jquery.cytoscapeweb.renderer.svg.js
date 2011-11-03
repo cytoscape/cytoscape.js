@@ -604,6 +604,9 @@ $(function(){
 				scale: zoom2
 			});
 			
+			self.cy.trigger("zoom");
+			self.cy.trigger("pan");
+			
 			e.preventDefault();
 		});
 		

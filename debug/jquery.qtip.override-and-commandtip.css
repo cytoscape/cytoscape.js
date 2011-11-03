@@ -1,0 +1,256 @@
+/*! Default tooltip style */
+.ui-tooltip {
+	font-size: 1em;
+	-moz-box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+	-webkit-box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+	-moz-border-radius: 8px; 
+	-webkit-border-radius: 8px;
+	border-radius: 8px;
+	max-width: 500px;
+	border-color: transparent; 
+	background: transparent;
+    zoom: 1;
+	background: rgba(0, 0, 0, 0.85);
+	border: 0;
+}
+
+.ui-tooltip-tip,
+.ui-tooltip,
+.ui-tooltip-content,
+.ui-tooltip-titlebar {
+	border-color: transparent;
+}
+
+.ui-tooltip-flash {
+	background: #ff0 !important;
+}
+
+.ui-tooltip-titlebar,
+.ui-tooltip-content,
+.ui-tooltip-buttonpane,
+.ui-tooltip-command-bottom  {
+	background: transparent;
+	border-width: 0;
+	color: #fff;
+}
+
+.ui-tooltip-command-bottom {
+	padding-top: 1em;
+	-webkit-border-bottom-right-radius: 8px;
+	-webkit-border-bottom-left-radius: 8px;
+	-moz-border-radius-bottomright: 8px;
+	-moz-border-radius-bottomleft: 8px;
+	border-bottom-right-radius: 8px;
+	border-bottom-left-radius: 8px;
+	clear: both;
+}
+
+.ui-tooltip-buttonpane {
+	padding: 1em 1em 0 1em;
+	text-align: right;
+}
+
+.ui-tooltip-buttonpane .ui-button {
+	margin-right: 0.5em;
+}
+
+.ui-tooltip-with-buttonpane .ui-tooltip-content,
+.ui-tooltip-with-buttonpane .scrollbarpaper-container,
+.ui-tooltip-with-buttonpane .scrollbarpaper-track {
+	-moz-border-radius: 0 !important;
+	-webkit-border-radius: 0 !important;
+	border-radius: 0 !important;
+}
+
+.ui-tooltip-with-buttonpane .scrollbarpaper-track {
+	border-bottom: 1px solid #666 !important;
+}
+
+.ui-tooltip-titlebar {
+	-webkit-border-top-left-radius: 8px;
+	-webkit-border-top-right-radius: 8px;
+	-moz-border-radius-topleft: 8px;
+	-moz-border-radius-topright: 8px;
+	border-top-left-radius: 8px;
+	border-top-right-radius: 8px;
+	border-bottom: 0;
+	text-shadow: 1px 1px 1px #000;
+	padding: 0.9em 0.25em 0 0.25em;
+	position: relative;
+}
+
+.ui-tooltip-titlebar .ui-tooltip-title {
+	border-bottom: 1px solid #666;
+	padding: 0 2.5em 0.9em 1em;
+	line-height: 1;
+}
+
+.ui-tooltip-content {
+	padding: 1em 1.25em;
+	line-height: 1.5;
+	overflow: auto;
+}
+
+
+.ui-tooltip .scrollbarpaper-drag {
+	margin-top: -1px;
+}
+
+.ui-tooltip-icon {
+	background: transparent !important;
+	border-color: transparent !important;
+	color: transparent !important;
+	text-shadow: none !important;
+	height: 20px;
+	width: 20px;
+	right: 0.25em !important;
+	margin-top: -9px !important;
+}
+
+.ui-tooltip-icon .ui-icon {
+	background-image: url(plugins/custom-theme/images/ui-icons_c2e9ff_256x240.png) !important;
+	background-position: -96px -128px !important;
+	height: 16px;
+	width: 16px;
+}
+
+.ui-draggable .ui-tooltip-titlebar {
+	cursor: url(../img/cursors/openhand.cur), move !important;
+}
+
+.ui-draggable.ui-draggable-dragging .ui-tooltip-titlebar {
+	cursor: url(../img/cursors/closedhand.cur), move !important;
+}
+
+.ui-tooltip-menu-command .ui-tooltip-content {
+	padding: 1em 0.25em 0.25em 0.25em;
+}
+
+.ui-tooltip .ui-menu {
+	background: transparent;
+	border: 0;
+	width: 100%;
+	padding: 0;
+}
+
+.ui-tooltip .ui-menu .ui-menu-item a {
+	border: 1px solid transparent !important;
+	margin: 0 !important;
+}
+
+.ui-tooltip .ui-menu .ui-menu-new-section a {
+	border-top: 1px solid #495860 !important;
+}
+
+.ui-tooltip .ui-menu .ui-menu-item a {
+	color: #C2E9FF;
+	padding-left: 0;
+	padding-right: 16px;
+	border-color: transparent;
+}
+
+.ui-tooltip .ui-menu .ui-menu-item a.ui-state-hover {
+	background: #C2E9FF;
+	color: #000;
+	-moz-box-shadow: 0 0 10px #C2E9FF;
+	-webkit-box-shadow: 0 0 10px #C2E9FF;
+	box-shadow: 0 0 10px #C2E9FF;
+	border: 1px solid #C2E9FF !important;
+}
+
+.ui-tooltip-menu-command-with-content .ui-tooltip-menu-command-list {
+	float: left;
+	width: auto;
+	background: transparent;
+	color: #fff;
+	-moz-border-radius: 0;
+	-webkit-border-radius: 0;
+	border-radius: 0;
+}
+
+
+.ui-tooltip-menu-command-with-content .ui-tooltip-menu-command-sub-list {
+	width: 100% !important;
+}
+
+.ui-tooltip-menu-command-content-inner {
+	padding: 0 1em;
+	font-size: 0.85em;
+	border-left: 1px solid #555;
+}
+
+.ui-tooltip-command-rollup {
+	right: 1.5em !important;
+}
+
+.ui-tooltip-menu-command-with-content .ui-tooltip-menu-command-list {
+	padding-top: 1em;
+	border-left: 3px solid transparent;
+}
+
+.ui-tooltip-menu-command-list .ui-tooltip-menu-command-sub-list {
+	padding: 0;
+	margin: 0;
+	background: transparent;
+	border-left: 0;
+}
+
+.ui-tooltip-menu-command-list .ui-icon {
+	background-position: -32px -16px;
+	visibility: hidden;
+}
+
+.ui-tooltip-menu-command-list .ui-menu-open	.ui-icon {
+	background-position: -64px -16px;
+}
+
+.ui-tooltip-menu-command-list .ui-menu-parent > a .ui-icon {
+	visibility: visible;
+}
+
+.ui-tooltip-menu-command-list .ui-icon {
+	display: inline;
+	padding: 0 8px;
+	margin-right: 0.25em;
+	background-image: url("plugins/custom-theme/images/ui-icons_c2e9ff_256x240.png");
+}
+
+.ui-tooltip-menu-command-list .ui-state-hover .ui-icon {
+	background-image: url("plugins/custom-theme/images/ui-icons_000000_256x240.png");
+}
+
+.ui-tooltip-no-title .ui-tooltip-content {
+	padding-bottom: 0;
+	padding-top: 0.25em;
+}
+
+.ui-tooltip-no-title .ui-tooltip-command-bottom {
+	padding-top: 0.25em;
+}
+
+.ui-tooltip-info {
+	max-width: 400px;
+	background: rgba(255, 241, 149, 0.9);
+	border: 1px solid #decb4d;
+	font-weight: bold;
+	text-shadow: 0 -1px 1px #fff;
+}
+
+.ui-tooltip-info .ui-tooltip-content,
+.ui-tooltip-info .ui-tooltip-titlebar
+ {
+	border-color: #decb4d;
+	color: #000;
+	
+}
+
+.ui-tooltip-content a {
+	color: #C2E9FF;
+	text-decoration: none;
+}
+
+.ui-loading-dialog {
+	padding: 1em 0.5em !important;
+}
+

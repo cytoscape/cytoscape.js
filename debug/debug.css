@@ -4,3 +4,4 @@ body { font: 14pt arial; }
 #commands h2 { margin-top: 1em; }
 label { position: absolute; margin-top: -1.25em; font-size: 0.75em; margin-left: 0.25em; }
 #nodes-number, #edges-number { width: 5em; }
+.ui-tooltip { font-size: 0.75em; }

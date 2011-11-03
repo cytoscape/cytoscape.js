@@ -1390,6 +1390,7 @@
 			};
 			
 			// what functions in CyElement update the renderer
+			// each one has the same name as its event 
 			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
 			var getters = [ "data", "bypass", "position" ];
 			

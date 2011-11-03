@@ -559,6 +559,12 @@ $(function(){
 			}
 		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
 			
+			var maxInt = -1 >>> 1;
+			var minInt = (-(-1>>>1)-1);
+			var maxZoom = maxInt;
+			var minPan = minInt;
+			var maxPan = maxInt;
+			
 			self.offsetFix(e);
 			
 			var point = {
@@ -575,10 +581,28 @@ $(function(){
 				y: -zoom2/zoom1 * (point.y - pan1.y) + point.y
 			};
 			
+			if( zoom2 > maxZoom ){
+				zoom2 = maxZoom;
+			} else if( zoom2 < 0 ){
+				zoom2 = zoom1;
+			}
+			
+			if( pan2.x < minPan ){
+				pan2.x = minPan;
+			} else if( pan2.x > maxPan ){
+				pan2.x = maxPan;
+			}
+			
+			if( pan2.y < minPan ){
+				pan2.y = minPan;
+			} else if( pan2.y > maxPan ){
+				pan2.y = maxPan;
+			}
+			
 			self.transform({
 				translation: pan2,
 				scale: zoom2
-			});	
+			});
 			
 			e.preventDefault();
 		});
@@ -770,7 +794,7 @@ $(function(){
 			};
 		}
 		
-		if( scale != null ){
+		if( scale != null && scale > 0 ){
 			self.scale = scale;
 		}
 		

@@ -1653,7 +1653,8 @@
 				var self = this;
 				
 				self._private = {
-					selectorText: null
+					selectorText: null,
+					invalid: true
 				}
 				
 				if( selector == null ){
@@ -1774,7 +1775,10 @@
 					} // each query
 				} else {
 					console.error("A selector must be created from a string; found %o", selector);
+					return;
 				}
+				
+				self._private.invalid = false;
 			};
 			
 			CySelector.prototype.size = function(){
@@ -1787,6 +1791,11 @@
 			
 			CySelector.prototype.filter = function(collection, addLiveFunction){
 				var self = this;
+				
+				// don't bother trying if it's invalid
+				if( self._private.invalid ){
+					return new CyCollection();
+				}
 				
 				var selectorFunction = function(i, element){
 					for(var j = 0; j < self.length; j++){

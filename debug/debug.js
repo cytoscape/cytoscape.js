@@ -187,14 +187,6 @@ $(function(){
 		cy.remove( cy.elements(":selected") );
 	});
 	
-	$("body").bind("keydown", function(e){
-		if( e.which == 8 || e.which == 46 ){
-			cy.remove( cy.elements(":selected") );
-			
-			e.preventDefault();
-		}
-	});
-	
 	function displayElementData(element, position){
 		var content = $('<div></div>');
 		var data = element.data();
@@ -234,4 +226,22 @@ $(function(){
 	cy.bind("zoom", function(){
 		$(".ui-tooltip").hide();
 	});
+	
+	function selectFromFilter(){
+		var selector = $("#filter-selector").val();
+		var toSelect = cy.elements(selector);
+		
+		toSelect.select();
+		cy.elements().not(toSelect).unselect();
+	}
+	$("#filter-button").click(function(){
+		selectFromFilter();
+	});
+	
+	$("#filter-selector").bind("keydown", function(e){
+		if( e.which == 13 ){
+			selectFromFilter();
+		}
+	});
+	
 });

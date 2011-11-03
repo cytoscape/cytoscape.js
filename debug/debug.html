@@ -17,7 +17,6 @@
 		
 		<script type="text/javascript" src="jquery.qtip.js"></script>
 		<script type="text/javascript" src="jquery.commandtip.js"></script>
-		<script type="text/javascript" src="jquery.menucommandtip.js"></script>
 		<script type="text/javascript" src="debug.js"></script>
 		
 		<link rel="stylesheet" href="jquery.qtip.css" />
@@ -29,7 +28,7 @@
 
 	<body>
 		<h1>Cytoscape Web debug page</h1>
-	    
+
 	    <div id="cytoscapeweb"></div>
 	    
 	    <div id="commands">
@@ -54,6 +53,37 @@
 	    	<button id="add-elements-button">Add</button>
 	    	<button id="remove-selected-button">Remove selected</button>
 	    	
+	    	<h2>Binding</h2>
+	    	<select id="bind-type-select">
+	    		<option value="bind">Bind</option>
+	    		<option value="unbind">Unbind</option>
+	    		<option value="live">Live</option>
+	    		<option value="die">Die</option>
+	    	</select>
+	    	to
+	    	<label for="bind-selector">Selector</label> <input type="text" id="bind-selector" />
+	    	for<br />
+	    	<select id="bind-event-select">
+	    		<option value="click">click</option>
+	    		<option value="mousedown">mousedown</option>
+	    		<option value="mouseup">mouseup</option>
+	    		<option value="mouseover">mouseover</option>
+	    		<option value="mouseout">mouseout</option>
+	    		<option value="mousemove">mousemove</option>
+	    		<option value="position">position</option>
+	    		<option value="data">data</option>
+	    		<option value="select">select</option>
+	    		<option value="unselect">unselect</option>
+	    		<option value="lock">lock</option>
+	    		<option value="unlock">unlock</option>
+	    		<option value="grab">grab</option>
+	    		<option value="ungrab">ungrab</option>
+	    	</select>
+	    	<button id="bind-button">Apply</button>
+	    	
+	    	<h2>Filtering</h2>
+	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />
+	    	<button id="filter-button">Select matches</button>
 	    </div>
 	</body>
 

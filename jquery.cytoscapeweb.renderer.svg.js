@@ -888,20 +888,6 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.makeSvgNodeLabelInteractive = function(element){
-		var svgDomElement = element._private.svgLabel;
-		var self = this;
-		
-		$(svgDomElement).bind("click", function(clickEvent){
-			self.offsetFix(clickEvent);
-			
-			var position = self.modelPoint({
-				x: clickEvent.offsetX,
-				y: clickEvent.offsetY
-			});
-			
-			//var intersection = Intersection.intersectShapes(new Rectangle(svgSelectionShape), new Path(element._private.svg));
-			
-		});
 	};
 	
 
@@ -1540,6 +1526,11 @@ $(function(){
 		var source = element.source();
 		var target = element.target();
 					
+		if( source == null || target == null ){
+			$.cytoscapeweb("debug", "SVG renderer is ignoring creating of edge `%s` with missing nodes");
+			return;
+		}
+		
 		var ps = source._private.position;
 		var pt = target._private.position;
 		
@@ -1894,17 +1885,25 @@ $(function(){
 		var container = $(this.options.selector);
 		var svg = container.svg('get');
 		var cy = this.options.cytoscapeweb;
+		var self = this;
 		
 		collection.each(function(i, element){
 			if( element._private.svgGroup != null ){
 				svg.remove(element._private.svgGroup);
 				delete element._private.svg;
 				delete element._private.svgGroup;
-				// TODO add delete arrow for edges
+				delete element._private.sourceSvg;
+				delete element._private.targetSvg;
+				// TODO add delete other svg children like labels
 			} else {
 				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
 			}
+			
 		});
+		
+		if( self.selectedElements != null ){
+			self.selectedElements = self.selectedElements.not(collection);
+		}
 		
 		this.updateElementsStyle( cy.nodes() );
 	};

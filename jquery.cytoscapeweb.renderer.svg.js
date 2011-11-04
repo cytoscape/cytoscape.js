@@ -32,7 +32,7 @@ $(function(){
 			shape: "ellipse",
 			cursor: "pointer",
 			visibility: "visible",
-			labelValign: "middle",
+			labelValign: "top",
 			labelHalign: "middle",
 			labelText: "",
 			labelFillColor: "#000",
@@ -44,8 +44,8 @@ $(function(){
 			labelFontVariant: "italic", 
 			labelFontFamily: "Arial",
 			labelFontWeight: "bold",
+			labelOpacity: 1,
 			labelOutlineOpacity: 1,
-			labelFillOpacity: 1,
 			selected: {
 				fillColor: "#222",
 				borderColor: "#000"
@@ -73,7 +73,7 @@ $(function(){
 			labelFontFamily: "Arial",
 			labelFontWeight: "bold",
 			labelOutlineOpacity: 1,
-			labelFillOpacity: 1,
+			labelOpacity: 1,
 			selected: {
 				lineColor: "#666",
 				targetArrowColor: "#666",
@@ -574,15 +574,21 @@ $(function(){
 			var maxPan = maxInt;
 			
 			self.offsetFix(e);
-			
+
 			var point = {
 				x: e.offsetX,
 				y: e.offsetY
 			};
 			
+			var deltaFactor = 0.5;
+			
+			if( $.browser.mozilla || $.browser.msie ){
+				deltaFactor = 0.167;
+			}
+			
 			var pan1 = self.pan();
 			var zoom1 = self.zoom();
-			var zoom2 = zoom1 * (1 + delta);
+			var zoom2 = zoom1 * (1 + delta*deltaFactor);
 			
 			var pan2 = {
 				x: -zoom2/zoom1 * (point.x - pan1.x) + point.x,
@@ -1248,13 +1254,20 @@ $(function(){
 		var x = element._private.position.x;
 		var y = element._private.position.y;
 		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, x, y, "label init");
+		element._private.svgLabelGroup = self.svg.group(element._private.svgGroup);
+		element._private.svgLabelOutline = self.svg.text(element._private.svgLabelGroup, x, y, "label init");
+		element._private.svgLabel = self.svg.text(element._private.svgLabelGroup, x, y, "label init");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
 		var self = this;
 
 		self.svg.change(element._private.svgLabel, {
+			x: element._private.position.x,
+			y: element._private.position.y
+		});
+		
+		self.svg.change(element._private.svgLabelOutline, {
 			x: element._private.position.x,
 			y: element._private.position.y
 		});
@@ -1477,7 +1490,9 @@ $(function(){
 			};
 		}
 		
-		element._private.svgLabel = self.svg.text(element._private.svgGroup, labelPosition.x, labelPosition.y, "label init");
+		element._private.svgLabelGroup = self.svg.group(element._private.svgGroup);
+		element._private.svgLabelOutline = self.svg.text(element._private.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
+		element._private.svgLabel = self.svg.text(element._private.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
 		
 		element._private.svg = svgPath;
 		return svgPath;
@@ -1708,24 +1723,36 @@ $(function(){
 			"visibility": visibility(style.visibility)
 		});
 		
-		// styles for label
-		this.svg.change(element._private.svgLabel, {
+		// styles for label		
+		var labelOptions = {
 			"visibility": visibility(style.visibility),
 			"pointer-events": "none",
 			fill: color(style.labelFillColor),
-			fillOpacity: percent(style.labelFillOpacity),
-			stroke: color(style.labelOutlineColor),
-			strokeWidth: number(style.labelOutlineWidth),
-			strokeOpacity: percent(style.labelOutlineOpacity),
 			"font-family": style.labelFontFamily,
 			"font-weight": style.labelFontWeight,
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
 			"font-size": style.labelFontSize
+		};
+		
+		this.svg.change(element._private.svgLabelGroup, {
+			opacity: percent(style.labelOpacity)
 		});
 		
-		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;
+		this.svg.change(element._private.svgLabelOutline, {
+			stroke: color(style.labelOutlineColor),
+			strokeWidth: number(style.labelOutlineWidth) * 2,
+			fill: "none",
+			opacity: percent(style.labelOutlineOpacity)
+		});
+		
+		this.svg.change(element._private.svgLabelOutline, labelOptions);
+		this.svg.change(element._private.svgLabel, labelOptions);
+		
+		var labelText = style.labelText == null ? "" : style.labelText;
+		element._private.svgLabel.textContent = labelText;
+		element._private.svgLabelOutline.textContent = labelText;
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
@@ -1750,6 +1777,10 @@ $(function(){
 		var width = 0;
 		var text = element._private.svgLabel.textContent;
 		
+		var textAnchor;
+		var styleAttr;
+		var transform;
+		
 		if( text == null || text == "" ){
 			return;
 		}
@@ -1760,18 +1791,18 @@ $(function(){
 		}
 		
 		if( halign == "middle" ){
-			this.svg.change(element._private.svgLabel, {
+			textAnchor =  {
 				"text-anchor": "middle"
-			});
+			};
 		} else if( halign == "right" ){
-			this.svg.change(element._private.svgLabel, {
+			textAnchor =  {
 				"text-anchor": "start"
-			});
+			};
 			dx = width/2 + spacing;
 		} else if( halign == "left" ){
-			this.svg.change(element._private.svgLabel, {
+			textAnchor =  {
 				"text-anchor": "end"
-			});
+			};
 			dx = -width/2 - spacing;
 		}
 		
@@ -1780,25 +1811,30 @@ $(function(){
 		var ieFix = $.browser.msie ? fontSize/3 : 0;
 	
 		if( valign == "middle" ){
-			this.svg.change(element._private.svgLabel, {
+			styleAttr = {
 				"style": "alignment-baseline: central; dominant-baseline: central;"
-			});
+			};
 			dy = 0 + ieFix;
 		} else if( valign == "top" ){
-			this.svg.change(element._private.svgLabel, {
+			styleAttr = {
 				"style": "alignment-baseline: normal; dominant-baseline: normal;"	
-			});
+			};
 			dy = -height/2 - spacing;
 		} else if( valign == "bottom" ){
-			this.svg.change(element._private.svgLabel, {
+			styleAttr = {
 				"style": "alignment-baseline: normal; dominant-baseline: normal;"
-			});
+			};
 			dy = height/2 + fontSize;
 		}
 		
-		this.svg.change(element._private.svgLabel, {
+		transform = {
 			transform: "translate("+ dx +","+ dy +")"
-		});
+		};
+		
+		var labelOptions = $.extend({}, textAnchor, styleAttr, transform);
+		
+		this.svg.change(element._private.svgLabelOutline, labelOptions);
+		this.svg.change(element._private.svgLabel, labelOptions);
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
@@ -1836,23 +1872,33 @@ $(function(){
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.svgLabel, {
+		var labelOptions = {
 			"visibility": visibility(style.visibility),
 			"pointer-events": "none",
 			fill: color(style.labelFillColor),
-			fillOpacity: percent(style.labelFillOpacity),
-			stroke: color(style.labelOutlineColor),
-			strokeWidth: number(style.labelOutlineWidth),
-			strokeOpacity: percent(style.labelOutlineOpacity),
 			"font-family": style.labelFontFamily,
 			"font-weight": style.labelFontWeight,
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
 			"font-size": style.labelFontSize
+		};
+		
+		this.svg.change(element._private.svgLabel, labelOptions);
+		this.svg.change(element._private.svgLabelOutline, $.extend({}, labelOptions, {
+			fill: "none",
+			stroke: color(style.labelOutlineColor),
+			strokeWidth: number(style.labelOutlineWidth) * 2,
+			opacity: percent(style.labelOutlineOpacity),
+		}) );
+		
+		this.svg.change(element._private.svgLabelGroup, {
+			opacity: percent(style.labelOpacity)
 		});
 		
-		element._private.svgLabel.textContent = style.labelText == null ? "" : style.labelText;
+		var labelText = style.labelText == null ? "" : style.labelText;
+		element._private.svgLabel.textContent = labelText;
+		element._private.svgLabelOutline.textContent = labelText;
 		this.updateLabelPosition(element, "middle", "middle");
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);

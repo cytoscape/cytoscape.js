@@ -37,8 +37,6 @@ $(function(){
 					defaultValue: "",
 					passthroughMapper: "id"
 				},
-				labelHalign: "middle",
-				labelValign: "top",
 				shape: "ellipse",
 				height: {
 					continuousMapper: {

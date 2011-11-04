@@ -2427,7 +2427,8 @@
 					}
 					
 					notificationsEnabled(false);
-					setTimeout(function(){ // TODO remove timeout when chrome reports dimenstions onload properly
+					
+					function callback(){
 						cy.layout({
 							ready: function(){
 								notificationsEnabled(true);
@@ -2439,7 +2440,16 @@
 								});
 							}
 						});
-					}, 10);
+					}
+					
+					// TODO remove timeout when chrome reports dimenstions onload properly
+					if( window.chrome ){
+						setTimeout(function(){
+							callback();
+						}, 10);
+					} else {
+						callback();
+					}
 					
 				},
 				

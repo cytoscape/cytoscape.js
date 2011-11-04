@@ -13,6 +13,10 @@ $(function(){
 				y: 0
 			};
 		});
+		
+		if( params.ready != null && typeof params.ready == typeof function(){} ){
+			params.ready();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "null", NullLayout);

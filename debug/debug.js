@@ -244,4 +244,32 @@ $(function(){
 		}
 	});
 	
+	$("#bind-button").click(function(){
+		var action = $("#bind-type-select").val();
+		var event = $("#bind-event-select").val();
+		var selector = $("#bind-selector").val();
+		
+		$.gritter.add({
+			title: 'Binding applied',
+			text: action + ' on `' + selector + '` for ' + event,
+			sticky: false,
+			time: 1000
+		});	
+		
+		var callback = function(){
+			$.gritter.add({
+				title: 'Event triggered for ' + this.data("id"),
+				text: action + ' on `' + selector + '` for ' + event,
+				sticky: false,
+				time: 1000
+			});
+		};
+		
+		if( action == "unbind" || action == "die" ){
+			callback = undefined;
+		}
+		
+		cy.elements(selector)[action](event, callback);
+	});
+	
 });

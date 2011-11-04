@@ -40,6 +40,10 @@ $(function(){
 		if( options.fit ){
 			cy.fit();
 		}
+
+		if( params.ready != null && typeof params.ready == typeof function(){} ){
+			params.ready();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "random", RandomLayout);

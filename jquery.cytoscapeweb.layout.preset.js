@@ -42,6 +42,10 @@ $(function(){
 			return position;
 			
 		});
+		
+		if( params.ready != null && typeof params.ready == typeof function(){} ){
+			params.ready();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "preset", PresetLayout);

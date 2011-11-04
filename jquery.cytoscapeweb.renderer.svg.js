@@ -378,8 +378,12 @@ $(function(){
 			container.svg({
 				onLoad: function(s){
 					
-					self.scale = 1;
-					self.translation = { x: 0, y: 0 };
+					if( self.scale == null ){
+						self.scale = 1;
+					}
+					if( self.translation == 0 ){
+						self.translation = { x: 0, y: 0 };
+					}
 					
 					container.find("svg").css("overflow", "hidden"); // fixes ie overflow
 					
@@ -402,6 +406,10 @@ $(function(){
 					self.makeBackgroundInteractive();
 					
 					callback();
+				},
+				settings: {
+					height: "100%",
+					width: "100%"
 				}
 			});
 		}
@@ -802,6 +810,10 @@ $(function(){
 		}
 		
 		function transform(svgElement){
+			if( self.svg == null || svgElement == null ){
+				return;
+			}
+			
 			self.svg.change(svgElement, {
 				transform: "translate(" + self.translation.x + "," + self.translation.y + ") scale(" + self.scale + ")"
 			});
@@ -1950,7 +1962,7 @@ $(function(){
 			case "load":
 				self.init(function(){
 					self.addElements( params.collection );
-					container.trigger("rendered");
+					self.options.cytoscapeweb.trigger("ready");
 				});
 				break;
 		

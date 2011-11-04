@@ -22,7 +22,7 @@ $(function(){
 		
 		var width = container.width();
 		var height = container.height();
-		
+
 		$.cytoscapeweb("debug", "Running grid layout on container of size (w, h) = (%i, %i) with %i nodes", width, height, nodes.size());
 		
 		if( height == 0 || width == 0){
@@ -134,6 +134,10 @@ $(function(){
 			cy.fit();
 		} else {
 			cy.reset();
+		}
+		
+		if( params.ready != null && typeof params.ready == typeof function(){} ){
+			params.ready();
 		}
 	};
 	

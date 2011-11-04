@@ -1981,7 +1981,7 @@
 			// Cytoscape Web object and helper functions
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			var enableNotifications = true;
+			var enableNotifications = 0;
 			var batchingNotifications = 0;
 			var batchedNotifications = [];
 			var batchedNotificationsTypeToIndex = {};
@@ -2013,7 +2013,7 @@
 			}
 			
 			function notificationsEnabled(enabled){
-				enableNotifications = enabled;
+				enableNotifications += enabled ? 1 : -1;
 			}
 			
 			function notify(params){				
@@ -2025,7 +2025,7 @@
 					params.collection = new CyCollection(elements);	
 				} 
 			
-				if( !enableNotifications ){
+				if( enableNotifications != 0 ){
 					return;
 				} else if( batchingNotifications > 0 ){
 					
@@ -2426,11 +2426,21 @@
 						
 					}
 					
-					notify({
-						type: "load", // TODO should this be a different type?
-						collection: cy.elements(),
-						style: structs.style
-					});
+					notificationsEnabled(false);
+					setTimeout(function(){ // TODO remove timeout when chrome reports dimenstions onload properly
+						cy.layout({
+							ready: function(){
+								notificationsEnabled(true);
+								
+								notify({
+									type: "load", // TODO should this be a different type?
+									collection: cy.elements(),
+									style: structs.style
+								});
+							}
+						});
+					}, 10);
+					
 				},
 				
 				toFormat: function(format){
@@ -2574,7 +2584,7 @@
 			var layout;
 			
 			cy.load(options.elements);
-			cy.layout();
+			
 			return cy;
 		} 
 		

@@ -15,7 +15,6 @@ $(function(){
 		
 		var nodes = params.nodes;
 		var edges = params.edges;
-		var renderer = params.renderer;
 		var options = this.options;
 		var container = $(options.selector);
 		

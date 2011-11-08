@@ -13,7 +13,6 @@ $(function(){
 	GridLayout.prototype.run = function(params){
 		var nodes = params.nodes;
 		var edges = params.edges;
-		var renderer = params.renderer;
 		var options = this.options;
 		var container = $(options.selector);
 		var cy = options.cy;
@@ -129,6 +128,7 @@ $(function(){
 			return { x: x, y: y };
 			
 		});
+	
 		
 		if( options.fit ){
 			cy.fit();

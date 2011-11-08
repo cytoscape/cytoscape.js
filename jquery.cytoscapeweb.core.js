@@ -151,7 +151,7 @@
 		if( isPlainObject(opts) ){
 			var defaults = {
 				layout: {
-					name: "forcedirected"
+					name: "grid"
 				},
 				renderer: {
 					name: "svg"
@@ -2277,12 +2277,14 @@
 				add: addElement(),
 				
 				remove: function(collection){
-					collection.remove();
+					if( typeof collection == typeof "" ){
+						var selector = collection;
+						var elements = elementsCollection({ selector: selector, addLiveFunction: false });
+						elements.remove();
+					} else {
+						collection.remove();
+					}
 				},
-				
-				addNodes: addElement({ group: "nodes" }),
-				
-				addEdges: addElement({ group: "edges" }),
 				
 				node: function(id){
 					return structs.nodes[id];

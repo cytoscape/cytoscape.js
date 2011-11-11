@@ -1,5 +1,5 @@
 body { font: 14pt arial; }	
-#cytoscapeweb { border: 1px solid #888; height: 800px; background: #fff; width: 800px; z-index: 1; position: relative; }	
+#cytoscapeweb { border: 1px solid #888; height: 600px; background: #fff; width: 600px; z-index: 1; position: relative; }	
 #commands { position: absolute; right: 0; top: 4.5em; margin: 0.5em; font-size: 0.75em; }
 #commands h2 { margin-top: 1em; }
 label { position: absolute; margin-top: -1.25em; font-size: 0.75em; margin-left: 0.25em; }

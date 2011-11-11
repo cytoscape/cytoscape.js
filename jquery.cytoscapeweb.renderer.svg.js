@@ -387,14 +387,20 @@ $(function(){
 					
 					container.find("svg").css("overflow", "hidden"); // fixes ie overflow
 					
-					self.transformTouchEvent(window, "touchmove", "mousemove");
-					
 					svg = s;
 					self.svg = svg;
+					
+					self.svg.change();
+					
+					self.svgBg = svg.rect(0, 0, "100%", "100%", {
+						fill: "white", // any arbitrary colour
+						opacity: 0 // don't show the bg rect but let it bubble up events
+					});
 					
 					self.edgesGroup = svg.group();
 					self.nodesGroup = svg.group();
 					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
+					
 					
 					self.selectedElements = self.cy.collection();
 					
@@ -437,6 +443,12 @@ $(function(){
 			self.shiftDown = e.shiftKey;
 		});
 		
+		function backgroundIsTarget(e){
+			return e.target == svgDomElement 
+				|| $(e.target).parents("g:last")[0] == self.edgesGroup
+				|| $(e.target)[0] == self.svgBg;
+		}
+		
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
 			// ignore right clicks
@@ -444,7 +456,8 @@ $(function(){
 				return;
 			}
 			
-			if( mousedownEvent.target == svgDomElement || $(mousedownEvent.target).parents("g:last")[0] == self.edgesGroup ){
+			if( backgroundIsTarget(mousedownEvent) ){
+				
 				mousedownEvent.preventDefault();
 				
 				self.offsetFix(mousedownEvent);
@@ -554,7 +567,7 @@ $(function(){
 						if( selectionSquare != null && selectionBounds.x1 != null && !isNaN(selectionBounds.x1) ){
 							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
 							self.svg.remove(selectionSquare);
-						} else if( mouseupEvent.target == svgDomElement ){
+						} else if( !self.shiftDown ) {
 							self.unselectAll();
 						}
 					}
@@ -566,12 +579,6 @@ $(function(){
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
 		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
-			
-			var maxInt = -1 >>> 1;
-			var minInt = (-(-1>>>1)-1);
-			var maxZoom = maxInt;
-			var minPan = minInt;
-			var maxPan = maxInt;
 			
 			self.offsetFix(e);
 
@@ -586,42 +593,113 @@ $(function(){
 				deltaFactor = 0.167;
 			}
 			
-			var pan1 = self.pan();
-			var zoom1 = self.zoom();
-			var zoom2 = zoom1 * (1 + delta*deltaFactor);
+			var zoom = self.zoom() * (1 + delta*deltaFactor);
 			
-			var pan2 = {
-				x: -zoom2/zoom1 * (point.x - pan1.x) + point.x,
-				y: -zoom2/zoom1 * (point.y - pan1.y) + point.y
-			};
-			
-			if( zoom2 > maxZoom ){
-				zoom2 = maxZoom;
-			} else if( zoom2 < 0 ){
-				zoom2 = zoom1;
-			}
-			
-			if( pan2.x < minPan ){
-				pan2.x = minPan;
-			} else if( pan2.x > maxPan ){
-				pan2.x = maxPan;
-			}
-			
-			if( pan2.y < minPan ){
-				pan2.y = minPan;
-			} else if( pan2.y > maxPan ){
-				pan2.y = maxPan;
-			}
-			
-			self.transform({
-				translation: pan2,
-				scale: zoom2
-			});
-			
-			self.cy.trigger("zoom");
-			self.cy.trigger("pan");
+			self.zoomAboutPoint(point, zoom);
 			
 			e.preventDefault();
+		}).bind("touchstart", function(tsEvent){
+
+			if( !backgroundIsTarget(tsEvent) ){
+				return;	
+			}
+			
+			tsEvent.preventDefault();
+			
+			function numEventPoints(e){
+				return e.originalEvent.touches == null ? 0 : e.originalEvent.touches.length;
+			}
+			
+			function point(e, i){
+				var x, y;
+				var offset = $(self.container).offset();
+				var touch = e.originalEvent.touches[i];
+				
+				x = touch.pageX - offset.left;
+				y = touch.pageY - offset.top;
+				
+				return { x: x, y: y };
+			}
+			
+			function centerPoint(e){
+				var p1 = point(e, 0);
+				var p2 = point(e, 1);
+				
+				return {
+					x: (p1.x + p2.x)/2,
+					y: (p1.y + p2.y)/2
+				};
+			}
+			
+			function distance(e){
+				var p1 = point(e, 0);
+				var p2 = point(e, 1);
+				
+				return self.getDistance(p1, p2);
+			}
+			
+			var center, distance1, point1, point2;
+			
+			if( numEventPoints(tsEvent) >= 2 ){
+				center = centerPoint(tsEvent);
+				distance1 = distance(tsEvent);
+			}
+			
+			point1 = point(tsEvent, 0);
+				
+			var moveEvents = "touchmove";
+			var moveHandler = function(tmEvent){
+				tmEvent.preventDefault();
+				
+				function pointsAtLeast(n){
+					return numEventPoints(tmEvent) >= n && numEventPoints(tsEvent) >= n;
+				}
+				
+				var translation = 0;
+				if( pointsAtLeast(1) ){
+					point2 = point(tmEvent, 0);
+					
+					translation = {
+						x: point2.x - point1.x,
+						y: point2.y - point1.y
+					};
+					
+					point1 = point2;
+					
+					if( pointsAtLeast(2) ){
+						var distance2 = distance(tmEvent);
+						center = centerPoint(tmEvent);
+						
+						var factor = distance2 / distance1;
+						
+						if( factor != 1 ){
+							var speed = 1.5;
+							
+							if( factor > 1 ){
+								factor = (factor - 1) * speed + 1;
+							} else {
+								factor = 1 - (1 - factor) * speed;
+							}
+							
+							var zoom = self.zoom() * factor;
+							
+							self.zoomAboutPoint(center, zoom, translation);
+							distance1 = distance2;
+						}
+					} else {
+						self.panBy(translation);
+					}
+				}
+				
+				
+			};
+			
+			$(svgDomElement).bind(moveEvents, moveHandler);
+			
+			$(svgDomElement).one("touchend", function(teEvent){
+				teEvent.preventDefault();
+				$(svgDomElement).unbind(moveEvents, moveHandler);
+			});
 		});
 		
 		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout", function(e){
@@ -651,6 +729,33 @@ $(function(){
 			self.cy.trigger(event);
 		});
 		
+	};
+	
+	SvgRenderer.prototype.zoomAboutPoint = function(point, zoom, translation){
+		var self = this;
+		var pan1 = self.pan();
+		var zoom1 = self.zoom();
+		var zoom2 = zoom;
+		
+		if( translation == null ){
+			translation = {
+				x: 0,
+				y: 0
+			};
+		}
+		
+		var pan2 = {
+			x: -zoom2/zoom1 * (point.x - pan1.x - translation.x) + point.x,
+			y: -zoom2/zoom1 * (point.y - pan1.y - translation.y) + point.y
+		};
+		
+		self.transform({
+			translation: pan2,
+			scale: zoom2
+		});
+		
+		self.cy.trigger("zoom");
+		self.cy.trigger("pan");
 	};
 	
 	SvgRenderer.prototype.zoom = function(scale){
@@ -799,20 +904,79 @@ $(function(){
 		});
 	};
 	
-	SvgRenderer.prototype.transform = function(params){
+	SvgRenderer.prototype.capTransformation = function(params){
 		var translation = params.translation;
 		var scale = params.scale;
 		var self = this;
 		
+		var maxInt = -1 >>> 1;
+		var minInt = (-(-1>>>1)-1);
+		var maxScale = 10;
+		var minScale = 0.1;
+		var minTranslation = minInt;
+		var maxTranslation = maxInt;
+		var validScale = true;
+		var validTranslation = true;
+		
 		if( translation != null ){
-			self.translation = {
-				x: translation.x,
-				y: translation.y
-			};
+			if( translation.x < minTranslation ){
+				translation.x = minTranslation;
+				validTranslation = false;
+			} else if( translation.x > maxTranslation ){
+				translation.x = maxTranslation;
+				validTranslation = false;
+			}
+			
+			if( translation.y < minTranslation ){
+				translation.y = minTranslation;
+				validTranslation = false;
+			} else if( translation.y > maxTranslation ){
+				translation.y = maxTranslation;
+				validTranslation = false;
+			}
+
+		} else {
+			translation = self.translation;
 		}
 		
-		if( scale != null && scale > 0 ){
-			self.scale = scale;
+		if( scale != null ){
+			if( scale > maxScale ){
+				scale = maxScale;
+				validScale = false;
+			} else if( scale < minScale ){
+				scale = minScale;
+				validScale = false;
+			}
+		} else {
+			scale = self.scale;
+		}
+		
+		return {
+			scale: scale,
+			translation: translation,
+			valid: validScale && validTranslation,
+			validScale: validScale,
+			validTranslation: validTranslation
+		};
+	};
+	
+	SvgRenderer.prototype.transform = function(params){
+		var self = this;
+		
+		var capped = self.capTransformation(params);
+		
+		if( capped.valid ){
+			self.translation = capped.translation;
+			self.scale = capped.scale;
+		} else {
+		
+			if( params.capScale ){
+				self.scale = capped.scale;	
+			}
+			
+			if( params.capTranslation ){
+				self.translation = capped.translation;
+			}
 		}
 		
 		function transform(svgElement){
@@ -896,28 +1060,6 @@ $(function(){
 		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
 	
-	SvgRenderer.prototype.transformTouchEvent = function(domElement, fromEvent, toEvent){
-		domElement.addEventListener(fromEvent, function(e){
-			var evt = $.extend({}, e);
-			evt.type = toEvent;
-			
-			if( e.touches != null && e.touches[0] != null ){
-				evt.pageX = e.touches[0].pageX;
-				evt.pageY = e.touches[0].pageY;
-				evt.clientX = e.touches[0].clientX;
-				evt.clientY = e.touches[0].clientY;
-				evt.screenX = e.touches[0].screenX;
-				evt.screenY = e.touches[0].screenY;
-				evt.layerX = e.touches[0].layerX;
-				evt.layerY = e.touches[0].layerY;
-			}
-			
-			e.preventDefault();
-			$(domElement).trigger(evt);
-			return false;
-		});
-	};
-	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
 		var svgDomElement = element._private.svg;
 		var targetArrow = element._private.targetSvg;
@@ -945,7 +1087,7 @@ $(function(){
 		// you need to prevent default event handling to 
 		// prevent built-in browser drag-and-drop etc
 		
-		$(svgDomElement).bind("mousedown", function(mousedownEvent){
+		$(svgDomElement).bind("mousedown touchstart", function(mousedownEvent){
 			draggedAfterMouseDown = false;
 			
 			element.trigger(mousedownEvent);
@@ -957,21 +1099,40 @@ $(function(){
 			 
 			element._private.grabbed = true;
 			
-			var originX = mousedownEvent.pageX;
-			var originY = mousedownEvent.pageY;
+			var originX, originY;
+			
+			if( mousedownEvent.type == "touchstart" ){
+				originX = mousedownEvent.originalEvent.touches[0].pageX;
+				originY = mousedownEvent.originalEvent.touches[0].pageY;
+			} else {
+				originX = mousedownEvent.pageX;
+				originY = mousedownEvent.pageY;
+			}
 			
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
 				
+				console.log("drag");
+				
 				self.moveToFront(element);
 				draggedAfterMouseDown = true;
 				
-				var dx = (dragEvent.pageX - originX) / self.zoom();
-				var dy = (dragEvent.pageY - originY) / self.zoom();
+				var dragX, dragY;
+				
+				if( dragEvent.type == "touchmove" ){
+					dragX = dragEvent.originalEvent.touches[0].pageX;
+					dragY = dragEvent.originalEvent.touches[0].pageY;
+				} else {
+					dragX = dragEvent.pageX;
+					dragY = dragEvent.pageY;
+				}
+				
+				var dx = (dragX - originX) / self.zoom();
+				var dy = (dragY - originY) / self.zoom();
 				
 				// new origin each event
-				originX = dragEvent.pageX;
-				originY = dragEvent.pageY;
+				originX = dragX;
+				originY = dragY;
 				
 				var elements;
 				
@@ -997,7 +1158,7 @@ $(function(){
 				
 			};
 			
-			$(window).bind("mousemove", dragHandler);
+			$(window).bind("mousemove touchmove", dragHandler);
 			
 			var finishedDragging = false;
 			var endHandler = function(mouseupEvent){
@@ -1008,20 +1169,18 @@ $(function(){
 					return;
 				}
 				
-				$(window).unbind("mousemove", dragHandler);
+				$(window).unbind("mousemove touchmove", dragHandler);
 
-				$(window).unbind("mouseup", endHandler);
-				$(window).unbind("blur", endHandler);
-				$(svgDomElement).unbind("mouseup", endHandler);
+				$(window).unbind("mouseup touchend blur", endHandler);
+				$(svgDomElement).unbind("mouseup touchend", endHandler);
 				
 				element._private.grabbed = false;
 				
 				element.trigger($.extend({}, mouseupEvent, { type: "dragstop" }));
 			};
 			
-			$(window).bind("mouseup", endHandler);
-			$(window).bind("blur", endHandler);
-			$(svgDomElement).bind("mouseup", endHandler);
+			$(window).bind("mouseup touchend blur", endHandler);
+			$(svgDomElement).bind("mouseup touchend", endHandler);
 			
 			mousedownEvent.preventDefault();
 		}).bind("mouseup", function(e){
@@ -1236,9 +1395,6 @@ $(function(){
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
 		this.makeSvgNodeLabel(element);
-		
-		this.transformTouchEvent(svgDomElement, "touchstart", "mousedown");
-		this.transformTouchEvent(svgDomElement, "touchend", "mouseup");
 		
 		element._private.svg = svgDomElement;
 		$.cytoscapeweb("debug", "SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);

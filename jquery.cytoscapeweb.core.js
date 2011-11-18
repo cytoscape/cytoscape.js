@@ -188,6 +188,7 @@
 					nodes: {},
 					edges: {}
 				},
+				continuousMapperUpdates: [],
 				live: {}, // event name => selector string => array of callbacks
 				selectors: {}, // selector string => selector for live
 				listeners: {} // cy || background => event name => array of callback functions
@@ -257,6 +258,14 @@
 				}
 			}
 			
+			function getContinuousMapperUpdates(){
+				return structs.continuousMapperUpdates;
+			}
+			
+			function clearContinuousMapperUpdates(){
+				structs.continuousMapperUpdates = [];
+			}
+			
 			function addContinuousMapperBounds(element, name, val){
 				var group = element._private.group;
 				
@@ -295,9 +304,9 @@
 					bounds.max = vals[vals.length - 1];
 					
 					if( oldMin != bounds.min || oldMax != bounds.max ){
-						notify({
-							type: "mapperbounds",
-							collection: [ element ]
+						structs.continuousMapperUpdates.push({
+							group: element.group(),
+							element: element
 						});
 					}
 				}
@@ -324,9 +333,9 @@
 				addContinuousMapperBounds(element, name, newVal);
 				
 				if( oldMin != bounds.min || oldMax != bounds.max ){
-					notify({
-						type: "mapperbounds",
-						collection: [ element ]
+					structs.continuousMapperUpdates.push({
+						group: element.group(),
+						element: element
 					});
 				}
 			}
@@ -364,9 +373,9 @@
 				}
 			
 				if( oldMin != bounds.min || oldMax != bounds.max ){
-					notify({
-						type: "mapperbounds",
-						collection: [ element ]
+					structs.continuousMapperUpdates.push({
+						group: element.group(),
+						element: element
 					});
 				}
 			}
@@ -2023,8 +2032,8 @@
 				} else if( params.collection instanceof Array ){
 					var elements = params.collection;
 					params.collection = new CyCollection(elements);	
-				} 
-			
+				}
+				
 				if( enableNotifications != 0 ){
 					return;
 				} else if( batchingNotifications > 0 ){
@@ -2052,6 +2061,14 @@
 					}
 					
 				} else {
+					
+					if( getContinuousMapperUpdates().length != 0 ){
+						console.log("update mappers in renderer");
+						params.updateMappers = true;
+						clearContinuousMapperUpdates();
+						console.log(params);
+					}
+					
 					renderer.notify(params);
 				}
 			}

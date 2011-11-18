@@ -1789,16 +1789,27 @@ $(function(){
 		this.updateElementsStyle(collection);
 	};
 	
-	SvgRenderer.prototype.updateData = function(collection){
+	SvgRenderer.prototype.updateData = function(collection, updateMappers){
 		this.updateElementsStyle(collection);
+		
+		if( updateMappers ){
+			this.updateMapperBounds( collection );
+		}
 	};
 	
 	SvgRenderer.prototype.updateMapperBounds = function(collection){
+		var elements = cy.elements();
 		
-		var elements = cy.elements().filter(function(){
-			return this.group() == collection[0].group();
-		}).not(collection);
+		if( collection.nodes().size() > 0 && collection.edges().size() > 0 ){
+			// update both nodes & edges
+		} else {
+			// update only the group in the collection
+			elements = elements.filter(function(){
+				return this.group() == collection[0].group();
+			});
+		}
 		
+		elements = elements.not(collection);
 		this.updateElementsStyle( elements );
 	};
 	
@@ -2060,7 +2071,7 @@ $(function(){
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);
 	};
 	
-	SvgRenderer.prototype.addElements = function(collection){
+	SvgRenderer.prototype.addElements = function(collection, updateMappers){
 		
 		var self = this;
 		var cy = this.cy;
@@ -2075,7 +2086,9 @@ $(function(){
 		
 		self.positionEdges( collection.edges().parallelEdges() );
 
-		self.updateElementsStyle( cy.nodes().not(collection) );
+		if( updateMappers ){
+			self.updateMapperBounds( collection );
+		}
 	};
 	
 	SvgRenderer.prototype.updatePosition = function(collection){
@@ -2120,7 +2133,7 @@ $(function(){
 		});
 	};
 	
-	SvgRenderer.prototype.removeElements = function(collection){
+	SvgRenderer.prototype.removeElements = function(collection, updateMappers){
 		$.cytoscapeweb("debug", "SVG renderer is removing elements");
 		
 		var container = $(this.options.selector);
@@ -2139,14 +2152,15 @@ $(function(){
 			} else {
 				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
 			}
-			
 		});
 		
 		if( self.selectedElements != null ){
 			self.selectedElements = self.selectedElements.not(collection);
 		}
 		
-		this.updateElementsStyle( cy.nodes() );
+		if( updateMappers ){
+			this.updateMapperBounds( collection );
+		}
 	};
 	
 	SvgRenderer.prototype.notify = function(params){
@@ -2169,11 +2183,11 @@ $(function(){
 				break;
 		
 			case "add":
-				this.addElements( params.collection );
+				this.addElements( params.collection, params.updateMappers );
 				break;
 			
 			case "remove":
-				this.removeElements( params.collection );
+				this.removeElements( params.collection, params.updateMappers );
 				break;
 			
 			case "position":
@@ -2189,11 +2203,7 @@ $(function(){
 				break;
 				
 			case "data":
-				this.updateData( params.collection );
-				break;
-			
-			case "mapperbounds":
-				this.updateMapperBounds( params.collection );
+				this.updateData( params.collection, params.updateMappers );
 				break;
 				
 			case "select":

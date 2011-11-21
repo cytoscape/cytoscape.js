@@ -2063,10 +2063,8 @@
 				} else {
 					
 					if( getContinuousMapperUpdates().length != 0 ){
-						console.log("update mappers in renderer");
 						params.updateMappers = true;
 						clearContinuousMapperUpdates();
-						console.log(params);
 					}
 					
 					renderer.notify(params);

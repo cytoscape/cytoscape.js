@@ -598,108 +598,168 @@ $(function(){
 			self.zoomAboutPoint(point, zoom);
 			
 			e.preventDefault();
-		}).bind("touchstart", function(tsEvent){
-
+		});
+		
+		// touch functions (& touch support)
+		//       |
+		//       v
+		
+		function point(e, i){
+			var x, y;
+			var offset = $(self.container).offset();
+			var touch = e.originalEvent.touches[i];
+			
+			x = touch.pageX - offset.left;
+			y = touch.pageY - offset.top;
+			
+			return { x: x, y: y };
+		}
+		
+		function centerPoint(e){
+			var p1 = point(e, 0);
+			var p2 = point(e, 1);
+			
+			return {
+				x: (p1.x + p2.x)/2,
+				y: (p1.y + p2.y)/2
+			};
+		}
+		
+		function distance(e){
+			var p1 = point(e, 0);
+			var p2 = point(e, 1);
+			
+			return self.getDistance(p1, p2);
+		}
+		
+		function numEventPoints(e){
+			return e.originalEvent.touches == null ? 0 : e.originalEvent.touches.length;
+		}
+		
+		function pointsAtLeast(e, n){
+			return numEventPoints(e) >= n;
+		}
+		
+		function fingers(n){
+			if( n >= 2 ){
+				twoFingers = true;
+				inTwoFingerDelay = true;
+				
+				clearTimeout(twoFingersTimeout);
+				twoFingersTimeout = setTimeout(function(){
+					inTwoFingerDelay = false;
+				}, delayFrom2FingersTo1);
+			} else {
+				twoFingers = false;
+			}
+		}
+		
+		var delayFrom2FingersTo1 = 100;
+		var twoFingers = false;
+		var inTwoFingerDelay = false;
+		var twoFingersTimeout = null;
+		var touchendUnselects = true;
+		var center, modelCenter, distance1, point11, point12, point21, point22, movedAfterTouchStart;
+		$(svgDomElement).bind("touchstart", function(tsEvent){
 			if( !backgroundIsTarget(tsEvent) ){
 				return;	
 			}
 			
 			tsEvent.preventDefault();
+			point11 = point(tsEvent, 0);
 			
-			function numEventPoints(e){
-				return e.originalEvent.touches == null ? 0 : e.originalEvent.touches.length;
-			}
-			
-			function point(e, i){
-				var x, y;
-				var offset = $(self.container).offset();
-				var touch = e.originalEvent.touches[i];
-				
-				x = touch.pageX - offset.left;
-				y = touch.pageY - offset.top;
-				
-				return { x: x, y: y };
-			}
-			
-			function centerPoint(e){
-				var p1 = point(e, 0);
-				var p2 = point(e, 1);
-				
-				return {
-					x: (p1.x + p2.x)/2,
-					y: (p1.y + p2.y)/2
-				};
-			}
-			
-			function distance(e){
-				var p1 = point(e, 0);
-				var p2 = point(e, 1);
-				
-				return self.getDistance(p1, p2);
-			}
-			
-			var center, distance1, point1, point2;
-			
-			if( numEventPoints(tsEvent) >= 2 ){
+			if( pointsAtLeast(tsEvent, 2) ){
 				center = centerPoint(tsEvent);
+				modelCenter = self.modelPoint(center);
 				distance1 = distance(tsEvent);
+				point12 = point(tsEvent, 1);
+				fingers(2);
+			} else {
+				fingers(1);
+				touchendUnselects = true;
 			}
 			
-			point1 = point(tsEvent, 0);
-				
-			var moveEvents = "touchmove";
-			var moveHandler = function(tmEvent){
-				tmEvent.preventDefault();
-				
-				function pointsAtLeast(n){
-					return numEventPoints(tmEvent) >= n && numEventPoints(tsEvent) >= n;
-				}
-				
-				var translation = 0;
-				if( pointsAtLeast(1) ){
-					point2 = point(tmEvent, 0);
-					
-					translation = {
-						x: point2.x - point1.x,
-						y: point2.y - point1.y
-					};
-					
-					point1 = point2;
-					
-					if( pointsAtLeast(2) ){
-						var distance2 = distance(tmEvent);
-						center = centerPoint(tmEvent);
-						
-						var factor = distance2 / distance1;
-						
-						if( factor != 1 ){
-							var speed = 1.5;
-							
-							if( factor > 1 ){
-								factor = (factor - 1) * speed + 1;
-							} else {
-								factor = 1 - (1 - factor) * speed;
-							}
-							
-							var zoom = self.zoom() * factor;
-							
-							self.zoomAboutPoint(center, zoom, translation);
-							distance1 = distance2;
-						}
-					} else {
-						self.panBy(translation);
-					}
-				}
-				
-				
+			movedAfterTouchStart = false;
+			
+		}).bind("touchmove", function(tmEvent){
+			if( !backgroundIsTarget(tmEvent) ){
+				return;	
+			}
+			
+			touchendUnselects = false;
+			
+			if( pointsAtLeast(tmEvent, 2) ){
+				fingers(2);
+				point22 = point(tmEvent, 1);
+			} else {
+				fingers(1);
+			}
+			
+			tmEvent.preventDefault();
+
+			var translation = {
+				x: 0,
+				y: 0
 			};
 			
-			$(svgDomElement).bind(moveEvents, moveHandler);
-			
-			$(svgDomElement).one("touchend", function(teEvent){
-				teEvent.preventDefault();
-				$(svgDomElement).unbind(moveEvents, moveHandler);
-			});
+			if( pointsAtLeast(tmEvent, 1) ){
+				point21 = point(tmEvent, 0);
+				
+				if( pointsAtLeast(tmEvent, 2) ){
+					var distance2 = distance(tmEvent);
+					//center = self.renderedPoint(modelCenter);
+					var factor = distance2 / distance1;
+					center = self.renderedPoint(modelCenter);
+					
+					if( factor != 1 ){
+						var speed = 1.5;
+						
+						// delta finger 1
+						var d1 = {
+							x: point21.x - point11.x,
+							y: point21.y - point11.y
+						};
+						
+						// delta finger 2
+						var d2 = {
+							x: point22.x - point12.x,
+							y: point22.y - point12.y
+						};
+						
+						// translation is the normalised vector of the two fingers movement
+						// i.e. so pinching cancels out and moving together pans
+						translation = {
+							x: (d1.x + d2.x) / 2,
+							y: (d1.y + d2.y) / 2
+						};
+						
+						if( factor > 1 ){
+							factor = (factor - 1) * speed + 1;
+						} else {
+							factor = 1 - (1 - factor) * speed;
+						}
+						
+						var zoom = self.zoom() * factor;
+						
+						self.zoomAboutPoint(center, zoom, translation);
+						distance1 = distance2;
+					}
+				} else if( !inTwoFingerDelay ){
+					translation = {
+						x: point21.x - point11.x,
+						y: point21.y - point11.y
+					};
+					
+					self.panBy(translation);
+				}
+				
+				point11 = point21;
+				point12 = point22;
+			}
+		}).bind("touchend", function(teEvent){
+			if( touchendUnselects && backgroundIsTarget(teEvent) ){
+				self.unselectAll();
+			}
 		});
 		
 		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout", function(e){
@@ -1067,9 +1127,9 @@ $(function(){
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
-		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click", function(e){
+		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click touchstart touchend mouseover mousemove mouseout", function(e){
 			element.trigger(e);
-		}).bind("click", function(e){
+		}).bind("click touchend", function(e){
 			self.selectElement(element);
 		});
 	};
@@ -1112,9 +1172,6 @@ $(function(){
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
 				
-				console.log("drag");
-				
-				self.moveToFront(element);
 				draggedAfterMouseDown = true;
 				
 				var dragX, dragY;
@@ -1150,19 +1207,26 @@ $(function(){
 				self.updatePosition( elements );
 				
 				if( justStartedDragging ){
+					
+					// TODO we should be able to do this on iOS too
+					if( dragEvent.type != "touchmove" ){
+						self.moveToFront(element);
+					}
+					
 					justStartedDragging = false;
 					element.trigger($.extend({}, dragEvent, { type: "dragstart" }));
 				} else {
 					element.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
 				
+				
 			};
 			
 			$(window).bind("mousemove touchmove", dragHandler);
 			
 			var finishedDragging = false;
+			var touchEndCount = 0;
 			var endHandler = function(mouseupEvent){
-				
 				if( !finishedDragging ){
 					finishedDragging = true;
 				} else {
@@ -1183,7 +1247,7 @@ $(function(){
 			$(svgDomElement).bind("mouseup touchend", endHandler);
 			
 			mousedownEvent.preventDefault();
-		}).bind("mouseup", function(e){
+		}).bind("mouseup touchend", function(e){
 			element.trigger($.extend({}, e));
 			
 			if( draggedAfterMouseDown == false ){

@@ -117,6 +117,14 @@ $(function(){
 		return val;
 	}
 	
+	function time(callback){
+		var start = new Date();
+		callback();
+		var end = new Date();
+		
+		$("#add-remove-time").html( (end - start) + " ms" );
+	}
+	
 	$("#add-elements-button").click(function(){
 		var n = number("nodes");
 		var e = number("edges");
@@ -153,15 +161,21 @@ $(function(){
 		}
 		numEdges += e;
 		
-		cy.add(edges);
+		time(function(){
+			cy.add(edges);
+		});
 	});
 	
 	$("#remove-elements-button").click(function(){
 		var n = number("nodes");
 		var e = number("edges");
 		
-		cy.nodes().slice(0, n).remove();
-		cy.edges().slice(0, e).remove();
+		time(function(){
+			cy.nodes().slice(0, n).remove();
+			cy.edges().slice(0, e).remove();
+		});
+		
+
 	});
 	
 	$("#zoom-pan-button").click(function(){

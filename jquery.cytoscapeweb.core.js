@@ -158,8 +158,7 @@
 				},
 				style: { // actual default style later specified by renderer
 					global: {},
-					nodes: {},
-					edges: {}
+					selectors: {}
 				}
 			};
 			
@@ -422,15 +421,21 @@
 					listeners: {}, // map ( type => array of functions )
 					one: {}, // map ( type => array of functions )
 					group: params.group, // string; "nodes" or "edges"
-					bypass: copy( params.bypass ),
+					bypass: copy( params.bypass ), // the bypass object
 					style: {}, // the rendered style populated by the renderer
 					removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 					selected: params.selected ? true : false, // whether it's selected
 					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
-					grabbed: false // whether the element is grabbed by the mouse; renderer sets this privately
+					grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
+					grabbable: true, // whether the element can be grabbed
+					classes: {} // map ( className => true )
 				};
 				
 				this.restore();
+			};
+			
+			CyElement.prototype.element = function(){
+				return this;
 			};
 			
 			CyElement.prototype.collection = function(){
@@ -443,7 +448,82 @@
 			
 			CyElement.prototype.group = function(){
 				return this._private.group;
-			}
+			};
+			
+			CyElement.prototype.addClass = function(classes){
+				classes = classes.split(/\s+/);
+				var self = this;
+				var added = false;
+				
+				$.each(classes, function(i, cls){
+					added = added || self._private.classes[cls] === undefined;
+					self._private.classes[cls] = true;
+				});
+				
+				if( added ){
+					self.trigger("class");
+				}
+				
+				return self;
+			};
+			
+			CyElement.prototype.hasClass = function(className){
+				return this._private.classes[className] == true;
+			};
+			
+			CyElement.prototype.toggleClass = function(classes, toggle){
+				classes = classes.split(/\s+/);
+				var self = this;
+				var toggled = false;
+				
+				function remove(cls){
+					toggled = toggled || self._private.classes[cls] !== undefined;
+					delete self._private.classes[cls];
+				}
+				
+				function add(cls){
+					toggled = toggled || self._private.classes[cls] === undefined;
+					self._private.classes[cls] = true;
+				}
+				
+				$.each(classes, function(i, cls){
+					if( toggle === undefined ){
+						if( self.hasClass(cls) ){
+							remove(cls);
+						} else {
+							add(cls);
+						}
+					} else if( toggle ){
+						add(cls);
+					} else {
+						remove(cls);
+					}
+				});
+				
+				if( toggled ){
+					self.trigger("class");
+				}
+				
+				return self;
+			};
+			
+			CyElement.prototype.removeClass = function(classes){
+				classes = classes.split(/\s+/);
+				var self = this;
+				var removed = false;
+				
+				
+				$.each(classes, function(i, cls){
+					removed = removed || self._private.classes[cls] !== undefined;
+					delete self._private.classes[cls];
+				});
+				
+				if( removed ){
+					self.trigger("class");
+				}
+				
+				return self;
+			};
 			
 			CyElement.prototype.removed = function(){
 				return this._private.removed;
@@ -510,6 +590,8 @@
 				});
 				
 				this.trigger("add");
+				
+				return this;
 			};
 			
 			// remove from cytoweb
@@ -551,7 +633,7 @@
 				
 				return this;
 			};
-
+			
 			function switchFunction(params){
 				return function(fn){
 					if( isFunction(fn) ){
@@ -571,8 +653,14 @@
 			};
 			
 			CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
-			
 			CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
+			
+			CyElement.prototype.grabbable = function(){
+				return this._private.grabbable;
+			};
+			
+			CyElement.prototype.grabify = switchFunction({ event: "grabify", field: "grabbable", value: true });
+			CyElement.prototype.ungrabify = switchFunction({ event: "ungrabify", field: "grabbable", value: false });
 			
 			CyElement.prototype.removeBypass = function(field){
 				
@@ -825,6 +913,14 @@
 				
 			};
 			
+			CyElement.prototype.positions = function(fn){
+				var positionOpts = fn.apply(this, [0, this]);
+				
+				if( isPlainObject(positionOpts) ){
+					this.position(positionOpts);
+				}
+			};
+			
 			CyElement.prototype.show = function(){
 				renderer.showElements(this.collection());
 				
@@ -895,6 +991,14 @@
 			
 			CyElement.prototype.bind = bind(false);
 			CyElement.prototype.one = bind(true);
+			
+			CyElement.prototype.live = function(){
+				console.error("You can not call `live` on an element");
+			};
+			
+			CyElement.prototype.die = function(){
+				console.error("You can not call `live` on an element");
+			};
 			
 			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
@@ -1008,6 +1112,14 @@
 				return this == element;
 			};
 			
+			CyElement.prototype.is = function(selector){
+				return new CySelector(selector).filter(this.collection()).size() > 0;
+			};
+			
+			CyElement.prototype.allAre = function(selector){
+				return this.is(selector);
+			};
+			
 			CyElement.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
 				var adjacents = this.neighborhood();
@@ -1030,7 +1142,7 @@
 					for(var j = 0; j < adjacents.size(); j++){
 						var adjacent = adjacents[j];
 						
-						if( element.group() == adjacent.group() && element._private.data.id == adjacent._private.data.id ){
+						if( element == adjacent){
 							inCollection = true;
 							break;
 						}
@@ -1183,6 +1295,77 @@
 				
 				this.length = elements.length;
 			};
+			
+			// what functions in CyElement update the renderer
+			// each one has the same name as its event 
+			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify" ];
+			var getters = [ "data", "bypass", "position" ];
+			
+			// functions in element can also be used on collections
+			$.each(CyElement.prototype, function(name, func){
+				CyCollection.prototype[name] = function(){
+					
+					var rets = [];
+					var returnsSelf = true; // whether the function returns itself
+					var returnsCollection = true; // whether the function returns a collection
+					var collection = new CyCollection();
+				
+					// disable renderer notifications during loop
+					// just notify at the end of the loop with the whole collection
+					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
+					var isListener = isFunction(arguments[0]);
+					var isGetter = $.inArray(name, getters) >= 0 && arguments[0] == null || arguments[1] == null;
+					
+					if( isRendererFn && !isListener && !isGetter ){
+						notificationsEnabled(false);
+					}
+				
+					for(var i = 0; i < this.size(); i++){
+						var element = this[i];
+						var ret = func.apply(element, arguments);
+						
+						if( ret !== undefined ){
+							rets.push(ret);
+						}
+						
+						returnsSelf = returnsSelf && (ret == element);
+						returnsCollection = returnsCollection && (ret instanceof CyCollection || ret instanceof CyElement);
+						
+						if(returnsCollection){
+							collection = collection.add(ret);
+						}
+						
+						if( !returnsSelf && !returnsCollection ){
+							break;
+						}
+					}
+					
+					// notify the renderer of the call on the whole collection
+					// (more efficient than sending each in a row---may have flicker?)
+					if( isRendererFn && !isListener && !isGetter ){
+						notificationsEnabled(true);
+						notify({
+							type: name,
+							collection: this
+						});
+					}
+					
+					if( !returnsSelf && !returnsCollection ){
+						return rets[0];
+					}
+					
+					if( returnsSelf || rets.length == 0 ) {
+						return this; // if fn returns the element, then return the same collection
+					} else if( returnsCollection ){
+						return collection;
+					}
+					
+					return rets;
+				};
+			});
+			
+			// NOTE: any functions with the same name in element and collection must go here for collection
+			//       if the implementation differs
 
 			CyCollection.prototype.toArray = function(){
 				var array = [];
@@ -1412,69 +1595,6 @@
 				return ret;
 			};
 			
-			// what functions in CyElement update the renderer
-			// each one has the same name as its event 
-			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
-			var getters = [ "data", "bypass", "position" ];
-			
-			// functions in element can also be used on collections
-			$.each(CyElement.prototype, function(name, func){
-				CyCollection.prototype[name] = function(){
-					
-					var rets = [];
-					var returnsSelf = true; // whether the function returns itself
-					var returnsCollection = true; // whether the function returns a collection
-					var collection = new CyCollection();
-				
-					// disable renderer notifications during loop
-					// just notify at the end of the loop with the whole collection
-					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
-					var isListener = isFunction(arguments[0]);
-					var isGetter = $.inArray(name, getters) >= 0 && arguments[0] == null || arguments[1] == null;
-					
-					if( isRendererFn && !isListener && !isGetter ){
-						notificationsEnabled(false);
-					}
-				
-					for(var i = 0; i < this.size(); i++){
-						var element = this[i];
-						var ret = func.apply(element, arguments);
-						
-						if( ret !== undefined ){
-							rets.push(ret);
-						}
-						
-						returnsSelf = returnsSelf && (ret == element);
-						returnsCollection = returnsCollection && (ret instanceof CyCollection || ret instanceof CyElement);
-						
-						if(returnsCollection){
-							collection = collection.add(ret);
-						}
-					}
-					
-					// notify the renderer of the call on the whole collection
-					// (more efficient than sending each in a row---may have flicker?)
-					if( isRendererFn && !isListener && !isGetter ){
-						notificationsEnabled(true);
-						notify({
-							type: name,
-							collection: this
-						});
-					}
-					
-					if( returnsSelf || rets.length == 0 ) {
-						return this; // if fn returns the element, then return the same collection
-					} else if( returnsCollection ){
-						return collection;
-					}
-					
-					return rets;
-				};
-			});
-			
-			// NOTE: any functions with the same name in element and collection must go here for collection
-			//       if the implementation differs
-			
 			
 			CyCollection.prototype.show = function(){
 				renderer.showElements(this);
@@ -1513,7 +1633,8 @@
 				return function(){
 					var ret = null;
 					var degrees = this[degreeFn]();
-					$.each(degrees, function(i, degree){
+					this.each(function(i, ele){
+						var degree = ele[degreeFn]();
 						if( degree != null && (ret == null || callback(degree, ret)) ){
 							ret = degree;
 						}
@@ -1572,6 +1693,68 @@
 			
 			CyCollection.prototype.is = function(selector){
 				return new CySelector(selector).filter(this).size() > 0;
+			};
+			
+			CyCollection.prototype.toggleClass = function(className, toggle){
+				var collection = this;
+				var classes = className.split(/\s+/);
+				var changed = new CyCollection();
+				
+				classes.each(function(i, cls){
+					collection.each(function(j, ele){
+						
+						function add(){ ele.addClass(cls); changed.add(ele); }
+						function remove(){ ele.removeClass(cls); changed.add(ele); }
+						function has(){ ele.hasClass(cls); }
+						
+						if( toggle === undefined ){
+							if( has() ){
+								remove();
+							} else {
+								add();
+							}
+						} else if( toggle && !has() ){
+							add();
+						} else if( !toggle && has() ) {
+							remove();
+						}
+						
+					});
+				});
+			};
+			
+			CyCollection.prototype.addClass = function(className){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.addClass(className);
+					});
+				});
+
+				notify({
+					type: "class",
+					collection: collection
+				});
+				
+				return this;
+			};
+			
+			CyCollection.prototype.removeClass = function(className){
+				var collection = this;
+				
+				noNotifications(function(){
+					collection.each(function(i, element){
+						element.removeClass(className);
+					});
+				});
+
+				notify({
+					type: "class",
+					collection: collection
+				});
+				
+				return this;
 			};
 			
 			CyCollection.prototype.removeData = function(field){
@@ -1649,6 +1832,23 @@
 				return this;
 			};
 			
+			CyCollection.prototype.element = function(){
+				return this[0];
+			};
+			
+			// CyElement functions based on CyCollection functions (to make same API)
+			////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+			$.each(CyCollection.prototype, function(name, func){
+				if( CyElement.prototype[name] == null ){
+					CyElement.prototype[name] = function(){
+						var collection = this.collection();
+						
+						return func.apply(collection, arguments);
+					};
+				}
+			});
+			
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
@@ -1679,7 +1879,7 @@
 					self.length = queries.length;
 					for(var i = 0; i < queries.length; i++){
 						var query = queries[i];
-						var q = query.match(/^(node|edge|)(:[a-z]+)*(\[.+\])*(:[a-z]+)*$/);
+						var q = query.match(/^(node|edge|)(((:[a-z]+)|(\[.+\])|(\.[\w_]+)|(#[\w_]+))*)$/);
 						self[i] = {};
 						
 						if( q == null ){
@@ -1701,86 +1901,106 @@
 							return;
 						}
 						
-						var colonSelectors = [];
-						$.each([ q[2], q[4] ], function(i, selectors){
-							if( selectors == null ) return;
-							
-							$.each(selectors.split(":"), function(i, sel){
-								if(sel == "") return;
-									
-								colonSelectors.push(":" + sel);
-							});
-						});
+						var selectors = q[2];
+
+						var colonSelectors = selectors.match(/(:[a-z]+)/g);
+						var dataSelectors = selectors.match(/(\[.+\])/g);
+						var classSelectors = selectors.match(/(\.[\w_]+)/g);
+						var idSelectors = selectors.match(/(#[\w_]+)/g);
 						
-						for(var j = 0; j < colonSelectors.length; j++){
+						// validate colon selectors
+						///////////////////////////
+						
+						for(var j = 0; colonSelectors != null && j < colonSelectors.length; j++){
 							var selector = colonSelectors[j];
-							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside$/) ){
+							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable$/) ){
 								// valid
 							} else {
 								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
 							}
 						}
-						self[i].colonSelectors = colonSelectors;
+						self[i].colonSelectors = colonSelectors || [];
 						
-						var bracketsText = q[3];
-						self[i].data = [];
+						// validate class selectors
+						///////////////////////////
 						
-						if( bracketsText != null ){
-							var brackets = bracketsText.split("][");
+						self[i].classes = [];
+						for(var j = 0; classSelectors != null && j < classSelectors.length; j++){
+							var sel = classSelectors[j];
+							var cls = sel.substring(1);
 							
-							for(var j = 0; j < brackets.length; j++){
-								var bracket = brackets[j];
-								var b = bracket.replace("[", "").replace("]", "");
-								
-								var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
-								
-								if(match == null){
-									console.error("Invalid attribute selector `%s` in parent selector `%s`", bracket, str);
-									return;
-								}
-								
-								var field = match[1];
-								var operator = match[2];
-								var value = match[3];
-								
-								if( operator == null && value != null ){
-									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
-									return;
-								}
-								
-								if( value == null && operator != null ){
-									console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
-									return;
-								}
-								
-								if( value != null && operator != null ){
-									for(var s = 0; s < value.length; s++){
-										var ch = value.charAt(s);
-										
-										if( ch == "'" || ch == '"' ){
-											if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
-												// matching beginning & end quotes
-											} else if( ch == '"' && value.charAt(0) == "'" && value.charAt(value.length - 1) == "'" ){
-												// enclosed like 'foo"bar'
-											} else if( s >= 1 && value.charAt(s - 1) == "\\" ){
-												// escaped like "foo\"bar"
-											} else if( ch == "'" && value.charAt(0) == '"' && value.charAt(value.length - 1) == '"' ){
-												// enclosed like "foo'bar"
-											} else {
-												console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
-												return;
-											}
+							self[i].classes.push(cls);
+						}
+						
+						// validate id selectors
+						////////////////////////
+						
+						self[i].ids = [];
+						for(var j = 0; idSelectors != null && j < idSelectors.length; j++){
+							var sel = idSelectors[j];
+							var id = sel.substring(1);
+							
+							self[i].ids.push(id);
+						}
+						
+						
+						// validate data selectors
+						//////////////////////////
+						
+						self[i].data = [];
+						for(var j = 0; dataSelectors != null && j < dataSelectors.length; j++){
+							var bracket = dataSelectors[j];
+							var b = bracket.replace("[", "").replace("]", "");
+							
+							var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
+							
+							if(match == null){
+								console.error("Invalid attribute selector `%s` in parent selector `%s`", bracket, str);
+								return;
+							}
+							
+							var field = match[1];
+							var operator = match[2];
+							var value = match[3];
+							
+							if( operator == null && value != null ){
+								console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
+								return;
+							}
+							
+							if( value == null && operator != null ){
+								console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
+								return;
+							}
+							
+							if( value != null && operator != null ){
+								for(var s = 0; s < value.length; s++){
+									var ch = value.charAt(s);
+									
+									if( ch == "'" || ch == '"' ){
+										if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
+											// matching beginning & end quotes
+										} else if( ch == '"' && value.charAt(0) == "'" && value.charAt(value.length - 1) == "'" ){
+											// enclosed like 'foo"bar'
+										} else if( s >= 1 && value.charAt(s - 1) == "\\" ){
+											// escaped like "foo\"bar"
+										} else if( ch == "'" && value.charAt(0) == '"' && value.charAt(value.length - 1) == '"' ){
+											// enclosed like "foo'bar"
+										} else {
+											console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
+											return;
 										}
 									}
 								}
-																
-								self[i].data.push({
-									field: field,
-									operator: operator,
-									value: value
-								});
-							} // each bracket text
-						} // brackets text populated
+							}
+															
+							self[i].data.push({
+								field: field,
+								operator: operator,
+								value: value
+							});
+						} // each bracket text
+						
 					} // each query
 				} else {
 					console.error("A selector must be created from a string; found %o", selector);
@@ -1849,16 +2069,38 @@
 							case ":inside":
 								allColonSelectorsMatch = !element.removed();
 								break;
-							}
-							
-							if( !allColonSelectorsMatch ){
+							case ":grabbable":
+								allColonSelectorsMatch = element.grabbable();
+								break;
+							case ":ungrabbable":
+								allColonSelectorsMatch = !element.grabbable();
 								break;
 							}
+							
+							if( !allColonSelectorsMatch ) break;
 						}
+						if( !allColonSelectorsMatch ) continue;
 						
-						if( !allColonSelectorsMatch ){
-							continue;
+						var allIdsMatch = true;
+						for(var k = 0; k < query.ids.length; k++){
+							var id = query.ids[k];
+							var actualId = element._private.data.id;
+							
+							allIdsMatch = allIdsMatch && (id == actualId);
+							
+							if( !allIdsMatch ) break;
 						}
+						if( !allIdsMatch ) continue;
+						
+						var addClassesMatch = true;
+						for(var k = 0; k < query.classes.length; k++){
+							var cls = query.classes[i];
+							
+							addClassesMatch = addClassesMatch && element.hasClass(cls);
+							
+							if( !addClassesMatch ) break;
+						}
+						if( !addClassesMatch ) continue;
 						
 						var allDataMatches = true;
 						for(var k = 0; k < query.data.length; k++){
@@ -2273,7 +2515,7 @@
 					if( val === undefined ){
 						ret = copy( structs.style );
 					} else {
-						structs.structs.style = copy( val );
+						structs.style = copy( val );
 						ret = this;
 						
 						notify({
@@ -2299,14 +2541,6 @@
 					} else {
 						collection.remove();
 					}
-				},
-				
-				node: function(id){
-					return structs.nodes[id];
-				},
-				
-				edge: function(id){
-					return structs.edges[id];
 				},
 				
 				nodes: function(selector){
@@ -2459,7 +2693,7 @@
 						});
 					}
 					
-					// TODO remove timeout when chrome reports dimenstions onload properly
+					// TODO remove timeout when chrome reports dimensions onload properly
 					if( window.chrome ){
 						setTimeout(function(){
 							callback();
@@ -2470,7 +2704,7 @@
 					
 				},
 				
-				toFormat: function(format){
+				exportTo: function(format){
 					var exporterDefn = reg.exporter[format];
 					
 					if( exporterDefn == null ){
@@ -2509,7 +2743,7 @@
 							
 							if( styleVal.customMapper != null ){
 								
-								ret = styleVal.customMapper( element._private.data );
+								ret = styleVal.customMapper( element );
 								
 							} else if( styleVal.passthroughMapper != null ){
 								

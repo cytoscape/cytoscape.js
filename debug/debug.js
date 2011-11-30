@@ -15,48 +15,50 @@ $(function(){
 			name: "grid"
 		},
 		style: {
-			edges: {
-				targetArrowShape: "triangle",
-				sourceArrowShape: "circle",
-				width: {
-					defaultValue: 1,
-					continuousMapper: {
-						attr: {
-							name: "weight",
-						},
-						mapped: {
-							min: 1,
-							max: 4
-						}
-					}
-				}
-			},
-			
-			nodes: {
-				labelText: {
-					defaultValue: "",
-					passthroughMapper: "id"
-				},
-				shape: "ellipse",
-				height: {
-					continuousMapper: {
-						attr: {
-							name: "weight",
-						},
-						mapped: {
-							min: 10,
-							max: 30
+			selectors: {
+				"edge": {
+					targetArrowShape: "triangle",
+					sourceArrowShape: "circle",
+					width: {
+						defaultValue: 1,
+						continuousMapper: {
+							attr: {
+								name: "weight",
+							},
+							mapped: {
+								min: 1,
+								max: 4
+							}
 						}
 					}
 				},
-				width: {
-					continuousMapper: {
-						attr: {
-							name: "weight",
-						},
-						mapped: {
-							min: 10,
-							max: 30
+				
+				"node": {
+					labelText: {
+						defaultValue: "",
+						passthroughMapper: "id"
+					},
+					shape: "ellipse",
+					height: {
+						continuousMapper: {
+							attr: {
+								name: "weight",
+							},
+							mapped: {
+								min: 10,
+								max: 30
+							}
+						}
+					},
+					width: {
+						continuousMapper: {
+							attr: {
+								name: "weight",
+							},
+							mapped: {
+								min: 10,
+								max: 30
+							}
 						}
 					}
 				}

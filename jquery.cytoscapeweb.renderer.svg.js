@@ -20,61 +20,66 @@ $(function(){
 	
 	// TODO add more styles
 	var defaults = {
-		nodes: {
-			fillColor: "#888",
-			fillOpacity: 1,
-			borderColor: "#666",
-			borderOpacity: 1,
-			borderWidth: 0,
-			borderStyle: "solid",
-			height: 10,
-			width: 10,
-			shape: "ellipse",
-			cursor: "pointer",
-			visibility: "visible",
-			labelValign: "top",
-			labelHalign: "middle",
-			labelText: "",
-			labelFillColor: "#000",
-			labelOutlineColor: "#666",
-			labelOutlineWidth: 0,
-			labelFontSize: "inherit",
-			labelFontStyle: "normal",
-			labelFontDecoration: "none", 
-			labelFontVariant: "italic", 
-			labelFontFamily: "Arial",
-			labelFontWeight: "bold",
-			labelOpacity: 1,
-			labelOutlineOpacity: 1,
-			selected: {
+		selectors: {
+			"node": {
+				fillColor: "#888",
+				fillOpacity: 1,
+				borderColor: "#666",
+				borderOpacity: 1,
+				borderWidth: 0,
+				borderStyle: "solid",
+				height: 10,
+				width: 10,
+				shape: "ellipse",
+				cursor: "pointer",
+				visibility: "visible",
+				labelValign: "top",
+				labelHalign: "middle",
+				labelText: {
+					defaultValue: "",
+					passthroughMapper: "label"
+				},
+				labelFillColor: "#000",
+				labelOutlineColor: "#666",
+				labelOutlineWidth: 0,
+				labelFontSize: "inherit",
+				labelFontStyle: "normal",
+				labelFontDecoration: "none", 
+				labelFontVariant: "italic", 
+				labelFontFamily: "Arial",
+				labelFontWeight: "bold",
+				labelOpacity: 1,
+				labelOutlineOpacity: 1
+			},
+			"node:selected": {
 				fillColor: "#222",
 				borderColor: "#000"
-			}
-		},
-		edges: {
-			lineColor: "#ccc",
-			targetArrowColor: "#ccc",
-			sourceArrowColor: "#ccc",
-			targetArrowShape: "none",
-			sourceArrowShape: "none",
-			opacity: 1,
-			width: 1,
-			style: "solid",
-			cursor: "pointer",
-			visibility: "visible",
-			labelText: "",
-			labelFillColor: "#000",
-			labelOutlineColor: "#666",
-			labelOutlineWidth: 0,
-			labelFontSize: "inherit",
-			labelFontStyle: "normal",
-			labelFontDecoration: "none", 
-			labelFontVariant: "italic", 
-			labelFontFamily: "Arial",
-			labelFontWeight: "bold",
-			labelOutlineOpacity: 1,
-			labelOpacity: 1,
-			selected: {
+			},
+			"edge": {
+				lineColor: "#ccc",
+				targetArrowColor: "#ccc",
+				sourceArrowColor: "#ccc",
+				targetArrowShape: "none",
+				sourceArrowShape: "none",
+				opacity: 1,
+				width: 1,
+				style: "solid",
+				cursor: "pointer",
+				visibility: "visible",
+				labelText: "",
+				labelFillColor: "#000",
+				labelOutlineColor: "#666",
+				labelOutlineWidth: 0,
+				labelFontSize: "inherit",
+				labelFontStyle: "normal",
+				labelFontDecoration: "none", 
+				labelFontVariant: "italic", 
+				labelFontFamily: "Arial",
+				labelFontWeight: "bold",
+				labelOutlineOpacity: 1,
+				labelOpacity: 1
+			},
+			"edge:selected": {
 				lineColor: "#666",
 				targetArrowColor: "#666",
 				sourceArrowColor: "#666"
@@ -1056,17 +1061,21 @@ $(function(){
 	SvgRenderer.prototype.calculateStyleField = function(element, fieldName){
 		var self = this;
 		var styleCalculator = self.options.styleCalculator;
+		var selectors = self.style.selectors;
 		
-		var field = this.style[element.group()][fieldName];
+		var field = undefined;
 		var bypassField = element._private.bypass[fieldName];
-		var selectedField = this.style[element.group()].selected != null ? this.style[element.group()].selected[fieldName] : undefined;
 		
 		if( bypassField !== undefined ){
 			field = bypassField;
-		}
-		
-		if( element.selected() && selectedField !== undefined ){
-			field = selectedField;
+		} else {
+			$.each(selectors, function(selector, selStyle){
+				var selField = selStyle[fieldName];
+				
+				if( selField != null && element.is(selector) ){
+					field = selField;
+				}
+			});
 		}
 		
 		return styleCalculator.calculate(element, field);
@@ -1075,16 +1084,16 @@ $(function(){
 	SvgRenderer.prototype.calculateStyle = function(element){
 		var self = this;
 		var styleCalculator = self.options.styleCalculator;
-		var style = $.extend({}, this.style[element.group()], element._private.bypass);
+		var selectors = self.style.selectors;
+		var style = {};
 		
-		if( element.selected() ){
-			var selected = style.selected;
-			delete style.selected;
-			
-			style = $.extend({}, style, selected);
-		} else {
-			delete style.selected;
-		}
+		$.each(selectors, function(selector, selStyle){
+			if( element.is(selector) ){
+				style = $.extend(style, selStyle);
+			}
+		});
+		
+		style = $.extend(style, element._private.bypass);
 		
 		$.each(style, function(styleName, styleVal){
 			style[styleName] = styleCalculator.calculate(element, styleVal);
@@ -1152,7 +1161,7 @@ $(function(){
 			
 			element.trigger(mousedownEvent);
 			
-			if( element._private.grabbed || element._private.locked ){
+			if( element._private.grabbed || element._private.locked || !element._private.grabbable ){
 				mousedownEvent.preventDefault();
 				return;
 			}
@@ -1309,8 +1318,7 @@ $(function(){
 		if( element.isNode() ){
 			return {
 				height: element._private.style.height * self.zoom(),
-				width: element._private.style.width * self.zoom(),
-				size: element._private.style.size * self.zoom()
+				width: element._private.style.width * self.zoom()
 			};
 		} else {
 			return {
@@ -1853,6 +1861,10 @@ $(function(){
 		this.updateElementsStyle(collection);
 	};
 	
+	SvgRenderer.prototype.updateClass = function(collection){
+		this.updateElementsStyle(collection);
+	};
+	
 	SvgRenderer.prototype.updateData = function(collection, updateMappers){
 		this.updateElementsStyle(collection);
 		
@@ -2264,6 +2276,10 @@ $(function(){
 				
 			case "bypass":
 				this.updateBypass( params.collection );
+				break;
+				
+			case "class":
+				this.updateClass( params.collection );
 				break;
 				
 			case "data":

@@ -22,6 +22,8 @@ $(function(){
 	var defaults = {
 		minZoom: 0.001,
 		maxZoom: 1000,
+		maxPan: -1 >>> 1,
+		minPan: (-(-1>>>1)-1),
 			
 		// TODO add more styles
 		style: {
@@ -980,12 +982,10 @@ $(function(){
 		var scale = params.scale;
 		var self = this;
 		
-		var maxInt = -1 >>> 1;
-		var minInt = (-(-1>>>1)-1);
 		var maxScale = self.options.maxZoom;
 		var minScale = self.options.minZoom;
-		var minTranslation = minInt;
-		var maxTranslation = maxInt;
+		var minTranslation = self.options.minPan;
+		var maxTranslation = self.options.maxPan;
 		var validScale = true;
 		var validTranslation = true;
 		

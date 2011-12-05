@@ -2382,7 +2382,9 @@
 						// add the collection
 						else if( opts instanceof CyCollection ){
 							var collection = opts;
-							elements.push(collection);
+							collection.each(function(i, ele){
+								elements.push(ele);
+							});
 							
 							collection.restore();
 						} 

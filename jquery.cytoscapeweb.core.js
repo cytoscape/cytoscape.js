@@ -1090,6 +1090,9 @@
 					});
 				}
 				
+				// bubble up element events to the core
+				cytrigger("cy", event, data);
+				
 				return this;
 			};
 			

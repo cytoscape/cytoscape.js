@@ -61,6 +61,10 @@ $(function(){
 							}
 						}
 					}
+				},
+				
+				".foo": {
+					fillColor: "red"
 				}
 			}
 		},

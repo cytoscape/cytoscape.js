@@ -2655,7 +2655,7 @@
 					cy.trigger("pan");
 				},
 				
-				load: function(elements){
+				load: function(elements, onload){
 					// remove old elements
 					cy.elements().remove();
 				
@@ -2704,6 +2704,10 @@
 								});
 							}
 						});
+						
+						if( isFunction(onload) ){
+							onload(cy);
+						}
 					}
 					
 					// TODO remove timeout when chrome reports dimensions onload properly
@@ -2857,7 +2861,7 @@
 			
 			var layout;
 			
-			cy.load(options.elements);
+			cy.load(options.elements, options.ready);
 			
 			return cy;
 		} 

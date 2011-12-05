@@ -18,79 +18,85 @@
 
 $(function(){
 	
-	// TODO add more styles
+	
 	var defaults = {
-		selectors: {
-			"node": {
-				fillColor: "#888",
-				fillOpacity: 1,
-				borderColor: "#666",
-				borderOpacity: 1,
-				borderWidth: 0,
-				borderStyle: "solid",
-				height: 10,
-				width: 10,
-				shape: "ellipse",
-				cursor: "pointer",
-				visibility: "visible",
-				labelValign: "top",
-				labelHalign: "middle",
-				labelText: {
-					defaultValue: "",
-					passthroughMapper: "label"
+		minZoom: 0.001,
+		maxZoom: 1000,
+			
+		// TODO add more styles
+		style: {
+			selectors: {
+				"node": {
+					fillColor: "#888",
+					fillOpacity: 1,
+					borderColor: "#666",
+					borderOpacity: 1,
+					borderWidth: 0,
+					borderStyle: "solid",
+					height: 10,
+					width: 10,
+					shape: "ellipse",
+					cursor: "pointer",
+					visibility: "visible",
+					labelValign: "top",
+					labelHalign: "middle",
+					labelText: {
+						defaultValue: "",
+						passthroughMapper: "label"
+					},
+					labelFillColor: "#000",
+					labelOutlineColor: "#666",
+					labelOutlineWidth: 0,
+					labelFontSize: "inherit",
+					labelFontStyle: "normal",
+					labelFontDecoration: "none", 
+					labelFontVariant: "italic", 
+					labelFontFamily: "Arial",
+					labelFontWeight: "bold",
+					labelOpacity: 1,
+					labelOutlineOpacity: 1
 				},
-				labelFillColor: "#000",
-				labelOutlineColor: "#666",
-				labelOutlineWidth: 0,
-				labelFontSize: "inherit",
-				labelFontStyle: "normal",
-				labelFontDecoration: "none", 
-				labelFontVariant: "italic", 
-				labelFontFamily: "Arial",
-				labelFontWeight: "bold",
-				labelOpacity: 1,
-				labelOutlineOpacity: 1
+				"node:selected": {
+					fillColor: "#222",
+					borderColor: "#000"
+				},
+				"edge": {
+					lineColor: "#ccc",
+					targetArrowColor: "#ccc",
+					sourceArrowColor: "#ccc",
+					targetArrowShape: "none",
+					sourceArrowShape: "none",
+					opacity: 1,
+					width: 1,
+					style: "solid",
+					cursor: "pointer",
+					visibility: "visible",
+					labelText: "",
+					labelFillColor: "#000",
+					labelOutlineColor: "#666",
+					labelOutlineWidth: 0,
+					labelFontSize: "inherit",
+					labelFontStyle: "normal",
+					labelFontDecoration: "none", 
+					labelFontVariant: "italic", 
+					labelFontFamily: "Arial",
+					labelFontWeight: "bold",
+					labelOutlineOpacity: 1,
+					labelOpacity: 1
+				},
+				"edge:selected": {
+					lineColor: "#666",
+					targetArrowColor: "#666",
+					sourceArrowColor: "#666"
+				}
 			},
-			"node:selected": {
-				fillColor: "#222",
-				borderColor: "#000"
-			},
-			"edge": {
-				lineColor: "#ccc",
-				targetArrowColor: "#ccc",
-				sourceArrowColor: "#ccc",
-				targetArrowShape: "none",
-				sourceArrowShape: "none",
-				opacity: 1,
-				width: 1,
-				style: "solid",
-				cursor: "pointer",
-				visibility: "visible",
-				labelText: "",
-				labelFillColor: "#000",
-				labelOutlineColor: "#666",
-				labelOutlineWidth: 0,
-				labelFontSize: "inherit",
-				labelFontStyle: "normal",
-				labelFontDecoration: "none", 
-				labelFontVariant: "italic", 
-				labelFontFamily: "Arial",
-				labelFontWeight: "bold",
-				labelOutlineOpacity: 1,
-				labelOpacity: 1
-			},
-			"edge:selected": {
-				lineColor: "#666",
-				targetArrowColor: "#666",
-				sourceArrowColor: "#666"
+			global: {
+				panCursor: "grabbing",
+				selectionFillColor: "#ccc",
+				selectionOpacity: 0.5,
+				selectionBorderColor: "#888",
+				selectionBorderWidth: 1
 			}
-		},
-		global: {
-			panCursor: "grabbing",
-			selectionFillColor: "#ccc",
-			selectionOpacity: 0.5,
-			selectionBorderColor: "#888",
-			selectionBorderWidth: 1
 		}
 	};
 	
@@ -358,8 +364,8 @@ $(function(){
 	
 	function SvgRenderer(options){
 		$.cytoscapeweb("debug", "Creating SVG renderer with options (%o)", options);
-		this.options = options;
-		this.style = $.extend(true, {}, defaults, options.style);
+		this.options = $.extend({}, defaults, options);
+		this.style = $.extend(true, {}, defaults.style, options.style);
 		
 		$.cytoscapeweb("debug", "SVG renderer is using style (%o)", this.style);
 	}
@@ -891,10 +897,10 @@ $(function(){
 			
 			if( src == tgt ){
 			
+				// handling loops
 				if( bb.x == e.x ){
 					x1 = Math.min(bb.x + bb.width*0.4, n.x);
 				}
-				
 				if( bb.y == e.y ){
 					y1 = Math.min(bb.y + bb.height*0.4, n.y);
 				}
@@ -908,7 +914,7 @@ $(function(){
 		
 		var w = x2 - x1;
 		var h = y2 - y1;
-		
+
 		var width = this.container.width();
 		var height = this.container.height();
 		
@@ -976,8 +982,8 @@ $(function(){
 		
 		var maxInt = -1 >>> 1;
 		var minInt = (-(-1>>>1)-1);
-		var maxScale = 10;
-		var minScale = 0.1;
+		var maxScale = self.options.maxZoom;
+		var minScale = self.options.minZoom;
 		var minTranslation = minInt;
 		var maxTranslation = maxInt;
 		var validScale = true;
@@ -1036,10 +1042,12 @@ $(function(){
 		} else {
 		
 			if( params.capScale ){
-				self.scale = capped.scale;	
+				$.cytoscapeweb("debug", "Capping zoom level %o to %o", self.scale, capped.scale);
+				self.scale = capped.scale;
 			}
 			
 			if( params.capTranslation ){
+				$.cytoscapeweb("debug", "Capping translation %o to %o", self.translation, capped.translation);
 				self.translation = capped.translation;
 			}
 		}
@@ -1223,7 +1231,7 @@ $(function(){
 					}
 					
 					justStartedDragging = false;
-					element.trigger($.extend({}, dragEvent, { type: "dragstart" }));
+					element.trigger($.extend({}, dragEvent, { type: "grab" }));
 				} else {
 					element.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
@@ -1249,7 +1257,7 @@ $(function(){
 				
 				element._private.grabbed = false;
 				
-				element.trigger($.extend({}, mouseupEvent, { type: "dragstop" }));
+				element.trigger($.extend({}, mouseupEvent, { type: "free" }));
 			};
 			
 			$(window).bind("mouseup touchend blur", endHandler);

@@ -188,7 +188,7 @@
 					edges: {}
 				},
 				continuousMapperUpdates: [],
-				live: {}, // event name => selector string => array of callbacks
+				live: {}, // event name => selector string => array of callback defns
 				selectors: {}, // selector string => selector for live
 				listeners: {} // cy || background => event name => array of callback functions
 			};
@@ -418,8 +418,7 @@
 				this._private = {
 					data: copy( params.data ), // data object
 					position: copy( params.position ), // fields x, y, etc (could be 3d or radial coords; renderer decides)
-					listeners: {}, // map ( type => array of functions )
-					one: {}, // map ( type => array of functions )
+					listeners: {}, // map ( type => array of function spec objects )
 					group: params.group, // string; "nodes" or "edges"
 					bypass: copy( params.bypass ), // the bypass object
 					style: {}, // the rendered style populated by the renderer
@@ -972,30 +971,38 @@
 				return copy( this._private.style );
 			};
 			
-			function bind(once){
-				return function(events, callback){
+			function bind(opts){
+				return function(events, data, callback){
 					var self = this;
+					
+					if( callback === undefined ){
+						callback = data;
+						data = undefined;
+					}
+					
+					var defaults = {
+						one: false,
+						data: data
+					};
+					var options = $.extend({}, defaults, opts);
 					
 					$.each(events.split(/\s+/), function(i, event){
 						if(event == "") return;
 						
-						if( self._private.one[event] == null ){
-							self._private.one[event] = [];
-						}
-						self._private.one[event].push(once);
-						
 						if( self._private.listeners[event] == null ){
 							self._private.listeners[event] = [];
 						}				
-						self._private.listeners[event].push(callback);
+						
+						options.callback = callback;
+						self._private.listeners[event].push(options);
 					});
 					
 					return this;
 				};
 			}
 			
-			CyElement.prototype.bind = bind(false);
-			CyElement.prototype.one = bind(true);
+			CyElement.prototype.bind = bind({ one: false });
+			CyElement.prototype.one = bind({ one: true });
 			
 			CyElement.prototype.live = function(){
 				console.error("You can not call `live` on an element");
@@ -1012,13 +1019,11 @@
 					if(event == "") return;
 				
 					var listeners = self._private.listeners[event];
-					var one = self._private.one[event];
 					
 					if( listeners != null ){
 						$.each(listeners, function(i, listener){
-							if( callback == null || callback == listener ){
+							if( callback == null || callback == listener.callback ){
 								delete listeners[i]
-								delete one[i];
 							}
 						});
 					}
@@ -1041,36 +1046,45 @@
 				}
 				
 				var listeners = this._private.listeners[type];
-				var one = this._private.one[type];
 				
-				function fire(listener, eventData, data){
-					if( $.isFunction(listener) ){
-						var args = [eventData, data];
-						listener.apply(self, args);
+				function fire(listener, eventData){
+					if( $.isFunction(listener.callback) ){
+						var eventData = isPlainObject(event) ? event : jQuery.Event(type);
+						eventData.data = listener.data;
+						
+						var args = [eventData];
+						
+						if( data != null ){
+							$.each(data, function(i, arg){
+								args.push(arg);
+							});
+						}
+						
+						listener.callback.apply(self, args);
 					}
-				}
+				}				 
 				
-				var eventData = isPlainObject(event) ? event : { type: type }; 
+				// trigger regularly bound listeners
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
-						fire(listener, eventData, data);
+						fire(listener);
 						
-						if( one[i] ){
+						if( listener.one ){
 							delete listeners[i];
-							delete one[i];
 						}
 					});
 				}
 				
+				// trigger element live events
 				if( structs.live[type] != null ){
-					$.each(structs.live[type], function(key, callbacks){
+					$.each(structs.live[type], function(key, callbackDefns){
 						
 						var selector = structs.selectors[key];
 						var filtered = selector.filter( self.collection() );
-	
+						
 						if( filtered.size() > 0 ){
-							$.each(callbacks, function(i, listener){
-								fire(listener, eventData, data);
+							$.each(callbackDefns, function(i, listener){
+								fire(listener);
 							});
 						}
 					});
@@ -2174,7 +2188,13 @@
 					var key = self.selector();
 					structs.selectors[key] = self;
 					
-					filteredCollection.live = function(event, callback){
+					filteredCollection.live = function(event, data, callback){
+						
+						if( callback === undefined ){
+							callback = data;
+							data = undefined;
+						}
+						
 						if( structs.live[event] == null ){
 							structs.live[event] = {};
 						}
@@ -2183,7 +2203,10 @@
 							structs.live[event][key] = [];
 						}
 						
-						structs.live[event][key].push(callback);
+						structs.live[event][key].push({
+							callback: callback,
+							data: data
+						});
 					};
 					
 					filteredCollection.die = function(event, callback){
@@ -2201,7 +2224,7 @@
 							}
 						} else if( structs.live[event] != null && structs.live[event][key] != null ) {
 							for(var i = 0; i < structs.live[event][key].length; i++){
-								if( structs.live[event][key][i] == callback ){
+								if( structs.live[event][key][i].callback == callback ){
 									structs.live[event][key].splice(i, 1);
 									i--;
 								}
@@ -2232,6 +2255,21 @@
 					for(var j = 0; j < query.data.length; j++){
 						var data = query.data[j];
 						str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
+					}
+					
+					for(var j = 0; j < query.colonSelectors.length; j++){
+						var sel = query.colonSelectors[i];
+						str += sel;
+					}
+					
+					for(var j = 0; j < query.ids.length; j++){
+						var sel = "#" + query.ids[i];
+						str += sel;
+					}
+					
+					for(var j = 0; j < query.classes.length; j++){
+						var sel = "." + query.classes[i];
+						str += sel;
 					}
 					
 					if( this.length > 1 && i < this.length - 1 ){
@@ -2420,7 +2458,12 @@
 			
 			var prevLayoutName = options.layout.name;
 			
-			function cybind(target, events, handler){
+			function cybind(target, events, data, handler){
+				if( handler === undefined ){
+					handler = data;
+					data = undefined;
+				}
+				
 				if( structs.listeners[target] == null ){
 					structs.listeners[target] = {};
 				}
@@ -2432,7 +2475,10 @@
 						structs.listeners[target][event] = [];
 					}
 					
-					structs.listeners[target][event].push(handler);
+					structs.listeners[target][event].push({
+						callback: handler,
+						data: data
+					});
 				});
 			}
 			
@@ -2465,7 +2511,7 @@
 					for(var i = 0; i < structs.listeners[target][event].length; i++){
 						var listener = structs.listeners[target][event][i];
 						
-						if( listener == handler ){
+						if( listener.callback == handler ){
 							structs.listeners[target][event].splice(i, 1);
 							i--;
 						}
@@ -2475,53 +2521,61 @@
 			}
 			
 			function cytrigger(target, event, data){
+				var type = isString(event) ? event : event.type;
 				
-				var eventObj;
-				if( isPlainObject(event) ){
-					eventObj = event;
-					event = eventObj.type;
-				} else {
-					eventObj = {
-						type: event
-					};
-				}
-				
-				if( structs.listeners[target] == null || structs.listeners[target][event] == null ){
+				if( structs.listeners[target] == null || structs.listeners[target][type] == null ){
 					return;
 				}
 				
-				$.each(structs.listeners[target][event], function(i, handler){
-					handler.apply(cy, [ eventObj, data ]);
+				$.each(structs.listeners[target][type], function(i, listener){
+					var eventObj;
+					if( isPlainObject(event) ){
+						eventObj = event;
+						event = eventObj.type;
+					} else {
+						eventObj = jQuery.Event(event);
+					}
+					eventObj.data = listener.data;
+					
+					var args = [ eventObj ];
+					
+					if( data != null ){
+						$.each(data, function(i, arg){
+							args.push(arg);
+						});
+					}
+					
+					listener.callback.apply(cy, args);
 				});
 			}
 			
 			var background = {
-				bind: function(event, handler){
-					cybind("background", event, handler);
+				bind: function(event, data, handler){
+					cybind("background", event, data, handler);
 				},
 				
 				unbind: function(event, handler){
 					cyunbind("background", event, handler);
 				},
 				
-				trigger: function(event){
-					cytrigger("background", event);
+				trigger: function(event, data){
+					cytrigger("background", event, data);
 				}
 			};
 			
 			// this is the cytoweb object
 			var cy = {
 				
-				bind: function(event, handler){
-					cybind("cy", event, handler);
+				bind: function(event, data, handler){
+					cybind("cy", event, data, handler);
 				},
 				
 				unbind: function(event, handler){
 					cyunbind("cy", event, handler);
 				},
 				
-				trigger: function(event){
-					cytrigger("cy", event);
+				trigger: function(event, data){
+					cytrigger("cy", event, data);
 				},
 					
 				style: function(val){

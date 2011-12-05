@@ -845,12 +845,17 @@
 					return;
 				}
 				
-				var map = getEdgesBetweenNodes(this, otherNode);
+				var nodes = otherNode.collection();
 				var elements = [];
-				for(var i in map){
-					var element = map[i];
-					elements.push(element);
+				
+				for(var i = 0; i < nodes.size(); i++){
+					var map = getEdgesBetweenNodes(this, nodes[i]);
+					for(var i in map){
+						var element = map[i];
+						elements.push(element);
+					}
 				}
+				
 				
 				return new CyCollection(elements);
 			}
@@ -1668,7 +1673,15 @@
 			});
 			
 			CyCollection.prototype.totalDegree = function(){
-				return 2 * this.edges().size();
+				var total = 0;
+				
+				this.each(function(i, ele){
+					if( ele.isNode() ){
+						total += ele.degree();
+					}
+				});
+
+				return total;
 			};
 			
 			CyCollection.prototype.allAreNeighbors = function(collection){

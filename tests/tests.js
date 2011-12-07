@@ -18,7 +18,14 @@ $(function(){
 	
 	QUnit.testDone = function(){
 		console.groupEnd();
+		
+		asyncCalls = 0;
 	};
+	
+	var asyncCalls = 0;
+	function async(fn){
+		setTimeout(fn, 100 * ++asyncCalls);
+	}
 	
 	var width = 500;
 	var height = 500;
@@ -203,14 +210,14 @@ $(function(){
 				},
 				elements: {
 					nodes: [
-					    { data: { id: "n1", foo: "one", weight: 0.25 } },
-				    	{ data: { id: "n2", foo: "two", weight: 0.5 } },
-				    	{ data: { id: "n3", foo: "three", weight: 0.75 } }
+					    { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+				    	{ data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+				    	{ data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" }
 					],
 					
 					edges: [
-					    { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 } },
-				    	{ data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 } }
+					    { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+				    	{ data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
 					]
 				},
 				ready: function(cy){
@@ -284,6 +291,7 @@ $(function(){
 		vals.sort();
 		
 		deepEqual( vals, expected, "Expected values remaining" );
+		ok(removedNode.removed(), "Node has removed state");
 		
 		cy.add(removedNode);
 
@@ -325,10 +333,10 @@ $(function(){
 	asyncTest("Test unbind selection", function(){
 		
 		var node = cy.nodes().eq(0);
-		var fired = false;
+		var fired = 0;
 				
 		node.bind("select", function(){
-			fired = true;
+			fired++;
 		});
 		
 		setTimeout(function(){
@@ -336,8 +344,8 @@ $(function(){
 		}, 100);
 		
 		setTimeout(function(){
-			ok( fired, "Listener was fired when bound" );
-			fired = false;
+			equal( fired, 1, "Listener was fired when bound" );
+			fired = 0;
 			node.unbind("select");
 		}, 200);
 		
@@ -346,21 +354,84 @@ $(function(){
 		}, 300);
 		
 		setTimeout(function(){
-			ok( !fired, "Listener was not fired when unbound" );
+			equal( fired, 0, "Listener was not fired when unbound" );
 			start();
 		}, 400);
 		
 	});
 	
+	asyncTest("Test unbind API", function(){
+		var node = cy.nodes().eq(0);
+		
+		var handler1Calls = 0;
+		var handler1 = function(){
+			handler1Calls++;
+		};
+		
+		var handler2Calls = 0;
+		var handler2 = function(){
+			handler2Calls++;
+		};
+		
+		node.bind("click", handler1);
+		node.bind("click", handler2);
+		
+		async(function(){
+			node.trigger("click");
+		});
+		
+		async(function(){
+			equal( handler1Calls, 1, "handler1 called first time" );
+			equal( handler2Calls, 1, "handler2 called first time" );
+			
+			node.unbind("click", handler2);
+			node.trigger("click");
+		});
+		
+		async(function(){
+			equal( handler1Calls, 2, "handler1 called again" );
+			equal( handler2Calls, 1, "handler2 not called" );
+			
+			node.unbind("click");
+			node.trigger("click");
+		});
+		
+		async(function(){
+			equal( handler1Calls, 2, "no change for handler1" );
+			equal( handler2Calls, 1, "no change for handler2" );
+
+			node.bind("click", handler1);
+			node.bind("click", handler2);
+		});
+		
+		async(function(){
+			node.unbind();
+			node.trigger("click");
+		});
+		
+		async(function(){
+			equal( handler1Calls, 2, "no change for handler1 after unbind all" );
+			equal( handler2Calls, 1, "no change for handler2 after unbind all" );
+			
+			start();
+		});
+		
+	});
+	
 	asyncTest("Test manual event binding & triggering", function(){
 		
-		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click" ];
+		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify" ];
 		var triggered = {};
+		var cyTriggered = {};
 		
 		var node = cy.nodes()[0];
 		$.each(events, function(i, event){
 			node.bind(event, function(e, d){
-				triggered[event] = true;
+				triggered[event] = triggered[event] != null ? triggered[event] + 1 : 1;
+			});
+			
+			cy.bind(event, function(e, d){
+				cyTriggered[event] = cyTriggered[event] != null ? cyTriggered[event] + 1 : 1;
 			});
 			
 			setTimeout(function(){
@@ -371,8 +442,29 @@ $(function(){
 		setTimeout(function(){
 			
 			$.each(events, function(i, event){
-				ok(triggered[event], "Handler fired for `" + event + "`");
+				equal(triggered[event], 1, "Handler fired for `" + event + "`");
+				equal(cyTriggered[event], 1, "Handler bubbled up to core for `" + event + "`");
 			});
+			
+		}, 500);
+		
+		var bgClick = 0;
+		cy.background().bind("click", function(){
+			bgClick++;
+		});
+		
+		var cyClick = 0;
+		cy.bind("click", function(){
+			cyClick++;
+		});
+		
+		setTimeout(function(){
+			cy.background().trigger("click");
+		}, 100);
+		
+		setTimeout(function(){
+			equal(bgClick, 1, "BG clicked once");
+			equal(cyClick, 1, "BG click bubbled up to core");
 			
 			start();
 		}, 500);
@@ -460,8 +552,9 @@ $(function(){
 		
 		ok( cy.filter("[weight=0.5]").allSame( n2 ), "n2 weight = 0.5" );
 		ok( cy.filter("[weight>=0.5]").allSame( n2.add(n3).add(n2n3) ), "n2 weight >= 0.5" );
-		ok( cy.filter("node").allSame( cy.nodes() ), "filter node same as nodes()" );
-		ok( cy.filter("node").allSame( cy.elements("node") ), "filter node same as nodes()" );
+		ok( cy.filter("node").allSame( cy.nodes() ), "filter node same as cy.nodes()" );
+		ok( cy.filter("node").allSame( cy.elements("node") ), "filter node same as cy.elements('node')" );
+		ok( cy.filter("node").allSame( n1.add(n2).add(n3) ), "node" );
 		equal( cy.nodes("[foo]").size(), 3, "nodes that have foo defined" );
 		equal( cy.edges("[foo]").size(), 0, "edges that have foo defined" );
 		ok( cy.filter("node[foo='one']").allSame( n1 ), "node[foo='one']" );
@@ -474,6 +567,10 @@ $(function(){
 		ok( cy.filter("node[foo!='two'][weight>0.3]").allSame( n3 ), "node[foo!='two'][weight>0.3]" );
 		ok( cy.filter("node[foo='one']").allSame( n1 ), "node[foo='one']" );
 		ok( cy.filter("node[foo=\"one\"]").allSame( n1 ), "node[foo=\"one\"]" );
+		ok( cy.filter("node.odd").allSame( n1.add(n3) ), "node.odd" );
+		ok( cy.filter(".odd.even").size() == 0, ".odd.even" );
+		ok( cy.filter(".one.odd").allSame(n1), ".one.odd" );
+		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );
 	});
 	
 	asyncTest("Test bypass", function(){

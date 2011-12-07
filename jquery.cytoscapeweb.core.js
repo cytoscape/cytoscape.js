@@ -1048,7 +1048,7 @@
 				var listeners = this._private.listeners[type];
 				
 				function fire(listener, eventData){
-					if( $.isFunction(listener.callback) ){
+					if( isFunction(listener.callback) ){
 						var eventData = isPlainObject(event) ? event : jQuery.Event(type);
 						eventData.data = listener.data;
 						
@@ -1068,11 +1068,14 @@
 				if( listeners != null ){
 					$.each(listeners, function(i, listener){
 						fire(listener);
-						
-						if( listener.one ){
-							delete listeners[i];
-						}
 					});
+					
+					for(var i = 0; i < listeners.length; i++){
+						if( listeners[i].one ){
+							listeners.splice(i, 1);
+							i--;
+						}
+					}
 				}
 				
 				// trigger element live events
@@ -1131,7 +1134,7 @@
 			};
 			
 			CyElement.prototype.same = function(element){
-				return this == element;
+				return this == element.element();
 			};
 			
 			CyElement.prototype.is = function(selector){
@@ -1933,10 +1936,17 @@
 						
 						var selectors = q[2];
 
-						var colonSelectors = selectors.match(/(:[a-z]+)/g);
-						var dataSelectors = selectors.match(/(\[.+\])/g);
-						var classSelectors = selectors.match(/(\.[\w_]+)/g);
-						var idSelectors = selectors.match(/(#[\w_]+)/g);
+						var dataSelectors = selectors.match(/(\[.+?\])/g);
+						
+						var split = selectors.split(/\[.+?\]/);
+						var selectorsWithoutData = "";
+						$.each(split, function(i, str){
+							selectorsWithoutData += str;
+						});
+						
+						var colonSelectors = selectorsWithoutData.match(/(:[a-z]+)/g);
+						var classSelectors = selectorsWithoutData.match(/(\.[\w_]+)/g);
+						var idSelectors = selectorsWithoutData.match(/(#[\w_]+)/g);
 						
 						// validate colon selectors
 						///////////////////////////
@@ -2004,22 +2014,17 @@
 							}
 							
 							if( value != null && operator != null ){
-								for(var s = 0; s < value.length; s++){
-									var ch = value.charAt(s);
+								var valueAsNumber = parseFloat( value );
+								var valueIsNumber = !isNaN(valueAsNumber);
+								
+								if( !valueIsNumber ){
+									// then value must be enclosed in quotes
 									
-									if( ch == "'" || ch == '"' ){
-										if( (s == 0 || s == value.length - 1) && value.charAt(s) == value.charAt(0) && value.length > 1 ){
-											// matching beginning & end quotes
-										} else if( ch == '"' && value.charAt(0) == "'" && value.charAt(value.length - 1) == "'" ){
-											// enclosed like 'foo"bar'
-										} else if( s >= 1 && value.charAt(s - 1) == "\\" ){
-											// escaped like "foo\"bar"
-										} else if( ch == "'" && value.charAt(0) == '"' && value.charAt(value.length - 1) == '"' ){
-											// enclosed like "foo'bar"
-										} else {
-											console.error("Invalid selector `%s`; quotation mark in child selector data comparator ``", str, b);
-											return;
-										}
+									if( value.match(/^'.+'$/) || value.match(/^".+"$/) ){
+										// value is enclosed in quotes
+									} else {
+										console.error("Invalid selector `%s`; string value must be enclosed in quotes `%s`", str, value);
+										return;
 									}
 								}
 							}
@@ -2142,18 +2147,6 @@
 							}
 							
 							var value = data.value;
-							if( !isNaN( parseFloat(value) ) ){
-								// got a number
-							} else if( isString(value) ){
-								var firstChar = value.charAt(0);
-								var lastChar = value.charAt(value.length - 1);
-								
-								if( value.length > 1 && firstChar == lastChar && (firstChar == '"' || firstChar == "'") ){
-									value = value;
-								} else {
-									value = '"' + value + '"';
-								}
-							}
 							
 							var field = data.field;
 							
@@ -2441,6 +2434,17 @@
 							});
 						} 
 						
+						// specify via opts.nodes and opts.edges
+						else if( isPlainObject(opts) && (isArray(opts.nodes) || isArray(opts.edges)) ){
+							$.each(["nodes", "edges"], function(i, group){
+								if( isArray(opts[group]) ){
+									$.each(opts[group], function(i, eleOpts){
+										elements.push(new CyElement( $.extend({}, eleOpts, { group: group }) ));
+									});
+								} 
+							});
+						}
+						
 						// specify options for one element
 						else {
 							if( params != null && params.group != null ){
@@ -2721,30 +2725,23 @@
 					if( elements != null ){
 						
 						noNotifications(function(){
-							$.each(["nodes", "edges"], function(i, group){
-								
-								var elementsInGroup = elements[group];								
-								if( elementsInGroup != null ){
-									$.each(elementsInGroup, function(i, params){
-										
-										var data = params.data;
-										var position = params.position;
-										var bypass = params.bypass;
-										var selected = params.selected;
-										var locked = params.locked;
-										
-										// add element
-										var element = new CyElement( {
-											group: group,
-											data: data,
-											bypass: bypass,
-											position: position,
-											selected: selected,
-											locked: locked
-										} );
-									});
-								}
-							});
+							
+							if( isPlainObject(elements) ){
+								$.each(["nodes", "edges"], function(i, group){
+									
+									var elementsInGroup = elements[group];
+									if( elementsInGroup != null ){
+										$.each(elementsInGroup, function(i, params){
+											var element = new CyElement( $.extend({}, params, { group: group }) );
+										});
+									}
+								});
+							} else if( isArray(elements) ){
+								$.each(elements, function(i, params){
+									var element = new CyElement( params );
+								});
+							}
+							
 						});
 						
 					}

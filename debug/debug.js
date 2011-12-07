@@ -262,24 +262,27 @@ $(function(){
 		}
 	});
 	
+	function gritter(options){
+		$.gritter.add($.extend({}, {
+			sticky: false,
+			time: 1000
+		}, options));
+	}
+	
 	$("#bind-button").click(function(){
 		var action = $("#bind-type-select").val();
 		var event = $("#bind-event-select").val();
 		var selector = $("#bind-selector").val();
 		
-		$.gritter.add({
+		gritter({
 			title: 'Binding applied',
-			text: action + ' on `' + selector + '` for ' + event,
-			sticky: false,
-			time: 1000
+			text: action + ' on `' + selector + '` for ' + event
 		});	
 		
 		var callback = function(){
-			$.gritter.add({
+			gritter({
 				title: 'Event triggered for ' + this.data("id"),
-				text: action + ' on `' + selector + '` for ' + event,
-				sticky: false,
-				time: 1000
+				text: action + ' on `' + selector + '` for ' + event
 			});
 		};
 		
@@ -289,5 +292,6 @@ $(function(){
 		
 		cy.elements(selector)[action](event, callback);
 	});
+	
 	
 });

@@ -188,6 +188,7 @@
 					edges: {}
 				},
 				continuousMapperUpdates: [],
+				once: [], // array of callback defns (synced w. ones in elements)
 				live: {}, // event name => selector string => array of callback defns
 				selectors: {}, // selector string => selector for live
 				listeners: {} // cy || background => event name => array of callback functions
@@ -408,6 +409,7 @@
 			
 			// represents a node or an edge
 			var CyElement = function(params){
+				var self = this;
 				
 				// validate group
 				if( params.group != "nodes" && params.group != "edges" ){
@@ -426,9 +428,17 @@
 					selected: params.selected ? true : false, // whether it's selected
 					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
-					grabbable: true, // whether the element can be grabbed
+					grabbable: params.grabbable || params.grabbable === undefined ? true : false, // whether the element can be grabbed
 					classes: {} // map ( className => true )
 				};
+				
+				if( isString(params.classes) ){
+					$.each(params.classes.split(/\s+/), function(i, cls){
+						if( cls != "" ){
+							self._private.classes[cls] = true;
+						}
+					});
+				}
 				
 				this.restore();
 			};
@@ -1015,17 +1025,25 @@
 			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
 				
+				if( events === undefined ){
+					self._private.listeners = {};
+					return this;
+				}
+				
 				$.each(events.split(/\s+/), function(j, event){
 					if(event == "") return;
 				
 					var listeners = self._private.listeners[event];
 					
 					if( listeners != null ){
-						$.each(listeners, function(i, listener){
+						for(var i = 0; i < listeners.length; i++){
+							var listener = listeners[i];
+							
 							if( callback == null || callback == listener.callback ){
-								delete listeners[i]
+								listeners.splice(i, 1);
+								i--;
 							}
-						});
+						}
 					}
 				
 				});
@@ -1048,7 +1066,7 @@
 				var listeners = this._private.listeners[type];
 				
 				function fire(listener, eventData){
-					if( isFunction(listener.callback) ){
+					if( listener != null && isFunction(listener.callback) ){
 						var eventData = isPlainObject(event) ? event : jQuery.Event(type);
 						eventData.data = listener.data;
 						
@@ -1072,6 +1090,27 @@
 					
 					for(var i = 0; i < listeners.length; i++){
 						if( listeners[i].one ){
+							listeners.splice(i, 1);
+							i--;
+						} else if( listeners[i].once ){
+							var listener = listeners[i];
+							
+							// remove listener for other elements
+							listener.collection.each(function(j, ele){
+								if( !ele.same(self) ){
+									ele.unbind(type, listener.callback);
+								}
+							});
+							
+							// remove listener from global once struct
+							for(var j = 0; j < structs.once.length; j++){
+								if( listener == structs.once[j] ){
+									structs.once.splice(j, 1);
+									j--;
+								}
+							}
+							
+							// remove listener for self
 							listeners.splice(i, 1);
 							i--;
 						}
@@ -1633,6 +1672,37 @@
 				return this;
 			};
 			
+			CyCollection.prototype.once = function(event, data, handler){
+				var self = this;
+				
+				if( handler === undefined ){
+					handler = data;
+					data = undefined;
+				}
+				
+				var events = event.split(/\s+/);
+				$.each(events, function(i, type){
+					var listener = {
+						once: true,
+						callback: handler,
+						collection: new CyCollection()
+					};
+					
+					structs.once.push(listener);
+					
+					self.each(function(i, ele){
+						if( ele._private.listeners[type] == null ){
+							ele._private.listeners[type] = [];
+						}
+						
+						ele._private.listeners[type].push(listener);
+						listener.collection = listener.collection.add(ele);
+					});
+				});
+				
+				return this;
+			};
+			
 			CyCollection.prototype.trigger = function(event, data){
 				
 				var collection = this;
@@ -1648,6 +1718,7 @@
 					collection: this
 				});
 				
+				return this;
 			};
 			
 			CyCollection.prototype.collection = function(){
@@ -2127,15 +2198,15 @@
 						}
 						if( !allIdsMatch ) continue;
 						
-						var addClassesMatch = true;
+						var allClassesMatch = true;
 						for(var k = 0; k < query.classes.length; k++){
-							var cls = query.classes[i];
+							var cls = query.classes[k];
 							
-							addClassesMatch = addClassesMatch && element.hasClass(cls);
+							allClassesMatch = allClassesMatch && element.hasClass(cls);
 							
-							if( !addClassesMatch ) break;
+							if( !allClassesMatch ) break;
 						}
-						if( !addClassesMatch ) continue;
+						if( !allClassesMatch ) continue;
 						
 						var allDataMatches = true;
 						for(var k = 0; k < query.data.length; k++){
@@ -2494,12 +2565,8 @@
 					return;
 				}
 				
-				if( events == null ){
-					if( structs.listeners[target] == null ){
-						return;
-					}
-					
-					delete structs.listeners[target];
+				if( events === undefined ){
+					structs.listeners[target] = {};
 					return;
 				}
 				

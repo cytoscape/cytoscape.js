@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<script type="text/javascript" src="../tests/jquery/jquery-latest.min.js"></script>
+		<script type="text/javascript" src="../jquery.color.js"></script>
+		<script type="text/javascript" src="../jquery.svg.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.core.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
+		<script type="text/javascript" src="../2D.js"></script>
+		<script type="text/javascript" src="../jquery.mousewheel.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.preset.js"></script>
+		
+		<script type="text/javascript" src="jquery.qtip.js"></script>
+		<script type="text/javascript" src="jquery.commandtip.js"></script>
+		<script type="text/javascript" src="jquery.gritter.js"></script>
+		<script type="text/javascript" src="init.js"></script>
+		<script type="text/javascript" src="bind.js"></script>
+		<script type="text/javascript" src="data.js"></script>
+		<script type="text/javascript" src="filter.js"></script>
+		<script type="text/javascript" src="layout.js"></script>
+		<script type="text/javascript" src="tests.js"></script>
+		<script type="text/javascript" src="view.js"></script>
+		
+		<link rel="stylesheet" href="jquery.qtip.css" />
+		<link rel="stylesheet" href="jquery.qtip.override-and-commandtip.css" />
+		<link rel="stylesheet" href="jquery.gritter.css" />
+		<link rel="stylesheet" href="style.css" />
+		
+		<title>Cytoscape Web debug page</title>
+	</head>
+
+	<body>
+		<h1>Cytoscape Web debug page</h1>
+
+	    <div id="cytoscapeweb"></div>
+	    
+	    <div id="commands">
+	    	
+	    	<h2>Testing</h2>
+	    	<select id="test-type-select">
+	    	</select>
+	    		
+	    	<h2>View</h2>
+	    	<button id="zoom-pan-button">No zoom & no pan</button>
+	    	<button id="fit-button">View to fit</button> <br />
+	    	<button id="center-selected-button">Center on selected</button>
+	    	<button id="fit-selected-button">Fit to selected</button>
+	    		    	
+	    	<h2>Layout</h2>
+	    	<select id="layout-select">
+	    		<option value="grid">Grid layout</option>
+	    		<option value="random">Random layout</option>
+	    	</select>
+	    	<button id="layout-button">Apply</button>
+	    	
+	    	<h2>Add & remove elements</h2>
+	    	
+	    	<label for="nodes-number">Nodes</label> <input type="text" id="nodes-number" />
+	    	<label for="edges-number">Edges</label> <input type="text" id="edges-number" />
+	    	<button id="add-elements-button">Add</button>
+	    	<button id="remove-selected-button">Remove selected</button> <br />
+	    	<span id="add-remove-time">&nbsp;</span>
+	    	
+	    	<h2>Binding</h2>
+	    	<select id="bind-type-select">
+	    		<option value="bind">Bind</option>
+	    		<option value="one">One</option>
+	    		<option value="once">Once</option>
+	    		<option value="unbind">Unbind</option>
+	    		<option value="live">Live</option>
+	    		<option value="die">Die</option>
+	    	</select>
+	    	to
+	    	<label for="bind-selector">Selector</label> <input type="text" id="bind-selector" />
+	    	for<br />
+	    	<select id="bind-event-select">
+	    		<option value="click">click</option>
+	    		<option value="mousedown">mousedown</option>
+	    		<option value="mouseup">mouseup</option>
+	    		<option value="mouseover">mouseover</option>
+	    		<option value="mouseout">mouseout</option>
+	    		<option value="mousemove">mousemove</option>
+	    		<option value="position">position</option>
+	    		<option value="data">data</option>
+	    		<option value="select">select</option>
+	    		<option value="unselect">unselect</option>
+	    		<option value="lock">lock</option>
+	    		<option value="unlock">unlock</option>
+	    		<option value="grab">grab</option>
+	    		<option value="free">free</option>
+	    		<option value="grabify">grabify</option>
+	    		<option value="ungrabify">ungrabify</option>
+	    	</select>
+	    	<button id="bind-button">Apply</button>
+	    	
+	    	<h2>Filtering</h2>
+	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />
+	    	<button id="filter-button">Select matches</button>
+	    </div>
+	</body>
+
+</html>

@@ -330,7 +330,7 @@ $(function(){
 		
 	});
 	
-	asyncTest("Test unbind selection", function(){
+	asyncTest("Unbind selection", function(){
 		
 		var node = cy.nodes().eq(0);
 		var fired = 0;
@@ -360,7 +360,7 @@ $(function(){
 		
 	});
 	
-	asyncTest("Test unbind API", function(){
+	asyncTest("Unbind API", function(){
 		var node = cy.nodes().eq(0);
 		
 		var handler1Calls = 0;
@@ -418,16 +418,72 @@ $(function(){
 		
 	});
 	
-	asyncTest("Test manual event binding & triggering", function(){
+	asyncTest("`once` with click", function(){
+		var triggers = 0;
 		
-		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify" ];
+		cy.nodes().once("click", function(){
+			triggers++;
+		});
+		
+		async(function(){
+			cy.nodes().eq(0).trigger("click");
+		});
+		
+		async(function(){
+			equal(triggers, 1, "Triggered once");
+		});
+		
+		async(function(){
+			cy.nodes().eq(0).trigger("click");
+		});
+		
+		async(function(){
+			equal(triggers, 1, "Not triggered again after clicking same node");
+		});
+		
+		async(function(){
+			cy.nodes().eq(1).trigger("click");
+		});
+		
+		async(function(){
+			equal(triggers, 1, "Not triggered again after clicking different node");
+			
+			start();
+		});
+	});
+	
+	asyncTest("Unbinding `once`", function(){
+		var triggers = 0;
+		var handler = function(){
+			triggers++;
+		};
+		
+		cy.nodes().once("click", handler);
+		cy.nodes().unbind("click", handler);
+		cy.nodes().eq(0).trigger("click");
+		
+		async(function(){
+			equal(triggers, 0, "Handler never triggered");
+			
+			start();
+		});
+	});
+	
+	asyncTest("Manual event binding & triggering", function(){
+		
+		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify", "grab", "free", "touchstart", "touchmove", "touchend" ];
 		var triggered = {};
 		var cyTriggered = {};
+		var aliasTriggered = {};
 		
 		var node = cy.nodes()[0];
 		$.each(events, function(i, event){
 			node.bind(event, function(e, d){
 				triggered[event] = triggered[event] != null ? triggered[event] + 1 : 1;
+			});
+			
+			node[event](function(){
+				aliasTriggered[event] = aliasTriggered[event] != null ? aliasTriggered[event] + 1 : 1;
 			});
 			
 			cy.bind(event, function(e, d){
@@ -443,6 +499,7 @@ $(function(){
 			
 			$.each(events, function(i, event){
 				equal(triggered[event], 1, "Handler fired for `" + event + "`");
+				equal(aliasTriggered[event], 1, "Aandler fired for `" + event + "` alias");
 				equal(cyTriggered[event], 1, "Handler bubbled up to core for `" + event + "`");
 			});
 			
@@ -543,7 +600,7 @@ $(function(){
 		equal( n1.allAreNeighbors( n2.add(n3) ), false, "(n2, n3) all neighbours of n1" );
 	});
 	
-	test("Test selectors", function(){
+	test("Selectors", function(){
 		var n1 = cy.nodes("#n1");     // 0.25
 		var n2 = cy.nodes("#n2");     // 0.5
 		var n3 = cy.nodes("#n3");     // 0.75
@@ -573,7 +630,7 @@ $(function(){
 		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );
 	});
 	
-	asyncTest("Test bypass", function(){
+	asyncTest("Bypass", function(){
 		var n1 = cy.nodes("#n1");
 		
 		n1.one("bypass", function(){
@@ -587,8 +644,9 @@ $(function(){
 		
 		n1.one("bypass", function(){
 			deepEqual( this.bypass(), {
+				foo: 1,
 				bar: 2
-			}, "bypass has bar" );
+			}, "bypass has foo & bar" );
 		});
 		n1.bypass({
 			bar: 2
@@ -596,23 +654,21 @@ $(function(){
 		
 		n1.one("bypass", function(){
 			deepEqual( this.bypass(), {
-				foo: 1,
 				bar: 2
-			}, "bypass has foo & bar" );
+			}, "bypass has bar" );
 		});
-		n1.bypass("foo", 1);
+		n1.removeBypass("foo");
 		
 		n1.one("bypass", function(){
 			deepEqual( this.bypass(), {
-				foo: 1
-			}, "bypass has only foo" );
+			}, "bypass is empty" );
 			
 			start();
 		});
 		n1.removeBypass("bar");
 	});
 	
-	asyncTest("Test data", function(){
+	asyncTest("Data", function(){
 		var n1 = cy.nodes("#n1");
 		
 		n1.one("data", function(){
@@ -650,7 +706,7 @@ $(function(){
 		});
 	});
 	
-	test("Test parallel edges", function(){
+	test("Parallel edges", function(){
 		cy.add({
 			edges: [
 			        { data: { source: "n1", target: "n2", id: "ep1" } },
@@ -664,6 +720,68 @@ $(function(){
 		ok( edges.anySame( cy.edges("#ep1") ), "has ep1" );
 		ok( edges.anySame( cy.edges("#ep2") ), "has ep2" );
 		ok( edges.anySame( cy.edges("#n1n2") ), "has n1n2" );
+	});
+	
+	test("Functions are chainable", function(){
+		
+		fn = {
+			plain: {
+				args: [],
+				names: [
+				        "remove", "restore",
+				        "removeData",
+				        "removeBypass",
+				        "grabify", "ungrabify",
+				        "lock", "unlock",
+				        "show", "hide",
+				        "select", "unselect",
+				        "die", "unbind"
+				        ]
+			},
+					
+			setters: {
+				args: [ { x: 1 } ],
+				names: [
+				          "data",
+				          "position",
+				          "bypass"
+				          ]
+			},
+			
+			events: {
+				args: [ function(){} ],
+				names: [ 
+		          "mousedown", "mouseup", "click", "mouseover", "mouseout", 
+		          "touchstart", "touchmove", "touchend", 
+		          "grabify", "ungrabify", "grab", "drag", "free", 
+		          "select", "unselect", 
+		          "lock", "unlock", 
+		          "data", "bypass", "remove", "restore"
+		          ],
+			},
+			
+			binders: {
+				args: [ "click", function(){} ],
+				names: [
+			          "bind", "one", "once", "live"
+			          ]
+			}
+		};
+		
+		var node = cy.nodes().eq(0);
+		var nodes = cy.nodes();
+		$.each(fn, function(type, fnSet){
+			
+			$.each(fnSet.names, function(i, fnName){
+				var ret = node[fnName].apply(node, fnSet.args);
+				ok( ret != null && ret.collection != null, "`node." + fnName + "()` w. args [" + fnSet.args + "] chainable" );
+				
+				var ret = nodes[fnName].apply(nodes, fnSet.args);
+				ok( ret != null && ret.collection != null, "`nodes." + fnName + "()` w. args [" + fnSet.args + "] chainable" );
+			});
+			
+		});
+		
 	});
 	
 });

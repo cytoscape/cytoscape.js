@@ -97,8 +97,30 @@
 		
 		// get object
 		if( opts == "get" ){
-			var cy = $(this).data("cytoscapeweb");
-			return cy;
+			var data = $(this).data("cytoscapeweb");
+			return data.cy;
+		}
+		
+		// bind to ready
+		else if( isFunction(opts) ){
+			var ready = opts;
+			var data = $(this).data("cytoscapeweb");
+			
+			if( data == null || data.cy == null ){
+				
+				if( data == null ){
+					data = {
+						readies: []
+					};
+				}
+				
+				data.readies.push(ready);
+				$(this).data("cytoscapeweb", data);
+				
+			} else {
+				data.cy.bind("ready", ready);
+			}
+			
 		}
 		
 		// proxy to create instance
@@ -121,7 +143,8 @@
 			}
 			
 			$(this).each(function(){
-				var cy = $(this).data("cytoscapeweb");
+				var data = $(this).data("cytoscapeweb");
+				var cy = data.cy;
 				var fnName = opts;
 				
 				if( cy != null && isFunction( cy[fnName] ) ){
@@ -443,6 +466,34 @@
 				this.restore();
 			};
 			
+			CyElement.prototype.json = function(){
+				var p = this._private;
+				
+				var json = copy({
+					data: p.data,
+					position: p.position,
+					group: p.group,
+					bypass: p.bypass,
+					removed: p.removed,
+					selected: p.selected,
+					locked: p.locked,
+					grabbed: p.grabbed,
+					grabbable: p.grabbable,
+					classes: ""
+				});
+				
+				var classes = [];
+				$.each(p.classes, function(cls, bool){
+					classes.push(cls);
+				});
+				
+				$.each(classes, function(i, cls){
+					json.classes += cls + ( i < classes.length - 1 ? " " : "" );
+				});
+				
+				return json;
+			};
+			
 			CyElement.prototype.element = function(){
 				return this;
 			};
@@ -470,7 +521,7 @@
 				});
 				
 				if( added ){
-					self.trigger("class");
+					self.rtrigger("class");
 				}
 				
 				return self;
@@ -510,7 +561,7 @@
 				});
 				
 				if( toggled ){
-					self.trigger("class");
+					self.rtrigger("class");
 				}
 				
 				return self;
@@ -528,7 +579,7 @@
 				});
 				
 				if( removed ){
-					self.trigger("class");
+					self.rtrigger("class");
 				}
 				
 				return self;
@@ -549,7 +600,7 @@
 					this._private.data.id = idFactory.generate( this._private.group );
 				} else if( structs[ this._private.group ][ this._private.data.id ] != null ){
 					console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", this._private.group, this._private.data.id);
-					return;
+					return this;
 				}
 				
 				// validate source and target for edges
@@ -563,10 +614,10 @@
 						
 						if( val == null || val == "" ){
 							console.error("Can not create edge with id `%s` since it has no `%s` attribute set in `data` (must be non-empty value)", this._private.data.id, field);
-							return;
+							return this;
 						} else if( structs.nodes[val] == null ){ 
 							console.error("Can not create edge with id `%s` since it specifies non-existant node as its `%s` attribute with id `%s`",  this._private.data.id, field, val);
-							return;
+							return this;
 						} 
 					}
 					
@@ -598,7 +649,7 @@
 					addContinuousMapperBounds(self, name, val);
 				});
 				
-				this.trigger("add");
+				this.rtrigger("add");
 				
 				return this;
 			};
@@ -636,7 +687,7 @@
 						type: "remove",
 						collection: [ this ]
 					});
-					this.trigger("remove");
+					this.rtrigger("remove");
 					
 				}
 				
@@ -650,7 +701,7 @@
 					} else if( this._private[params.field] != params.value ) {
 						this._private[params.field] = params.value;
 						
-						this.trigger(params.event);
+						this.rtrigger(params.event);
 					}
 					
 					return this;
@@ -671,41 +722,71 @@
 			CyElement.prototype.grabify = switchFunction({ event: "grabify", field: "grabbable", value: true });
 			CyElement.prototype.ungrabify = switchFunction({ event: "ungrabify", field: "grabbable", value: false });
 			
-			CyElement.prototype.removeBypass = function(field){
-				
-				if( field == null ){
-					// delete whole object
-					this._private.bypass = {};
-					this.trigger("bypass");
-				} else {
-					// delete only one
-					delete this._private.bypass[field];
-					this.trigger("bypass");
-				}
-				
-				return this;
+			function setterGetterFunction(params){
+				return function(key, val){
+
+					// bind to event
+					if( isFunction(key) ){
+						var handler = key;
+						this.bind(params.event, handler);
+					}
+					
+					// bind to event with data
+					else if( isFunction(val) ){
+						var data = key;
+						var handler = val;
+						this.bind(params.event, data, handler);
+					}
+					
+					// set or get field with key
+					else if( isString(key) ){
+						if( val === undefined ){
+							return copy( this._private[params.field][key] );
+						} else {
+							this._private[params.field][key] = copy( val );
+							this.rtrigger(params.event);
+						}
+					}
+					
+					// update via object
+					else if( isPlainObject(key) ) {
+						var map = key;
+						var current = this._private[params.field];
+						
+						this._private[params.field] = $.extend(true, {}, current, map);
+						this.rtrigger(params.event);
+					}
+					
+					// return the whole object
+					else if( key === undefined ){
+						return copy( this._private[params.field] );
+					}
+					
+					return this;
+				};
 			};
 			
-			CyElement.prototype.bypass = function(newBypass, newBypassVal){
-				
-				if( newBypassVal === undefined ){
-					// set whole object
-					
-					if( newBypass === undefined ){
-						return copy( this._private.bypass );
-					} else {
-						this._private.bypass = copy( newBypass );
-						this.trigger("bypass");
-						return this;
+			function removerFunction(params){
+				return function(key){
+					// remove all
+					if( key === undefined ){
+						this._private[params.field] = {};
 					}
-				
-				} else {
-					// set only one
-					this._private.bypass[newBypass] = copy(newBypassVal);
-					this.trigger("bypass");
+					
+					else {
+						delete this._private[params.field][key];
+					}
+						
+					if( params.event != null ){
+						this.rtrigger(params.event);
+					}					
+					
 					return this;
-				}
+				};
 			};
+			
+			CyElement.prototype.removeBypass = removerFunction({ field: "bypass", event: "bypass" });
+			CyElement.prototype.bypass = setterGetterFunction({ field: "bypass", event: "bypass" });
 						
 			CyElement.prototype.data = function(attr, val){
 				var ret;
@@ -718,7 +799,22 @@
 				
 				if( attr == "id" && val !== undefined ){
 					console.error("Can not change ID of element with group `%s` and ID `%s`", this._private.group, this._private.data.id);
-					return;
+					return this;
+				}
+				
+				// bind to event
+				else if( isFunction(attr) ){
+					var handler = attr;
+					this.bind("data", handler);
+					ret = this;
+				}
+				
+				// bind to event with data
+				else if( isFunction(val) ){
+					var data = attr;
+					var handler = val;
+					this.bind("data", data, handler);
+					ret = this;
 				}
 				
 				// set whole field from obj
@@ -745,7 +841,7 @@
 						this._private.data.source = oldValObj.source;
 					}
 					
-					this.trigger("data");
+					this.rtrigger("data");
 					ret = this;
 				} 
 				
@@ -760,7 +856,7 @@
 					if( this._private.group == "edges" ){
 						if( attr == "source" || attr == "target" ){
 							console.error("Can not change `%s` of edge with ID --- you can not move edges", attr, this._private.data.id);
-							return;
+							return this;
 						}
 					}
 					
@@ -770,7 +866,7 @@
 					
 					updateContinuousMapperBounds(this, attr, oldVal, val);
 					
-					this.trigger("data");
+					this.rtrigger("data");
 				}		
 				
 				return ret;
@@ -786,11 +882,11 @@
 						removeContinuousMapperBounds(self, attr, val);
 					});
 					
-					if( this._private.group == "nodes" ){
+					if( this.isNode() ){
 						this._private.data = {
 							id: oldData.id
 						};
-					} else if( this._private.group == "edges" ){
+					} else if( this.isEdge() ){
 						this._private.data = {
 							id: oldData.id,
 							source: oldData.source,
@@ -802,26 +898,26 @@
 					
 					if( field == "id" ){
 						console.error("You can not delete the `id` data field; tried to delete on element with group `%s` and ID `%s`", this._private.group, this._private.data.id);
-						return;
+						return this;
 					}
 					
-					if( this._private.group == "edges" && ( field == "source" || field == "target" ) ){
+					if( this.isEdge() && ( field == "source" || field == "target" ) ){
 						console.error("You can not delete the `%s` data field; tried to delete on edge `%s`", field, this._private.data.id);
-						return;
-					}
+						return this;
+					} 
 					
 					removeContinuousMapperBounds(this, field, this._private.data[field]);
 					delete this._private.data[field];
 				}
 				
-				this.trigger("data");
+				this.rtrigger("data");
 				return this;
 			};
 			
 			CyElement.prototype.target = function(){
 				if( this.isNode() ){
 					console.error("Can not call `target` on node `%s`; only edges have targets", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				return structs.nodes[ this._private.data.target ];
@@ -830,7 +926,7 @@
 			CyElement.prototype.source = function(){
 				if( this.isNode() ){
 					console.error("Can not call `source` on node `%s`; only edges have sources", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				return structs.nodes[ this._private.data.source ];
@@ -839,7 +935,7 @@
 			CyElement.prototype.connectedNodes = function(){
 				if( this.isNode() ){
 					console.error("Can not call `connectedNodes` on node `%s`; only edges have a source and target", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				var source = structs.nodes[ this._private.data.source ];
@@ -851,7 +947,7 @@
 			CyElement.prototype.edgesWith = function(otherNode){
 				if( otherNode.isEdge() ){
 					console.error("Can not call `edgesWith` on edge `%s`; only nodes have edges", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				var nodes = otherNode.collection();
@@ -872,7 +968,7 @@
 			CyElement.prototype.parallelEdges = function(selector){
 				if( this.isNode() ){
 					console.error("Can not call `parallelEdges` on node `%s`; only edges have sources", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				var map = getParallelEdgesForEdge(this);
@@ -918,7 +1014,7 @@
 					}
 				} else if( isPlainObject(val) ) {
 					this._private.position = copy( val );									
-					this.trigger("position");
+					this.rtrigger("position");
 				} else {
 					console.error("Can not set position on node `%s` with non-object `%o`", this._private.data.id, val);
 				}
@@ -997,7 +1093,7 @@
 					var options = $.extend({}, defaults, opts);
 					
 					$.each(events.split(/\s+/), function(i, event){
-						if(event == "") return;
+						if(event == "") return this;
 						
 						if( self._private.listeners[event] == null ){
 							self._private.listeners[event] = [];
@@ -1016,10 +1112,12 @@
 			
 			CyElement.prototype.live = function(){
 				console.error("You can not call `live` on an element");
+				return this;
 			};
 			
 			CyElement.prototype.die = function(){
-				console.error("You can not call `live` on an element");
+				console.error("You can not call `die` on an element");
+				return this;
 			};
 			
 			CyElement.prototype.unbind = function(events, callback){
@@ -1031,7 +1129,7 @@
 				}
 				
 				$.each(events.split(/\s+/), function(j, event){
-					if(event == "") return;
+					if(event == "") return this;
 				
 					var listeners = self._private.listeners[event];
 					
@@ -1051,17 +1149,21 @@
 				return this;
 			};
 			
-			CyElement.prototype.trigger = function(event, data){
-				var self = this;
-				var type = isPlainObject(event) ? event.type : event;
-				
+			CyElement.prototype.rtrigger = function(event, data){
 				// notify renderer unless removed
 				if( !this.removed() ){
 					notify({
-						type: type,
+						type: event,
 						collection: [ this ]
 					});
 				}
+				
+				this.trigger(event, data);
+			};
+			
+			CyElement.prototype.trigger = function(event, data){
+				var self = this;
+				var type = isPlainObject(event) ? event.type : event;
 				
 				var listeners = this._private.listeners[type];
 				
@@ -1069,6 +1171,7 @@
 					if( listener != null && isFunction(listener.callback) ){
 						var eventData = isPlainObject(event) ? event : jQuery.Event(type);
 						eventData.data = listener.data;
+						eventData.cy = eventData.cytoscapeweb = cy;
 						
 						var args = [eventData];
 						
@@ -1080,7 +1183,7 @@
 						
 						listener.callback.apply(self, args);
 					}
-				}				 
+				}
 				
 				// trigger regularly bound listeners
 				if( listeners != null ){
@@ -1149,7 +1252,7 @@
 			CyElement.prototype.source = function(){
 				if( this._private.group == "nodes" ){
 					console.error("Can call `source` only on edges---tried to call on node `%s`", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				return structs.nodes[ this._private.data.source ];
@@ -1158,7 +1261,7 @@
 			CyElement.prototype.target = function(){
 				if( this._private.group == "nodes" ){
 					console.error("Can call `target` only on edges---tried to call on node `%s`", this._private.data.id);
-					return;
+					return this;
 				}
 				
 				return structs.nodes[ this._private.data.target ];
@@ -1323,24 +1426,32 @@
 			});
 			
 			function listenerAlias(params){
-				return function(callback){
+				return function(data, callback){
 					if( isFunction(callback) ){
-						return this.bind(params.name, callback);
+						return this.bind(params.name, data, callback);
+					} else if( isFunction(data) ){
+						var handler = data;
+						return this.bind(params.name, handler);						
 					} else {
-						var opts = callback;
-						return this.trigger(params.name, opts);
+						return this.rtrigger(params.name, data);
 					}
 				};
 			}
 			
 			// aliases to listeners, e.g. node.click(fn) => node.bind("click", fn)
 			// TODO add more
-			CyElement.prototype.mousedown = listenerAlias({ name : "mousedown"});
-			CyElement.prototype.mouseup = listenerAlias({ name : "mouseup"});
-			CyElement.prototype.mouseover = listenerAlias({ name : "mouseover"});
-			CyElement.prototype.mouseout = listenerAlias({ name : "mouseout"});
-			CyElement.prototype.mousemove = listenerAlias({ name : "mousemove"});
-			CyElement.prototype.click = listenerAlias({ name : "click"});
+			CyElement.prototype.mousedown = listenerAlias({ name : "mousedown" });
+			CyElement.prototype.mouseup = listenerAlias({ name : "mouseup" });
+			CyElement.prototype.mouseover = listenerAlias({ name : "mouseover" });
+			CyElement.prototype.mouseout = listenerAlias({ name : "mouseout" });
+			CyElement.prototype.mousemove = listenerAlias({ name : "mousemove" });
+			CyElement.prototype.click = listenerAlias({ name : "click" });
+			CyElement.prototype.touchstart = listenerAlias({ name : "touchstart" });
+			CyElement.prototype.touchmove = listenerAlias({ name : "touchmove" });
+			CyElement.prototype.touchend = listenerAlias({ name : "touchend" });
+			CyElement.prototype.grab = listenerAlias({ name : "grab" });
+			CyElement.prototype.drag = listenerAlias({ name : "drag" });
+			CyElement.prototype.free = listenerAlias({ name : "free" });
 			
 			
 			// CyCollection
@@ -1362,7 +1473,18 @@
 			
 			// what functions in CyElement update the renderer
 			// each one has the same name as its event 
-			var rendererFunctions = [ "remove", "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify" ];
+			// TODO keep in sync as more alias functions are added
+			var rendererFunctions = [
+			                         "remove",
+			                         "data",
+			                         "bypass", 
+			                         "position",
+			                         "select", "unselect",
+			                         "lock", "unlock",
+			                         "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click",
+			                         "touchstart", "touchmove", "touchend",
+			                         "grabify", "ungrabify", "grab", "drag", "free"
+			                         ];
 			var getters = [ "data", "bypass", "position" ];
 			
 			// functions in element can also be used on collections
@@ -1377,10 +1499,12 @@
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
 					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
-					var isListener = isFunction(arguments[0]);
+					var isListener = isFunction(arguments[0]) || isFunction(arguments[1]);
 					var isGetter = $.inArray(name, getters) >= 0 && arguments[0] == null || arguments[1] == null;
 					
-					if( isRendererFn && !isListener && !isGetter ){
+					var joinNotifications = isRendererFn && !isListener && !isGetter;
+					
+					if( joinNotifications ){
 						notificationsEnabled(false);
 					}
 				
@@ -1406,7 +1530,7 @@
 					
 					// notify the renderer of the call on the whole collection
 					// (more efficient than sending each in a row---may have flicker?)
-					if( isRendererFn && !isListener && !isGetter ){
+					if( joinNotifications ){
 						notificationsEnabled(true);
 						notify({
 							type: name,
@@ -1703,13 +1827,13 @@
 				return this;
 			};
 			
-			CyCollection.prototype.trigger = function(event, data){
+			CyCollection.prototype.rtrigger = function(event, data){
 				
 				var collection = this;
 				
 				noNotifications(function(){
 					collection.each(function(i, element){
-						element.trigger(event, data);
+						element.rtrigger(event, data);
 					});
 				});
 
@@ -2274,6 +2398,8 @@
 							callback: callback,
 							data: data
 						});
+						
+						return this;
 					};
 					
 					filteredCollection.die = function(event, callback){
@@ -2297,6 +2423,8 @@
 								}
 							}
 						}
+						
+						return this;
 					};
 				}
 				
@@ -2610,6 +2738,7 @@
 						eventObj = jQuery.Event(event);
 					}
 					eventObj.data = listener.data;
+					eventObj.cy = eventObj.cytoscapeweb = cy;
 					
 					var args = [ eventObj ];
 					
@@ -2785,6 +2914,10 @@
 					cy.trigger("pan");
 				},
 				
+				reload: function(onload){
+					
+				},
+				
 				load: function(elements, onload){
 					// remove old elements
 					cy.elements().remove();
@@ -2844,11 +2977,12 @@
 					
 				},
 				
-				exportTo: function(format){
+				exportTo: function(params){
+					var format = params.name;
 					var exporterDefn = reg.exporter[format];
 					
 					if( exporterDefn == null ){
-						console.error("No exporter with name `%s` found; did you remember to register it?");
+						console.error("No exporter with name `%s` found; did you remember to register it?", format);
 					} else {
 						var exporter = new exporterDefn({
 							selector: options.selector,
@@ -2861,7 +2995,23 @@
 				}
 				
 			};
-			$(options.selector).data("cytoscapeweb", cy);
+			
+			var data = $(options.selector).data("cytoscapeweb");
+			
+			if( data == null ){
+				data = {};
+			}
+			data.cy = cy;
+			
+			if( data.readies != null ){
+				$.each(data.readies, function(i, ready){
+					cy.bind("ready", ready);
+				});
+				
+				data.readies = [];
+			}
+			
+			$(options.selector).data("cytoscapeweb", data);
 			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
@@ -3066,5 +3216,30 @@
 		$.fn.cy = $.fn.cytoscapeweb;
 		$.cy = $.cytoscapeweb;
 	}
+	
+	// define the json exporter
+	function JsonExporter(options){
+		this.options = options;
+		this.cy = options.cy;
+		this.renderer = options.renderer;
+	}
+	
+	JsonExporter.prototype.run = function(){
+		var elements = {};
+		
+		this.cy.elements().each(function(i, ele){
+			var group = ele.group();
+			
+			if( elements[group] == null ){
+				elements[group] = [];
+			}
+			
+			elements[group].push( ele.json() );
+		});
+		
+		return elements;
+	};
+	
+	$.cytoscapeweb("exporter", "json", JsonExporter);
 	
 })(jQuery);

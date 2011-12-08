@@ -382,56 +382,57 @@ $(function(){
 		this.cy = this.options.cytoscapeweb;
 		
 		if( svg != null ){
-			svg.clear(true);	
-		} else {
-			container.css({
-				padding: "0 !important"
-			});
-			
-			container.svg({
-				onLoad: function(s){
-					
-					if( self.scale == null ){
-						self.scale = 1;
-					}
-					if( self.translation == 0 ){
-						self.translation = { x: 0, y: 0 };
-					}
-					
-					container.find("svg").css("overflow", "hidden"); // fixes ie overflow
-					
-					svg = s;
-					self.svg = svg;
-					
-					self.svg.change();
-					
-					self.svgBg = svg.rect(0, 0, "100%", "100%", {
-						fill: "white", // any arbitrary colour
-						opacity: 0 // don't show the bg rect but let it bubble up events
-					});
-					
-					self.edgesGroup = svg.group();
-					self.nodesGroup = svg.group();
-					self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
-					
-					
-					self.selectedElements = self.cy.collection();
-					
-					$(self.edgesGroup).svgattr("class", "cw-edges");
-					$(self.nodesGroup).svgattr("class", "cw-nodes");
-					
-					self.defs = self.svg.defs();
-					
-					self.makeBackgroundInteractive();
-					
-					callback();
-				},
-				settings: {
-					height: "100%",
-					width: "100%"
+			container.svg('destroy');	
+		} 
+		
+		container.css({
+			padding: "0 !important"
+		});
+		
+		container.svg({
+			onLoad: function(s){
+				
+				if( self.scale == null ){
+					self.scale = 1;
 				}
-			});
-		}
+				if( self.translation == 0 ){
+					self.translation = { x: 0, y: 0 };
+				}
+				
+				container.find("svg").css("overflow", "hidden"); // fixes ie overflow
+				
+				svg = s;
+				self.svg = svg;
+				
+				self.svg.change();
+				
+				self.svgBg = svg.rect(0, 0, "100%", "100%", {
+					fill: "white", // any arbitrary colour
+					opacity: 0 // don't show the bg rect but let it bubble up events
+				});
+				
+				self.edgesGroup = svg.group();
+				self.nodesGroup = svg.group();
+				self.svgRoot = $(self.nodesGroup).parents("svg:first")[0];
+				
+				
+				self.selectedElements = self.cy.collection();
+				
+				$(self.edgesGroup).svgattr("class", "cw-edges");
+				$(self.nodesGroup).svgattr("class", "cw-nodes");
+				
+				self.defs = self.svg.defs();
+				
+				self.makeBackgroundInteractive();
+				
+				callback();
+			},
+			settings: {
+				height: "100%",
+				width: "100%"
+			}
+		});
+		
 	};
 	
 	SvgRenderer.prototype.offsetFix = function(e){

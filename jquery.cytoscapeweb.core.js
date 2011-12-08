@@ -1500,7 +1500,7 @@
 					// just notify at the end of the loop with the whole collection
 					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
 					var isListener = isFunction(arguments[0]) || isFunction(arguments[1]);
-					var isGetter = $.inArray(name, getters) >= 0 && arguments[0] == null || arguments[1] == null;
+					var isGetter = $.inArray(name, getters) >= 0 && (arguments[0] == null || arguments[1] == null);
 					
 					var joinNotifications = isRendererFn && !isListener && !isGetter;
 					

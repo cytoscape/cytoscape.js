@@ -382,7 +382,7 @@ $(function(){
 		this.cy = this.options.cytoscapeweb;
 		
 		if( svg != null ){
-			container.svg('destroy');	
+			container.svg('destroy');
 		} 
 		
 		container.css({
@@ -1407,7 +1407,9 @@ $(function(){
 		
 		self.selectedElements = self.selectedElements.not(toUnselect);
 		self.selectedElements = self.selectedElements.add(toSelect);
-		self.moveToFront(toSelect);
+		
+		// TODO do we need this?
+		//self.moveToFront(toSelect.nodes());
 		
 	};
 	
@@ -1475,6 +1477,7 @@ $(function(){
 		element._private.svgGroup = svgDomGroup;
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
+		element._private.svg = svgDomElement;
 		this.makeSvgNodeLabel(element);
 		
 		element._private.svg = svgDomElement;
@@ -1953,11 +1956,21 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.updateNodeStyle = function(element, newStyle){
+		var oldShape = element._private.style.shape;
+		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
 		var style = element._private.style;
 		
+		var newShape = element._private.style.shape;
+		
 		if( element._private.svg == null ){
 			$.cytoscapeweb("error", "SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
+			return;
+		}
+		
+		if( newShape != oldShape ){
+			this.svg.remove(element._private.svgGroup);
+			this.makeSvgNode(element);
 			return;
 		}
 			

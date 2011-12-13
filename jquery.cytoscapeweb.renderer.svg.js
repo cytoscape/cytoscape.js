@@ -1285,7 +1285,7 @@ $(function(){
 			x: (screenPoint.x - self.pan().x) / self.zoom(),
 			y: (screenPoint.y - self.pan().y) / self.zoom()
 		};
-	}
+	};
 	
 	SvgRenderer.prototype.renderedPoint = function(modelPoint){
 		var self = this;
@@ -1293,7 +1293,7 @@ $(function(){
 			x: modelPoint.x * self.zoom() + self.pan().x,
 			y: modelPoint.y * self.zoom() + self.pan().y
 		};
-	}
+	};
 	
 	SvgRenderer.prototype.renderedPosition = function(element){
 		var self = this;

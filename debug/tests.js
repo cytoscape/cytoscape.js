@@ -2,6 +2,7 @@ $(function(){
 
 	$("#cytoscapeweb").cy(function(e){
 		var cy = e.cy;
+
 		
 		var tests = {}; // name => setup
 		function test(options){

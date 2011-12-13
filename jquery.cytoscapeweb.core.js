@@ -1047,9 +1047,9 @@
 				return renderer.elementIsVisible(this);
 			};
 			
-			CyElement.prototype.renderedPosition = function(coord){
+			CyElement.prototype.renderedPosition = function(coord, val){
 				if( this.isEdge() ){
-					$.cytoscapeweb("warn", "Can not get rendered position for edge `" + element._private.data.id + "`; edges have no position");
+					$.cytoscapeweb("warn", "Can not access rendered position for edge `" + this._private.data.id + "`; edges have no position");
 					return null;
 				}
 				
@@ -1057,9 +1057,19 @@
 				
 				if( coord === undefined ){
 					return pos;
-				} else {
-					return pos[coord];
+				} else if( isString(coord) ) {
+					if( val === undefined ){
+						return pos[coord];
+					} else {
+						pos[coord] = val;
+						this.position( renderer.modelPoint(pos) );
+					}
+				} else if( isPlainObject(coord) ){
+					pos = $.extend(true, {}, pos, coord);
+					this.position( renderer.modelPoint(pos) );
 				}
+				
+				return this;
 			};
 			
 			CyElement.prototype.renderedDimensions = function(dimension){
@@ -1483,7 +1493,7 @@
 			                         "lock", "unlock",
 			                         "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click",
 			                         "touchstart", "touchmove", "touchend",
-			                         "grabify", "ungrabify", "grab", "drag", "free"
+			                         "grabify", "ungrabify"
 			                         ];
 			var getters = [ "data", "bypass", "position" ];
 			
@@ -1499,10 +1509,10 @@
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
 					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
-					var isListener = isFunction(arguments[0]) || isFunction(arguments[1]);
-					var isGetter = $.inArray(name, getters) >= 0 && (arguments[0] == null || arguments[1] == null);
+					var hasPassedFn = isFunction(arguments[0]);
+					var isGetter = $.inArray(name, getters) >= 0 && ( arguments[0] === undefined || (isString(arguments[0]) && arguments[1] === undefined));
 					
-					var joinNotifications = isRendererFn && !isListener && !isGetter;
+					var joinNotifications = isRendererFn && !hasPassedFn && !isGetter;
 					
 					if( joinNotifications ){
 						notificationsEnabled(false);

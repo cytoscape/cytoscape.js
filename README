@@ -20,6 +20,15 @@ of the libraries used by Cytoscape Web, you can use
 jquery.cytoscapeweb.withdeps.min.js.
 
 
+Credits
+===============================================================================
+
+Cytoscape Web is an open-source project, and was primarily written by:
+ 
+	* Max Franz (core, SVG renderer, layouts)
+	* Christian Lopes (SVG renderer)
+	* Marek Zaluski (initial SVG prototype)
+
 
 We'd like to thank the academy...
 ===============================================================================
@@ -40,6 +49,13 @@ of some objects, like edges.  You can find his library at his website
 We used Brandon Aaron's mouse wheel library for providing easy cross-browser
 support for zooming with the mouse wheel in the SVG renderer.  You can find out
 more about his library at his website (http://brandonaaron.net).
+
+Arbor was used in one of Cytoscape Web's included layouts.  We made some
+modifications to the library, written by Samizdat Drafting Co., so that it
+would work with multiple instances of Cytoscape Web and that it would work
+on lesser browsers, like IE.  Information about this library can be found
+at the Arbor website (http://arborjs.org/) and on GitHub
+(https://github.com/maxkfranz/arbor) where the original code was forked.
 
 
 Build dependencies

@@ -4,27 +4,31 @@
 	<head>
 		<script type="text/javascript" src="../tests/jquery/jquery-latest.min.js"></script>
 		<script type="text/javascript" src="../jquery.color.js"></script>
+		<script type="text/javascript" src="../arbor.js"></script>
 		<script type="text/javascript" src="../jquery.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.core.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.null.js"></script>
 		<script type="text/javascript" src="../2D.js"></script>
 		<script type="text/javascript" src="../jquery.mousewheel.js"></script>
+		<script type="text/javascript" src="../seedrandom.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.renderer.svg.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.null.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.random.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.grid.js"></script>
 		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.preset.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.force-directed-springy.js"></script>
+		<script type="text/javascript" src="../jquery.cytoscapeweb.layout.force-directed-arbor.js"></script>
 		
 		<script type="text/javascript" src="jquery.qtip.js"></script>
 		<script type="text/javascript" src="jquery.commandtip.js"></script>
 		<script type="text/javascript" src="jquery.gritter.js"></script>
-		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="bind.js"></script>
 		<script type="text/javascript" src="data.js"></script>
 		<script type="text/javascript" src="filter.js"></script>
 		<script type="text/javascript" src="layout.js"></script>
 		<script type="text/javascript" src="tests.js"></script>
 		<script type="text/javascript" src="view.js"></script>
+		<script type="text/javascript" src="init.js"></script>
 		
 		<link rel="stylesheet" href="jquery.qtip.css" />
 		<link rel="stylesheet" href="jquery.qtip.override-and-commandtip.css" />
@@ -53,8 +57,10 @@
 	    		    	
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
-	    		<option value="grid">Grid layout</option>
-	    		<option value="random">Random layout</option>
+	    		<option value="grid">Grid</option>
+	    		<option value="random">Random</option>
+	    		<option value="springy">Springy</option>
+	    		<option value="arbor">Arbor</option>
 	    	</select>
 	    	<button id="layout-button">Apply</button>
 	    	

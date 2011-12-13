@@ -190,8 +190,6 @@ $(function(){
 				// unbind handlers
 				nodes.unbind("grab drag dragstop", grabHandler);
 				
-				console.log("done");
-				
 				// enable back grabbing if so set
 				if( options.ungrabifyWhileSimulating ){
 					grabbableNodes.grabify();

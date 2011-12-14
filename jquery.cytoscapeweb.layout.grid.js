@@ -4,20 +4,19 @@ $(function(){
 		fit: false
 	};
 	
-	function GridLayout(options){
-		$.cytoscapeweb("debug", "Creating grid layout with options (%o)", options);
-		
-		this.options = $.extend({}, defaults, options);
+	function GridLayout(){
+		$.cytoscapeweb("debug", "Creating grid layout");
 	}
 	
 	GridLayout.prototype.run = function(params){
-		var nodes = params.nodes;
-		var edges = params.edges;
-		var options = this.options;
-		var container = $(options.selector);
-		var cy = options.cy;
+		var options = $.extend(true, {}, defaults, params);
 		
-		$.cytoscapeweb("debug", "Running grid layout with options (%o)", params);
+		var cy = params.cy;
+		var nodes = cy.nodes();
+		var edges = cy.edges();
+		var container = cy.container();
+		
+		$.cytoscapeweb("debug", "Running grid layout with options (%o)", options);
 		
 		var width = container.width();
 		var height = container.height();

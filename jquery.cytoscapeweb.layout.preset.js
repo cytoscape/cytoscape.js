@@ -4,19 +4,18 @@ $(function(){
 		
 	};
 	
-	function PresetLayout(options){
-		$.cytoscapeweb("debug", "Creating preset layout with options (%o)", options);
-		
-		this.options = $.extend({}, defaults, options);
+	function PresetLayout(){
+		$.cytoscapeweb("debug", "Creating preset layout with options");
 	}
 	
 	PresetLayout.prototype.run = function(params){
-		$.cytoscapeweb("debug", "Running preset layout with options (%o)", params);
-		
-		var nodes = params.nodes;
-		var edges = params.edges;
-		var options = this.options;
-		var container = $(options.selector);
+		var options = $.extend(true, {}, defaults, params);
+		$.cytoscapeweb("debug", "Running preset layout with options (%o)", options);
+
+		var cy = params.cy;
+		var nodes = cy.nodes();
+		var edges = cy.edges();
+		var container = cy.container();
 		
 		function getPosition(node){
 			if( options.positions == null ){

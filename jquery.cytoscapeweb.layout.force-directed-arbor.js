@@ -13,24 +13,21 @@ $(function(){
 		precision: undefined,
 		nodeMass: undefined,
 		edgeLength: undefined,
-		padding: [ 50, 50, 50, 50 ],
-		seed: "What's cookin', good lookin'?"
+		padding: [ 50, 50, 50, 50 ]
 	};
 	
-	function ForceDirectedLayout(options){
-		$.cytoscapeweb("debug", "Creating force-directed layout with options (%o)", options);
-		
-		this.options = $.extend({}, defaults, options);
+	function ForceDirectedLayout(){
+		$.cytoscapeweb("debug", "Creating force-directed layout");
 	}
 	
 	ForceDirectedLayout.prototype.run = function(params){
-		$.cytoscapeweb("debug", "Running force-directed layout with options (%o)", params);
+		var options = $.extend(true, {}, defaults, params);
+		$.cytoscapeweb("debug", "Running force-directed layout with options (%o)", options);
 		
-		var nodes = params.nodes;
-		var edges = params.edges;
-		var options = this.options;
 		var cy = options.cy;
-		var container = $(options.selector);
+		var nodes = cy.nodes();
+		var edges = cy.edges();
+		var container = cy.container();
 		
 		var sys = window.sys = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
 		

@@ -127,7 +127,7 @@
 		else if( isPlainObject(opts) ){
 			return $(this).each(function(){
 				var options = $.extend({}, opts, {
-					selector: $(this)
+					container: $(this)
 				});
 			
 				$.cytoscapeweb(options);
@@ -180,23 +180,18 @@
 					name: "svg"
 				},
 				style: { // actual default style later specified by renderer
-					global: {},
-					selectors: {}
 				}
 			};
 			
 			var options = $.extend(true, {}, defaults, opts);
 			
-			if( options.selector == null ){
-				console.error("Cytoscape Web must be called on an element; specify `selector` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
+			if( options.container == null ){
+				console.error("Cytoscape Web must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
 				return;
-			} else if( $(options.selector).size() > 1 ){
+			} else if( $(options.container).size() > 1 ){
 				console.error("Cytoscape Web can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
 				return;
 			}
-			
-			options.layout.selector = options.selector;
-			options.renderer.selector = options.selector;
 			
 			// structs to hold internal cytoweb model
 			var structs = {
@@ -454,6 +449,13 @@
 					grabbable: params.grabbable || params.grabbable === undefined ? true : false, // whether the element can be grabbed
 					classes: {} // map ( className => true )
 				};
+				
+				// renderedPosition overrides if specified
+				// you shouldn't and can't use this option with cy.load() since we don't have access to the renderer yet
+				// AND the initial state of the graph is such that renderedPosition and position are the same
+				if( params.renderedPosition != null ){
+					this._private.position = renderer.modelPoint(params.renderedPosition);
+				}
 				
 				if( isString(params.classes) ){
 					$.each(params.classes.split(/\s+/), function(i, cls){
@@ -2672,7 +2674,7 @@
 				}
 			}
 			
-			var prevLayoutName = options.layout.name;
+			var prevLayoutOptions = options.layout;
 			
 			function cybind(target, events, data, handler){
 				if( handler === undefined ){
@@ -2779,6 +2781,10 @@
 			// this is the cytoweb object
 			var cy = {
 				
+				container: function(){
+					return $(options.container);
+				},
+					
 				bind: function(event, data, handler){
 					cybind("cy", event, data, handler);
 				},
@@ -2851,31 +2857,32 @@
 				
 				layout: function(params){
 					if( params == null ){
-						params = options.layout;
+						console.error("Layout options must be specified to run a layout");
+						return;
 					}
 					
-					var name = params.name != null ? params.name : options.layout.name;
-					var name = name.toLowerCase();
+					if( params.name == null ){
+						console.error("A `name` must be specified to run a layout");
+						return;
+					}
+					
+					var name = params.name.toLowerCase();
 					
 					if( reg.layout[ name ] == null ){
 						console.error("Can not apply layout: No such layout `%s` found; did you include its JS file?", name);
 						return;
 					}
 					
-					if( prevLayoutName != name || layout == null ){
+					if( prevLayoutOptions.name != name || layout == null ){
 												
-						layout = new reg.layout[name]($.extend({}, params, { 
-							selector: options.selector,
-							cy: cy
-						}));
+						layout = new reg.layout[name]();
 						
-						prevLayoutName = name;
+						prevLayoutOptions = params;
 					}
 					
 					layout.run( $.extend({}, params, {
-						nodes: cy.nodes(),
-						edges: cy.edges(),
-						renderer: renderer
+						renderer: renderer,
+						cy: cy
 					}) );
 					
 				},
@@ -2960,6 +2967,7 @@
 					
 					function callback(){
 						cy.layout({
+							name: options.layout.name,
 							ready: function(){
 								notificationsEnabled(true);
 								
@@ -2995,7 +3003,6 @@
 						console.error("No exporter with name `%s` found; did you remember to register it?", format);
 					} else {
 						var exporter = new exporterDefn({
-							selector: options.selector,
 							cy: cy,
 							renderer: renderer
 						});
@@ -3006,7 +3013,7 @@
 				
 			};
 			
-			var data = $(options.selector).data("cytoscapeweb");
+			var data = $(options.container).data("cytoscapeweb");
 			
 			if( data == null ){
 				data = {};
@@ -3021,7 +3028,7 @@
 				data.readies = [];
 			}
 			
-			$(options.selector).data("cytoscapeweb", data);
+			$(options.container).data("cytoscapeweb", data);
 			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
@@ -3030,8 +3037,7 @@
 			
 			var renderer = new reg.renderer[ options.renderer.name.toLowerCase() ]( $.extend({}, options.renderer, {
 				
-				selector: $(options.selector),
-				cytoscapeweb: cy,
+				cy: cy,
 				style: options.style,
 				
 				styleCalculator: {
@@ -3236,6 +3242,7 @@
 	
 	JsonExporter.prototype.run = function(){
 		var elements = {};
+		var style = this.cy.style();
 		
 		this.cy.elements().each(function(i, ele){
 			var group = ele.group();
@@ -3247,7 +3254,11 @@
 			elements[group].push( ele.json() );
 		});
 		
-		return elements;
+		return {
+			elements: elements,
+			style: style,
+			renderer: options.renderer
+		};
 	};
 	
 	$.cytoscapeweb("exporter", "json", JsonExporter);

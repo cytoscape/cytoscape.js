@@ -4,18 +4,16 @@ $(function(){
 		fit: true
 	};
 	
-	function RandomLayout(options){
-		$.cytoscapeweb("debug", "Creating random layout with options (%o)", options);
-		
-		this.options = $.extend({}, defaults, options);
+	function RandomLayout(){
+		$.cytoscapeweb("debug", "Creating random layout with options");
 	}
 	
 	RandomLayout.prototype.run = function(params){
-		var nodes = params.nodes;
-		var edges = params.edges;
-		var options = this.options;
-		var container = $(options.selector);
-		var cy = options.cy;
+		var options = $.extend(true, {}, defaults, params);
+		var cy = params.cy;
+		var nodes = cy.nodes();
+		var edges = cy.edges();
+		var container = cy.container();
 		
 		$.cytoscapeweb("debug", "Running random layout with options (%o)", params);
 		

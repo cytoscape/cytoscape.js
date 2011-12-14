@@ -6,20 +6,18 @@ $(function(){
 		fit: true
 	};
 	
-	function ForceDirectedLayout(options){
-		$.cytoscapeweb("debug", "Creating force-directed layout with options (%o)", options);
-		
-		this.options = $.extend({}, defaults, options);
+	function ForceDirectedLayout(){
+		$.cytoscapeweb("debug", "Creating force-directed layout with options");
 	}
 	
 	ForceDirectedLayout.prototype.run = function(params){
-		$.cytoscapeweb("debug", "Running preset layout with options (%o)", params);
-		
-		var nodes = params.nodes;
-		var edges = params.edges;
-		var options = this.options;
-		var cy = options.cy;
-		var container = $(options.selector);
+		var options = $.extend(true, {}, defaults, params);
+		$.cytoscapeweb("debug", "Running preset layout with options (%o)", options);
+	
+		var cy = params.cy;
+		var nodes = cy.nodes();
+		var edges = cy.edges();
+		var container = cy.container();
 		
 		// make a new graph
 		var graph = new Graph();

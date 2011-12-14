@@ -20,16 +20,6 @@ of the libraries used by Cytoscape Web, you can use
 jquery.cytoscapeweb.withdeps.min.js.
 
 
-Credits
-===============================================================================
-
-Cytoscape Web is an open-source project, and was primarily written by:
- 
-	* Max Franz (core, SVG renderer, layouts)
-	* Christian Lopes (SVG renderer)
-	* Marek Zaluski (initial SVG prototype)
-
-
 We'd like to thank the academy...
 ===============================================================================
 

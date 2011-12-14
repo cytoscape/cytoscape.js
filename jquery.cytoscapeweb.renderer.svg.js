@@ -368,18 +368,20 @@ $(function(){
 		$.cytoscapeweb("debug", "Creating SVG renderer with options (%o)", options);
 		this.options = $.extend({}, defaults, options);
 		this.style = $.extend(true, {}, defaults.style, options.style);
+		this.cy = options.cy;
+		
 		
 		$.cytoscapeweb("debug", "SVG renderer is using style (%o)", this.style);
 	}
 	
 	SvgRenderer.prototype.init = function(callback){
-		var container = $(this.options.selector);
-		var svg = container.svg('get'); 
 		var self = this;
+		this.cy = this.options.cy;
+		var container = this.cy.container();
+		var svg = container.svg('get'); 
 		
 		this.container = container;
 		this.svg = svg;
-		this.cy = this.options.cytoscapeweb;
 		
 		if( svg != null ){
 			container.svg('destroy');
@@ -440,8 +442,8 @@ $(function(){
 		
 		// firefox fix :(
 		if( e.offsetX == null || e.offsetY == null ){
-			e.offsetX = e.clientX - $(self.options.selector).offset().left;
-			e.offsetY = e.clientY - $(self.options.selector).offset().top;
+			e.offsetX = e.clientX - self.cy.container().offset().left;
+			e.offsetY = e.clientY - self.cy.container().offset().top;
 		}
 	};
 	
@@ -498,7 +500,8 @@ $(function(){
 						cursor: cursor(self.style.global.panCursor)
 					});
 					
-					$(self.options.selector).scrollLeft(100);
+					// TODO why do we have this scroll thing here?
+					self.cy.container().scrollLeft(100);
 					
 				}, panDelay);
 				
@@ -620,7 +623,7 @@ $(function(){
 		
 		function point(e, i){
 			var x, y;
-			var offset = $(self.container).offset();
+			var offset = self.cy.container().offset();
 			var touch = e.originalEvent.touches[i];
 			
 			x = touch.pageX - offset.left;
@@ -918,8 +921,8 @@ $(function(){
 		var w = x2 - x1;
 		var h = y2 - y1;
 
-		var width = this.container.width();
-		var height = this.container.height();
+		var width = this.cy.container().width();
+		var height = this.cy.container().height();
 		
 		var scale = Math.min( width/w, height/h );
 		
@@ -1756,7 +1759,7 @@ $(function(){
 			opacity: 1
 		});
 		
-		var rect = this.svg.rect(0, 0, this.container.width(), this.container.height());
+		var rect = this.svg.rect(0, 0, this.cy.container().width(), this.cy.container().height());
 		this.svg.remove(rect);
 	};
 	
@@ -2194,10 +2197,10 @@ $(function(){
 		$.cytoscapeweb("debug", "SVG renderer is updating node positions");
 		
 		collection = collection.collection();
-		var container = $(this.options.selector);
+		var container = this.cy.container();
 		var svg = container.svg('get');
 		var self = this;
-		var cy = this.options.cytoscapeweb;
+		var cy = this.options.cy;
 		
 		// update nodes
 		collection.nodes().each(function(i, element){
@@ -2234,9 +2237,9 @@ $(function(){
 	SvgRenderer.prototype.removeElements = function(collection, updateMappers){
 		$.cytoscapeweb("debug", "SVG renderer is removing elements");
 		
-		var container = $(this.options.selector);
+		var container = this.cy.container();
 		var svg = container.svg('get');
-		var cy = this.options.cytoscapeweb;
+		var cy = this.options.cy;
 		var self = this;
 		
 		collection.each(function(i, element){
@@ -2262,7 +2265,7 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.notify = function(params){
-		var container = $(params.selector);
+		var container = this.options.cy.container();
 	
 		$.cytoscapeweb("debug", "Notify SVG renderer with params (%o)", params);
 		
@@ -2276,7 +2279,7 @@ $(function(){
 			case "load":
 				self.init(function(){
 					self.addElements( params.collection );
-					self.options.cytoscapeweb.trigger("ready");
+					self.options.cy.trigger("ready");
 				});
 				break;
 		
@@ -2330,7 +2333,7 @@ $(function(){
 	}
 	
 	SvgExporter.prototype.run = function(){
-		return $(this.options.selector).svg("get").toSVG();
+		return this.options.cy.container().svg("get").toSVG();
 	};
 	
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);

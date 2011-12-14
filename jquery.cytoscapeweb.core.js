@@ -3242,7 +3242,6 @@
 	
 	JsonExporter.prototype.run = function(){
 		var elements = {};
-		var style = this.cy.style();
 		
 		this.cy.elements().each(function(i, ele){
 			var group = ele.group();
@@ -3254,11 +3253,7 @@
 			elements[group].push( ele.json() );
 		});
 		
-		return {
-			elements: elements,
-			style: style,
-			renderer: options.renderer
-		};
+		return elements;
 	};
 	
 	$.cytoscapeweb("exporter", "json", JsonExporter);

@@ -1299,7 +1299,7 @@
 				return this.is(selector);
 			};
 			
-			CyElement.prototype.allAreNeighbors = function(collection){
+			CyElement.prototype.allAreNeighbours = CyElement.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
 				var adjacents = this.neighborhood();
 				
@@ -1336,15 +1336,15 @@
 				return ret;
 			};
 			
-			CyElement.prototype.closedNeighborhood = function(selector){
+			CyElement.prototype.closedNeighbourhood = CyElement.prototype.closedNeighborhood = function(selector){
 				return new CySelector(selector).filter( this.neighborhood().add(this) );
 			};
 			
-			CyElement.prototype.openNeighborhood = function(selector){
+			CyElement.prototype.openNeighbourhood = CyElement.prototype.openNeighborhood = function(selector){
 				return this.neighborhood(selector);
 			};
 			
-			CyElement.prototype.neighborhood = function(selector){
+			CyElement.prototype.neighbourhood = CyElement.prototype.neighborhood = function(selector){
 				
 				var collection;
 				
@@ -1911,7 +1911,7 @@
 				return total;
 			};
 			
-			CyCollection.prototype.allAreNeighbors = function(collection){
+			CyCollection.prototype.allAreNeighbours = CyCollection.prototype.allAreNeighbors = function(collection){
 				collection = collection.collection();
 				var ret = true;
 				
@@ -2921,6 +2921,10 @@
 					});
 					
 					cy.trigger("pan");
+				},
+				
+				centre: function(){ // alias to center
+					cy.center.apply(cy, arguments); 
 				},
 				
 				reset: function(){

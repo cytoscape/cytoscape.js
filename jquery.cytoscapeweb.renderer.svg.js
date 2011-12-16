@@ -1099,23 +1099,25 @@ $(function(){
 		var selectors = self.style.selectors;
 		var style = {};
 		
+		// iteratively set style based on matching selectors
 		$.each(selectors, function(selector, selStyle){
 			if( element.is(selector) ){
 				style = $.extend(style, selStyle);
 			}
 		});
 		
+		// apply the bypass
 		style = $.extend(style, element._private.bypass);
 		
+		// compute the individual values (i.e. flatten mappers to actual values)
 		$.each(style, function(styleName, styleVal){
 			style[styleName] = styleCalculator.calculate(element, styleVal);
 		});
 		
+		// assign to computed style field
 		element._private.style = style;
 		
-		if( element._private.group == "nodes" ){
-		
-		} if( element._private.group == "edges" ){
+		if( element.isEdge() ){
 			var source = element.source();
 			var target = element.target();
 			

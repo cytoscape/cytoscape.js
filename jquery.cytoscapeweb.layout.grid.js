@@ -1,7 +1,9 @@
 $(function(){
 	
 	var defaults = {
-		fit: false
+		fit: true,
+		rows: undefined,
+		columns: undefined
 	};
 	
 	function GridLayout(){
@@ -71,8 +73,22 @@ $(function(){
 			}
 		}
 		
+		// if rows or columns were set in options, use those values
+		if( options.rows != null && options.columns != null ){
+			rows = options.rows;
+			cols = options.columns;
+		} else if( options.rows != null && options.columns == null ){
+			rows = options.rows;
+			cols = Math.ceil( cells / rows );
+		} else if( options.rows == null && options.columns != null ){
+			cols = options.columns;
+			rows = Math.ceil( cells / cols );
+		}
+		
+		// otherwise use the automatic values and adjust accordingly
+		
 		// if rounding was up, see if we can reduce rows or columns
-		if( cols * rows > cells ){
+		else if( cols * rows > cells ){
 			var sm = small();
 			var lg = large();
 			
@@ -130,10 +146,8 @@ $(function(){
 	
 		
 		if( options.fit ){
-			cy.fit();
-		} else {
 			cy.reset();
-		}
+		} 
 		
 		if( params.ready != null && typeof params.ready == typeof function(){} ){
 			params.ready();

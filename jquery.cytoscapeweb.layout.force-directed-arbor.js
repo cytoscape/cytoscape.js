@@ -1,8 +1,10 @@
 $(function(){
 	
 	var defaults = {
+		ready: undefined,
 		maxSimulationTime: 1000,
 		fit: true,
+		padding: [ 50, 50, 50, 50 ],
 		ungrabifyWhileSimulating: true,
 		repulsion: undefined,
 		stiffness: undefined,
@@ -12,8 +14,7 @@ $(function(){
 		dt: undefined,
 		precision: undefined,
 		nodeMass: undefined,
-		edgeLength: undefined,
-		padding: [ 50, 50, 50, 50 ]
+		edgeLength: undefined
 	};
 	
 	function ForceDirectedLayout(){
@@ -133,7 +134,7 @@ $(function(){
 	  	
 		nodes.each(function(i, node){
 			var id = this._private.data.id;
-			var mass = calculateValueForElement(this, options.nodeWeight);
+			var mass = calculateValueForElement(this, options.nodeMass);
 			var locked = this._private.locked;
 			
 			var pos = fromScreen({

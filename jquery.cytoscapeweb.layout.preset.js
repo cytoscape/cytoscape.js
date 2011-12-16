@@ -1,7 +1,7 @@
 $(function(){
 	
 	var defaults = {
-		
+		fit: true
 	};
 	
 	function PresetLayout(){
@@ -41,8 +41,12 @@ $(function(){
 			
 		});
 		
-		if( params.ready != null && typeof params.ready == typeof function(){} ){
-			params.ready();
+		if( options.fit ){
+			cy.fit();
+		}
+		
+		if( options.ready != null && typeof options.ready == typeof function(){} ){
+			options.ready();
 		}
 	};
 	

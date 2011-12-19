@@ -401,6 +401,7 @@ $(function(){
 				
 				
 				self.selectedElements = self.cy.collection();
+				self.touchingNodes = self.cy.collection();
 				
 				self.defs = self.svg.defs();
 				
@@ -603,7 +604,8 @@ $(function(){
 		function point(e, i){
 			var x, y;
 			var offset = self.cy.container().offset();
-			var touch = e.originalEvent.touches[i];
+			var touches = e.originalEvent.touches;
+			var touch = touches[ i ];
 			
 			x = touch.pageX - offset.left;
 			y = touch.pageY - offset.top;
@@ -657,7 +659,7 @@ $(function(){
 		var touchendUnselects = true;
 		var center, modelCenter, distance1, point11, point12, point21, point22, movedAfterTouchStart;
 		$(svgDomElement).bind("touchstart", function(tsEvent){
-			if( !backgroundIsTarget(tsEvent) ){
+			if( !backgroundIsTarget(tsEvent) || self.touchingNodes.size() > 0 ){
 				return;	
 			}
 			
@@ -678,7 +680,7 @@ $(function(){
 			movedAfterTouchStart = false;
 			
 		}).bind("touchmove", function(tmEvent){
-			if( !backgroundIsTarget(tmEvent) ){
+			if( !backgroundIsTarget(tmEvent) || self.touchingNodes.size() > 0 ){
 				return;	
 			}
 			
@@ -1158,14 +1160,23 @@ $(function(){
 				mousedownEvent.preventDefault();
 				return;
 			}
+			
+			if( mousedownEvent.type == "touchstart" && mousedownEvent.originalEvent.touches.length > 1 ){
+				return;
+			}
 			 
 			element._private.grabbed = true;
+			self.touchingNodes = self.touchingNodes.add(element);
+			console.log(self.touchingNodes.size());
 			
 			var originX, originY;
 			
 			if( mousedownEvent.type == "touchstart" ){
-				originX = mousedownEvent.originalEvent.touches[0].pageX;
-				originY = mousedownEvent.originalEvent.touches[0].pageY;
+				var touches = mousedownEvent.originalEvent.touches;
+				var touch = touches[touches.length - 1];
+				
+				originX = touch.pageX;
+				originY = touch.pageY;
 			} else {
 				originX = mousedownEvent.pageX;
 				originY = mousedownEvent.pageY;
@@ -1179,8 +1190,11 @@ $(function(){
 				var dragX, dragY;
 				
 				if( dragEvent.type == "touchmove" ){
-					dragX = dragEvent.originalEvent.touches[0].pageX;
-					dragY = dragEvent.originalEvent.touches[0].pageY;
+					var touches = mousedownEvent.originalEvent.touches;
+					var touch = touches[touches.length - 1];
+					
+					dragX = touch.pageX;
+					dragY = touch.pageY;
 				} else {
 					dragX = dragEvent.pageX;
 					dragY = dragEvent.pageY;
@@ -1229,6 +1243,10 @@ $(function(){
 			var finishedDragging = false;
 			var touchEndCount = 0;
 			var endHandler = function(mouseupEvent){
+				if( mouseupEvent.originalEvent.touches.length != 0 ){
+					return;
+				}
+				
 				if( !finishedDragging ){
 					finishedDragging = true;
 				} else {
@@ -1241,6 +1259,7 @@ $(function(){
 				$(svgDomElement).unbind("mouseup touchend", endHandler);
 				
 				element._private.grabbed = false;
+				self.touchingNodes = self.touchingNodes.not(element);
 				
 				element.trigger($.extend({}, mouseupEvent, { type: "free" }));
 			};

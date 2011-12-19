@@ -1,21 +1,3 @@
-(function($){
-	
-	$.fn.svgattr = function(attrName, val){
-		
-		var container = $(this).parents("svg:first").parent();
-		var svg = container.svg('get'); 
-		
-		if( val !== undefined ){
-			// set
-			var obj = {};
-			obj[attrName] = val;
-			svg.change( $(this)[0], obj );
-		}
-		
-	};
-	
-})(jQuery);
-
 $(function(){
 	
 	
@@ -419,9 +401,6 @@ $(function(){
 				
 				
 				self.selectedElements = self.cy.collection();
-				
-				$(self.edgesGroup).svgattr("class", "cw-edges");
-				$(self.nodesGroup).svgattr("class", "cw-nodes");
 				
 				self.defs = self.svg.defs();
 				

@@ -529,7 +529,7 @@ $(function(){
 	
 	test("Functions are chainable", function(){
 		
-		fn = {
+		var fn = {
 			plain: {
 				args: [],
 				names: [

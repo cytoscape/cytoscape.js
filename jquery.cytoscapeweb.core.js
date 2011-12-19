@@ -1761,7 +1761,7 @@
 				for(var i = 0; i < collection.size(); i++){
 					var collectionElement = collection.eq(i);
 					
-					hasCollectionElement = false;
+					var hasCollectionElement = false;
 					for(var j = 0; j < this.size(); j++){
 						var thisElement = this.eq(j);
 						

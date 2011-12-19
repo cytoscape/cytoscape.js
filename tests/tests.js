@@ -2,6 +2,8 @@ $(function(){
 	
 	// set up testing params
 	
+	window.cy = null;
+	
 	$.cytoscapeweb("quiet", false);
 	$.cytoscapeweb("debugging", true);
 	

@@ -1132,6 +1132,14 @@
 				return this;
 			};
 			
+			CyElement.prototype.on = function(events, data, callback){
+				return this.bind(events, data, callback);
+			};
+			
+			CyElement.prototype.off = function(events, callback){
+				return this.unbind(events, callback);
+			};
+			
 			CyElement.prototype.unbind = function(events, callback){
 				var self = this;
 				
@@ -2787,16 +2795,62 @@
 					
 				bind: function(event, data, handler){
 					cybind("cy", event, data, handler);
+					
+					return this;
 				},
 				
 				unbind: function(event, handler){
 					cyunbind("cy", event, handler);
+					
+					return this;
 				},
 				
 				trigger: function(event, data){
 					cytrigger("cy", event, data);
-				},
 					
+					return this;
+				},
+				
+				delegate: function(selector, event, data, handler){
+					this.elements(selector).live(event, data, handler);
+					
+					return this;
+				},
+				
+				undelegate: function(selector, event, handler){
+					this.elements(selector).die(event, handler);
+					
+					return this;
+				},
+				
+				on: function(event, selector, data, handler){
+					if( data === undefined && handler === undefined ){
+						cybind("cy", event, data, handler);
+					} else {
+						this.elements(selector).live(event, data, handler);
+					}
+						
+					return this;
+				},
+				
+				off: function(event, selector, handler){
+					if( selector === undefined && handler === undefined ){
+						cyunbind("cy", event);
+					} else if( handler === undefined ){
+						if( isFunction(selector) ){
+							handler = selector;
+							selector = undefined;
+							cyunbind("cy", event, handler);
+						} else {
+							cy.elements(selector).die(event);
+						}
+					} else {
+						cy.elements(selector).die(event, handler);
+					}
+						
+					return this;
+				},
+				
 				style: function(val){
 					var ret;
 					
@@ -2829,6 +2883,8 @@
 					} else {
 						collection.remove();
 					}
+					
+					return this;
 				},
 				
 				nodes: function(selector){
@@ -2885,18 +2941,19 @@
 						cy: cy
 					}) );
 					
+					return this;
+					
 				},
 				
 				pan: function(params){
-					return renderer.pan(params);
-					
 					cy.trigger("pan");
+					return renderer.pan(params) || cy;
 				},
 				
 				panBy: function(params){
-					return renderer.panBy(params);
-					
 					cy.trigger("pan");
+					return renderer.panBy(params) || cy;					
+					
 				},
 				
 				fit: function(elements){
@@ -2907,11 +2964,13 @@
 					
 					cy.trigger("zoom");
 					cy.trigger("pan");
+					
+					return this;
 				},
 				
 				zoom: function(params){
-					return renderer.zoom(params);
 					cy.trigger("zoom");
+					return renderer.zoom(params) || cy;
 				},
 				
 				center: function(elements){
@@ -2921,10 +2980,12 @@
 					});
 					
 					cy.trigger("pan");
+					
+					return cy;
 				},
 				
 				centre: function(){ // alias to center
-					cy.center.apply(cy, arguments); 
+					return cy.center.apply(cy, arguments); 
 				},
 				
 				reset: function(){
@@ -2933,10 +2994,8 @@
 					
 					cy.trigger("zoom");
 					cy.trigger("pan");
-				},
-				
-				reload: function(onload){
 					
+					return this;
 				},
 				
 				load: function(elements, onload){
@@ -2989,14 +3048,16 @@
 					}
 					
 					// TODO remove timeout when chrome reports dimensions onload properly
+					// only affects when loading the html from localhost, i think...
 					if( window.chrome ){
 						setTimeout(function(){
 							callback();
-						}, 10);
+						}, 1);
 					} else {
 						callback();
 					}
 					
+					return this;
 				},
 				
 				exportTo: function(params){

@@ -583,8 +583,6 @@ $(function(){
 				y: e.originalEvent.offsetY
 			};
 			
-			console.log(delta, deltaX, deltaY);
-			
 			var deltaFactor = 0.5;
 			
 			if( $.browser.mozilla || $.browser.msie ){
@@ -795,8 +793,6 @@ $(function(){
 		var pan1 = self.pan();
 		var zoom1 = self.zoom();
 		var zoom2 = zoom;
-		
-		console.log(arguments);
 		
 		if( translation == null ){
 			translation = {

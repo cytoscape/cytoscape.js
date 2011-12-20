@@ -3052,7 +3052,7 @@
 					if( window.chrome ){
 						setTimeout(function(){
 							callback();
-						}, 1);
+						}, 10);
 					} else {
 						callback();
 					}

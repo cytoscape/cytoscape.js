@@ -575,14 +575,15 @@ $(function(){
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
-		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
-			
-			self.offsetFix(e);
+		}).bind("mousewheel", function(e, delta, deltaX, deltaY){		
+			self.offsetFix(e.originalEvent);
 
 			var point = {
-				x: e.offsetX,
-				y: e.offsetY
+				x: e.originalEvent.offsetX,
+				y: e.originalEvent.offsetY
 			};
+			
+			console.log(delta, deltaX, deltaY);
 			
 			var deltaFactor = 0.5;
 			
@@ -590,7 +591,7 @@ $(function(){
 				deltaFactor = 0.167;
 			}
 			
-			var zoom = self.zoom() * (1 + delta*deltaFactor);
+			var zoom = self.zoom() * (1 + deltaY * deltaFactor);
 			
 			self.zoomAboutPoint(point, zoom);
 			
@@ -794,6 +795,8 @@ $(function(){
 		var pan1 = self.pan();
 		var zoom1 = self.zoom();
 		var zoom2 = zoom;
+		
+		console.log(arguments);
 		
 		if( translation == null ){
 			translation = {

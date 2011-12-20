@@ -1,0 +1,39 @@
+.ui-cytoscapeweb-panzoom {
+	border-radius: 25px;
+	border: 2px solid #fff;
+	box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.25);
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	margin: 1em;
+	height: 50px;
+	width: 300px;
+	font-size: 12px;
+	background: rgba(0, 0, 0, 0.85);
+	color: #fff;
+	font-family: arial, helvetica, sans-serif;
+	line-height: 1;
+}
+
+.ui-cytoscapeweb-panzoom-zoom-button {
+	cursor: pointer;
+	padding: 0 0.125em;
+	text-align: center;
+	font-size: 2em;
+	position: absolute;
+	top: 0;
+}
+
+.ui-cytoscapeweb-panzoom-reset {
+	right: 1.5em;
+}
+
+.ui-cytoscapeweb-panzoom-zoom-in {
+	right: 0.5em;
+}
+
+.ui-cytoscapeweb-panzoom-zoom-out {
+	right: 2.5em;
+	line-height: 0.85;
+	padding-bottom: 0.15em;
+}

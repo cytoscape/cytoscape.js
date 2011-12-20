@@ -3043,7 +3043,7 @@
 						});
 						
 						if( isFunction(onload) ){
-							onload(cy);
+							onload.apply(cy, [cy]);
 						}
 					}
 					
@@ -3215,7 +3215,10 @@
 			
 			var layout;
 			
-			cy.load(options.elements, options.ready);
+			cy.load(options.elements, function(){
+				options.ready.apply(cy, [cy]);
+				cy.trigger("ready");
+			});
 			
 			return cy;
 		} 

@@ -101,11 +101,16 @@ $(function(){
 		});
 	}
 	
-	$("#cytoscapeweb").cy(options).cy(function(){
+	var $container = $("#cytoscapeweb");
+	
+	$container.cy(options).cy(function(){
 		
 		height = $("#cytoscapeweb").height();
 		width = $("#cytoscapeweb").width();
 		
+//		$container.cytoscapewebPanzoom({
+//			
+//		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

@@ -55,7 +55,10 @@ $(function(){
 					style: "solid",
 					cursor: "pointer",
 					visibility: "visible",
-					labelText: "",
+					labelText: {
+						defaultValue: "",
+						passthroughMapper: "label"
+					},
 					labelFillColor: "#000",
 					labelOutlineColor: "#666",
 					labelOutlineWidth: 0,
@@ -819,11 +822,28 @@ $(function(){
 		
 		if( scale === undefined ){
 			return this.scale;
-		}
-		
-		this.transform({
-			scale: scale
-		});
+		} else if( typeof scale == typeof {} ){
+			var options = scale;
+			var position = options.position;
+			
+			if( options.renderedPosition !== undefined ){
+				position = this.modelPoint(options.renderedPosition);
+			}
+			
+			if( position !== undefined ){
+				this.zoomAboutPoint(position, scale.level);
+			} else {
+				this.transform({
+					scale: options.level
+				});
+			}
+			
+		} else {
+			this.transform({
+				scale: scale
+			});
+		} 
+
 	};
 	
 	SvgRenderer.prototype.fit = function(params){
@@ -1312,6 +1332,9 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.showElements = function(collection){
+		var self = this;
+		var updated = this.cy.collection();
+		
 		collection.each(function(i, element){
 			element._private.bypass.visibility = "visible";
 		});
@@ -1320,7 +1343,7 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.elementIsVisible = function(element){
-		return element._private.bypass.visibility != "hidden";
+		return element._private.style.visibility != "hidden";
 	};
 	
 	SvgRenderer.prototype.renderedDimensions = function(element){
@@ -2296,7 +2319,6 @@ $(function(){
 			case "load":
 				self.init(function(){
 					self.addElements( params.collection );
-					self.options.cy.trigger("ready");
 				});
 				break;
 		

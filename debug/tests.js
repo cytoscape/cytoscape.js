@@ -219,7 +219,7 @@ $(function(){
 							labelText: {
 								defaultValue: "",
 								customMapper: function(data){
-									return Math.floor( data.weight );
+									return Math.round( data.weight );
 								}
 							},
 							labelValign: "middle",

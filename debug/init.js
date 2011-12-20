@@ -5,7 +5,7 @@ $(function(){
 	
 	var height, width;
 	
-	var options = {
+	window.options = {
 		renderer: {
 			name: "svg"
 		},

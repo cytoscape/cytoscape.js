@@ -3,7 +3,8 @@ $(function(){
 	var defaults = {
 		maxSimulationTime: 1000,
 		ungrabifyWhileSimulating: true,
-		fit: true
+		fit: true,
+		random: false
 	};
 	
 	function ForceDirectedLayout(){
@@ -90,7 +91,9 @@ $(function(){
 		
 		// set initial node points
 		nodes.each(function(i, ele){
-			setLayoutPositionForElement(ele);
+			if( !options.random ){
+				setLayoutPositionForElement(ele);
+			}
 		});
 	
 		// update actual node positions every once in a while
@@ -109,7 +112,11 @@ $(function(){
 		function setLayoutPositionForElement(element){
 			var fdId = element._private.fd.id;
 			var fdP = fdRenderer.layout.nodePoints[fdId].p;
-			var positionInFd = fromScreen(element._private.position);
+			var pos = element._private.position;
+			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element._private.position) : {
+				x: Math.random() * 4 - 2,
+				y: Math.random() * 4 - 2
+			};
 			
 			fdP.x = positionInFd.x;
 			fdP.y = positionInFd.y;
@@ -126,27 +133,33 @@ $(function(){
 			fdRenderer.start();
 		}
 		
-		function stop(){
+		function stop(callback){
 			graph.filterNodes(function(){
 				return false; // remove all nodes
 			});
 			
-			if( options.ungrabifyWhileSimulating ){
-				grabbableNodes.grabify();
-			}
+			setTimeout(function(){
+				if( options.ungrabifyWhileSimulating ){
+					grabbableNodes.grabify();
+				}
+				
+				callback();
+			}, 100);
 		}
 		
 		start();
 		setTimeout(function(){
-			stop();
+			stop(function(){
+				if( options.fit ){
+					cy.fit();
+				}
+				
+				if( params.ready != null && typeof params.ready == typeof function(){} ){
+					params.ready();
+				}
+			});
 			
-			if( options.fit ){
-				cy.fit();
-			}
 			
-			if( params.ready != null && typeof params.ready == typeof function(){} ){
-				params.ready();
-			}
 		}, options.maxSimulationTime);
 
 	};

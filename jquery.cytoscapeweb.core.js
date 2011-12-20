@@ -2862,7 +2862,7 @@
 						
 						notify({
 							type: "style",
-							style: style
+							style: structs.style
 						});
 					}
 					
@@ -3114,7 +3114,7 @@
 							
 							if( styleVal.customMapper != null ){
 								
-								ret = styleVal.customMapper( element );
+								ret = styleVal.customMapper.apply( element, [ element.data() ] );
 								
 							} else if( styleVal.passthroughMapper != null ){
 								

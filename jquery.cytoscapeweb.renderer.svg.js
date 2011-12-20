@@ -349,7 +349,7 @@ $(function(){
 	function SvgRenderer(options){
 		$.cytoscapeweb("debug", "Creating SVG renderer with options (%o)", options);
 		this.options = $.extend({}, defaults, options);
-		this.style = $.extend(true, {}, defaults.style, options.style);
+		this.setStyle(options.style);
 		this.cy = options.cy;
 		
 		
@@ -1165,6 +1165,7 @@ $(function(){
 			}
 			 
 			element._private.grabbed = true;
+			element.trigger($.extend({}, mousedownEvent, { type: "grab" }));
 			self.touchingNodes = self.touchingNodes.add(element);
 			
 			var originX, originY;
@@ -1228,7 +1229,7 @@ $(function(){
 					}
 					
 					justStartedDragging = false;
-					element.trigger($.extend({}, dragEvent, { type: "grab" }));
+					
 				} else {
 					element.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
@@ -1352,6 +1353,10 @@ $(function(){
 		
 		function nodeInside(element){
 
+			if( !self.elementIsVisible(element) ){
+				return false;
+			}
+			
 			// intersect rectangle in the model with the actual node shape in the model
 			var shape = nodeShape(element._private.style.shape).intersectionShape;
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
@@ -1386,7 +1391,8 @@ $(function(){
 				}
 			} else {
 				// if both node center points are inside, then the edge is inside
-				if( nodeInside( element.source() ) &&
+				if( self.elementIsVisible(element) &&
+					nodeInside( element.source() ) &&
 					nodeInside( element.target() ) ){
 					
 					toSelect = toSelect.add(element);
@@ -1922,13 +1928,14 @@ $(function(){
 		});
 	};
 	
+	SvgRenderer.prototype.setStyle = function(style){
+		this.style = $.extend(true, {}, defaults.style, style);
+	};
+	
 	SvgRenderer.prototype.updateStyle = function(style){
 		var collection = this.cy.elements();
-		var self = this;
 		
-		if( style !== undefined ){
-			self.style = style;
-		}
+		this.setStyle(style);
 		
 		this.updateElementsStyle(collection);
 	};

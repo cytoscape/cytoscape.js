@@ -141,6 +141,111 @@ $(function(){
 				cy.elements().unbind("click");
 			}
 		});
+		
+		
+		test({
+			name: "labelOnClick",
+			displayName: "Label on click",
+			description: "Change label on click",
+			setup: function(){
+				cy.elements().bind("click", function(){
+					this.bypass({
+						labelText: "clicked"
+					});
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
+			name: "hideOnClick",
+			displayName: "Hide on click",
+			description: "Hide nodes and edges when clicked",
+			setup: function(){
+				cy.elements().bind("click", function(){
+					this.hide();
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
+			name: "fancyStyle",
+			displayName: "Set a fancy visual style",
+			description: "Change the visual style and make sure it takes effect",
+			setup: function(){
+				
+				var edgeColor = {
+					defaultValue: "blue",
+					continuousMapper: {
+						attr: {
+							name: "weight"
+						},
+						mapped: {
+							min: "blue",
+							max: "red"
+						}
+					}
+				};
+				
+				cy.style({
+					selectors: {
+						"node": {
+							shape: "rectangle",
+							fillColor: "lightblue",
+							borderColor: "black",
+							borderWidth: 1,
+							width: {
+								defaultValue: 10,
+								continuousMapper: {
+									attr: {
+										name: "weight",
+										min: 20,
+										max: 100
+									},
+									mapped: {
+										min: 20,
+										max: 100
+									}
+								}
+							},
+							height: 20,
+							labelFontWeight: "normal",
+							labelFontSize: "0.75em",
+							labelText: {
+								defaultValue: "",
+								customMapper: function(data){
+									return Math.floor( data.weight );
+								}
+							},
+							labelValign: "middle",
+							labelHalign: "middle"
+						},
+						"node:selected": {
+							borderWidth: 3,
+							fillColor: "lightblue"
+						},
+						"edge": {
+							lineColor: edgeColor,
+							targetArrowShape: "triangle",
+							targetArrowColor: edgeColor
+						},
+						"edge:selected": {
+							lineColor: edgeColor,
+							targetArrowColor: edgeColor,
+							width: 3
+						}
+					}
+				});
+			},
+			teardown: function(){
+				cy.style(window.options.style);
+			}
+		});
 	});
 
 });

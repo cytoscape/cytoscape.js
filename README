@@ -85,11 +85,6 @@ A note to developers:
 For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
 actual release ZIP.
 
-In the `Makefile`, you can specify the JS files to include in the built ZIP in
-the `JSFILES` variable.  The order you specify there is the same as the order
-the files are included in the all.min.js file.  Order your dependencies 
-accordingly.
-
 
 
 Tests

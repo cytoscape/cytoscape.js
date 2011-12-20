@@ -76,6 +76,71 @@ $(function(){
 				cy.elements().unbind("click").removeBypass();
 			}
 		});
+		
+		test({
+			name: "positionOnClick",
+			displayName: "Random position on click",
+			description: "Put node to random position on click",
+			setup: function(){
+				
+				var $cy = $("#cytoscapeweb");
+				
+				var w = $cy.width();
+				var h = $cy.height();
+								
+				cy.nodes().bind("click", function(){
+					var node = this;
+					
+					var p1 = node.position();
+					
+					var padding = 50;
+					
+					var p2 = {
+						x: Math.random() * (w - padding) + padding,
+						y: Math.random() * (h - padding) + padding
+					};
+					
+					var delta = {
+						x: p2.x - p1.x,
+						y: p2.y - p1.y
+					};
+						
+					var d = Math.sqrt( delta.x*delta.x + delta.y*delta.y );
+						
+					var v = {
+						x: delta.x/d,
+						y: delta.y/d
+					};
+					
+					var step = 10;
+					var lastP = {
+						x: p1.x,
+						y: p1.y
+					};
+					var interval = setInterval(function(){
+						
+						d -= step;
+						
+						if(d < 0){
+							step = step + d;
+						}
+						
+						lastP = {
+							x: lastP.x + step*v.x,
+							y: lastP.y + step*v.y
+						};
+						node.position(lastP);
+						
+						if( d <= 0 ){
+							clearInterval(interval);
+						}
+					}, 10);
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click");
+			}
+		});
 	});
 
 });

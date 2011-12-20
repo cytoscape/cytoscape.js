@@ -58,6 +58,24 @@ $(function(){
 				cy.elements().unbind("click").removeBypass();
 			}
 		});
+		
+		test({
+			name: "shapeOnClick",
+			displayName: "Squares on click",
+			description: "Set nodes to squares and edge arrows to squares on click",
+			setup: function(){
+				cy.elements().bind("click", function(){
+					this.bypass({
+						shape: "rectangle",
+						targetArrowShape: "square",
+						sourceArrowShape: "square"
+					});
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click").removeBypass();
+			}
+		});
 	});
 
 });

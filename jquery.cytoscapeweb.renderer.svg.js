@@ -1167,7 +1167,6 @@ $(function(){
 			 
 			element._private.grabbed = true;
 			self.touchingNodes = self.touchingNodes.add(element);
-			console.log(self.touchingNodes.size());
 			
 			var originX, originY;
 			
@@ -1243,7 +1242,7 @@ $(function(){
 			var finishedDragging = false;
 			var touchEndCount = 0;
 			var endHandler = function(mouseupEvent){
-				if( mouseupEvent.originalEvent.touches.length != 0 ){
+				if( mouseupEvent.type == "touchend" && mouseupEvent.originalEvent.touches.length != 0 ){
 					return;
 				}
 				
@@ -2106,11 +2105,23 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
+		var oldTargetShape = element._private.style.targetArrowShape;
+		var oldSourceShape = element._private.style.sourceArrowShape;
+		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
 		var style = element._private.style;
 		
 		if( element._private.svg == null ){
 			$.cytoscapeweb("error", "SVG renderer can not update style for edge `%s` since it has no SVG element", element._private.data.id);
+			return;
+		}
+		
+		var newTargetShape = element._private.style.targetArrowShape;
+		var newSourceShape = element._private.style.sourceArrowShape;
+		
+		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape ){
+			this.svg.remove(element._private.svgGroup);
+			this.makeSvgEdge(element);
 			return;
 		}
 		

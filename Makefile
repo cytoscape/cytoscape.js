@@ -27,10 +27,11 @@ JS_WO_DEPS_FILE = $(BUILD_DIR)/jquery.cytoscapeweb.js
 MIN_JS_W_DEPS_FILE = $(JS_W_DEPS_FILE:%.js=%.min.js)
 MIN_JS_WO_DEPS_FILE = $(JS_WO_DEPS_FILE:%.js=%.min.js)
 MIN_EXTRAS = $(EXTRAS:%.js=$(BUILD_DIR)/%.min.js)
+BUILD_EXTRAS = $(EXTRAS:%=$(BUILD_DIR)/%)
 
 # configure what files to include in the zip
 ZIP_FILE = $(BUILD_DIR)/jquery.cytoscapeweb-$(VERSION).zip
-ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(MIN_EXTRAS) $(DEPENDENCIES_DIR) $(EXTRAS) $(LICENSE) $(README)
+ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(MIN_EXTRAS) $(BUILD_EXTRAS) $(DEPENDENCIES_DIR) $(LICENSE) $(README)
 BUILD_DIR = build
 ZIP_DIR = jquery.cytoscapeweb-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
@@ -46,7 +47,7 @@ all : zip
 
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 	
-minify : $(MIN_JS_W_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_DIR)
+minify : $(MIN_JS_W_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_DIR) $(EXTRAS)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)
@@ -58,15 +59,19 @@ $(ZIP_FILE) : $(ZIP_DIR)
 	$(RM) $(ZIP_DIR)
 
 $(JS_W_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(BUILD)/$(PREAMBLE) $(DEPENDENCIES) $(LIB) > $@
+	$(CAT) $(PREAMBLE) $(DEPENDENCIES) $(LIB) > $@
 
 $(JS_WO_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(BUILD)/$(PREAMBLE) $(LIB) > $@
+	$(CAT) $(PREAMBLE) $(LIB) > $@
+
+$(BUILD_EXTRAS) : $(BUILD_DIR)
+	$(CP) $(@:$(BUILD_DIR)/%=%) $@
+	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILD_DIR) :
 	$(MKDIR) $@
 	$(MKDIR) $(TEMP)
-	$(CP) $(DEPENDENCIES_DIR) $(EXTRAS) $(LICENSE) $(README) $@
 
 # rule for minifying a .js file to a .min.js file
 %.min.js : %.js

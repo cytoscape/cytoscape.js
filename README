@@ -15,7 +15,7 @@ To use Cytoscape Web in your HTML document, you must include the following JS:
 		    
 		    You'll need the dependencies of the SVG renderer.
 		    
-	    	SVG renderer dependencies
+	    	SVG renderer dependencies (found in the `lib` directory)
 	    		* 2D.js
 	    		* jquery.color.js
 	    		* jquery.mousewheel.js

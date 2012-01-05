@@ -84,7 +84,7 @@ $(function(){
 			if( value == null ){
 				return undefined;
 			} else if( typeof value == typeof function(){} ){
-				return value.apply(element, [this.data()]); 
+				return value.apply(element, [element.data()]); 
 			} else {
 				return value;
 			}

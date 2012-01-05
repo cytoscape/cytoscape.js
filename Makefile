@@ -59,15 +59,17 @@ $(ZIP_FILE) : $(ZIP_DIR)
 	$(RM) $(ZIP_DIR)
 
 $(JS_W_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(PREAMBLE) $(DEPENDENCIES) $(LIB) > $@
+	$(CAT) $(DEPENDENCIES) $(LIB) > $@
+	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(JS_WO_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(PREAMBLE) $(LIB) > $@
+	$(CAT) $(LIB) > $@
+	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILD_EXTRAS) : $(BUILD_DIR)
 	$(CP) $(@:$(BUILD_DIR)/%=%) $@
-	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
-	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILD_DIR) :
 	$(MKDIR) $@

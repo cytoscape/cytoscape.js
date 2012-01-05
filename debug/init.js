@@ -108,9 +108,11 @@ $(function(){
 		height = $("#cytoscapeweb").height();
 		width = $("#cytoscapeweb").width();
 		
-//		$container.cytoscapewebPanzoom({
-//			
-//		});
+		// enable this again later...
+		
+		$container.cytoscapewebPanzoom({
+			
+		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

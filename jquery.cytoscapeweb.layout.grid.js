@@ -149,9 +149,14 @@ $(function(){
 			cy.reset();
 		} 
 		
-		if( params.ready != null && typeof params.ready == typeof function(){} ){
-			params.ready();
+		function exec(fn){
+			if( fn != null && typeof fn == typeof function(){} ){
+				fn();
+			}
 		}
+		
+		exec( params.ready );
+		exec( params.done );
 	};
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);

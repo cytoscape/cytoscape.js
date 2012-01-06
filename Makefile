@@ -19,7 +19,7 @@ VERSION = 2.0-snapshot
 DEPENDENCIES_DIR = lib
 DEPENDENCIES = lib/jquery.color.js lib/jquery.svg.js lib/2D.js lib/jquery.mousewheel.js
 LIB = jquery.cytoscapeweb.core.js jquery.cytoscapeweb.renderer.null.js jquery.cytoscapeweb.renderer.svg.js jquery.cytoscapeweb.layout.null.js jquery.cytoscapeweb.layout.random.js jquery.cytoscapeweb.layout.grid.js jquery.cytoscapeweb.layout.preset.js
-EXTRAS = jquery.cytoscapeweb.layout.arbor.js jquery.cytoscapeweb.layout.springy.js
+EXTRAS = jquery.cytoscapeweb.layout.arbor.js jquery.cytoscapeweb.layout.springy.js jquery.cytoscapeweb-panzoom.js jquery.cytoscapeweb-panzoom.css
 
 # names of the cytoscape web release js files
 JS_W_DEPS_FILE = $(BUILD_DIR)/jquery.cytoscapeweb.all.js
@@ -47,7 +47,7 @@ all : zip
 
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 	
-minify : $(MIN_JS_W_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_DIR) $(EXTRAS)
+minify : $(MIN_JS_W_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_DIR) $(BUILD_EXTRAS)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)
@@ -61,15 +61,17 @@ $(ZIP_FILE) : $(ZIP_DIR)
 $(JS_W_DEPS_FILE) : $(BUILD_DIR)
 	$(CAT) $(DEPENDENCIES) $(LIB) > $@
 	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
-	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(JS_WO_DEPS_FILE) : $(BUILD_DIR)
 	$(CAT) $(LIB) > $@
 	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
-	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILD_EXTRAS) : $(BUILD_DIR)
 	$(CP) $(@:$(BUILD_DIR)/%=%) $@
+	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 $(BUILD_DIR) :
 	$(MKDIR) $@
@@ -79,7 +81,7 @@ $(BUILD_DIR) :
 %.min.js : %.js
 	$(YUI) $(YUIFLAGS) $? -o $@
 	$(SED) "s/VERSION/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
-	$(PRINTF) "\n// $(@F)\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+	$(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 clean : 
 	$(RM) $(BUILD_DIR)

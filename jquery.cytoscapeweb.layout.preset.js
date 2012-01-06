@@ -45,9 +45,14 @@ $(function(){
 			cy.fit();
 		}
 		
-		if( options.ready != null && typeof options.ready == typeof function(){} ){
-			options.ready();
+		function exec(fn){
+			if( fn != null && typeof fn == typeof function(){} ){
+				fn();
+			}
 		}
+		
+		exec( params.ready );
+		exec( params.done );
 	};
 	
 	$.cytoscapeweb("layout", "preset", PresetLayout);

@@ -21,6 +21,12 @@ $(function(){
 		$.cytoscapeweb("debug", "Creating force-directed layout");
 	}
 	
+	function exec(fn){
+		if( fn != null && typeof fn == typeof function(){} ){
+			fn();
+		}
+	}
+	
 	ForceDirectedLayout.prototype.run = function(params){
 		var options = $.extend(true, {}, defaults, params);
 		$.cytoscapeweb("debug", "Running force-directed layout with options (%o)", options);
@@ -36,8 +42,11 @@ $(function(){
 			cy.reset();
 		};
 		
-		var doneTime = 3 * 1000/options.fps;
+		var framesToDoneCheck = 3;
+		var doneTime = framesToDoneCheck * 1000/options.fps;
 		var doneTimeout;
+		
+		var ready = false;
 		
 		var sysRenderer = {
 			init: function(system){
@@ -68,6 +77,11 @@ $(function(){
 				
 				if( movedNodes.size() > 0 ){
 					movedNodes.rtrigger("position");
+				}
+				
+				if( !ready ){
+					ready = true;
+					exec( params.ready );
 				}
 			}
 			
@@ -127,11 +141,7 @@ $(function(){
 			}
 		};
 		nodes.bind("grab drag dragstop", grabHandler);
-		
-		if( typeof Math.seedrandom == typeof function(){} ){
-			Math.seedrandom(options.seed);
-		}
-	  	
+			  	
 		nodes.each(function(i, node){
 			var id = this._private.data.id;
 			var mass = calculateValueForElement(this, options.nodeMass);
@@ -193,9 +203,7 @@ $(function(){
 					grabbableNodes.grabify();
 				}
 				
-				if( params.ready != null && typeof params.ready == typeof function(){} ){
-					params.ready();
-				}
+				exec( params.done );
 			}
 		};
 		

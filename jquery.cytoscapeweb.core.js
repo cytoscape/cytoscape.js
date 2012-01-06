@@ -2998,7 +2998,7 @@
 					return this;
 				},
 				
-				load: function(elements, onload){
+				load: function(elements, onload, ondone){
 					// remove old elements
 					cy.elements().remove();
 				
@@ -3039,12 +3039,21 @@
 									collection: cy.elements(),
 									style: structs.style
 								});
+								
+								if( isFunction(onload) ){
+									onload.apply(cy, [cy]);
+								}
+								cy.trigger("layoutready");
+							},
+							done: function(){
+								if( isFunction(ondone) ){
+									ondone.apply(cy, [cy]);
+								}
+								cy.trigger("layoutdone");
 							}
 						});
 						
-						if( isFunction(onload) ){
-							onload.apply(cy, [cy]);
-						}
+						
 					}
 					
 					// TODO remove timeout when chrome reports dimensions onload properly
@@ -3215,9 +3224,18 @@
 			
 			var layout;
 			
-			cy.load(options.elements, function(){
-				options.ready.apply(cy, [cy]);
+			cy.load(options.elements, function(){ // onready
+				if( isFunction( options.ready ) ){
+					options.ready.apply(cy, [cy]);
+				}
+				
 				cy.trigger("ready");
+			}, function(){ // ondone
+				if( isFunction( options.done ) ){
+					options.done.apply(cy, [cy]);
+				}
+				
+				cy.trigger("done");
 			});
 			
 			return cy;

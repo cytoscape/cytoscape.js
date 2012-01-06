@@ -1,23 +1,3 @@
-
-// jquery.cytoscapeweb.layout.springy.js
-
-/**
- * This file is part of Cytoscape Web 2.0-snapshot.
- * 
- * Cytoscape Web is free software: you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- * 
- * Cytoscape Web is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License along with
- * Cytoscape Web. If not, see <http://www.gnu.org/licenses/>.
- */
- 
 $(function(){
 	
 	var defaults = {
@@ -28,12 +8,18 @@ $(function(){
 	};
 	
 	function ForceDirectedLayout(){
-		$.cytoscapeweb("debug", "Creating force-directed layout with options");
+		$.cytoscapeweb("debug", "Creating Springy layout with options");
+	}
+	
+	function exec(fn){
+		if( fn != null && typeof fn == typeof function(){} ){
+			fn();
+		}
 	}
 	
 	ForceDirectedLayout.prototype.run = function(params){
 		var options = $.extend(true, {}, defaults, params);
-		$.cytoscapeweb("debug", "Running preset layout with options (%o)", options);
+		$.cytoscapeweb("debug", "Running Springy layout with options (%o)", options);
 	
 		var cy = params.cy;
 		var nodes = cy.nodes();
@@ -82,6 +68,8 @@ $(function(){
 		
 		var movedNodes = cy.collection();
 		
+		var numNodes = cy.nodes().size();
+		var drawnNodes = 1;
 		var fdRenderer = new Renderer(10, layout,
 		  function clear() {
 		    // code to clear screen
@@ -105,6 +93,13 @@ $(function(){
 			} else {
 				setLayoutPositionForElement(element);
 			}
+			
+			if( drawnNodes == numNodes ){
+				exec( params.ready );
+			} 
+			
+			drawnNodes++;
+			
 		   
 		  }
 		);
@@ -174,9 +169,7 @@ $(function(){
 					cy.fit();
 				}
 				
-				if( params.ready != null && typeof params.ready == typeof function(){} ){
-					params.ready();
-				}
+				exec( params.done );
 			});
 			
 			

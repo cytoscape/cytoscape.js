@@ -2683,8 +2683,15 @@
 			}
 			
 			var prevLayoutOptions = options.layout;
-			
+						
 			function cybind(target, events, data, handler){
+				
+				var one;
+				if( isPlainObject(target) ){
+					one = target.one;
+					target = target.target;
+				}
+				
 				if( handler === undefined ){
 					handler = data;
 					data = undefined;
@@ -2703,7 +2710,8 @@
 					
 					structs.listeners[target][event].push({
 						callback: handler,
-						data: data
+						data: data,
+						one: one
 					});
 				});
 			}
@@ -2749,7 +2757,9 @@
 					return;
 				}
 				
-				$.each(structs.listeners[target][type], function(i, listener){
+				for(var i = 0; i < structs.listeners[target][type].length; i++){
+					var listener = structs.listeners[target][type][i];
+					
 					var eventObj;
 					if( isPlainObject(event) ){
 						eventObj = event;
@@ -2768,21 +2778,34 @@
 						});
 					}
 					
+					if( listener.one ){
+						structs.listeners[target][type].splice(i, 1);
+						i--;
+					}
+					
 					listener.callback.apply(cy, args);
-				});
+				}
 			}
 			
 			var background = {
+				one: function(event, data, handler){
+					cybind({ one: true, target: "background" }, event, data, handler);
+					return this;
+				},
+					
 				bind: function(event, data, handler){
 					cybind("background", event, data, handler);
+					return this;
 				},
 				
 				unbind: function(event, handler){
 					cyunbind("background", event, handler);
+					return this;
 				},
 				
 				trigger: function(event, data){
 					cytrigger("background", event, data);
+					return this;
 				}
 			};
 			
@@ -2792,7 +2815,13 @@
 				container: function(){
 					return $(options.container);
 				},
+				
+				one: function(event, data, handler){
+					cybind({ one: true, target: "cy" }, event, data, handler);
 					
+					return this;
+				},
+				
 				bind: function(event, data, handler){
 					cybind("cy", event, data, handler);
 					
@@ -2936,7 +2965,11 @@
 						prevLayoutOptions = params;
 					}
 					
-					cy.trigger("layoutstart");
+					if( isFunction( params.start ) ){
+						cy.one();
+					}
+					cy.trigger("layoutstart");		
+					
 					layout.run( $.extend({}, params, {
 						renderer: renderer,
 						cy: cy

@@ -81,6 +81,7 @@ $(function(){
 				
 				if( !ready ){
 					ready = true;
+					cy.trigger("layoutready");
 					exec( params.ready );
 				}
 			}
@@ -203,7 +204,8 @@ $(function(){
 					grabbableNodes.grabify();
 				}
 				
-				exec( params.done );
+				cy.trigger("layoutstop");
+				exec( params.stop );
 			}
 		};
 		

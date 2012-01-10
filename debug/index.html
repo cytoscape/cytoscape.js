@@ -83,9 +83,9 @@
 	    	<label for="edges-number">Edges</label> <input type="text" id="edges-number" />
 	    	<button id="add-elements-button">Add</button>
 	    	<button id="remove-selected-button">Remove selected</button> <br />
-	    	<span id="add-remove-time">&nbsp;</span>
+	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small>
 	    	
-	    	<h2>Binding</h2>
+	    	<h2>Element binding</h2>
 	    	<select id="bind-type-select">
 	    		<option value="bind">Bind</option>
 	    		<option value="one">One</option>
@@ -104,18 +104,53 @@
 	    		<option value="mouseover">mouseover</option>
 	    		<option value="mouseout">mouseout</option>
 	    		<option value="mousemove">mousemove</option>
-	    		<option value="position">position</option>
+	    		<option value="touchstart">touchstart</option>
+	    		<option value="touchmove">touchmove</option>
+	    		<option value="touchend">touchend</option>
 	    		<option value="data">data</option>
 	    		<option value="select">select</option>
 	    		<option value="unselect">unselect</option>
 	    		<option value="lock">lock</option>
 	    		<option value="unlock">unlock</option>
+	    		<option value="position">position</option>
 	    		<option value="grab">grab</option>
+	    		<option value="drag">drag</option>
 	    		<option value="free">free</option>
 	    		<option value="grabify">grabify</option>
 	    		<option value="ungrabify">ungrabify</option>
+	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	<button id="bind-button">Apply</button>
+	    	
+	    	<h2>Core binding</h2>
+	    	<select id="core-bind-type-select">
+	    		<option value="bind">Bind</option>
+	    		<option value="one">One</option>
+	    		<option value="unbind">Unbind</option>
+	    	</select>
+	    	to
+	    	<select id="core-bind-target-select">
+	    		<option value="core">core</option>
+	    		<option value="background">background</option>
+	    	</select>
+	    	for<br />
+	    	<select id="core-bind-event-select">
+	    		<option value="click">click</option>
+	    		<option value="mousedown">mousedown</option>
+	    		<option value="mouseup">mouseup</option>
+	    		<option value="mouseover">mouseover</option>
+	    		<option value="mouseout">mouseout</option>
+	    		<option value="mousemove">mousemove</option>
+	    		<option value="touchstart">touchstart</option>
+	    		<option value="touchmove">touchmove</option>
+	    		<option value="touchend">touchend</option>
+	    		<option value="layoutstart">layoutstart</option>
+	    		<option value="layoutready">layoutready</option>
+	    		<option value="layoutstop">layoutend</option>
+	    		<option value="">null (unbind all)</option>
+	    	</select>
+	    	<button id="core-bind-button">Apply</button>
+	    	
 	    	
 	    	<h2>Filtering</h2>
 	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />

@@ -95,6 +95,7 @@ $(function(){
 			}
 			
 			if( drawnNodes == numNodes ){
+				cy.trigger("layoutready");
 				exec( params.ready );
 			} 
 			
@@ -169,7 +170,8 @@ $(function(){
 					cy.fit();
 				}
 				
-				exec( params.done );
+				cy.trigger("layoutstop");
+				exec( params.stop );
 			});
 			
 			

@@ -3,29 +3,29 @@ Usage dependencies
 
 To use Cytoscape Web in your HTML document, you must include the following JS:
 
-	* jQuery 1.3.2 or 1.7.1 (or newer)
+  * jQuery 1.3.2 or 1.7.1 (or newer)
 	
-	* One of
+  * One of
 	
-		* jquery.cytoscapeweb[.min].js
+    * jquery.cytoscapeweb[.min].js
 		    
-		    Either the minified or unminified Cytoscape Web code WITHOUT ANY
-		    dependencies.  When using this file, you must include the
-		    appropriate dependencies in the `lib` directory in your HTML file.
+      Either the minified or unminified Cytoscape Web code WITHOUT ANY
+      dependencies.  When using this file, you must include the
+      appropriate dependencies in the `lib` directory in your HTML file.
+
+      You'll need the dependencies of the SVG renderer.
 		    
-		    You'll need the dependencies of the SVG renderer.
-		    
-	    	SVG renderer dependencies (found in the `lib` directory)
-	    		* 2D.js
-	    		* jquery.color.js
-	    		* jquery.mousewheel.js
-	    		* jquery.svg.js
+      SVG renderer dependencies (found in the `lib` directory)
+        * 2D.js
+        * jquery.color.js
+        * jquery.mousewheel.js
+        * jquery.svg.js
 		
-		* jquery.cytoscapeweb.all[.min].js
+    * jquery.cytoscapeweb.all[.min].js
 		    
-		    Either the minified or unminified Cytoscape Web code WITH ALL
-		    dependencies.  When using this file, you do not need to include
-		    any of the dependencies for the SVG renderer.
+        Either the minified or unminified Cytoscape Web code WITH ALL
+        dependencies.  When using this file, you do not need to include
+        any of the dependencies for the SVG renderer.
 
 
 We'd like to thank the academy...
@@ -75,10 +75,10 @@ Build instructions
 
 Run `make` in the console.  The targets are:
 
-	all : build everything (default)
-	minify : build the production minified JS
-	zip : minify and make a ZIP file for release
-	clean : deletes built files
+  all : build everything (default)
+  minify : build the production minified JS
+  zip : minify and make a ZIP file for release
+  clean : deletes built files
 
 A note to developers:
 

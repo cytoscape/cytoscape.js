@@ -8,6 +8,7 @@ $(function(){
 				name: $("#layout-select").val()
 			});
 		});
+		
 	});
 
 });

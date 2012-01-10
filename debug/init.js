@@ -31,6 +31,12 @@ $(function(){
 					}
 				},
 				
+				"edge:selected": {
+					lineColor: "#666",
+					targetArrowColor: "#666",
+					sourceArrowColor: "#666"
+				},
+				
 				"node": {
 					labelText: {
 						defaultValue: "",
@@ -59,6 +65,10 @@ $(function(){
 							}
 						}
 					}
+				},
+				
+				"node:selected": {
+					fillColor: "#333"
 				}
 			}
 		},

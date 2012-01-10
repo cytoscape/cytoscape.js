@@ -155,8 +155,11 @@ $(function(){
 			}
 		}
 		
+		cy.trigger("layoutready");
 		exec( params.ready );
-		exec( params.done );
+		
+		cy.trigger("layoutstop");
+		exec( params.stop );
 	};
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);

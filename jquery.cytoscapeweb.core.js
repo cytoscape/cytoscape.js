@@ -2936,6 +2936,7 @@
 						prevLayoutOptions = params;
 					}
 					
+					cy.trigger("layoutstart");
 					layout.run( $.extend({}, params, {
 						renderer: renderer,
 						cy: cy

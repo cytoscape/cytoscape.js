@@ -226,8 +226,7 @@ $(function(){
 							labelHalign: "middle"
 						},
 						"node:selected": {
-							borderWidth: 3,
-							fillColor: "lightblue"
+							borderWidth: 3
 						},
 						"edge": {
 							lineColor: edgeColor,
@@ -235,8 +234,6 @@ $(function(){
 							targetArrowColor: edgeColor
 						},
 						"edge:selected": {
-							lineColor: edgeColor,
-							targetArrowColor: edgeColor,
 							width: 3
 						}
 					}

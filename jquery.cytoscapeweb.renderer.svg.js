@@ -40,10 +40,6 @@ $(function(){
 					labelOpacity: 1,
 					labelOutlineOpacity: 1
 				},
-				"node:selected": {
-					fillColor: "#222",
-					borderColor: "#000"
-				},
 				"edge": {
 					lineColor: "#ccc",
 					targetArrowColor: "#ccc",
@@ -70,11 +66,6 @@ $(function(){
 					labelFontWeight: "bold",
 					labelOutlineOpacity: 1,
 					labelOpacity: 1
-				},
-				"edge:selected": {
-					lineColor: "#666",
-					targetArrowColor: "#666",
-					sourceArrowColor: "#666"
 				}
 			},
 			global: {
@@ -762,31 +753,15 @@ $(function(){
 			}
 		});
 		
-		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout", function(e){
-			var event = $.extend({}, e, { cyTarget: self.cy });
+		$(svgDomElement).bind("mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend", function(e){
 			
-			self.cy.background().trigger(event);
-			
-			if( e.type == "mouseover" && e.target != svgDomElement ){
-				return;
+			// only pass along if bg is the target: when an element gets an event, it automatically bubbles up to
+			// core and bg via the core (CyElement) logic
+			if( backgroundIsTarget(e) ){
+				var event = $.extend({}, e, { cyTarget: self.cy });
+				self.cy.background().trigger(event);
+				self.cy.trigger(event);
 			}
-			
-			if( e.type == "mouseout" ){
-				var parents = $(e.toElement).parents();
-				
-				if( e.toElement == svgDomElement ){
-					return;
-				}
-				
-				for(var i = 0; i < parents.size(); i++){
-					var parent = parents.eq(i);
-					if( parent[0] == svgDomElement ){
-						return;
-					}
-				}
-			}
-			
-			self.cy.trigger(event);
 		});
 		
 	};
@@ -1150,7 +1125,7 @@ $(function(){
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
-		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click touchstart touchend mouseover mousemove mouseout", function(e){
+		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click touchstart touchmove touchend mouseover mousemove mouseout", function(e){
 			element.trigger(e);
 		}).bind("click touchend", function(e){
 			self.selectElement(element);
@@ -1251,6 +1226,7 @@ $(function(){
 					justStartedDragging = false;
 					
 				} else {
+					element.trigger($.extend({}, dragEvent, { type: "position" }));
 					element.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
 				

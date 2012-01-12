@@ -13,7 +13,7 @@ CD = cd
 PWD = pwd
 
 # version (update this when building release zip)
-VERSION = 2.0-snapshot
+VERSION = snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 
 # targets (add scripts here to add to the release zip)
 DEPENDENCIES_DIR = lib

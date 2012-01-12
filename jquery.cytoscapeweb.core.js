@@ -267,9 +267,11 @@
 			
 			// return a deep copy of an object
 			function copy(obj){
-				if( isArray(obj) ){
+				if( obj == null ){
+					return obj;
+				} if( isArray(obj) ){
 					return $.extend(true, [], obj);
-				} else if( isPlainObject(obj) || obj == null ){
+				} else if( isPlainObject(obj) ){
 					return $.extend(true, {}, obj);
 				} else {
 					return obj;
@@ -436,11 +438,11 @@
 				}
 				
 				this._private = {
-					data: copy( params.data ), // data object
-					position: copy( params.position ), // fields x, y, etc (could be 3d or radial coords; renderer decides)
+					data: copy( params.data ) || {}, // data object
+					position: copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 					listeners: {}, // map ( type => array of function spec objects )
 					group: params.group, // string; "nodes" or "edges"
-					bypass: copy( params.bypass ), // the bypass object
+					bypass: copy( params.bypass ) || {}, // the bypass object
 					style: {}, // the rendered style populated by the renderer
 					removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 					selected: params.selected ? true : false, // whether it's selected

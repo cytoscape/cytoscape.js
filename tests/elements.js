@@ -412,6 +412,9 @@ $(function(){
 		var n1n2 = cy.edges("#n1n2"); // 0.33 
 		var n2n3 = cy.edges("#n2n3"); // 0.66
 		
+		n1.data("weird", "foo\nbar");
+		n2.data("weird", "foo, bar");
+		
 		ok( cy.filter("[weight=0.5]").allSame( n2 ), "n2 weight = 0.5" );
 		ok( cy.filter("[weight>=0.5]").allSame( n2.add(n3).add(n2n3) ), "n2 weight >= 0.5" );
 		ok( cy.filter("node").allSame( cy.nodes() ), "filter node same as cy.nodes()" );
@@ -432,7 +435,8 @@ $(function(){
 		ok( cy.filter("node.odd").allSame( n1.add(n3) ), "node.odd" );
 		ok( cy.filter(".odd.even").size() == 0, ".odd.even" );
 		ok( cy.filter(".one.odd").allSame(n1), ".one.odd" );
-		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );
+		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );	
+		ok( cy.filter("[weird = 'foo, bar']").allSame(n2), "[weird = 'foo, bar']" );
 	});
 	
 	asyncTest("Bypass", function(){

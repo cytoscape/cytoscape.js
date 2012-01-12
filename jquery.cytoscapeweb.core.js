@@ -1767,6 +1767,11 @@
 			CyCollection.prototype.allSame = function(collection){
 				collection = collection.collection();
 				
+				// cheap check to make sure A.allSame(B) == B.allSame(A)
+				if( collection.size() != this.size() ){
+					return false;
+				}
+				
 				var ret = true;
 				for(var i = 0; i < collection.size(); i++){
 					var collectionElement = collection.eq(i);
@@ -2115,21 +2120,49 @@
 					selectorText: null,
 					invalid: true
 				}
+			
 				
-				if( selector == null ){
+				if( selector == null || selector.match(/^\s*$/) ){
 					// ignore
 					self.length = 0;					
 				} else if( isString(selector) ){
 				
 					var str = selector;
 					self._private.selectorText = selector;
+					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\.[\\w_]+)|(#[\\w_]+))*)";
 					
-					var queries = str.split(/,\s*/);
+					var remaining = str;
+					var queries = [];
+					while( true ){
+						match = remaining.match(new RegExp( "(" + queryRegex + ")(\\s*,\\s*(.+))?" ));
+						
+						if( match != null ){
+							queries.push( match[1] );
+							
+							var rmatch = remaining.match(new RegExp( queryRegex + "\\s*,\\s*(.+)" ));
+							if( rmatch != null ){
+								remaining = rmatch[ rmatch.length - 1 ];
+							} else {
+								break;
+							}
+						} else {
+							break;
+						}
+					}
 					
+					// get rid of empty ones
+					for(var i = 0; i < queries.length; i++){
+						if( queries[i] == null || queries[i] == "" ){
+							queries.splice(i, 1);
+							i--;
+						}
+					}
+					
+					// create the query objects
 					self.length = queries.length;
 					for(var i = 0; i < queries.length; i++){
 						var query = queries[i];
-						var q = query.match(/^(node|edge|)(((:[a-z]+)|(\[.+\])|(\.[\w_]+)|(#[\w_]+))*)$/);
+						var q = query.match(new RegExp( "^" + queryRegex + "$" ));
 						self[i] = {};
 						
 						if( q == null ){
@@ -2209,7 +2242,7 @@
 							var bracket = dataSelectors[j];
 							var b = bracket.replace("[", "").replace("]", "");
 							
-							var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
+							var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>|\*=|\^=|\$=|@=|@\*=|@\^=|@\$=){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
 							
 							if(match == null){
 								console.error("Invalid attribute selector `%s` in parent selector `%s`", bracket, str);
@@ -2364,14 +2397,38 @@
 							}
 							
 							var value = data.value;
-							
 							var field = data.field;
-							
 							var matches;
 							
 							if( operator != null && value != null ){
-								var expr = "element._private.data." + field + " " + operator + " " + value;
-								matches = eval(expr);
+								
+								var fieldStr = "" + element._private.data[field];
+								var valStr = "" + eval(value);
+								
+								if( operator.length == 3 && operator.charAt(0) == "@" ){
+									fieldStr = fieldStr.toLowerCase();
+									valStr = valStr.toLowerCase();
+									
+									operator = operator.substring(1);
+								}
+								
+								switch(operator){
+								case "*=":
+									matches = fieldStr.search(valStr) >= 0;
+									break;
+								case "@=":
+									matches = fieldStr.toLowerCase() == valStr.toLowerCase();
+									break;
+								case "$=":
+									matches = new RegExp(valStr + "$").exec(fieldStr) != null;
+									break;
+								case "^=":
+									matches = new RegExp("^" + valStr).exec(fieldStr) != null;
+									break;
+								default:
+									var expr = "element._private.data." + field + " " + operator + " " + value;
+									matches = eval(expr);
+								}
 							} else {
 								matches = element._private.data[field] !== undefined;
 							}
@@ -3097,7 +3154,7 @@
 					if( window.chrome ){
 						setTimeout(function(){
 							callback();
-						}, 10);
+						}, 30);
 					} else {
 						callback();
 					}

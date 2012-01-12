@@ -15,6 +15,7 @@ $(function(){
 					fillOpacity: 1,
 					borderColor: "#666",
 					borderOpacity: 1,
+					opacity: 1,
 					borderWidth: 0,
 					borderStyle: "solid",
 					height: 10,
@@ -1993,6 +1994,10 @@ $(function(){
 			strokeOpacity: percent(style.borderOpacity),
 			cursor: cursor(style.cursor),
 			"visibility": visibility(style.visibility)
+		});
+		
+		this.svg.change(element._private.svgGroup, {
+			opacity: percent(style.opacity)
 		});
 		
 		// styles for label		

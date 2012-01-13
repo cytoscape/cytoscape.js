@@ -2261,6 +2261,11 @@
 								var operator = match[2];
 								var value = match[3];
 								
+								if( !params.validField(field) ){
+									console.error("Invalid selector `%s`; field `%s` is not valid", str, value);
+									return;
+								}
+								
 								if( operator == null && value != null ){
 									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
 									return;
@@ -2293,21 +2298,38 @@
 									value: value
 								});
 							} // each bracket text
+							
+							return true;
 						}
 						
-						addOperandSelectors({
+						var dataValid = addOperandSelectors({
 							name: "data",
 							selectors: dataSelectors,
 							openParen: "[",
-							closeParen: "]"
+							closeParen: "]",
+							validField: function(field){
+								return true;
+							}
 						});
+						if( !dataValid ){ return; }
 						
-						addOperandSelectors({
+						var metaValid = addOperandSelectors({
 							name: "meta",
 							selectors: metaSelectors,
 							openParen: "{",
-							closeParen: "}"
+							closeParen: "}",
+							validField: function(field){
+								switch(field){
+								case "degree":
+								case "indegree":
+								case "outdegree":
+									return true;
+								default:
+									return false;
+								}
+							}
 						});
+						if( !metaValid ){ return; }
 						
 					} // each query
 				} else {
@@ -2464,7 +2486,7 @@
 										
 									}
 								} else {
-									matches = params.fieldValue(field) !== undefined;
+									matches = !params.fieldEmpty(field);
 								}
 								
 								if( !matches ){
@@ -2483,6 +2505,9 @@
 							},
 							fieldExpr: function(field){
 								return "element._private.data." + field;
+							},
+							fieldEmpty: function(field){
+								return element._private.data[field] === undefined;
 							}
 						});
 						
@@ -2497,6 +2522,9 @@
 							},
 							fieldExpr: function(field){
 								return "element." + field + "()";
+							},
+							fieldEmpty: function(field){
+								return element[field]() == null;
 							}
 						});
 						

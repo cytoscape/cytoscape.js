@@ -160,6 +160,24 @@ $(function(){
 		});
 		
 		test({
+			name: "labelWithWeight",
+			displayName: "Labels with weight",
+			description: "Show weight in node labels",
+			setup: function(){
+				var style = cy.style();
+				style.selectors["node"].labelText = {
+					customMapper: function(data){
+						return data.id + " : " + Math.floor(data.weight);
+					}
+				};
+				cy.style( style );
+			},
+			teardown: function(){
+				cy.style( window.options.style );
+			}
+		});
+		
+		test({
 			name: "hideOnClick",
 			displayName: "Hide on click",
 			description: "Hide nodes and edges when clicked",

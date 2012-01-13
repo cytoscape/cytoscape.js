@@ -2129,7 +2129,7 @@
 				
 					var str = selector;
 					self._private.selectorText = selector;
-					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\.[\\w_]+)|(#[\\w_]+))*)";
+					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))*)";
 					
 					var remaining = str;
 					var queries = [];
@@ -2187,16 +2187,22 @@
 						var selectors = q[2];
 
 						var dataSelectors = selectors.match(/(\[.+?\])/g);
-						
 						var split = selectors.split(/\[.+?\]/);
 						var selectorsWithoutData = "";
 						$.each(split, function(i, str){
 							selectorsWithoutData += str;
 						});
 						
-						var colonSelectors = selectorsWithoutData.match(/(:[a-z]+)/g);
-						var classSelectors = selectorsWithoutData.match(/(\.[\w_]+)/g);
-						var idSelectors = selectorsWithoutData.match(/(#[\w_]+)/g);
+						var metaSelectors = selectorsWithoutData.match(/(\{.+?\})/g);
+						split = selectorsWithoutData.split(/(\{.+?\})/g);
+						var selectorsWoMetaAndData = "";
+						$.each(split, function(i, str){
+							selectorsWoMetaAndData += str;
+						});
+						
+						var colonSelectors = selectorsWoMetaAndData.match(/(:[a-z]+)/g);
+						var classSelectors = selectorsWoMetaAndData.match(/(\.[\w_]+)/g);
+						var idSelectors = selectorsWoMetaAndData.match(/(#[\w_]+)/g);
 						
 						// validate colon selectors
 						///////////////////////////
@@ -2237,60 +2243,79 @@
 						// validate data selectors
 						//////////////////////////
 						
-						self[i].data = [];
-						for(var j = 0; dataSelectors != null && j < dataSelectors.length; j++){
-							var bracket = dataSelectors[j];
-							var b = bracket.replace("[", "").replace("]", "");
+						function addOperandSelectors(params){
 							
-							var match = b.match(/^\s*(\w+)\s*(=|!=||>=||<=|<|>|\*=|\^=|\$=|@=|@\*=|@\^=|@\$=){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
-							
-							if(match == null){
-								console.error("Invalid attribute selector `%s` in parent selector `%s`", bracket, str);
-								return;
-							}
-							
-							var field = match[1];
-							var operator = match[2];
-							var value = match[3];
-							
-							if( operator == null && value != null ){
-								console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
-								return;
-							}
-							
-							if( value == null && operator != null ){
-								console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
-								return;
-							}
-							
-							if( value != null && operator != null ){
-								var valueAsNumber = parseFloat( value );
-								var valueIsNumber = !isNaN(valueAsNumber);
+							self[i][params.name] = [];
+							for(var j = 0; params.selectors != null && j < params.selectors.length; j++){
+								var bracket = params.selectors[j];
+								var b = bracket.replace(params.openParen, "").replace(params.closeParen, "");
 								
-								if( !valueIsNumber ){
-									// then value must be enclosed in quotes
+								var match = b.match(/^\s*(\w+)\s*((?:@?)(?:=|!=||>=||<=|<|>|\*=|\^=|\$=|\$=)){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
+								
+								if(match == null){
+									console.error("Invalid operand selector `%s` in parent selector `%s`", bracket, str);
+									return;
+								}
+								
+								var field = match[1];
+								var operator = match[2];
+								var value = match[3];
+								
+								if( operator == null && value != null ){
+									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
+									return;
+								}
+								
+								if( value == null && operator != null ){
+									console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
+									return;
+								}
+								
+								if( value != null && operator != null ){
+									var valueAsNumber = parseFloat( value );
+									var valueIsNumber = !isNaN(valueAsNumber);
 									
-									if( value.match(/^'.+'$/) || value.match(/^".+"$/) ){
-										// value is enclosed in quotes
-									} else {
-										console.error("Invalid selector `%s`; string value must be enclosed in quotes `%s`", str, value);
-										return;
+									if( !valueIsNumber ){
+										// then value must be enclosed in quotes
+										
+										if( value.match(/^'.+'$/) || value.match(/^".+"$/) ){
+											// value is enclosed in quotes
+										} else {
+											console.error("Invalid selector `%s`; string value must be enclosed in quotes `%s`", str, value);
+											return;
+										}
 									}
 								}
-							}
-															
-							self[i].data.push({
-								field: field,
-								operator: operator,
-								value: value
-							});
-						} // each bracket text
+																
+								self[i][params.name].push({
+									field: field,
+									operator: operator,
+									value: value
+								});
+							} // each bracket text
+						}
+						
+						addOperandSelectors({
+							name: "data",
+							selectors: dataSelectors,
+							openParen: "[",
+							closeParen: "]"
+						});
+						
+						addOperandSelectors({
+							name: "meta",
+							selectors: metaSelectors,
+							openParen: "{",
+							closeParen: "}"
+						});
 						
 					} // each query
 				} else {
 					console.error("A selector must be created from a string; found %o", selector);
 					return;
 				}
+				
+				console.log(this);
 				
 				self._private.invalid = false;
 			};
@@ -2387,61 +2412,102 @@
 						}
 						if( !allClassesMatch ) continue;
 						
-						var allDataMatches = true;
-						for(var k = 0; k < query.data.length; k++){
-							var data = query.data[k];
-							
-							var operator = data.operator;
-							if( operator == "=" ){
-								operator = "==";
-							}
-							
-							var value = data.value;
-							var field = data.field;
-							var matches;
-							
-							if( operator != null && value != null ){
+						function operandsMatch(params){
+							var allDataMatches = true;
+							for(var k = 0; k < query[params.name].length; k++){
+								var data = query[params.name][k];
 								
-								var fieldStr = "" + element._private.data[field];
-								var valStr = "" + eval(value);
+								var operator = data.operator;
 								
-								if( operator.length == 3 && operator.charAt(0) == "@" ){
-									fieldStr = fieldStr.toLowerCase();
-									valStr = valStr.toLowerCase();
+								var value = data.value;
+								var field = data.field;
+								var matches;
+								
+								if( operator != null && value != null ){
 									
-									operator = operator.substring(1);
+									var fieldStr = "" + params.fieldValue(field);
+									var valStr = "" + eval(value);
+									
+									var caseInsensitive = false;
+									if( operator.charAt(0) == "@" ){
+										fieldStr = fieldStr.toLowerCase();
+										valStr = valStr.toLowerCase();
+										
+										operator = operator.substring(1);
+										caseInsensitive = true;
+									}
+									
+									if( operator == "=" ){
+										operator = "==";
+									}
+									
+									switch(operator){
+									case "*=":
+										matches = fieldStr.search(valStr) >= 0;
+										break;
+									case "$=":
+										matches = new RegExp(valStr + "$").exec(fieldStr) != null;
+										break;
+									case "^=":
+										matches = new RegExp("^" + valStr).exec(fieldStr) != null;
+										break;
+									default:
+										// if we're doing a case insensitive comparison, then we're using a STING comparison
+										// even if we're comparing numbers
+										if( caseInsensitive ){
+											// eval with lower case strings
+											var expr = "fieldStr " + operator + " valStr";
+											matches = eval(expr);
+										} else {
+											// just eval as normal
+											var expr = params.fieldExpr(field) + " " + operator + " " + value;
+											matches = eval(expr);
+										}
+										
+									}
+								} else {
+									matches = params.fieldValue(field) !== undefined;
 								}
 								
-								switch(operator){
-								case "*=":
-									matches = fieldStr.search(valStr) >= 0;
+								if( !matches ){
+									allDataMatches = false;
 									break;
-								case "@=":
-									matches = fieldStr.toLowerCase() == valStr.toLowerCase();
-									break;
-								case "$=":
-									matches = new RegExp(valStr + "$").exec(fieldStr) != null;
-									break;
-								case "^=":
-									matches = new RegExp("^" + valStr).exec(fieldStr) != null;
-									break;
-								default:
-									var expr = "element._private.data." + field + " " + operator + " " + value;
-									matches = eval(expr);
 								}
-							} else {
-								matches = element._private.data[field] !== undefined;
-							}
+							} // for
 							
-							if( !matches ){
-								allDataMatches = false;
-								break;
+							return allDataMatches;
+						} // operandsMatch
+						
+						var allDataMatches = operandsMatch({
+							name: "data",
+							fieldValue: function(field){
+								return element._private.data[field];
+							},
+							fieldExpr: function(field){
+								return "element._private.data." + field;
 							}
+						});
+						
+						if( !allDataMatches ){
+							continue;
 						}
 						
-						if( allDataMatches ){
-							return true;
+						var allMetaMatches = operandsMatch({
+							name: "meta",
+							fieldValue: function(field){
+								return element[field]();
+							},
+							fieldExpr: function(field){
+								return "element." + field + "()";
+							}
+						});
+						
+						if( !allMetaMatches ){
+							continue;
 						}
+						
+						// we've reached the end, so we've matched everything for this query
+						return true;
 					}
 					
 					return false;

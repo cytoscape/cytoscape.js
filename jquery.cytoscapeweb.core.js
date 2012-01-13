@@ -2314,9 +2314,7 @@
 					console.error("A selector must be created from a string; found %o", selector);
 					return;
 				}
-				
-				console.log(this);
-				
+
 				self._private.invalid = false;
 			};
 			

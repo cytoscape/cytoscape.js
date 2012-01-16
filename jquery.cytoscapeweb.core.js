@@ -88,7 +88,7 @@
 	}
 	
 	function isColor(obj){
-		return obj != null && typeof obj == typeof "" && $.Color(obj).toString != "";
+		return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
 	}
 	
 	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
@@ -449,7 +449,12 @@
 					locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 					grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
 					grabbable: params.grabbable || params.grabbable === undefined ? true : false, // whether the element can be grabbed
-					classes: {} // map ( className => true )
+					classes: {}, // map ( className => true )
+					animation: { // object for currently-running animations
+						current: [],
+						queue: [],
+						delay: 0
+					}  
 				};
 				
 				// renderedPosition overrides if specified
@@ -772,13 +777,18 @@
 			
 			function removerFunction(params){
 				return function(key){
+					var self = this;
+					
 					// remove all
 					if( key === undefined ){
 						this._private[params.field] = {};
 					}
 					
 					else {
-						delete this._private[params.field][key];
+						var keys = key.split(/\s+/);
+						for(var i = 0; i < keys.length; i++){
+							delete this._private[params.field][ keys[i] ];
+						}
 					}
 						
 					if( params.event != null ){
@@ -1032,6 +1042,184 @@
 				
 				if( isPlainObject(positionOpts) ){
 					this.position(positionOpts);
+				}
+			};
+			
+			CyElement.prototype.animate = function( properties, params ){
+				var self = this;
+				
+				if( self._private.animation.current.length > 0 && (params.queue === undefined || params.queue) ){
+					enqueue();
+				} else {
+					run();
+				}
+				
+				function enqueue(){
+					self._private.animation.queue.push({
+						properties: properties,
+						params: params
+					});
+				}
+				
+				function run(){
+					var startTime = +new Date;
+					
+					params = $.extend({}, {
+						duration: 400
+					}, params);
+					
+					switch( params.duration ){
+					case "slow":
+						params.duration = 600;
+						break;
+					case "fast":
+						params.duration = 200;
+						break;
+					}
+					
+					if( properties == null || (properties.position == null && properties.bypass == null) ){
+						return; // nothing to animate
+					}
+					
+					var stepDelay = 13; // this value is used in jquery core
+					var startPosition = copy( self._private.position );
+					var startStyle = copy( self.style() );
+					
+					function step(){
+						var now = +new Date;
+						var percent;
+						
+						if( params.duration == 0 ){
+							percent = 1;
+						} else {
+							percent = Math.min(1, (now - startTime)/params.duration);
+						}
+						
+						function update(p){
+							if( p.end != null ){
+								var start = p.start;
+								var end = p.end;
+								
+								$.each(end, function(name, val){
+									if( valid(start[name], end[name]) ){
+										self._private[p.field][name] = ease( start[name], end[name], percent );
+									}
+								});
+								
+								self.rtrigger(p.event);						
+							}
+						}
+						
+						update({
+							end: properties.position,
+							start: startPosition,
+							field: "position",
+							event: "position"
+						});
+						
+						update({
+							end: properties.bypass,
+							start: startStyle,
+							field: "bypass",
+							event: "bypass"
+						});
+						
+						if( isFunction( params.step ) ){
+							params.step.apply( self, [ now ] );
+						}
+						
+						return percent;
+					}
+						
+					var interval = setInterval(function(){
+						if( step() >= 1 ){ // done at 100%
+							clearInterval( interval );
+							self._private.animation.current = [];
+							
+							if( isFunction( params.complete ) ){
+								params.complete.apply( self, [] );
+							}
+							
+							if( self._private.animation.queue.length > 0 ){
+								var ani = self._private.animation.queue.shift();
+								self.animate( ani.properties, ani.params );
+							}
+						} 
+					}, Math.min(stepDelay, params.duration));
+					
+					self._private.animation.current.push({
+						properties: properties,
+						params: params,
+						interval: interval
+					});
+					
+					function valid(start, end){
+						if( start == null || end == null ){
+							return false;
+						}
+						
+						if( isNumber(start) && isNumber(end) ){
+							return true;
+						} else if( isColor(start) && isColor(end) ){
+							return true;
+						}
+						
+						return false;
+					}
+					
+					function ease(start, end, percent){
+						if( isNumber(start) && isNumber(end) ){
+							return start + (end - start) * percent;
+						} else if( isColor(start) && isColor(end) ){
+							var c1 = $.Color(start).fix().toRGB();
+							var c2 = $.Color(end).fix().toRGB();
+	
+							function ch(ch1, ch2){
+								var diff = ch2 - ch1;
+								var min = ch1;
+								return Math.round( percent * diff + min );
+							}
+							
+							var r = ch( c1.red(), c2.red() );
+							var g = ch( c1.green(), c2.green() );
+							var b = ch( c1.blue(), c2.blue() );
+							
+							return $.Color([r, g, b], "RGB").toHEX().toString();
+						}
+						
+						return undefined;
+					}
+					
+				} // run
+			};
+			
+			CyElement.prototype.stop = function(clearQueue, jumpToEnd){
+				var self = this;
+				
+				var events = {};
+				$.each(self._private.animation.current, function(i, animation){
+					clearInterval( animation.interval );
+					
+					if( jumpToEnd ){
+						$.each(animation.properties, function(propertyName, property){
+							$.each(property, function(field, value){
+								self._private[propertyName][field] = value;
+							});
+							
+							events[propertyName] = true;
+						});
+					}
+				});
+				
+				// trigger events
+				$.each(events, function(event, triggered){
+					self.rtrigger(event);
+				});
+				
+				self._private.animation.current = [];
+				
+				if( clearQueue ){
+					self._private.animation.queue = [];
 				}
 			};
 			
@@ -2089,6 +2277,22 @@
 			
 			CyCollection.prototype.element = function(){
 				return this[0];
+			};
+			
+			CyCollection.prototype.animate = function(){
+				var args = arguments;
+				
+				this.each(function(i, ele){
+					ele.animate.apply( ele, args );
+				});
+			};
+			
+			CyCollection.prototype.stop = function(){
+				var args = arguments;
+				
+				this.each(function(i, ele){
+					ele.stop.apply( ele, args );
+				});
 			};
 			
 			// CyElement functions based on CyCollection functions (to make same API)

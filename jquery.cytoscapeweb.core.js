@@ -1191,6 +1191,8 @@
 					}
 					
 				} // run
+				
+				return this;
 			};
 			
 			CyElement.prototype.stop = function(clearQueue, jumpToEnd){
@@ -1221,6 +1223,8 @@
 				if( clearQueue ){
 					self._private.animation.queue = [];
 				}
+				
+				return this;
 			};
 			
 			CyElement.prototype.show = function(){
@@ -2285,6 +2289,8 @@
 				this.each(function(i, ele){
 					ele.animate.apply( ele, args );
 				});
+				
+				return this;
 			};
 			
 			CyCollection.prototype.stop = function(){
@@ -2293,6 +2299,8 @@
 				this.each(function(i, ele){
 					ele.stop.apply( ele, args );
 				});
+				
+				return this;
 			};
 			
 			// CyElement functions based on CyCollection functions (to make same API)

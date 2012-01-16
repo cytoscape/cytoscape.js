@@ -90,9 +90,6 @@ $(function(){
 								
 				cy.nodes().bind("click", function(){
 					var node = this;
-					
-					var p1 = node.position();
-					
 					var padding = 50;
 					
 					var p2 = {
@@ -100,41 +97,12 @@ $(function(){
 						y: Math.random() * (h - padding) + padding
 					};
 					
-					var delta = {
-						x: p2.x - p1.x,
-						y: p2.y - p1.y
-					};
-						
-					var d = Math.sqrt( delta.x*delta.x + delta.y*delta.y );
-						
-					var v = {
-						x: delta.x/d,
-						y: delta.y/d
-					};
-					
-					var step = 10;
-					var lastP = {
-						x: p1.x,
-						y: p1.y
-					};
-					var interval = setInterval(function(){
-						
-						d -= step;
-						
-						if(d < 0){
-							step = step + d;
-						}
-						
-						lastP = {
-							x: lastP.x + step*v.x,
-							y: lastP.y + step*v.y
-						};
-						node.position(lastP);
-						
-						if( d <= 0 ){
-							clearInterval(interval);
-						}
-					}, 10);
+					node.animate({
+						position: p2
+					},
+					{
+						duration: 1000
+					});
 				});
 			},
 			teardown: function(){
@@ -184,6 +152,42 @@ $(function(){
 			setup: function(){
 				cy.elements().bind("click", function(){
 					this.hide();
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
+			name: "bigRedOnClick",
+			displayName: "Make coloured and sized",
+			description: "Make nodes grow/shrink and change colour on click",
+			setup: function(){
+				cy.nodes().bind("click", function(){
+					function rch(){
+						return Math.round( Math.random() * 255 );
+					}
+					
+					function rcolor(){
+						return "rgb(" + rch() + "," + rch() + "," + rch() + ")"
+					}
+					
+					function rsize(){
+						return 5 + Math.round( Math.random() * 50 );
+					}
+					
+					var size = rsize();
+					
+					this.stop().animate({
+						bypass: {
+							fillColor: rcolor(),
+							height: size,
+							width: size
+						}
+					}, {
+						duration: 1000
+					});
 				});
 			},
 			teardown: function(){

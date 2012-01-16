@@ -2126,12 +2126,27 @@ $(function(){
 			return;
 		}
 		
+		var newSrcStyle = element.source().style();
+		var oldSrcStyle = element._private.oldSourceStyle || newSrcStyle;
+		
+		var newTgtStyle = element.target().style();
+		var oldTgtStyle = element._private.oldTargetStyle || newTgtStyle;
+		
 		var newTargetShape = element._private.style.targetArrowShape;
 		var newSourceShape = element._private.style.sourceArrowShape;
 		
-		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape ){
+		var nodesStyleChanged = newSrcStyle.height != oldSrcStyle.height || newSrcStyle.width != oldSrcStyle.width ||
+			newTgtStyle.height != oldTgtStyle.height || newTgtStyle.width != oldTgtStyle.width ||
+			newSrcStyle.shape != oldSrcStyle.shape || newTgtStyle.shape != oldTgtStyle.shape ||
+			newSrcStyle.borderWidth != oldSrcStyle.borderWidth || newTgtStyle.borderWidth != oldTgtStyle.borderWidth;
+		
+		element._private.oldSourceStyle = newSrcStyle;
+		element._private.oldTargetStyle = newTgtStyle;
+		
+		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged ){
 			this.svg.remove(element._private.svgGroup);
 			this.makeSvgEdge(element);
+			
 			return;
 		}
 		

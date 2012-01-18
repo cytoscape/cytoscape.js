@@ -70,7 +70,7 @@ $(function(){
 	test("Get a node with the cy.nodes function using a selector", function(){
 		
 		var n = cy.nodes("[foo='one']").size();
-		equal(n , 1, "Expected number of matching nodes");
+		equal(n, 1, "Expected number of matching nodes");
 		
 	});
 

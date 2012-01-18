@@ -23,8 +23,8 @@ $(function(){
 				]
 			}, 
 			ready: function(cy){
-				equal( 2, cy.nodes().size(), "Number of nodes" );
-				equal( 1, cy.nodes("#n1").size(), "Instances of node `n1`" );
+				equal( cy.nodes().size(), 2, "Number of nodes" );
+				equal( cy.nodes("#n1").size(), 1, "Instances of node `n1`" );
 				ok( cy.nodes("#n2") != null, "Node `n2` is there" );
 				
 				start();

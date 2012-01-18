@@ -7,6 +7,14 @@ $(function(){
 	$.cytoscapeweb("quiet", false);
 	$.cytoscapeweb("debugging", true);
 	
+	if( $.browser.msie ){
+		window.console = {
+			log: function(){},
+			group: function(){},
+			groupEnd: function(){}
+		};
+	}
+	
 	QUnit.moduleStart = function(module){
 		console.group(module.name);
 	};

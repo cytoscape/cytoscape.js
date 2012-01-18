@@ -25,6 +25,9 @@ $(function(){
 				]
 			},
 			ready: function(cy){
+				console.log("tests");
+				console.log(cy);
+				
 				ok( cy != null, "Not null object" );
 				ok( cy.nodes().size() == 1, "Node is there" );
 				equal( cy.nodes().eq(0).data("foo"), "the node", "Data attribute is there" );

@@ -106,20 +106,23 @@
 			var ready = opts;
 			var data = $(this).data("cytoscapeweb");
 			
-			if( data == null || data.cy == null ){
+			if( data != null && data.cy != null && data.ready ){
+				// already ready so just trigger now
+				ready.apply(data.cy, []);
+			} else {
+				// not yet ready, so add to readies list
 				
 				if( data == null ){
-					data = {
-						readies: []
-					};
+					data = {}
+				}
+				
+				if( data.readies == null ){
+					data.readies = [];
 				}
 				
 				data.readies.push(ready);
 				$(this).data("cytoscapeweb", data);
-				
-			} else {
-				data.cy.bind("ready", ready);
-			}
+			} 
 			
 		}
 		
@@ -2319,7 +2322,7 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			var CySelector = function(onlyThisGroup, selector){
+			window.CySelector = function(onlyThisGroup, selector){
 				
 				if( selector === undefined && onlyThisGroup !== undefined ){
 					selector = onlyThisGroup;
@@ -2342,16 +2345,17 @@
 					var str = selector;
 					self._private.selectorText = selector;
 					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))*)";
+					var qnnRegex = "(((node|edge)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))*))|((((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))+)))";
 					
 					var remaining = str;
 					var queries = [];
 					while( true ){
-						match = remaining.match(new RegExp( "(" + queryRegex + ")(\\s*,\\s*(.+))?" ));
+						match = remaining.match(new RegExp( "(" + qnnRegex + ")(\\s*,\\s*(.+))?" ));
 						
 						if( match != null ){
 							queries.push( match[1] );
 							
-							var rmatch = remaining.match(new RegExp( queryRegex + "\\s*,\\s*(.+)" ));
+							var rmatch = remaining.match(new RegExp( qnnRegex + "\\s*,\\s*(.+)" ));
 							if( rmatch != null ){
 								remaining = rmatch[ rmatch.length - 1 ];
 							} else {
@@ -2550,7 +2554,9 @@
 				}
 
 				self._private.invalid = false;
-			};
+				
+				
+			};			
 			
 			CySelector.prototype.size = function(){
 				return this.length;
@@ -2762,25 +2768,34 @@
 					var key = self.selector();
 					structs.selectors[key] = self;
 					
-					filteredCollection.live = function(event, data, callback){
+					filteredCollection.live = function(events, data, callback){
 						
-						if( callback === undefined ){
-							callback = data;
-							data = undefined;
-						}
-						
-						if( structs.live[event] == null ){
-							structs.live[event] = {};
-						}
-						
-						if( structs.live[event][key] == null ){
-							structs.live[event][key] = [];
-						}
-						
-						structs.live[event][key].push({
-							callback: callback,
-							data: data
-						});
+						var evts = events.split(/\s+/);
+						$.each(evts, function(i, event){
+							
+							if( event == "" ){
+								return;
+							}
+							
+							if( callback === undefined ){
+								callback = data;
+								data = undefined;
+							}
+							
+							if( structs.live[event] == null ){
+								structs.live[event] = {};
+							}
+							
+							if( structs.live[event][key] == null ){
+								structs.live[event][key] = [];
+							}
+							
+							structs.live[event][key].push({
+								callback: callback,
+								data: data
+							});
+							
+						});						
 						
 						return this;
 					};
@@ -2794,17 +2809,24 @@
 									}
 								});
 							}
-						} else if( callback == null ){
-							if( structs.live[event] != null ){
-								delete structs.live[event][key];
-							}
-						} else if( structs.live[event] != null && structs.live[event][key] != null ) {
-							for(var i = 0; i < structs.live[event][key].length; i++){
-								if( structs.live[event][key][i].callback == callback ){
-									structs.live[event][key].splice(i, 1);
-									i--;
+						} else {
+							var evts = event.split(/\s+/);
+							
+							$.each(evts, function(j, event){
+								if( callback == null ){
+									if( structs.live[event] != null ){
+										delete structs.live[event][key];
+									}
+								} else if( structs.live[event] != null && structs.live[event][key] != null ) {
+									for(var i = 0; i < structs.live[event][key].length; i++){
+										if( structs.live[event][key][i].callback == callback ){
+											structs.live[event][key].splice(i, 1);
+											i--;
+										}
+									}
 								}
-							}
+							});
+							
 						}
 						
 						return this;
@@ -3442,7 +3464,7 @@
 								}
 								cy.trigger("layoutready");
 							},
-							done: function(){
+							stop: function(){
 								if( isFunction(ondone) ){
 									ondone.apply(cy, [cy]);
 								}
@@ -3483,23 +3505,6 @@
 				}
 				
 			};
-			
-			var data = $(options.container).data("cytoscapeweb");
-			
-			if( data == null ){
-				data = {};
-			}
-			data.cy = cy;
-			
-			if( data.readies != null ){
-				$.each(data.readies, function(i, ready){
-					cy.bind("ready", ready);
-				});
-				
-				data.readies = [];
-			}
-			
-			$(options.container).data("cytoscapeweb", data);
 			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
@@ -3622,6 +3627,24 @@
 			var layout;
 			
 			cy.load(options.elements, function(){ // onready
+				var data = $(options.container).data("cytoscapeweb");
+				
+				if( data == null ){
+					data = {};
+				}
+				data.cy = cy;
+				data.ready = true;
+				
+				if( data.readies != null ){
+					$.each(data.readies, function(i, ready){
+						cy.bind("ready", ready);
+					});
+					
+					data.readies = [];
+				}
+				
+				$(options.container).data("cytoscapeweb", data);
+				
 				if( isFunction( options.ready ) ){
 					options.ready.apply(cy, [cy]);
 				}

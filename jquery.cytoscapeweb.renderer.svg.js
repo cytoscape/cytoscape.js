@@ -1295,7 +1295,7 @@ $(function(){
 		case "mouseout":
 			return $rt.parent()[0] == self.svgRoot;
 		default:
-			return false;
+			return true;
 		}		
 	};
 	
@@ -1308,7 +1308,7 @@ $(function(){
 		case "mouseout":
 			return $rt.parent()[0] != self.svgRoot;
 		default:
-			return false;
+			return true;
 		}		
 	};
 	

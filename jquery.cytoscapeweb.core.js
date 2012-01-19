@@ -210,7 +210,7 @@
 				},
 				continuousMapperUpdates: [],
 				once: [], // array of callback defns (synced w. ones in elements)
-				live: {}, // event name => selector string => array of callback defns
+				live: {}, // event name => array of callback defns
 				selectors: {}, // selector string => selector for live
 				listeners: {} // cy || background => event name => array of callback functions
 			};
@@ -1441,10 +1441,12 @@
 				if( structs.live[type] != null ){
 					$.each(structs.live[type], function(key, callbackDefns){
 						
-						var selector = structs.selectors[key];
+						var selector = new CySelector( key );
 						var filtered = selector.filter( self.collection() );
 						
 						if( filtered.size() > 0 ){
+							console.log(self.data("id"), selector);
+							
 							$.each(callbackDefns, function(i, listener){
 								fire(listener);
 							});
@@ -2322,7 +2324,7 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			window.CySelector = function(onlyThisGroup, selector){
+			var CySelector = function(onlyThisGroup, selector){
 				
 				if( selector === undefined && onlyThisGroup !== undefined ){
 					selector = onlyThisGroup;
@@ -2338,8 +2340,24 @@
 			
 				
 				if( selector == null || selector.match(/^\s*$/) ){
-					// ignore
-					self.length = 0;					
+					
+					if( onlyThisGroup == null ){
+						// ignore
+						self.length = 0;
+					} else {
+						
+						// NOTE: need to update this with fields as they are added to logic in else if
+						self[0] = {
+							classes: [],
+							colonSelectors: [],
+							data: [],
+							group: onlyThisGroup,
+							ids: [],
+							meta: []
+						};
+						self.length = 1;
+					}
+									
 				} else if( isString(selector) ){
 				
 					var str = selector;
@@ -2394,7 +2412,7 @@
 							// valid
 						} else if( onlyThisGroup != null && (group == null || group == onlyThisGroup) ){
 							// valid
-							self[i].group = onlyThisGroup.substring();
+							self[i].group = onlyThisGroup;
 						} else {
 							console.error("Invalid group `%s` in selector `%s` in parent selector `%s` with implicit group `%s`", group, query, str, onlyThisGroup);
 							return;
@@ -2766,7 +2784,6 @@
 				if(addLiveFunction){
 					
 					var key = self.selector();
-					structs.selectors[key] = self;
 					
 					filteredCollection.live = function(events, data, callback){
 						
@@ -2802,13 +2819,11 @@
 					
 					filteredCollection.die = function(event, callback){
 						if( event == null ){
-							if( structs.live[event] != null ){
-								$.each(structs.live[event], function(k, selector){
-									if( k == key ){
-										delete structs.live[event][k];
-									}
-								});
-							}
+							$.each(structs.live, function(event){
+								if( structs.live[event] != null ){
+									delete structs.live[event][key];
+								}
+							});
 						} else {
 							var evts = event.split(/\s+/);
 							
@@ -2850,7 +2865,9 @@
 				
 				for(var i = 0; i < this.length; i++){
 					var query = this[i];
-					str += clean(query.group);
+					
+					var group = clean(query.group);
+					str += group.substring(0, group.length - 1);
 					
 					for(var j = 0; j < query.data.length; j++){
 						var data = query.data[j];

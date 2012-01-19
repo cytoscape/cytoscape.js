@@ -1127,7 +1127,9 @@ $(function(){
 		var self = this;
 		
 		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click touchstart touchmove touchend mouseover mousemove mouseout", function(e){
-			element.trigger(e);
+			if( self.edgeEventIsValid(e) ){
+				element.trigger(e);
+			}
 		}).bind("click touchend", function(e){
 			self.selectElement(element);
 		});
@@ -1273,9 +1275,41 @@ $(function(){
 				self.selectElement(element);
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
+			// ignore events created falsely for recreated elements
+			if( self.nodeEventIsValid(e) ){
+				return;
+			}
+			
 			element.trigger($.extend({}, e));
 		});
 		
+	};
+	
+
+	SvgRenderer.prototype.edgeEventIsValid = function(event){
+		var $rt = $(event.relatedTarget);
+		var self = this;
+		
+		switch( event.type ){
+		case "mouseover":
+		case "mouseout":
+			return $rt.parent()[0] == self.svgRoot;
+		default:
+			return false;
+		}		
+	};
+	
+	SvgRenderer.prototype.nodeEventIsValid = function(event){
+		var $rt = $(event.relatedTarget);
+		var self = this;
+		
+		switch( event.type ){
+		case "mouseover":
+		case "mouseout":
+			return $rt.parent()[0] != self.svgRoot;
+		default:
+			return false;
+		}		
 	};
 	
 	SvgRenderer.prototype.modelPoint = function(screenPoint){

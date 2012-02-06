@@ -212,7 +212,12 @@
 				once: [], // array of callback defns (synced w. ones in elements)
 				live: {}, // event name => array of callback defns
 				selectors: {}, // selector string => selector for live
-				listeners: {} // cy || background => event name => array of callback functions
+				listeners: {}, // cy || background => event name => array of callback functions
+				animation: { 
+					// normally shouldn't use collections here, but animation is not related
+					// to the functioning of CySelectors, so it's ok
+					elements: null // elements queued or currently animated
+				}
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -845,17 +850,8 @@
 							console.error("Can not change immutable field `%s` for element with group `%s` and ID `%s` to `%o`", field, this._private.group, this._private.data.id, val);
 						} else {
 							updateContinuousMapperBounds(self, field, self._private.data[field], val);
+							self._private.data[field] = copy( val );
 						}
-					}
-					
-					var oldValObj = this._private.data;
-					
-					this._private.data = copy(newValObj);
-					this._private.data.id = oldValObj.id;
-					
-					if( this._private.group == "edges" ){
-						this._private.data.target = oldValObj.target;
-						this._private.data.source = oldValObj.source;
 					}
 					
 					this.rtrigger("data");
@@ -870,9 +866,14 @@
 				
 				// set attr val by name
 				else {
+					if( attr == "id" ){
+						console.error("Can not change `%s` of element with ID %s --- you can not change IDs", attr, this._private.data.id);
+						return this;
+					}
+					
 					if( this._private.group == "edges" ){
 						if( attr == "source" || attr == "target" ){
-							console.error("Can not change `%s` of edge with ID --- you can not move edges", attr, this._private.data.id);
+							console.error("Can not change `%s` of edge with ID %s --- you can not change IDs", attr, this._private.data.id);
 							return this;
 						}
 					}
@@ -1006,6 +1007,8 @@
 			
 			CyElement.prototype.position = function(val){
 				
+				var self = this;
+				
 				if( val === undefined ){
 					if( this.isNode() ){
 						return copy( this._private.position );
@@ -1030,7 +1033,9 @@
 						this._private.position[param] = copy(value);
 					}
 				} else if( isPlainObject(val) ) {
-					this._private.position = copy( val );									
+					$.each(val, function(k, v){
+						self._private.position[k] = copy( v );
+					});
 					this.rtrigger("position");
 				} else {
 					console.error("Can not set position on node `%s` with non-object `%o`", this._private.data.id, val);
@@ -1048,152 +1053,66 @@
 				}
 			};
 			
+			CyElement.prototype.animated = function(){
+				return this._private.animation.current.length > 0;
+			};
+			
+			CyElement.prototype.clearQueue = function(){
+				this._private.animation.queue = [];
+			};
+			
 			CyElement.prototype.animate = function( properties, params ){
 				var self = this;
+				var callTime = +new Date;
+				var startPosition = copy( self._private.position );
+				var startStyle = copy( self.style() );
 				
-				if( self._private.animation.current.length > 0 && (params.queue === undefined || params.queue) ){
+				if( self.animated() && (params.queue === undefined || params.queue) ){
 					enqueue();
 				} else {
 					run();
 				}
 				
+				params = $.extend({}, {
+					duration: 400
+				}, params);
+				
+				switch( params.duration ){
+				case "slow":
+					params.duration = 600;
+					break;
+				case "fast":
+					params.duration = 200;
+					break;
+				}
+				
+				if( properties == null || (properties.position == null && properties.bypass == null) ){
+					return; // nothing to animate
+				}
+				
+				var q;
+				
 				function enqueue(){
-					self._private.animation.queue.push({
-						properties: properties,
-						params: params
-					});
+					q = self._private.animation.queue;
+					add();
 				}
 				
 				function run(){
-					var startTime = +new Date;
-					
-					params = $.extend({}, {
-						duration: 400
-					}, params);
-					
-					switch( params.duration ){
-					case "slow":
-						params.duration = 600;
-						break;
-					case "fast":
-						params.duration = 200;
-						break;
-					}
-					
-					if( properties == null || (properties.position == null && properties.bypass == null) ){
-						return; // nothing to animate
-					}
-					
-					var stepDelay = 13; // this value is used in jquery core
-					var startPosition = copy( self._private.position );
-					var startStyle = copy( self.style() );
-					
-					function step(){
-						var now = +new Date;
-						var percent;
-						
-						if( params.duration == 0 ){
-							percent = 1;
-						} else {
-							percent = Math.min(1, (now - startTime)/params.duration);
-						}
-						
-						function update(p){
-							if( p.end != null ){
-								var start = p.start;
-								var end = p.end;
-								
-								$.each(end, function(name, val){
-									if( valid(start[name], end[name]) ){
-										self._private[p.field][name] = ease( start[name], end[name], percent );
-									}
-								});
-								
-								self.rtrigger(p.event);						
-							}
-						}
-						
-						update({
-							end: properties.position,
-							start: startPosition,
-							field: "position",
-							event: "position"
-						});
-						
-						update({
-							end: properties.bypass,
-							start: startStyle,
-							field: "bypass",
-							event: "bypass"
-						});
-						
-						if( isFunction( params.step ) ){
-							params.step.apply( self, [ now ] );
-						}
-						
-						return percent;
-					}
-						
-					var interval = setInterval(function(){
-						if( step() >= 1 ){ // done at 100%
-							clearInterval( interval );
-							self._private.animation.current = [];
-							
-							if( isFunction( params.complete ) ){
-								params.complete.apply( self, [] );
-							}
-							
-							if( self._private.animation.queue.length > 0 ){
-								var ani = self._private.animation.queue.shift();
-								self.animate( ani.properties, ani.params );
-							}
-						} 
-					}, Math.min(stepDelay, params.duration));
-					
-					self._private.animation.current.push({
+					q = self._private.animation.current;
+					add();
+				} 
+				
+				function add(){
+					q.push({
 						properties: properties,
 						params: params,
-						interval: interval
+						callTime: callTime,
+						startPosition: startPosition,
+						startStyle: startStyle
 					});
 					
-					function valid(start, end){
-						if( start == null || end == null ){
-							return false;
-						}
-						
-						if( isNumber(start) && isNumber(end) ){
-							return true;
-						} else if( isColor(start) && isColor(end) ){
-							return true;
-						}
-						
-						return false;
-					}
-					
-					function ease(start, end, percent){
-						if( isNumber(start) && isNumber(end) ){
-							return start + (end - start) * percent;
-						} else if( isColor(start) && isColor(end) ){
-							var c1 = $.Color(start).fix().toRGB();
-							var c2 = $.Color(end).fix().toRGB();
-	
-							function ch(ch1, ch2){
-								var diff = ch2 - ch1;
-								var min = ch1;
-								return Math.round( percent * diff + min );
-							}
-							
-							var r = ch( c1.red(), c2.red() );
-							var g = ch( c1.green(), c2.green() );
-							var b = ch( c1.blue(), c2.blue() );
-							
-							return $.Color([r, g, b], "RGB").toHEX().toString();
-						}
-						
-						return undefined;
-					}
-					
-				} // run
+					structs.animation.elements = structs.animation.elements.add( self );
+				}
 				
 				return this;
 			};
@@ -1201,24 +1120,19 @@
 			CyElement.prototype.stop = function(clearQueue, jumpToEnd){
 				var self = this;
 				
-				var events = {};
-				$.each(self._private.animation.current, function(i, animation){
-					clearInterval( animation.interval );
-					
+				$.each(self._private.animation.current, function(i, animation){				
 					if( jumpToEnd ){
 						$.each(animation.properties, function(propertyName, property){
 							$.each(property, function(field, value){
 								self._private[propertyName][field] = value;
 							});
-							
-							events[propertyName] = true;
 						});
 					}
 				});
 				
-				// trigger events
-				$.each(events, function(event, triggered){
-					self.rtrigger(event);
+				notify({
+					collection: self.collection(),
+					type: "draw"
 				});
 				
 				self._private.animation.current = [];
@@ -1229,6 +1143,190 @@
 				
 				return this;
 			};
+			
+			function startAnimationLoop(){
+				var stepDelay = 7;
+				var useTimeout = false;
+				
+				// initialise the list
+				structs.animation.elements = new CyCollection();
+				
+				// TODO change this when standardised
+				var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+					window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+				
+				var containerDom = cy.container()[0];
+				
+				function globalAnimationStep(){
+					function exec(){
+						requestAnimationFrame(function(now){
+							handleElements(now);
+							globalAnimationStep();
+						}, containerDom);
+					}
+					
+					if( useTimeout ){
+						setTimeout(function(){
+							exec();
+						}, stepDelay);
+					} else {
+						exec();
+					}
+					
+				}
+				
+				globalAnimationStep(); // first call
+				
+				function handleElements(now){
+//					console.log( structs.animation.elements );
+					
+					structs.animation.elements.each(function(i, ele){
+						
+						// we might have errors if we edit animation.queue and animation.current
+						// for ele (i.e. by stopping)
+						try{
+							ele = ele.element(); // make sure we've actually got a CyElement
+							var current = ele._private.animation.current;
+							var queue = ele._private.animation.queue;
+							
+							// if nothing currently animating, get something from the queue
+							if( current.length == 0 ){
+								var q = queue;
+								var next = q.length > 0 ? q.shift() : null;
+								
+								if( next != null ){
+									current.push( next );
+								}
+							}
+							
+							// step all currently running anis
+							$.each(current, function(i, ani){
+								step( ele, ani, now );
+							});
+							
+							// remove done anis in current
+							for(var i = 0; i < current.length; i++){
+								if( current[i].done ){
+									current.splice(i, 1);
+									i--;
+								}
+							}
+							
+						} catch(e){
+							// do nothing
+						}
+						
+					}); // each element
+					
+					
+					// notify renderer
+					if( structs.animation.elements.size() > 0 ){
+						notify({
+							type: "draw",
+							collection: structs.animation.elements
+						});
+					}
+					
+					// remove elements from list of currently animating if its queues are empty
+					structs.animation.elements = structs.animation.elements.filter(function(){
+						var ele = this;
+						var queue = ele._private.animation.queue;
+						var current = ele._private.animation.current;
+						
+						return current.length > 0 || queue.length > 0;
+					});
+				}
+					
+				function step( self, animation, now ){
+					var properties = animation.properties;
+					var params = animation.params;
+					var startTime = animation.callTime;
+					var percent;
+					
+					if( params.duration == 0 ){
+						percent = 1;
+					} else {
+						percent = Math.min(1, (now - startTime)/params.duration);
+					}
+					
+//					console.log(percent, now, startTime);
+					
+					function update(p){
+						if( p.end != null ){
+							var start = p.start;
+							var end = p.end;
+							
+							// for each field in end, update the current value
+							$.each(end, function(name, val){
+								if( valid(start[name], end[name]) ){
+									self._private[p.field][name] = ease( start[name], end[name], percent );
+//									console.log("%s.%s = %o (%s) [%o - %o]", p.field, name, ease( start[name], end[name], percent ), percent, start, end);
+								}
+							});					
+						}
+					}
+					
+					update({
+						end: properties.position,
+						start: animation.startPosition,
+						field: "position"
+					});
+					
+					update({
+						end: properties.bypass,
+						start: animation.startStyle,
+						field: "bypass"
+					});
+					
+					if( isFunction(params.step) ){
+						params.step.apply( self, [ now ] );
+					}
+					
+					if( percent >= 1 ){
+						animation.done = true;
+					}
+					
+					return percent;
+				}
+				
+				function valid(start, end){
+					if( start == null || end == null ){
+						return false;
+					}
+					
+					if( isNumber(start) && isNumber(end) ){
+						return true;
+					} else if( isColor(start) && isColor(end) ){
+						return true;
+					}
+					
+					return false;
+				}
+				
+				function ease(start, end, percent){
+					if( isNumber(start) && isNumber(end) ){
+						return start + (end - start) * percent;
+					} else if( isColor(start) && isColor(end) ){
+						var c1 = $.Color(start).fix().toRGB();
+						var c2 = $.Color(end).fix().toRGB();
+
+						function ch(ch1, ch2){
+							var diff = ch2 - ch1;
+							var min = ch1;
+							return Math.round( percent * diff + min );
+						}
+						
+						var r = ch( c1.red(), c2.red() );
+						var g = ch( c1.green(), c2.green() );
+						var b = ch( c1.blue(), c2.blue() );
+						
+						return $.Color([r, g, b], "RGB").toHEX().toString();
+					}
+					
+					return undefined;
+				}
+				
+			}
 			
 			CyElement.prototype.show = function(){
 				renderer.showElements(this.collection());
@@ -1445,8 +1543,6 @@
 						var filtered = selector.filter( self.collection() );
 						
 						if( filtered.size() > 0 ){
-							console.log(self.data("id"), selector);
-							
 							$.each(callbackDefns, function(i, listener){
 								fire(listener);
 							});
@@ -2362,8 +2458,8 @@
 				
 					var str = selector;
 					self._private.selectorText = selector;
-					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))*)";
-					var qnnRegex = "(((node|edge)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))*))|((((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_]+)|(#[\\w_]+))+)))";
+					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))*)";
+					var qnnRegex = "(((node|edge)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))*))|((((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))+)))";
 					
 					var remaining = str;
 					var queries = [];
@@ -2435,15 +2531,15 @@
 						});
 						
 						var colonSelectors = selectorsWoMetaAndData.match(/(:[a-z]+)/g);
-						var classSelectors = selectorsWoMetaAndData.match(/(\.[\w_]+)/g);
-						var idSelectors = selectorsWoMetaAndData.match(/(#[\w_]+)/g);
+						var classSelectors = selectorsWoMetaAndData.match(/(\.[\w_-]+)/g);
+						var idSelectors = selectorsWoMetaAndData.match(/(#[\w_-]+)/g);
 						
 						// validate colon selectors
 						///////////////////////////
 						
 						for(var j = 0; colonSelectors != null && j < colonSelectors.length; j++){
 							var selector = colonSelectors[j];
-							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable$/) ){
+							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated$/) ){
 								// valid
 							} else {
 								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
@@ -2485,15 +2581,44 @@
 								var b = bracket.replace(params.openParen, "").replace(params.closeParen, "");
 								
 								var match = b.match(/^\s*(\w+)\s*((?:@?)(?:=|!=||>=||<=|<|>|\*=|\^=|\$=|\$=)){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
+								var boolMatch = b.match(/^\s*(\!|\?|\^|\^\^)\s*([\w._-]+)\s*$/);
 								
-								if(match == null){
+								if(match == null && boolMatch == null){
 									console.error("Invalid operand selector `%s` in parent selector `%s`", bracket, str);
 									return;
 								}
 								
-								var field = match[1];
-								var operator = match[2];
-								var value = match[3];
+								var field, operator, value;
+								var isBool = false;
+								
+								if( match != null ){
+									field = match[1];
+									operator = match[2];
+									value = match[3];
+								} else if( boolMatch != null ){
+									
+									// convert boolean data queries to regular queries using boolean values
+									// e.g. !foo => foo != true
+									
+									field = boolMatch[2];
+									operator = boolMatch[1];
+									value = "true";
+									
+									switch( operator ){
+									case "?":
+										operator = "=";
+										break;
+									case "!":
+										operator = "!=";
+										break;
+									case "^":
+										operator = "===";
+										value = "undefined";
+										break;
+									}
+									
+									isBool = true;
+								}
 								
 								if( !params.validField(field) ){
 									console.error("Invalid selector `%s`; field `%s` is not valid", str, value);
@@ -2510,7 +2635,7 @@
 									return;
 								}
 								
-								if( value != null && operator != null ){
+								if( value != null && operator != null && !isBool ){
 									var valueAsNumber = parseFloat( value );
 									var valueIsNumber = !isNaN(valueAsNumber);
 									
@@ -2640,6 +2765,9 @@
 								break;
 							case ":ungrabbable":
 								allColonSelectorsMatch = !element.grabbable();
+								break;
+							case ":animated":
+								allColonSelectorsMatch = element.animated();
 								break;
 							}
 							
@@ -3643,6 +3771,7 @@
 			
 			var layout;
 			
+			// initial load
 			cy.load(options.elements, function(){ // onready
 				var data = $(options.container).data("cytoscapeweb");
 				
@@ -3662,6 +3791,8 @@
 				
 				$(options.container).data("cytoscapeweb", data);
 				
+				startAnimationLoop();
+				
 				if( isFunction( options.ready ) ){
 					options.ready.apply(cy, [cy]);
 				}
@@ -3675,7 +3806,7 @@
 				cy.trigger("done");
 			});
 			
-			return cy;
+			return cy; // return cytoscape web from jquery lib call
 		} 
 		
 		// logging functions

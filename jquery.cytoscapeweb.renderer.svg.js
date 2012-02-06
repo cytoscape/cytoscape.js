@@ -2068,14 +2068,16 @@ $(function(){
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
 		
-		this.updateLabelPosition(element, valign, halign);
-		
 		// styles to the group
 		this.svg.change(element._private.svgGroup, {
 			fillOpacity: percent(style.fillOpacity)
 		});
 		
+		// update shape specific stuff like position
 		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);
+		
+		// update label position after the node itself
+		this.updateLabelPosition(element, valign, halign);
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for node `%s` to %o", element._private.data.id, style);
 	};
@@ -2087,6 +2089,9 @@ $(function(){
 		var height = 0;
 		var width = 0;
 		var text = element._private.svgLabel.textContent;
+		
+		// update node label x, y
+		this.positionSvgNodeLabel(element);
 		
 		var textAnchor;
 		var styleAttr;
@@ -2304,6 +2309,12 @@ $(function(){
 		});
 	};
 	
+	SvgRenderer.prototype.drawElements = function(collection){
+		var self = this;
+		
+		self.updateElementsStyle( collection );
+	};
+	
 	SvgRenderer.prototype.removeElements = function(collection, updateMappers){
 		$.cytoscapeweb("debug", "SVG renderer is removing elements");
 		
@@ -2383,6 +2394,10 @@ $(function(){
 			case "select":
 			case "unselect":
 				this.updateSelection( params.collection );
+				break;
+				
+			case "draw":
+				this.drawElements( params.collection );
 				break;
 				
 			default:

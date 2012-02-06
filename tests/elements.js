@@ -486,7 +486,7 @@ $(function(){
 		n1.data("foo", 1);
 		
 		n1.one("data", function(){
-			equal( this.data("foo"), null, "foo" );
+			equal( this.data("foo"), undefined, "foo" );
 			
 			var d = this.data();
 			for(var i in d){

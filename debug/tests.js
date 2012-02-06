@@ -160,7 +160,7 @@ $(function(){
 		});
 		
 		test({
-			name: "bigRedOnClick",
+			name: "growOnClick",
 			displayName: "Make coloured and sized",
 			description: "Make nodes grow/shrink and change colour on click",
 			setup: function(){
@@ -192,6 +192,45 @@ $(function(){
 			},
 			teardown: function(){
 				cy.elements().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
+			name: "bigRedOnClick",
+			displayName: "Make nodes big & red",
+			description: "Click background to toggle",
+			setup: function(){
+				var on = false;
+				
+				cy.background().bind("click", function(){
+					
+					if( !on ){
+						cy.nodes().stop().animate({
+							bypass: {
+								fillColor: "red",
+								labelFillColor: "red",
+								height: 50,
+								width: 50
+							}
+						},
+						{
+							duration: 2000,
+							step: function(now){
+								console.log( now );
+							}
+						});
+						
+						on = true;
+					} else {
+						cy.nodes().stop().removeBypass();
+						on = false;
+					}
+					
+				});
+			},
+			teardown: function(){
+				cy.background().unbind("click");
+				cy.nodes().removeBypass();
 			}
 		});
 		

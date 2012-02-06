@@ -5,7 +5,9 @@
 		format: {},
 		renderer: {},
 		layout: {},
-		exporter: {}
+		exporter: {},
+		core: {},
+		collection: {}
 	};
 	
 	var subreg = {
@@ -2413,6 +2415,19 @@
 				return this;
 			};
 			
+			// Add registered collection functions
+			////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+			// add each function to the CyCollection prototype
+			// automatically added also to CyElement via code below
+			$.each(reg.collection, function(name, func){
+				if( CyCollection.prototype[name] == null ){
+					CyCollection.prototype[name] = func;
+				} else {
+					console.error("Can not override collection function `%s`; already has default implementation", name);
+				}
+			});
+			
 			// CyElement functions based on CyCollection functions (to make same API)
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
@@ -3660,6 +3675,14 @@
 				
 			};
 			
+			$.each(reg.core, function(name, func){
+				if( cy[name] == null ){
+					cy[name] = func;
+				} else {
+					console.error("Can not override core function `%s`; already has default implementation", name);
+				}
+			});
+			
 			if( reg.renderer[ options.renderer.name.toLowerCase() ] == null ){
 				console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.renderer.name);
 				return;
@@ -3841,6 +3864,8 @@
 		// allow for registration of extensions
 		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
 		// e.g. $.cytoscapeweb("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
+		// e.g. $.cytoscapeweb("core", "doSomething", function(){ /* doSomething code */ });
+		// e.g. $.cytoscapeweb("collection", "doSomething", function(){ /* doSomething code */ });
 		else if( typeof opts == typeof "" ) {
 			var registrant = arguments[0].toLowerCase(); // what to register (e.g. "renderer")
 			var name = arguments[1].toLowerCase(); // name of the module (e.g. "svg")
@@ -3848,9 +3873,6 @@
 			var componentType = arguments[2];
 			var componentName = arguments[3];
 			var component = arguments[4];
-			
-			var haveModule = module != null && typeof module == typeof function(){}.prototype;
-			var haveComponent = component != null;
 			
 			if( isString(componentType) ){
 				componentType = componentType.toLowerCase();

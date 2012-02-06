@@ -462,9 +462,8 @@
 					classes: {}, // map ( className => true )
 					animation: { // object for currently-running animations
 						current: [],
-						queue: [],
-						delay: 0
-					}  
+						queue: []
+					}
 				};
 				
 				// renderedPosition overrides if specified
@@ -1063,6 +1062,16 @@
 				this._private.animation.queue = [];
 			};
 			
+			CyElement.prototype.delay = function( time ){
+				this.animate({
+					delay: time
+				}, {
+					duration: time
+				});
+				
+				return this;
+			};
+			
 			CyElement.prototype.animate = function( properties, params ){
 				var self = this;
 				var callTime = +new Date;
@@ -1088,7 +1097,7 @@
 					break;
 				}
 				
-				if( properties == null || (properties.position == null && properties.bypass == null) ){
+				if( properties == null || (properties.position == null && properties.bypass == null && properties.delay == null) ){
 					return; // nothing to animate
 				}
 				
@@ -1132,16 +1141,17 @@
 					}
 				});
 				
-				notify({
-					collection: self.collection(),
-					type: "draw"
-				});
-				
 				self._private.animation.current = [];
 				
 				if( clearQueue ){
 					self._private.animation.queue = [];
 				}
+
+				// we have to notify (the animation loop doesn't do it for us on `stop`)
+				notify({
+					collection: self.collection(),
+					type: "draw"
+				});
 				
 				return this;
 			};
@@ -1189,7 +1199,6 @@
 				globalAnimationStep(); // first call
 				
 				function handleElements(now){
-//					console.log( structs.animation.elements );
 					
 					structs.animation.elements.each(function(i, ele){
 						
@@ -1206,6 +1215,7 @@
 								var next = q.length > 0 ? q.shift() : null;
 								
 								if( next != null ){
+									next.callTime = +new Date; // was queued, so update call time
 									current.push( next );
 								}
 							}
@@ -1216,12 +1226,22 @@
 							});
 							
 							// remove done anis in current
+							var completes = [];
 							for(var i = 0; i < current.length; i++){
 								if( current[i].done ){
+									completes.push( current[i].params.complete );
+									
 									current.splice(i, 1);
 									i--;
 								}
 							}
+							
+							// call complete callbacks
+							$.each(completes, function(i, fn){
+								if( isFunction(complete) ){
+									complete.apply( ele );
+								}
+							});
 							
 						} catch(e){
 							// do nothing
@@ -1260,8 +1280,6 @@
 						percent = Math.min(1, (now - startTime)/params.duration);
 					}
 					
-//					console.log(percent, now, startTime);
-					
 					function update(p){
 						if( p.end != null ){
 							var start = p.start;
@@ -1271,23 +1289,24 @@
 							$.each(end, function(name, val){
 								if( valid(start[name], end[name]) ){
 									self._private[p.field][name] = ease( start[name], end[name], percent );
-//									console.log("%s.%s = %o (%s) [%o - %o]", p.field, name, ease( start[name], end[name], percent ), percent, start, end);
 								}
 							});					
 						}
 					}
 					
-					update({
-						end: properties.position,
-						start: animation.startPosition,
-						field: "position"
-					});
-					
-					update({
-						end: properties.bypass,
-						start: animation.startStyle,
-						field: "bypass"
-					});
+					if( properties.delay == null ){
+						update({
+							end: properties.position,
+							start: animation.startPosition,
+							field: "position"
+						});
+						
+						update({
+							end: properties.bypass,
+							start: animation.startStyle,
+							field: "bypass"
+						});
+					}
 					
 					if( isFunction(params.step) ){
 						params.step.apply( self, [ now ] );
@@ -2394,22 +2413,17 @@
 			CyCollection.prototype.element = function(){
 				return this[0];
 			};
-			
-			CyCollection.prototype.animate = function(){
-				var args = arguments;
-				
-				this.each(function(i, ele){
-					ele.animate.apply( ele, args );
-				});
-				
-				return this;
-			};
-			
+					
 			CyCollection.prototype.stop = function(){
 				var args = arguments;
 				
 				this.each(function(i, ele){
 					ele.stop.apply( ele, args );
+				});
+				
+				notify({
+					type: "draw",
+					collection: this
 				});
 				
 				return this;

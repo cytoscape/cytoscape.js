@@ -146,6 +146,32 @@ $(function(){
 		});
 		
 		test({
+			name: "labelRendering",
+			displayName: "Label rendering test",
+			description: "Try dragging nodes around and see if there's a redraw issue (trailing pixels)",
+			setup: function(){
+				var style = cy.style();
+				
+				style = $.extend(true, {}, style, {
+					selectors: {
+						"node": {
+							labelText: "a nice, long label",
+							labelValign: "middle",
+							labelFillColor: "white",
+							labelOutlineColor: "#888",
+							labelOutlineWidth: 3
+						}
+					}
+				});
+				
+				cy.style( style );
+			},
+			teardown: function(){
+				cy.style( window.options.style );
+			}
+		});
+		
+		test({
 			name: "hideOnClick",
 			displayName: "Hide on click",
 			description: "Hide nodes and edges when clicked",
@@ -196,6 +222,72 @@ $(function(){
 		});
 		
 		test({
+			name: "redThenGrow",
+			displayName: "Make nodes red then grow",
+			description: "Click nodes to trigger",
+			setup: function(){
+				cy.nodes().bind("click", function(){
+					this
+						.stop(true)
+						.animate({
+							bypass: {
+								fillColor: "red"
+							}
+						},
+						{
+							duration: 1000
+						})
+						.delay(1000)
+						.animate({
+							bypass: {
+								height: 50,
+								width: 50
+							}
+						},
+						{
+							duration: 1000
+						});
+				});
+			},
+			teardown: function(){
+				cy.nodes().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
+			name: "redAndGrow",
+			displayName: "Make nodes blue and grow in parallel",
+			description: "Click nodes to trigger",
+			setup: function(){
+				cy.nodes().bind("click", function(){
+					this
+						.stop(true)
+						.animate({
+							bypass: {
+								fillColor: "blue"
+							}
+						},
+						{
+							duration: 1000
+						})
+						.animate({
+							bypass: {
+								height: 50,
+								width: 50
+							}
+						},
+						{
+							duration: 1000,
+							queue: false
+						});
+				});
+			},
+			teardown: function(){
+				cy.nodes().unbind("click").removeBypass();
+			}
+		});
+		
+		test({
 			name: "bigRedOnClick",
 			displayName: "Make nodes big & red",
 			description: "Click background to toggle",
@@ -214,10 +306,7 @@ $(function(){
 							}
 						},
 						{
-							duration: 2000,
-							step: function(now){
-								console.log( now );
-							}
+							duration: 2000
 						});
 						
 						on = true;

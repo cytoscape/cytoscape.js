@@ -1145,8 +1145,9 @@
 			};
 			
 			function startAnimationLoop(){
-				var stepDelay = 7;
+				var stepDelay = 10;
 				var useTimeout = false;
+				var useRequestAnimationFrame = true;
 				
 				// initialise the list
 				structs.animation.elements = new CyCollection();
@@ -1154,6 +1155,14 @@
 				// TODO change this when standardised
 				var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
 					window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+				
+				if( requestAnimationFrame == null || !useRequestAnimationFrame ){
+					requestAnimationFrame = function(fn){
+						window.setTimeout(function(){
+							fn(+new Date);
+						}, stepDelay);
+					};
+				}
 				
 				var containerDom = cy.container()[0];
 				
@@ -1235,7 +1244,7 @@
 						
 						return current.length > 0 || queue.length > 0;
 					});
-				}
+				} // handleElements
 					
 				function step( self, animation, now ){
 					var properties = animation.properties;

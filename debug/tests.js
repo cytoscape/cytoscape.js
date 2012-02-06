@@ -187,7 +187,7 @@ $(function(){
 		
 		test({
 			name: "growOnClick",
-			displayName: "Make coloured and sized",
+			displayName: "Coloured and sized",
 			description: "Make nodes grow/shrink and change colour on click",
 			setup: function(){
 				cy.nodes().bind("click", function(){
@@ -222,8 +222,8 @@ $(function(){
 		});
 		
 		test({
-			name: "redThenGrow",
-			displayName: "Make nodes red then grow",
+			name: "colourThenGrow",
+			displayName: "Orange, delay, grow",
 			description: "Click nodes to trigger",
 			setup: function(){
 				cy.nodes().bind("click", function(){
@@ -231,7 +231,7 @@ $(function(){
 						.stop(true)
 						.animate({
 							bypass: {
-								fillColor: "red"
+								fillColor: "orange"
 							}
 						},
 						{
@@ -248,15 +248,39 @@ $(function(){
 							duration: 1000
 						});
 				});
+				
+				cy.edges().bind("click", function(){
+					this
+						.stop(true)
+						.animate({
+							bypass: {
+								lineColor: "orange",
+								targetArrowColor: "orange",
+								sourceArrowColor: "orange"
+							}
+						},
+						{
+							duration: 1000
+						})
+						.delay(1000)
+						.animate({
+							bypass: {
+								width: 7
+							}
+						},
+						{
+							duration: 1000
+						});
+				});
 			},
 			teardown: function(){
-				cy.nodes().unbind("click").removeBypass();
+				cy.elements().unbind("click").removeBypass();
 			}
 		});
 		
 		test({
 			name: "redAndGrow",
-			displayName: "Make nodes blue and grow in parallel",
+			displayName: "Blue and grow in parallel",
 			description: "Click nodes to trigger",
 			setup: function(){
 				cy.nodes().bind("click", function(){
@@ -289,7 +313,7 @@ $(function(){
 		
 		test({
 			name: "bigRedOnClick",
-			displayName: "Make nodes big & red",
+			displayName: "Big & red",
 			description: "Click background to toggle",
 			setup: function(){
 				var on = false;

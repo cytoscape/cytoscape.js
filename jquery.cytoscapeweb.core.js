@@ -463,7 +463,8 @@
 					animation: { // object for currently-running animations
 						current: [],
 						queue: []
-					}
+					},
+					renderer: {}, // object in which the renderer can store information
 				};
 				
 				// renderedPosition overrides if specified

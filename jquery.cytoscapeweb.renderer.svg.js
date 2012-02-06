@@ -174,7 +174,7 @@ $(function(){
 		// update unique style attributes for this shape
 		// see http://keith-wood.name/svgRef.html for api reference
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.svg, {
+			svg.change(node._private.renderer.svg, {
 				cx: position.x,
 				cy: position.y,
 				rx: style.width / 2,
@@ -192,7 +192,7 @@ $(function(){
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.svg, {
+			svg.change(node._private.renderer.svg, {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -209,7 +209,7 @@ $(function(){
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height, style.width/4, style.height/4);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.svg, {
+			svg.change(node._private.renderer.svg, {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -231,7 +231,7 @@ $(function(){
 					           ]);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.svg, {
+			svg.change(node._private.renderer.svg, {
 				points: [ 
 			             [position.x,                 position.y - style.height/2], 
 			             [position.x + style.width/2, position.y + style.height/2],
@@ -866,7 +866,7 @@ $(function(){
 		}
 		
 		elements.nodes().each(function(){
-			var bb = this._private.svgGroup.getBBox();
+			var bb = this._private.renderer.svgGroup.getBBox();
 			update(bb);
 		});
 		
@@ -875,7 +875,7 @@ $(function(){
 		elements.edges().each(function(){
 			var src = this._private.data.source;
 			var tgt = this._private.data.target;
-			var bb = this._private.svg.getBBox();
+			var bb = this._private.renderer.svg.getBBox();
 			
 			if( src == tgt ){
 			
@@ -889,7 +889,7 @@ $(function(){
 				
 				// TODO check edge labels when added
 			} else {
-				bb = this._private.svgGroup.getBBox();
+				bb = this._private.renderer.svgGroup.getBBox();
 				update(bb);
 			}
 		});
@@ -1113,16 +1113,16 @@ $(function(){
 	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
 		var style = element._private.style;
-		var parent = element._private.svgGroup;
+		var parent = element._private.renderer.svgGroup;
 		var position = element._private.position;
 		
 		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
 	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
-		var svgDomElement = element._private.svg;
-		var targetArrow = element._private.targetSvg;
-		var sourceArrow = element._private.sourceSvg;
+		var svgDomElement = element._private.renderer.svg;
+		var targetArrow = element._private.renderer.svgTargetArrow;
+		var sourceArrow = element._private.renderer.svgSourceArrow;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
@@ -1140,7 +1140,7 @@ $(function(){
 	
 
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
-		var svgDomElement = element._private.svg;
+		var svgDomElement = element._private.renderer.svg;
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		var draggedAfterMouseDown = null;
@@ -1396,7 +1396,7 @@ $(function(){
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
 			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
 			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
-			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape(element._private.svg));
+			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape(element._private.renderer.svg));
 			self.svg.remove(modelRectangle);
 			
 			// rendered node
@@ -1492,7 +1492,7 @@ $(function(){
 		var self = this;
 		
 		collection.each(function(i, element){
-			self.svg.remove(element._private.svgGroup);
+			self.svg.remove(element._private.renderer.svgGroup);
 			self.makeSvgElement(element);
 			self.updatePosition(collection.closedNeighborhood().edges());
 		});
@@ -1515,13 +1515,13 @@ $(function(){
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.nodesGroup);
-		element._private.svgGroup = svgDomGroup;
+		element._private.renderer.svgGroup = svgDomGroup;
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
-		element._private.svg = svgDomElement;
+		element._private.renderer.svg = svgDomElement;
 		this.makeSvgNodeLabel(element);
 		
-		element._private.svg = svgDomElement;
+		element._private.renderer.svg = svgDomElement;
 		$.cytoscapeweb("debug", "SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);
 		
 		this.makeSvgNodeInteractive(element);
@@ -1535,20 +1535,20 @@ $(function(){
 		var x = element._private.position.x;
 		var y = element._private.position.y;
 		
-		element._private.svgLabelGroup = self.svg.group(element._private.svgGroup);
-		element._private.svgLabelOutline = self.svg.text(element._private.svgLabelGroup, x, y, "label init");
-		element._private.svgLabel = self.svg.text(element._private.svgLabelGroup, x, y, "label init");
+		element._private.renderer.svgLabelGroup = self.svg.group(element._private.renderer.svgGroup);
+		element._private.renderer.svgLabelOutline = self.svg.text(element._private.renderer.svgLabelGroup, x, y, "label init");
+		element._private.renderer.svgLabel = self.svg.text(element._private.renderer.svgLabelGroup, x, y, "label init");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
 		var self = this;
 
-		self.svg.change(element._private.svgLabel, {
+		self.svg.change(element._private.renderer.svgLabel, {
 			x: element._private.position.x,
 			y: element._private.position.y
 		});
 		
-		self.svg.change(element._private.svgLabelOutline, {
+		self.svg.change(element._private.renderer.svgLabelOutline, {
 			x: element._private.position.x,
 			y: element._private.position.y
 		});
@@ -1602,11 +1602,11 @@ $(function(){
 			}
 			
 			if( loop ){
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
 			} else if( curved ){
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
-				svgPath = self.svg.path( element._private.svgGroup, path.move(x1, y1).line(x2, y2) );
+				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).line(x2, y2) );
 			}
 		}
 		
@@ -1681,10 +1681,10 @@ $(function(){
 		var targetShape = nodeShape(targetShape).intersectionShape;
 		var sourceShape = nodeShape(sourceShape).intersectionShape;
 		
-		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.svg));
+		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.renderer.svg));
 		var tgtInt = intersection.points[ intersection.points.length - 1 ];
 		
-		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.svg));
+		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.renderer.svg));
 		var srcInt = intersection.points[0];
 		
 		var scale = f * edgeWidth;
@@ -1715,8 +1715,8 @@ $(function(){
 		
 		makePath();
 		
-		if( element._private.targetArrow != null ){
-			this.svg.remove(element._private.targetArrow);
+		if( element._private.renderer.svgTargetArrow != null ){
+			this.svg.remove(element._private.renderer.svgTargetArrow);
 		}
 		
 		if( targetArrowShape != "none" ){
@@ -1726,27 +1726,27 @@ $(function(){
 				y: y2 - tgtShapeObj.centerPoint.y * scale,
 			};
 			var targetCenter = tgtShapeObj.centerPoint;
-			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, element._private.svgGroup, element, element._private.position, element._private.style);
-			element._private.targetSvg = targetArrow;
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, element._private.renderer.svgGroup, element, element._private.position, element._private.style);
+			element._private.renderer.svgTargetArrow = targetArrow;
 
 			this.svg.change(targetArrow, {
 				transform: "translate(" + tgtArrowTranslation.x + " " + tgtArrowTranslation.y + ") scale(" + scale + ") rotate(" + targetRotation + " " + targetCenter.x + " " + targetCenter.y + ")"
 			});
 		}
 		
-		if( sourceArrowShape != "none" ){
-			if( element._private.sourceArrow != null ){
-				this.svg.remove(element._private.sourceArrow);
-			}
-			
+		if( element._private.renderer.svgSourceArrow != null ){
+			this.svg.remove(element._private.renderer.svgSourceArrow);
+		}
+		
+		if( sourceArrowShape != "none" ){		
 			var srcShapeObj = edgeArrowShape(sourceArrowShape);
 			var srcArrowTranslation = {
 				x: x1 - srcShapeObj.centerPoint.x * scale,
 				y: y1 - srcShapeObj.centerPoint.y * scale,
 			};
 			var sourceCenter = srcShapeObj.centerPoint;
-			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element._private.svgGroup, element, element._private.position, element._private.style);
-			element._private.sourceSvg = sourceArrow;
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element._private.renderer.svgGroup, element, element._private.position, element._private.style);
+			element._private.renderer.svgSourceArrow = sourceArrow;
 			
 			this.svg.change(sourceArrow, {
 				transform: "translate(" + srcArrowTranslation.x + " " + srcArrowTranslation.y + ") scale(" + scale + ") rotate(" + sourceRotation + " " + sourceCenter.x + " " + sourceCenter.y + ")"
@@ -1771,11 +1771,11 @@ $(function(){
 			};
 		}
 		
-		element._private.svgLabelGroup = self.svg.group(element._private.svgGroup);
-		element._private.svgLabelOutline = self.svg.text(element._private.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
-		element._private.svgLabel = self.svg.text(element._private.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
+		element._private.renderer.svgLabelGroup = self.svg.group(element._private.renderer.svgGroup);
+		element._private.renderer.svgLabelOutline = self.svg.text(element._private.renderer.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
+		element._private.renderer.svgLabel = self.svg.text(element._private.renderer.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
 		
-		element._private.svg = svgPath;
+		element._private.renderer.svg = svgPath;
 		return svgPath;
 	};
 	
@@ -1877,7 +1877,7 @@ $(function(){
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.edgesGroup);
-		element._private.svgGroup = svgDomGroup;
+		element._private.renderer.svgGroup = svgDomGroup;
 		this.svg.change(svgDomGroup);
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
@@ -1887,7 +1887,7 @@ $(function(){
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
-		return element._private.svg;
+		return element._private.renderer.svg;
 	};
 	
 	SvgRenderer.prototype.makeSvgElement = function(element){
@@ -1903,8 +1903,8 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.getSvgElement = function(element){
-		if( element._private.svg != null ){
-			return element._private.svg;
+		if( element._private.renderer.svg != null ){
+			return element._private.renderer.svg;
 		} else {
 			return this.makeSvgElement(element);
 		}
@@ -2005,20 +2005,20 @@ $(function(){
 		
 		var newShape = element._private.style.shape;
 		
-		if( element._private.svg == null ){
+		if( element._private.renderer.svg == null ){
 			$.cytoscapeweb("error", "SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
 			return;
 		}
 		
 		if( newShape != oldShape ){
-			this.svg.remove(element._private.svgGroup);
+			this.svg.remove(element._private.renderer.svgGroup);
 			this.makeSvgNode(element);
 			return;
 		}
 			
 		// TODO add more as more styles are added
 		// generic styles go here
-		this.svg.change(element._private.svg, {
+		this.svg.change(element._private.renderer.svg, {
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			fillOpacity: percent(style.fillOpacity),
@@ -2030,7 +2030,7 @@ $(function(){
 			"visibility": visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.svgGroup, {
+		this.svg.change(element._private.renderer.svgGroup, {
 			opacity: percent(style.opacity)
 		});
 		
@@ -2047,29 +2047,29 @@ $(function(){
 			"font-size": style.labelFontSize
 		};
 		
-		this.svg.change(element._private.svgLabelGroup, {
+		this.svg.change(element._private.renderer.svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
-		this.svg.change(element._private.svgLabelOutline, {
+		this.svg.change(element._private.renderer.svgLabelOutline, {
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			fill: "none",
 			opacity: percent(style.labelOutlineOpacity)
 		});
 		
-		this.svg.change(element._private.svgLabelOutline, labelOptions);
-		this.svg.change(element._private.svgLabel, labelOptions);
+		this.svg.change(element._private.renderer.svgLabelOutline, labelOptions);
+		this.svg.change(element._private.renderer.svgLabel, labelOptions);
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element._private.svgLabel.textContent = labelText;
-		element._private.svgLabelOutline.textContent = labelText;
+		element._private.renderer.svgLabel.textContent = labelText;
+		element._private.renderer.svgLabelOutline.textContent = labelText;
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
 		
 		// styles to the group
-		this.svg.change(element._private.svgGroup, {
+		this.svg.change(element._private.renderer.svgGroup, {
 			fillOpacity: percent(style.fillOpacity)
 		});
 		
@@ -2088,7 +2088,7 @@ $(function(){
 		var dy = 0;
 		var height = 0;
 		var width = 0;
-		var text = element._private.svgLabel.textContent;
+		var text = element._private.renderer.svgLabel.textContent;
 		
 		// update node label x, y
 		this.positionSvgNodeLabel(element);
@@ -2123,7 +2123,7 @@ $(function(){
 		}
 		
 		// TODO remove this hack to fix IE when it supports baseline properties properly
-		var fontSize = parseInt(window.getComputedStyle(element._private.svgLabel)["fontSize"]);
+		var fontSize = parseInt(window.getComputedStyle(element._private.renderer.svgLabel)["fontSize"]);
 		var ieFix = $.browser.msie ? fontSize/3 : 0;
 	
 		if( valign == "middle" ){
@@ -2149,8 +2149,8 @@ $(function(){
 		
 		var labelOptions = $.extend({}, textAnchor, styleAttr, transform);
 		
-		this.svg.change(element._private.svgLabelOutline, labelOptions);
-		this.svg.change(element._private.svgLabel, labelOptions);
+		this.svg.change(element._private.renderer.svgLabelOutline, labelOptions);
+		this.svg.change(element._private.renderer.svgLabel, labelOptions);
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
@@ -2160,16 +2160,16 @@ $(function(){
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
 		var style = element._private.style;
 		
-		if( element._private.svg == null ){
+		if( element._private.renderer.svg == null ){
 			$.cytoscapeweb("error", "SVG renderer can not update style for edge `%s` since it has no SVG element", element._private.data.id);
 			return;
 		}
 		
 		var newSrcStyle = element.source().style();
-		var oldSrcStyle = element._private.oldSourceStyle || newSrcStyle;
+		var oldSrcStyle = element._private.renderer.oldSourceStyle || newSrcStyle;
 		
 		var newTgtStyle = element.target().style();
-		var oldTgtStyle = element._private.oldTargetStyle || newTgtStyle;
+		var oldTgtStyle = element._private.renderer.oldTargetStyle || newTgtStyle;
 		
 		var newTargetShape = element._private.style.targetArrowShape;
 		var newSourceShape = element._private.style.sourceArrowShape;
@@ -2179,11 +2179,14 @@ $(function(){
 			newSrcStyle.shape != oldSrcStyle.shape || newTgtStyle.shape != oldTgtStyle.shape ||
 			newSrcStyle.borderWidth != oldSrcStyle.borderWidth || newTgtStyle.borderWidth != oldTgtStyle.borderWidth;
 		
-		element._private.oldSourceStyle = newSrcStyle;
-		element._private.oldTargetStyle = newTgtStyle;
+		var widthChanged = element._private.renderer.oldStyle == null || element._private.renderer.oldStyle.width != style.width;
 		
-		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged ){
-			this.svg.remove(element._private.svgGroup);
+		element._private.renderer.oldSourceStyle = newSrcStyle;
+		element._private.renderer.oldTargetStyle = newTgtStyle;
+		element._private.renderer.oldStyle = style;
+		
+		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
+			this.svg.remove(element._private.renderer.svgGroup);
 			this.makeSvgEdge(element);
 			
 			return;
@@ -2191,7 +2194,7 @@ $(function(){
 		
 		// TODO add more as more styles are added
 		// generic edge styles go here
-		this.svg.change(element._private.svg, {
+		this.svg.change(element._private.renderer.svg, {
 			"pointer-events": "visibleStroke", // on visibility:hidden, no events
 			stroke: color(style.lineColor),
 			strokeWidth: number(style.width),
@@ -2203,13 +2206,13 @@ $(function(){
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.targetSvg, {
+		this.svg.change(element._private.renderer.svgTargetArrow, {
 			fill: color(style.targetArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.sourceSvg, {
+		this.svg.change(element._private.renderer.svgSourceArrow, {
 			fill: color(style.sourceArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
@@ -2227,21 +2230,21 @@ $(function(){
 			"font-size": style.labelFontSize
 		};
 		
-		this.svg.change(element._private.svgLabel, labelOptions);
-		this.svg.change(element._private.svgLabelOutline, $.extend({}, labelOptions, {
+		this.svg.change(element._private.renderer.svgLabel, labelOptions);
+		this.svg.change(element._private.renderer.svgLabelOutline, $.extend({}, labelOptions, {
 			fill: "none",
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			opacity: percent(style.labelOutlineOpacity),
 		}) );
 		
-		this.svg.change(element._private.svgLabelGroup, {
+		this.svg.change(element._private.renderer.svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element._private.svgLabel.textContent = labelText;
-		element._private.svgLabelOutline.textContent = labelText;
+		element._private.renderer.svgLabel.textContent = labelText;
+		element._private.renderer.svgLabelOutline.textContent = labelText;
 		this.updateLabelPosition(element, "middle", "middle");
 		
 		$.cytoscapeweb("debug", "SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);
@@ -2297,8 +2300,8 @@ $(function(){
 		var self = this;
 		
 		edges.each(function(i, edge){
-			if( edge._private.svgGroup != null ){
-				self.svg.remove(edge._private.svgGroup);
+			if( edge._private.renderer.svgGroup != null ){
+				self.svg.remove(edge._private.renderer.svgGroup);
 			}
 			self.makeSvgEdge(edge);
 			
@@ -2324,12 +2327,12 @@ $(function(){
 		var self = this;
 		
 		collection.each(function(i, element){
-			if( element._private.svgGroup != null ){
-				svg.remove(element._private.svgGroup);
-				delete element._private.svg;
-				delete element._private.svgGroup;
-				delete element._private.sourceSvg;
-				delete element._private.targetSvg;
+			if( element._private.renderer.svgGroup != null ){
+				svg.remove(element._private.renderer.svgGroup);
+				delete element._private.renderer.svg;
+				delete element._private.renderer.svgGroup;
+				delete element._private.renderer.svgSourceArrow;
+				delete element._private.renderer.svgTargetArrow;
 				// TODO add delete other svg children like labels
 			} else {
 				$.cytoscapeweb("debug", "Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);

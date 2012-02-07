@@ -2,7 +2,7 @@
 	
 	var defaults = {
 		zoomFactor: 0.05,
-		zoomDelay: 50,
+		zoomDelay: 16,
 		minZoom: 0.1,
 		maxZoom: 10,
 		panSpeed: 10,
@@ -112,16 +112,16 @@
 			var handler = function(e){
 				e.stopPropagation(); // don't trigger dragging of panzoom
 				e.preventDefault(); // don't cause text selection
+				clearInterval(panInterval);
 				
 				var pan = handle2pan(e);
 				
 				if( isNaN(pan.x) || isNaN(pan.y) ){
+					$pIndicator.hide();
 					return;
 				}
 				
 				positionIndicator(pan);
-				
-				clearInterval(panInterval);
 				panInterval = setInterval(function(){
 					$container.cytoscapeweb("get").panBy(pan);
 				}, options.panSpeed);
@@ -146,32 +146,51 @@
 			var sliderMax = 100;
 			var sliderMin = Math.floor( Math.log(options.minZoom)/Math.log(options.maxZoom) * sliderMax );
 			
+			function getSliderVal(){
+				var $handle = $slider.find(".ui-slider-handle");
+				var left = $handle.position().left;
+				var width = $handle.parent().width();
+				
+				var range = sliderMax - sliderMin;
+				var min = sliderMin;
+				
+				return Math.round( left / width * range + min );
+			}
+			
+			function setZoomViaSlider(){
+				var cy = $container.cytoscapeweb("get");
+				var val = getSliderVal();
+				
+				var zoom = slider2zoom(val);
+				
+				clearTimeout(sliderTimeout);
+				sliderTimeout = null;
+				cy.zoom({
+					level: zoom,
+					renderedPosition: {
+						x: $container.width()/2,
+						y: $container.height()/2
+					}
+				});
+			}
+			
 			$slider.slider({
 				min: sliderMin,
 				max: sliderMax,
 				step: 1,
-				val: zoom2slider( $container.cytoscapeweb("get").zoom() ),
-				slide: function(){
-					var cy = $container.cytoscapeweb("get");
-					var val = $slider.slider("value");
-					var zoom = slider2zoom(val);
-					
-					clearTimeout(sliderTimeout);
-					sliderTimeout = null;
-					cy.zoom({
-						level: zoom,
-						renderedPosition: {
-							x: $container.width()/2,
-							y: $container.height()/2
-						}
-					});
-				}
+				val: zoom2slider( $container.cytoscapeweb("get").zoom() )
 			});
+			
+			function sliderHandler(){
+				setZoomViaSlider();
+			};
 			
 			var sliderMdown = false;
 			$slider.find(".ui-slider-handle").bind("mousedown", function(){
-				sliderMdown = true;
+				sliderMdown = true;				
+				$(window).bind("mousemove", sliderHandler);
 			}).bind("mouseup", function(){
+				$(window).unbind("mousemove", sliderHandler);
 				sliderMdown = false;
 			});
 			
@@ -181,7 +200,6 @@
 			
 			var sliderTimeout;
 			$container.cytoscapeweb("get").bind("zoom", function(){
-				
 				if( sliderTimeout != null || sliderMdown ){
 					return;
 				}

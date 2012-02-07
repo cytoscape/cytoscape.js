@@ -132,10 +132,94 @@
 	position: absolute;
 	left: 0;
 	top: 0;
-/* 	background: rgba(255, 0, 0, 0.5); */
 	outline: none;
 	height: 40px;
 	width: 40px;
 	position: absolute;
 	z-index: 999;
+}
+
+.ui-cytoscapeweb-panzoom-static {
+	position: absolute;
+	left: 25px;
+	top: 25px;
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	height: 0;
+	width: 0;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-panner {
+	top: 0;
+	left: 0;
+	border: 1px solid #888;
+	margin-left: -1px;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider {
+	left: 11px;
+	top: 100px;
+	height: 100px !important;
+	width: 16px !important;
+	box-shadow: none;
+	border-radius: 0 !important;
+	position: absolute;
+	background: transparent;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider .ui-slider-handle {
+	left: 50%;
+	margin-left: -9px;
+	margin-top: 0;
+	top: auto;
+	height: 6px;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
+	background-image: url("debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button {
+	border-radius: 4px;
+	height: 16px;
+	width: 16px;
+	border: 1px solid #ccc;
+	padding: 0;
+	left: 10px;
+	background: #fff;
+	box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+	z-index: 1;
+	border: 1px solid #888;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-reset {
+	top: 55px;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-in {
+	top: 77px;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-out {
+	top: 209px;
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-panner {
+	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider-background {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	height: 100%;
+	width: 2px;
+	margin-left: -2px;
+	box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+	border: 1px solid #888;
+	background: #fff;
+	padding-top: 6px;
+	margin-top: -6px;
+	padding-bottom: 8px;
 }

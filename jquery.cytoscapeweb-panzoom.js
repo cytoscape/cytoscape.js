@@ -7,10 +7,11 @@
 		maxZoom: 10,
 		panSpeed: 10,
 		panDistance: 10,
-		panDragAreaSize: 100,
+		panDragAreaSize: 75,
 		panMinPercentSpeed: 0.25,
 		panInactiveArea: 10,
-		panIndicatorMinOpacity: 0.65
+		panIndicatorMinOpacity: 0.65,
+		staticPosition: false
 	};
 	
 	$.fn.cytoscapewebPanzoom = function(params){
@@ -21,6 +22,10 @@
 			
 			var $panzoom = $('<div class="ui-cytoscapeweb-panzoom"></div>');
 			$container.append( $panzoom );
+			
+			if( options.staticPosition ){
+				$panzoom.addClass("ui-cytoscapeweb-panzoom-static");
+			}
 			
 			var $zoomIn = $('<div class="ui-cytoscapeweb-panzoom-zoom-in ui-cytoscapeweb-panzoom-zoom-button"><span class="ui-icon ui-icon-plusthick"></span></div>');
 			$panzoom.append( $zoomIn );
@@ -33,6 +38,8 @@
 			
 			var $slider = $('<div class="ui-cytoscapeweb-panzoom-slider"></div>');
 			$panzoom.append( $slider );
+			
+			$slider.append('<div class="ui-cytoscapeweb-panzoom-slider-background"></div>');
 			
 			var $panner = $('<div class="ui-cytoscapeweb-panzoom-panner"></div>');
 			$panzoom.append( $panner );
@@ -148,13 +155,19 @@
 			
 			function getSliderVal(){
 				var $handle = $slider.find(".ui-slider-handle");
-				var left = $handle.position().left;
-				var width = $handle.parent().width();
+				var $parent = $handle.parent();
+				var pos = $handle.position();
+				
+				var width = $parent.width();
+				var height = $parent.height();
+				var left = pos.left;
+				var bottom = height - pos.top;
 				
 				var range = sliderMax - sliderMin;
 				var min = sliderMin;
+				var percent = options.staticPosition ? (bottom / height) : (left / width);
 				
-				return Math.round( left / width * range + min );
+				return Math.round( percent * range + min );
 			}
 			
 			function setZoomViaSlider(){
@@ -178,7 +191,13 @@
 				min: sliderMin,
 				max: sliderMax,
 				step: 1,
-				val: zoom2slider( $container.cytoscapeweb("get").zoom() )
+				val: zoom2slider( $container.cytoscapeweb("get").zoom() ),
+				orientation: options.staticPosition ? "vertical" : "horizontal",
+				slide: function(e){
+					if( e.originalEvent.type == "keydown" ){
+						return false; // don't allow keyboard to modify slider
+					}
+				}
 			});
 			
 			function sliderHandler(){
@@ -186,11 +205,16 @@
 			};
 			
 			var sliderMdown = false;
-			$slider.find(".ui-slider-handle").bind("mousedown", function(){
-				sliderMdown = true;				
+			$slider.find(".ui-slider-handle").add( $slider ).bind("mousedown", function(){
+				sliderMdown = true;
+				
+				sliderHandler();
+				
+				$(window).unbind("mousemove", sliderHandler);
 				$(window).bind("mousemove", sliderHandler);
 			}).bind("mouseup", function(){
 				$(window).unbind("mousemove", sliderHandler);
+				
 				sliderMdown = false;
 			});
 			
@@ -198,8 +222,16 @@
 				sliderMdown = false;
 			});
 			
+			$(window).bind("mousemove", function(){
+				
+				if( sliderMdown ){
+					return false;
+				}
+				
+			});
+			
 			var sliderTimeout;
-			$container.cytoscapeweb("get").bind("zoom", function(){
+			$container.cytoscapeweb("get").bind("zoom", function(){ 
 				if( sliderTimeout != null || sliderMdown ){
 					return;
 				}
@@ -217,7 +249,9 @@
 						percent = 0;
 					}
 					
-					$slider.find(".ui-slider-handle").css("left", (100 * percent) + "%");
+					var property = options.staticPosition ? "bottom" : "left";
+					
+					$slider.find(".ui-slider-handle").css(property, (100 * percent) + "%");
 					sliderTimeout = null;
 				}, 10);
 			});
@@ -230,13 +264,18 @@
 				return Math.log(zoom) * 100 / Math.log(10);
 			}
 			
-			$panzoom.draggable({
-				containment: "parent"
-			});
-			
+			if( !options.staticPosition ){
+				$panzoom.draggable({
+					containment: "parent"
+				});
+			}
+		
 			var zoomInterval;
 			function bindButton($button, factor){
 				$button.bind("mousedown", function(e){
+					e.preventDefault();
+					e.stopPropagation();
+					
 					if( e.button != 0 ){
 						return;
 					}

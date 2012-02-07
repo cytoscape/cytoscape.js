@@ -121,7 +121,7 @@ $(function(){
 		// enable this again later...
 		
 		$container.cytoscapewebPanzoom({
-			
+			staticPosition: true
 		});
 		
 		function number(group){

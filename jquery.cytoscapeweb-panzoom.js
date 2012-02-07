@@ -5,8 +5,12 @@
 		zoomDelay: 50,
 		minZoom: 0.1,
 		maxZoom: 10,
-		panSpeed: 25,
-		panDistance: 1.5
+		panSpeed: 10,
+		panDistance: 10,
+		panDragAreaSize: 100,
+		panMinPercentSpeed: 0.25,
+		panInactiveArea: 10,
+		panIndicatorMinOpacity: 0.65
 	};
 	
 	$.fn.cytoscapewebPanzoom = function(params){
@@ -36,57 +40,99 @@
 			var $pHandle = $('<div class="ui-cytoscapeweb-panzoom-panner-handle"></div>');
 			$panner.append( $pHandle );
 			
-			function handle2pan(){
-				var pos = $pHandle.position();
-				var x = pos.left;
-				var y = pos.top;
-				var w = $panner.width() - $pHandle.outerWidth();
-				var h = $panner.height() - $pHandle.outerHeight();
-				var r = $panner.width()/2;
-				
+			var $pUp = $('<div class="ui-cytoscapeweb-panzoom-pan-up ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-n"></span></div>');
+			var $pDown = $('<div class="ui-cytoscapeweb-panzoom-pan-down ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-s"></span></div>');
+			var $pLeft = $('<div class="ui-cytoscapeweb-panzoom-pan-left ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-w"></span></div>');
+			var $pRight = $('<div class="ui-cytoscapeweb-panzoom-pan-right ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-e"></span></div>');
+			$panner.append( $pUp ).append( $pDown ).append( $pLeft ).append( $pRight );
+			
+			var $pIndicator = $('<div class="ui-cytoscapeweb-panzoom-pan-indicator"></div>');
+			$panner.append( $pIndicator );
+			
+			function handle2pan(e){
 				var v = {
-					x: x - w/2,
-					y: y - h/2
+					x: e.originalEvent.pageX - $panner.offset().left - $panner.width()/2,
+					y: e.originalEvent.pageY - $panner.offset().top - $panner.height()/2
+				}
+				
+				var r = options.panDragAreaSize;
+				var d = Math.sqrt( v.x*v.x + v.y*v.y );
+				var percent = Math.min( d/r, 1 );
+				
+				if( d < options.panInactiveArea ){
+					return {
+						x: NaN,
+						y: NaN
+					};
+				}
+				
+				v = {
+					x: v.x/d,
+					y: v.y/d
 				};
 				
-				var d = Math.sqrt( v.x*v.x + v.y*v.y );
-				var percent = d/r;
+				percent = Math.max( options.panMinPercentSpeed, percent );
 				
 				var vnorm = {
 					x: -1 * v.x * (percent * options.panDistance),
 					y: -1 * v.y * (percent * options.panDistance)
 				};
-	
+				
 				return vnorm;
 			}
 			
 			function donePanning(){
 				clearInterval(panInterval);
+				$(window).unbind("mousemove", handler);
 				
-				$pHandle.css({
-					left: $panner.width()/2 - $pHandle.outerWidth()/2,
-					top: $panner.height()/2 - $pHandle.outerHeight()/2
+				$pIndicator.hide();
+			}
+			
+			function positionIndicator(pan){
+				var v = pan;
+				var d = Math.sqrt( v.x*v.x + v.y*v.y );
+				var vnorm = {
+					x: -1 * v.x/d,
+					y: -1 * v.y/d
+				};
+				
+				var w = $panner.width();
+				var h = $panner.height();
+				var percent = d/options.panDistance;
+				
+				$pIndicator.show().css({
+					left: w/2 * vnorm.x + w/2,
+					top: h/2 * vnorm.y + h/2,
+					opacity: Math.max( options.panIndicatorMinOpacity, percent )
 				});
 			}
 			
 			var panInterval;
-			$pHandle.draggable({
-				containment: "parent",
-				drag: function(){
-					var pan = handle2pan();
-					
-					if( isNaN(pan.x) || isNaN(pan.y) ){
-						return;
-					}
-					
-					clearInterval(panInterval);
-					panInterval = setInterval(function(){
-						$container.cytoscapeweb("get").panBy(pan);
-					}, options.panSpeed);
-				},
-				stop: function(){
-					donePanning();
+			
+			var handler = function(e){
+				e.stopPropagation(); // don't trigger dragging of panzoom
+				e.preventDefault(); // don't cause text selection
+				
+				var pan = handle2pan(e);
+				
+				if( isNaN(pan.x) || isNaN(pan.y) ){
+					return;
 				}
+				
+				positionIndicator(pan);
+				
+				clearInterval(panInterval);
+				panInterval = setInterval(function(){
+					$container.cytoscapeweb("get").panBy(pan);
+				}, options.panSpeed);
+			};
+			
+			$pHandle.bind("mousedown", function(e){
+				// handle click of icon
+				handler(e);
+				
+				// update on mousemove
+				$(window).bind("mousemove", handler);
 			});
 			
 			$pHandle.bind("mouseup", function(){

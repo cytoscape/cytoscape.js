@@ -28,6 +28,17 @@
 	background-image: url("debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
 }
 
+.ui-cytoscapeweb-panzoom-pan-button .ui-icon {
+	background-image: url("debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
+}
+
+.ui-cytoscapeweb-panzoom-pan-button {
+	position: absolute;
+	z-index: 1;
+	height: 16px;
+	width: 16px;
+}
+
 .ui-cytoscapeweb-panzoom-reset {
 	right: 50px;
 }
@@ -38,6 +49,47 @@
 
 .ui-cytoscapeweb-panzoom-zoom-out {
 	right: 95px;
+}
+
+.ui-cytoscapeweb-panzoom-pan-up {
+	top: -4px;
+	left: 50%;
+	margin-left: -8px;
+}
+
+.ui-cytoscapeweb-panzoom-pan-down {
+	bottom: -4px;
+	left: 50%;
+	margin-left: -8px;
+}
+
+.ui-cytoscapeweb-panzoom-pan-left {
+	top: 50%;
+	left: -4px;
+	margin-top: -8px;
+}
+
+.ui-cytoscapeweb-panzoom-pan-right {
+	top: 50%;
+	right: -4px;
+	margin-top: -8px;
+}
+
+.ui-cytoscapeweb-panzoom-pan-indicator {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 8px;
+	height: 8px;
+	border-radius: 8px;
+	background: #000;
+	border: 2px solid #fff;
+	border-radius: 8px;
+	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+	margin-left: -5px;
+	margin-top: -5px;
+	display: none;
+	z-index: 999;
 }
 
 .ui-cytoscapeweb-panzoom-slider {
@@ -78,14 +130,12 @@
 
 .ui-cytoscapeweb-panzoom-panner-handle {
 	position: absolute;
-	left: 11px;
-	top: 11px;
-	background: #000;
-	border: 2px solid #fff;
-	border-radius: 10px;
+	left: 0;
+	top: 0;
+/* 	background: rgba(255, 0, 0, 0.5); */
 	outline: none;
-	height: 14px;
-	width: 14px;
+	height: 40px;
+	width: 40px;
 	position: absolute;
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	z-index: 999;
 }

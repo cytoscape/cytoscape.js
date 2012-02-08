@@ -1127,7 +1127,7 @@ $(function(){
 		var self = this;
 		
 		$(svgDomElement).add(targetArrow).add(sourceArrow).bind("mouseup mousedown click touchstart touchmove touchend mouseover mousemove mouseout", function(e){
-			if( self.edgeEventIsValid(e) ){
+			if( self.edgeEventIsValid(element, e) ){
 				element.trigger(e);
 			}
 		}).bind("click touchend", function(e){
@@ -1276,37 +1276,35 @@ $(function(){
 			}
 		}).bind("mouseover mouseout mousemove", function(e){
 			// ignore events created falsely for recreated elements
-			if( self.nodeEventIsValid(e) ){
-				return;
+			if( self.nodeEventIsValid(element, e) ){
+				element.trigger($.extend({}, e));
 			}
-			
-			element.trigger($.extend({}, e));
 		});
 		
 	};
 	
 
-	SvgRenderer.prototype.edgeEventIsValid = function(event){
+	SvgRenderer.prototype.edgeEventIsValid = function(element, event){
 		var $rt = $(event.relatedTarget);
 		var self = this;
 		
 		switch( event.type ){
 		case "mouseover":
 		case "mouseout":
-			return $rt.parent()[0] == self.svgRoot;
+			return $rt.parent().parent().size() > 0; // don't count when elements were removed
 		default:
 			return true;
 		}		
 	};
 	
-	SvgRenderer.prototype.nodeEventIsValid = function(event){
+	SvgRenderer.prototype.nodeEventIsValid = function(element, event){
 		var $rt = $(event.relatedTarget);
 		var self = this;
-		
+
 		switch( event.type ){
 		case "mouseover":
 		case "mouseout":
-			return $rt.parent()[0] != self.svgRoot;
+			return $rt.parent().parent().size() > 0; // don't count when elements were removed
 		default:
 			return true;
 		}		

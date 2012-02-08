@@ -120,9 +120,9 @@ $(function(){
 		
 		// enable this again later...
 		
-		$container.cytoscapewebPanzoom({
-			staticPosition: true
-		});
+		$container.cytoscapewebPanzoom();
+		
+		$container.cytoscapewebEdgehandles();
 		
 		function number(group){
 			var input = $("#" + group + "-number");

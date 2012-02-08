@@ -465,6 +465,7 @@
 						queue: []
 					},
 					renderer: {}, // object in which the renderer can store information
+					scratch: {} // scratch objects
 				};
 				
 				// renderedPosition overrides if specified
@@ -483,6 +484,49 @@
 				}
 				
 				this.restore();
+			};
+			
+			CyElement.prototype.scratch = function( name, val ){
+				var self = this;
+				var fields = name.split(".");
+				
+				function set(){
+					var obj = self._private.scratch;
+					$.each(fields, function(i, field){
+						if( i == fields.length - 1 ){ return; }
+						
+						obj = obj[field];
+					});
+					
+					var lastField = fields[ fields.length - 1 ];
+					
+					obj[ lastField ] = val;
+				}
+				
+				function get(){
+					var obj = self._private.scratch;
+					$.each(fields, function(i, field){
+						obj = obj[field];
+					});
+					
+					return obj;
+				}
+				
+				if( val === undefined ){
+					return get(); 
+				} else {
+					set();
+				}
+				
+				return this;
+			};
+			
+			CyElement.prototype.removeScratch = function( name ){
+				var self = this;
+				
+				eval( "delete self._private.scratch." + name + ";" );
+				
+				return this;
 			};
 			
 			CyElement.prototype.json = function(){

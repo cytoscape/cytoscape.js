@@ -49,8 +49,8 @@ $(function(){
 								name: "weight",
 							},
 							mapped: {
-								min: 10,
-								max: 30
+								min: 25,
+								max: 40
 							}
 						}
 					},
@@ -60,8 +60,8 @@ $(function(){
 								name: "weight",
 							},
 							mapped: {
-								min: 10,
-								max: 30
+								min: 25,
+								max: 40
 							}
 						}
 					}
@@ -69,6 +69,23 @@ $(function(){
 				
 				"node:selected": {
 					fillColor: "#333"
+				},
+				
+				"node.ui-cytoscapeweb-edgehandles-hover": {
+					
+				},
+				
+				"node.ui-cytoscapeweb-edgehandles-target": {
+					borderColor: "red",
+					borderWidth: 3
+				},
+				
+				".ui-cytoscapeweb-edgehandles-preview": {
+					fillColor: "red",
+					lineColor: "red",
+					sourceArrowColor: "red",
+					targetArrowColor: "red",
+					opacity: 0.75
 				}
 			}
 		},
@@ -122,7 +139,13 @@ $(function(){
 		
 		$container.cytoscapewebPanzoom();
 		
-		$container.cytoscapewebEdgehandles();
+		$container.cytoscapewebEdgehandles({
+			lineType: "straight",
+			preview: true,
+			edgeType: function(){
+				return $("#add-edge-type-select").val();
+			}
+		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

@@ -80,12 +80,16 @@
 	    	<button id="layout-button">Apply</button>
 	    	
 	    	<h2>Add & remove elements</h2>
-	    	
+	    	<label for="add-edge-type-select">Edge handle type</label>
+	    	<select id="add-edge-type-select">
+	    		<option value="flat">Flat edges</option>
+	    		<option value="node">Edges with intermediate node</option>
+	    	</select><br /><br />
 	    	<label for="nodes-number">Nodes</label> <input type="text" id="nodes-number" />
 	    	<label for="edges-number">Edges</label> <input type="text" id="edges-number" />
 	    	<button id="add-elements-button">Add</button>
 	    	<button id="remove-selected-button">Remove selected</button> <br />
-	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small>
+	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small> <br />
 	    	
 	    	<h2>Element binding</h2>
 	    	<select id="bind-type-select">

@@ -468,6 +468,10 @@ $(function(){
 				var selectDy = 0;
 				
 				var panDelayTimeout = setTimeout(function(){
+					if( !self.cy.panning() ){
+						return;
+					}
+					
 					panning = true;
 					selecting = false;
 					
@@ -570,7 +574,11 @@ $(function(){
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
-		}).bind("mousewheel", function(e, delta, deltaX, deltaY){		
+		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
+			if( !self.cy.panning() || !self.cy.zooming() ){
+				return;
+			}
+			
 			self.offsetFix(e.originalEvent);
 
 			var point = {
@@ -587,6 +595,8 @@ $(function(){
 			var zoom = self.zoom() * (1 + deltaY * deltaFactor);
 			
 			self.zoomAboutPoint(point, zoom);
+			self.cy.trigger("zoom");
+			self.cy.trigger("pan");
 			
 			e.preventDefault();
 		});
@@ -694,10 +704,10 @@ $(function(){
 				y: 0
 			};
 			
-			if( pointsAtLeast(tmEvent, 1) ){
+			if( pointsAtLeast(tmEvent, 1) && self.cy.panning() ){
 				point21 = point(tmEvent, 0);
 				
-				if( pointsAtLeast(tmEvent, 2) ){
+				if( pointsAtLeast(tmEvent, 2) && self.cy.zooming() ){
 					var distance2 = distance(tmEvent);
 					//center = self.renderedPoint(modelCenter);
 					var factor = distance2 / distance1;
@@ -769,6 +779,12 @@ $(function(){
 	
 	SvgRenderer.prototype.zoomAboutPoint = function(point, zoom, translation){
 		var self = this;
+		var cy = self.cy;
+		
+		if( !cy.panning() || !cy.zooming() ){
+			return;
+		}
+		
 		var pan1 = self.pan();
 		var zoom1 = self.zoom();
 		var zoom2 = zoom;
@@ -789,12 +805,15 @@ $(function(){
 			translation: pan2,
 			scale: zoom2
 		});
-		
-		self.cy.trigger("zoom");
-		self.cy.trigger("pan");
 	};
 	
 	SvgRenderer.prototype.zoom = function(scale){
+		
+		var cy = this.cy;
+		
+		if( !cy.zooming() ){
+			return;
+		}
 		
 		if( scale === undefined ){
 			return this.scale;
@@ -825,6 +844,11 @@ $(function(){
 	SvgRenderer.prototype.fit = function(params){
 		var elements = params.elements;
 		var zoom = params.zoom;
+		var cy = self.cy;
+		
+		if( !cy.panning() || (zoom !== undefined && !cy.zooming()) ){
+			return;
+		}
 		
 		if( elements == null || elements.size() == 0 ){
 			elements = this.cy.elements();
@@ -924,6 +948,10 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.panBy = function(position){
+		if( !this.cy.panning() ){
+			return;
+		}
+		
 		$.cytoscapeweb("debug", "Relatively pan SVG renderer with position (%o)", position);
 		
 		this.transform({
@@ -935,6 +963,10 @@ $(function(){
 	};
 	
 	SvgRenderer.prototype.pan = function(position){
+		if( !this.cy.panning() ){
+			return;
+		}
+		
 		$.cytoscapeweb("debug", "Pan SVG renderer with position (%o)", position);
 		
 		if( position === undefined ){

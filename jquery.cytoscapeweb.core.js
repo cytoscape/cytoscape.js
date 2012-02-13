@@ -93,6 +93,10 @@
 		return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
 	}
 	
+	function isBoolean(obj){
+		return obj != null && typeof obj == typeof true;
+	}
+	
 	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
@@ -542,7 +546,8 @@
 					locked: p.locked,
 					grabbed: p.grabbed,
 					grabbable: p.grabbable,
-					classes: ""
+					classes: "",
+					scratch: p.scratch
 				});
 				
 				var classes = [];
@@ -579,6 +584,8 @@
 				var added = false;
 				
 				$.each(classes, function(i, cls){
+					if( cls == null || cls == "" ){ return; }
+					
 					added = added || self._private.classes[cls] === undefined;
 					self._private.classes[cls] = true;
 				});
@@ -656,7 +663,6 @@
 				if( !this.removed() ){
 					// don't need to do anything
 				}
-				this._private.removed = false;
 				
 				// set id and validate
 				if( this._private.data.id == null ){
@@ -687,7 +693,8 @@
 					addParallelEdgeToMap(this);
 					
 				} 
-				  
+				 
+				this._private.removed = false;
 				structs[ this._private.group ][ this._private.data.id ] = this;
 				
 				// add to map of edges belonging to nodes
@@ -2547,12 +2554,12 @@
 					var remaining = str;
 					var queries = [];
 					while( true ){
-						match = remaining.match(new RegExp( "(" + qnnRegex + ")(\\s*,\\s*(.+))?" ));
+						match = remaining.match(new RegExp( "^(" + qnnRegex + ")(\\s*,\\s*(.+))?$" ));
 						
 						if( match != null ){
 							queries.push( match[1] );
 							
-							var rmatch = remaining.match(new RegExp( qnnRegex + "\\s*,\\s*(.+)" ));
+							var rmatch = remaining.match(new RegExp( "^" + qnnRegex + "\\s*,\\s*(.+)$" ));
 							if( rmatch != null ){
 								remaining = rmatch[ rmatch.length - 1 ];
 							} else {
@@ -3292,6 +3299,8 @@
 						collection: elements
 					});
 					
+					
+					return new CyCollection( elements );
 				}
 			}
 			
@@ -3422,6 +3431,9 @@
 				}
 			};
 			
+			var zoomEnabled = true;
+			var panEnabled = true;
+			
 			// this is the cytoweb object
 			var cy = {
 				
@@ -3521,12 +3533,10 @@
 					if( typeof collection == typeof "" ){
 						var selector = collection;
 						var elements = elementsCollection({ selector: selector, addLiveFunction: false });
-						elements.remove();
+						return elements.remove();
 					} else {
-						collection.remove();
+						return collection.remove();
 					}
-					
-					return this;
 				},
 				
 				nodes: function(selector){
@@ -3592,32 +3602,72 @@
 					
 				},
 				
+				panning: function(bool){
+					if( bool !== undefined ){
+						panEnabled = bool ? true : false;
+					} else {
+						return panEnabled;
+					}
+					
+					return cy;
+				},
+				
+				zooming: function(bool){
+					if( bool !== undefined ){
+						zoomEnabled = bool ? true : false;
+					} else {
+						return zoomEnabled;
+					}
+					
+					return cy;
+				},
+				
 				pan: function(params){
-					cy.trigger("pan");
-					return renderer.pan(params) || cy;
+					var ret = renderer.pan(params);
+					
+					if( ret == null ){
+						cy.trigger("pan");
+						return cy;
+					}
+					
+					return ret;
 				},
 				
 				panBy: function(params){
-					cy.trigger("pan");
-					return renderer.panBy(params) || cy;					
+					var ret = renderer.panBy(params);
 					
+					if( ret == null ){
+						cy.trigger("pan");
+						return cy;
+					}
+					
+					return ret;
 				},
 				
 				fit: function(elements){
-					renderer.fit({
+					var ret = renderer.fit({
 						elements: elements,
 						zoom: true
 					});
 					
-					cy.trigger("zoom");
-					cy.trigger("pan");
+					if( ret == null ){
+						cy.trigger("zoom");
+						cy.trigger("pan");
+						return cy;
+					}
 					
-					return this;
+					return ret;
 				},
 				
 				zoom: function(params){
-					cy.trigger("zoom");
-					return renderer.zoom(params) || cy;
+					var ret = renderer.zoom(params);
+					
+					if( ret != null ){
+						return ret;
+					} else {
+						cy.trigger("zoom");
+						return cy;
+					}
 				},
 				
 				center: function(elements){
@@ -3627,7 +3677,6 @@
 					});
 					
 					cy.trigger("pan");
-					
 					return cy;
 				},
 				

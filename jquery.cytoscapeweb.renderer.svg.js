@@ -562,7 +562,7 @@ $(function(){
 					if( selecting ){
 						if( selectionSquare != null && selectionBounds.x1 != null && !isNaN(selectionBounds.x1) ){
 							self.selectElementsFromIntersection(selectionSquare, selectionBounds);
-							self.svg.remove(selectionSquare);
+							self.svgRemove(selectionSquare);
 						} else if( !self.shiftDown ) {
 							self.unselectAll();
 						}
@@ -1143,6 +1143,34 @@ $(function(){
 		return style;
 	};
 	
+	SvgRenderer.prototype.svgRemove = function(svg){
+		var $svg = $(svg);
+		var $container = $(this.svgRoot);
+		
+		function svgIsInCy( svgDomElement ){
+			var $ele = $(svgDomElement);
+			var inside = false;
+			
+			if( $ele.parent().size() == 0 ){
+				return false; // more efficient :)
+			}
+			
+			$ele.parents().each(function(){
+				if( this == $container[0] ){
+					inside = true;
+				}
+			});
+			
+			return inside;
+		}
+		
+		if( svg == null || !svgIsInCy(svg) ){
+			return;
+		}
+		
+		this.svg.remove( svg );
+	};
+	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
 		var style = element._private.style;
 		var parent = element._private.renderer.svgGroup;
@@ -1427,7 +1455,7 @@ $(function(){
 			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
 			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
 			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape(element._private.renderer.svg));
-			self.svg.remove(modelRectangle);
+			self.svgRemove(modelRectangle);
 			
 			// rendered node
 			var zoom = self.zoom();
@@ -1522,7 +1550,7 @@ $(function(){
 		var self = this;
 		
 		collection.each(function(i, element){
-			self.svg.remove(element._private.renderer.svgGroup);
+			self.svgRemove(element._private.renderer.svgGroup);
 			self.makeSvgElement(element);
 			self.updatePosition(collection.closedNeighborhood().edges());
 		});
@@ -1628,7 +1656,7 @@ $(function(){
 			var path = self.svg.createPath();
 			
 			if( svgPath != null ){
-				self.svg.remove(svgPath);
+				self.svgRemove(svgPath);
 			}
 			
 			if( loop ){
@@ -1746,7 +1774,7 @@ $(function(){
 		makePath();
 		
 		if( element._private.renderer.svgTargetArrow != null ){
-			this.svg.remove(element._private.renderer.svgTargetArrow);
+			this.svgRemove(element._private.renderer.svgTargetArrow);
 		}
 		
 		if( targetArrowShape != "none" ){
@@ -1765,7 +1793,7 @@ $(function(){
 		}
 		
 		if( element._private.renderer.svgSourceArrow != null ){
-			this.svg.remove(element._private.renderer.svgSourceArrow);
+			this.svgRemove(element._private.renderer.svgSourceArrow);
 		}
 		
 		if( sourceArrowShape != "none" ){		
@@ -1828,7 +1856,7 @@ $(function(){
 		});
 		
 		var rect = this.svg.rect(0, 0, this.cy.container().width(), this.cy.container().height());
-		this.svg.remove(rect);
+		this.svgRemove(rect);
 	};
 	
 	SvgRenderer.prototype.getAngle = function(p1, p2){
@@ -2041,7 +2069,7 @@ $(function(){
 		}
 		
 		if( newShape != oldShape ){
-			this.svg.remove(element._private.renderer.svgGroup);
+			this.svgRemove(element._private.renderer.svgGroup);
 			this.makeSvgNode(element);
 			return;
 		}
@@ -2216,7 +2244,7 @@ $(function(){
 		element._private.renderer.oldStyle = style;
 		
 		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
-			this.svg.remove(element._private.renderer.svgGroup);
+			this.svgRemove(element._private.renderer.svgGroup);
 			this.makeSvgEdge(element);
 			
 			return;
@@ -2331,7 +2359,7 @@ $(function(){
 		
 		edges.each(function(i, edge){
 			if( edge._private.renderer.svgGroup != null ){
-				self.svg.remove(edge._private.renderer.svgGroup);
+				self.svgRemove(edge._private.renderer.svgGroup);
 			}
 			self.makeSvgEdge(edge);
 			

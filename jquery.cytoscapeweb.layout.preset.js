@@ -60,4 +60,23 @@ $(function(){
 	
 	$.cytoscapeweb("layout", "preset", PresetLayout);
 	
+	function PresetExporter(options){
+		this.options = options;
+		this.cy = options.cy;
+		this.renderer = options.renderer;
+	}
+	
+	PresetExporter.prototype.run = function(){
+		var elements = {};
+		
+		this.cy.elements().each(function(i, ele){
+			elements[ ele.data("id") ] = ele.position();
+		});
+		
+		return elements;
+	};
+	
+	$.cytoscapeweb("exporter", "preset", PresetExporter);
+	
+	
 });

@@ -1130,13 +1130,7 @@
 				var startPosition = copy( self._private.position );
 				var startStyle = copy( self.style() );
 				
-				if( self.animated() && (params.queue === undefined || params.queue) ){
-					enqueue();
-				} else {
-					run();
-				}
-				
-				params = $.extend({}, {
+				params = $.extend(true, {}, {
 					duration: 400
 				}, params);
 				
@@ -1151,6 +1145,12 @@
 				
 				if( properties == null || (properties.position == null && properties.bypass == null && properties.delay == null) ){
 					return; // nothing to animate
+				}
+				
+				if( self.animated() && (params.queue === undefined || params.queue) ){
+					enqueue();
+				} else {
+					run();
 				}
 				
 				var q;
@@ -2510,7 +2510,7 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			var CySelector = function(onlyThisGroup, selector){
+			var CySelector = window.CySelector = function(onlyThisGroup, selector){
 				
 				if( selector === undefined && onlyThisGroup !== undefined ){
 					selector = onlyThisGroup;
@@ -2524,6 +2524,16 @@
 					invalid: true
 				}
 			
+				function newQuery(){
+					return {
+						classes: [],
+						colonSelectors: [],
+						data: [],
+						group: onlyThisGroup,
+						ids: [],
+						meta: []
+					};
+				}
 				
 				if( selector == null || selector.match(/^\s*$/) ){
 					
@@ -2533,254 +2543,180 @@
 					} else {
 						
 						// NOTE: need to update this with fields as they are added to logic in else if
-						self[0] = {
-							classes: [],
-							colonSelectors: [],
-							data: [],
-							group: onlyThisGroup,
-							ids: [],
-							meta: []
-						};
+						self[0] = newQuery();
 						self.length = 1;
 					}
 									
 				} else if( isString(selector) ){
 				
-					var str = selector;
-					self._private.selectorText = selector;
-					var queryRegex = "(node|edge|)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))*)";
-					var qnnRegex = "(((node|edge)(((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))*))|((((:[a-z]+)|(\\[.+\\])|(\\{.+\\})|(\\.[\\w_-]+)|(#[\\w_-]+))+)))";
+					var variable = "[\\w-]+";
+					var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=";
+					var boolOp = "\\?|\\!|\\^";
+					var string = "\\'.*\\'|\\\".*\\\"";
+					var number = "\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+";
+					var value = string + "|" + number;
+					var meta = "degree|indegree|outdegree";
+					var separator = "\\s*,\\s*";
+					var className = variable;
+					var id = variable;
 					
-					var remaining = str;
-					var queries = [];
-					while( true ){
-						match = remaining.match(new RegExp( "^(" + qnnRegex + ")(\\s*,\\s*(.+))?$" ));
-						
-						if( match != null ){
-							queries.push( match[1] );
-							
-							var rmatch = remaining.match(new RegExp( "^" + qnnRegex + "\\s*,\\s*(.+)$" ));
-							if( rmatch != null ){
-								remaining = rmatch[ rmatch.length - 1 ];
-							} else {
-								break;
+					// add @ variants to comparatorOp
+					$.each( comparatorOp.split("|"), function(i, op){
+						comparatorOp += "|@" + op;
+					} );
+					
+					var tokens = {
+						group: {
+							regex: "(node|edge)",
+							populate: function( group ){
+								this.group = group + "s";
 							}
+						},
+						
+						state: {
+							regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated)",
+							populate: function( state ){
+								this.colonSelectors.push( state );
+							}
+						},
+						
+						id: {
+							regex: "\\#("+ id +")",
+							populate: function( id ){
+								this.ids.push( id );
+							}
+						},
+						
+						className: {
+							regex: "\\.("+ className +")",
+							populate: function( className ){
+								this.classes.push( className );
+							}
+						},
+						
+						dataExists: {
+							regex: "\\[\\s*("+ variable +")\\s*\\]",
+							populate: function( variable ){
+								this.data.push({
+									field: variable
+								});
+							}
+						},
+						
+						dataCompare: {
+							regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
+							populate: function( variable, comparatorOp, value ){
+								this.data.push({
+									field: variable,
+									operator: comparatorOp,
+									value: value
+								});
+							}
+						},
+						
+						dataBool: {
+							regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
+							populate: function( boolOp, variable ){
+								this.data.push({
+									field: variable,
+									operator: boolOp
+								});
+							}
+						},
+						
+						metaCompare: {
+							regex: "\\{\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\}",
+							populate: function( meta, comparatorOp, number ){
+								this.meta.push({
+									field: meta,
+									operator: comparatorOp,
+									value: number
+								});
+							}
+						}
+					};
+					
+					self._private.selectorText = selector;
+					var remaining = selector;
+					var i = 0;
+					
+					// of all the tokens, find the first match in the remaining text
+					function consumeToken(){
+						var token;
+						var match;
+						var name;
+						
+						$.each(tokens, function(n, t){
+							var m = remaining.match(new RegExp( "^" + t.regex ));
+							
+							if( m != null ){
+								match = m;
+								token = t;
+								name = n;
+								
+								var consumed = m[0];
+								remaining = remaining.substring( consumed.length );								
+								
+								return false;
+							}
+						});
+						
+						return {
+							token: token,
+							match: match,
+							name: name
+						};
+					}
+					
+					function consumeWhitespace(){
+						var match = remaining.match(/^\s+/);
+						
+						if( match ){
+							var consumed = match[0];
+							remaining = remaining.substring( consumed.length );
+						}
+					}
+					
+					function consumeSeparators(){
+						var match = remaining.match(new RegExp( "^" + separator ));
+						
+						// if we've matched to a separator, consume it
+						if( match ){ console.log("consumed separator");
+							var consumed = match[0];
+							remaining = remaining.substring( consumed.length );
+							self[++i] = newQuery();
+						}
+					}
+					
+					self[0] = newQuery(); // get started
+					
+					consumeWhitespace(); // get rid of leading whitespace
+					for(;;){
+						consumeSeparators();
+						
+						var check = consumeToken();
+					
+						if( check.token == null ){
+							console.error("The selector `%s` is invalid", selector);
+							return;
 						} else {
+							var args = [];
+							for(var j = 1; j < check.match.length; j++){
+								args.push( check.match[j] );
+							}
+							
+							// let the token populate the selector object (i.e. in self[i])
+							check.token.populate.apply( self[i], args );
+						}
+						
+						// we're done when there's nothing left to parse
+						if( remaining.match(/^\s*$/) ){
 							break;
 						}
 					}
 					
-					// get rid of empty ones
-					for(var i = 0; i < queries.length; i++){
-						if( queries[i] == null || queries[i] == "" ){
-							queries.splice(i, 1);
-							i--;
-						}
-					}
+					self.length = i + 1;
 					
-					// create the query objects
-					self.length = queries.length;
-					for(var i = 0; i < queries.length; i++){
-						var query = queries[i];
-						var q = query.match(new RegExp( "^" + queryRegex + "$" ));
-						self[i] = {};
-						
-						if( q == null ){
-							console.error("Invalid selector `%s` in parent selector `%s`", query, str);
-							return;
-						}
-						
-						var group = q[1] == "" ? undefined : q[1] + "s";
-						
-						self[i].group = group;
-						
-						if( onlyThisGroup == null ){
-							// valid
-						} else if( onlyThisGroup != null && (group == null || group == onlyThisGroup) ){
-							// valid
-							self[i].group = onlyThisGroup;
-						} else {
-							console.error("Invalid group `%s` in selector `%s` in parent selector `%s` with implicit group `%s`", group, query, str, onlyThisGroup);
-							return;
-						}
-						
-						var selectors = q[2];
-
-						var dataSelectors = selectors.match(/(\[.+?\])/g);
-						var split = selectors.split(/\[.+?\]/);
-						var selectorsWithoutData = "";
-						$.each(split, function(i, str){
-							selectorsWithoutData += str;
-						});
-						
-						var metaSelectors = selectorsWithoutData.match(/(\{.+?\})/g);
-						split = selectorsWithoutData.split(/(\{.+?\})/g);
-						var selectorsWoMetaAndData = "";
-						$.each(split, function(i, str){
-							selectorsWoMetaAndData += str;
-						});
-						
-						var colonSelectors = selectorsWoMetaAndData.match(/(:[a-z]+)/g);
-						var classSelectors = selectorsWoMetaAndData.match(/(\.[\w_-]+)/g);
-						var idSelectors = selectorsWoMetaAndData.match(/(#[\w_-]+)/g);
-						
-						// validate colon selectors
-						///////////////////////////
-						
-						for(var j = 0; colonSelectors != null && j < colonSelectors.length; j++){
-							var selector = colonSelectors[j];
-							if( selector.match(/^:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated$/) ){
-								// valid
-							} else {
-								console.error("Invalid colon style selector `%s` in parent selector `%s`", selector, str);
-							}
-						}
-						self[i].colonSelectors = colonSelectors || [];
-						
-						// validate class selectors
-						///////////////////////////
-						
-						self[i].classes = [];
-						for(var j = 0; classSelectors != null && j < classSelectors.length; j++){
-							var sel = classSelectors[j];
-							var cls = sel.substring(1);
-							
-							self[i].classes.push(cls);
-						}
-						
-						// validate id selectors
-						////////////////////////
-						
-						self[i].ids = [];
-						for(var j = 0; idSelectors != null && j < idSelectors.length; j++){
-							var sel = idSelectors[j];
-							var id = sel.substring(1);
-							
-							self[i].ids.push(id);
-						}
-						
-						
-						// validate data selectors
-						//////////////////////////
-						
-						function addOperandSelectors(params){
-							
-							self[i][params.name] = [];
-							for(var j = 0; params.selectors != null && j < params.selectors.length; j++){
-								var bracket = params.selectors[j];
-								var b = bracket.replace(params.openParen, "").replace(params.closeParen, "");
-								
-								var match = b.match(/^\s*(\w+)\s*((?:@?)(?:=|!=||>=||<=|<|>|\*=|\^=|\$=|\$=)){0,1}\s*([\w._-]+|'.+'|".+"){0,1}?\s*$/);
-								var boolMatch = b.match(/^\s*(\!|\?|\^|\^\^)\s*([\w._-]+)\s*$/);
-								
-								if(match == null && boolMatch == null){
-									console.error("Invalid operand selector `%s` in parent selector `%s`", bracket, str);
-									return;
-								}
-								
-								var field, operator, value;
-								var isBool = false;
-								
-								if( match != null ){
-									field = match[1];
-									operator = match[2];
-									value = match[3];
-								} else if( boolMatch != null ){
-									
-									// convert boolean data queries to regular queries using boolean values
-									// e.g. !foo => foo != true
-									
-									field = boolMatch[2];
-									operator = boolMatch[1];
-									value = "true";
-									
-									switch( operator ){
-									case "?":
-										operator = "=";
-										break;
-									case "!":
-										operator = "!=";
-										break;
-									case "^":
-										operator = "===";
-										value = "undefined";
-										break;
-									}
-									
-									isBool = true;
-								}
-								
-								if( !params.validField(field) ){
-									console.error("Invalid selector `%s`; field `%s` is not valid", str, value);
-									return;
-								}
-								
-								if( operator == null && value != null ){
-									console.error("Invalid selector `%s`; operator must be specified for value `%s`", str, value);
-									return;
-								}
-								
-								if( value == null && operator != null ){
-									console.error("Invalid selector `%s`; value must be specified for operator `%s`", str, operator);
-									return;
-								}
-								
-								if( value != null && operator != null && !isBool ){
-									var valueAsNumber = parseFloat( value );
-									var valueIsNumber = !isNaN(valueAsNumber);
-									
-									if( !valueIsNumber ){
-										// then value must be enclosed in quotes
-										
-										if( value.match(/^'.+'$/) || value.match(/^".+"$/) ){
-											// value is enclosed in quotes
-										} else {
-											console.error("Invalid selector `%s`; string value must be enclosed in quotes `%s`", str, value);
-											return;
-										}
-									}
-								}
-																
-								self[i][params.name].push({
-									field: field,
-									operator: operator,
-									value: value
-								});
-							} // each bracket text
-							
-							return true;
-						}
-						
-						var dataValid = addOperandSelectors({
-							name: "data",
-							selectors: dataSelectors,
-							openParen: "[",
-							closeParen: "]",
-							validField: function(field){
-								return true;
-							}
-						});
-						if( !dataValid ){ return; }
-						
-						var metaValid = addOperandSelectors({
-							name: "meta",
-							selectors: metaSelectors,
-							openParen: "{",
-							closeParen: "}",
-							validField: function(field){
-								switch(field){
-								case "degree":
-								case "indegree":
-								case "outdegree":
-									return true;
-								default:
-									return false;
-								}
-							}
-						});
-						if( !metaValid ){ return; }
-						
-					} // each query
 				} else {
 					console.error("A selector must be created from a string; found %o", selector);
 					return;
@@ -2926,7 +2862,7 @@
 										matches = new RegExp("^" + valStr).exec(fieldStr) != null;
 										break;
 									default:
-										// if we're doing a case insensitive comparison, then we're using a STING comparison
+										// if we're doing a case insensitive comparison, then we're using a STRING comparison
 										// even if we're comparing numbers
 										if( caseInsensitive ){
 											// eval with lower case strings
@@ -2934,13 +2870,25 @@
 											matches = eval(expr);
 										} else {
 											// just eval as normal
-											var expr = params.fieldExpr(field) + " " + operator + " " + value;
+											var expr = params.fieldRef(field) + " " + operator + " " + value;
 											matches = eval(expr);
 										}
 										
 									}
-								} else {
-									matches = !params.fieldEmpty(field);
+								} else if( operator != null ){
+									switch(operator){
+									case "?":
+										matches = params.fieldTruthy(field);
+										break;
+									case "!":
+										matches = !params.fieldTruthy(field);
+										break;
+									case "^":
+										matches = params.fieldUndefined(field);
+										break;
+									}
+								} else { 	
+									matches = !params.fieldUndefined(field);
 								}
 								
 								if( !matches ){
@@ -2957,11 +2905,17 @@
 							fieldValue: function(field){
 								return element._private.data[field];
 							},
-							fieldExpr: function(field){
+							fieldRef: function(field){
 								return "element._private.data." + field;
 							},
-							fieldEmpty: function(field){
+							fieldUndefined: function(field){
 								return element._private.data[field] === undefined;
+							},
+							fieldTruthy: function(field){
+								if( element._private.data[field] ){
+									return true;
+								}
+								return false;
 							}
 						});
 						
@@ -2974,11 +2928,17 @@
 							fieldValue: function(field){
 								return element[field]();
 							},
-							fieldExpr: function(field){
+							fieldRef: function(field){
 								return "element." + field + "()";
 							},
-							fieldEmpty: function(field){
-								return element[field]() == null;
+							fieldUndefined: function(field){
+								return element[field]() == undefined;
+							},
+							fieldTruthy: function(field){
+								if( element[field]() ){
+									return true;
+								}
+								return false;
 							}
 						});
 						

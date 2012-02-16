@@ -601,8 +601,8 @@
 				return this._private.classes[className] == true;
 			};
 			
-			CyElement.prototype.toggleClass = function(classes, toggle){
-				classes = classes.split(/\s+/);
+			CyElement.prototype.toggleClass = function(classesStr, toggle){
+				var classes = classesStr.split(/\s+/);
 				var self = this;
 				var toggled = false;
 				
@@ -2328,29 +2328,37 @@
 			CyCollection.prototype.toggleClass = function(className, toggle){
 				var collection = this;
 				var classes = className.split(/\s+/);
-				var changed = new CyCollection();
 				
-				classes.each(function(i, cls){
-					collection.each(function(j, ele){
-						
-						function add(){ ele.addClass(cls); changed.add(ele); }
-						function remove(){ ele.removeClass(cls); changed.add(ele); }
-						function has(){ ele.hasClass(cls); }
-						
-						if( toggle === undefined ){
-							if( has() ){
-								remove();
-							} else {
+				noNotifications(function(){
+					$.each(classes, function(i, cls){
+						collection.each(function(j, ele){
+							
+							function add(){ ele.addClass(cls); }
+							function remove(){ ele.removeClass(cls); }
+							function has(){ return ele.hasClass(cls); }
+							
+							if( toggle === undefined ){
+								if( has() ){
+									remove();
+								} else {
+									add();
+								}
+							} else if( toggle && !has() ){
 								add();
+							} else if( !toggle && has() ) {
+								remove();
 							}
-						} else if( toggle && !has() ){
-							add();
-						} else if( !toggle && has() ) {
-							remove();
-						}
-						
+							
+						});
 					});
 				});
+				
+				notify({
+					type: "class",
+					collection: collection
+				});
+				
+				return this;
 			};
 			
 			CyCollection.prototype.addClass = function(className){
@@ -2681,7 +2689,7 @@
 						var match = remaining.match(new RegExp( "^" + separator ));
 						
 						// if we've matched to a separator, consume it
-						if( match ){ console.log("consumed separator");
+						if( match ){
 							var consumed = match[0];
 							remaining = remaining.substring( consumed.length );
 							self[++i] = newQuery();
@@ -2695,7 +2703,12 @@
 						consumeSeparators();
 						
 						var check = consumeToken();
-					
+						
+						if( check.name == "group" && onlyThisGroup != null && self[i].group != onlyThisGroup ){
+							console.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[i].group, onlyThisGroup, selector);
+							return;
+						}
+						
 						if( check.token == null ){
 							console.error("The selector `%s` is invalid", selector);
 							return;

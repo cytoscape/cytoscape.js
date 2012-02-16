@@ -2557,23 +2557,35 @@
 									
 				} else if( isString(selector) ){
 				
-					var variable = "[\\w-]+";
-					var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=";
-					var boolOp = "\\?|\\!|\\^";
-					var string = "\\'.*\\'|\\\".*\\\"";
-					var number = "\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+";
-					var value = string + "|" + number;
-					var meta = "degree|indegree|outdegree";
-					var separator = "\\s*,\\s*";
-					var className = variable;
-					var id = variable;
+					// these are the actual tokens in the query language
+					var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
+					var variable = "(?:[\\w-]|(?:\\\\"+ metaChar +"))+"; // a variable name
+					var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
+					var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
+					var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
+					var number = "\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+"; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+					var value = string + "|" + number; // a value literal, either a string or number
+					var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from CyCollection)
+					var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
+					var className = variable; // a class name (follows variable conventions)
+					var id = variable; // an element id (follows variable conventions)
+					
+					// when a token like a variable has escaped meta characters, we need to clean the backslashes out
+					// so that values get compared properly in CySelector.filter()
+					function cleanMetaChars(str){
+						return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), "\1");
+					}
 					
 					// add @ variants to comparatorOp
 					$.each( comparatorOp.split("|"), function(i, op){
 						comparatorOp += "|@" + op;
 					} );
 					
-					var tokens = {
+					// NOTE: add new expression syntax here to have it recognised by the parser;
+					// a query contains all adjacent (i.e. no separator in between) expressions;
+					// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
+					// you need to check the query objects in CySelector.filter() for it actually filter properly, but that's pretty straight forward
+					var exprs = {
 						group: {
 							regex: "(node|edge)",
 							populate: function( group ){
@@ -2591,14 +2603,14 @@
 						id: {
 							regex: "\\#("+ id +")",
 							populate: function( id ){
-								this.ids.push( id );
+								this.ids.push( cleanMetaChars(id) );
 							}
 						},
 						
 						className: {
 							regex: "\\.("+ className +")",
 							populate: function( className ){
-								this.classes.push( className );
+								this.classes.push( cleanMetaChars(className) );
 							}
 						},
 						
@@ -2606,7 +2618,7 @@
 							regex: "\\[\\s*("+ variable +")\\s*\\]",
 							populate: function( variable ){
 								this.data.push({
-									field: variable
+									field: cleanMetaChars(variable)
 								});
 							}
 						},
@@ -2615,7 +2627,7 @@
 							regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
 							populate: function( variable, comparatorOp, value ){
 								this.data.push({
-									field: variable,
+									field: cleanMetaChars(variable),
 									operator: comparatorOp,
 									value: value
 								});
@@ -2626,7 +2638,7 @@
 							regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
 							populate: function( boolOp, variable ){
 								this.data.push({
-									field: variable,
+									field: cleanMetaChars(variable),
 									operator: boolOp
 								});
 							}
@@ -2636,7 +2648,7 @@
 							regex: "\\{\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\}",
 							populate: function( meta, comparatorOp, number ){
 								this.meta.push({
-									field: meta,
+									field: cleanMetaChars(meta),
 									operator: comparatorOp,
 									value: number
 								});
@@ -2648,18 +2660,18 @@
 					var remaining = selector;
 					var i = 0;
 					
-					// of all the tokens, find the first match in the remaining text
-					function consumeToken(){
-						var token;
+					// of all the expressions, find the first match in the remaining text
+					function consumeExpr(){
+						var expr;
 						var match;
 						var name;
 						
-						$.each(tokens, function(n, t){
-							var m = remaining.match(new RegExp( "^" + t.regex ));
+						$.each(exprs, function(n, e){
+							var m = remaining.match(new RegExp( "^" + e.regex ));
 							
 							if( m != null ){
 								match = m;
-								token = t;
+								expr = e;
 								name = n;
 								
 								var consumed = m[0];
@@ -2670,7 +2682,7 @@
 						});
 						
 						return {
-							token: token,
+							expr: expr,
 							match: match,
 							name: name
 						};
@@ -2702,14 +2714,14 @@
 					for(;;){
 						consumeSeparators();
 						
-						var check = consumeToken();
+						var check = consumeExpr();
 						
 						if( check.name == "group" && onlyThisGroup != null && self[i].group != onlyThisGroup ){
 							console.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[i].group, onlyThisGroup, selector);
 							return;
 						}
 						
-						if( check.token == null ){
+						if( check.expr == null ){
 							console.error("The selector `%s` is invalid", selector);
 							return;
 						} else {
@@ -2719,7 +2731,7 @@
 							}
 							
 							// let the token populate the selector object (i.e. in self[i])
-							check.token.populate.apply( self[i], args );
+							check.expr.populate.apply( self[i], args );
 						}
 						
 						// we're done when there's nothing left to parse

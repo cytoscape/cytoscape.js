@@ -2518,7 +2518,7 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			var CySelector = window.CySelector = function(onlyThisGroup, selector){
+			var CySelector = function(onlyThisGroup, selector){
 				
 				if( selector === undefined && onlyThisGroup !== undefined ){
 					selector = onlyThisGroup;

@@ -2,7 +2,7 @@ $(function(){
 	
 	var defaults = {
 		ready: undefined,
-		maxSimulationTime: 1000,
+		maxSimulationTime: 8000,
 		fit: true,
 		padding: [ 50, 50, 50, 50 ],
 		ungrabifyWhileSimulating: true,

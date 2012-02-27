@@ -25,6 +25,17 @@ $(function(){
 		ok( cy.nodes().filter("[foo='one']").size() == 1, "node.filter works" );
 	});
 	
+	test("Boolean selectors", function(){
+		var n1 = cy.$("#n1").data("bool", true);
+		var n2 = cy.$("#n2").data("bool", null);
+		var n3 = cy.$("#n3");
+		
+		ok( cy.$("node[bool]").allSame( n1.add(n2) ), "n1, n2 have bool defined" );
+		ok( cy.$("node[?bool]").allSame( n1 ), "n1 has bool truthy" );
+		ok( cy.$("node[!bool]").allSame( n2.add(n3) ), "n2, n3 have bool falsey" );
+		ok( cy.$("node[^bool]").allSame( n3 ), "only n3 has bool not defined" );
+	});
+	
 	test("Syntax variants", function(){
 		var n1 = cy.nodes("#n1");     // 0.25
 		var n2 = cy.nodes("#n2");     // 0.5

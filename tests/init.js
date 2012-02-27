@@ -2,7 +2,7 @@ $(function(){
 	// Test invalid init options module
 	////////////////////////////////////////////////////////////////////////////////////////////
 	
-	module("Invalid init options", {
+	module("Initialisation", {
 		setup: function(){},
 		teardown: function(){}
 	});

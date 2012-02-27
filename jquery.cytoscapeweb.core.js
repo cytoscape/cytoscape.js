@@ -1793,7 +1793,7 @@
 						
 						return degree;
 					} else {
-						return null;
+						return undefined;
 					}
 				};
 			}
@@ -2070,7 +2070,7 @@
 						for(var j = 0; j < collection.size(); j++){
 							var c = collection.eq(j);
 							
-							if( c._private.group == element._private.group && c._private.data.id == element._private.data.id ){
+							if( c.element() == element.element() ){
 								remove = true;
 								break;
 							}
@@ -2086,19 +2086,19 @@
 				} 
 			};
 			
-			CyCollection.prototype.filter = function(filterFn){
-				if( isFunction(filterFn) ){
+			CyCollection.prototype.filter = function(filter){
+				if( isFunction(filter) ){
 					var elements = [];
 					this.each(function(i, element){
-						if( !$.isFunction(filterFn) || filterFn.apply(element, [i, element]) ){
+						if( !$.isFunction(filter) || filter.apply(element, [i, element]) ){
 							elements.push(element);
 						}
 					});
 					
 					return new CyCollection(elements);
-				} else if( isString(filterFn) ){
-					return new CySelector(filterFn).filter(this);
-				}
+				} else if( isString(filter) ){
+					return new CySelector(filter).filter(this);
+				} 
 
 				console.error("You must pass a function or a selector to `filter`");
 			};
@@ -2518,7 +2518,7 @@
 			// CySelector
 			////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			var CySelector = function(onlyThisGroup, selector){
+			var CySelector = window.CySelector = function(onlyThisGroup, selector){
 				
 				if( selector === undefined && onlyThisGroup !== undefined ){
 					selector = onlyThisGroup;
@@ -2539,7 +2539,8 @@
 						data: [],
 						group: onlyThisGroup,
 						ids: [],
-						meta: []
+						meta: [],
+						collection: new CyCollection()
 					};
 				}
 				
@@ -2555,6 +2556,18 @@
 						self.length = 1;
 					}
 									
+				} else if( selector instanceof CyElement ){
+					var collection = new CyCollection([ selector ]);
+					
+					self[0] = newQuery();
+					self[0].collection = collection;
+					self.length = 1;
+					
+				} else if( selector instanceof CyCollection ){
+					self[0] = newQuery();
+					self[0].collection = selector;
+					self.length = 1;
+					
 				} else if( isString(selector) ){
 				
 					// these are the actual tokens in the query language
@@ -2851,9 +2864,7 @@
 							var allDataMatches = true;
 							for(var k = 0; k < query[params.name].length; k++){
 								var data = query[params.name][k];
-								
 								var operator = data.operator;
-								
 								var value = data.value;
 								var field = data.field;
 								var matches;
@@ -3536,6 +3547,10 @@
 					return elementsCollection({ selector: selector, addLiveFunction: true });
 				},
 				
+				$: function(){
+					return cy.filter.apply( cy, arguments );
+				},
+				
 				filter: function(selector){
 					if( isString(selector) ){
 						return elementsCollection({ selector: selector, addLiveFunction: true });
@@ -3724,6 +3739,7 @@
 								if( isFunction(onload) ){
 									onload.apply(cy, [cy]);
 								}
+								cy.trigger("load");
 								cy.trigger("layoutready");
 							},
 							stop: function(){

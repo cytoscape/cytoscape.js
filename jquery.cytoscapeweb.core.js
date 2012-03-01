@@ -2503,7 +2503,7 @@
 				if( CyCollection.prototype[name] == null ){
 					CyCollection.prototype[name] = func;
 				} else {
-					console.error("Can not override collection function `%s`; already has default implementation", name);
+					console.error("Can not override collection function `%s`; already has an implementation", name);
 				}
 			});
 			
@@ -3789,8 +3789,23 @@
 					}
 				},
 				
-				scratch: function(  ){
+				scratch: function( name, value ){
+					if( value === undefined ){
+						return structs.scratch[name];
+					} else {
+						structs.scratch[name] = value;
+						return this;
+					}
+				},
+				
+				removeScratch: function( name ){
+					if( name === undefined ){
+						structs.scratch = {};
+					} else {
+						eval( "delete structs.scratch." + name + ";" );
+					}
 					
+					return this;
 				}
 				
 			};
@@ -3988,11 +4003,15 @@
 		// e.g. $.cytoscapeweb("collection", "doSomething", function(){ /* doSomething code */ });
 		else if( typeof opts == typeof "" ) {
 			var registrant = arguments[0].toLowerCase(); // what to register (e.g. "renderer")
-			var name = arguments[1].toLowerCase(); // name of the module (e.g. "svg")
+			var name = arguments[1]; // name of the module (e.g. "svg")
 			var module = arguments[2]; // the module object
 			var componentType = arguments[2];
 			var componentName = arguments[3];
 			var component = arguments[4];
+			
+			if( registrant != "core" && registrant != "collection" ){
+				name = name.toLowerCase();
+			}
 			
 			if( isString(componentType) ){
 				componentType = componentType.toLowerCase();

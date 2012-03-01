@@ -2,6 +2,29 @@ $(function(){
 	
 	defaultModule("Data");
 	
+	test("Try out data watching", function(){
+		
+		var set = false;
+		
+		var priv = {
+			set watchedData( val ){
+				this.data = val;
+				console.log("data has been changed");
+				set = true;
+			},
+			
+			get watchedData(){
+				return this.data;
+			},
+			
+			data: {}
+		};
+		
+		priv.watchedData = {};
+		priv.watchedData.foo = "bar";
+		
+	});
+	
 	test("Verify the data for the nodes is there", function(){
 		
 		var expectedValues = { "one": false, "two": false, "three": false };

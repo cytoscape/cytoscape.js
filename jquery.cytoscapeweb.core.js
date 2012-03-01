@@ -223,7 +223,8 @@
 					// normally shouldn't use collections here, but animation is not related
 					// to the functioning of CySelectors, so it's ok
 					elements: null // elements queued or currently animated
-				}
+				},
+				scratch: {} // scratch object for core
 			};
 			
 			function parallelEdgeIds(node1Id, node2Id){				
@@ -528,7 +529,11 @@
 			CyElement.prototype.removeScratch = function( name ){
 				var self = this;
 				
-				eval( "delete self._private.scratch." + name + ";" );
+				if( name === undefined ){
+					self._private.scratch = {};
+				} else {
+					eval( "delete self._private.scratch." + name + ";" );
+				}
 				
 				return this;
 			};
@@ -2701,6 +2706,7 @@
 						};
 					}
 					
+					// consume all leading whitespace
 					function consumeWhitespace(){
 						var match = remaining.match(/^\s+/);
 						
@@ -2710,6 +2716,7 @@
 						}
 					}
 					
+					// consume query separators
 					function consumeSeparators(){
 						var match = remaining.match(new RegExp( "^" + separator ));
 						
@@ -3780,6 +3787,10 @@
 						
 						return exporter.run();
 					}
+				},
+				
+				scratch: function(  ){
+					
 				}
 				
 			};

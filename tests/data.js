@@ -2,6 +2,43 @@ $(function(){
 	
 	defaultModule("Data");
 	
+	function confirmScratch( options ){
+		confirm( $.extend({}, options, {
+			storage: "scratch"
+		}) );
+	}
+	
+	function confirmData( options ){
+		confirm( $.extend({}, options, {
+			storage: "data"
+		}) );
+	}
+	
+	function confirm( options ){
+		var self = options.element;
+		var fields = options.fields;
+		var storage = options.storage;
+		
+		var actualFieldCount = 0;
+		for(var fieldName in self[storage]()){
+			actualFieldCount++;
+		}
+		
+		var expectedFieldCount = 0;
+		for(var fieldName in fields){
+			expectedFieldCount++;
+		}
+		
+		equal(actualFieldCount, expectedFieldCount, "Expected number of fields for " + self.data("id"));		
+		
+		$.each(fields, function(name, value){
+			var expected = value;
+			var actual = self[storage](name);
+			
+			equal(actual, expected, "Field `" + name + "` for " + self.data("id"));
+		});
+	}
+	
 	test("Verify the data for the nodes is there", function(){
 		
 		var expectedValues = { "one": false, "two": false, "three": false };
@@ -52,6 +89,103 @@ $(function(){
 			ok( this.data("weight") == null, "no weight " + this.data("id") );
 			ok( this.data("id") != null, "has id " + this.data("id") );
 		});
+	});
+	
+	test("Delete data", function(){
+		// data fields: id, foo, weight
+		
+		// delete just weight field and confirm
+		cy.nodes("#n1").removeData("weight");
+		confirmData({
+			element: cy.nodes("#n1"),
+			fields: {
+				id: "n1",
+				foo: "one"
+			}
+		});
+		
+		// delete all data from n1
+		cy.nodes("#n1").removeData();
+		confirmData({
+			element: cy.nodes("#n1"),
+			fields: {
+				id: "n1"
+			}
+		});
+		
+		// delete all data for all nodes and confirm
+		cy.nodes().removeData();
+		confirmData({
+			element: cy.nodes("#n1"),
+			fields: {
+				id: "n1"
+			}
+		});
+		confirmData({
+			element: cy.nodes("#n2"),
+			fields: {
+				id: "n2"
+			}
+		});
+		confirmData({
+			element: cy.nodes("#n3"),
+			fields: {
+				id: "n3"
+			}
+		});
+	});
+	
+	test("Scratch", function(){
+		
+		// write scratch to all
+		cy.nodes().scratch("foo", "bar").each(function(){
+			confirmScratch({
+				element: this,
+				fields: {
+					foo: "bar"
+				}
+			});
+		});
+		
+		// add scratch to n1
+		cy.nodes("#n1").scratch("hello", "there").each(function(){
+			confirmScratch({
+				element: this,
+				fields: {
+					foo: "bar",
+					hello: "there"
+				}
+			});
+		});
+		
+		// remove scratch for n1
+		cy.nodes("#n1").removeScratch().each(function(){
+			confirmScratch({
+				element: this,
+				fields: {}
+			});
+		});
+		
+		// remove scratch for all others
+		cy.nodes("#n1").removeScratch().each(function(){
+			confirmScratch({
+				element: this,
+				fields: {}
+			});
+		});
+		
+		// try out dot namespace notation
+		cy.nodes("#n1").scratch("foo", {}).scratch("foo.bar", "hello");
+		equal( cy.nodes("#n1").scratch("foo.bar"), "hello" );
+		cy.nodes("#n1").scratch("foo.uh", "huh").removeScratch("foo.bar");
+		equal( cy.nodes("#n1").scratch("foo.uh"), "huh", "uh: huh there" );
+		equal( cy.nodes("#n1").scratch("foo.bar"), null, "foo.bar deleted" );
+		
+		// delete two scratches at once
+		cy.nodes("#n1").scratch("baz", {}).removeScratch("foo baz");
+		equal( cy.nodes("#n1").scratch("foo"), null, "foo deleted" );
+		equal( cy.nodes("#n1").scratch("baz"), null, "baz deleted" );
+		
 	});
 	
 });

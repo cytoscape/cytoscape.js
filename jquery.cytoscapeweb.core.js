@@ -493,6 +493,11 @@
 			
 			CyElement.prototype.scratch = function( name, val ){
 				var self = this;
+				
+				if( name === undefined ){
+					return self._private.scratch;
+				}
+				
 				var fields = name.split(".");
 				
 				function set(){
@@ -532,7 +537,10 @@
 				if( name === undefined ){
 					self._private.scratch = {};
 				} else {
-					eval( "delete self._private.scratch." + name + ";" );
+					var names = name.split(/\s+/);
+					$.each(names, function(i, name){
+						eval( "delete self._private.scratch." + name + ";" );
+					});
 				}
 				
 				return this;

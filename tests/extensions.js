@@ -44,6 +44,7 @@ $(function(){
 		});
 	});
 	
+	
 	asyncTest("Add a collection function", function(){
 		$.cytoscapeweb("collection", "oddSize", function(){
 			return !this.evenSize();

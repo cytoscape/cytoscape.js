@@ -25,11 +25,15 @@
 }
 
 .ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
-	background-image: url("debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
+	background-image: url("../../debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
 }
 
 .ui-cytoscapeweb-panzoom-pan-button .ui-icon {
-	background-image: url("debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
+	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
+}
+
+.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
+	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
 }
 
 .ui-cytoscapeweb-panzoom-pan-button {
@@ -174,10 +178,6 @@
 	margin-top: 0;
 	top: auto;
 	height: 6px;
-}
-
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
-	background-image: url("debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
 }
 
 .ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button {

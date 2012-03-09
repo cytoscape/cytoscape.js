@@ -69,33 +69,35 @@
 		}
 	};
 	
-	function isString(obj){
-		return obj != null && typeof obj == typeof "";
-	}
-	
-	function isFunction(obj){
-		return obj != null && typeof obj == typeof function(){};
-	}
-	
-	function isArray(obj){
-		return obj != null && obj instanceof Array;
-	}
-	
-	function isPlainObject(obj){
-		return obj != null && typeof obj == typeof {} && !isArray(obj);
-	}
-	
-	function isNumber(obj){
-		return obj != null && typeof obj == typeof 1 && !isNaN(obj);
-	}
-	
-	function isColor(obj){
-		return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
-	}
-	
-	function isBoolean(obj){
-		return obj != null && typeof obj == typeof true;
-	}
+	var is = {
+		string: function(obj){
+			return obj != null && typeof obj == typeof "";
+		},
+		
+		fn: function(obj){
+			return obj != null && typeof obj == typeof function(){};
+		},
+		
+		array: function(obj){
+			return obj != null && obj instanceof Array;
+		},
+		
+		plainObject: function(obj){
+			return obj != null && typeof obj == typeof {} && !is.array(obj);
+		},
+		
+		number: function(obj){
+			return obj != null && typeof obj == typeof 1 && !isNaN(obj);
+		},
+		
+		color: function(obj){
+			return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
+		},
+		
+		boolean: function(obj){
+			return obj != null && typeof obj == typeof true;
+		}
+	};
 	
 	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
@@ -108,7 +110,7 @@
 		}
 		
 		// bind to ready
-		else if( isFunction(opts) ){
+		else if( is.fn(opts) ){
 			var ready = opts;
 			var data = $(this).data("cytoscapeweb");
 			
@@ -133,7 +135,7 @@
 		}
 		
 		// proxy to create instance
-		else if( isPlainObject(opts) ){
+		else if( is.plainObject(opts) ){
 			return $(this).each(function(){
 				var options = $.extend({}, opts, {
 					container: $(this)
@@ -156,7 +158,7 @@
 				var cy = data.cy;
 				var fnName = opts;
 				
-				if( cy != null && isFunction( cy[fnName] ) ){
+				if( cy != null && is.fn( cy[fnName] ) ){
 					var ret = cy[fnName].apply(cy, args);
 					rets.push(ret);
 				}
@@ -180,7 +182,7 @@
 	$.cytoscapeweb = function(opts){
 		
 		// create instance
-		if( isPlainObject(opts) ){
+		if( is.plainObject(opts) ){
 			var defaults = {
 				layout: {
 					name: "grid"
@@ -289,9 +291,9 @@
 			function copy(obj){
 				if( obj == null ){
 					return obj;
-				} if( isArray(obj) ){
+				} if( is.array(obj) ){
 					return $.extend(true, [], obj);
-				} else if( isPlainObject(obj) ){
+				} else if( is.plainObject(obj) ){
 					return $.extend(true, {}, obj);
 				} else {
 					return obj;
@@ -310,7 +312,7 @@
 			function addContinuousMapperBounds(element, name, val){
 				var group = element._private.group;
 				
-				if( isNumber(val) ){
+				if( is.number(val) ){
 					if( structs.continuousMapperBounds[ group ][ name ] == null ){
 						structs.continuousMapperBounds[ group ][ name ] = {
 							min: val,
@@ -489,7 +491,7 @@
 					this._private.position = renderer.modelPoint(params.renderedPosition);
 				}
 				
-				if( isString(params.classes) ){
+				if( is.string(params.classes) ){
 					$.each(params.classes.split(/\s+/), function(i, cls){
 						if( cls != "" ){
 							self._private.classes[cls] = true;
@@ -788,7 +790,7 @@
 			
 			function switchFunction(params){
 				return function(fn){
-					if( isFunction(fn) ){
+					if( is.fn(fn) ){
 						this.bind(params.event, fn);
 					} else if( this._private[params.field] != params.value ) {
 						this._private[params.field] = params.value;
@@ -818,20 +820,20 @@
 				return function(key, val){
 
 					// bind to event
-					if( isFunction(key) ){
+					if( is.fn(key) ){
 						var handler = key;
 						this.bind(params.event, handler);
 					}
 					
 					// bind to event with data
-					else if( isFunction(val) ){
+					else if( is.fn(val) ){
 						var data = key;
 						var handler = val;
 						this.bind(params.event, data, handler);
 					}
 					
 					// set or get field with key
-					else if( isString(key) ){
+					else if( is.string(key) ){
 						if( val === undefined ){
 							return copy( this._private[params.field][key] );
 						} else {
@@ -841,7 +843,7 @@
 					}
 					
 					// update via object
-					else if( isPlainObject(key) ) {
+					else if( is.plainObject(key) ) {
 						var map = key;
 						var current = this._private[params.field];
 						
@@ -900,14 +902,14 @@
 				}
 				
 				// bind to event
-				else if( isFunction(attr) ){
+				else if( is.fn(attr) ){
 					var handler = attr;
 					this.bind("data", handler);
 					ret = this;
 				}
 				
 				// bind to event with data
-				else if( isFunction(val) ){
+				else if( is.fn(val) ){
 					var data = attr;
 					var handler = val;
 					this.bind("data", data, handler);
@@ -915,7 +917,7 @@
 				}
 				
 				// set whole field from obj
-				else if( isPlainObject(attr) ){
+				else if( is.plainObject(attr) ){
 					var newValObj = attr;
 					
 					for(var field in newValObj){
@@ -1073,7 +1075,7 @@
 				
 				var collection = new CyCollection(elements);
 				
-				if( isString(selector) ){
+				if( is.string(selector) ){
 					collection = new CySelector(selector).filter(collection);
 				}
 				
@@ -1091,14 +1093,14 @@
 						console.warn("Can not get position for edge with ID `%s`; edges have no position", this._private.data.id);
 						return null;
 					}
-				} else if( isFunction(val) ){
+				} else if( is.fn(val) ){
 					var fn = val;
 					this.bind("position", fn);
 				} else if( this.isEdge() ){
 					console.warn("Can not move edge with ID `%s`; edges can not be moved", this._private.data.id);
 				} else if( this.locked() ) {
 					console.warn("Can not move locked node with ID `%s`", this._private.data.id);
-				} else if( isString(val) ) {
+				} else if( is.string(val) ) {
 					var param = arguments[0];
 					var value = arguments[1];
 					
@@ -1107,7 +1109,7 @@
 					} else {
 						this._private.position[param] = copy(value);
 					}
-				} else if( isPlainObject(val) ) {
+				} else if( is.plainObject(val) ) {
 					$.each(val, function(k, v){
 						self._private.position[k] = copy( v );
 					});
@@ -1123,7 +1125,7 @@
 			CyElement.prototype.positions = function(fn){
 				var positionOpts = fn.apply(this, [0, this]);
 				
-				if( isPlainObject(positionOpts) ){
+				if( is.plainObject(positionOpts) ){
 					this.position(positionOpts);
 				}
 			};
@@ -1312,7 +1314,7 @@
 							
 							// call complete callbacks
 							$.each(completes, function(i, fn){
-								if( isFunction(complete) ){
+								if( is.fn(complete) ){
 									complete.apply( ele );
 								}
 							});
@@ -1382,7 +1384,7 @@
 						});
 					}
 					
-					if( isFunction(params.step) ){
+					if( is.fn(params.step) ){
 						params.step.apply( self, [ now ] );
 					}
 					
@@ -1398,9 +1400,9 @@
 						return false;
 					}
 					
-					if( isNumber(start) && isNumber(end) ){
+					if( is.number(start) && is.number(end) ){
 						return true;
-					} else if( isColor(start) && isColor(end) ){
+					} else if( (start) && (end) ){
 						return true;
 					}
 					
@@ -1408,9 +1410,9 @@
 				}
 				
 				function ease(start, end, percent){
-					if( isNumber(start) && isNumber(end) ){
+					if( is.number(start) && is.number(end) ){
 						return start + (end - start) * percent;
-					} else if( isColor(start) && isColor(end) ){
+					} else if( (start) && (end) ){
 						var c1 = $.Color(start).fix().toRGB();
 						var c2 = $.Color(end).fix().toRGB();
 
@@ -1458,14 +1460,14 @@
 				
 				if( coord === undefined ){
 					return pos;
-				} else if( isString(coord) ) {
+				} else if( is.string(coord) ) {
 					if( val === undefined ){
 						return pos[coord];
 					} else {
 						pos[coord] = val;
 						this.position( renderer.modelPoint(pos) );
 					}
-				} else if( isPlainObject(coord) ){
+				} else if( is.plainObject(coord) ){
 					pos = $.extend(true, {}, pos, coord);
 					this.position( renderer.modelPoint(pos) );
 				}
@@ -1582,13 +1584,13 @@
 			
 			CyElement.prototype.trigger = function(event, data){
 				var self = this;
-				var type = isPlainObject(event) ? event.type : event;
+				var type = is.plainObject(event) ? event.type : event;
 				
 				var listeners = this._private.listeners[type];
 				
 				function fire(listener, eventData){
-					if( listener != null && isFunction(listener.callback) ){
-						var eventData = isPlainObject(event) ? event : jQuery.Event(type);
+					if( listener != null && is.fn(listener.callback) ){
+						var eventData = is.plainObject(event) ? event : jQuery.Event(type);
 						eventData.data = listener.data;
 						eventData.cy = eventData.cytoscapeweb = cy;
 						
@@ -1844,9 +1846,9 @@
 			
 			function listenerAlias(params){
 				return function(data, callback){
-					if( isFunction(callback) ){
+					if( is.fn(callback) ){
 						return this.bind(params.name, data, callback);
-					} else if( isFunction(data) ){
+					} else if( is.fn(data) ){
 						var handler = data;
 						return this.bind(params.name, handler);						
 					} else {
@@ -1916,8 +1918,8 @@
 					// disable renderer notifications during loop
 					// just notify at the end of the loop with the whole collection
 					var isRendererFn = $.inArray(name, rendererFunctions) >= 0;
-					var hasPassedFn = isFunction(arguments[0]);
-					var isGetter = $.inArray(name, getters) >= 0 && ( arguments[0] === undefined || (isString(arguments[0]) && arguments[1] === undefined));
+					var hasPassedFn = is.fn(arguments[0]);
+					var isGetter = $.inArray(name, getters) >= 0 && ( arguments[0] === undefined || (is.string(arguments[0]) && arguments[1] === undefined));
 					
 					var joinNotifications = isRendererFn && !hasPassedFn && !isGetter;
 					
@@ -2022,7 +2024,7 @@
 			
 			CyCollection.prototype.each = function(fn){
 				for(var i = 0; i < this.size(); i++){
-					if( isFunction(fn) ){
+					if( is.fn(fn) ){
 						fn.apply( this.eq(i), [ i, this.eq(i) ] );
 					}
 				}
@@ -2035,7 +2037,7 @@
 					return this;
 				}
 				
-				if( isString(toAdd) ){
+				if( is.string(toAdd) ){
 					var selector = toAdd;
 					toAdd = elementsCollection({ selector: selector });
 				}
@@ -2077,7 +2079,7 @@
 					return this;
 				} else {
 				
-					if( isString(toRemove) ){
+					if( is.string(toRemove) ){
 						toRemove = new CySelector(toRemove).filter(this);
 					}
 					
@@ -2107,16 +2109,16 @@
 			};
 			
 			CyCollection.prototype.filter = function(filter){
-				if( isFunction(filter) ){
+				if( is.fn(filter) ){
 					var elements = [];
 					this.each(function(i, element){
-						if( !$.isFunction(filter) || filter.apply(element, [i, element]) ){
+						if( !is.fn(filter) || filter.apply(element, [i, element]) ){
 							elements.push(element);
 						}
 					});
 					
 					return new CyCollection(elements);
-				} else if( isString(filter) ){
+				} else if( is.string(filter) ){
 					return new CySelector(filter).filter(this);
 				} 
 
@@ -2147,7 +2149,7 @@
 					collection.each(function(i, element){
 						var positionOpts = fn.apply(element, [i, element]);
 						
-						if( isPlainObject(positionOpts) ){
+						if( is.plainObject(positionOpts) ){
 							element.position(positionOpts);
 						}
 					});
@@ -2565,7 +2567,7 @@
 					};
 				}
 				
-				if( selector == null || ( isString(selector) && selector.match(/^\s*$/) ) ){
+				if( selector == null || ( is.string(selector) && selector.match(/^\s*$/) ) ){
 					
 					if( onlyThisGroup == null ){
 						// ignore
@@ -2589,12 +2591,12 @@
 					self[0].collection = selector;
 					self.length = 1;
 					
-				} else if( isFunction(selector) ) {
+				} else if( is.fn(selector) ) {
 					self[0] = newQuery();
 					self[0].filter = selector;
 					self.length = 1;
 					
-				} else if( isString(selector) ){
+				} else if( is.string(selector) ){
 				
 					// these are the actual tokens in the query language
 					var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
@@ -3130,7 +3132,7 @@
 				var str = "";
 				
 				function clean(obj){
-					if( isString(obj) ){
+					if( is.string(obj) ){
 						return obj;
 					} 
 					return "";
@@ -3318,7 +3320,7 @@
 						} 
 						
 						// specify an array of options
-						else if( isArray(opts) ){
+						else if( is.array(opts) ){
 							$.each(opts, function(i, elementParams){
 								if( params != null && params.group != null ){
 									elements.push(new CyElement( $.extend({}, elementParams, { group: params.group }) ));
@@ -3329,9 +3331,9 @@
 						} 
 						
 						// specify via opts.nodes and opts.edges
-						else if( isPlainObject(opts) && (isArray(opts.nodes) || isArray(opts.edges)) ){
+						else if( is.plainObject(opts) && (is.array(opts.nodes) || is.array(opts.edges)) ){
 							$.each(["nodes", "edges"], function(i, group){
-								if( isArray(opts[group]) ){
+								if( is.array(opts[group]) ){
 									$.each(opts[group], function(i, eleOpts){
 										elements.push(new CyElement( $.extend({}, eleOpts, { group: group }) ));
 									});
@@ -3364,7 +3366,7 @@
 			function cybind(target, events, data, handler){
 				
 				var one;
-				if( isPlainObject(target) ){
+				if( is.plainObject(target) ){
 					one = target.one;
 					target = target.target;
 				}
@@ -3428,7 +3430,7 @@
 			}
 			
 			function cytrigger(target, event, data){
-				var type = isString(event) ? event : event.type;
+				var type = is.string(event) ? event : event.type;
 				
 				if( structs.listeners[target] == null || structs.listeners[target][type] == null ){
 					return;
@@ -3438,7 +3440,7 @@
 					var listener = structs.listeners[target][type][i];
 					
 					var eventObj;
-					if( isPlainObject(event) ){
+					if( is.plainObject(event) ){
 						eventObj = event;
 						event = eventObj.type;
 					} else {
@@ -3546,7 +3548,7 @@
 					if( selector === undefined && handler === undefined ){
 						cyunbind("cy", event);
 					} else if( handler === undefined ){
-						if( isFunction(selector) ){
+						if( is.fn(selector) ){
 							handler = selector;
 							selector = undefined;
 							cyunbind("cy", event, handler);
@@ -3611,9 +3613,9 @@
 				},
 				
 				filter: function(selector){
-					if( isString(selector) ){
+					if( is.string(selector) ){
 						return elementsCollection({ selector: selector, addLiveFunction: true });
-					} else if( isFunction(selector) ) {
+					} else if( is.fn(selector) ) {
 						return elementsCollection().filter(selector);
 					}
 				},
@@ -3647,7 +3649,7 @@
 						prevLayoutOptions = params;
 					}
 					
-					if( isFunction( params.start ) ){
+					if( is.fn( params.start ) ){
 						cy.one();
 					}
 					cy.trigger("layoutstart");		
@@ -3761,7 +3763,7 @@
 						
 						noNotifications(function(){
 							
-							if( isPlainObject(elements) ){
+							if( is.plainObject(elements) ){
 								$.each(["nodes", "edges"], function(i, group){
 									
 									var elementsInGroup = elements[group];
@@ -3771,7 +3773,7 @@
 										});
 									}
 								});
-							} else if( isArray(elements) ){
+							} else if( is.array(elements) ){
 								$.each(elements, function(i, params){
 									var element = new CyElement( params );
 								});
@@ -3795,14 +3797,14 @@
 									style: structs.style
 								});
 								
-								if( isFunction(onload) ){
+								if( is.fn(onload) ){
 									onload.apply(cy, [cy]);
 								}
 								cy.trigger("load");
 								cy.trigger("layoutready");
 							},
 							stop: function(){
-								if( isFunction(ondone) ){
+								if( is.fn(ondone) ){
 									ondone.apply(cy, [cy]);
 								}
 								cy.trigger("layoutdone");
@@ -3883,7 +3885,7 @@
 				styleCalculator: {
 					calculate: function(element, styleVal){
 
-						if( isPlainObject(styleVal) ){
+						if( is.plainObject(styleVal) ){
 							
 							var ret;
 							
@@ -3951,9 +3953,9 @@
 									
 									if( data == null && styleVal.defaultValue != null ){
 										ret = styleVal.defaultValue;
-									} else if( isNumber(map.mapped.min) && isNumber(map.mapped.max) ){
+									} else if( is.number(map.mapped.min) && is.number(map.mapped.max) ){
 										ret = percent * (map.mapped.max - map.mapped.min) + map.mapped.min;
-									} else if( isColor(map.mapped.min) && isColor(map.mapped.max) ){
+									} else if( (map.mapped.min) && (map.mapped.max) ){
 										
 										var cmin = $.Color(map.mapped.min).fix().toRGB();
 										var cmax = $.Color(map.mapped.max).fix().toRGB();
@@ -4012,13 +4014,13 @@
 				
 				startAnimationLoop();
 				
-				if( isFunction( options.ready ) ){
+				if( is.fn( options.ready ) ){
 					options.ready.apply(cy, [cy]);
 				}
 				
 				cy.trigger("ready");
 			}, function(){ // ondone
-				if( isFunction( options.done ) ){
+				if( is.fn( options.done ) ){
 					options.done.apply(cy, [cy]);
 				}
 				
@@ -4029,7 +4031,7 @@
 		} 
 		
 		// logging functions
-		else if( typeof opts == typeof "" && isFunction(console[opts]) ){
+		else if( typeof opts == typeof "" && is.fn(console[opts]) ){
 			var args = [];
 			for(var i = 1; i < arguments.length; i++){
 				args.push( arguments[i] );
@@ -4065,10 +4067,10 @@
 				name = name.toLowerCase();
 			}
 			
-			if( isString(componentType) ){
+			if( is.string(componentType) ){
 				componentType = componentType.toLowerCase();
 				
-				if( isString(componentName) ){
+				if( is.string(componentName) ){
 					componentName = componentName.toLowerCase();
 					
 					if( component !== undefined ){
@@ -4109,29 +4111,7 @@
 		$.cy = $.cytoscapeweb;
 	}
 	
-	// define the json exporter
-	function JsonExporter(options){
-		this.options = options;
-		this.cy = options.cy;
-		this.renderer = options.renderer;
-	}
-	
-	JsonExporter.prototype.run = function(){
-		var elements = {};
-		
-		this.cy.elements().each(function(i, ele){
-			var group = ele.group();
-			
-			if( elements[group] == null ){
-				elements[group] = [];
-			}
-			
-			elements[group].push( ele.json() );
-		});
-		
-		return elements;
-	};
-	
-	$.cytoscapeweb("exporter", "json", JsonExporter);
+	// let others use the is object
+	$.cytoscapeweb.is = is;
 	
 })(jQuery);

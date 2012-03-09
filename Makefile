@@ -12,10 +12,11 @@ MKDIR = mkdir
 CD = cd
 PWD = pwd
 LS = ls
+AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 # version (update this when building release zip)
-VERSION = snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+VERSION := snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 
 # directories
 LIB_DIR = lib
@@ -91,11 +92,11 @@ $(ZIP_FILE) : $(ZIP_DIR)
 	$(RM) $(ZIP_DIR)
 
 $(JS_W_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(CORE) $(DEPS) > $@
+	$(AWK_NEWLINE) $(CORE) $(DEPS) > $@
 	$(call PREAMBLIFY)
 
 $(JS_WO_DEPS_FILE) : $(BUILD_DIR)
-	$(CAT) $(CORE) > $@
+	$(AWK_NEWLINE) $(CORE) > $@
 	$(call PREAMBLIFY)
 
 $(BUILD_PLUGINS) : $(BUILD_PLUGINS_DIR)

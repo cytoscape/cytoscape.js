@@ -1548,9 +1548,6 @@
 		$.cy = $.cytoscapeweb;
 	}
 	
-	// let others use the is object
-	$.cytoscapeweb.is = is;
-	
 	// let others access the reg object (TODO don't expose this directly and use the registration system)
 	$.cytoscapeweb.reg = reg;	
 	

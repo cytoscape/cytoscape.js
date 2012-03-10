@@ -1,4 +1,4 @@
-$(function(){
+;(function($){
 	
 	// define the json exporter
 	function JsonExporter(options){
@@ -25,4 +25,4 @@ $(function(){
 	
 	$.cytoscapeweb("exporter", "json", JsonExporter);
 	
-});
+})(jQuery);

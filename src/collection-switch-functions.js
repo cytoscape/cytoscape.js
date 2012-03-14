@@ -3,17 +3,16 @@
 	function defineSwitchFunction(params){
 		return function(){
 			var args = arguments;
-			var self = this;
 			
 			if( args.length == 2 ){
 				this.bind( args[0], args[1] );
 			} else if( args.length == 1 ){
-				if( $$.is.fn( args[0] ) ) {
-					this.bind( args[0] );
-				} else {
-					this._private[params.field] = params.value;
-					this.rtrigger(params.event);
-				}
+				this.bind( args[0] );
+			} else if( args.length == 0 ){
+				this.each(function(){
+					this.element()._private[params.field] = params.value;
+				});
+				this.rtrigger(params.event);
 			}
 
 			return this;

@@ -77,9 +77,17 @@
 		name: "allAreNeighbors",
 		impl: function(collection){
 			collection = collection.collection();
-			var adjacents = this.neighborhood();
 			
-			collection.each();
+			var neighborhood = this.neighborhood();
+			for(var i = 0; i < collection.size(); i++){
+				var element = collection.eq(i);
+				
+				if( element.intersect(neighborhood).size() == 0 ){
+					return false;
+				}
+			}
+			
+			return true;
 		}
 	});
 	$$.fn.collection({ // English spelling variant

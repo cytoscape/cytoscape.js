@@ -504,14 +504,7 @@
 				
 				// check collection
 				if( query.collection != null ){
-					var matchesAny = false;
-					
-					for(var k = 0; k < query.collection.size(); k++){								
-						if( query.collection.eq(k).same(element) ){
-							matchesAny = true;
-							break;
-						}
-					}
+					var matchesAny = query.collection._private.ids[ element.id() ] != null;
 					
 					if( !matchesAny ){
 						continue;

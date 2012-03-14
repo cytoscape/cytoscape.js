@@ -121,14 +121,18 @@
 	
 	$$.fn.collection({
 		name: "bind",
-		impl: defineBinder()
+		impl: defineBinder({
+			listener: function(){
+				return {};
+			}
+		})
 	});
 	
 	$$.fn.collection({
 		name: "one",
 		impl: defineBinder({
 			listener: function(){
-				return { one: true }
+				return { one: true };
 			}
 		})
 	});

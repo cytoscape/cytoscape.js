@@ -82,8 +82,9 @@
 	});
 	
 	$$.fn.collection({
-		name: "both",
+		name: "intersect",
 		impl: function( other ){
+			var self = this;
 			
 			// if a selector is specified, then filter by it
 			if( $$.is.string(other) ){
@@ -91,17 +92,24 @@
 				return this.filter( selector );
 			}
 			
+			if( $$.is.element(other) ){
+				other = other.collection();
+			}
+			
+			var elements = [];
 			var col1 = this;
-			var col2 = other.collection();
-			var ids1 = {};
+			var col2 = other;
+			var col1Smaller = this.size() < other.size();
+			var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
+			var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
 			
-			col1.each(function(){
-				ids1[ this.id() ] = true;
+			$.each(ids1, function(id){
+				if( ids2[ id ] ){
+					elements.push( self.cy().getElementById(id) );
+				}
 			});
 			
-			col2.each(function(){
-				
-			});
+			return new $$.CyCollection( this.cy(), elements );
 		}
 	});
 	
@@ -186,8 +194,7 @@
 		name: "source",
 		impl: function(){
 			var ele = this.element();
-			var structs = ele.cy()._private; // TODO remove ref to `structs` after refactoring
-			
+
 			if( ele.isNode() ){
 				$$.console.warn("Can call `source()` only on edges---tried to call on node `%s`", ele._private.data.id);
 				return new $$.CyCollection( ele.cy() );

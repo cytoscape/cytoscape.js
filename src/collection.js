@@ -136,7 +136,7 @@
 			return;
 		}
 		
-		var ids = [];
+		var ids = {};
 		var uniqueElements = [];
 		
 		if( elements == null ){
@@ -158,7 +158,8 @@
 		this.length = uniqueElements.length;
 		
 		this._private = {
-			cy: cy
+			cy: cy,
+			ids: ids
 		};
 	}
 	$$.CyCollection = CyCollection; // expose
@@ -233,13 +234,16 @@
 						}, obj);
 					}
 					
+					var src = this.cy().getElementById( this._private.data.source );
+					var tgt = this.cy().getElementById( this._private.data.target );
+					
 					// connect reference to source
-					connect( this.source().element(), this.target().element(), this, {
+					connect( src, tgt, this, {
 						source: true
 					} );
 					
 					// connect reference to target
-					connect( this.target().element(), this.source().element(), this, {
+					connect( tgt, src, this, {
 						target: true
 					} );
 				} 

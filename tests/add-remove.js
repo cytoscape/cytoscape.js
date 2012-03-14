@@ -27,26 +27,26 @@ $(function(){
 		
 	});
 	
-	asyncTest("Load a new graph on top", function(){
-		
-		cy.load({
-			nodes: [
-			        {
-			        	data: { id: "foo" }
-			        }
-			        ]
-		}, function(){
-			// on ready
-			
-			equal( cy.elements().size(), 1, "Expected number of nodes after loading" );
-			equal( cy.nodes().eq(0).data("id"), "foo", "ID of loaded node" );
-			ok( cy.elements("#foo").size() == 1, "Can get loaded node with selector" );
-			
-			start();
-		}, function(){
-			// on done
-		});
-		
-	});
+//	asyncTest("Load a new graph on top", function(){
+//		
+//		cy.load({
+//			nodes: [
+//			        {
+//			        	data: { id: "foo" }
+//			        }
+//			        ]
+//		}, function(){
+//			// on ready
+//			
+//			equal( cy.elements().size(), 1, "Expected number of nodes after loading" );
+//			equal( cy.nodes().eq(0).data("id"), "foo", "ID of loaded node" );
+//			ok( cy.elements("#foo").size() == 1, "Can get loaded node with selector" );
+//			
+//			start();
+//		}, function(){
+//			// on done
+//		});
+//		
+//	});
 	
 });

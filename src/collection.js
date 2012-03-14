@@ -144,8 +144,10 @@
 		}
 		
 		$.each(elements, function(i, element){
-			if( ids[ element.id() ] == null ){
-				ids[ element.id() ] = true;
+			var id = element.element()._private.data.id;
+			
+			if( ids[ id ] == null ){
+				ids[ id ] = true;
 				uniqueElements.push( element );
 			}
 		});
@@ -153,8 +155,7 @@
 		for(var i = 0; i < uniqueElements.length; i++){
 			this[i] = uniqueElements[i];
 		}
-		
-		this.length = elements.length;
+		this.length = uniqueElements.length;
 		
 		this._private = {
 			cy: cy
@@ -220,11 +221,14 @@
 					}
 					
 					function connect( node, otherNode, edge, obj ){
-						if( node._private.edges[ otherNode.id() ] == null ){
-							 node._private.edges[ otherNode.id() ] = {};
+						var otherId = otherNode.element()._private.data.id;
+						var edgeId = edge.element()._private.data.id;
+						
+						if( node._private.edges[ otherId ] == null ){
+							 node._private.edges[ otherId ] = {};
 						}
 						
-						node._private.edges[ otherNode.id() ][ edge.id() ] = $.extend({
+						node._private.edges[ otherId ][ edgeId ] = $.extend({
 							edge: edge
 						}, obj);
 					}
@@ -284,8 +288,11 @@
 					
 					// remove from map of edges belonging to nodes
 					if( self.isEdge() ){
-						removeConnection( node, otherNode ){
-							delete node.element()._private.edges[ otherNode.id() ][ self.id() ];
+						function removeConnection( node, otherNode ){
+							var otherId = otherNode.element()._private.data.id;
+							var selfIf = self.element()._private.data.id;
+							
+							delete node.element()._private.edges[ otherId ][ selfId ];
 						}
 						
 						// remove connection to source
@@ -322,3 +329,4 @@
 	});
 	
 })(jQuery, jQuery.cytoscapeweb);
+

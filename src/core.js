@@ -43,8 +43,6 @@
 				style: options.style,
 				nodes: {}, // id => node object
 				edges: {}, // id => edge object
-				nodeToEdges: {}, // id => array of edges
-				edgeSiblings: {}, // id => array of edges
 				continuousMapperBounds: { // data attr name => { min, max }
 					nodes: {},
 					edges: {}
@@ -62,64 +60,7 @@
 				scratch: {} // scratch object for core
 			};
 			
-			// get sorted ids which can be used to access the parallel edges map
-			function parallelEdgeIds(node1Id, node2Id){				
-				var id1 = node1Id < node2Id ? node1Id : node2Id;
-				var id2 = id1 == node1Id ? node2Id : node1Id;
-				
-				return {
-					id1: id1,
-					id2: id2
-				};
-			}
-			
-			// adds an edge to the parallel edge map
-			function addParallelEdgeToMap(element){
-				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
-				var id1 = ids.id1;
-				var id2 = ids.id2;
-				
-				if( structs.edgeSiblings[id1] == null ){
-					structs.edgeSiblings[id1] = {};
-				}
-				
-				if( structs.edgeSiblings[id1][id2] == null ){
-					structs.edgeSiblings[id1][id2] = {};
-				}
-				
-				var siblings = structs.edgeSiblings[id1][id2];
-				siblings[element._private.data.id] = element;
-			}
-			
-			// remove an edge from the parallel edges map
-			function removeParallelEdgeFromMap(element){
-				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
-				var id1 = ids.id1;
-				var id2 = ids.id2;
-				
-				if( structs.edgeSiblings[id1] != null && structs.edgeSiblings[id1][id2] != null ){
-					delete structs.edgeSiblings[id1][id2][element._private.data.id];
-				}
-			}
-			
-			// gets edges parallel to the specified edge (element)
-			function getParallelEdgesForEdge(element){
-				var ids = parallelEdgeIds(element._private.data.source, element._private.data.target);
-				var id1 = ids.id1;
-				var id2 = ids.id2;
-				
-				return structs.edgeSiblings[id1][id2];
-			}
-			
-			// gets edges edges between two nodes (both directions)
-			function getEdgesBetweenNodes(node1, node2){
-				var ids = parallelEdgeIds(node1._private.data.id, node2._private.data.id);
-				var id1 = ids.id1;
-				var id2 = ids.id2;
-				
-				return structs.edgeSiblings[id1][id2];
-			}
-			
+						
 			function getContinuousMapperUpdates(){
 				return structs.continuousMapperUpdates;
 			}
@@ -785,27 +726,12 @@
 					return structs.nodes[id] || structs.edges[id];
 				},
 				
-				getEdgesParallelTo: function( edge ){
-					var map = getParallelEdgesForEdge( edge.element() );
-					var array = [];
-					
-					$.each(map, function(i, edge){
-						array.push( edge );
-					});
-					
-					return new $$.CyCollection(this, array);
-				},
-				
 				// TODO refactor this
 				notify: notify,
 				noNotifications: noNotifications,
 				notificationsEnabled: notificationsEnabled,
 				addContinuousMapperBounds: addContinuousMapperBounds,
-				addParallelEdgeToMap: addParallelEdgeToMap,
-				getParallelEdgesForEdge: getParallelEdgesForEdge,
 				renderer: function(){ return renderer; },
-				removeParallelEdgeFromMap: removeParallelEdgeFromMap,
-				getEdgesBetweenNodes: getEdgesBetweenNodes,
 				removeContinuousMapperBounds: removeContinuousMapperBounds,
 				updateContinuousMapperBounds: updateContinuousMapperBounds,
 				
@@ -1068,7 +994,7 @@
 				load: function(elements, onload, ondone){
 					// remove old elements
 					cy.elements().remove();
-				
+					
 					if( elements != null ){
 						
 						noNotifications(function(){

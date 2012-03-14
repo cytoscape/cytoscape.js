@@ -72,8 +72,7 @@
 			return ret;
 		}
 	});
-
-
+	
 	$$.fn.collection({
 		name: "allAreNeighbors",
 		impl: function(collection){

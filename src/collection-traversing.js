@@ -34,6 +34,8 @@
 				return new $$.CyCollection(this.cy(), elements);
 			} else if( $$.is.string(filter) ){
 				return new $$.CySelector(this.cy(), filter).filter(this);
+			} else if( filter === undefined ){
+				return this;
 			}
 
 			$$.console.warn("You must pass a function or a selector to `filter`");
@@ -76,6 +78,30 @@
 				
 				return new $$.CyCollection(this.cy(), elements);
 			} 
+		}
+	});
+	
+	$$.fn.collection({
+		name: "both",
+		impl: function( other ){
+			
+			// if a selector is specified, then filter by it
+			if( $$.is.string(other) ){
+				var selector = other;
+				return this.filter( selector );
+			}
+			
+			var col1 = this;
+			var col2 = other.collection();
+			var ids1 = {};
+			
+			col1.each(function(){
+				ids1[ this.id() ] = true;
+			});
+			
+			col2.each(function(){
+				
+			});
 		}
 	});
 	
@@ -260,7 +286,7 @@
 				elements.push( edge.target().element() );
 			});
 			
-			return new CyCollection( this.cy(), elements ).filter( selector );
+			return new $$.CyCollection( this.cy(), elements ).filter( selector );
 		}
 	});
 	

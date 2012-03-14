@@ -41,7 +41,7 @@
 			} else {
 				return 0;
 			}
-		}
+		})
 	});
 	
 	$$.fn.collection({
@@ -52,7 +52,7 @@
 			} else {
 				return 0;
 			}
-		}
+		})
 	});
 	
 	

@@ -171,7 +171,7 @@
 	$$.fn.collection({
 		name: "unbind",
 		impl: function(events, callback){
-			var eventsArray = events.split(/\s+/);
+			var eventsArray = (events || "").split(/\s+/);
 			
 			this.each(function(){
 				var self = this;

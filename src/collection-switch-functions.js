@@ -65,8 +65,3 @@
 	});
 	
 })(jQuery, jQuery.cytoscapeweb);
-
-	
-	CyElement.prototype.grabbed = function(){
-		return this._private.grabbed;
-	};

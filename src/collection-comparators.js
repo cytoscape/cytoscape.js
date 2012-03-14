@@ -1,100 +1,95 @@
-CyCollection.prototype.allAre = function(selector){
-		return this.filter(selector).size() == this.size();
-	};
+;(function($, $$){
+
+	$$.fn.collection({
+		name: "allAre",
+		impl: function(selector){
+			return this.filter(selector).size() == this.size();
+		}
+	});
 	
-	CyCollection.prototype.is = function(selector){
-		return this.filter(selector).size() > 0;
-	};
+	$$.fn.collection({
+		name: "is",
+		impl: function(selector){
+			return new $$.CySelector(this.cy(), selector).filter(this).size() > 0;
+		}
+	});
+
+	$$.fn.collection({
+		name: "same",
+		impl: function( other ){
+			return this.element() === other.element();
+		}
+	});
 	
-	
-	CyCollection.prototype.anySame = function(collection){
-		collection = collection.collection();
-		
-		var ret = false;
-		for(var i = 0; i < collection.size(); i++){
-			var collectionElement = collection.eq(i);
+	$$.fn.collection({
+		name: "anySame",
+		impl: function(collection){
+			collection = collection.collection();
 			
-			for(var j = 0; j < this.size(); j++){
-				var thisElement = this.eq(j);
+			var ret = false;
+			for(var i = 0; i < collection.size(); i++){
+				var collectionElement = collection.eq(i).element();
 				
-				ret = ret || thisElement.same(collectionElement);
+				for(var j = 0; j < this.size(); j++){
+					var thisElement = this.eq(j);
+					
+					ret = ret || thisElement.same(collectionElement);
+					if(ret) break;
+				}
 				if(ret) break;
 			}
-			if(ret) break;
-		}
-		
-		return ret;
-	};
-	
-	CyCollection.prototype.allSame = function(collection){
-		collection = collection.collection();
-		
-		// cheap check to make sure A.allSame(B) == B.allSame(A)
-		if( collection.size() != this.size() ){
-			return false;
-		}
-		
-		var ret = true;
-		for(var i = 0; i < collection.size(); i++){
-			var collectionElement = collection.eq(i);
 			
-			var hasCollectionElement = false;
-			for(var j = 0; j < this.size(); j++){
-				var thisElement = this.eq(j);
+			return ret;
+		}
+	});
+
+	$$.fn.collection({
+		name: "allSame",
+		impl: function(collection){
+			collection = collection.collection();
+			
+			// cheap check to make sure A.allSame(B) == B.allSame(A)
+			if( collection.size() != this.size() ){
+				return false;
+			}
+			
+			var ret = true;
+			for(var i = 0; i < collection.size(); i++){
+				var collectionElement = collection.eq(i);
 				
-				hasCollectionElement = thisElement.same(collectionElement);
-				if(hasCollectionElement) break;
-			}
-			
-			ret = ret && hasCollectionElement;
-			if(!ret) break;
-		}
-		
-		return ret;
-	};
-	
-	
-	CyElement.prototype.is = function(selector){
-		return new $$.CySelector(this.cy(), selector).filter(this.collection()).size() > 0;
-	};
-	
-	CyElement.prototype.allAre = function(selector){
-		return this.is(selector);
-	};
-	
-	CyElement.prototype.allAreNeighbours = CyElement.prototype.allAreNeighbors = function(collection){
-		collection = collection.collection();
-		var adjacents = this.neighborhood();
-		
-		if( this.isNode() ){
-			var self = this;
-			adjacents.edges().each(function(i, edge){
-				if( edge._private.data.source == edge._private.data.target ){
-					adjacents = adjacents.add(self);
+				var hasCollectionElement = false;
+				for(var j = 0; j < this.size(); j++){
+					var thisElement = this.eq(j);
+					
+					hasCollectionElement = thisElement.same(collectionElement);
+					if(hasCollectionElement) break;
 				}
-			});
-		}
-		
-		var ret = true;
-		
-		for(var i = 0; i < collection.size(); i++){
-			var element = collection[i];
-			var inCollection = false;
-			
-			for(var j = 0; j < adjacents.size(); j++){
-				var adjacent = adjacents[j];
 				
-				if( element == adjacent){
-					inCollection = true;
-					break;
-				}
+				ret = ret && hasCollectionElement;
+				if(!ret) break;
 			}
 			
-			ret = ret && inCollection;
-			if(ret == false){
-				break;
-			}
+			return ret;
 		}
-		
-		return ret;
-	};
+	});
+
+
+	$$.fn.collection({
+		name: "allAreNeighbors",
+		impl: function(collection){
+			collection = collection.collection();
+			var adjacents = this.neighborhood();
+			
+			collection.each();
+		}
+	});
+	$$.fn.collection({ // English spelling variant
+		name: "allAreNeighbours",
+		impl: function(){
+			return this.allAreNeighbors.apply(this, [arguments]);
+		}
+	});
+
+
+	
+})(jQuery, jQuery.cytoscapeweb);

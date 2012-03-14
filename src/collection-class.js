@@ -6,26 +6,16 @@
 		impl: function(classes){
 			classes = classes.split(/\s+/);
 			var self = this;
-			var addedElements = [];
 			
 			$.each(classes, function(i, cls){
-				if( cls == null || cls == "" ){ return; }
+				if( $$.is.emptyString(cls) ){ return; }
 				
 				self.each(function(){
-					var added = this._private.classes[cls] === undefined;
 					this._private.classes[cls] = true;
-					
-					if( added ){
-						addedElements.push( this );
-					}
 				});
 			});
 			
-			if( addedElements.length > 0 ){
-				var collection = new $$.CyCollection(self.cy(), addedElements);
-				collection.rtrigger("class");
-			}
-			
+			self.rtrigger("class");
 			return self;
 		}
 	});

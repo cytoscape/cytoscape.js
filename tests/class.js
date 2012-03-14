@@ -5,7 +5,7 @@ $(function(){
 	function testBind(options){
 		var triggered = {};
 		
-		stop();
+//		stop();
 		
 		options.elements.each(function(){
 			triggered[ this.data("id") ] = 0;
@@ -14,14 +14,14 @@ $(function(){
 			console.log("class");
 		});
 		
-		setTimeout(function(){
-			options.elements.each(function(){
-				equal( triggered[ this.data("id") ], 1, "`class` triggered once for " + this.data("id") );
-			});
-			
-			options.after();
-			start();
-		}, 100);
+//		setTimeout(function(){
+//			options.elements.each(function(){
+//				equal( triggered[ this.data("id") ], 1, "`class` triggered once for " + this.data("id") );
+//			});
+//			
+//			options.after();
+//			start();
+//		}, 100);
 	}
 	
 	asyncTest("Add class", function(){

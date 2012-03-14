@@ -1,40 +1,70 @@
-function switchFunction(params){
-		return function(fn){
-			if( $$.is.fn(fn) ){
-				this.bind(params.event, fn);
-			} else if( this._private[params.field] != params.value ) {
-				this._private[params.field] = params.value;
-				
-				this.rtrigger(params.event);
-			}
+;(function($, $$){
+	
+	function defineSwitchFunction(params){
+		return function(){
+			var args = arguments;
+			var self = this;
 			
+			if( args.length == 2 ){
+				this.bind( args[0], args[1] );
+			} else if( args.length == 1 ){
+				if( $$.is.fn( args[0] ) ) {
+					this.bind( args[0] );
+				} else {
+					this._private[params.field] = params.value;
+					this.rtrigger(params.event);
+				}
+			}
+
 			return this;
-		}
+		};
 	}
 	
-	CyElement.prototype.locked = function(){
-		return this._private.locked;
-	};
+	function defineSwitchSet( params ){
+		$$.fn.collection({
+			name: params.field,
+			impl: function(){
+				return this.element()._private[ params.field ];
+			}
+		});
+		
+		$$.fn.collection({
+			name: params.on,
+			impl: defineSwitchFunction({ event: params.on, field: params.field, value: true })
+		});
+		
+		$$.fn.collection({
+			name: params.off,
+			impl: defineSwitchFunction({ event: params.off, field: params.field, value: false })
+		});
+	}
 	
-	CyElement.prototype.lock = switchFunction({ event: "lock", field: "locked", value: true });
-	CyElement.prototype.unlock = switchFunction({ event: "unlock", field: "locked", value: false });
+	defineSwitchSet({
+		field: "locked",
+		on: "lock",
+		off: "unlock"
+	});
 	
-	CyElement.prototype.grabbable = function(){
-		return this._private.grabbable;
-	};
+	defineSwitchSet({
+		field: "grabbable",
+		on: "grabify",
+		off: "ungrabify"
+	});
 	
-	CyElement.prototype.grabify = switchFunction({ event: "grabify", field: "grabbable", value: true });
-	CyElement.prototype.ungrabify = switchFunction({ event: "ungrabify", field: "grabbable", value: false });
+	defineSwitchSet({
+		field: "selected",
+		on: "select",
+		off: "unselect"
+	});
 	
-	CyElement.prototype.selected = function(){
-		return this._private.selected;
-	};
+	$$.fn.collection({
+		name: "grabbed",
+		impl: function(){
+			return this.element()._private.grabbed;
+		}
+	});
 	
-	CyElement.prototype.select = switchFunction({ event: "select", field: "selected", value: true });
-	
-	CyElement.prototype.unselect = switchFunction({ event: "unselect", field: "selected", value: false });
-	
-	
+})(jQuery, jQuery.cytoscapeweb);
 
 	
 	CyElement.prototype.grabbed = function(){

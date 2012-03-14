@@ -48,14 +48,14 @@
 				self.length = 1;
 			}
 							
-		} else if( selector instanceof $$.CyElement ){
+		} else if( $$.is.element( selector ) ){
 			var collection = new $$.CyCollection(self.cy(), [ selector ]);
 			
 			self[0] = newQuery();
 			self[0].collection = collection;
 			self.length = 1;
 			
-		} else if( selector instanceof $$.CyCollection ){
+		} else if( $$.is.collection( selector ) ){
 			self[0] = newQuery();
 			self[0].collection = selector;
 			self.length = 1;
@@ -261,7 +261,6 @@
 
 		self._private.invalid = false;
 		
-		
 	}
 	$.cytoscapeweb.CySelector = CySelector; // expose
 	
@@ -277,6 +276,12 @@
 		return this[i];
 	};
 	
+	// get elements from the core and then filter them
+	CySelector.prototype.find = function(){
+		// TODO impl
+	};
+	
+	// filter an existing collection
 	CySelector.prototype.filter = function(collection, addLiveFunction){
 		var self = this;
 		

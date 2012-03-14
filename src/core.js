@@ -781,7 +781,22 @@
 					return $(options.container);
 				},
 				
-				// TODO move these elsewhere
+				getElementById: function(id){
+					return structs.nodes[id] || structs.edges[id];
+				},
+				
+				getEdgesParallelTo: function( edge ){
+					var map = getParallelEdgesForEdge( edge.element() );
+					var array = [];
+					
+					$.each(map, function(i, edge){
+						array.push( edge );
+					});
+					
+					return new $$.CyCollection(this, array);
+				},
+				
+				// TODO refactor this
 				notify: notify,
 				noNotifications: noNotifications,
 				notificationsEnabled: notificationsEnabled,

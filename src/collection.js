@@ -4,9 +4,22 @@
 	// This interface is good, because it forces you to think in terms
 	// of the collections case (more than 1 element), so we don't need
 	// notification blocking nonsense everywhere.
+	//
+	// Other collection-*.js files depend on this being defined first.
+	// It's a trade off: It simplifies the code for CyCollection and 
+	// CyElement integration so much that it's worth it to create the
+	// JS dependency.
+	//
+	// Having this integration guarantees that we can call any
+	// collection function on an element and vice versa.
 	$$.fn.collection = function( options ){
+		
+		// When adding a function, write it from the perspective of a
+		// collection -- it's more generic.
 		$$.CyCollection.prototype[ options.name ] = options.impl;
 		
+		// The element version of the function is then the trivial
+		// case of a collection of size 1.
 		$$.CyElement.prototype[ options.name ] = function(){
 			var self = this.collection();
 			return self[ options.name ].apply(self, arguments);
@@ -54,6 +67,9 @@
 			return;
 		}
 		
+		this.length = 1;
+		this[0] = this;
+		
 		this._private = {
 			cy: cy,
 			data: $$.util.copy( params.data ) || {}, // data object
@@ -73,15 +89,15 @@
 				queue: []
 			},
 			renderer: {}, // object in which the renderer can store information
-			scratch: {} // scratch objects
+			scratch: {}, // scratch objects
+			edges: {} // map of connected edges ( otherNodeId: { edgeId: { source: true|false, target: true|false, edge: edgeRef } } )
 		};
 		
 		// renderedPosition overrides if specified
 		// you shouldn't and can't use this option with cy.load() since we don't have access to the renderer yet
 		// AND the initial state of the graph is such that renderedPosition and position are the same
 		if( params.renderedPosition != null ){
-			var renderer = cy.renderer(); // TODO remove reference after refactoring
-			this._private.position = renderer.modelPoint(params.renderedPosition);
+			this._private.position = this.cy().renderer().modelPoint(params.renderedPosition);
 		}
 		
 		if( $$.is.string(params.classes) ){
@@ -94,7 +110,7 @@
 		
 		this.restore();
 	}
-	$.cytoscapeweb.CyElement = CyElement; // expose
+	$$.CyElement = CyElement; // expose
 	
 	CyElement.prototype.cy = function(){
 		return this._private.cy;
@@ -120,12 +136,22 @@
 			return;
 		}
 		
+		var ids = [];
+		var uniqueElements = [];
+		
 		if( elements == null ){
 			elements = [];
 		}
 		
-		for(var i = 0; i < elements.length; i++){
-			this[i] = elements[i];
+		$.each(elements, function(i, element){
+			if( ids[ element.id() ] == null ){
+				ids[ element.id() ] = true;
+				uniqueElements.push( element );
+			}
+		});
+		
+		for(var i = 0; i < uniqueElements.length; i++){
+			this[i] = uniqueElements[i];
 		}
 		
 		this.length = elements.length;
@@ -134,7 +160,7 @@
 			cy: cy
 		};
 	}
-	$.cytoscapeweb.CyCollection = CyCollection; // expose
+	$$.CyCollection = CyCollection; // expose
 
 	CyCollection.prototype.cy = function(){
 		return this._private.cy;
@@ -144,7 +170,7 @@
 		return this[0];
 	};
 	
-	CyElement.prototype.collection = function(){
+	CyCollection.prototype.collection = function(){
 		return this;
 	};
 
@@ -152,39 +178,6 @@
 	
 	// Functions
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	$$.fn.collection({
-		name: "json",
-		
-		impl: function(){
-			var p = this.element()._private;
-			
-			var json = $$.util.copy({
-				data: p.data,
-				position: p.position,
-				group: p.group,
-				bypass: p.bypass,
-				removed: p.removed,
-				selected: p.selected,
-				locked: p.locked,
-				grabbed: p.grabbed,
-				grabbable: p.grabbable,
-				classes: "",
-				scratch: p.scratch
-			});
-			
-			var classes = [];
-			$.each(p.classes, function(cls, bool){
-				classes.push(cls);
-			});
-			
-			$.each(classes, function(i, cls){
-				json.classes += cls + ( i < classes.length - 1 ? " " : "" );
-			});
-			
-			return json;
-		}
-	});
 	
 	$$.fn.collection({
 		name: "restore",
@@ -203,7 +196,7 @@
 				// set id and validate
 				if( this._private.data.id == null ){
 					this._private.data.id = idFactory.generate( this, this._private.group );
-				} else if( structs[ this._private.group ][ this._private.data.id ] != null ){
+				} else if( this.cy().getElementById( this._private.data.id ) != null ){
 					$$.console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", this._private.group, this._private.data.id);
 					return this;
 				}
@@ -223,30 +216,32 @@
 						} else if( structs.nodes[val] == null ){ 
 							$$.console.error("Can not create edge with id `%s` since it specifies non-existant node as its `%s` attribute with id `%s`",  this._private.data.id, field, val);
 							return;
-						} 
+						}
 					}
 					
-					this.cy().addParallelEdgeToMap(this);
+					function connect( node, otherNode, edge, obj ){
+						if( node._private.edges[ otherNode.id() ] == null ){
+							 node._private.edges[ otherNode.id() ] = {};
+						}
+						
+						node._private.edges[ otherNode.id() ][ edge.id() ] = $.extend({
+							edge: edge
+						}, obj);
+					}
+					
+					// connect reference to source
+					connect( this.source().element(), this.target().element(), this, {
+						source: true
+					} );
+					
+					// connect reference to target
+					connect( this.target().element(), this.source().element(), this, {
+						target: true
+					} );
 				} 
 				 
 				this._private.removed = false;
 				structs[ this._private.group ][ this._private.data.id ] = this;
-				
-				// add to map of edges belonging to nodes
-				if( this._private.group == "edges" ){
-					if( structs.nodeToEdges[ this._private.data.source ] == null ){
-						structs.nodeToEdges[this._private.data.source ] = {};
-					}
-					
-					if( structs.nodeToEdges[ this._private.data.target ] == null ){
-						structs.nodeToEdges[this._private.data.target ] = {};
-					}
-					
-					structs.nodeToEdges[ this._private.data.source ][ this._private.data.id ] = this;
-					structs.nodeToEdges[ this._private.data.target ][ this._private.data.id ] = this;
-				} else if( this._private.group == "nodes" ){
-					structs.nodeToEdges[ this._private.data.id ] = {};
-				}
 				
 				// update mapper structs
 				var self = this;
@@ -277,7 +272,7 @@
 		name: "remove",
 		
 		impl: function(){
-			var removedElements = new CyCollection( this.cy(), [] );
+			var removedElements = new CyCollection( this.cy() );
 			
 			this.each(function(){
 				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
@@ -288,20 +283,17 @@
 					var group = self._private.group;
 					
 					// remove from map of edges belonging to nodes
-					if( self._private.group == "edges" ){
-						delete structs.nodeToEdges[ self._private.data.source ][ self._private.data.id ];
-						delete structs.nodeToEdges[ self._private.data.target ][ self._private.data.id ];
-						self.cy().removeParallelEdgeFromMap(self);
-					} 
-					
-					// remove connected edges
-					else if( self._private.group == "nodes" ){
-						$.each(structs.nodeToEdges[ self._private.data.id ], function(id, edge){
-							remove(edge);
-						});
+					if( self.isEdge() ){
+						removeConnection( node, otherNode ){
+							delete node.element()._private.edges[ otherNode.id() ][ self.id() ];
+						}
 						
-						structs.nodeToEdges[ self._private.data.id ] = {};
-					}
+						// remove connection to source
+						removeConnection( self.source(), self.target() );
+						
+						// remove connection to target
+						removeConnection( self.target(), self.source() );
+					} 
 					
 					$.each(self._private.data, function(attr, val){
 						self.cy().removeContinuousMapperBounds(self, attr, val);

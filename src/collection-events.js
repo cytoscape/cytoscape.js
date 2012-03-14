@@ -1,158 +1,248 @@
-CyCollection.prototype.once = function(event, data, handler){
-		var self = this;
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		
-		if( handler === undefined ){
-			handler = data;
-			data = undefined;
-		}
-		
-		var events = event.split(/\s+/);
-		$.each(events, function(i, type){
-			var listener = {
-				once: true,
-				callback: handler,
-				collection: new CyCollection( self.cy() )
-			};
-			
-			structs.once.push(listener);
-			
-			self.each(function(i, ele){
-				if( ele._private.listeners[type] == null ){
-					ele._private.listeners[type] = [];
+;(function($, $$){
+	
+	$$.fn.collection({
+		name: "trigger",
+		impl: function(event, data){
+			this.each(function(){
+				var self = this;
+				var type = $$.is.plainObject(event) ? event.type : event;
+				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
+				
+				var listeners = this._private.listeners[type];
+				
+				function fire(listener, eventData){
+					if( listener != null && $$.is.fn(listener.callback) ){
+						var eventData = $$.is.plainObject(event) ? event : jQuery.Event(type);
+						eventData.data = listener.data;
+						eventData.cy = eventData.cytoscapeweb = cy;
+						
+						var args = [eventData];
+						
+						if( data != null ){
+							$.each(data, function(i, arg){
+								args.push(arg);
+							});
+						}
+						
+						listener.callback.apply(self, args);
+					}
 				}
 				
-				ele._private.listeners[type].push(listener);
-				listener.collection = listener.collection.add(ele);
+				// trigger regularly bound listeners
+				if( listeners != null ){
+					$.each(listeners, function(i, listener){
+						fire(listener);
+					});
+					
+					for(var i = 0; i < listeners.length; i++){
+						function remove(){
+							listeners.splice(i, 1);
+							i--;
+						}
+						
+						if( listeners[i].one ){
+							remove();
+						} else if( listeners[i].once ){
+							var listener = listeners[i];
+							
+							// remove listener for other elements
+							listener.collection.each(function(j, ele){
+								if( !ele.same(self) ){
+									ele.unbind(type, listener.callback);
+								}
+							});
+							
+							// remove listener from global once struct
+							for(var j = 0; j < structs.once.length; j++){
+								if( listener == structs.once[j] ){
+									structs.once.splice(j, 1);
+									j--;
+								}
+							}
+							
+							// remove listener for self
+							remove();
+						}
+					}
+				}
+				
+				// trigger element live events
+				if( structs.live[type] != null ){
+					$.each(structs.live[type], function(key, callbackDefns){
+						
+						var selector = new $$.CySelector( self.cy(), key );
+						var filtered = selector.filter( self.collection() );
+						
+						if( filtered.size() > 0 ){
+							$.each(callbackDefns, function(i, listener){
+								fire(listener);
+							});
+						}
+					});
+				}
+				
+				// bubble up element events to the core
+				self.cy().trigger(event, data);
+				
 			});
+			
+			return this;
+		}
+	});
+	
+	$$.fn.collection({
+		name: "rtrigger",
+		impl: function(event, data){
+			// notify renderer unless removed
+			this.cy().notify({
+				type: event,
+				collection: this.filter(function(){
+					return !this.removed();
+				})
+			});
+			
+			this.trigger(event, data);
+		}
+	});
+	
+	$$.fn.collection({
+		name: "live",
+		impl: function(){
+			$$.console.warn("`live()` can be called only on collections made from top-level selectors");
+		}
+	});
+	
+	$$.fn.collection({
+		name: "die",
+		impl: function(){
+			$$.console.warn("`die()` can be called only on collections made from top-level selectors");
+		}
+	});
+	
+	$$.fn.collection({
+		name: "bind",
+		impl: defineBinder()
+	});
+	
+	$$.fn.collection({
+		name: "one",
+		impl: defineBinder({
+			listener: function(){
+				return { one: true }
+			}
+		})
+	});
+	
+	$$.fn.collection({
+		name: "once",
+		impl: defineBinder({
+			listener: function( collection, element ){
+				return {
+					once: true,
+					collection: collection
+				}
+			},
+			after: function( collection, callback, data ){
+				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
+				structs.once.push({
+					once: true,
+					collection: collection,
+					callback: callback,
+					data: data
+				});
+			}
+		})
+	});
+	
+	$$.fn.collection({
+		name: "on",
+		impl: function(events, data, callback){
+			return this.bind(events, data, callback);
+		}
+	});
+	
+	$$.fn.collection({
+		name: "off",
+		impl: function(events, callback){
+			return this.unbind(events, callback);
+		}
+	});
+	
+	$$.fn.collection({
+		name: "unbind",
+		impl: function(events, callback){
+			var eventsArray = events.split(/\s+/);
+			
+			this.each(function(){
+				var self = this;
+				
+				if( events === undefined ){
+					self._private.listeners = {};
+					return;
+				}
+				
+				$.each(eventsArray, function(j, event){
+					if( $$.is.emptyString(event) ) return this;
+				
+					var listeners = self._private.listeners[event];
+					
+					if( listeners != null ){
+						for(var i = 0; i < listeners.length; i++){
+							var listener = listeners[i];
+							
+							if( callback == null || callback == listener.callback ){
+								listeners.splice(i, 1);
+								i--;
+							}
+						}
+					}
+				
+				});
+			});
+			
+			return this;
+		}
+	});
+	
+	// add events to the list here IF AND ONLY IF there is no corresponding getter/setter function
+	// e.g. it doesn't make sense to have `data` here, since it's also a getter/setter
+	var aliases = "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free";
+	
+	$.each(aliases.split(/\s+/), function(i, alias){
+		$$.fn.collection({
+			name: alias,
+			impl: defineBindAlias({
+				event: alias
+			})
 		});
+	});
+	
+	function defineBindAlias( params ){
+		var defaults = {
+			event: ""
+		};
 		
-		return this;
-	};
-	
-	
-	CyCollection.prototype.live = function(){
-		$$.console.error("`live` can be called only on collections made from top-level selectors");
-	};
-	
-	CyCollection.prototype.die = function(){
-		$$.console.error("`die` can be called only on collections made from top-level selectors");
-	};
-	
-	
-
-	function listenerAlias(params){
+		params = $.extend({}, defaults, params);
+		
 		return function(data, callback){
 			if( $$.is.fn(callback) ){
-				return this.bind(params.name, data, callback);
+				return this.bind(params.event, data, callback);
 			} else if( $$.is.fn(data) ){
 				var handler = data;
-				return this.bind(params.name, handler);						
+				return this.bind(params.event, handler);						
 			} else {
-				return this.rtrigger(params.name, data);
+				return this.rtrigger(params.event, data);
 			}
 		};
 	}
 	
-	// aliases to listeners, e.g. node.click(fn) => node.bind("click", fn)
-	// TODO add more
-	CyElement.prototype.mousedown = listenerAlias({ name : "mousedown" });
-	CyElement.prototype.mouseup = listenerAlias({ name : "mouseup" });
-	CyElement.prototype.mouseover = listenerAlias({ name : "mouseover" });
-	CyElement.prototype.mouseout = listenerAlias({ name : "mouseout" });
-	CyElement.prototype.mousemove = listenerAlias({ name : "mousemove" });
-	CyElement.prototype.click = listenerAlias({ name : "click" });
-	CyElement.prototype.touchstart = listenerAlias({ name : "touchstart" });
-	CyElement.prototype.touchmove = listenerAlias({ name : "touchmove" });
-	CyElement.prototype.touchend = listenerAlias({ name : "touchend" });
-	CyElement.prototype.grab = listenerAlias({ name : "grab" });
-	CyElement.prototype.drag = listenerAlias({ name : "drag" });
-	CyElement.prototype.free = listenerAlias({ name : "free" });
-	
-	
-	CyElement.prototype.trigger = function(event, data){
-		var self = this;
-		var type = $$.is.plainObject(event) ? event.type : event;
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
+	function defineBinder( params ){
+		var defaults = {
+			listener: function(){},
+			after: function(){}
+		};
+		params = $.extend({}, defaults, params);
 		
-		var listeners = this._private.listeners[type];
-		
-		function fire(listener, eventData){
-			if( listener != null && $$.is.fn(listener.callback) ){
-				var eventData = $$.is.plainObject(event) ? event : jQuery.Event(type);
-				eventData.data = listener.data;
-				eventData.cy = eventData.cytoscapeweb = cy;
-				
-				var args = [eventData];
-				
-				if( data != null ){
-					$.each(data, function(i, arg){
-						args.push(arg);
-					});
-				}
-				
-				listener.callback.apply(self, args);
-			}
-		}
-		
-		// trigger regularly bound listeners
-		if( listeners != null ){
-			$.each(listeners, function(i, listener){
-				fire(listener);
-			});
-			
-			for(var i = 0; i < listeners.length; i++){
-				if( listeners[i].one ){
-					listeners.splice(i, 1);
-					i--;
-				} else if( listeners[i].once ){
-					var listener = listeners[i];
-					
-					// remove listener for other elements
-					listener.collection.each(function(j, ele){
-						if( !ele.same(self) ){
-							ele.unbind(type, listener.callback);
-						}
-					});
-					
-					// remove listener from global once struct
-					for(var j = 0; j < structs.once.length; j++){
-						if( listener == structs.once[j] ){
-							structs.once.splice(j, 1);
-							j--;
-						}
-					}
-					
-					// remove listener for self
-					listeners.splice(i, 1);
-					i--;
-				}
-			}
-		}
-		
-		// trigger element live events
-		if( structs.live[type] != null ){
-			$.each(structs.live[type], function(key, callbackDefns){
-				
-				var selector = new $$.CySelector( self.cy(), key );
-				var filtered = selector.filter( self.collection() );
-				
-				if( filtered.size() > 0 ){
-					$.each(callbackDefns, function(i, listener){
-						fire(listener);
-					});
-				}
-			});
-		}
-		
-		// bubble up element events to the core
-		self.cy().trigger(event, data);
-		
-		return this;
-	};
-	
-	
-	function bind(opts){
 		return function(events, data, callback){
 			var self = this;
 			
@@ -161,85 +251,28 @@ CyCollection.prototype.once = function(event, data, handler){
 				data = undefined;
 			}
 			
-			var defaults = {
-				one: false,
-				data: data
-			};
-			var options = $.extend({}, defaults, opts);
-			
 			$.each(events.split(/\s+/), function(i, event){
-				if(event == "") return this;
+				if( $$.is.emptyString(event) ) return;
 				
-				if( self._private.listeners[event] == null ){
-					self._private.listeners[event] = [];
-				}				
+				self.each(function(){
+					if( this._private.listeners[event] == null ){
+						this._private.listeners[event] = [];
+					}
+					
+					var listener = params.listener.apply(this, [ self, this ]);
+					
+					listener.callback = callback; // add the callback
+					listener.data = data; // add the data
+					this._private.listeners[event].push( listener );
+				});
 				
-				options.callback = callback;
-				self._private.listeners[event].push(options);
+				params.after.apply(this, [self, callback, data]);
 			});
 			
 			return this;
 		};
 	}
 	
-	CyElement.prototype.bind = bind({ one: false });
-	CyElement.prototype.one = bind({ one: true });
 	
-	CyElement.prototype.live = function(){
-		$$.console.error("You can not call `live` on an element");
-		return this;
-	};
 	
-	CyElement.prototype.die = function(){
-		$$.console.error("You can not call `die` on an element");
-		return this;
-	};
-	
-	CyElement.prototype.on = function(events, data, callback){
-		return this.bind(events, data, callback);
-	};
-	
-	CyElement.prototype.off = function(events, callback){
-		return this.unbind(events, callback);
-	};
-	
-	CyElement.prototype.unbind = function(events, callback){
-		var self = this;
-		
-		if( events === undefined ){
-			self._private.listeners = {};
-			return this;
-		}
-		
-		$.each(events.split(/\s+/), function(j, event){
-			if(event == "") return this;
-		
-			var listeners = self._private.listeners[event];
-			
-			if( listeners != null ){
-				for(var i = 0; i < listeners.length; i++){
-					var listener = listeners[i];
-					
-					if( callback == null || callback == listener.callback ){
-						listeners.splice(i, 1);
-						i--;
-					}
-				}
-			}
-		
-		});
-		
-		return this;
-	};
-	
-	CyElement.prototype.rtrigger = function(event, data){
-		// notify renderer unless removed
-		if( !this.removed() ){
-			this.cy().notify({
-				type: event,
-				collection: [ this ]
-			});
-		}
-		
-		this.trigger(event, data);
-	};
+})(jQuery, jQuery.cytoscapeweb);

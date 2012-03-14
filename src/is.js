@@ -1,6 +1,6 @@
-;(function($){
+;(function($, $$){
 	
-	$.cytoscapeweb.is = {
+	$$.is = {
 		string: function(obj){
 			return obj != null && typeof obj == typeof "";
 		},
@@ -14,7 +14,7 @@
 		},
 		
 		plainObject: function(obj){
-			return obj != null && typeof obj == typeof {} && !$.cytoscapeweb.is.array(obj);
+			return obj != null && typeof obj == typeof {} && !$$.is.array(obj);
 		},
 		
 		number: function(obj){
@@ -30,8 +30,30 @@
 		},
 		
 		elementOrCollection: function(obj){
-			return obj instanceof $.cytoscapeweb.CyElement || obj instanceof $.cytoscapeweb.CyCollection;
+			return $$.is.element(obj) || $$.is.collection(obj);
+		},
+		
+		element: function(obj){
+			return obj instanceof $$.CyElement;
+		},
+		
+		collection: function(obj){
+			return obj instanceof $$.CyCollection;
+		},
+		
+		emptyString: function(obj){
+			if( obj == null ){ // null is empty
+				return true; 
+			} else if( $$.is.string(obj) ){
+				return obj.match(/^\s+$/) != null; // all whitespace is empty
+			}
+			
+			return false; // otherwise, we don't know what we've got
+		},
+		
+		nonemptyString: function(obj){
+			return obj != null && $$.is.string(obj) && obj.match(/^\s+$/) == null;
 		}
 	};	
 	
-})(jQuery);
+})(jQuery, jQuery.cytoscapeweb);

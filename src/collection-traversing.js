@@ -1,266 +1,309 @@
-CyCollection.prototype.nodes = function(selector){
-		return this.filter(function(i, element){
-			return element.group() == "nodes";
-		});
-	};
-	
-	CyCollection.prototype.edges = function(selector){
-		return this.filter(function(i, element){
-			return element.group() == "edges";
-		});
-	};
-	
-	CyCollection.prototype.filter = function(filter){
-		var cy = this.cy();
-		
-		if( $$.is.fn(filter) ){
-			var elements = [];
-			this.each(function(i, element){
-				if( !$$.is.fn(filter) || filter.apply(element, [i, element]) ){
-					elements.push(element);
-				}
-			});
-			
-			return new CyCollection(this.cy(), elements);
-		} else if( $$.is.string(filter) ){
-			return new $$.CySelector(this.cy(), filter).filter(this);
-		} 
+;(function($, $$){
 
-		$$.console.error("You must pass a function or a selector to `filter`");
-	};
-	
-CyCollection.prototype.not = function(toRemove){
-		
-		if(toRemove == null){
-			return this;
-		} else {
-		
-			if( $$.is.string(toRemove) ){
-				toRemove = this.filter(toRemove);
-			}
-			
-			var elements = [];
-			var collection = toRemove.collection();
-			
-			this.each(function(i, element){
-				
-				var remove = false;
-				for(var j = 0; j < collection.size(); j++){
-					var c = collection.eq(j);
-					
-					if( c.element() == element.element() ){
-						remove = true;
-						break;
-					}
-				}
-				
-				if(!remove){
-					elements.push(element);
-				}
-				
+	$$.fn.collection({
+		name: "nodes",
+		impl: function(selector){
+			return this.filter(function(i, element){
+				return element.isNode();
 			});
+		}
+	});
+
+	$$.fn.collection({
+		name: "edges",
+		impl: function(selector){
+			return this.filter(function(i, element){
+				return element.isEdge();
+			});
+		}
+	});
+
+	$$.fn.collection({
+		name: "filter",
+		impl: function(filter){
+			var cy = this.cy();
 			
-			return new CyCollection(this.cy(), elements);
-		} 
-	};
-	
-CyCollection.prototype.add = function(toAdd){
-		
-		if(toAdd == null){
-			return this;
-		}
-		
-		if( $$.is.string(toAdd) ){
-			var selector = toAdd;
-			toAdd = elementsCollection({ selector: selector });
-		}
-		
-		var elements = [];
-		var ids = {
-			nodes: {},
-			edges: {}
-		};
-	
-		function add(element){
-			if( element == null ){
-				return;
-			}
-			
-			if( ids[element._private.group][element._private.data.id] == null ){
-				elements.push(element);
-				ids[element._private.group][element._private.data.id] = true;
-			}
-		}
-		
-		// add own
-		this.each(function(i, element){
-			add(element);
-		});
-		
-		// add toAdd
-		var collection = toAdd.collection();
-		collection.each(function(i, element){
-			add(element);
-		});
-		
-		return new CyCollection(this.cy(), elements);
-	};
-	
-	
-	CyElement.prototype.neighbourhood = CyElement.prototype.neighborhood = function(selector){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		var collection;
-		
-		if( this.group() == "nodes" ) {
-			var node = this;
-			var neighbors = [];
-			var nodes = {};
-			$.each(structs.nodeToEdges[ this._private.data.id ], function(id, edge){
-				neighbors.push(edge);
+			if( $$.is.fn(filter) ){
+				var elements = [];
+				this.each(function(i, element){
+					if( filter.apply(element, [i, element]) ){
+						elements.push(element);
+					}
+				});
 				
-				$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
+				return new $$.CyCollection(this.cy(), elements);
+			} else if( $$.is.string(filter) ){
+				return new $$.CySelector(this.cy(), filter).filter(this);
+			}
+
+			$$.console.warn("You must pass a function or a selector to `filter`");
+			return new $$.CyCollection( this.cy() );
+		}
+	});
+
+	$$.fn.collection({
+		name: "not",
+		impl: function(toRemove){
+			
+			if( toRemove == null ){
+				return this;
+			} else {
+			
+				if( $$.is.string(toRemove) ){
+					toRemove = this.filter(toRemove);
+				}
+				
+				var elements = [];
+				var collection = toRemove.collection();
+				
+				this.each(function(i, element){
 					
-					if( nodes[nodeId] == null ){
-						if( (nodeId != node._private.data.id) ){
-							nodes[nodeId] = true;
-							neighbors.push( structs.nodes[nodeId] );
+					var remove = false;
+					for(var j = 0; j < collection.size(); j++){
+						var c = collection.eq(j);
+						
+						if( c.same(element) ){
+							remove = true;
+							break;
 						}
 					}
 					
-				});
-			});
-			collection = new CyCollection(this.cy(), neighbors);
-			
-		} else if( this.group() == "edges" ){
-			
-			var neighbors = [];
-			var nodes = {};
-			var edge = this;
-			$.each([ edge._private.data.source, edge._private.data.target ], function(i, nodeId){
-				
-				if( nodes[nodeId] == null ){
-					nodes[nodeId] = true;
+					if(!remove){
+						elements.push(element);
+					}
 					
-					neighbors.push( structs.nodes[nodeId] );
+				});
+				
+				return new $$.CyCollection(this.cy(), elements);
+			} 
+		}
+	});
+	
+	$$.fn.collection({
+		name: "add",
+		impl: function(toAdd){
+			
+			if(toAdd == null){
+				return this;
+			}
+			
+			if( $$.is.string(toAdd) ){
+				var selector = toAdd;
+				toAdd = this.cy().elements(selector);
+			}
+			
+			var elements = [];
+			var ids = {};
+		
+			function add(element){
+				if( element == null ){
+					return;
 				}
 				
-			});
-			collection = new CyCollection(this.cy(), neighbors);
-			
-		}
-		
-		collection = new $$.CySelector(this.cy(), selector).filter(collection);
-		
-		return collection;
-	};
-	
-	
-	CyElement.prototype.closedNeighbourhood = CyElement.prototype.closedNeighborhood = function(selector){
-		return new $$.CySelector(this.cy(), selector).filter( this.neighborhood().add(this) );
-	};
-	
-	CyElement.prototype.openNeighbourhood = CyElement.prototype.openNeighborhood = function(selector){
-		return this.neighborhood(selector);
-	};
-	
-	
-	CyElement.prototype.source = function(){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		
-		if( this._private.group == "nodes" ){
-			$$.console.error("Can call `source` only on edges---tried to call on node `%s`", this._private.data.id);
-			return this;
-		}
-		
-		return structs.nodes[ this._private.data.source ];
-	};
-	
-	CyElement.prototype.target = function(){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		
-		if( this._private.group == "nodes" ){
-			$$.console.error("Can call `target` only on edges---tried to call on node `%s`", this._private.data.id);
-			return this;
-		}
-		
-		return structs.nodes[ this._private.data.target ];
-	};
-	
-	CyElement.prototype.edgesWith = function(otherNode){
-		if( otherNode.isEdge() ){
-			$$.console.error("Can not call `edgesWith` on edge `%s`; only nodes have edges", this._private.data.id);
-			return this;
-		}
-		
-		var nodes = otherNode.collection();
-		var elements = [];
-		
-		for(var i = 0; i < nodes.size(); i++){
-			var map = this.cy().getEdgesBetweenNodes(this, nodes[i]);
-			for(var i in map){
-				var element = map[i];
-				elements.push(element);
+				if( ids[ element.id() ] == null ){
+					elements.push(element);
+					ids[ element.id() ] = true;
+				}
 			}
+			
+			// add own
+			this.each(function(i, element){
+				add(element);
+			});
+			
+			// add toAdd
+			var collection = toAdd.collection();
+			collection.each(function(i, element){
+				add(element);
+			});
+			
+			return new $$.CyCollection(this.cy(), elements);
 		}
+	});
+
+	$$.fn.collection({
+		name: "neighborhood",
+		impl: function(selector){
+			var elements = [];
+			
+			this.nodes().each(function(i, node){
+				node.connectedEdges().each(function(j, edge){
+					var otherNode = edge.connectedNodes().not(node).element();
+					elements.push( otherNode ); // add node 1 hop away
+					
+					// add connected edge
+					elements.push( edge.element() );
+				});
+			});
+			
+			return this.connectedNodes().add( new $$.CyCollection( this.cy(), elements ) ).filter( selector );
+		}
+	});
+	
+	$$.fn.collection({
+		name: "closedNeighborhood",
+		impl: function(selector){
+			return new $$.CySelector(this.cy(), selector).filter( this.neighborhood().add(this) );
+		}
+	});
+	$$.fn.collection({ name: "closedNeighbourhood", impl: function(selector){ return this.closedNeighborhood(selector); } });
+	
+	$$.fn.collection({
+		name: "openNeighborhood",
+		impl: function(selector){
+			return this.neighborhood(selector);
+		}
+	});
+	$$.fn.collection({ name: "openNeighbourhood", impl: function(selector){ return this.openNeighborhood(selector); } });
+	
+	$$.fn.collection({
+		name: "source",
+		impl: function(){
+			var ele = this.element();
+			var structs = ele.cy()._private; // TODO remove ref to `structs` after refactoring
+			
+			if( ele.isNode() ){
+				$$.console.warn("Can call `source()` only on edges---tried to call on node `%s`", ele._private.data.id);
+				return new $$.CyCollection( ele.cy() );
+			}
+			
+			return ele.cy().getElementById( ele._private.data.source ).collection();
+		}
+	});
+	
+	$$.fn.collection({
+		name: "target",
+		impl: function(){
+			var ele = this.element();
+			
+			if( ele.isNode() ){
+				$$.console.warn("Can call `target()` only on edges---tried to call on node `%s`", ele._private.data.id);
+				return new $$.CyCollection( ele.cy() );
+			}
+			
+			return ele.cy().getElementById( ele._private.data.target ).collection();
+		}
+	});
+	
+	$$.fn.collection({
+		name: "edgesWith",
+		impl: defineEdgesWithFunction()
+	});
+	
+	$$.fn.collection({
+		name: "edgesTo",
+		impl: defineEdgesWithFunction({
+			include: function( node, otherNode, edgeStruct ){
+				return edgeStruct.source;
+			}
+		})
+	});
+	
+	$$.fn.collection({
+		name: "edgesFrom",
+		impl: defineEdgesWithFunction({
+			include: function( node, otherNode, edgeStruct ){
+				return edgeStruct.target;
+			}
+		})
+	});
+	
+	function defineEdgesWithFunction( params ){
+		var defaults = {
+			include: function( node, otherNode, edgeStruct ){
+				return true;
+			}
+		};
+		params = $.extend(true, {}, defaults, params);
 		
-		
-		return new CyCollection(this.cy(), elements);
+		return function(otherNodes){
+			var elements = [];
+			
+			this.nodes().each(function(i, node){
+				otherNodes.nodes().each(function(j, otherNode){
+					$.each( node.element()._private.edges[ otherNode.id() ], function(edgeId, edgeStruct){
+						if( params.include( node, otherNode, edgeStruct ) ){
+							elements.push( otherNode.element() );
+						}
+					} );
+				});
+			});
+			
+			return new $$.CyCollection( this.cy(), elements );
+		};
 	}
 	
-	CyElement.prototype.parallelEdges = function(selector){
-		if( this.isNode() ){
-			$$.console.error("Can not call `parallelEdges` on node `%s`; only edges have sources", this._private.data.id);
-			return this;
+	$$.fn.collection({
+		name: "connectedEdges",
+		impl: function( selector ){
+			var elements = [];
+			
+			this.nodes().each(function(i, node){
+				$.each(node.element()._private.edges, function(otherNodeId, edgesById){
+					$.each(edgesById, function(edgeId, edgeStruct){
+						elements.push( edgeStruct.edge );
+					});
+				});
+			});
+			
+			return new $$.CyCollection( this.cy(), elements ).filter( selector );
 		}
-		
-		var map = this.cy().getParallelEdgesForEdge(this);
-		var elements = [];
-		for(var i in map){
-			var element = map[i];
-			elements.push(element);
-		}
-		
-		var collection = new CyCollection(this.cy(), elements);
-		
-		if( $$.is.string(selector) ){
-			collection = collection.filter(selector);
-		}
-		
-		return collection;
-	};
+	});
 	
-	CyElement.prototype.target = function(){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		
-		if( this.isNode() ){
-			$$.console.error("Can not call `target` on node `%s`; only edges have targets", this._private.data.id);
-			return this;
+	$$.fn.collection({
+		name: "connectedNodes",
+		impl: function( selector ){
+			var elements = [];
+			
+			this.edges().each(function(i, edge){
+				elements.push( edge.source().element() );
+				elements.push( edge.target().element() );
+			});
+			
+			return new CyCollection( this.cy(), elements ).filter( selector );
 		}
-		
-		return structs.nodes[ this._private.data.target ];
-	};
+	});
 	
-	CyElement.prototype.source = function(){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-		
-		if( this.isNode() ){
-			$$.console.error("Can not call `source` on node `%s`; only edges have sources", this._private.data.id);
-			return this;
-		}
-		
-		return structs.nodes[ this._private.data.source ];
-	};
+	$$.fn.collection({
+		name: "parallelEdges",
+		impl: defineParallelEdgesFunction()
+	});
 	
-	CyElement.prototype.connectedNodes = function( selector ){
-		var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
+	$$.fn.collection({
+		name: "codirectedEdges",
+		impl: defineParallelEdgesFunction({
+			include: function( source, target, edgeStruct ){
+				return edgeStruct.source;
+			}
+		})
+	});
+	
+	function defineParallelEdgesFunction(params){
+		var defaults = {
+			include: function( source, target, edgeStruct ){
+				return true;
+			}
+		};
+		params = $.extend(true, {}, defaults, params);
 		
-		if( this.isNode() ){
-			$$.console.error("Can not call `connectedNodes` on node `%s`; only edges have a source and target", this._private.data.id);
-			return this;
-		}
-		
-		var source = structs.nodes[ this._private.data.source ];
-		var target = structs.nodes[ this._private.data.target ];
-		
-		return source.collection().add(target).filter( selector );
-	};
+		return function( selector ){
+			var elements = [];
+			
+			this.edges().each(function(i, edge){
+				var src = edge.source().element();
+				var tgt = edge.target().element();
+				
+				// look at edges between src and tgt
+				$.each( src._private.edges[ tgt.id() ], function(id, edgeStruct){
+					if( params.include(src, tgt, edgeStruct) ){
+						elements.push( edgeStruct.edge );
+					}
+				});
+			});
+			
+			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+		};
+	
+	}
+	
+})(jQuery, jQuery.cytoscapeweb);

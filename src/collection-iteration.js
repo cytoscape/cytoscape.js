@@ -1,57 +1,72 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: ""
+		name: "each",
+		impl: function(fn){
+			if( $$.is.fn(fn) ){
+				for(var i = 0; i < this.size(); i++){
+					var ele = this.eq(i).element();
+					fn.apply( ele, [ i, ele ] );				
+				}
+			}
+			return this;
+		}
 	});
 	
-	CyCollection.prototype.each = function(fn){
-		for(var i = 0; i < this.size(); i++){
-			if( $$.is.fn(fn) ){
-				fn.apply( this.eq(i), [ i, this.eq(i) ] );
+	
+	$$.fn.collection({
+		name: "toArray",
+		impl: function(){
+			var array = [];
+			
+			for(var i = 0; i < this.size(); i++){
+				array.push( this.eq(i).element() );
 			}
+			
+			return array;
 		}
-		return this;
-	};
+	});
 	
-	
-	CyCollection.prototype.toArray = function(){
-		var array = [];
-		
-		for(var i = 0; i < this.size(); i++){
-			array.push( this.eq(i) );
+	$$.fn.collection({
+		name: "slice",
+		impl: function(start, end){
+			var array = [];
+			
+			if( end == null ){
+				end = this.size();
+			}
+			
+			if( start < 0 ){
+				start = this.size() + start;
+			}
+			
+			for(var i = start; i >= 0 && i < end && i < this.size(); i++){
+				array.push( this.eq(i) );
+			}
+			
+			return new $$.CyCollection(this.cy(), array);
 		}
-		
-		return array;
-	};
+	});
 	
-	CyCollection.prototype.slice = function(start, end){
-		var array = [];
-		
-		if( end == null ){
-			end = this.size();
+	$$.fn.collection({
+		name: "size",
+		impl: function(){
+			return this.length;
 		}
-		
-		if( start < 0 ){
-			start = this.size() + start;
+	});
+	
+	$$.fn.collection({
+		name: "eq",
+		impl: function(i){
+			return this[i];
 		}
-		
-		for(var i = start; i >= 0 && i < end && i < this.size(); i++){
-			array.push( this.eq(i) );
+	});
+	
+	$$.fn.collection({
+		name: "empty",
+		impl: function(){
+			return this.size() == 0;
 		}
-		
-		return new CyCollection(this.cy(), array);
-	};
-	
-	CyCollection.prototype.size = function(){
-		return this.length;
-	};
-	
-	CyCollection.prototype.eq = function(i){
-		return this[i];
-	};
-	
-	CyCollection.prototype.empty = function(){
-		return this.size() == 0;
-	};
+	});
 	
 })(jQuery, jQuery.cytoscapeweb);

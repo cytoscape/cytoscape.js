@@ -1,68 +1,19 @@
-function degreeBoundsFunction(degreeFn, callback){
+;(function($, $$){
+	
+	// Regular degree functions (works on single element)
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	function defineDegreeFunction(callback){
 		return function(){
-			var ret = null;
-			var degrees = this[degreeFn]();
-			this.each(function(i, ele){
-				var degree = ele[degreeFn]();
-				if( degree != null && (ret == null || callback(degree, ret)) ){
-					ret = degree;
-				}
-			});
-			return ret;
-		};
-	}
-	
-	CyCollection.prototype.minDegree = degreeBoundsFunction("degree", function(degree, min){
-		return degree < min;
-	});
-	
-	CyCollection.prototype.maxDegree = degreeBoundsFunction("degree", function(degree, max){
-		return degree > max;
-	});
-
-	CyCollection.prototype.minIndegree = degreeBoundsFunction("indegree", function(indegree, min){
-		return indegree < min;
-	});
-	
-	CyCollection.prototype.maxIndegree = degreeBoundsFunction("indegree", function(indegree, max){
-		return indegree > max;
-	});
-	
-	CyCollection.prototype.minOutdegree = degreeBoundsFunction("outdegree", function(outdegree, min){
-		return outdegree < min;
-	});
-	
-	CyCollection.prototype.maxOutdegree = degreeBoundsFunction("outdegree", function(outdegree, max){
-		return outdegree > max;
-	});
-	
-	CyCollection.prototype.totalDegree = function(){
-		var total = 0;
-		
-		this.each(function(i, ele){
-			if( ele.isNode() ){
-				total += ele.degree();
-			}
-		});
-
-		return total;
-	};
-	
-	
-	function degreeFunction(callback){
-		return function(){
-			var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
+			var self = this.element();
 			
-			if( this._private.group == "nodes" && !this._private.removed ){
+			if( self.isNode() && !self.removed() ){
 				var degree = 0;
-				var edges = structs.nodeToEdges[this._private.data.id];
 				var node = this;
 				
-				if( edges != null ){
-					$.each(edges, function(i, edge){
-						degree += callback(node, edge);
-					});
-				}
+				node.connectedEdges().each(function(i, edge){
+					degree += callback( node, edge );
+				});
 				
 				return degree;
 			} else {
@@ -71,26 +22,113 @@ function degreeBoundsFunction(degreeFn, callback){
 		};
 	}
 	
-	CyElement.prototype.degree = degreeFunction(function(node, edge){
-		if( edge._private.data.source == edge._private.data.target ){
-			return 2;
-		} else {
-			return 1;
+	$$.fn.collection({
+		name: "degree",
+		impl: defineDegreeFunction(function(node, edge){
+			if( edge.source().same( edge.target() ) ){
+				return 2;
+			} else {
+				return 1;
+			}
+		})
+	});
+	
+	$$.fn.collection({
+		name: "indegree",
+		impl: defineDegreeFunction(function(node, edge){
+			if( edge.target().same(node) ){
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 	});
 	
-	CyElement.prototype.indegree = degreeFunction(function(node, edge){
-		if( node._private.data.id == edge._private.data.target ){
-			return 1;
-		} else {
-			return 0;
+	$$.fn.collection({
+		name: "outdegree",
+		impl: defineDegreeFunction(function(node, edge){
+			if( edge.source().same(node) ){
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 	});
 	
-	CyElement.prototype.outdegree = degreeFunction(function(node, edge){
-		if( node._private.data.id == edge._private.data.source ){
-			return 1;
-		} else {
-			return 0;
+	
+	// Collection degree stats
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	function defineDegreeBoundsFunction(degreeFn, callback){
+		return function(){
+			var ret = null;
+			
+			this.nodes().each(function(i, ele){
+				var degree = ele[degreeFn]();
+				if( degree != null && (ret == null || callback(degree, ret)) ){
+					ret = degree;
+				}
+			});
+			
+			return ret;
+		};
+	}
+	
+	$$.fn.collection({
+		name: "minDegree",
+		impl: defineDegreeBoundsFunction("degree", function(degree, min){
+			return degree < min;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "maxDegree",
+		impl: defineDegreeBoundsFunction("degree", function(degree, max){
+			return degree > max;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "minIndegree",
+		impl: defineDegreeBoundsFunction("indegree", function(degree, min){
+			return degree < min;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "maxIndegree",
+		impl: defineDegreeBoundsFunction("indegree", function(degree, max){
+			return degree > max;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "minOutdegree",
+		impl: defineDegreeBoundsFunction("outdegree", function(degree, min){
+			return degree < min;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "maxOutdegree",
+		impl: defineDegreeBoundsFunction("outdegree", function(degree, max){
+			return degree > max;
+		})
+	});
+	
+	$$.fn.collection({
+		name: "totalDegree",
+		impl: function(){
+			var total = 0;
+			
+			this.nodes().each(function(i, ele){
+				total += ele.degree();
+			});
+
+			return total;
 		}
 	});
+	
+})(jQuery, jQuery.cytoscapeweb);
+
+	

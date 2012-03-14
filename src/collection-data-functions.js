@@ -1,324 +1,429 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: "data",
-		
-		impl: function(attr, val){
-			// get whole field
-			if( attr === undefined ){
-				return $$.util.copy( this.eq(0).element()._private.data );
-			}
-			
-			if( attr == "id" && val !== undefined ){
-				$$.console.error("Can not change ID of collection with element with group `%s` and ID `%s`", this.element()._private.group, this.element()._private.data.id);
-				return this;
-			}
-			
-			// bind to event
-			else if( $$.is.fn(attr) ){
-				var handler = attr;
-				
-				this.bind("data", handler);
-				return this;
-			}
-			
-			// bind to event with data
-			else if( $$.is.fn(val) ){
-				var data = attr;
-				var handler = val;
-				
-				this.bind("data", data, handler);
-				return this;
-			}
-			
-			// set whole field from obj
-			else if( $$.is.plainObject(attr) ){
-				var newValObj = attr;
-				
-				this.each(function(){
-					for(var field in newValObj){
-						var val = newValObj[field];
-						
-						if( field == "id" || ( this._private.group == "edges" && ( field == "source" || field == "target" ) ) ){
-							$$.console.error("Can not change immutable field `%s` for element with group `%s` and ID `%s` to `%o`", field, this._private.group, this._private.data.id, val);
-						} else {
-							this.cy().updateContinuousMapperBounds(this, field, this._private.data[field], val);
-							this._private.data[field] = $$.util.copy( val );
-						}
+		name: "data",		
+		impl: defineAccessor({ // defaults serve as example (data)
+			attr: "data",
+			allowBinding: true,
+			bindingEvent: "data",
+			settingTriggersEvent: true, 
+			settingEvent: "data",
+			validKey: { // already guaranteed that key is a string; `this` refers to the element
+				forSet: function( key ){
+					switch( key ){
+					case "id":
+					case "source":
+					case "target":
+						return false;
+					default:
+						return true;
 					}
-				});
-				
-				this.rtrigger("data");
-				return this;
-			} 
-			
-			// get attr val by name
-			else if( val === undefined ){
-				var ret = this.element()._private.data[ attr ];
-				ret =  ( $$.is.plainObject(ret) ? $$.util.copy(ret) : ret );
-				
-				return ret;
-			}
-			
-			// set attr val by name
-			else {
-				if( attr == "id" ){
-					$$.console.error("Can not change `%s` of element with ID `%s` --- you can not change IDs", attr, this.element()._private.data.id);
-					return this;
 				}
-				
-				if( attr == "source" || attr == "target" ){
-					$$.console.error("Can not change `%s` of collection with element with ID `%s` --- you can not change IDs", attr, this._private.data.id);
-					return this;
-				}
-				
-				this.each(function(){
-					var oldVal = this._private.data[ attr ];
-					this._private.data[ attr ] = ( $$.is.plainObject(val) ? $$.util.copy(val) : val );
-					this.cy().updateContinuousMapperBounds(this, attr, oldVal, val);
-				});
-				
-				this.rtrigger("data");
-				return this;
+			},
+			onSet: function( key, oldVal, newVal ){ // callback function to call when setting for an element
+				this.cy().updateContinuousMapperBounds(this, key, oldVal, newVal);
 			}
-			
-			return this; // just in case
-		}
+		}) 
 	});
 	
 	$$.fn.collection({
 		name: "removeData",
-		
-		impl: function(field){
-			if( field == undefined ){
-				
-				// delete all non-essential data
-				this.each(function(){
-					var oldData = this._private.data;
-					var self = this;
-					
-					$.each(this._private.data, function(attr, val){
-						self.cy().removeContinuousMapperBounds(self, attr, val);
-					});
-					
-					if( this.isNode() ){
-						this._private.data = {
-							id: oldData.id
-						};
-					} else if( this.isEdge() ){
-						this._private.data = {
-							id: oldData.id,
-							source: oldData.source,
-							target: oldData.target
-						};
-					}
-				});
-				
-			} else {
-				// delete only one field
-				
-				if( field == "id" ){
-					$$.console.error("You can not delete the `id` data field; tried to delete on collection with element with group `%s` and ID `%s`", this.element()._private.group, this.element()._private.data.id);
-					return this;
+		impl: defineRemover({
+			attr: "data",
+			event: "data",
+			triggerEvent: true,
+			onRemove: function( key, val ){ // callback after removing; `this` refers to the element
+				this.cy().removeContinuousMapperBounds(this, key, val);
+			},
+			validKey: function( key ){
+				switch(key){
+				case "id":
+				case "source":
+				case "target":
+					return false;
+				default:
+					return true;
 				}
-				
-				if( field == "source" || field == "target" ){
-					$$.console.error("You can not delete the `%s` data field; tried to delete on collection with element `%s`", field, this.element()._private.data.id);
-					return this;
-				} 
-				
-				this.each(function(){
-					this.cy().removeContinuousMapperBounds(this, field, this._private.data[field]);
-					delete this._private.data[field];
-				});
-			}
-			
-			this.rtrigger("data");
-			return this;
+			},
+			essentialKeys: [ "id", "source", "target" ] // keys that remain even when deleting all
+		}) 
+	});
+	
+	$$.fn.collection({
+		name: "id",
+		impl: function(){
+			return this.element()._private.data.id;
 		}
 	});
 	
-})(jQuery, jQuery.cytoscapeweb);
-
-
-CyElement.prototype.position = function(val){
+	$$.fn.collection({
+		name: "position",
+		impl: defineAccessor({
+			attr: "position",
+			allowBinding: true,
+			bindingEvent: "position",
+			settingTriggersEvent: true, 
+			settingEvent: "position",
+			validKey: {
+				forSet: function( key ){
+					return this.isNode();
+				},
+				forGet: function( key ){
+					return this.isNode();
+				}
+			},
+			validValue: function( key, val ){
+				return true;
+			},
+			onSet: function( key, oldVal, newVal ){
+				// do nothing
+			},
+			onGet: function( key, val ){
+				// do nothing
+			}
+		})
+	});
 	
-	var self = this;
-	
-	if( val === undefined ){
-		if( this.isNode() ){
-			return $$.util.copy( this._private.position );
-		} else {
-			$$.console.warn("Can not get position for edge with ID `%s`; edges have no position", this._private.data.id);
-			return null;
+	$$.fn.collection({
+		name: "positions",
+		impl: function(pos){
+			if( $$.is.plainObject(pos) ){
+				
+				this.each(function(i, ele){
+					$.each(pos, function(key, val){
+						ele._private.position[ key ] = val;
+					});
+				});
+				
+				this.rtrigger("position");
+				
+			} else if( $$.is.fn(pos) ){
+				var fn = pos;
+				
+				this.each(function(i, ele){
+					var pos = fn.apply(ele, [i, ele]);
+					
+					$.each(pos, function(key, val){
+						ele._private.position[ key ] = val;
+					});
+				});
+				
+				this.rtrigger("position");
+			}
 		}
-	} else if( $$.is.fn(val) ){
-		var fn = val;
-		this.bind("position", fn);
-	} else if( this.isEdge() ){
-		$$.console.warn("Can not move edge with ID `%s`; edges can not be moved", this._private.data.id);
-	} else if( this.locked() ) {
-		$$.console.warn("Can not move locked node with ID `%s`", this._private.data.id);
-	} else if( $$.is.string(val) ) {
-		var param = arguments[0];
-		var value = arguments[1];
+	});
+	
+	$$.fn.collection({
+		name: "renderedPosition",
+		impl: function(){} // TODO
+	});
+	
+	$$.fn.collection({
+		name: "renderedDimension",
+		impl: function( dimension ){
+			var ele = this.element();
+			var renderer = ele.cy().renderer(); // TODO remove reference after refactoring
+			var dim = renderer.renderedDimensions(ele);
+			
+			if( dimension === undefined ){
+				return dim;
+			} else {
+				return dim[dimension];
+			}
+		}
+	});
+	
+	$$.fn.collection({
+		name: "style",
+		impl: function(){
+			return $$.util.copy( this.element()._private.style );
+		}
+	});
+	
+	$$.fn.collection({
+		name: "bypass",
+		impl: defineAccessor({
+			attr: "bypass",
+			allowBinding: true,
+			bindingEvent: "bypass",
+			settingTriggersEvent: true, 
+			settingEvent: "bypass"
+		})
+	});
+	
+	$$.fn.collection({
+		name: "removeBypass",
+		impl: defineRemover({
+			attr: "bypass",
+			event: "bypass",
+			triggerEvent: true
+		})
+	});
+	
+	$$.fn.collection({
+		name: "json",
 		
-		if( value === undefined ){
-			 return this._private.position[param];
-		} else {
-			this._private.position[param] = $$.util.copy(value);
+		impl: function(){
+			var p = this.element()._private;
+			
+			var json = $$.util.copy({
+				data: p.data,
+				position: p.position,
+				group: p.group,
+				bypass: p.bypass,
+				removed: p.removed,
+				selected: p.selected,
+				locked: p.locked,
+				grabbed: p.grabbed,
+				grabbable: p.grabbable,
+				classes: "",
+				scratch: p.scratch
+			});
+			
+			var classes = [];
+			$.each(p.classes, function(cls, bool){
+				classes.push(cls);
+			});
+			
+			$.each(classes, function(i, cls){
+				json.classes += cls + ( i < classes.length - 1 ? " " : "" );
+			});
+			
+			return json;
 		}
-	} else if( $$.is.plainObject(val) ) {
-		$.each(val, function(k, v){
-			self._private.position[k] = $$.util.copy( v );
-		});
-		this.rtrigger("position");
-	} else {
-		$$.console.error("Can not set position on node `%s` with non-object `%o`", this._private.data.id, val);
-	}
+	});
 	
-	return this;
+	// Generic metacode for defining data function behaviour follows
+	//////////////////////////////////////////////////////////////////////////////////////
 	
-};
-
-CyElement.prototype.positions = function(fn){
-	var positionOpts = fn.apply(this, [0, this]);
-	
-	if( $$.is.plainObject(positionOpts) ){
-		this.position(positionOpts);
-	}
-};
-
-CyElement.prototype.renderedPosition = function(coord, val){
-	if( this.isEdge() ){
-		$.cytoscapeweb("warn", "Can not access rendered position for edge `" + this._private.data.id + "`; edges have no position");
-		return null;
-	}
-	var renderer = this.cy().renderer(); // TODO remove reference after refactoring
-	
-	var pos = renderer.renderedPosition(this);
-	
-	if( coord === undefined ){
-		return pos;
-	} else if( $$.is.string(coord) ) {
-		if( val === undefined ){
-			return pos[coord];
-		} else {
-			pos[coord] = val;
-			this.position( renderer.modelPoint(pos) );
-		}
-	} else if( $$.is.plainObject(coord) ){
-		pos = $.extend(true, {}, pos, coord);
-		this.position( renderer.modelPoint(pos) );
-	}
-	
-	return this;
-};
-
-CyElement.prototype.renderedDimensions = function(dimension){
-	var renderer = this.cy().renderer(); // TODO remove reference after refactoring
-	var dim = renderer.renderedDimensions(this);
-	
-	if( dimension === undefined ){
-		return dim;
-	} else {
-		return dim[dimension];
-	}
-};
-
-CyElement.prototype.style = function(){
-	// the renderer should populate this field and keep it up-to-date
-	return $$.util.copy( this._private.style );
-};
-
-function setterGetterFunction(params){
+	function defineAccessor( opts ){
+		var defaults = { // defaults serve as example (data)
+			attr: "foo",
+			allowBinding: false,
+			bindingEvent: "foo",
+			settingTriggersEvent: false, 
+			settingEvent: "foo",
+			validKey: { // already guaranteed that key is a string; `this` refers to the element
+				forGet: function( key ){
+					return true;
+				},
+				forSet: function( key ){
+					return true;
+				}
+			},
+			preprocess: {
+				forSet: function(key, val){
+					return val;
+				},
+				
+				forSet: function(key, val){
+					return val;
+				}
+			},
+			validValue: function( key, val ){
+				return true;
+			},
+			onSet: function( key, oldVal, newVal ){ // callback function to call when setting for an element
+				// do nothing
+			},
+			onGet: function( key, val ){ // callback function to call when getting for an element
+				// do nothing
+			}
+		};
+		var params = $.extend(true, {}, defaults, opts);
+		
 		return function(key, val){
-
-			// bind to event
-			if( $$.is.fn(key) ){
-				var handler = key;
-				this.bind(params.event, handler);
-			}
+			var ele = this.element();
+			var eles = this;
 			
-			// bind to event with data
-			else if( $$.is.fn(val) ){
-				var data = key;
-				var handler = val;
-				this.bind(params.event, data, handler);
-			}
-			
-			// set or get field with key
-			else if( $$.is.string(key) ){
-				if( val === undefined ){
-					return $$.util.copy( this._private[params.field][key] );
+			function getter(key){
+				if( params.validKey.forGet.apply(ele, [key]) ){
+					var ret = $$.util.copy(  ele._private[ params.attr ] [ key ] );
+					if( $$.is.fn(params.onGet) ){
+						params.onGet.apply( ele, [key, ret] );
+					}
+					
+					return ret;
 				} else {
-					this._private[params.field][key] = $$.util.copy( val );
-					this.rtrigger(params.event);
+					$$.console.warn( "Can not access field `%s` for `%s` for collection with element `%s`", key, params.attr, ele._private.data.id );
 				}
 			}
 			
-			// update via object
-			else if( $$.is.plainObject(key) ) {
-				var map = key;
-				var current = this._private[params.field];
-				
-				this._private[params.field] = $.extend(true, {}, current, map);
-				this.rtrigger(params.event);
+			function setter(key, val){
+				eles.each(function(){
+					if( params.validKey.forSet.apply(this, [key]) && params.validValue.apply(this, [key, val]) ){
+						var oldVal = this.element()._private.data[ key ];
+							
+						this.element()._private.data[ key ] = $$.util.copy( val );
+						
+						if( $$.is.fn(params.onSet) ){
+							params.onSet.apply( ele, [key, oldVal, val] );
+						}
+					} else {
+						$$.console.warn( "Can not set field `%s` for `%s` for element `%s` to value `%o` : invalid value", key, params.attr, ele._private.data.id );
+					}
+				});
 			}
 			
-			// return the whole object
-			else if( key === undefined ){
-				return $$.util.copy( this._private[params.field] );
+			function bind(fn, data){
+				if( data === undefined ){
+					eles.bind( params.bindingEvent, fn );
+				} else {
+					eles.bind( params.bindingEvent, data, fn );
+				}
 			}
 			
-			return this;
-		};
-	};
-	
-	function removerFunction(params){
-		return function(key){
-			var self = this;
+			function trigger(){
+				if( params.settingTriggersEvent ){
+					eles.rtrigger( params.settingEvent );
+				}
+			}
 			
-			// remove all
+			// CASE: no parameters
+			// get whole attribute object
 			if( key === undefined ){
-				this._private[params.field] = {};
+				return $$.util.copy( ele._private[ params.attr ] );
 			}
+			
+			// CASE: single parameter
+			else if( val === undefined ){
+				
+				// get attribute with specified key
+				if( $$.is.string(key) ){
+					return getter(key);
+				}
+				
+				// set fields with an object
+				else if( $$.is.plainObject(key) ) {
+					var obj = key;
+					
+					$.each(obj, function(key, val){
+						setter(key, val);
+					});
+					
+					trigger();
+				}
+				
+				// bind with a handler function
+				else if( params.allowBinding && $$.is.fn(key) ){
+					var fn = key;
+					
+					bind(fn);
+				}
+				
+				else {
+					$$.console.warn("Invalid first parameter for `%s()` for collection with element `%s` : expect a key string or an object" + ( params.allowBinding ?  " or a handler function for binding" : "" ), params.attr, ele._private.data.id);
+				}
+
+			}
+			
+			// CASE: two parameters
+			else {
+				
+				// bind to event with data object
+				if( params.allowBinding && $$.is.plainObject(key) && $$.is.fn(val) ){
+					var data = key;
+					var fn = val;
+					
+					bind(fn, data);
+				}
+				
+				// set field with key to val
+				else if( $$.is.string(key) ){
+					setter(key, val);
+					trigger();
+				}
+				
+				else {
+					$$.console.warn("Invalid parameters for `%s()` for collection with element `%s` : expect a key string and a value" + ( params.allowBinding ?  " or a data object and a handler function for binding" : "" ), params.attr, ele._private.data.id);
+				}
+				
+			}
+			
+			return this; // chaining
+		};
+	}
+	
+	function defineRemover( opts ){
+		var defaults = {
+			attr: "foo",
+			event: "foo",
+			triggerEvent: false,
+			onRemove: function( key, val ){ // callback after removing; `this` refers to the element
+				// do nothing
+			},
+			validKey: function( key ){
+				return true;
+			},
+			essentialKeys: [  ] // keys that remain even when deleting all
+		};
+		
+		var params = $.extend(true, {}, defaults, opts);
+		
+		return function(keys){
+			var ele = this.element();
+			var eles = this;
+			
+			function removeAll(){
+				eles.each(function(){
+					var ele = this.element();
+					var oldObj = ele._private[ params.attr ];
+					var newObj = {};
+					
+					// copy essential keys to new obj
+					$.each( params.essentialKeys, function(i, key){
+						newObj[ key ] = oldObj[ key ];
+					} );
+					
+					ele._private[ params.attr ] = newObj;
+				});
+			}
+			
+			function remove( key ){
+				eles.each(function(){
+					var ele = this.element();
+					
+					if( params.validKey.apply(ele, [key]) ){
+						var val = ele._private[ params.attr ][ key ];
+						delete ele._private[ params.attr ][ key ];
+						
+						if( $$.is.fn( params.onRemove ) ){
+							params.onRemove.apply(ele, [key, val]);
+						}
+					}
+				});
+			}
+			
+			function trigger(){
+				if( params.triggerEvent ){
+					eles.rtrigger( params.event );
+				}
+			}
+			
+			// remove all 
+			if( keys === undefined ){
+				removeAll();
+				trigger();
+			}
+			
+			else if( $$.is.string(keys) ){
+				var keysArray = keys.split(/\s+/);
+				
+				$.each( keysArray, function(i, key){
+					if( $$.is.emptyString(key) ) return; // ignore empty keys
+					remove( key );
+				} );
+				
+				trigger();
+			} 
 			
 			else {
-				var keys = key.split(/\s+/);
-				for(var i = 0; i < keys.length; i++){
-					delete this._private[params.field][ keys[i] ];
-				}
+				$$.console.warn("Invalid parameters to `%s()` for collection with element `%s` : %o", params.attr, ele._private.data.id, arguments);
 			}
-				
-			if( params.event != null ){
-				this.rtrigger(params.event);
-			}					
 			
-			return this;
+			return this; // chaining
 		};
-	};
-	
-	CyElement.prototype.removeBypass = removerFunction({ field: "bypass", event: "bypass" });
-	CyElement.prototype.bypass = setterGetterFunction({ field: "bypass", event: "bypass" });
+	}
 
-	CyCollection.prototype.positions = function(fn){
-		
-		var collection = this;
-		
-		this.cy().noNotifications(function(){
-			collection.each(function(i, element){
-				var positionOpts = fn.apply(element, [i, element]);
-				
-				if( $$.is.plainObject(positionOpts) ){
-					element.position(positionOpts);
-				}
-			});
-		});
-
-		this.cy().notify({
-			type: "position",
-			collection: this
-		});
-	};
 	
+})(jQuery, jQuery.cytoscapeweb);

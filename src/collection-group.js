@@ -1,12 +1,25 @@
+;(function($, $$){
+
+	$$.fn.collection({
+		name: "isNode",
+		impl: function(){
+			return this.group() == "nodes";
+		}
+	});
 	
-	CyElement.prototype.isNode = function(){
-		return this._private.group == "nodes";
-	};
+	$$.fn.collection({
+		name: "isEdge",
+		impl: function(){
+			return this.group() == "edges";
+		}
+	});
 	
-	CyElement.prototype.isEdge = function(){
-		return this._private.group == "edges";
-	};
+	$$.fn.collection({
+		name: "group",
+		impl: function(){
+			return this.element()._private.group;
+		}
+	});
+
 	
-	CyElement.prototype.group = function(){
-		return this._private.group;
-	};
+})(jQuery, jQuery.cytoscapeweb);

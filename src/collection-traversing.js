@@ -1,5 +1,5 @@
 ;(function($, $$){
-
+	
 	$$.fn.collection({
 		name: "nodes",
 		impl: function(selector){

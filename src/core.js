@@ -48,7 +48,6 @@
 					edges: {}
 				},
 				continuousMapperUpdates: [],
-				once: [], // array of callback defns (synced w. ones in elements)
 				live: {}, // event name => array of callback defns
 				selectors: {}, // selector string => selector for live
 				listeners: {}, // cy || background => event name => array of callback functions

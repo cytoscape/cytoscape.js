@@ -1,14 +1,23 @@
 ;(function($, $$){
 	
+	// This file contains collection functions that toggle a boolean value
+	
 	function defineSwitchFunction(params){
 		return function(){
 			var args = arguments;
 			
+			// e.g. cy.nodes().select( data, handler )
 			if( args.length == 2 ){
-				this.bind( args[0], args[1] );
-			} else if( args.length == 1 ){
-				this.bind( args[0] );
-			} else if( args.length == 0 ){
+				this.bind( params.event, args[0], args[1] );
+			} 
+			
+			// e.g. cy.nodes().select( handler )
+			else if( args.length == 1 ){
+				this.bind( params.event, args[0] );
+			}
+			
+			// e.g. cy.nodes().select()
+			else if( args.length == 0 ){
 				this.each(function(){
 					this.element()._private[params.field] = params.value;
 				});

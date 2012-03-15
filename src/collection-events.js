@@ -52,14 +52,6 @@
 								}
 							});
 							
-							// remove listener from global once struct
-							for(var j = 0; j < structs.once.length; j++){
-								if( listener == structs.once[j] ){
-									structs.once.splice(j, 1);
-									j--;
-								}
-							}
-							
 							// remove listener for self
 							remove();
 						}
@@ -109,6 +101,7 @@
 		name: "live",
 		impl: function(){
 			$$.console.warn("`live()` can be called only on collections made from top-level selectors");
+			return this;
 		}
 	});
 	
@@ -116,6 +109,7 @@
 		name: "die",
 		impl: function(){
 			$$.console.warn("`die()` can be called only on collections made from top-level selectors");
+			return this;
 		}
 	});
 	
@@ -147,13 +141,7 @@
 				}
 			},
 			after: function( collection, callback, data ){
-				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-				structs.once.push({
-					once: true,
-					collection: collection,
-					callback: callback,
-					data: data
-				});
+				// do nothing
 			}
 		})
 	});
@@ -270,7 +258,7 @@
 					this._private.listeners[event].push( listener );
 				});
 				
-				params.after.apply(this, [self, callback, data]);
+				params.after.apply(self, [self, callback, data]);
 			});
 			
 			return this;

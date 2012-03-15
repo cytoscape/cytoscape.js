@@ -9,13 +9,13 @@
 	$$.modules = modules;
 	
 	function setExtension(type, name, registrant){
+		var impl = {};
+		impl[name] = registrant;
+		
 		switch( type ){
 		case "core":
 		case "collection":
-			$$.fn[type]({
-				name: name,
-				impl: registrant
-			});
+			$$.fn[type]( impl );
 		}
 		
 		return $$.util.setMap({

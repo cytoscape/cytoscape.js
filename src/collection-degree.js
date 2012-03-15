@@ -23,8 +23,7 @@
 	}
 	
 	$$.fn.collection({
-		name: "degree",
-		impl: defineDegreeFunction(function(node, edge){
+		degree: defineDegreeFunction(function(node, edge){
 			if( edge.source().same( edge.target() ) ){
 				return 2;
 			} else {
@@ -34,8 +33,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "indegree",
-		impl: defineDegreeFunction(function(node, edge){
+		indegree: defineDegreeFunction(function(node, edge){
 			if( edge.target().same(node) ){
 				return 1;
 			} else {
@@ -45,8 +43,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "outdegree",
-		impl: defineDegreeFunction(function(node, edge){
+		outdegree: defineDegreeFunction(function(node, edge){
 			if( edge.source().same(node) ){
 				return 1;
 			} else {
@@ -75,50 +72,43 @@
 	}
 	
 	$$.fn.collection({
-		name: "minDegree",
-		impl: defineDegreeBoundsFunction("degree", function(degree, min){
+		minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
 			return degree < min;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "maxDegree",
-		impl: defineDegreeBoundsFunction("degree", function(degree, max){
+		maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
 			return degree > max;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "minIndegree",
-		impl: defineDegreeBoundsFunction("indegree", function(degree, min){
+		minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
 			return degree < min;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "maxIndegree",
-		impl: defineDegreeBoundsFunction("indegree", function(degree, max){
+		maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
 			return degree > max;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "minOutdegree",
-		impl: defineDegreeBoundsFunction("outdegree", function(degree, min){
+		minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
 			return degree < min;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "maxOutdegree",
-		impl: defineDegreeBoundsFunction("outdegree", function(degree, max){
+		maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
 			return degree > max;
 		})
 	});
 	
 	$$.fn.collection({
-		name: "totalDegree",
-		impl: function(){
+		totalDegree: function(){
 			var total = 0;
 			
 			this.nodes().each(function(i, ele){

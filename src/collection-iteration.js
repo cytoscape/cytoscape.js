@@ -1,8 +1,10 @@
 ;(function($, $$){
 	
+	// Functions for iterating over collections
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	$$.fn.collection({
-		name: "each",
-		impl: function(fn){
+		each: function(fn){
 			if( $$.is.fn(fn) ){
 				for(var i = 0; i < this.size(); i++){
 					var ele = this.eq(i).element();
@@ -15,8 +17,7 @@
 	
 	
 	$$.fn.collection({
-		name: "toArray",
-		impl: function(){
+		toArray: function(){
 			var array = [];
 			
 			for(var i = 0; i < this.size(); i++){
@@ -28,8 +29,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "slice",
-		impl: function(start, end){
+		slice: function(start, end){
 			var array = [];
 			
 			if( end == null ){
@@ -49,22 +49,19 @@
 	});
 	
 	$$.fn.collection({
-		name: "size",
-		impl: function(){
+		size: function(){
 			return this.length;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "eq",
-		impl: function(i){
+		eq: function(i){
 			return this[i];
 		}
 	});
 	
 	$$.fn.collection({
-		name: "empty",
-		impl: function(){
+		empty: function(){
 			return this.size() == 0;
 		}
 	});

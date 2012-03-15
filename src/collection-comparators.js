@@ -1,29 +1,25 @@
 ;(function($, $$){
 
 	$$.fn.collection({
-		name: "allAre",
-		impl: function(selector){
+		allAre: function(selector){
 			return this.filter(selector).size() == this.size();
 		}
 	});
 	
 	$$.fn.collection({
-		name: "is",
-		impl: function(selector){
+		is: function(selector){
 			return new $$.CySelector(this.cy(), selector).filter(this).size() > 0;
 		}
 	});
 
 	$$.fn.collection({
-		name: "same",
-		impl: function( other ){
+		same: function( other ){
 			return this.element() === other.element();
 		}
 	});
 	
 	$$.fn.collection({
-		name: "anySame",
-		impl: function(collection){
+		anySame: function(collection){
 			collection = collection.collection();
 			
 			var ret = false;
@@ -44,8 +40,7 @@
 	});
 
 	$$.fn.collection({
-		name: "allSame",
-		impl: function(collection){
+		allSame: function(collection){
 			collection = collection.collection();
 			
 			// cheap check to make sure A.allSame(B) == B.allSame(A)
@@ -74,8 +69,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "allAreNeighbors",
-		impl: function(collection){
+		allAreNeighbors: function(collection){
 			collection = collection.collection();
 			
 			var neighborhood = this.neighborhood();
@@ -91,8 +85,7 @@
 		}
 	});
 	$$.fn.collection({ // English spelling variant
-		name: "allAreNeighbours",
-		impl: function(){
+		allAreNeighbours: function(){
 			return this.allAreNeighbors.apply(this, [arguments]);
 		}
 	});

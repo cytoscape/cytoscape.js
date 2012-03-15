@@ -1,15 +1,13 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: "animated",
-		impl: function(){
+		animated: function(){
 			return this.element()._private.animation.current.length > 0;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "clearQueue",
-		impl: function(){
+		clearQueue: function(){
 			return this.each(function(){
 				this.element()._private.animation.queue = [];
 			});
@@ -17,8 +15,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "delay",
-		impl: function( time ){
+		delay: function( time ){
 			return this.animate({
 				delay: time
 			}, {
@@ -28,8 +25,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "animate",
-		impl: function( properties, params ){
+		animate: function( properties, params ){
 			var callTime = +new Date;
 			
 			return this.each(function(){
@@ -89,8 +85,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "stop",
-		impl: function(clearQueue, jumpToEnd){
+		stop: function(clearQueue, jumpToEnd){
 			this.each(function(){
 				var self = this;
 				
@@ -122,8 +117,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "show",
-		impl: function(){
+		show: function(){
 			this.cy().renderer().showElements( this.collection() );
 			
 			return this;
@@ -131,8 +125,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "hide",
-		impl: function(){
+		hide: function(){
 			this.cy().renderer().hideElements( this.collection() );
 			
 			return this;
@@ -140,8 +133,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "visible",
-		impl: function(){
+		visible: function(){
 			return this.cy().renderer().elementIsVisible( this.element() );
 		}
 	});

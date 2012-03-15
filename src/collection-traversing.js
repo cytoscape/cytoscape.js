@@ -1,8 +1,7 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: "nodes",
-		impl: function(selector){
+		nodes: function(selector){
 			return this.filter(function(i, element){
 				return element.isNode();
 			});
@@ -10,8 +9,7 @@
 	});
 
 	$$.fn.collection({
-		name: "edges",
-		impl: function(selector){
+		edges: function(selector){
 			return this.filter(function(i, element){
 				return element.isEdge();
 			});
@@ -19,8 +17,7 @@
 	});
 
 	$$.fn.collection({
-		name: "filter",
-		impl: function(filter){
+		filter: function(filter){
 			var cy = this.cy();
 			
 			if( $$.is.fn(filter) ){
@@ -43,9 +40,8 @@
 		}
 	});
 
-	$$.fn.collection({
-		name: "not",
-		impl: function(toRemove){
+	$$.fn.collection({	
+		not: function(toRemove){
 			
 			if( toRemove == null ){
 				return this;
@@ -74,8 +70,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "intersect",
-		impl: function( other ){
+		intersect: function( other ){
 			var self = this;
 			
 			// if a selector is specified, then filter by it
@@ -106,10 +101,10 @@
 	});
 	
 	$$.fn.collection({
-		name: "add",
-		impl: function(toAdd){
+		add: function(toAdd){
+			var self = this;			
 			
-			if(toAdd == null){
+			if( toAdd == null ){
 				return this;
 			}
 			
@@ -117,6 +112,7 @@
 				var selector = toAdd;
 				toAdd = this.cy().elements(selector);
 			}
+			toAdd = toAdd.collection();
 			
 			var elements = [];
 			var ids = {};
@@ -148,8 +144,7 @@
 	});
 
 	$$.fn.collection({
-		name: "neighborhood",
-		impl: function(selector){
+		neighborhood: function(selector){
 			var elements = [];
 			
 			this.nodes().each(function(i, node){
@@ -165,26 +160,24 @@
 			return this.connectedNodes().add( new $$.CyCollection( this.cy(), elements ) ).filter( selector );
 		}
 	});
+	$$.fn.collection({ neighbourhood: function(selector){ return this.neighborhood(selector); } });
 	
 	$$.fn.collection({
-		name: "closedNeighborhood",
-		impl: function(selector){
+		closedNeighborhood: function(selector){
 			return new $$.CySelector(this.cy(), selector).filter( this.neighborhood().add(this) );
 		}
 	});
-	$$.fn.collection({ name: "closedNeighbourhood", impl: function(selector){ return this.closedNeighborhood(selector); } });
+	$$.fn.collection({ closedNeighbourhood: function(selector){ return this.closedNeighborhood(selector); } });
 	
 	$$.fn.collection({
-		name: "openNeighborhood",
-		impl: function(selector){
+		openNeighborhood: function(selector){
 			return this.neighborhood(selector);
 		}
 	});
-	$$.fn.collection({ name: "openNeighbourhood", impl: function(selector){ return this.openNeighborhood(selector); } });
+	$$.fn.collection({ openNeighbourhood: function(selector){ return this.openNeighborhood(selector); } });
 	
 	$$.fn.collection({
-		name: "source",
-		impl: function(){
+		source: function(){
 			var ele = this.element();
 
 			if( ele.isNode() ){
@@ -197,8 +190,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "target",
-		impl: function(){
+		target: function(){
 			var ele = this.element();
 			
 			if( ele.isNode() ){
@@ -211,13 +203,11 @@
 	});
 	
 	$$.fn.collection({
-		name: "edgesWith",
-		impl: defineEdgesWithFunction()
+		edgesWith: defineEdgesWithFunction()
 	});
 	
 	$$.fn.collection({
-		name: "edgesTo",
-		impl: defineEdgesWithFunction({
+		edgesTo: defineEdgesWithFunction({
 			include: function( node, otherNode, edgeStruct ){
 				return edgeStruct.source;
 			}
@@ -225,8 +215,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "edgesFrom",
-		impl: defineEdgesWithFunction({
+		edgesFrom: defineEdgesWithFunction({
 			include: function( node, otherNode, edgeStruct ){
 				return edgeStruct.target;
 			}
@@ -259,8 +248,7 @@
 	}
 	
 	$$.fn.collection({
-		name: "connectedEdges",
-		impl: function( selector ){
+		connectedEdges: function( selector ){
 			var elements = [];
 			
 			this.nodes().each(function(i, node){
@@ -276,8 +264,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "connectedNodes",
-		impl: function( selector ){
+		connectedNodes: function( selector ){
 			var elements = [];
 			
 			this.edges().each(function(i, edge){
@@ -290,13 +277,11 @@
 	});
 	
 	$$.fn.collection({
-		name: "parallelEdges",
-		impl: defineParallelEdgesFunction()
+		parallelEdges: defineParallelEdgesFunction()
 	});
 	
 	$$.fn.collection({
-		name: "codirectedEdges",
-		impl: defineParallelEdgesFunction({
+		codirectedEdges: defineParallelEdgesFunction({
 			include: function( source, target, edgeStruct ){
 				return edgeStruct.source;
 			}

@@ -1,22 +1,19 @@
 ;(function($, $$){
 
 	$$.fn.collection({
-		name: "isNode",
-		impl: function(){
+		isNode: function(){
 			return this.group() == "nodes";
 		}
 	});
 	
 	$$.fn.collection({
-		name: "isEdge",
-		impl: function(){
+		isEdge: function(){
 			return this.group() == "edges";
 		}
 	});
 	
 	$$.fn.collection({
-		name: "group",
-		impl: function(){
+		group: function(){
 			return this.element()._private.group;
 		}
 	});

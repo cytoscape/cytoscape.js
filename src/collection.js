@@ -12,18 +12,21 @@
 	//
 	// Having this integration guarantees that we can call any
 	// collection function on an element and vice versa.
-	$$.fn.collection = function( options ){
-		
-		// When adding a function, write it from the perspective of a
-		// collection -- it's more generic.
-		$$.CyCollection.prototype[ options.name ] = options.impl;
-		
-		// The element version of the function is then the trivial
-		// case of a collection of size 1.
-		$$.CyElement.prototype[ options.name ] = function(){
-			var self = this.collection();
-			return self[ options.name ].apply(self, arguments);
-		};
+	$$.fn.collection = function( impl, options ){
+		for(var name in impl){
+			
+			// When adding a function, write it from the perspective of a
+			// collection -- it's more generic.
+			$$.CyCollection.prototype[ name ] = impl[name];
+			
+			// The element version of the function is then the trivial
+			// case of a collection of size 1.
+			$$.CyElement.prototype[ name ] = function(){
+				var self = this.collection();
+				return self[ name ].apply(self, arguments);
+			};
+			
+		}
 	};
 	
 	// factory for generating edge ids when no id is specified for a new element
@@ -182,9 +185,7 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	$$.fn.collection({
-		name: "restore",
-		
-		impl: function(){
+		restore: function(){
 			var restored = new CyCollection(this.cy());
 			
 			this.each(function(){
@@ -269,17 +270,13 @@
 	});
 	
 	$$.fn.collection({
-		name: "removed",
-		
-		impl: function(){
+		removed: function(){
 			return this.element()._private.removed;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "remove",
-		
-		impl: function(){
+		remove: function(){
 			var removedElements = new CyCollection( this.cy() );
 			
 			this.each(function(){

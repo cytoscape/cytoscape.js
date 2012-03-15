@@ -1,9 +1,10 @@
 ;(function($, $$){
 
+	// Functions for scratchpad data for extensions & plugins
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	$$.fn.collection({
-		name: "scratch",
-		
-		impl: function( name, val ){
+		scratch: function( name, val ){
 			var self = this;
 			
 			if( name === undefined ){
@@ -48,9 +49,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "removeScratch",
-		
-		impl: function( name ){
+		removeScratch: function( name ){
 			var self = this;
 			
 			// remove all

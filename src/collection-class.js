@@ -1,9 +1,7 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: "addClass",
-		
-		impl: function(classes){
+		addClass: function(classes){
 			classes = classes.split(/\s+/);
 			var self = this;
 			
@@ -20,18 +18,14 @@
 		}
 	});
 	
-	$$.fn.collection({
-		name: "hasClass",
-		
-		impl: function(className){
+	$$.fn.collection({	
+		hasClass: function(className){
 			return this.element()._private.classes[className] == true;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "toggleClass",
-		
-		impl: function(classesStr, toggle){
+		toggleClass: function(classesStr, toggle){
 			var classes = classesStr.split(/\s+/);
 			var self = this;
 			var toggledElements = [];
@@ -84,9 +78,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "removeClass",
-		
-		impl: function(classes){
+		removeClass: function(classes){
 			classes = classes.split(/\s+/);
 			var self = this;
 			var removedElements = [];

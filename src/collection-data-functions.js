@@ -1,8 +1,7 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		name: "data",		
-		impl: defineAccessor({ // defaults serve as example (data)
+		data: defineAccessor({ // defaults serve as example (data)
 			attr: "data",
 			allowBinding: true,
 			bindingEvent: "data",
@@ -27,8 +26,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "removeData",
-		impl: defineRemover({
+		removeData: defineRemover({
 			attr: "data",
 			event: "data",
 			triggerEvent: true,
@@ -50,15 +48,13 @@
 	});
 	
 	$$.fn.collection({
-		name: "id",
-		impl: function(){
+		id: function(){
 			return this.element()._private.data.id;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "position",
-		impl: defineAccessor({
+		position: defineAccessor({
 			attr: "position",
 			allowBinding: true,
 			bindingEvent: "position",
@@ -85,8 +81,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "positions",
-		impl: function(pos){
+		positions: function(pos){
 			if( $$.is.plainObject(pos) ){
 				
 				this.each(function(i, ele){
@@ -114,13 +109,11 @@
 	});
 	
 	$$.fn.collection({
-		name: "renderedPosition",
-		impl: function(){} // TODO
+		renderedPosition: function(){} // TODO
 	});
 	
 	$$.fn.collection({
-		name: "renderedDimension",
-		impl: function( dimension ){
+		renderedDimension: function( dimension ){
 			var ele = this.element();
 			var renderer = ele.cy().renderer(); // TODO remove reference after refactoring
 			var dim = renderer.renderedDimensions(ele);
@@ -134,15 +127,13 @@
 	});
 	
 	$$.fn.collection({
-		name: "style",
-		impl: function(){
+		style: function(){
 			return $$.util.copy( this.element()._private.style );
 		}
 	});
 	
 	$$.fn.collection({
-		name: "bypass",
-		impl: defineAccessor({
+		bypass: defineAccessor({
 			attr: "bypass",
 			allowBinding: true,
 			bindingEvent: "bypass",
@@ -152,8 +143,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "removeBypass",
-		impl: defineRemover({
+		removeBypass: defineRemover({
 			attr: "bypass",
 			event: "bypass",
 			triggerEvent: true
@@ -161,9 +151,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "json",
-		
-		impl: function(){
+		json: function(){
 			var p = this.element()._private;
 			
 			var json = $$.util.copy({
@@ -232,6 +220,8 @@
 		};
 		var params = $.extend(true, {}, defaults, opts);
 		
+		console.log(params);
+		
 		return function(key, val){
 			var ele = this.element();
 			var eles = this;
@@ -252,9 +242,9 @@
 			function setter(key, val){
 				eles.each(function(){
 					if( params.validKey.forSet.apply(this, [key]) && params.validValue.apply(this, [key, val]) ){
-						var oldVal = this.element()._private.data[ key ];
+						var oldVal = this.element()._private[ params.attr ][ key ];
 							
-						this.element()._private.data[ key ] = $$.util.copy( val );
+						this.element()._private[ params.attr ][ key ] = $$.util.copy( val );
 						
 						if( $$.is.fn(params.onSet) ){
 							params.onSet.apply( ele, [key, oldVal, val] );

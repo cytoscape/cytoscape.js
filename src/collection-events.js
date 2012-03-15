@@ -1,8 +1,10 @@
 ;(function($, $$){
 	
+	// Functions for binding & triggering events
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	$$.fn.collection({
-		name: "trigger",
-		impl: function(event, data){
+		trigger: function(event, data){
 			this.each(function(){
 				var self = this;
 				var type = $$.is.plainObject(event) ? event.type : event;
@@ -83,8 +85,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "rtrigger",
-		impl: function(event, data){
+		rtrigger: function(event, data){
 			// notify renderer unless removed
 			this.cy().notify({
 				type: event,
@@ -98,24 +99,21 @@
 	});
 	
 	$$.fn.collection({
-		name: "live",
-		impl: function(){
+		live: function(){
 			$$.console.warn("`live()` can be called only on collections made from top-level selectors");
 			return this;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "die",
-		impl: function(){
+		die: function(){
 			$$.console.warn("`die()` can be called only on collections made from top-level selectors");
 			return this;
 		}
 	});
 	
 	$$.fn.collection({
-		name: "bind",
-		impl: defineBinder({
+		bind: defineBinder({
 			listener: function(){
 				return {};
 			}
@@ -123,8 +121,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "one",
-		impl: defineBinder({
+		one: defineBinder({
 			listener: function(){
 				return { one: true };
 			}
@@ -132,8 +129,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "once",
-		impl: defineBinder({
+		once: defineBinder({
 			listener: function( collection, element ){
 				return {
 					once: true,
@@ -147,22 +143,19 @@
 	});
 	
 	$$.fn.collection({
-		name: "on",
-		impl: function(events, data, callback){
+		on: function(events, data, callback){
 			return this.bind(events, data, callback);
 		}
 	});
 	
 	$$.fn.collection({
-		name: "off",
-		impl: function(events, callback){
+		off: function(events, callback){
 			return this.unbind(events, callback);
 		}
 	});
 	
 	$$.fn.collection({
-		name: "unbind",
-		impl: function(events, callback){
+		unbind: function(events, callback){
 			var eventsArray = (events || "").split(/\s+/);
 			
 			this.each(function(){
@@ -196,17 +189,20 @@
 		}
 	});
 	
+	// Metaprogramming to define a bunch of functions
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	// add events to the list here IF AND ONLY IF there is no corresponding getter/setter function
 	// e.g. it doesn't make sense to have `data` here, since it's also a getter/setter
 	var aliases = "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free";
 	
 	$.each(aliases.split(/\s+/), function(i, alias){
-		$$.fn.collection({
-			name: alias,
-			impl: defineBindAlias({
-				event: alias
-			})
+		var impl = {};
+		impl[ alias ] = defineBindAlias({
+			event: alias
 		});
+		
+		$$.fn.collection(impl);
 	});
 	
 	function defineBindAlias( params ){

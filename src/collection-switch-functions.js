@@ -1,6 +1,8 @@
 ;(function($, $$){
 	
-	// This file contains collection functions that toggle a boolean value
+	// Collection functions that toggle a boolean value
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	
 	function defineSwitchFunction(params){
 		return function(){
@@ -29,22 +31,36 @@
 	}
 	
 	function defineSwitchSet( params ){
-		$$.fn.collection({
-			name: params.field,
-			impl: function(){
+		function impl(name, fn){
+			var impl = {};
+			impl[ name ] = fn;
+			
+			return impl;
+		}
+		
+		$$.fn.collection(
+			impl( params.field, function(){
 				return this.element()._private[ params.field ];
-			}
-		});
+			})
+		);
 		
-		$$.fn.collection({
-			name: params.on,
-			impl: defineSwitchFunction({ event: params.on, field: params.field, value: true })
-		});
-		
-		$$.fn.collection({
-			name: params.off,
-			impl: defineSwitchFunction({ event: params.off, field: params.field, value: false })
-		});
+		$$.fn.collection(
+			impl( params.on, defineSwitchFunction({
+					event: params.on,
+					field: params.field,
+					value: true
+				})
+			)
+		);
+	
+		$$.fn.collection(
+			impl( params.off, defineSwitchFunction({
+					event: params.off,
+					field: params.field,
+					value: false
+				})
+			)
+		);
 	}
 	
 	defineSwitchSet({
@@ -66,8 +82,7 @@
 	});
 	
 	$$.fn.collection({
-		name: "grabbed",
-		impl: function(){
+		grabbed: function(){
 			return this.element()._private.grabbed;
 		}
 	});

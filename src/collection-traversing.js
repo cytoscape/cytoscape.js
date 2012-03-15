@@ -56,28 +56,20 @@
 				}
 				
 				var elements = [];
-				var collection = toRemove.collection();
+				toRemove = toRemove.collection();
 				
 				this.each(function(i, element){
 					
-					var remove = false;
-					for(var j = 0; j < collection.size(); j++){
-						var c = collection.eq(j);
-						
-						if( c.same(element) ){
-							remove = true;
-							break;
-						}
-					}
-					
-					if(!remove){
-						elements.push(element);
+					var remove = toRemove._private.ids[ element.id() ];					
+					if( !remove ){
+						elements.push( element.element() );
 					}
 					
 				});
 				
 				return new $$.CyCollection(this.cy(), elements);
-			} 
+			}
+			
 		}
 	});
 	

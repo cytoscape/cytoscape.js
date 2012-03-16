@@ -1,18 +1,20 @@
 ;(function($, $$){
 	
-	$$.fn.core = function( options ){
-		CyCore.prototype[ options.name ] = options.impl;
+	$$.fn.core = function( impl, options ){
+		$.each(impl, function(name, fn){
+			CyCore.prototype[ name ] = fn;
+		});
 	};
 	
 	function CyCore(){
 		this._private = {};
 	}
-	$.cytoscapeweb.CyCore = CyCore; // expose
+	$$.CyCore = CyCore; // expose
 	
 	// allow functional access to cytoweb
 	// e.g. var cytoweb = $.cytoscapeweb({ selector: "#foo", ... });
 	//      var nodes = cytoweb.nodes();
-	$.cytoscapeweb.init = function(opts){
+	$$.init = function(opts){
 		
 		// create instance
 		if( $$.is.plainObject(opts) ){

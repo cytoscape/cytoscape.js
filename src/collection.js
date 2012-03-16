@@ -147,6 +147,10 @@
 		}
 		
 		$.each(elements, function(i, element){
+			if( element == null ){
+				return;
+			}
+			
 			var id = element.element()._private.data.id;
 			
 			if( ids[ id ] == null ){

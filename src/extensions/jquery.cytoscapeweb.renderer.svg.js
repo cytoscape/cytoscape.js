@@ -173,7 +173,7 @@
 		// update unique style attributes for this shape
 		// see http://keith-wood.name/svgRef.html for api reference
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.renderer.svg, {
+			svg.change(node.renderer("svg"), {
 				cx: position.x,
 				cy: position.y,
 				rx: style.width / 2,
@@ -191,7 +191,7 @@
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.renderer.svg, {
+			svg.change(node.renderer("svg"), {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -208,7 +208,7 @@
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height, style.width/4, style.height/4);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.renderer.svg, {
+			svg.change(node.renderer("svg"), {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -230,7 +230,7 @@
 					           ]);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node._private.renderer.svg, {
+			svg.change(node.renderer("svg"), {
 				points: [ 
 			             [position.x,                 position.y - style.height/2], 
 			             [position.x + style.width/2, position.y + style.height/2],
@@ -889,16 +889,16 @@
 		}
 		
 		elements.nodes().each(function(){
-			var bb = this._private.renderer.svgGroup.getBBox();
+			var bb = this.renderer("svgGroup").getBBox();
 			update(bb);
 		});
 		
 		// fix for loop edges (their bounding boxes are 2x width and height of path
 		// they push the bb up and left
 		elements.edges().each(function(){
-			var src = this._private.data.source;
-			var tgt = this._private.data.target;
-			var bb = this._private.renderer.svg.getBBox();
+			var src = this.source().id();
+			var tgt = this.target().id();
+			var bb = this.renderer("svg").getBBox();
 			
 			if( src == tgt ){
 			
@@ -912,7 +912,7 @@
 				
 				// TODO check edge labels when added
 			} else {
-				bb = this._private.renderer.svgGroup.getBBox();
+				bb = this.renderer("svgGroup").getBBox();
 				update(bb);
 			}
 		});
@@ -1083,7 +1083,7 @@
 		var selectors = self.style.selectors;
 		
 		var field = undefined;
-		var bypassField = element._private.bypass[fieldName];
+		var bypassField = element.bypass(false)[fieldName];
 		
 		if( bypassField !== undefined ){
 			field = bypassField;
@@ -1114,7 +1114,7 @@
 		});
 		
 		// apply the bypass
-		style = $.extend(style, element._private.bypass);
+		style = $.extend(style, element.bypass(false));
 		
 		// compute the individual values (i.e. flatten mappers to actual values)
 		$.each(style, function(styleName, styleVal){
@@ -1129,7 +1129,7 @@
 			var target = element.target();
 			
 			function calculateVisibility(){
-				if( source._private.style.visibility == "visible" && target._private.style.visibility == "visible" ){
+				if( source.style("visibility") == "visible" && target.style("visibility") == "visible" ){
 					return visibility(style.visibility);
 				} else {
 					return "hidden";
@@ -1171,17 +1171,17 @@
 	};
 	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
-		var style = element._private.style;
-		var parent = element._private.renderer.svgGroup;
-		var position = element._private.position;
+		var style = element.style(false);
+		var parent = element.renderer("svgGroup");
+		var position = element.position(false);
 		
 		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
 	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
-		var svgDomElement = element._private.renderer.svg;
-		var targetArrow = element._private.renderer.svgTargetArrow;
-		var sourceArrow = element._private.renderer.svgSourceArrow;
+		var svgDomElement = element.renderer("svg");
+		var targetArrow = element.renderer("svgTargetArrow");
+		var sourceArrow = element.renderer("svgSourceArrow");
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
@@ -1199,7 +1199,7 @@
 	
 
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
-		var svgDomElement = element._private.renderer.svg;
+		var svgDomElement = element.renderer("svg");
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		var draggedAfterMouseDown = null;
@@ -1212,7 +1212,7 @@
 			
 			element.trigger(mousedownEvent);
 			
-			if( element._private.grabbed || element._private.locked || !element._private.grabbable ){
+			if( element.grabbed() || element.locked() || !element.grabbable() ){
 				mousedownEvent.preventDefault();
 				return;
 			}
@@ -1272,8 +1272,8 @@
 				}
 				
 				elements.each(function(i, e){
-					e._private.position.x += dx;
-					e._private.position.y += dy;
+					e.element()._private.position.x += dx;
+					e.element()._private.position.y += dy;
 				});			
 				
 				self.updatePosition( elements );
@@ -1371,29 +1371,43 @@
 	
 	SvgRenderer.prototype.modelPoint = function(screenPoint){
 		var self = this;
-		return {
-			x: (screenPoint.x - self.pan().x) / self.zoom(),
-			y: (screenPoint.y - self.pan().y) / self.zoom()
-		};
+		var mpos = {};
+
+		if( screenPoint.x !== undefined ){
+			mpos.x = (screenPoint.x - self.pan().x) / self.zoom();
+		}
+		
+		if( screenPoint.y !== undefined ){
+			mpos.y = (screenPoint.y - self.pan().y) / self.zoom();
+		}
+		
+		return mpos;
 	};
 	
 	SvgRenderer.prototype.renderedPoint = function(modelPoint){
 		var self = this;
-		return {
-			x: modelPoint.x * self.zoom() + self.pan().x,
-			y: modelPoint.y * self.zoom() + self.pan().y
-		};
+		var rpos = {};
+		
+		if( modelPoint.x !== undefined ){
+			rpos.x = modelPoint.x * self.zoom() + self.pan().x;
+		}
+		
+		if( modelPoint.y !== undefined ){
+			rpos.y = modelPoint.y * self.zoom() + self.pan().y;
+		}
+		
+		return rpos;
 	};
 	
 	SvgRenderer.prototype.renderedPosition = function(element){
 		var self = this;
 		
-		return self.renderedPoint(element._private.position);
+		return self.renderedPoint( element.position(false) );
 	};
 	
 	SvgRenderer.prototype.hideElements = function(collection){
 		collection.each(function(i, element){
-			element._private.bypass.visibility = "hidden";
+			element.bypass(false).visibility = "hidden";
 		});
 		
 		this.updateBypass(collection);
@@ -1404,14 +1418,14 @@
 		var updated = this.cy.collection();
 		
 		collection.each(function(i, element){
-			element._private.bypass.visibility = "visible";
+			element.bypass(false).visibility = "visible";
 		});
 		
 		this.updateBypass(collection);
 	};
 	
 	SvgRenderer.prototype.elementIsVisible = function(element){
-		return element._private.style.visibility != "hidden";
+		return element.style(false).visibility != "hidden";
 	};
 	
 	SvgRenderer.prototype.renderedDimensions = function(element){
@@ -1419,12 +1433,12 @@
 		
 		if( element.isNode() ){
 			return {
-				height: element._private.style.height * self.zoom(),
-				width: element._private.style.width * self.zoom()
+				height: element.style("height") * self.zoom(),
+				width: element.style("width") * self.zoom()
 			};
 		} else {
 			return {
-				width: element._private.style.width * self.zoom()
+				width: element.style("width") * self.zoom()
 			};
 		}
 	};
@@ -1449,19 +1463,19 @@
 			}
 			
 			// intersect rectangle in the model with the actual node shape in the model
-			var shape = nodeShape(element._private.style.shape).intersectionShape;
+			var shape = nodeShape( element.style("shape") ).intersectionShape;
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
 			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
 			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
-			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape(element._private.renderer.svg));
+			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape( element.renderer("svg") ));
 			self.svgRemove(modelRectangle);
 			
 			// rendered node
 			var zoom = self.zoom();
 			var x = element.renderedPosition().x;
 			var y = element.renderedPosition().y;
-			var w = element.renderedDimensions().width + element._private.style.borderWidth * zoom;
-			var h = element.renderedDimensions().height + element._private.style.borderWidth * zoom;
+			var w = element.renderedDimensions().width + element.style("borderWidth") * zoom;
+			var h = element.renderedDimensions().height + element.style("borderWidth") * zoom;
 			
 			// rendered selection square
 			var x1 = selectionBounds.x1;
@@ -1549,9 +1563,9 @@
 		var self = this;
 		
 		collection.each(function(i, element){
-			self.svgRemove(element._private.renderer.svgGroup);
+			self.svgRemove( element.renderer("svgGroup") );
 			self.makeSvgElement(element);
-			self.updatePosition(collection.closedNeighborhood().edges());
+			self.updatePosition( collection.closedNeighborhood().edges() );
 		});
 	};
 	
@@ -1560,11 +1574,11 @@
 	};
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
-		var p = element._private.position;
+		var p = element.position(false);
 		var self = this;
 		
 		if( p.x == null || p.y == null ){
-			$$.console.debug("SVG renderer is ignoring creating of node `%s` with position (%o, %o)", element._private.data.id, p.x, p.y);
+			$$.console.debug("SVG renderer is ignoring creating of node `%s` with position (%o, %o)", element.id(), p.x, p.y);
 			return;
 		}
 		
@@ -1572,14 +1586,14 @@
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.nodesGroup);
-		element._private.renderer.svgGroup = svgDomGroup;
+		element.renderer("svgGroup", svgDomGroup);
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
-		element._private.renderer.svg = svgDomElement;
+		element.renderer("svg", svgDomElement);
 		this.makeSvgNodeLabel(element);
 		
-		element._private.renderer.svg = svgDomElement;
-		$$.console.debug("SVG renderer made node `%s` with position (%i, %i)", element._private.data.id, p.x, p.y);
+		element.renderer("svg", svgDomElement);
+		$$.console.debug("SVG renderer made node `%s` with position (%i, %i)", element.id(), p.x, p.y);
 		
 		this.makeSvgNodeInteractive(element);
 		this.updateElementStyle(element, style);
@@ -1589,25 +1603,28 @@
 	SvgRenderer.prototype.makeSvgNodeLabel = function(element){
 		var self = this;
 		
-		var x = element._private.position.x;
-		var y = element._private.position.y;
+		var x = element.position("x");
+		var y = element.position("y");
 		
-		element._private.renderer.svgLabelGroup = self.svg.group(element._private.renderer.svgGroup);
-		element._private.renderer.svgLabelOutline = self.svg.text(element._private.renderer.svgLabelGroup, x, y, "label init");
-		element._private.renderer.svgLabel = self.svg.text(element._private.renderer.svgLabelGroup, x, y, "label init");
+		element.renderer().svgLabelGroup = self.svg.group(element.renderer().svgGroup);
+		element.renderer().svgLabelOutline = self.svg.text(element.renderer().svgLabelGroup, x, y, "label init");
+		element.renderer().svgLabel = self.svg.text(element.renderer().svgLabelGroup, x, y, "label init");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
 		var self = this;
 
-		self.svg.change(element._private.renderer.svgLabel, {
-			x: element._private.position.x,
-			y: element._private.position.y
+		var x = element.position("x");
+		var y = element.position("y");
+		
+		self.svg.change(element.renderer().svgLabel, {
+			x: x,
+			y: y
 		});
 		
-		self.svg.change(element._private.renderer.svgLabelOutline, {
-			x: element._private.position.x,
-			y: element._private.position.y
+		self.svg.change(element.renderer().svgLabelOutline, {
+			x: x,
+			y: y
 		});
 	};
 	
@@ -1615,13 +1632,13 @@
 		var self = this;
 		var tgt = element.target();
 		var src = element.source();
-		var loop = tgt._private.data.id == src._private.data.id;
+		var loop = tgt.data("id") == src.data("id");
 		var svgPath;
 		
-		var x1 = src._private.position.x;
-		var y1 = src._private.position.y;
-		var x2 = tgt._private.position.x;
-		var y2 = tgt._private.position.y;
+		var x1 = src.position("x");
+		var y1 = src.position("y");
+		var x2 = tgt.position("x");
+		var y2 = tgt.position("y");
 		
 		// if the nodes are directly on top of each other, just make a small difference
 		// so we don't get bad calculation states (e.g. divide by zero)
@@ -1659,17 +1676,17 @@
 			}
 			
 			if( loop ){
-				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+				svgPath = self.svg.path( element.renderer("svgGroup"), path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
 			} else if( curved ){
-				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+				svgPath = self.svg.path( element.renderer("svgGroup"), path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
-				svgPath = self.svg.path( element._private.renderer.svgGroup, path.move(x1, y1).line(x2, y2) );
+				svgPath = self.svg.path( element.renderer("svgGroup"), path.move(x1, y1).line(x2, y2) );
 			}
 		}
 		
 		if( loop ){
-			var sh = src._private.style.height;
-			var sw = src._private.style.width;
+			var sh = src.style("height");
+			var sw = src.style("width");
 			curveDistance += Math.max(sw, sh);
 			
 			curveIndex = index;
@@ -1700,7 +1717,7 @@
 			
 			var curved = curveIndex != 0;
 			
-			if( src._private.data.id > tgt._private.data.id ){
+			if( src.id() > tgt.id() ){
 				curveIndex *= -1;
 			}
 			
@@ -1738,10 +1755,10 @@
 		var targetShape = nodeShape(targetShape).intersectionShape;
 		var sourceShape = nodeShape(sourceShape).intersectionShape;
 		
-		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape(tgt._private.renderer.svg));
+		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape( tgt.renderer("svg") ));
 		var tgtInt = intersection.points[ intersection.points.length - 1 ];
 		
-		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape(src._private.renderer.svg));
+		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape( src.renderer("svg") ));
 		var srcInt = intersection.points[0];
 		
 		var scale = f * edgeWidth;
@@ -1772,8 +1789,8 @@
 		
 		makePath();
 		
-		if( element._private.renderer.svgTargetArrow != null ){
-			this.svgRemove(element._private.renderer.svgTargetArrow);
+		if( element.renderer("svgTargetArrow") != null ){
+			this.svgRemove( element.renderer("svgTargetArrow") );
 		}
 		
 		if( targetArrowShape != "none" ){
@@ -1783,16 +1800,16 @@
 				y: y2 - tgtShapeObj.centerPoint.y * scale,
 			};
 			var targetCenter = tgtShapeObj.centerPoint;
-			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg(this.svg, element._private.renderer.svgGroup, element, element._private.position, element._private.style);
-			element._private.renderer.svgTargetArrow = targetArrow;
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renderer("svgGroup"), element, element.position(false), element.style(false) );
+			element.renderer("svgTargetArrow", targetArrow);
 
 			this.svg.change(targetArrow, {
 				transform: "translate(" + tgtArrowTranslation.x + " " + tgtArrowTranslation.y + ") scale(" + scale + ") rotate(" + targetRotation + " " + targetCenter.x + " " + targetCenter.y + ")"
 			});
 		}
 		
-		if( element._private.renderer.svgSourceArrow != null ){
-			this.svgRemove(element._private.renderer.svgSourceArrow);
+		if( element.renderer("svgSourceArrow") != null ){
+			this.svgRemove( element.renderer("svgSourceArrow") );
 		}
 		
 		if( sourceArrowShape != "none" ){		
@@ -1802,8 +1819,8 @@
 				y: y1 - srcShapeObj.centerPoint.y * scale,
 			};
 			var sourceCenter = srcShapeObj.centerPoint;
-			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element._private.renderer.svgGroup, element, element._private.position, element._private.style);
-			element._private.renderer.svgSourceArrow = sourceArrow;
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renderer("svgGroup"), element, element.position(false), element.style(false) );
+			element.renderer().svgSourceArrow = sourceArrow;
 			
 			this.svg.change(sourceArrow, {
 				transform: "translate(" + srcArrowTranslation.x + " " + srcArrowTranslation.y + ") scale(" + scale + ") rotate(" + sourceRotation + " " + sourceCenter.x + " " + sourceCenter.y + ")"
@@ -1813,8 +1830,8 @@
 		var labelPosition;
 		if( loop ){
 			labelPosition = {
-				x: (cp1.x + cp2.x)/2*0.85 + tgt._private.position.x*0.15,
-				y: (cp1.y + cp2.y)/2*0.85 + tgt._private.position.y*0.15
+				x: (cp1.x + cp2.x)/2*0.85 + tgt.position("x")*0.15,
+				y: (cp1.y + cp2.y)/2*0.85 + tgt.position("y")*0.15
 			};
 		} else if( curved ) {
 			labelPosition = {
@@ -1828,11 +1845,11 @@
 			};
 		}
 		
-		element._private.renderer.svgLabelGroup = self.svg.group(element._private.renderer.svgGroup);
-		element._private.renderer.svgLabelOutline = self.svg.text(element._private.renderer.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
-		element._private.renderer.svgLabel = self.svg.text(element._private.renderer.svgLabelGroup, labelPosition.x, labelPosition.y, "label init");
+		element.renderer("svgLabelGroup", self.svg.group(element.renderer().svgGroup) );
+		element.renderer("svgLabelOutline", self.svg.text(element.renderer().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
+		element.renderer("svgLabel", self.svg.text(element.renderer().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
 		
-		element._private.renderer.svg = svgPath;
+		element.renderer().svg = svgPath;
 		return svgPath;
 	};
 	
@@ -1915,36 +1932,36 @@
 	
 	SvgRenderer.prototype.makeSvgEdge = function(element){
 		var self = this;
-		var source = element.source();
-		var target = element.target();
+		var source = element.source().element();
+		var target = element.target().element();
 					
 		if( source == null || target == null ){
 			$$.console.debug("SVG renderer is ignoring creating of edge `%s` with missing nodes");
 			return;
 		}
 		
-		var ps = source._private.position;
-		var pt = target._private.position;
+		var ps = source.position(false);
+		var pt = target.position(false);
 		
 		if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
-			$$.console.debug("SVG renderer is ignoring creating of edge `%s` with position (%o, %o, %o, %o)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
+			$$.console.debug("SVG renderer is ignoring creating of edge `%s` with position (%o, %o, %o, %o)", element.id(), ps.x, ps.y, pt.x, pt.y);
 			return;
 		}
 		
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.edgesGroup);
-		element._private.renderer.svgGroup = svgDomGroup;
+		element.renderer().svgGroup = svgDomGroup;
 		this.svg.change(svgDomGroup);
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
 		this.makeSvgEdgePath(element);
 		
-		$$.console.debug("SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element._private.data.id, ps.x, ps.y, pt.x, pt.y);
+		$$.console.debug("SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element.id(), ps.x, ps.y, pt.x, pt.y);
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
-		return element._private.renderer.svg;
+		return element.renderer().svg;
 	};
 	
 	SvgRenderer.prototype.makeSvgElement = function(element){
@@ -1960,8 +1977,8 @@
 	};
 	
 	SvgRenderer.prototype.getSvgElement = function(element){
-		if( element._private.renderer.svg != null ){
-			return element._private.renderer.svg;
+		if( element.renderer().svg != null ){
+			return element.renderer().svg;
 		} else {
 			return this.makeSvgElement(element);
 		}
@@ -2055,27 +2072,27 @@
 	};
 	
 	SvgRenderer.prototype.updateNodeStyle = function(element, newStyle){
-		var oldShape = element._private.style.shape;
+		var oldShape = element.style(false).shape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element._private.style;
+		var style = element.style(false);
 		
-		var newShape = element._private.style.shape;
+		var newShape = element.style(false).shape;
 		
-		if( element._private.renderer.svg == null ){
-			$$.console.error("SVG renderer can not update style for node `%s` since it has no SVG element", element._private.data.id);
+		if( element.renderer().svg == null ){
+			$$.console.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
 		if( newShape != oldShape ){
-			this.svgRemove(element._private.renderer.svgGroup);
+			this.svgRemove(element.renderer().svgGroup);
 			this.makeSvgNode(element);
 			return;
 		}
 			
 		// TODO add more as more styles are added
 		// generic styles go here
-		this.svg.change(element._private.renderer.svg, {
+		this.svg.change(element.renderer().svg, {
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			fillOpacity: percent(style.fillOpacity),
@@ -2087,7 +2104,7 @@
 			"visibility": visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.renderer.svgGroup, {
+		this.svg.change(element.renderer().svgGroup, {
 			opacity: percent(style.opacity)
 		});
 		
@@ -2104,39 +2121,39 @@
 			"font-size": style.labelFontSize
 		};
 		
-		this.svg.change(element._private.renderer.svgLabelGroup, {
+		this.svg.change(element.renderer().svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
-		this.svg.change(element._private.renderer.svgLabelOutline, {
+		this.svg.change(element.renderer().svgLabelOutline, {
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			fill: "none",
 			opacity: percent(style.labelOutlineOpacity)
 		});
 		
-		this.svg.change(element._private.renderer.svgLabelOutline, labelOptions);
-		this.svg.change(element._private.renderer.svgLabel, labelOptions);
+		this.svg.change(element.renderer().svgLabelOutline, labelOptions);
+		this.svg.change(element.renderer().svgLabel, labelOptions);
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element._private.renderer.svgLabel.textContent = labelText;
-		element._private.renderer.svgLabelOutline.textContent = labelText;
+		element.renderer().svgLabel.textContent = labelText;
+		element.renderer().svgLabelOutline.textContent = labelText;
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
 		
 		// styles to the group
-		this.svg.change(element._private.renderer.svgGroup, {
+		this.svg.change(element.renderer().svgGroup, {
 			fillOpacity: percent(style.fillOpacity)
 		});
 		
 		// update shape specific stuff like position
-		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element._private.position, style);
+		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element.position(false), style);
 		
 		// update label position after the node itself
 		this.updateLabelPosition(element, valign, halign);
 		
-		$$.console.debug("SVG renderer collapsed mappers and updated style for node `%s` to %o", element._private.data.id, style);
+		$$.console.debug("SVG renderer collapsed mappers and updated style for node `%s` to %o", element.id(), style);
 	};
 	
 	SvgRenderer.prototype.updateLabelPosition = function(element, valign, halign){
@@ -2145,7 +2162,7 @@
 		var dy = 0;
 		var height = 0;
 		var width = 0;
-		var text = element._private.renderer.svgLabel.textContent;
+		var text = element.renderer().svgLabel.textContent;
 		
 		// update node label x, y
 		this.positionSvgNodeLabel(element);
@@ -2159,8 +2176,8 @@
 		}
 		
 		if( element.isNode() ){
-			height = element._private.style.height;
-			width = element._private.style.width;
+			height = element.style(false).height;
+			width = element.style(false).width;
 		}
 		
 		if( halign == "middle" ){
@@ -2180,7 +2197,7 @@
 		}
 		
 		// TODO remove this hack to fix IE when it supports baseline properties properly
-		var fontSize = parseInt(window.getComputedStyle(element._private.renderer.svgLabel)["fontSize"]);
+		var fontSize = parseInt(window.getComputedStyle(element.renderer().svgLabel)["fontSize"]);
 		var ieFix = $.browser.msie ? fontSize/3 : 0;
 	
 		if( valign == "middle" ){
@@ -2206,44 +2223,44 @@
 		
 		var labelOptions = $.extend({}, textAnchor, styleAttr, transform);
 		
-		this.svg.change(element._private.renderer.svgLabelOutline, labelOptions);
-		this.svg.change(element._private.renderer.svgLabel, labelOptions);
+		this.svg.change(element.renderer().svgLabelOutline, labelOptions);
+		this.svg.change(element.renderer().svgLabel, labelOptions);
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
-		var oldTargetShape = element._private.style.targetArrowShape;
-		var oldSourceShape = element._private.style.sourceArrowShape;
+		var oldTargetShape = element.style(false).targetArrowShape;
+		var oldSourceShape = element.style(false).sourceArrowShape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element._private.style;
+		var style = element.style(false);
 		
-		if( element._private.renderer.svg == null ){
-			$$.console.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element._private.data.id);
+		if( element.renderer().svg == null ){
+			$$.console.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
 		var newSrcStyle = element.source().style();
-		var oldSrcStyle = element._private.renderer.oldSourceStyle || newSrcStyle;
+		var oldSrcStyle = element.renderer().oldSourceStyle || newSrcStyle;
 		
 		var newTgtStyle = element.target().style();
-		var oldTgtStyle = element._private.renderer.oldTargetStyle || newTgtStyle;
+		var oldTgtStyle = element.renderer().oldTargetStyle || newTgtStyle;
 		
-		var newTargetShape = element._private.style.targetArrowShape;
-		var newSourceShape = element._private.style.sourceArrowShape;
+		var newTargetShape = element.style(false).targetArrowShape;
+		var newSourceShape = element.style(false).sourceArrowShape;
 		
 		var nodesStyleChanged = newSrcStyle.height != oldSrcStyle.height || newSrcStyle.width != oldSrcStyle.width ||
 			newTgtStyle.height != oldTgtStyle.height || newTgtStyle.width != oldTgtStyle.width ||
 			newSrcStyle.shape != oldSrcStyle.shape || newTgtStyle.shape != oldTgtStyle.shape ||
 			newSrcStyle.borderWidth != oldSrcStyle.borderWidth || newTgtStyle.borderWidth != oldTgtStyle.borderWidth;
 		
-		var widthChanged = element._private.renderer.oldStyle == null || element._private.renderer.oldStyle.width != style.width;
+		var widthChanged = element.renderer().oldStyle == null || element.renderer().oldStyle.width != style.width;
 		
-		element._private.renderer.oldSourceStyle = newSrcStyle;
-		element._private.renderer.oldTargetStyle = newTgtStyle;
-		element._private.renderer.oldStyle = style;
+		element.renderer().oldSourceStyle = newSrcStyle;
+		element.renderer().oldTargetStyle = newTgtStyle;
+		element.renderer().oldStyle = style;
 		
 		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
-			this.svgRemove(element._private.renderer.svgGroup);
+			this.svgRemove(element.renderer().svgGroup);
 			this.makeSvgEdge(element);
 			
 			return;
@@ -2251,7 +2268,7 @@
 		
 		// TODO add more as more styles are added
 		// generic edge styles go here
-		this.svg.change(element._private.renderer.svg, {
+		this.svg.change(element.renderer().svg, {
 			"pointer-events": "visibleStroke", // on visibility:hidden, no events
 			stroke: color(style.lineColor),
 			strokeWidth: number(style.width),
@@ -2263,13 +2280,13 @@
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.renderer.svgTargetArrow, {
+		this.svg.change(element.renderer().svgTargetArrow, {
 			fill: color(style.targetArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element._private.renderer.svgSourceArrow, {
+		this.svg.change(element.renderer().svgSourceArrow, {
 			fill: color(style.sourceArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
@@ -2287,24 +2304,24 @@
 			"font-size": style.labelFontSize
 		};
 		
-		this.svg.change(element._private.renderer.svgLabel, labelOptions);
-		this.svg.change(element._private.renderer.svgLabelOutline, $.extend({}, labelOptions, {
+		this.svg.change(element.renderer().svgLabel, labelOptions);
+		this.svg.change(element.renderer().svgLabelOutline, $.extend({}, labelOptions, {
 			fill: "none",
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			opacity: percent(style.labelOutlineOpacity),
 		}) );
 		
-		this.svg.change(element._private.renderer.svgLabelGroup, {
+		this.svg.change(element.renderer().svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element._private.renderer.svgLabel.textContent = labelText;
-		element._private.renderer.svgLabelOutline.textContent = labelText;
+		element.renderer().svgLabel.textContent = labelText;
+		element.renderer().svgLabelOutline.textContent = labelText;
 		this.updateLabelPosition(element, "middle", "middle");
 		
-		$$.console.debug("SVG renderer collapsed mappers and updated style for edge `%s` to %o", element._private.data.id, style);
+		$$.console.debug("SVG renderer collapsed mappers and updated style for edge `%s` to %o", element.id(), style);
 	};
 	
 	SvgRenderer.prototype.addElements = function(collection, updateMappers){
@@ -2340,12 +2357,12 @@
 		// update nodes
 		collection.nodes().each(function(i, element){
 			var svgEle = self.getSvgElement(element);			
-			var p = element._private.position;
+			var p = element.position(false);
 			
 			self.updateNodePositionFromShape(element);
 			self.positionSvgNodeLabel(element);
 
-			$$.console.debug("SVG renderer is moving node `%s` to position (%o, %o)", element._private.data.id, p.x, p.y);
+			$$.console.debug("SVG renderer is moving node `%s` to position (%o, %o)", element.id(), p.x, p.y);
 		});
 		
 		// update connected edges
@@ -2357,15 +2374,15 @@
 		var self = this;
 		
 		edges.each(function(i, edge){
-			if( edge._private.renderer.svgGroup != null ){
-				self.svgRemove(edge._private.renderer.svgGroup);
+			if( edge.renderer().svgGroup != null ){
+				self.svgRemove(edge.renderer().svgGroup);
 			}
 			self.makeSvgEdge(edge);
 			
-			var ps = edge.source()._private.position;
-			var pt = edge.target()._private.position;
+			var ps = edge.source().position(false);
+			var pt = edge.target().position(false);
 			
-			$$.console.debug("SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge._private.data.id, ps.x, ps.y, pt.x, pt.y);
+			$$.console.debug("SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge.id(), ps.x, ps.y, pt.x, pt.y);
 		});
 	};
 	
@@ -2384,15 +2401,15 @@
 		var self = this;
 		
 		collection.each(function(i, element){
-			if( element._private.renderer.svgGroup != null ){
-				svg.remove(element._private.renderer.svgGroup);
-				delete element._private.renderer.svg;
-				delete element._private.renderer.svgGroup;
-				delete element._private.renderer.svgSourceArrow;
-				delete element._private.renderer.svgTargetArrow;
+			if( element.renderer().svgGroup != null ){
+				svg.remove(element.renderer().svgGroup);
+				delete element.renderer().svg;
+				delete element.renderer().svgGroup;
+				delete element.renderer().svgSourceArrow;
+				delete element.renderer().svgTargetArrow;
 				// TODO add delete other svg children like labels
 			} else {
-				$$.console.debug("Element with group `%s` and ID `%s` has no associated SVG element", element._private.group, element._private.data.id);
+				$$.console.debug("Element with group `%s` and ID `%s` has no associated SVG element", element.group(), element.id());
 			}
 		});
 		

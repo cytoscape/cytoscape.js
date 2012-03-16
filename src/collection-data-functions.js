@@ -109,11 +109,46 @@
 	});
 	
 	$$.fn.collection({
-		renderedPosition: function(){} // TODO
+		renderedPosition: defineAccessor({
+			attr: "position",
+			allowBinding: false,
+			settingTriggersEvent: true, 
+			settingEvent: "position",
+			validKey: {
+				forSet: function( key ){
+					return this.isNode();
+				},
+				forGet: function( key ){
+					return this.isNode();
+				}
+			},
+			validValue: function( key, val ){
+				return true;
+			},
+			override: {
+				forSet: function( key, val ){ 
+					var rpos = {};
+					rpos[ key ] = val;
+					
+					var mpos = this.cy().renderer().modelPoint( rpos );
+					this.element()._private.position[key] = mpos[key];
+				},
+				forGet: function( key ){
+					var rpos = {};
+					rpos[ key ] = val;
+					
+					var mpos = this.cy().renderer().modelPoint( rpos );
+					return mpos[ key ];
+				},
+				forObjectGet: function(){
+					return this.cy().renderer().renderedPosition( this.element() );
+				}
+			}
+		})
 	});
 	
 	$$.fn.collection({
-		renderedDimension: function( dimension ){
+		renderedDimensions: function( dimension ){
 			var ele = this.element();
 			var renderer = ele.cy().renderer(); // TODO remove reference after refactoring
 			var dim = renderer.renderedDimensions(ele);
@@ -127,8 +162,21 @@
 	});
 	
 	$$.fn.collection({
-		style: function(){
-			return $$.util.copy( this.element()._private.style );
+		style: function( key ){
+			var ele = this.element();
+			
+			if( key === undefined ){
+				return $$.util.copy( ele._private.style );
+			}
+			
+			// on false, return whole obj but w/o copying
+			else if( key === false ){
+				return ele._private.style;
+			}
+			
+			else if( $$.is.string(key) ){
+				return $$.util.copy( ele._private.style[key] );
+			}
 		}
 	});
 	
@@ -199,43 +247,40 @@
 					return true;
 				}
 			},
-			preprocess: {
-				forSet: function(key, val){
-					return val;
-				},
-				
-				forSet: function(key, val){
-					return val;
-				}
+			override: {
+				forSet: null, // function(key, val){ return val; },
+				forGet: null, // function(key){ return val; },
+				forObjectGet: null // function( obj ){ return obj; }
 			},
 			validValue: function( key, val ){
 				return true;
 			},
-			onSet: function( key, oldVal, newVal ){ // callback function to call when setting for an element
-				// do nothing
-			},
-			onGet: function( key, val ){ // callback function to call when getting for an element
-				// do nothing
-			}
+			onSet: null, // function( key, oldVal, newVal ){},
+			onGet: null, // function( key, val ){}
 		};
 		var params = $.extend(true, {}, defaults, opts);
-		
-		console.log(params);
-		
+				
 		return function(key, val){
 			var ele = this.element();
 			var eles = this;
 			
 			function getter(key){
 				if( params.validKey.forGet.apply(ele, [key]) ){
-					var ret = $$.util.copy(  ele._private[ params.attr ] [ key ] );
+					var ret;
+					
+					if( $$.is.fn( params.override.forGet ) ){
+						ret = params.override.forGet.apply( ele, [ key ] );
+					} else {
+						ret = $$.util.copy(  ele._private[ params.attr ] [ key ] );
+					}
+					
 					if( $$.is.fn(params.onGet) ){
 						params.onGet.apply( ele, [key, ret] );
 					}
 					
 					return ret;
 				} else {
-					$$.console.warn( "Can not access field `%s` for `%s` for collection with element `%s`", key, params.attr, ele._private.data.id );
+					//$$.console.warn( "Can not access field `%s` for `%s` for collection with element `%s`", key, params.attr, ele._private.data.id );
 				}
 			}
 			
@@ -243,14 +288,18 @@
 				eles.each(function(){
 					if( params.validKey.forSet.apply(this, [key]) && params.validValue.apply(this, [key, val]) ){
 						var oldVal = this.element()._private[ params.attr ][ key ];
-							
-						this.element()._private[ params.attr ][ key ] = $$.util.copy( val );
+						
+						if( $$.is.fn( params.override.forSet ) ){
+							params.override.forSet.apply( this, [ key, val ] );
+						} else {
+							this.element()._private[ params.attr ][ key ] = $$.util.copy( val );
+						}
 						
 						if( $$.is.fn(params.onSet) ){
 							params.onSet.apply( ele, [key, oldVal, val] );
 						}
 					} else {
-						$$.console.warn( "Can not set field `%s` for `%s` for element `%s` to value `%o` : invalid value", key, params.attr, ele._private.data.id );
+						//$$.console.warn( "Can not set field `%s` for `%s` for element `%s` to value `%o` : invalid value", key, params.attr, ele._private.data.id );
 					}
 				});
 			}
@@ -269,10 +318,32 @@
 				}
 			}
 			
+			function objGetter( copy ){
+				var ret;
+				var obj = ele._private[ params.attr ];
+				
+				if( $$.is.fn( params.override.forObjectGet ) ){
+					ret = params.override.forObjectGet.apply( ele, [ ] );
+				} else {
+					ret = obj;
+				}
+				
+				if( copy || copy === undefined ){
+					ret = $$.util.copy( ret );
+				}
+				
+				return ret;
+			}
+			
 			// CASE: no parameters
 			// get whole attribute object
 			if( key === undefined ){
-				return $$.util.copy( ele._private[ params.attr ] );
+				return objGetter(false);
+			}
+			
+			// if passed false, just get the whole object without copying
+			else if( key === false ){
+				return objGetter(false);
 			}
 			
 			// CASE: single parameter

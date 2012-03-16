@@ -4,11 +4,32 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	$$.fn.collection({
-		scratch: function( name, val ){
+		scratch: defineAccessor({ attr: "scratch" })
+	});
+	
+	$$.fn.collection({
+		removeScratch: defineRemover({ attr: "scratch" })
+	});
+	
+	$$.fn.collection({
+		renderer: defineAccessor({ attr: "renderer" })
+	});
+	
+	$$.fn.collection({
+		removeRenderer: defineRemover({ attr: "renderer" })
+	});
+
+	function defineAccessor( params ){
+		var defaults = {
+			attr: "scratch"
+		};
+		params = $.extend(true, {}, defaults, params);
+		
+		return function( name, val ){
 			var self = this;
 			
 			if( name === undefined ){
-				return self.element()._private.scratch;
+				return self.element()._private[ params.attr ];
 			}
 			
 			var fields = name.split(".");
@@ -17,7 +38,7 @@
 				self.each(function(){
 					var self = this;
 					
-					var obj = self._private.scratch;
+					var obj = self._private[ params.attr ];
 					$.each(fields, function(i, field){
 						if( i == fields.length - 1 ){ return; }
 						
@@ -30,7 +51,7 @@
 			}
 			
 			function get(){
-				var obj = self.element()._private.scratch;
+				var obj = self.element()._private[ params.attr ];
 				$.each(fields, function(i, field){
 					obj = obj[field];
 				});
@@ -45,17 +66,22 @@
 			}
 			
 			return this;
-		}
-	});
+		};
+	}
 	
-	$$.fn.collection({
-		removeScratch: function( name ){
+	function defineRemover( params ){
+		var defaults = {
+			attr: "scratch"
+		};
+		params = $.extend(true, {}, defaults, params);
+		
+		return function( name ){
 			var self = this;
 			
 			// remove all
 			if( name === undefined ){
 				self.each(function(){
-					this._private.scratch = {};
+					this._private[ params.attr ] = {};
 				});
 			} 
 			
@@ -64,14 +90,13 @@
 				var names = name.split(/\s+/);
 				$.each(names, function(i, name){
 					self.each(function(){
-						eval( "delete this._private.scratch." + name + ";" );
+						eval( "delete this._private." + params.attr + "." + name + ";" );
 					});
 				});
 			}
 			
 			return this;
-		}
-	});
-
+		};
+	}
 	
 })(jQuery, jQuery.cytoscapeweb);

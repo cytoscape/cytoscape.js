@@ -14,6 +14,12 @@ $(function(){
 		}) );
 	}
 	
+	function confirmPosition( options ){
+		confirm( $.extend({}, options, {
+			storage: "position"
+		}) );
+	}
+	
 	function confirm( options ){
 		var self = options.element;
 		var fields = options.fields;
@@ -133,6 +139,40 @@ $(function(){
 				id: "n3"
 			}
 		});
+	});
+	
+	test("position", function(){
+		var n1 = cy.$("#n1");
+		
+		n1.one("position", function(){
+			confirmPosition({
+				element: n1, 
+				fields: {
+					x: 1,
+					y: 2
+				}
+			});
+		});
+		n1.position({
+			x: 1,
+			y: 2
+		});
+		
+		n1.one("position", function(){
+			confirmPosition({
+				element: n1,
+				fields: {
+					x: 123,
+					y: 2
+				}
+			});
+		});
+		n1.position("x", 123);
+		
+		equal( n1.position("x"), 123, "x via 1 param get" );
+		equal( n1.position("y"), 2, "y via 1 param get" );
+		deepEqual( n1.position(), { x: 123, y: 2 }, "position obj via 0 param get" );
+		
 	});
 	
 	test("Scratch", function(){

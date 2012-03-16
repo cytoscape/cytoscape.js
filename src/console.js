@@ -8,7 +8,7 @@
 			if( name == quiet ){
 				return quiet = ( val === undefined ? quiet : val );
 			} else if( name == debug ){
-				return debug = ( val === undeifned ? debug : val );
+				return debug = ( val === undefined ? debug : val );
 			}
 		},
 			

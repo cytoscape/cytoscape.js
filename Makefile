@@ -36,7 +36,7 @@ LIBS = $(LIB_DIR)/jquery.color.js\
 	$(LIB_DIR)/jquery.mousewheel.js
 
 # the files that make up the cytoweb core
-CORE = $(SRC_DIR)/jquery.cytoscapeweb.core.js
+CORE = $(SRC_DIR)/core.js
 
 # the contents of the library when combined into the .all.js file
 DEPS = $(EXTENSIONS_DIR)/jquery.cytoscapeweb.renderer.null.js\

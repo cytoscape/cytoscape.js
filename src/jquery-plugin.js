@@ -1,5 +1,5 @@
 ;(function($, $$){
-
+	
 	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
 	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
 	$.fn.cytoscapeweb = function(opts){
@@ -75,6 +75,26 @@
 			return rets;
 		}
 
+	};
+	
+	// allow functional access to cytoweb
+	// e.g. var cytoweb = $.cytoscapeweb({ selector: "#foo", ... });
+	//      var nodes = cytoweb.nodes();
+	$$.init = function( options ){
+		
+		// create instance
+		if( $$.is.plainObject( options ) ){
+			return new $$.CyCore( options );
+		} 
+		
+		// allow for registration of extensions
+		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
+		// e.g. $.cytoscapeweb("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
+		// e.g. $.cytoscapeweb("core", "doSomething", function(){ /* doSomething code */ });
+		// e.g. $.cytoscapeweb("collection", "doSomething", function(){ /* doSomething code */ });
+		else if( $$.is.string( options ) ) {
+			return $$.extension.apply($$.extension, arguments);
+		}
 	};
 	
 	// use short alias (cy) if not already defined

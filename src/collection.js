@@ -189,7 +189,7 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	$$.fn.collection({
-		restore: function(){
+		restore: function( notifyRenderer ){
 			var restored = new CyCollection(this.cy());
 			
 			this.each(function(){
@@ -266,7 +266,12 @@
 			});
 			
 			if( restored.size() > 0 ){
-				restored.rtrigger("add");
+				if( notifyRenderer ){
+					restored.rtrigger("add");
+				} else {
+					restored.trigger("add");
+				}
+				
 			}
 			
 			return this;
@@ -280,7 +285,7 @@
 	});
 	
 	$$.fn.collection({
-		remove: function(){
+		remove: function( notifyRenderer ){
 			var removedElements = new CyCollection( this.cy() );
 			
 			this.each(function(){
@@ -321,10 +326,13 @@
 			
 			if( removedElements.size() > 0 ){
 				// must manually notify since trigger won't do this automatically once removed
-				this.cy().notify({
-					type: "remove",
-					collection: removedElements
-				});
+				
+				if( notifyRenderer ){
+					this.cy().notify({
+						type: "remove",
+						collection: removedElements
+					});
+				}
 				
 				removedElements.rtrigger("remove");
 			}

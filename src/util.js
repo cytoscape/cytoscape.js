@@ -49,6 +49,14 @@
 			}
 			
 			return obj;
+		},
+		
+		capitalize: function(str){
+			if( $$.is.emptyString(str) ){
+				return str;
+			}
+			
+			return str.charAt(0).toUpperCase() + str.substring(1);
 		}
 			
 	};

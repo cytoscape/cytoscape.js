@@ -433,7 +433,9 @@
 					
 					// copy essential keys to new obj
 					$.each( params.essentialKeys, function(i, key){
-						newObj[ key ] = oldObj[ key ];
+						if( oldObj[ key ] !== undefined ){
+							newObj[ key ] = oldObj[ key ];
+						}
 					} );
 					
 					ele._private[ params.attr ] = newObj;

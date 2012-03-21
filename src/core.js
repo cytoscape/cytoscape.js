@@ -55,9 +55,7 @@
 			zoomEnabled: true,
 			panEnabled: true
 		};
-		
-		console.log( this._private );
-		
+
 		cy.initRenderer( options.renderer );
 		
 		// initial load

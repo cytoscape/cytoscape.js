@@ -2,6 +2,8 @@
 	
 	$$.fn.core({
 		notify: function( params ){
+			if( !this._private.notificationsEnabled ){ return; } // exit on disabled
+			
 			var renderer = this.renderer();
 			
 			if( $$.is.element(params.collection) ){

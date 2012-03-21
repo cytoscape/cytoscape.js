@@ -2,7 +2,7 @@
 	
 	$$.fn.core({
 		collection: function(){
-			return new CyCollection( cy );
+			return new $$.CyCollection( this );
 		},
 		
 		getElementById: function(id){

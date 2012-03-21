@@ -205,8 +205,8 @@
 					return;
 				}
 				
-				for(var i = 0; i < structs.listeners[target][type].length; i++){
-					var listener = structs.listeners[target][type][i];
+				for(var i = 0; i < listeners[target][type].length; i++){
+					var listener = listeners[target][type][i];
 					
 					var eventObj;
 					if( $$.is.plainObject(event) ){
@@ -227,7 +227,7 @@
 					}
 					
 					if( listener.one ){
-						structs.listeners[target][type].splice(i, 1);
+						listeners[target][type].splice(i, 1);
 						i--;
 					}
 					

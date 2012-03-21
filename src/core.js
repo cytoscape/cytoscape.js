@@ -2,8 +2,6 @@
 	
 	$$.fn.core = function( impl, options ){
 		$.each(impl, function(name, fn){
-			console.log(name);
-			
 			CyCore.prototype[ name ] = fn;
 		});
 	};

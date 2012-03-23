@@ -14,7 +14,7 @@
 				
 				function fire(listener, eventData){
 					if( listener != null && $$.is.fn(listener.callback) ){
-						var eventData = $$.is.plainObject(event) ? event : jQuery.Event(type);
+						var eventData = $$.is.plainObject(event) ? event : $.Event(type);
 						eventData.data = listener.data;
 						eventData.cy = eventData.cytoscapeweb = cy;
 						

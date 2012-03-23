@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 		
 	function NullLayout(){
 		$.cytoscapeweb("debug", "Creating null layout");
@@ -32,4 +32,4 @@ $(function(){
 	
 	$.cytoscapeweb("layout", "null", NullLayout);
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

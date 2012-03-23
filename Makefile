@@ -36,7 +36,38 @@ LIBS = $(LIB_DIR)/jquery.color.js\
 	$(LIB_DIR)/jquery.mousewheel.js
 
 # the files that make up the cytoweb core
-CORE = $(SRC_DIR)/jquery.cytoscapeweb.core.js
+CORE = $(SRC_DIR)/namespace.js\
+	$(SRC_DIR)/is.js\
+	$(SRC_DIR)/util.js\
+	$(SRC_DIR)/console.js\
+	$(SRC_DIR)/extension.js\
+	$(SRC_DIR)/jquery-plugin.js\
+	$(SRC_DIR)/core.js\
+	$(SRC_DIR)/core-add-remove.js\
+	$(SRC_DIR)/core-animation.js\
+	$(SRC_DIR)/core-events.js\
+	$(SRC_DIR)/core-export.js\
+	$(SRC_DIR)/core-layout.js\
+	$(SRC_DIR)/core-notification.js\
+	$(SRC_DIR)/core-renderer.js\
+	$(SRC_DIR)/core-scratch.js\
+	$(SRC_DIR)/core-search.js\
+	$(SRC_DIR)/core-style.js\
+	$(SRC_DIR)/core-viewport.js\
+	$(SRC_DIR)/collection.js\
+	$(SRC_DIR)/collection-animation.js\
+	$(SRC_DIR)/collection-class.js\
+	$(SRC_DIR)/collection-comparators.js\
+	$(SRC_DIR)/collection-data-functions.js\
+	$(SRC_DIR)/collection-degree.js\
+	$(SRC_DIR)/collection-events.js\
+	$(SRC_DIR)/collection-group.js\
+	$(SRC_DIR)/collection-iteration.js\
+	$(SRC_DIR)/collection-scratch.js\
+	$(SRC_DIR)/collection-switch-functions.js\
+	$(SRC_DIR)/collection-traversing.js\
+	$(SRC_DIR)/json-exporter.js\
+	$(SRC_DIR)/selector.js
 
 # the contents of the library when combined into the .all.js file
 DEPS = $(EXTENSIONS_DIR)/jquery.cytoscapeweb.renderer.null.js\
@@ -120,5 +151,4 @@ $(BUILD_DIR) :
 	$(call PREAMBLIFY)
 
 clean : 
-	echo $(EXTENSIONS)
 	$(RM) $(BUILD_DIR)

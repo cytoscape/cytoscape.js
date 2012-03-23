@@ -25,7 +25,7 @@
 			return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
 		},
 		
-		boolean: function(obj){
+		bool: function(obj){
 			return obj != null && typeof obj == typeof true;
 		},
 		

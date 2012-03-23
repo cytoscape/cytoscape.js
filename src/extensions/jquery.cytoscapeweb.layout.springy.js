@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 	
 	var defaults = {
 		maxSimulationTime: 1000,
@@ -732,4 +732,4 @@ $(function(){
 	};
 
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

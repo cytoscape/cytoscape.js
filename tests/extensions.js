@@ -1,4 +1,4 @@
-$(function(){
+$v(function(jQuery, $, version){
 	
 	module("Extensions", {
 		setup: function(){

@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 	
 	var defaults = {
 		ready: undefined,
@@ -218,4 +218,4 @@ $(function(){
 	$.cytoscapeweb("layout", "arbor", ForceDirectedLayout);
 	
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

@@ -28,11 +28,7 @@
 				// specify an array of options
 				else if( $$.is.array(opts) ){
 					$.each(opts, function(i, elementParams){
-						if( params != null && params.group != null ){
-							elements.push(new $$.CyElement( cy, $.extend({}, elementParams, { group: params.group }) ));
-						} else {
-							elements.push(new $$.CyElement( cy, elementParams ));
-						}
+						elements.push(new $$.CyElement( cy, elementParams ));
 					});
 				}
 				
@@ -49,11 +45,7 @@
 				
 				// specify options for one element
 				else {
-					if( params != null && params.group != null ){
-						elements.push(new $$.CyElement( cy, $.extend({}, opts, { group: params.group }) ));
-					} else {
-						elements.push(new $$.CyElement( cy, opts ));
-					}
+					elements.push(new $$.CyElement( cy, opts ));
 				}
 			});
 			

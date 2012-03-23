@@ -213,7 +213,7 @@
 						eventObj = event;
 						event = eventObj.type;
 					} else {
-						eventObj = jQuery.Event(event);
+						eventObj = $.Event(event);
 					}
 					eventObj.data = listener.data;
 					eventObj.cy = eventObj.cytoscapeweb = cy;

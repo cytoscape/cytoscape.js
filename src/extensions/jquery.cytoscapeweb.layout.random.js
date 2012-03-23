@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 	
 	var defaults = {
 		fit: true
@@ -53,4 +53,4 @@ $(function(){
 	
 	$.cytoscapeweb("layout", "random", RandomLayout);
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

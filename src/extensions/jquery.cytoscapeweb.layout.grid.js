@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 	
 	var defaults = {
 		fit: true,
@@ -163,4 +163,4 @@ $(function(){
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

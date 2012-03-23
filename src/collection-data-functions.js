@@ -134,11 +134,9 @@
 					this.element()._private.position[key] = mpos[key];
 				},
 				forGet: function( key ){
-					var rpos = {};
-					rpos[ key ] = val;
-					
-					var mpos = this.cy().renderer().modelPoint( rpos );
-					return mpos[ key ];
+					var mpos = this.position(false);
+					var rpos = this.cy().renderer().renderedPoint( mpos );
+					return rpos[ key ];
 				},
 				forObjectGet: function(){
 					return this.cy().renderer().renderedPosition( this.element() );

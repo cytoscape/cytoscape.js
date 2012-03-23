@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 		
 	function NullRenderer(options){
 		$.cytoscapeweb("debug", "Creating null renderer with options (%o)", options);
@@ -46,4 +46,4 @@ $(function(){
 	
 	$.cytoscapeweb("renderer", "null", NullRenderer);
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

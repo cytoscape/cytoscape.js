@@ -1,4 +1,4 @@
-$(function(){
+(function($){
 	
 	// set up testing params
 	
@@ -86,4 +86,4 @@ $(function(){
 		});
 	}
 	
-});
+})(jQuery);

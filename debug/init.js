@@ -139,13 +139,14 @@ $(function(){
 		
 		$container.cytoscapewebPanzoom();
 		
-		$container.cytoscapewebEdgehandles({
-			lineType: "straight",
-			preview: true,
-			edgeType: function(){
-				return $("#add-edge-type-select").val();
-			}
-		});
+		// disable for now while refactoring
+//		$container.cytoscapewebEdgehandles({
+//			lineType: "straight",
+//			preview: true,
+//			edgeType: function(){
+//				return $("#add-edge-type-select").val();
+//			}
+//		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

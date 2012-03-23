@@ -1,4 +1,4 @@
-$(function(){
+;(function($, $$){
 	
 	var defaults = {
 		fit: true
@@ -79,4 +79,4 @@ $(function(){
 	$.cytoscapeweb("exporter", "preset", PresetExporter);
 	
 	
-});
+})(jQuery, jQuery.cytoscapeweb);

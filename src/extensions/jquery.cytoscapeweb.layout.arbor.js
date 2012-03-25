@@ -17,7 +17,7 @@
 		edgeLength: undefined
 	};
 	
-	function ForceDirectedLayout(){
+	function ArborLayout(){
 		$.cytoscapeweb("debug", "Creating force-directed layout");
 	}
 	
@@ -27,7 +27,7 @@
 		}
 	}
 	
-	ForceDirectedLayout.prototype.run = function(params){
+	ArborLayout.prototype.run = function(params){
 		var options = $.extend(true, {}, defaults, params);
 		$.cytoscapeweb("debug", "Running force-directed layout with options (%o)", options);
 		
@@ -163,9 +163,9 @@
 		});
 		
 		edges.each(function(){
-			var id = this._private.data.id;
-			var src = this.source()._private.data.id;
-			var tgt = this.target()._private.data.id;
+			var id = this.id();
+			var src = this.source().id();
+			var tgt = this.target().id();
 			var length = calculateValueForElement(this, options.edgeLength);
 			
 			this._private.arbor = sys.addEdge(src, tgt, {
@@ -215,7 +215,7 @@
 		}, options.maxSimulationTime);
 	};
 	
-	$.cytoscapeweb("layout", "arbor", ForceDirectedLayout);
+	$.cytoscapeweb("layout", "arbor", ArborLayout);
 	
 	
 })(jQuery, jQuery.cytoscapeweb);

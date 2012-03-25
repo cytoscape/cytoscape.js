@@ -7,7 +7,7 @@
 		random: false
 	};
 	
-	function ForceDirectedLayout(){
+	function SpringyLayout(){
 		$.cytoscapeweb("debug", "Creating Springy layout with options");
 	}
 	
@@ -17,7 +17,7 @@
 		}
 	}
 	
-	ForceDirectedLayout.prototype.run = function(params){
+	SpringyLayout.prototype.run = function(params){
 		var options = $.extend(true, {}, defaults, params);
 		$.cytoscapeweb("debug", "Running Springy layout with options (%o)", options);
 	
@@ -31,18 +31,22 @@
 
 		// make some nodes
 		nodes.each(function(i, node){
-			node._private.fd = graph.newNode({
-				element: node
+			node.scratch("springy", {
+				model: graph.newNode({
+					element: node
+				})
 			});
 		});
 
 		// connect them with edges
 		edges.each(function(i, edge){
-			fdSrc = edge.source()._private.fd;
-			fdTgt = edge.target()._private.fd;
+			fdSrc = edge.source().scratch("springy.model");
+			fdTgt = edge.target().scratch("springy.model");
 			
-			edge._private.fd = graph.newEdge(fdSrc, fdTgt, {
-				element: edge
+			edge.scratch("springy", {
+				model: graph.newEdge(fdSrc, fdTgt, {
+					element: edge
+				})
 			});
 		});
 		
@@ -126,10 +130,10 @@
 		});
 		
 		function setLayoutPositionForElement(element){
-			var fdId = element._private.fd.id;
+			var fdId = element.scratch("springy.model").id;
 			var fdP = fdRenderer.layout.nodePoints[fdId].p;
-			var pos = element._private.position;
-			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element._private.position) : {
+			var pos = element.position(false);
+			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element.position(false)) : {
 				x: Math.random() * 4 - 2,
 				y: Math.random() * 4 - 2
 			};
@@ -179,7 +183,7 @@
 
 	};
 	
-	$.cytoscapeweb("layout", "springy", ForceDirectedLayout);
+	$.cytoscapeweb("layout", "springy", SpringyLayout);
 	
 	
 	/**

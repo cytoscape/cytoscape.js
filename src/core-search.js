@@ -56,6 +56,10 @@
 			var cy = this;
 			var elements = [];
 			
+			if( selector == null ){
+				selector = "";
+			}
+			
 			$.each(groups, function(i, group){
 				$.each(cy._private[group], function(id, element){
 					elements.push( element );
@@ -63,7 +67,15 @@
 			});
 			
 			var collection = new $$.CyCollection( cy, elements );
-			return new $$.CySelector( cy, selector ).filter( collection, params.addLiveFunction );
+			
+			var selector;
+			if(params.group != null){
+				selector = new $$.CySelector( cy, params.group, selector );
+			} else {
+				selector = new $$.CySelector( cy, selector );
+			}
+			
+			return selector.filter( collection, params.addLiveFunction );
 		};
 	};
 	

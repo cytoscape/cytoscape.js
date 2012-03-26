@@ -314,6 +314,9 @@
 					var ele = element.element();
 					var group = ele._private.group;
 					
+					// mark self as removed via flag
+					ele._private.removed = true;
+					
 					// remove reference from core
 					delete ele.cy()._private[ ele.group() ][ ele.id() ];
 					

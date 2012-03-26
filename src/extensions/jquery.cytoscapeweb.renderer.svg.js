@@ -5,6 +5,7 @@
 		maxZoom: 1000,
 		maxPan: -1 >>> 1,
 		minPan: (-(-1>>>1)-1),
+		selectionToPanDelay: 500,
 			
 		// TODO add more styles
 		style: {
@@ -426,7 +427,7 @@
 		var self = this;
 		
 		var svgDomElement = self.svgRoot;
-		var panDelay = 150;
+		var panDelay = self.options.selectionToPanDelay;
 		
 		self.shiftDown = false;
 		$(window).bind("keydown keyup", function(e){

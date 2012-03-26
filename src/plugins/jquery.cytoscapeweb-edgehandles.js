@@ -212,7 +212,7 @@
 					
 					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler;
 					cy.nodes().live("mouseover", startHandler = function(e){
-						if( mdownOnHandle || grabbingNode ){
+						if( mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscapeweb-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
 						} 
@@ -325,6 +325,10 @@
 						$handle.bind("mousedown", mdownHandler);
 						
 					}).live("mouseover", hoverHandler = function(){
+						if( this.hasClass("ui-cytoscapeweb-edgehandles-preview") ){
+							return; // ignore preview nodes
+						}
+						
 						if( mdownOnHandle ){ // only handle mdown case
 							var node = this;
 							var target = this;

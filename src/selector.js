@@ -539,7 +539,7 @@
 				var evts = events.split(/\s+/);
 				$.each(evts, function(i, event){
 				
-					if( event == "" ){
+					if( $$.is.emptyString(event) ){
 						return;
 					}
 					
@@ -601,7 +601,7 @@
 	};
 	
 	// ith query to string
-	CySelector.prototype.selector = function(){
+	CySelector.prototype.toString = CySelector.prototype.selector = function(){
 		
 		var str = "";
 		

@@ -23,6 +23,8 @@
 			if( $$.is.fn(filter) ){
 				var elements = [];
 				this.each(function(i, element){
+					element = element.element();
+					
 					if( filter.apply(element, [i, element]) ){
 						elements.push(element);
 					}
@@ -209,7 +211,7 @@
 	$$.fn.collection({
 		edgesTo: defineEdgesWithFunction({
 			include: function( node, otherNode, edgeStruct ){
-				return edgeStruct.source;
+				return edgeStruct.target.same( otherNode );
 			}
 		})
 	});
@@ -217,7 +219,7 @@
 	$$.fn.collection({
 		edgesFrom: defineEdgesWithFunction({
 			include: function( node, otherNode, edgeStruct ){
-				return edgeStruct.target;
+				return edgeStruct.source.same( node );
 			}
 		})
 	});
@@ -237,7 +239,7 @@
 				otherNodes.nodes().each(function(j, otherNode){
 					$.each( node.element()._private.edges[ otherNode.id() ], function(edgeId, edgeStruct){
 						if( params.include( node, otherNode, edgeStruct ) ){
-							elements.push( otherNode.element() );
+							elements.push( edgeStruct.edge );
 						}
 					} );
 				});

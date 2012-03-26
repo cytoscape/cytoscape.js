@@ -2002,14 +2002,14 @@
 	};
 	
 	SvgRenderer.prototype.updateMapperBounds = function(collection){
-		var elements = cy.elements();
+		var elements = this.cy.elements();
 		
 		if( collection.nodes().size() > 0 && collection.edges().size() > 0 ){
 			// update both nodes & edges
 		} else {
 			// update only the group in the collection
 			elements = elements.filter(function(){
-				return this.group() == collection[0].group();
+				return this.group() == collection.eq(0).group();
 			});
 		}
 		
@@ -2275,10 +2275,13 @@
 			strokeWidth: number(style.width),
 			strokeDashArray: lineStyle(style.style).array,
 			"stroke-linecap": "butt", // disable for now for markers to line up nicely
-			opacity: percent(style.opacity),
 			cursor: cursor(style.cursor),
 			fill: "none",
 			visibility: visibility(style.visibility)
+		});
+		
+		this.svg.change(element.renderer().svgGroup, {
+			opacity: percent(style.opacity)
 		});
 		
 		this.svg.change(element.renderer().svgTargetArrow, {
@@ -2402,12 +2405,15 @@
 		var self = this;
 		
 		collection.each(function(i, element){
+			
 			if( element.renderer().svgGroup != null ){
-				svg.remove(element.renderer().svgGroup);
-				delete element.renderer().svg;
-				delete element.renderer().svgGroup;
-				delete element.renderer().svgSourceArrow;
-				delete element.renderer().svgTargetArrow;
+				// remove the svg element from the dom
+				svg.remove( element.renderer().svgGroup );
+				
+				element.removeRenderer("svg");
+				element.removeRenderer("svgGroup");
+				element.removeRenderer("svgSourceArrow");
+				element.removeRenderer("svgTargetArrow");
 				// TODO add delete other svg children like labels
 			} else {
 				$$.console.debug("Element with group `%s` and ID `%s` has no associated SVG element", element.group(), element.id());

@@ -76,15 +76,16 @@ $(function(){
 				},
 				
 				"node.ui-cytoscapeweb-edgehandles-target": {
-					borderColor: "red",
-					borderWidth: 3
+					borderColor: "#5CC2ED",
+					borderWidth: 3,
+					borderOpacity: 0.75
 				},
 				
 				".ui-cytoscapeweb-edgehandles-preview": {
-					fillColor: "red",
-					lineColor: "red",
-					sourceArrowColor: "red",
-					targetArrowColor: "red",
+					fillColor: "#5CC2ED",
+					lineColor: "#5CC2ED",
+					sourceArrowColor: "#5CC2ED",
+					targetArrowColor: "#5CC2ED",
 					opacity: 0.75
 				}
 			}
@@ -135,18 +136,17 @@ $(function(){
 		height = $("#cytoscapeweb").height();
 		width = $("#cytoscapeweb").width();
 		
-		// enable this again later...
-		
 		$container.cytoscapewebPanzoom();
 		
-		// disable for now while refactoring
-//		$container.cytoscapewebEdgehandles({
-//			lineType: "straight",
-//			preview: true,
-//			edgeType: function(){
-//				return $("#add-edge-type-select").val();
-//			}
-//		});
+		$container.cytoscapewebEdgehandles({
+			lineType: "straight",
+			preview: true,
+			handleSize: 12,
+			handleColor: "#5CC2ED",
+			edgeType: function(){
+				return $("#add-edge-type-select").val();
+			}
+		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");
@@ -221,7 +221,7 @@ $(function(){
 		});
 		
 		$("#remove-selected-button").click(function(){
-			cy.remove( cy.elements(":selected") );
+			cy.elements(":selected").remove();
 		});
 	});
 	

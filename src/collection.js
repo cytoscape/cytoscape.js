@@ -203,8 +203,8 @@
 				// set id and validate
 				if( this._private.data.id == null ){
 					this._private.data.id = idFactory.generate( this, this._private.group );
-				} else if( this.cy().getElementById( this._private.data.id ) != null ){
-					$$.console.error("Can not create element: an element in the visualisation in group `%s` already has ID `%s`", this._private.group, this._private.data.id);
+				} else if( this.cy().getElementById( this._private.data.id ).size() != 0 ){
+					$$.console.error("Can not create element: an element in the visualisation already has ID `%s`", this.element()._private.data.id);
 					return this;
 				}
 				
@@ -226,7 +226,10 @@
 						}
 					}
 					
-					function connect( node, otherNode, edge, obj ){
+					var src = this.cy().getElementById( this._private.data.source );
+					var tgt = this.cy().getElementById( this._private.data.target );
+					
+					function connect( node, otherNode, edge ){
 						var otherId = otherNode.element()._private.data.id;
 						var edgeId = edge.element()._private.data.id;
 						
@@ -234,23 +237,18 @@
 							 node._private.edges[ otherId ] = {};
 						}
 						
-						node._private.edges[ otherId ][ edgeId ] = $.extend({
-							edge: edge
-						}, obj);
+						node._private.edges[ otherId ][ edgeId ] = {
+							edge: edge,
+							source: src,
+							target: tgt
+						};
 					}
 					
-					var src = this.cy().getElementById( this._private.data.source );
-					var tgt = this.cy().getElementById( this._private.data.target );
-					
 					// connect reference to source
-					connect( src, tgt, this, {
-						source: true
-					} );
+					connect( src, tgt, this );
 					
 					// connect reference to target
-					connect( tgt, src, this, {
-						target: true
-					} );
+					connect( tgt, src, this );
 				} 
 				 
 				this._private.removed = false;
@@ -286,44 +284,59 @@
 	
 	$$.fn.collection({
 		remove: function( notifyRenderer ){
-			var removedElements = new CyCollection( this.cy() );
+			var removed = [];
+			var edges = {};
+			var nodes = {};
+			
+			if( notifyRenderer === undefined ){
+				notifyRenderer = true;
+			}
 			
 			this.each(function(){
-				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-				
-				function remove(self){
-					delete structs[ self._private.group ][ self._private.data.id ];
-					self._private.removed = true;
-					var group = self._private.group;
+				if( this.isNode() ){
+					var node = this.element();
+					nodes[ node.id() ] = this;
 					
-					// remove from map of edges belonging to nodes
-					if( self.isEdge() ){
-						function removeConnection( node, otherNode ){
-							var otherId = otherNode.element()._private.data.id;
-							var selfIf = self.element()._private.data.id;
-							
-							delete node.element()._private.edges[ otherId ][ selfId ];
-						}
-						
-						// remove connection to source
-						removeConnection( self.source(), self.target() );
-						
-						// remove connection to target
-						removeConnection( self.target(), self.source() );
-					} 
-					
-					$.each(self._private.data, function(attr, val){
-						self.cy().removeContinuousMapperBounds(self, attr, val);
+					$.each(node._private.edges, function(otherNodeId, map){
+						$.each(map, function(edgeId, struct){
+							edges[ edgeId ] = struct.edge;
+						});
 					});
-					
-					removedElements = removedElements.add( self );
 				}
 				
-				if( !this._private.removed ){
-					remove( this );					
+				if( this.isEdge() ){
+					edges[ this.id() ] = this;
 				}
 			});
 			
+			$.each( [edges, nodes], function(i, elements){
+				$.each(elements, function(id, element){
+					var ele = element.element();
+					var group = ele._private.group;
+					
+					// remove reference from core
+					delete ele.cy()._private[ ele.group() ][ ele.id() ];
+					
+					// remove mapper bounds for all data removed
+					$.each(ele._private.data, function(attr, val){
+						ele.cy().removeContinuousMapperBounds(ele, attr, val);
+					});
+					
+					// add to list of removed elements
+					removed.push( ele );
+					
+					// if edge, delete references in nodes
+					if( ele.isEdge() ){
+						var src = ele.source().element();
+						var tgt = ele.target().element();
+						
+						delete src._private.edges[ tgt.id() ][ ele.id() ];
+						delete tgt._private.edges[ src.id() ][ ele.id() ];
+					}
+				});
+			} );
+			
+			var removedElements = new $$.CyCollection( this.cy(), removed );
 			if( removedElements.size() > 0 ){
 				// must manually notify since trigger won't do this automatically once removed
 				
@@ -334,7 +347,7 @@
 					});
 				}
 				
-				removedElements.rtrigger("remove");
+				removedElements.trigger("remove");
 			}
 			
 			return this;

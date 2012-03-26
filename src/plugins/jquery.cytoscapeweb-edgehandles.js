@@ -5,13 +5,13 @@
 		handleColor: "red",
 		handleLineWidth: 1,
 		lineType: "draw", // can be "straight" or "draw"
-		edgeType: function( sourceNode, targetNodes ){
+		edgeType: function( sourceNode, targetNodes, targetNode ){
 			return "node"; // can return "flat" for flat edges between nodes or "node" for intermediate node between them
 		},
 		loopAllowed: function( node ){
 			return false;
 		},
-		nodeParams: function( sourceNode, targetNodes ){
+		nodeParams: function( sourceNode, targetNodes, targetNode ){
 			return {};
 		},
 		edgeParams: function( sourceNode, targetNodes, targetNode ){
@@ -63,7 +63,7 @@
 			},
 				
 			init: function(){
-				var options = $.extend(true, {}, defaults, params);
+				var options = $.extend(true, {}, defaults, params); console.log(options);
 				var $container = $(this);
 				var svg, cy;
 				var handle;
@@ -121,6 +121,7 @@
 				}
 				
 				function removePreview( source, target ){
+
 					source.edgesWith(target).filter(".ui-cytoscapeweb-edgehandles-preview").remove();
 				}
 				
@@ -151,7 +152,7 @@
 						var p = source.position();
 						
 						targets.each(function(){
-							var p2 = this.position();
+							var p2 = this.position(false);
 							
 							p.x += p2.x;
 							p.y += p2.y;
@@ -237,7 +238,7 @@
 						
 						// add new handle
 						handle = svg.circle(hx, hy, hr, {
-							fill: "red"
+							fill: options.handleColor
 						});
 						var $handle = $(handle);
 						

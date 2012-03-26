@@ -6,7 +6,7 @@
 		},
 		
 		getElementById: function(id){
-			return this._private.nodes[id] || this._private.edges[id];
+			return this._private.nodes[id] || this._private.edges[id] || new $$.CyCollection( this );
 		},
 		
 		nodes: defineSearch({

@@ -86,7 +86,15 @@ $(function(){
 					lineColor: "#5CC2ED",
 					sourceArrowColor: "#5CC2ED",
 					targetArrowColor: "#5CC2ED",
-					opacity: 0.75
+					opacity: 0.75,
+					labelText: ""
+				},
+				
+				"node.intermediate": {
+					height: 16,
+					width: 16,
+					shape: "rectangle",
+					labelText: ""
 				}
 			}
 		},
@@ -145,6 +153,11 @@ $(function(){
 			handleColor: "#5CC2ED",
 			edgeType: function(){
 				return $("#add-edge-type-select").val();
+			},
+			nodeParams: function(){
+				return {
+					classes: "intermediate"
+				};
 			}
 		});
 		

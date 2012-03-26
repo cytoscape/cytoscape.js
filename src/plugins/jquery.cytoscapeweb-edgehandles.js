@@ -5,16 +5,16 @@
 		handleColor: "red",
 		handleLineWidth: 1,
 		lineType: "draw", // can be "straight" or "draw"
-		edgeType: function( sourceNode, targetNodes, targetNode ){
+		edgeType: function( sourceNode, targetNode ){
 			return "node"; // can return "flat" for flat edges between nodes or "node" for intermediate node between them
 		},
 		loopAllowed: function( node ){
 			return false;
 		},
-		nodeParams: function( sourceNode, targetNodes, targetNode ){
+		nodeParams: function( sourceNode, targetNode ){
 			return {};
 		},
-		edgeParams: function( sourceNode, targetNodes, targetNode ){
+		edgeParams: function( sourceNode, targetNode ){
 			return {};
 		}
 	};
@@ -121,8 +121,13 @@
 				}
 				
 				function removePreview( source, target ){
-
 					source.edgesWith(target).filter(".ui-cytoscapeweb-edgehandles-preview").remove();
+					
+					target
+						.neighborhood("node.ui-cytoscapeweb-edgehandles-preview")
+						.closedNeighborhood(".ui-cytoscapeweb-edgehandles-preview")
+						.remove();
+					
 				}
 				
 				function makeEdges( preview ){
@@ -146,63 +151,53 @@
 						cy.elements(".ui-cytoscapeweb-edgehandles-preview").remove();
 					}
 					
-					switch( options.edgeType( source, targets ) ){
-					case "node":
-					
-						var p = source.position();
-						
-						targets.each(function(){
-							var p2 = this.position(false);
+					targets.each(function(i, target){
+						switch( options.edgeType( source, target ) ){
+						case "node":
 							
-							p.x += p2.x;
-							p.y += p2.y;
-						});
-						
-						var n = (targets.size() + 1)
-						p.x = p.x / n;
-						p.y = p.y / n;
-						
-											
-						var interNode = cy.add($.extend( true, {
-							group: "nodes",
-							position: p
-						}, options.nodeParams(source, targets) )).addClass(classes);
-						
-						// console.log(interNode);
-						
-						cy.add($.extend( true, {
-							group: "edges",
-							data: {
-								source: source.data("id"),
-								target: interNode.data("id")
-							}
-						}, options.edgeParams(source, targets, interNode) )).addClass(classes);
-						
-						targets.each(function(i, target){
+							var p1 = source.position(false);
+							var p2 = target.position(false);
+							var p = {
+								x: (p1.x + p2.x)/2,
+								y: (p1.y + p2.y)/2
+							};
+												
+							var interNode = cy.add($.extend( true, {
+								group: "nodes",
+								position: p
+							}, options.nodeParams(source, target) )).addClass(classes);
+
 							cy.add($.extend( true, {
 								group: "edges",
 								data: {
-									source: source.data("id"),
-									target: target.data("id")
+									source: source.id(),
+									target: interNode.id()
 								}
-							}, options.edgeParams(source, targets, target) )).addClass(classes);
-						});
-						
-						break;
-						
-					case "flat":
-					default:
-						targets.each(function(i, target){
-							cy.add({
+							}, options.edgeParams(source, target) )).addClass(classes);
+							
+							cy.add($.extend( true, {
 								group: "edges",
 								data: {
-									source: source.data("id"),
-									target: target.data("id")
+									source: interNode.id(),
+									target: target.id()
 								}
-							}).addClass(classes);
-						});
-						break;
-					}
+							}, options.edgeParams(source, target) )).addClass(classes);
+							
+							break;
+							
+						case "flat":
+						default:
+							cy.add($.extend( true, {
+								group: "edges",
+								data: {
+									source: source.id(),
+									target: target.id()
+								}
+							}, options.edgeParams(source, target) )).addClass(classes);
+							break;
+						}
+					});
+					
 					
 				}
 				

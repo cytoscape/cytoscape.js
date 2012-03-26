@@ -61,9 +61,9 @@
 		remove: function(collection){
 			if( !$$.is.elementOrCollection(collection) ){
 				collection = collection;
-			} else {
+			} else if( $$.is.string(collection) ){
 				var selector = collection;
-				collection = this.filter( selector );
+				collection = this.$( selector );
 			}
 			
 			return collection.remove();

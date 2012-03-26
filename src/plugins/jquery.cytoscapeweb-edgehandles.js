@@ -63,7 +63,7 @@
 			},
 				
 			init: function(){
-				var options = $.extend(true, {}, defaults, params); console.log(options);
+				var options = $.extend(true, {}, defaults, params); 
 				var $container = $(this);
 				var svg, cy;
 				var handle;

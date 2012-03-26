@@ -176,7 +176,9 @@
 		function packToCenter(callback){
 			// TODO implement this for IE :(
 			
-			cy.fit();
+			if( options.fit ){
+				cy.fit();
+			}
 			callback();
 		};
 		

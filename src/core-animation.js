@@ -100,7 +100,7 @@
 				
 				// notify renderer
 				if( structs.animation.elements.size() > 0 ){
-					notify({
+					cy.notify({
 						type: "draw",
 						collection: structs.animation.elements
 					});

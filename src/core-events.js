@@ -161,14 +161,14 @@
 				
 				// unbind all
 				if( handler === undefined ){
-					delete structs.listeners[ params.target ][ event ];
+					delete listeners[ params.target ][ event ];
 					return;
 				}
 				
 				// unbind specific handler
 				else {
 					for(var i = 0; i < listeners[params.target][event].length; i++){
-						var listener = structs.listeners[params.target][event][i];
+						var listener = listeners[params.target][event][i];
 						
 						if( listener.callback == handler ){
 							listeners[params.target][event].splice(i, 1);

@@ -41,10 +41,6 @@
 			
 		});
 		
-		if( options.fit ){
-			cy.fit();
-		}
-		
 		function exec(fn){
 			if( fn != null && typeof fn == typeof function(){} ){
 				fn();
@@ -53,6 +49,10 @@
 		
 		cy.trigger("layoutready");
 		exec( params.ready );
+		
+		if( options.fit ){
+			cy.fit();
+		}
 		
 		cy.trigger("layoutstop");
 		exec( params.stop );

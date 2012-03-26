@@ -843,7 +843,7 @@
 	SvgRenderer.prototype.fit = function(params){
 		var elements = params.elements;
 		var zoom = params.zoom;
-		var cy = self.cy;
+		var cy = this.cy;
 		
 		if( !cy.panning() || (zoom !== undefined && !cy.zooming()) ){
 			return;

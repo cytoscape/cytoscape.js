@@ -107,8 +107,8 @@
 			});
 			
 			// we have to notify (the animation loop doesn't do it for us on `stop`)
-			this.cy.notify({
-				collection: self.collection(),
+			this.cy().notify({
+				collection: this,
 				type: "draw"
 			});
 			

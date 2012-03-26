@@ -102,7 +102,7 @@
 						cy.notifications(true);
 
 						cy.notify({
-							type: "load", // TODO should this be a different type?
+							type: "load",
 							collection: cy.elements(),
 							style: cy._private.style
 						});

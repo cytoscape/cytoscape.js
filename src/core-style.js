@@ -6,14 +6,14 @@
 			var ret;
 			
 			if( val === undefined ){
-				ret = $$.util.copy( structs.style );
+				ret = $$.util.copy( this._private.style );
 			} else {
-				structs.style = $$.util.copy( val );
+				this._private.style = $$.util.copy( val );
 				ret = this;
 				
-				notify({
+				this.notify({
 					type: "style",
-					style: structs.style
+					style: this._private.style
 				});
 			}
 			

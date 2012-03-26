@@ -21,6 +21,9 @@ VERSION := snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 # directories
 LIB_DIR = lib
 SRC_DIR = src
+WEB_DIR = ../cytoscapeweb-website
+WEB_JS_DIR = $(WEB_DIR)/js
+WEB_CSS_DIR = $(WEB_DIR)/css
 EXTENSIONS_DIR_NAME = extensions
 EXTENSIONS_DIR = $(SRC_DIR)/$(EXTENSIONS_DIR_NAME)
 BUILD_EXTENSIONS_DIR = $(BUILD_DIR)/$(EXTENSIONS_DIR_NAME)
@@ -94,6 +97,10 @@ MIN_BUILD_PLUGINS =  $(BUILD_PLUGINS:%.js=%.min.js)
 BUILD_EXTENSIONS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(EXTENSIONS))
 MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
+# js files to copy to the website to make them up to date
+WEB_JS_FILES = build/jquery.cytoscapeweb.all.min.js build/plugins/jquery.cytoscapeweb-panzoom.min.js build/extensions/jquery.cytoscapeweb.layout.arbor.min.js build/extensions/jquery.cytoscapeweb.layout.springy.min.js
+WEB_CSS_FILES = build/plugins/jquery.cytoscapeweb-panzoom.css
+
 # configure what files to include in the zip
 ZIP_FILE = $(BUILD_DIR)/jquery.cytoscapeweb-$(VERSION).zip
 ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_EXTENSIONS_DIR) $(BUILD_PLUGINS_DIR) $(LIB_DIR) $(LICENSE) $(README)
@@ -108,6 +115,10 @@ TEMPFILE = $(TEMP)/temp-file
 CWD = `$(PWD)`
 
 all : zip
+
+website : minify
+	$(CP) $(WEB_JS_FILES) $(WEB_JS_DIR)
+	$(CP) $(WEB_CSS_FILES) $(WEB_CSS_DIR)
 
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 	

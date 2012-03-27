@@ -374,7 +374,7 @@
 				if( self.scale == null ){
 					self.scale = 1;
 				}
-				if( self.translation == 0 ){
+				if( self.translation == null ){
 					self.translation = { x: 0, y: 0 };
 				}
 				

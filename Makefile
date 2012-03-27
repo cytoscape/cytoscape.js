@@ -8,7 +8,7 @@ ZIP = zip
 MV = mv
 PRINTF = printf
 SED = sed
-MKDIR = mkdir
+MKDIR = mkdir -p
 CD = cd
 PWD = pwd
 LS = ls
@@ -98,8 +98,8 @@ BUILD_EXTENSIONS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(EXTENSIONS))
 MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
 # js files to copy to the website to make them up to date
-WEB_JS_FILES = build/jquery.cytoscapeweb.all.min.js build/plugins/jquery.cytoscapeweb-panzoom.min.js build/extensions/jquery.cytoscapeweb.layout.arbor.min.js build/extensions/jquery.cytoscapeweb.layout.springy.min.js
-WEB_CSS_FILES = build/plugins/jquery.cytoscapeweb-panzoom.css
+WEB_JS_FILES = build/jquery.cytoscapeweb.all.js build/jquery.cytoscapeweb.all.min.js build/plugins/jquery.cytoscapeweb-panzoom.min.js build/extensions/jquery.cytoscapeweb.layout.arbor.min.js build/extensions/jquery.cytoscapeweb.layout.springy.min.js
+WEB_CSS_FILES = 
 
 # configure what files to include in the zip
 ZIP_FILE = $(BUILD_DIR)/jquery.cytoscapeweb-$(VERSION).zip

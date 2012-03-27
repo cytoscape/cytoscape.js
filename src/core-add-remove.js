@@ -97,6 +97,9 @@
 			}
 			
 			function callback(){
+				var layoutReady = cy._private.options.layout.ready;
+				var layoutStop = cy._private.options.layout.stop;
+				
 				cy.layout( $.extend({}, cy._private.options.layout, {
 					ready: function(){
 						cy.notifications(true);
@@ -107,6 +110,9 @@
 							style: cy._private.style
 						});
 
+						if( $$.is.fn( layoutReady ) ){
+							layoutReady.apply(cy, [cy]);
+						}
 						if( $$.is.fn(onload) ){
 							onload.apply(cy, [cy]);
 						}
@@ -114,6 +120,9 @@
 						cy.trigger("layoutready");
 					},
 					stop: function(){
+						if( $$.is.fn( layoutStop ) ){
+							layoutStop.apply(cy, [cy]);
+						}
 						if( $$.is.fn(ondone) ){
 							ondone.apply(cy, [cy]);
 						}

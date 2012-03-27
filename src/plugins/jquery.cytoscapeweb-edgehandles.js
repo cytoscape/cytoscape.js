@@ -99,11 +99,10 @@
 				}
 				
 				function resetToDefaultState(){
+//					console.log("resetToDefaultState");
+
 					safelyRemoveCySvgChild( handle );
 					safelyRemoveCySvgChild( line );
-					
-//					// console.log("def state");
-//					console.trace();
 					
 					cy.nodes()
 						.removeClass("ui-cytoscapeweb-edgehandles-hover")
@@ -242,9 +241,9 @@
 								return; // sorry, no right clicks allowed 
 							}
 							
-							mdownOnHandle = true;
+//							console.log("-- mdownHandler %o --", e);
 							
-							// console.log("handle mdown");
+							mdownOnHandle = true;
 							
 							e.preventDefault();
 							node.unbind("mouseout", removeHandler);
@@ -252,7 +251,9 @@
 							
 							node.addClass("ui-cytoscapeweb-edgehandles-source");
 							
-							function doneMoving(){
+							function doneMoving(dmEvent){
+//								console.log("doneMoving %o", dmEvent);
+								
 								var $this = $(this);
 								mdownOnHandle = false;
 								$(window).unbind("mousemove", moveHandler);
@@ -304,20 +305,18 @@
 							
 						}
 						
-						function removeHandler(e){
-							
-							
+						function removeHandler(e){							
 							var newTargetIsHandle = e.toElement == handle;
 							var newTargetIsNode = e.toElement == node._private.renderer.svg;
 							
-							if( newTargetIsHandle || newTargetIsNode ){
+							if( newTargetIsHandle || newTargetIsNode || mdownOnHandle ){
 								return; // don't consider mouseout
 							}
 							
-							// console.log("remove");
+//							console.log("removeHandler %o", e);
 							
-							resetToDefaultState();
 							node.unbind("mouseout", removeHandler);
+							resetToDefaultState();
 						}
 						
 						node.bind("mouseout", removeHandler);

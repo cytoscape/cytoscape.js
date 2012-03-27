@@ -16,7 +16,7 @@ AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
 # version (update this when building release zip)
-VERSION := snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+VERSION := 2.0-prerelease-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 
 # directories
 LIB_DIR = lib

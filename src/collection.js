@@ -192,6 +192,10 @@
 		restore: function( notifyRenderer ){
 			var restored = new CyCollection(this.cy());
 			
+			if( notifyRenderer === undefined ){
+				notifyRenderer = true;
+			}
+			
 			this.each(function(){
 				if( !this.removed() ){
 					// don't need to do anything

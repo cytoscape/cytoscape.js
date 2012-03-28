@@ -60,7 +60,7 @@
 		
 		// initial load
 		cy.load(options.elements, function(){ // onready
-			var data = $(options.container).data("cytoscapeweb");
+			var data = cy.container().data("cytoscapeweb");
 			
 			if( data == null ){
 				data = {};
@@ -85,19 +85,19 @@
 			}
 			
 			cy.trigger("ready");
-		}, function(){ // ondone
-			if( $$.is.fn( options.done ) ){
-				options.done.apply(cy, [cy]);
-			}
-			
-			cy.trigger("done");
-		});
+		}, options.done);
 	}
 	$$.CyCore = CyCore; // expose
 	
 	$$.fn.core({
 		container: function(){
 			return $( this._private.options.container );
+		}
+	});
+	
+	$$.fn.core({
+		options: function(){
+			return $$.util.copy( this._private.options );
 		}
 	});
 	

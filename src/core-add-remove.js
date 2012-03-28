@@ -96,40 +96,30 @@
 
 			}
 			
-			function callback(){
-				var layoutReady = cy._private.options.layout.ready;
-				var layoutStop = cy._private.options.layout.stop;
-				
-				cy.layout( $.extend({}, cy._private.options.layout, {
-					ready: function(){
-						cy.notifications(true);
+			function callback(){				
+				cy.one("layoutready", function(){
+					cy.notifications(true);
 
-						cy.notify({
-							type: "load",
-							collection: cy.elements(),
-							style: cy._private.style
-						});
+					cy.notify({
+						type: "load",
+						collection: cy.elements(),
+						style: cy._private.style
+					});
 
-						if( $$.is.fn( layoutReady ) ){
-							layoutReady.apply(cy, [cy]);
-						}
-						if( $$.is.fn(onload) ){
-							onload.apply(cy, [cy]);
-						}
-						cy.trigger("load");
-						cy.trigger("layoutready");
-					},
-					stop: function(){
-						if( $$.is.fn( layoutStop ) ){
-							layoutStop.apply(cy, [cy]);
-						}
-						if( $$.is.fn(ondone) ){
-							ondone.apply(cy, [cy]);
-						}
-						cy.trigger("layoutdone");
+					if( $$.is.fn(onload) ){
+						onload.apply(cy, [cy]);
 					}
-				}) );
-
+					
+					cy.trigger("load");
+				}).one("layoutstop", function(){
+					if( $$.is.fn(ondone) ){
+						ondone.apply(cy, [cy]);
+					}
+					
+					cy.trigger("done");
+				});
+				
+				cy.layout( cy._private.options.layout );
 
 			}
 

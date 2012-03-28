@@ -65,7 +65,7 @@
 					if( node == null ){
 						return;
 					}
-					var pos = node._private.position;
+					var pos = node.position(false);
 					
 					if( !node.locked() && !node.grabbed() ){
 						pos.x = point.x;
@@ -127,7 +127,7 @@
 		
 		var grabHandler = function(e){
 			grabbed = this;
-			var pos = sys.fromScreen(this._private.position);
+			var pos = sys.fromScreen( this.position(false) );
 			var p = arbor.Point(pos.x, pos.y);
 			this._private.arbor.p = p;
 			
@@ -149,8 +149,8 @@
 			var locked = this._private.locked;
 			
 			var pos = fromScreen({
-				x: node._private.position.x,
-				y: node._private.position.y
+				x: node.position(false).x,
+				y: node.position(false).y
 			});
 
 			this._private.arbor = sys.addNode(id, {

@@ -237,11 +237,15 @@
 			
 			this.nodes().each(function(i, node){
 				otherNodes.nodes().each(function(j, otherNode){
-					$.each( node.element()._private.edges[ otherNode.id() ], function(edgeId, edgeStruct){
-						if( params.include( node, otherNode, edgeStruct ) ){
-							elements.push( edgeStruct.edge );
-						}
-					} );
+					var edgesMap = node.element()._private.edges[ otherNode.id() ];
+					
+					if( edgesMap != null ){
+						$.each(edgesMap, function(edgeId, edgeStruct){
+							if( params.include( node, otherNode, edgeStruct ) ){
+								elements.push( edgeStruct.edge );
+							}
+						} );
+					}
 				});
 			});
 			

@@ -7,6 +7,7 @@
 		lineType: "draw", // can be "straight" or "draw"
 		edgeType: function( sourceNode, targetNode ){
 			return "node"; // can return "flat" for flat edges between nodes or "node" for intermediate node between them
+			// returning null/undefined means an edge can't be added between the two nodes
 		},
 		loopAllowed: function( node ){
 			return false;
@@ -16,6 +17,15 @@
 		},
 		edgeParams: function( sourceNode, targetNode ){
 			return {};
+		},
+		start: function( sourceNode ){
+			// fired when edgehandles interaction starts (drag on handle)
+		},
+		complete: function( sourceNode, targetNodes, addedEntities ){
+			// fired when edgehandles is done and entities are added
+		},
+		stop: function( sourceNode ){
+			// fired when edgehandles interaction is stopped (either complete with added edges or incomplete)
 		}
 	};
 	
@@ -136,6 +146,7 @@
 					var source = cy.nodes(".ui-cytoscapeweb-edgehandles-source");
 					var targets = cy.nodes(".ui-cytoscapeweb-edgehandles-target");
 					var classes = preview ? "ui-cytoscapeweb-edgehandles-preview" : "";
+					var added = cy.collection();
 					
 					if( source.size() == 0 || targets.size() == 0 ){
 						return; // nothing to do :(
@@ -143,7 +154,9 @@
 					
 					// just remove preview class if we already have the edges
 					if( !preview && options.preview ){
-						cy.elements(".ui-cytoscapeweb-edgehandles-preview").removeClass("ui-cytoscapeweb-edgehandles-preview");
+						added = cy.elements(".ui-cytoscapeweb-edgehandles-preview").removeClass("ui-cytoscapeweb-edgehandles-preview");
+						
+						options.complete( source, targets, added );
 						return;
 					} else {
 						// remove old previews
@@ -166,7 +179,7 @@
 								position: p
 							}, options.nodeParams(source, target) )).addClass(classes);
 
-							cy.add($.extend( true, {
+							var source2inter = cy.add($.extend( true, {
 								group: "edges",
 								data: {
 									source: source.id(),
@@ -174,7 +187,7 @@
 								}
 							}, options.edgeParams(source, target) )).addClass(classes);
 							
-							cy.add($.extend( true, {
+							var inter2target = cy.add($.extend( true, {
 								group: "edges",
 								data: {
 									source: interNode.id(),
@@ -182,22 +195,29 @@
 								}
 							}, options.edgeParams(source, target) )).addClass(classes);
 							
+							added = added.add( interNode ).add( source2inter ).add( inter2target );
+							
 							break;
 							
 						case "flat":
 						default:
-							cy.add($.extend( true, {
+							var edge = cy.add($.extend( true, {
 								group: "edges",
 								data: {
 									source: source.id(),
 									target: target.id()
 								}
 							}, options.edgeParams(source, target) )).addClass(classes);
+						
+							added = added.add( edge );
+						
 							break;
 						}
 					});
 					
-					
+					if( !preview ){
+						options.complete( source, targets, added );
+					}
 				}
 				
 				$container.cytoscapeweb(function(e){
@@ -254,16 +274,24 @@
 							function doneMoving(dmEvent){
 //								console.log("doneMoving %o", dmEvent);
 								
+								if( !mdownOnHandle ){
+									return;
+								}
+								
 								var $this = $(this);
 								mdownOnHandle = false;
 								$(window).unbind("mousemove", moveHandler);
 								
 								makeEdges();
 								resetToDefaultState();
+								
+								options.stop( node );
 							}
 							
 							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
 							cy.zooming(false).panning(false);
+							
+							options.start( node );
 						}
 						
 						function moveHandler(e){

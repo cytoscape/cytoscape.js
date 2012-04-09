@@ -158,6 +158,15 @@ $(function(){
 				return {
 					classes: "intermediate"
 				};
+			},
+			start: function( sourceNode ){
+//				console.log("start(%o)", sourceNode);
+			},
+			complete: function( sourceNode, targetNodes, added ){
+//				console.log("complete(%o, %o, %o)", sourceNode, targetNodes, added);
+			},
+			stop: function( sourceNode ){
+//				console.log("stop(%o)", sourceNode);
 			}
 		});
 		

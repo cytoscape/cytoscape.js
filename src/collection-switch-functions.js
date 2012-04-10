@@ -20,10 +20,16 @@
 			
 			// e.g. cy.nodes().select()
 			else if( args.length == 0 ){
+				var selected = new $$.CyCollection( this.cy() );
+				
 				this.each(function(){
-					this.element()._private[params.field] = params.value;
+					if( params.ableField == null || this.element()._private[params.ableField] ){
+						this.element()._private[params.field] = params.value;
+						
+						selected = selected.add( this );
+					}
 				});
-				this.rtrigger(params.event);
+				selected.rtrigger(params.event);
 			}
 
 			return this;
@@ -48,6 +54,7 @@
 			impl( params.on, defineSwitchFunction({
 					event: params.on,
 					field: params.field,
+					ableField: params.ableField,
 					value: true
 				})
 			)
@@ -57,6 +64,7 @@
 			impl( params.off, defineSwitchFunction({
 					event: params.off,
 					field: params.field,
+					ableField: params.ableField,
 					value: false
 				})
 			)
@@ -77,8 +85,15 @@
 	
 	defineSwitchSet({
 		field: "selected",
+		ableField: "selectable",
 		on: "select",
 		off: "unselect"
+	});
+	
+	defineSwitchSet({
+		field: "selectable",
+		on: "selectify",
+		off: "unselectify"
 	});
 	
 	$$.fn.collection({

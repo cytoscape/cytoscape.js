@@ -83,6 +83,7 @@
 			style: {}, // the rendered style populated by the renderer
 			removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 			selected: params.selected ? true : false, // whether it's selected
+			selectable: params.selectable || params.selectable === undefined ? true : false, // whether it's selectable
 			locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 			grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
 			grabbable: params.grabbable || params.grabbable === undefined ? true : false, // whether the element can be grabbed

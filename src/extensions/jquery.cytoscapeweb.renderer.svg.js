@@ -6,8 +6,9 @@
 		maxPan: -1 >>> 1,
 		minPan: (-(-1>>>1)-1),
 		selectionToPanDelay: 500,
+		dragToSelect: true,
+		dragToPan: true,
 			
-		// TODO add more styles
 		style: {
 			selectors: {
 				"node": {
@@ -456,8 +457,21 @@
 				var selectionSquare = null;
 				var selectionBounds = {};
 				
-				var panning = false;
+				var panning = true;
 				var selecting = true;
+				
+				if( !self.options.dragToSelect ){
+					selecting = false;
+				}
+				
+				if( !self.options.dragToPan ){
+					panning = false;
+				}
+				
+				if( panning && selecting ){
+					panning = false;
+					selecting = true;
+				}
 				
 				var originX = mousedownEvent.pageX;
 				var originY = mousedownEvent.pageY;
@@ -467,22 +481,27 @@
 				var selectDx = 0;
 				var selectDy = 0;
 				
-				var panDelayTimeout = setTimeout(function(){
-					if( !self.cy.panning() ){
-						return;
-					}
+				var _setPanCursor = false;
+				function setPanCursor(){
+					if( _setPanCursor ){ return; }
 					
-					panning = true;
-					selecting = false;
-					
+					_setPanCursor = true;
 					self.svg.change(svgDomElement, {
 						cursor: cursor(self.style.global.panCursor)
 					});
-					
-					// TODO why do we have this scroll thing here?
-					self.cy.container().scrollLeft(100);
-					
-				}, panDelay);
+				}
+				
+				if( self.options.dragToPan ){
+					var panDelayTimeout = setTimeout(function(){
+						if( !self.cy.panning() ){
+							return;
+						}
+						
+						panning = true;
+						selecting = false;
+						
+					}, panDelay);
+				}
 				
 				var dragHandler = function(dragEvent){
 					clearTimeout(panDelayTimeout);
@@ -500,6 +519,8 @@
 					if( panning ){	
 						self.translation.x += dx;
 						self.translation.y += dy;
+						
+						setPanCursor();
 						
 						self.pan(self.translation);
 					}

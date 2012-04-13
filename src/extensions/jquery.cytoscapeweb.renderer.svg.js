@@ -2187,7 +2187,9 @@
 		var text = element.renderer().svgLabel.textContent;
 		
 		// update node label x, y
-		this.positionSvgNodeLabel(element);
+		if( element.isNode() ){
+			this.positionSvgNodeLabel(element);
+		}
 		
 		var textAnchor;
 		var styleAttr;

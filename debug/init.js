@@ -23,7 +23,7 @@ $(function(){
 						defaultValue: 1,
 						continuousMapper: {
 							attr: {
-								name: "weight",
+								name: "weight"
 							},
 							mapped: {
 								min: 1,
@@ -48,7 +48,7 @@ $(function(){
 					height: {
 						continuousMapper: {
 							attr: {
-								name: "weight",
+								name: "weight"
 							},
 							mapped: {
 								min: 25,
@@ -59,7 +59,7 @@ $(function(){
 					width: {
 						continuousMapper: {
 							attr: {
-								name: "weight",
+								name: "weight"
 							},
 							mapped: {
 								min: 25,
@@ -222,7 +222,7 @@ $(function(){
 						weight: Math.random() * 100,
 						source: nodeId(),
 						target: nodeId()
-					},
+					}
 				});
 			}
 			numEdges += e;

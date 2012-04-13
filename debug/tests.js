@@ -133,11 +133,13 @@ $(function(){
 			description: "Show weight in node labels",
 			setup: function(){
 				var style = cy.style();
-				style.selectors["node"].labelText = {
+				
+				style.selectors["edge"].labelText = style.selectors["node"].labelText = {
 					customMapper: function(data){
 						return data.id + " : " + Math.floor(data.weight);
 					}
 				};
+				
 				cy.style( style );
 			},
 			teardown: function(){

@@ -198,9 +198,8 @@
 							added = added.add( interNode ).add( source2inter ).add( inter2target );
 							
 							break;
-							
+						
 						case "flat":
-						default:
 							var edge = cy.add($.extend( true, {
 								group: "edges",
 								data: {
@@ -212,6 +211,10 @@
 							added = added.add( edge );
 						
 							break;
+
+						default:
+							target.removeClass("ui-cytoscapeweb-edgehandles-target");
+							break; // don't add anything
 						}
 					});
 					

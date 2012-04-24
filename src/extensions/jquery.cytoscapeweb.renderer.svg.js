@@ -2118,7 +2118,7 @@
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			fillOpacity: percent(style.fillOpacity),
-			stroke: color(style.borderColor),
+			stroke: number(style.borderWidth) > 0 ? color(style.borderColor) : "none",
 			strokeWidth: number(style.borderWidth),
 			strokeDashArray: lineStyle(style.borderStyle).array,
 			strokeOpacity: percent(style.borderOpacity),

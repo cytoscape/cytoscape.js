@@ -207,7 +207,7 @@
 				
 				// set id and validate
 				if( this._private.data.id == null ){
-					this._private.data.id = idFactory.generate( this, this._private.group );
+					this._private.data.id = idFactory.generate( this );
 				} else if( this.cy().getElementById( this._private.data.id ).size() != 0 ){
 					$$.console.error("Can not create element: an element in the visualisation already has ID `%s`", this.element()._private.data.id);
 					return this;

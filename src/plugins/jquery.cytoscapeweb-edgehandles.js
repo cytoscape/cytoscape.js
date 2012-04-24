@@ -4,6 +4,7 @@
 		handleSize: 10,
 		handleColor: "red",
 		handleLineWidth: 1,
+		hoverDelay: 100,
 		lineType: "draw", // can be "straight" or "draw"
 		edgeType: function( sourceNode, targetNode ){
 			return "node"; // can return "flat" for flat edges between nodes or "node" for intermediate node between them
@@ -81,6 +82,7 @@
 				var mdownOnHandle = false;
 				var grabbingNode = false;
 				var hx, hy, hr;
+				var hoverTimeout;
 				
 				// write options to data
 				var data = $container.data("cyedgehandles");
@@ -355,33 +357,42 @@
 						$handle.bind("mousedown", mdownHandler);
 						
 					}).live("mouseover", hoverHandler = function(){
+						var node = this;
+						var target = this;
+
 						if( this.hasClass("ui-cytoscapeweb-edgehandles-preview") ){
 							return; // ignore preview nodes
 						}
 						
 						if( mdownOnHandle ){ // only handle mdown case
-							var node = this;
-							var target = this;
-							var source = cy.nodes(".ui-cytoscapeweb-edgehandles-source");
-							
-							var isLoop = node.hasClass("ui-cytoscapeweb-edgehandles-source");
-							var loopAllowed = options.loopAllowed( node );
-							
-							if( !isLoop || (isLoop && loopAllowed) ){
-								this.addClass("ui-cytoscapeweb-edgehandles-hover");
-								this.toggleClass("ui-cytoscapeweb-edgehandles-target");
+
+							clearTimeout( hoverTimeout );
+							hoverTimeout = setTimeout(function(){
+								var source = cy.nodes(".ui-cytoscapeweb-edgehandles-source");
 								
-								if( options.preview ){
-									if( this.hasClass("ui-cytoscapeweb-edgehandles-target") ){
-										makePreview( source, target );
-									} else {
-										removePreview( source, target );
+								var isLoop = node.hasClass("ui-cytoscapeweb-edgehandles-source");
+								var loopAllowed = options.loopAllowed( node );
+								
+								if( !isLoop || (isLoop && loopAllowed) ){
+									node.addClass("ui-cytoscapeweb-edgehandles-hover");
+									node.toggleClass("ui-cytoscapeweb-edgehandles-target");
+									
+									if( options.preview ){
+										if( node.hasClass("ui-cytoscapeweb-edgehandles-target") ){
+											makePreview( source, target );
+										} else {
+											removePreview( source, target );
+										}
 									}
 								}
-							}
+							}, options.hoverDelay);
 						}
 					}).live("mouseout", leaveHandler = function(){
 						this.removeClass("ui-cytoscapeweb-edgehandles-hover");
+
+						if( mdownOnHandle ){
+							clearTimeout(hoverTimeout);
+						}
 					}).live("grab", grabNodeHandler = function(){
 						grabbingNode = true;
 						resetToDefaultState();

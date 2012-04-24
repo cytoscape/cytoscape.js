@@ -225,11 +225,12 @@ $(function(){
 		
 		test({
 			name: "colourThenGrow",
-			displayName: "Orange, delay, grow",
+			displayName: "Orange, delay, grow, reset",
 			description: "Click nodes to trigger",
 			setup: function(){
 				cy.nodes().bind("click", function(){
-					this
+					var self = this;
+					self
 						.stop(true)
 						.animate({
 							bypass: {
@@ -248,6 +249,8 @@ $(function(){
 						},
 						{
 							duration: 1000
+						}).delay(1000, function(){
+							self.removeBypass();
 						});
 				});
 				

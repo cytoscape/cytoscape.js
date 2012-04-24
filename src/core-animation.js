@@ -68,26 +68,27 @@
 							}
 						}
 						
-						// step all currently running anis
-						$.each(current, function(i, ani){
-							step( ele, ani, now );
-						});
-						
-						// remove done anis in current
+						// step and remove if done
 						var completes = [];
 						for(var i = 0; i < current.length; i++){
+							var ani = current[i];
+							step( ele, ani, now );
+
 							if( current[i].done ){
-								completes.push( current[i].params.complete );
+								completes.push( ani );
 								
+								// remove current[i]
 								current.splice(i, 1);
 								i--;
 							}
 						}
 						
 						// call complete callbacks
-						$.each(completes, function(i, fn){
+						$.each(completes, function(i, ani){
+							var complete = ani.params.complete;
+
 							if( $$.is.fn(complete) ){
-								complete.apply( ele );
+								complete.apply( ele, [ now ] );
 							}
 						});
 						

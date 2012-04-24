@@ -12,6 +12,7 @@ MKDIR = mkdir -p
 CD = cd
 PWD = pwd
 LS = ls
+OPEN = open
 AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 
@@ -28,6 +29,7 @@ PLUGINS_DIR_NAME = plugins
 PLUGINS_DIR = $(SRC_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_PLUGINS_DIR = $(BUILD_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_DIR = build
+DEBUG_PAGE = debug/index.html
 
 # dependencies for the .all.js file
 LIBS = $(LIB_DIR)/jquery.color.js\
@@ -152,3 +154,7 @@ $(BUILD_DIR) :
 
 clean : 
 	$(RM) $(BUILD_DIR)
+
+.PHONY: debug
+debug : 
+	$(OPEN) $(DEBUG_PAGE)

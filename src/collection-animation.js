@@ -15,11 +15,12 @@
 	});
 	
 	$$.fn.collection({
-		delay: function( time ){
+		delay: function( time, complete ){
 			return this.animate({
 				delay: time
 			}, {
-				duration: time
+				duration: time,
+				complete: complete
 			});
 		}
 	});

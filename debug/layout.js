@@ -8,6 +8,18 @@ $(function(){
 				name: $("#layout-select").val()
 			});
 		});
+
+		var start, end;
+		cy.bind("layoutstart", function(){
+			start = +new Date;
+		}).bind("layoutstop", function(){
+			end = +new Date;
+			var time = end - start;
+
+			if( !isNaN(time) ){
+				$("#layout-time").html( (time) + " ms" );
+			}
+		});
 		
 	});
 

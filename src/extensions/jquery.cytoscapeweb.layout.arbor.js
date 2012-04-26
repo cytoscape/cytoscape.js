@@ -1,6 +1,7 @@
 ;(function($, $$){
 	
 	var defaults = {
+		liveUpdate: true,
 		ready: undefined,
 		maxSimulationTime: 8000,
 		fit: true,
@@ -10,7 +11,7 @@
 		stiffness: undefined,
 		friction: undefined,
 		gravity: undefined,
-		fps: 30,
+		fps: 9999,
 		dt: undefined,
 		precision: undefined,
 		nodeMass: undefined,
@@ -38,12 +39,12 @@
 		
 		var sys = window.sys = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
 		
-		if( options.fit ){
+		if( options.liveUpdate && options.fit ){
 			cy.reset();
 		};
 		
 		var framesToDoneCheck = 3;
-		var doneTime = framesToDoneCheck * 1000/options.fps;
+		var doneTime = Math.max(100, framesToDoneCheck * 1000/options.fps);
 		var doneTimeout;
 		
 		var ready = false;
@@ -75,7 +76,7 @@
 					}
 				});
 				
-				if( movedNodes.size() > 0 ){
+				if( options.liveUpdate && movedNodes.size() > 0 ){
 					movedNodes.rtrigger("position");
 				}
 				
@@ -129,15 +130,15 @@
 			grabbed = this;
 			var pos = sys.fromScreen( this.position(false) );
 			var p = arbor.Point(pos.x, pos.y);
-			this._private.arbor.p = p;
+			this.scratch().arbor.p = p;
 			
 			switch( e.type ){
 			case "grab":
-				this._private.arbor.fixed = true;
+				this.scratch().arbor.fixed = true;
 				break;
 			case "dragstop":
-				this._private.arbor.fixed = false;
-				this._private.arbor.tempMass = 1000
+				this.scratch().arbor.fixed = false;
+				this.scratch().arbor.tempMass = 1000
 				break;
 			}
 		};
@@ -153,7 +154,7 @@
 				y: node.position(false).y
 			});
 
-			this._private.arbor = sys.addNode(id, {
+			this.scratch().arbor = sys.addNode(id, {
 				element: this,
 				mass: mass,
 				fixed: locked,
@@ -168,7 +169,7 @@
 			var tgt = this.target().id();
 			var length = calculateValueForElement(this, options.edgeLength);
 			
-			this._private.arbor = sys.addEdge(src, tgt, {
+			this.scratch().arbor = sys.addEdge(src, tgt, {
 				length: length
 			});
 		});
@@ -198,6 +199,14 @@
 			}
 			
 			function done(){
+				if( !options.liveUpdate ){
+					if( options.fit ){
+						cy.reset();
+					}
+
+					cy.nodes().rtrigger("position");
+				}
+
 				// unbind handlers
 				nodes.unbind("grab drag dragstop", grabHandler);
 				

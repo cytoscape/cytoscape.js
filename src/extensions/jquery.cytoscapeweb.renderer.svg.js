@@ -914,7 +914,13 @@
 			}
 		}
 
-		update(n);
+		elements.nodes().each(function(){
+			var bb = this.renscratch("svgGroup").getBBox();
+			var bbLabel = this.renscratch("svgLabel").getBBox();
+
+			update(bb);
+			update(bbLabel);
+		});
 
 		// fix for loop edges (their bounding boxes are approx 2x width and height of path
 		// they push the bb up and left

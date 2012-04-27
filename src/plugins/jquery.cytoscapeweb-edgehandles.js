@@ -363,7 +363,7 @@
 						
 						function removeHandler(e){							
 							var newTargetIsHandle = e.toElement == handle;
-							var newTargetIsNode = e.toElement == node._private.renderer.svg;
+							var newTargetIsNode = e.toElement == node.renscratch("svg"); // TODO plugin shouldn't use ele.renscratch
 							
 							if( newTargetIsHandle || newTargetIsNode || mdownOnHandle ){
 								return; // don't consider mouseout

@@ -92,7 +92,7 @@
 				current: [],
 				queue: []
 			},
-			renderer: {}, // object in which the renderer can store information
+			renscratch: {}, // object in which the renderer can store information
 			scratch: {}, // scratch objects
 			edges: {} // map of connected edges ( otherNodeId: { edgeId: { source: true|false, target: true|false, edge: edgeRef } } )
 		};

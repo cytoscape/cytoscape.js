@@ -12,11 +12,11 @@
 	});
 	
 	$$.fn.collection({
-		renderer: defineAccessor({ attr: "renderer" })
+		renscratch: defineAccessor({ attr: "renscratch" })
 	});
-	
+
 	$$.fn.collection({
-		removeRenderer: defineRemover({ attr: "renderer" })
+		removeRenscratch: defineRemover({ attr: "renscratch" })
 	});
 
 	function defineAccessor( params ){

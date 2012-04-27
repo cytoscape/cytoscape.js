@@ -1,18 +1,31 @@
+
+/*
+
+Cytoscape Web panzoom UI plugin
+
+Depends on
+- jQuery UI core
+	- draggable
+	- slider
+	- Theme Roller UI icons (if you want)
+
+*/
+
 ;(function($){
 	
 	var defaults = {
-		zoomFactor: 0.05,
-		zoomDelay: 16,
-		minZoom: 0.1,
-		maxZoom: 10,
-		panSpeed: 10,
-		panDistance: 10,
-		panDragAreaSize: 75,
-		panMinPercentSpeed: 0.25,
-		panInactiveArea: 8,
-		panIndicatorMinOpacity: 0.65,
-		staticPosition: true,
-		autodisableForMobile: true
+		zoomFactor: 0.05, // zoom factor per zoom tick
+		zoomDelay: 16, // how many ms between zoom ticks
+		minZoom: 0.1, // min zoom level
+		maxZoom: 10, // max zoom level
+		panSpeed: 10, // how many ms in between pan ticks
+		panDistance: 10, // max pan distance per tick
+		panDragAreaSize: 75, // the length of the pan drag box in which the vector for panning is calculated (bigger = finer control of pan speed and direction)
+		panMinPercentSpeed: 0.25, // the slowest speed we can pan by (as a percent of panSpeed)
+		panInactiveArea: 8, // radius of inactive area in pan drag box
+		panIndicatorMinOpacity: 0.65, // min opacity of pan indicator (the draggable nib); scales from this to 1.0
+		staticPosition: true, // should the panzoom control be static (like Google Maps) or in a draggable control (like VLC)
+		autodisableForMobile: true // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
 	};
 	
 	$.fn.cytoscapewebPanzoom = function(params){

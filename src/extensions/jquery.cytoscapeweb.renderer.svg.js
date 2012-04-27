@@ -915,7 +915,7 @@
 		}
 
 		elements.nodes().each(function(){
-			var bb = this.renscratch("svgGroup").getBBox();
+			var bb = this.renscratch("svg").getBBox();
 			var bbLabel = this.renscratch("svgLabel").getBBox();
 
 			update(bb);

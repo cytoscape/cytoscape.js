@@ -944,7 +944,6 @@
 
 				update(bb);
 				update(bbLabel);
-				console.log(bbLabel);
 			}
 		});
 		
@@ -1889,7 +1888,7 @@
 		this.forceRedraw();
 	};
 	
-	SvgRenderer.prototype.forceRedraw = function(){
+	window.redraw = SvgRenderer.prototype.forceRedraw = function(){
 		this.svg.change(this.svgRoot, {
 			opacity: 0
 		});

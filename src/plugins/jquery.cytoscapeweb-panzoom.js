@@ -143,6 +143,17 @@ Depends on
 						});
 					}
 					
+					var zx, zy;
+					function zoomTo(level){
+						cy.zoom({
+							level: level,
+							renderedPosition: {
+								x: zx,
+								y: zy
+							}
+						});
+					}
+
 					var panInterval;
 					
 					var handler = function(e){
@@ -207,13 +218,7 @@ Depends on
 						
 						clearTimeout(sliderTimeout);
 						sliderTimeout = null;
-						cy.zoom({
-							level: zoom,
-							renderedPosition: {
-								x: $container.width()/2,
-								y: $container.height()/2
-							}
-						});
+						zoomTo(zoom);
 					}
 					
 					$slider.slider({
@@ -236,6 +241,9 @@ Depends on
 					function startSliding(){
 						sliderMdown = true;
 						
+						zx = $container.width()/2;
+						zy = $container.height()/2;
+
 						sliderHandler();
 						
 						$(window).unbind("mousemove", sliderHandler);
@@ -315,6 +323,9 @@ Depends on
 								return;
 							}
 							
+							zx = $container.width()/2;
+							zy = $container.height()/2;
+
 							var cy = $container.cytoscapeweb("get");
 							
 							zoomInterval = setInterval(function(){
@@ -335,13 +346,7 @@ Depends on
 									return;
 								}
 								
-								cy.zoom({
-									level: lvl,
-									renderedPosition: {
-										x: $container.width()/2,
-										y: $container.height()/2
-									}
-								});
+								zoomTo(lvl);
 							}, options.zoomDelay);
 							
 							return false;

@@ -840,14 +840,16 @@
 			return this.scale;
 		} else if( typeof scale == typeof {} ){
 			var options = scale;
-			var position = options.position;
+			var rposition;
 			
-			if( options.renderedPosition !== undefined ){
-				position = this.modelPoint(options.renderedPosition);
+			if( options.position !== undefined ){
+				rposition = this.renderedPoint(options.position);
+			} else {
+				rposition = options.renderedPosition;
 			}
 			
-			if( position !== undefined ){
-				this.zoomAboutPoint(position, scale.level);
+			if( rposition !== undefined ){
+				this.zoomAboutPoint(rposition, scale.level);
 			} else {
 				this.transform({
 					scale: options.level

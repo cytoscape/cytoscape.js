@@ -2148,7 +2148,8 @@
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
-			"font-size": style.labelFontSize
+			"font-size": style.labelFontSize,
+			"text-rendering": "geometricPrecision"
 		};
 		
 		this.svg.change(element.renscratch().svgLabelGroup, {
@@ -2336,7 +2337,8 @@
 			"font-style": style.labelFontStyle,
 			"text-decoration": style.labelFontDecoration,
 			"font-variant": style.labelFontVariant,
-			"font-size": style.labelFontSize
+			"font-size": style.labelFontSize,
+			"text-rendering": "geometricPrecision"
 		};
 		
 		this.svg.change(element.renscratch().svgLabel, labelOptions);

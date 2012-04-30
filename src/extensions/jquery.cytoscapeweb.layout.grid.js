@@ -6,24 +6,24 @@
 		columns: undefined
 	};
 	
-	function GridLayout(){
-		$.cytoscapeweb("debug", "Creating grid layout");
+	function GridLayout( options ){
+		this.options = $.extend(true, {}, defaults, options);
 	}
 	
-	GridLayout.prototype.run = function(params){
-		var options = $.extend(true, {}, defaults, params);
+	GridLayout.prototype.run = function(){
+		var params = options= this.options;
 		
 		var cy = params.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var container = cy.container();
+		var $container = cy.container();
 		
-		$.cytoscapeweb("debug", "Running grid layout with options (%o)", options);
+		$$.console.debug("Running grid layout with options (%o)", options);
 		
-		var width = container.width();
-		var height = container.height();
+		var width = $container.width();
+		var height = $container.height();
 
-		$.cytoscapeweb("debug", "Running grid layout on container of size (w, h) = (%i, %i) with %i nodes", width, height, nodes.size());
+		$$.console.debug("Running grid layout on container of size (w, h) = (%i, %i) with %i nodes", width, height, nodes.size());
 		
 		if( height == 0 || width == 0){
 			$.cytoscapeweb("warn", "Running grid layout on container of size 0");
@@ -40,7 +40,7 @@
 			var rows = Math.round( splits );
 			var cols = Math.round( width/height * splits );
 			
-			$.cytoscapeweb("debug", "Grid layout decided on initial (cols, rows) = (%i, %i)", cols, rows);
+			$$.console.debug("Grid layout decided on initial (cols, rows) = (%i, %i)", cols, rows);
 			
 			function small(val){
 				if( val == undefined ){
@@ -49,10 +49,10 @@
 					var min = Math.min(rows, cols);
 					if( min == rows ){
 						rows = val;
-						$.cytoscapeweb("debug", "Grid layout set small number of rows to %i", rows);
+						$$.console.debug("Grid layout set small number of rows to %i", rows);
 					} else {
 						cols = val;
-						$.cytoscapeweb("debug", "Grid layout set small number of columns to %i", cols);
+						$$.console.debug("Grid layout set small number of columns to %i", cols);
 					}
 				}
 			}
@@ -64,10 +64,10 @@
 					var max = Math.max(rows, cols);
 					if( max == rows ){
 						rows = val;
-						$.cytoscapeweb("debug", "Grid layout set large number of rows to %i", rows);
+						$$.console.debug("Grid layout set large number of rows to %i", rows);
 					} else {
 						cols = val;
-						$.cytoscapeweb("debug", "Grid layout set large number of columns to %i", cols);
+						$$.console.debug("Grid layout set large number of columns to %i", cols);
 					}
 				}
 			}
@@ -91,7 +91,7 @@
 				var sm = small();
 				var lg = large();
 				
-				$.cytoscapeweb("debug", "Grid layout is looking to make a reduction");
+				$$.console.debug("Grid layout is looking to make a reduction");
 				
 				// reducing the small side takes away the most cells, so try it first
 				if( (sm - 1) * lg >= cells ){
@@ -101,7 +101,7 @@
 				} 
 			} else {
 				
-				$.cytoscapeweb("debug", "Grid layout is looking to make an increase");
+				$$.console.debug("Grid layout is looking to make an increase");
 				
 				// if rounding was too low, add rows or columns
 				while( cols * rows < cells ){
@@ -117,7 +117,7 @@
 				}
 			}
 			
-			$.cytoscapeweb("debug", "Grid layout split area into cells (cols, rows) = (%i, %i)", cols, rows);
+			$$.console.debug("Grid layout split area into cells (cols, rows) = (%i, %i)", cols, rows);
 			
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
@@ -144,21 +144,15 @@
 			});
 		}
 		
-		if( options.fit ){
+		if( params.fit ){
 			cy.reset();
 		} 
 		
-		function exec(fn){
-			if( fn != null && typeof fn == typeof function(){} ){
-				fn();
-			}
-		}
-		
+		cy.one("layoutready", params.ready);
 		cy.trigger("layoutready");
-		exec( params.ready );
 		
+		cy.one("layoutstop", params.stop);
 		cy.trigger("layoutstop");
-		exec( params.stop );
 	};
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);

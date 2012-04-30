@@ -1,14 +1,15 @@
 ;(function($, $$){
 		
-	function NullLayout(){
-		$.cytoscapeweb("debug", "Creating null layout");
+	var defaults = {};
+
+	function NullLayout( options ){
+		this.options = $.extend(true, {}, defaults, options); 
 	}
 	
 	// puts all nodes at (0, 0)
-	NullLayout.prototype.run = function(params){
-		$.cytoscapeweb("debug", "Running null layout with options (%o)", params);
-		
-		var cy = params.cy;
+	NullLayout.prototype.run = function(){
+		var options = this.options;
+		var cy = options.cy;
 		
 		cy.nodes().positions(function(){
 			return {
@@ -17,17 +18,14 @@
 			};
 		});
 		
-		function exec(fn){
-			if( fn != null && typeof fn == typeof function(){} ){
-				fn();
-			}
-		}
-		
+		cy.one("layoutready", options.ready);
 		cy.trigger("layoutready");
-		exec( params.ready );
 		
+		cy.one("layoutstop", options.stop);
 		cy.trigger("layoutstop");
-		exec( params.stop );
+	};
+
+	NullLayout.prototype.stop = function(){
 	};
 	
 	$.cytoscapeweb("layout", "null", NullLayout);

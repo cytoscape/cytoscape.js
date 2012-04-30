@@ -1,27 +1,26 @@
 ;(function($, $$){
 	
 	var defaults = {
-		fit: true
+		ready: undefined, // callback on layoutready
+		stop: undefined, // callback on layoutstop
+		fit: true // whether to fit to viewport
 	};
 	
-	function RandomLayout(){
-		$.cytoscapeweb("debug", "Creating random layout with options");
+	function RandomLayout( options ){
+		this.options = $.extend(true, {}, defaults, options);
 	}
 	
-	RandomLayout.prototype.run = function(params){
-		var options = $.extend(true, {}, defaults, params);
-		var cy = params.cy;
+	RandomLayout.prototype.run = function(){
+		var options = this.options;
+		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var container = cy.container();
+		var $container = cy.container();
 		
-		$.cytoscapeweb("debug", "Running random layout with options (%o)", params);
+		var width = $container.width();
+		var height = $container.height();
 		
-		var width = container.width();
-		var height = container.height();
-			
-		$.cytoscapeweb("debug", "Random layout found (w, h, d) = (%i, %i)", width, height);
-		
+
 		nodes.positions(function(i, element){
 			
 			if( element.locked() ){
@@ -40,17 +39,29 @@
 			}
 		}
 		
+		// layoutready should be triggered when the layout has set each node's
+		// position at least once
 		cy.trigger("layoutready");
-		exec( params.ready );
+		exec( options.ready );
 		
 		if( options.fit ){
 			cy.fit();
 		}
 		
+		// layoutstop should be triggered when the layout stops running
 		cy.trigger("layoutstop");
-		exec( params.stop );
+		exec( options.stop ); 
 	};
 	
-	$.cytoscapeweb("layout", "random", RandomLayout);
+	RandomLayout.prototype.stop = function(){
+		// stop the layout if it were running continuously
+	};
+
+	// register the layout
+	$.cytoscapeweb(
+		"layout", // we're registering a layout
+		"random", // the layout name
+		RandomLayout // the layout prototype
+	);
 	
 })(jQuery, jQuery.cytoscapeweb);

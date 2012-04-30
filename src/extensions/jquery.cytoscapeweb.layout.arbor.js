@@ -3,40 +3,53 @@
 	var defaults = {
 		liveUpdate: true,
 		ready: undefined,
-		maxSimulationTime: 8000,
+		maxSimulationTime: 1500,
 		fit: true,
 		padding: [ 50, 50, 50, 50 ],
 		ungrabifyWhileSimulating: true,
 		repulsion: undefined,
-		stiffness: undefined,
+		stiffness: 800,
 		friction: undefined,
-		gravity: undefined,
+		gravity: true,
 		fps: 9999,
 		dt: undefined,
 		precision: undefined,
 		nodeMass: undefined,
-		edgeLength: undefined
+		edgeLength: undefined,
+		stepSize: 0.9
 	};
 	
-	function ArborLayout(){
-		$.cytoscapeweb("debug", "Creating force-directed layout");
+	function ArborLayout(options){
+		this.options = $.extend(true, {}, defaults, options);
 	}
-	
-	function exec(fn){
-		if( fn != null && typeof fn == typeof function(){} ){
-			fn();
-		}
-	}
-	
-	ArborLayout.prototype.run = function(params){
-		var options = $.extend(true, {}, defaults, params);
-		$.cytoscapeweb("debug", "Running force-directed layout with options (%o)", options);
 		
+	ArborLayout.prototype.run = function(){
+		var options = this.options;
 		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var container = cy.container();
+		var $container = cy.container();
 		
+		// arbor doesn't work with just 1 node
+		if( cy.nodes().size() <= 1 ){
+			if( options.fit ){
+				cy.reset();
+			}
+
+			cy.nodes().position({
+				x: $container.width()/2,
+				y: $container.height()/2
+			});
+
+			cy.one("layoutstop", options.stop);
+			cy.trigger("layoutstop");
+
+			cy.one("layoutstop", options.stop);
+			cy.trigger("layoutstop");
+
+			return;
+		}
+
 		var sys = window.sys = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
 		
 		if( options.liveUpdate && options.fit ){
@@ -82,20 +95,21 @@
 				
 				if( !ready ){
 					ready = true;
+					cy.one("layoutready", options.ready);
 					cy.trigger("layoutready");
-					exec( params.ready );
 				}
 			}
 			
 		};
 		sys.renderer = sysRenderer;
 		
-		var width = container.width();
-		var height = container.height();
+		var width = $container.width();
+		var height = $container.height();
 		
 		sys.screenSize( width, height );
 		sys.screenPadding( options.padding[0], options.padding[1], options.padding[2], options.padding[3] );
-		
+		sys.screenStep( options.stepSize );
+
 		function calculateValueForElement(element, value){
 			if( value == null ){
 				return undefined;
@@ -215,8 +229,8 @@
 					grabbableNodes.grabify();
 				}
 				
+				cy.one("layoutstop", options.stop);
 				cy.trigger("layoutstop");
-				exec( params.stop );
 			}
 		};
 		
@@ -224,6 +238,7 @@
 		setTimeout(function(){
 			sys.stop();
 		}, options.maxSimulationTime);
+		
 	};
 	
 	$.cytoscapeweb("layout", "arbor", ArborLayout);

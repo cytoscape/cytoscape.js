@@ -2,20 +2,31 @@
 	
 	$$.fn.core({
 		
-		exportTo: function(params){
-			var format = params.name;
-			var exporterDefn = $$.extension("exporter", format);
+		json: function(params){
+			var json = {};
+			var cy = this;
 			
-			if( exporterDefn == null ){
-				$$.console.error("No exporter with name `%s` found; did you remember to register it?", format);
-			} else {
-				var exporter = new exporterDefn({
-					cy: cy,
-					renderer: this.renderer()
-				});
+			console.log(this);
+
+			json.elements = {};
+			cy.elements().each(function(i, ele){
+				var group = ele.group();
 				
-				return exporter.run();
-			}
+				if( json.elements[group] == null ){
+					json.elements[group] = [];
+				}
+				
+				elements[group].push( ele.json() );
+			});
+
+			json.style = cy.style();
+			json.scratch = $$.util.copy( cy.scratch() );
+			json.zoomEnabled = cy._private.zoomEnabled;
+			json.panEnabled = cy._private.panEnabled;
+			json.layout = $$.util.copy( cy._private.options.layout );
+			json.renderer = $$.util.copy( cy._private.options.renderer );
+			
+			return json;
 		}
 		
 	});	

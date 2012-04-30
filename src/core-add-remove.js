@@ -93,7 +93,6 @@
 						var element = new $$.CyElement( cy, params );
 					});
 				}
-
 			}
 			
 			function callback(){				
@@ -106,16 +105,10 @@
 						style: cy._private.style
 					});
 
-					if( $$.is.fn(onload) ){
-						onload.apply(cy, [cy]);
-					}
-					
+					cy.one("load", onload);
 					cy.trigger("load");
 				}).one("layoutstop", function(){
-					if( $$.is.fn(ondone) ){
-						ondone.apply(cy, [cy]);
-					}
-					
+					cy.one("done", ondone);
 					cy.trigger("done");
 				});
 				

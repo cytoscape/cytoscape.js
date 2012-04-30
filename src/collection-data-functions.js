@@ -196,37 +196,6 @@
 		})
 	});
 	
-	$$.fn.collection({
-		json: function(){
-			var p = this.element()._private;
-			
-			var json = $$.util.copy({
-				data: p.data,
-				position: p.position,
-				group: p.group,
-				bypass: p.bypass,
-				removed: p.removed,
-				selected: p.selected,
-				locked: p.locked,
-				grabbed: p.grabbed,
-				grabbable: p.grabbable,
-				classes: "",
-				scratch: p.scratch
-			});
-			
-			var classes = [];
-			$.each(p.classes, function(cls, bool){
-				classes.push(cls);
-			});
-			
-			$.each(classes, function(i, cls){
-				json.classes += cls + ( i < classes.length - 1 ? " " : "" );
-			});
-			
-			return json;
-		}
-	});
-	
 	// Generic metacode for defining data function behaviour follows
 	//////////////////////////////////////////////////////////////////////////////////////
 	
@@ -336,7 +305,7 @@
 			// CASE: no parameters
 			// get whole attribute object
 			if( key === undefined ){
-				return objGetter(false);
+				return objGetter();
 			}
 			
 			// if passed false, just get the whole object without copying

@@ -73,6 +73,7 @@
 		this.length = 1;
 		this[0] = this;
 		
+		// NOTE: when something is added here, add also to ele.json()
 		this._private = {
 			cy: cy,
 			data: $$.util.copy( params.data ) || {}, // data object
@@ -189,6 +190,44 @@
 	// Functions
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	$$.fn.collection({
+		json: function(){
+			var p = this.element()._private;
+			
+			var json = $$.util.copy({
+				data: p.data,
+				position: p.position,
+				group: p.group,
+				bypass: p.bypass,
+				removed: p.removed,
+				selected: p.selected,
+				selectable: p.selectable,
+				locked: p.locked,
+				grabbed: p.grabbed,
+				grabbable: p.grabbable,
+				classes: "",
+				scratch: p.scratch
+			});
+			
+			var classes = [];
+			$.each(p.classes, function(cls, bool){
+				classes.push(cls);
+			});
+			
+			$.each(classes, function(i, cls){
+				json.classes += cls + ( i < classes.length - 1 ? " " : "" );
+			});
+			
+			return json;
+		}
+	});
+
+	$$.fn.collection({
+		jsonString: function(){
+			return JSON.stringify( this.json.apply(this, arguments) );
+		}
+	});
+
 	$$.fn.collection({
 		restore: function( notifyRenderer ){
 			var restored = new CyCollection(this.cy());

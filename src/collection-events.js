@@ -234,9 +234,15 @@
 		return function(events, data, callback){
 			var self = this;
 			
+			// if data is undefined (middle param), then switch param order
 			if( callback === undefined ){
 				callback = data;
 				data = undefined;
+			}
+
+			// if there isn't a callback, we can't really do anything
+			if( callback == null ){
+				return this;
 			}
 			
 			$.each(events.split(/\s+/), function(i, event){

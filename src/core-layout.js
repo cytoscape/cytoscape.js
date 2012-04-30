@@ -14,10 +14,7 @@
 			
 			cy.trigger("layoutstart");
 			
-			this._private.layout.run( $.extend({}, params, {
-				renderer: cy._private.renderer,
-				cy: cy
-			}) );
+			this._private.layout.run();
 			
 			return this;
 			
@@ -42,7 +39,10 @@
 				return;
 			}
 			
-			this._private.layout = new layoutProto();
+			this._private.layout = new layoutProto( $.extend({}, options, {
+				renderer: this._private.renderer,
+				cy: this
+			}) );
 			this._private.options.layout = options; // save options
 		}
 		

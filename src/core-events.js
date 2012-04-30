@@ -113,11 +113,17 @@
 			var cy = this;
 			var listeners = cy._private.listeners;
 			
+			// if data is not defined, switch params
 			if( handler === undefined ){
 				handler = data;
 				data = undefined;
 			}
 			
+			// if we have no handler callback, then we can't really do anything
+			if( handler == null ){
+				return cy;
+			}
+
 			events = events.split(/\s+/);
 			$.each(events, function(i, event){
 				if( $$.is.emptyString(event) ){ return; }
@@ -152,7 +158,7 @@
 			var listeners = cy._private.listeners;
 			
 			if( listeners[ params.target ] == null ){
-				return;
+				return cy;
 			}
 			
 			events = events.split(/\s+/);
@@ -162,7 +168,7 @@
 				// unbind all
 				if( handler === undefined ){
 					delete listeners[ params.target ][ event ];
-					return;
+					return cy;
 				}
 				
 				// unbind specific handler

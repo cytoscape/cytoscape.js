@@ -2483,7 +2483,7 @@
 				element.removeRenscratch("svgGroup");
 				element.removeRenscratch("svgSourceArrow");
 				element.removeRenscratch("svgTargetArrow");
-				// TODO add delete other svg children like labels
+				element.removeRenscratch("svgLabel");
 			} else {
 				$$.console.debug("Element with group `%s` and ID `%s` has no associated SVG element", element.group(), element.id());
 			}
@@ -2492,6 +2492,16 @@
 		if( self.selectedElements != null ){
 			self.selectedElements = self.selectedElements.not(collection);
 		}
+
+		var edgesToReposition = self.cy.collection();
+		collection.edges().each(function(i, edge){
+			var src = edge.source();
+			var tgt = edge.target();
+
+			edgesToReposition = edgesToReposition.add( src.edgesWith( tgt ) );
+		});
+
+		self.updatePosition( edgesToReposition );
 		
 		if( updateMappers ){
 			this.updateMapperBounds( collection );

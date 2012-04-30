@@ -156,6 +156,34 @@
 			y: 0.5
 		}
 	});
+
+	registerEdgeArrowShape({
+		name: "diamond",
+		
+		// generate the shape svg
+		svg: function(svg, parent, edge, position, style){
+			return svg.polygon(parent, [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]);
+		},
+		
+		centerPoint: {
+			x: 0.5,
+			y: 0.5
+		}
+	});
+
+	registerEdgeArrowShape({
+		name: "tee",
+		
+		// generate the shape svg
+		svg: function(svg, parent, edge, position, style){
+			return svg.rect(parent, 0, 0, 1, 0.5);
+		},
+		
+		centerPoint: {
+			x: 0.5,
+			y: 0.5
+		}
+	});
 	
 	var registerNodeShape = function(shape){
 		$.cytoscapeweb("renderer", "svg", "nodeshape", shape.name, shape);

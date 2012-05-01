@@ -6,8 +6,6 @@
 			var json = {};
 			var cy = this;
 			
-			console.log(this);
-
 			json.elements = {};
 			cy.elements().each(function(i, ele){
 				var group = ele.group();
@@ -16,7 +14,7 @@
 					json.elements[group] = [];
 				}
 				
-				elements[group].push( ele.json() );
+				json.elements[group].push( ele.json() );
 			});
 
 			json.style = cy.style();

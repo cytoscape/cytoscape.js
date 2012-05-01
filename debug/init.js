@@ -112,11 +112,17 @@ $(function(){
 		}
 	};
 	
-	var numNodes = 4;
-	var numEdges = 10;
+	var cliques = 2;
+	var numNodes = 16;
+	var numEdges = 32;
 	
-	function randNodeId(){
-		return "n" + Math.floor( Math.random() * numNodes );
+	function randNodeId( clique ){
+		var min = numNodes * clique / cliques;
+		var max = numNodes * (clique + 1) / cliques - (cliques == 1 ? 0 : 1);
+		var rand = Math.floor( Math.random() * (max - min) + min );
+		var id = "n" + rand;
+
+		return id;
 	}
 	
 	for(var i = 0; i < numNodes; i++){
@@ -128,15 +134,21 @@ $(function(){
 		});
 	}
 	
-	for(var i = 0; i < numEdges; i++){
-		options.elements.edges.push({
-			data: {
-				id: "e" + i,
-				source: randNodeId(),
-				target: randNodeId(),
-				weight: Math.random() * 100
-			}
-		});
+	var j = 0;
+	for(var clique = 0; clique < cliques; clique++){
+		for(var i = 0; i < numEdges/cliques; i++){
+			var srcId = randNodeId( clique );
+			var tgtId = randNodeId( clique );
+
+			options.elements.edges.push({
+				data: {
+					id: "e" + (j++),
+					source: srcId,
+					target: tgtId,
+					weight: Math.random() * 100
+				}
+			});
+		}
 	}
 	
 	var $container = $("#cytoscapeweb");

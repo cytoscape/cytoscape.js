@@ -15,7 +15,7 @@
 		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var $container = cy.container();
+		var $container = cy.container(); // the container div for cytoscapeweb
 		
 		var width = $container.width();
 		var height = $container.height();
@@ -32,25 +32,19 @@
 				y: Math.round( Math.random() * height )
 			};
 		});
-
-		function exec(fn){
-			if( fn != null && typeof fn == typeof function(){} ){
-				fn();
-			}
-		}
 		
 		// layoutready should be triggered when the layout has set each node's
 		// position at least once
+		cy.one("layoutready", options.ready);
 		cy.trigger("layoutready");
-		exec( options.ready );
 		
 		if( options.fit ){
 			cy.fit();
 		}
 		
 		// layoutstop should be triggered when the layout stops running
+		cy.one("layoutstop", options.stop);
 		cy.trigger("layoutstop");
-		exec( options.stop ); 
 	};
 	
 	RandomLayout.prototype.stop = function(){

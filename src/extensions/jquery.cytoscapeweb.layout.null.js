@@ -26,6 +26,7 @@
 	};
 
 	NullLayout.prototype.stop = function(){
+		// not a continuous layout
 	};
 	
 	$.cytoscapeweb("layout", "null", NullLayout);

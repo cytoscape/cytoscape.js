@@ -154,6 +154,10 @@
 		cy.one("layoutstop", params.stop);
 		cy.trigger("layoutstop");
 	};
+
+	GridLayout.prototype.stop = function(){
+		// not a continuous layout
+	};
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);
 	

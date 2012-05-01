@@ -7,8 +7,8 @@
 		random: false
 	};
 	
-	function SpringyLayout(){
-		$.cytoscapeweb("debug", "Creating Springy layout with options");
+	function SpringyLayout( options ){
+		this.options = $.extend(true, {}, defaults, options);
 	}
 	
 	function exec(fn){
@@ -17,11 +17,13 @@
 		}
 	}
 	
-	SpringyLayout.prototype.run = function(params){
-		var options = $.extend(true, {}, defaults, params);
+	SpringyLayout.prototype.run = function(){
+		var self = this;
+		var options = this.options;
+		var params = options;
 		$.cytoscapeweb("debug", "Running Springy layout with options (%o)", options);
 	
-		var cy = params.cy;
+		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
 		var container = cy.container();
@@ -99,8 +101,8 @@
 			}
 			
 			if( drawnNodes == numNodes ){
+				cy.one("layoutready", options.ready);
 				cy.trigger("layoutready");
-				exec( params.ready );
 			} 
 			
 			drawnNodes++;
@@ -166,21 +168,31 @@
 				callback();
 			}, 100);
 		}
-		
-		start();
-		setTimeout(function(){
+
+		var stopSystem = self.stopSystem = function(){
 			stop(function(){
 				if( options.fit ){
 					cy.fit();
 				}
 				
+				cy.one("layoutstop", options.stop);
 				cy.trigger("layoutstop");
-				exec( params.stop );
+
+				self.stopSystem = null;
 			});
-			
-			
+		};
+		
+		start();
+		setTimeout(function(){
+			stopSystem();
 		}, options.maxSimulationTime);
 
+	};
+
+	SpringyLayout.prototype.stop = function(){
+		if( this.stopSystem != null ){
+			this.stopSystem();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "springy", SpringyLayout);

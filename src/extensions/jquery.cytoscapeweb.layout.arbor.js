@@ -3,20 +3,23 @@
 	var defaults = {
 		liveUpdate: true,
 		ready: undefined,
-		maxSimulationTime: 1500,
+		maxSimulationTime: 4000,
 		fit: true,
 		padding: [ 50, 50, 50, 50 ],
 		ungrabifyWhileSimulating: true,
 		repulsion: undefined,
-		stiffness: 800,
+		stiffness: undefined,
 		friction: undefined,
 		gravity: true,
-		fps: 9999,
-		dt: undefined,
+		fps: undefined,
 		precision: undefined,
 		nodeMass: undefined,
 		edgeLength: undefined,
-		stepSize: 0.9
+		stepSize: 1,
+		stableEnergy: function( energy ){
+			var e = energy; 
+			return (e.max <= 7) || (e.mean <= 5);
+		}
 	};
 	
 	function ArborLayout(options){
@@ -50,7 +53,7 @@
 			return;
 		}
 
-		var sys = window.sys = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
+		var sys = this.system = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
 		
 		if( options.liveUpdate && options.fit ){
 			cy.reset();
@@ -62,10 +65,19 @@
 		
 		var ready = false;
 		
+		var lastDraw = +new Date;
 		var sysRenderer = {
 			init: function(system){
 			},
 			redraw: function(){
+				var energy = sys.energy();
+
+				// if we're stable (according to the client), we're done
+				if( options.stableEnergy != null && energy != null && options.stableEnergy(energy) ){
+					sys.stop();
+					return;
+				}
+
 				clearTimeout(doneTimeout);
 				doneTimeout = setTimeout(doneHandler, doneTime);
 				
@@ -89,9 +101,13 @@
 					}
 				});
 				
-				if( options.liveUpdate && movedNodes.size() > 0 ){
+
+				var timeToDraw = (+new Date - lastDraw) >= 16;
+				if( options.liveUpdate && movedNodes.size() > 0 && timeToDraw ){
 					movedNodes.rtrigger("position");
+					lastDraw = +new Date;
 				}
+
 				
 				if( !ready ){
 					ready = true;
@@ -114,7 +130,11 @@
 			if( value == null ){
 				return undefined;
 			} else if( typeof value == typeof function(){} ){
-				return value.apply(element, [element.data()]); 
+				return value.apply(element, [element.data(), {
+					nodes: nodes.size(),
+					edges: edges.size(),
+					element: element
+				}]); 
 			} else {
 				return value;
 			}
@@ -239,6 +259,12 @@
 			sys.stop();
 		}, options.maxSimulationTime);
 		
+	};
+
+	ArborLayout.prototype.stop = function(){
+		if( this.system != null ){
+			system.stop();
+		}
 	};
 	
 	$.cytoscapeweb("layout", "arbor", ArborLayout);

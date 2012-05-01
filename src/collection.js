@@ -223,12 +223,6 @@
 	});
 
 	$$.fn.collection({
-		jsonString: function(){
-			return JSON.stringify( this.json.apply(this, arguments) );
-		}
-	});
-
-	$$.fn.collection({
 		restore: function( notifyRenderer ){
 			var restored = new CyCollection(this.cy());
 			

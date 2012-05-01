@@ -38,6 +38,27 @@
 	window.async = function(fn){
 		setTimeout(fn, 100 * ++asyncCalls);
 	}
+
+	var asyncChecks = 0;
+	var asyncExpect = 0;
+	var asyncFunction = null;
+
+	window.asyncExpect = function( calls, fn ){
+		asyncExpect = calls;
+		asyncChecks = 0;
+		asyncFunction = fn;
+	};
+
+	window.asyncStart = function(){
+		asyncChecks++;
+
+		if( asyncChecks >= asyncExpect ){
+			if( asyncFunction != null ){
+				asyncFunction();
+			}
+			start();
+		}
+	};
 	
 	var width = 500;
 	var height = 500;

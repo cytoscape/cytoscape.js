@@ -7,11 +7,11 @@
 	};
 	
 	function GridLayout( options ){
-		this.options = $.extend(true, {}, defaults, options);
+		this.options = $.extend({}, defaults, options);
 	}
 	
 	GridLayout.prototype.run = function(){
-		var params = options= this.options;
+		var params = options = this.options;
 		
 		var cy = params.cy;
 		var nodes = cy.nodes();

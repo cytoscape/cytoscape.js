@@ -65,23 +65,6 @@ $v(function(jQuery, $, version){
 			ok( cy.nodes()[0].collection().oddSize(), true, "one node (collection) is odd" );
 		});
 	});
-	
-	asyncTest("Add an exporter", function(){
-		function Foo(){
-		}
-		
-		Foo.prototype.run = function(params){
-			return "foo";
-		};
-		
-		$.cytoscapeweb("exporter", "foo", Foo);
-		
-		
-		init(function(){
-			ok( $.cytoscapeweb("exporter", "foo") == Foo, "exporter registered and gotten back successfully" );
-			
-			equal( cy.exportTo({ name: "foo" }), "foo", "exporter returns expected value" );
-		});
-	});
+
 	
 });

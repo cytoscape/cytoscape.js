@@ -228,5 +228,36 @@ $v(function(jQuery, $, version){
 		}, 500);
 		
 	});
+
+	asyncTest("Event data", function(){
+		asyncExpect(2);
+		var targets = {
+			node: cy.nodes().eq(0),
+			cy: cy
+		};
+
+		$.each(targets, function(name, self){
+			self.bind("click", { foo: "bar" }, function(e, param1, param2){
+				equal( e.data.foo, "bar", "eventObj.data passed properly for " + name );
+				ok( e.cy == cy, "eventObj.cy defined for " + name );
+				ok( e.cytoscapeweb == cy, "eventObj.cytoscapeweb defined for " + name );
+
+				equal(param1, "foo", "trigger param1 passed properly for " + name );
+				equal(param2, "bar", "trigger param2 passed properly for " + name);
+
+				asyncStart();
+			});
+
+			self.bind("touchstart", function(e, param){
+				equal(param, "foo", "trigger param1 passed properly for " + name );
+
+				asyncStart();
+			});
+
+			self.trigger("click", ["foo", "bar"]);
+			self.trigger($.Event("touchstart"), "foo");
+
+		});
+	});
 	
 });

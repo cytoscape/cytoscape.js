@@ -21,6 +21,10 @@
 						var args = [eventData];
 						
 						if( data != null ){
+							if( !$$.is.array(data) ){
+								data = [data];
+							}
+
 							$.each(data, function(i, arg){
 								args.push(arg);
 							});

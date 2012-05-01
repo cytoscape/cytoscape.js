@@ -197,49 +197,50 @@
 		return function( event, data ){
 			var cy = this;
 			var listeners = cy._private.listeners;
-			var types;
 			var target = params.target;
+			var type;
 			
 			if( $$.is.plainObject(event) ){
-				types = [ event.type ];
+				type = event.type;
 			} else {
-				types = event.split(/\s+/);
+				type = event;
 			}
 			
-			$.each(types, function(t, type){
-				if( listeners[target] == null || listeners[target][type] == null ){
-					return;
+			if( listeners[target] == null || listeners[target][type] == null ){
+				return;
+			}
+			
+			for(var i = 0; i < listeners[target][type].length; i++){
+				var listener = listeners[target][type][i];
+				
+				var eventObj;
+				if( $$.is.plainObject(event) ){
+					eventObj = event;
+				} else {
+					eventObj = $.Event(event);
+				}
+				eventObj.data = listener.data;
+				eventObj.cy = eventObj.cytoscapeweb = cy;
+				
+				var args = [ eventObj ];
+				
+				if( data != null ){
+					if( !$$.is.array(data) ){
+						data = [ data ];
+					}
+
+					$.each(data, function(i, arg){
+						args.push(arg);
+					});
 				}
 				
-				for(var i = 0; i < listeners[target][type].length; i++){
-					var listener = listeners[target][type][i];
-					
-					var eventObj;
-					if( $$.is.plainObject(event) ){
-						eventObj = event;
-						event = eventObj.type;
-					} else {
-						eventObj = $.Event(event);
-					}
-					eventObj.data = listener.data;
-					eventObj.cy = eventObj.cytoscapeweb = cy;
-					
-					var args = [ eventObj ];
-					
-					if( data != null ){
-						$.each(data, function(i, arg){
-							args.push(arg);
-						});
-					}
-					
-					if( listener.one ){
-						listeners[target][type].splice(i, 1);
-						i--;
-					}
-					
-					listener.callback.apply(cy, args);
+				if( listener.one ){
+					listeners[target][type].splice(i, 1);
+					i--;
 				}
-			});
+				
+				listener.callback.apply(cy, args);
+			}
 		}
 	}
 		

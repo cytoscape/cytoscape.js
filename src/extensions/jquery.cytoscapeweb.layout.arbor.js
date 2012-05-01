@@ -59,8 +59,7 @@
 			cy.reset();
 		};
 		
-		var framesToDoneCheck = 3;
-		var doneTime = Math.max(100, framesToDoneCheck * 1000/options.fps);
+		var doneTime = 250;
 		var doneTimeout;
 		
 		var ready = false;
@@ -248,7 +247,7 @@
 				if( options.ungrabifyWhileSimulating ){
 					grabbableNodes.grabify();
 				}
-				
+
 				cy.one("layoutstop", options.stop);
 				cy.trigger("layoutstop");
 			}

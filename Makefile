@@ -68,7 +68,6 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/collection-scratch.js\
 	$(SRC_DIR)/collection-switch-functions.js\
 	$(SRC_DIR)/collection-traversing.js\
-	$(SRC_DIR)/json-exporter.js\
 	$(SRC_DIR)/selector.js
 
 # the contents of the library when combined into the .all.js file

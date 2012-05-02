@@ -38,13 +38,10 @@
 							} else if( styleVal.discreteMapper != null ){
 								
 								var attrName = styleVal.discreteMapper.attr;
-								var entries = styleVal.discreteMapper.entries;
+								var entries = styleVal.discreteMapper.mapped;
 								var elementVal = element.data(attrName);
 								
-								$.each(entries, function(i, entry){
-									var attrVal = entry.attrVal;
-									var mappedVal = entry.mappedVal;
-									
+								$.each(entries, function(attrVal, mappedVal){								
 									if( attrVal == elementVal ){
 										ret = mappedVal;
 									}

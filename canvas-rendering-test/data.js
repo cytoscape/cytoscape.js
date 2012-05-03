@@ -20,9 +20,12 @@ function Network(nodeCount, edgeCount) {
 
 		var edge = new Edge(start, end);
 		var startNode = this.nodes[start];
+		var endNode = this.nodes[end];
 
-		startNode.edges[startNode.edges.length] = edge;
+		startNode.outEdges[startNode.outEdges.length] = edge;
+		endNode.inEdges[endNode.inEdges.length] = edge;
 		
+
 		/*
 		if (startNode.edges.length > 1) {
 			alert("startNode after: " + startNode);
@@ -45,16 +48,18 @@ function Node(index) {
 	this.index = index;
 	this.x = 0;
 	this.y = 0;
-	this.edges = [];
+	this.outEdges = [];
+	this.inEdges = [];
 }
 
 Node.prototype.toString = function nodeToString() {
-	return "node, index: " + this.index + ", edge count: " + this.edges.length;
+	return "node, index: " + this.index + ", out edge count: " + this.outEdges.length;
 }
 
 function Edge(start, end) {
 	this.start = start;
 	this.end = end;
+	this.line = null;
 }
 
 Edge.prototype.toString = function edgeToString() {

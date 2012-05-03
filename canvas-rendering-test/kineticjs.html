@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="http://www.html5canvastutorials.com/libraries/kinetic-v3.9.4.js"></script>
+		<script type="text/javascript" src="data.js"></script>
+		<script>
+
+			var testNetwork = new Network(500, 500);
+			var stageWidth = 600;
+			var stageHeight = 300;
+
+			window.onload = function() {
+				var stage = new Kinetic.Stage({
+					container: "container",
+					width: stageWidth,
+					height: stageHeight
+				});
+
+				var layer = new Kinetic.Layer();
+
+				var circle = new Kinetic.Circle({
+					x: 150,
+					y: 150,
+					radius: 50,
+					fill: "blue",
+					stroke: "black",
+					strokeWidth: 5,
+					draggable: true
+				});
+
+				layer.add(circle);
+
+				stage.add(layer);
+			};
+
+			var nodes = testNetwork.nodes;
+			var edges = testNetwork.edges;
+
+			// Spread nodes
+			for (var i = 0; i < nodes.length; i++) {
+				nodes[i].x = Math.round(Math.random() * stageWidth);
+				nodes[i].y = Math.round(Math.random() * stageHeight);
+			}
+
+/*
+			alert("nodes spread");
+
+			for (var i = 0; i < nodes.length; i++) {
+
+				if (nodes[i].edges.length > 2) {
+					alert(i + " has " + nodes[i].edges.length + " starting edges");
+					alert(nodes[i].edges[0]);
+					alert(nodes[i].edges[1]);
+					break;
+				}
+			}
+*/
+		</script>
+	</head>
+
+	<body>
+		<h2> kineticjs v3.9.4 <h2>
+
+		<div id="container"></div>
+	</body>
+
+
+</html>

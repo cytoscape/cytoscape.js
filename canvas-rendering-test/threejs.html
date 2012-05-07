@@ -2,79 +2,6 @@
 <html>
 	<head>
 		
-		<!--
-		<script type="text/javascript" src="http://mrdoob.github.com/three.js/build/Three.js"></script>
-		-->
-
-		<script type="text/javascript" src="Three.js"></script>
-		<script type="text/javascript" src="data.js"></script>
-		<script>
-			var WIDTH = 400;
-			var HEIGHT = 300;
-
-			// set some camera attributes
-			var VIEW_ANGLE = 45;
-			var ASPECT = WIDTH / HEIGHT;
-			var NEAR = 0.1;
-			var FAR = 10000;
-
-			// get the DOM element to attach to
-			// - assume we've got jQuery to hand
-			var $container = $('#container');
-
-			// create a WebGL renderer, camera
-			// and a scene
-			var renderer = new THREE.WebGLRenderer();
-			var camera = new THREE.PerspectiveCamera(  VIEW_ANGLE,
-			                                ASPECT,
-			                                NEAR,
-			                                FAR  );
-			var scene = new THREE.Scene();
-
-			// the camera starts at 0,0,0 so pull it back
-			camera.position.z = 300;
-
-			// start the renderer
-			renderer.setSize(WIDTH, HEIGHT);
-
-			// attach the render-supplied DOM element
-			$container.append(renderer.domElement);
-
-			// create the sphere's material
-			var sphereMaterial = new THREE.MeshLambertMaterial(
-			{
-			    color: 0xCC0000
-			});
-
-			// set up the sphere vars
-			var radius = 50, segments = 16, rings = 16;
-
-			// create a new mesh with sphere geometry -
-			// we will cover the sphereMaterial next!
-			var sphere = new THREE.Mesh(
-			   new THREE.SphereGeometry(radius, segments, rings),
-			   sphereMaterial);
-
-			// add the sphere to the scene
-			scene.add(sphere);
-
-			// and the camera
-			scene.add(camera);
-
-			// create a point light
-			var pointLight = new THREE.PointLight( 0xFFFFFF );
-
-			// set its position
-			pointLight.position.x = 10;
-			pointLight.position.y = 50;
-			pointLight.position.z = 130;
-
-			// add to the scene
-			scene.add(pointLight);
-
-			// draw!
-			renderer.render(scene, camera);
-		</script>
 	</head>
 
 	<body>
@@ -83,5 +10,148 @@
 		<div id="container"></div>
 	</body>
 
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+
+	<script type="text/javascript" src="http://mrdoob.github.com/three.js/build/Three.js"></script>
+	<script type="text/javascript" src="data.js"></script>
+
+	<script>
+		var WIDTH = 800;
+		var HEIGHT = 600;
+
+		// set some camera attributes
+		var VIEW_ANGLE = 45;
+		var ASPECT = WIDTH / HEIGHT;
+		var NEAR = 0.1;
+		var FAR = 10000;
+
+		var testNetwork = new Network(200, 200);
+		var nodes = testNetwork.nodes;
+		var edges = testNetwork.edges;
+
+		// get the DOM element to attach to
+		// - assume we've got jQuery to hand
+		var $container = $('#container');
+
+		// create a WebGL renderer, camera
+		// and a scene
+		var renderer = new THREE.WebGLRenderer();
+
+		/*
+		var camera = new THREE.PerspectiveCamera(  VIEW_ANGLE,
+		                                ASPECT,
+		                                NEAR,
+		                                FAR  );
+		*/
+
+		var camera = new THREE.OrthographicCamera(-WIDTH / 2,
+			WIDTH / 2, HEIGHT / 2, -HEIGHT / 2, 1, 1000);
+
+		var scene = new THREE.Scene();
+
+		// the camera starts at 0,0,0 so pull it back
+		camera.position.z = 300;
+
+		// start the renderer
+		renderer.setSize(WIDTH, HEIGHT);
+
+		// attach the render-supplied DOM element
+		$container.append(renderer.domElement);
+
+
+		// Spread nodes
+		for (var i = 0; i < nodes.length; i++) {
+			nodes[i].x = WIDTH * Math.random() - WIDTH / 2;
+			nodes[i].y = HEIGHT * Math.random() - HEIGHT / 2;
+		}
+
+
+		// create the sphere's material
+		var sphereMaterial = new THREE.MeshLambertMaterial(
+		{
+		    color: 0xCC0000
+		});
+
+		// set up the sphere vars
+		var radius = 20, segments = 16, rings = 16;
+
+		// create a new mesh with sphere geometry -
+		// we will cover the sphereMaterial next!
+		
+		var spheres = [];
+		for (var i = 0; i < nodes.length; i++) {
+			
+			/*
+			var sphere = new THREE.Mesh(
+				new THREE.SphereGeometry(radius, segments, rings),
+				sphereMaterial);
+			*/
+
+
+			
+			var sphere = new THREE.Mesh(
+				new THREE.CylinderGeometry(
+					radius, 0, 0, 15, 1, false),
+				sphereMaterial);
+			
+
+			sphere.position.x = nodes[i].x;
+			sphere.position.y = nodes[i].y;
+			sphere.rotation.x = 90;
+			spheres[spheres.length] = sphere;
+			// add the sphere to the scene
+			scene.add(sphere);
+
+			sphere.node = nodes[i];
+		}
+
+
+
+		var lineMaterial = new THREE.LineBasicMaterial({
+			color: 0x0000ff
+		});
+
+		var lines = [];
+
+		/*
+		var startNode, endNode;
+		for (var i = 0; i < edges.length; i++) {
+			
+			startNode = nodes[edges[i].start];
+			endNode = nodes[edges[i].end];
+
+			var lineGeometry = new THREE.Geometry();
+			
+			lineGeometry.vertices.push(new THREE.Vertex(
+				new Three.Vector3(startNode.x, startNode.y, 0)));
+			lineGeometry.vertices.push(new THREE.Vertex(
+				new Three.Vector3(endNode.x, endNode.y, 0)));	
+
+			var line = new THREE.Line(lineGeometry, lineMaterial);
+
+			scene.add(line);
+			edges[i].line = line;
+		}
+		*/
+		
+
+		// and the camera
+		scene.add(camera);
+
+		// create a point light
+		var pointLight = new THREE.PointLight( 0xFFFFFF );
+
+		// set its position
+		pointLight.position.x = 10;
+		pointLight.position.y = 50;
+		pointLight.position.z = 130;
+
+		// add to the scene
+		scene.add(pointLight);
+
+		// draw!
+		renderer.render(scene, camera);
+	</script>
 
 </html>

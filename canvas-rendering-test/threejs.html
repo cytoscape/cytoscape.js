@@ -5,8 +5,7 @@
 	</head>
 
 	<body>
-		<h2> Three.js (WebGL based) test <h2>
-
+		<h2> Three.js WebGL renderer </h2>
 		<div id="container"></div>
 	</body>
 
@@ -26,14 +25,55 @@
 		var NEAR = 0.1;
 		var FAR = 10000;
 
-		var testNetwork = new Network(200, 200);
+		var testNetwork = new Network(3000, 3000);
 		var nodes = testNetwork.nodes;
 		var edges = testNetwork.edges;
 
+		function LineTransformer() {
+			this.displacementX = 0;
+			this.displacementY = 0;
+			this.lineLength = 0;
+			this.referenceAngle = 0;
+			this.rotateAngle = 0;
+		}
+		
+		LineTransformer.prototype.transform = function(lineMesh, x1, y1, x2, y2) {
+			this.displacementX = 1;
+			
+			this.displacementX = x2 - x1;
+			this.displacementY = y2 - y1;
+			
+			this.lineLength = Math.sqrt(this.displacementX * this.displacementX 
+				+ this.displacementY * this.displacementY);
+			
+			
+			// Find the reference angle between displacement and the x axis
+			// dot product against unit x vector
+			this.referenceAngle = Math.acos(this.displacementX / this.lineLength);
+			
+			if (this.displacementY >= 0) {
+				this.rotateAngle = this.referenceAngle;
+			} else {
+				this.rotateAngle = 2 * Math.PI - this.referenceAngle;
+			}
+			
+			lineMesh.scale.x = this.lineLength;
+			lineMesh.position.x = x1;
+			lineMesh.position.y = y1;
+			lineMesh.rotation.z = this.rotateAngle;
+		};
+
+		var lineTransformer = new LineTransformer();
+		var projector = new THREE.Projector();
+		var mouseDown = false;
+		var selected = null;
+		var selectOffsetX;
+		var selectOffsetY;
+		var hovered = null;
+		
 		// get the DOM element to attach to
 		// - assume we've got jQuery to hand
-		var $container = $('#container');
-
+		var $container = $("#container");
 		// create a WebGL renderer, camera
 		// and a scene
 		var renderer = new THREE.WebGLRenderer();
@@ -45,11 +85,11 @@
 		                                FAR  );
 		*/
 
-		var camera = new THREE.OrthographicCamera(-WIDTH / 2,
-			WIDTH / 2, HEIGHT / 2, -HEIGHT / 2, 1, 1000);
+		var camera = new THREE.OrthographicCamera(0,
+			WIDTH, HEIGHT, 0, -1000, 1000);
 
 		var scene = new THREE.Scene();
-
+		
 		// the camera starts at 0,0,0 so pull it back
 		camera.position.z = 300;
 
@@ -62,19 +102,56 @@
 
 		// Spread nodes
 		for (var i = 0; i < nodes.length; i++) {
-			nodes[i].x = WIDTH * Math.random() - WIDTH / 2;
-			nodes[i].y = HEIGHT * Math.random() - HEIGHT / 2;
+			nodes[i].x = Math.random() * WIDTH;
+			nodes[i].y = Math.random() * HEIGHT;
 		}
 
+	
+		var lineMaterial = new THREE.LineBasicMaterial({
+			color: 0x000000,
+			linewidth: 2,
+			opacity: 0.3
+		});
+
+		var lines = [];
+		var unitLineGeometry = new THREE.Geometry();
+		unitLineGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
+		unitLineGeometry.vertices.push(new THREE.Vector3(1, 0, 0));
+
+		var startNode, endNode;
+		var displacementX, displacementY;
+		var edgeRotationVector = new THREE.Vector3(0, 0, 1);
+		
+		var lineLength, referenceAngle, rotateAngle;
+		for (var i = 0; i < edges.length; i++) {
+			
+			startNode = nodes[edges[i].start];
+			endNode = nodes[edges[i].end];
+
+			var line = new THREE.Line(unitLineGeometry, lineMaterial);
+
+			displacementX = endNode.x - startNode.x;
+			displacementY = endNode.y - startNode.y;
+			
+			
+			lineTransformer.transform(
+				line, startNode.x, startNode.y, endNode.x, endNode.y);
+			
+			edges[i].line = line;
+			scene.add(line);
+		}
+		
+		
+		
 
 		// create the sphere's material
 		var sphereMaterial = new THREE.MeshLambertMaterial(
 		{
-		    color: 0xCC0000
+		    color: 0x999999
 		});
 
 		// set up the sphere vars
-		var radius = 20, segments = 16, rings = 16;
+		var radius = 10, segments = 16, rings = 16;
 
 		// create a new mesh with sphere geometry -
 		// we will cover the sphereMaterial next!
@@ -87,71 +164,185 @@
 				new THREE.SphereGeometry(radius, segments, rings),
 				sphereMaterial);
 			*/
-
-
 			
+			/*
 			var sphere = new THREE.Mesh(
 				new THREE.CylinderGeometry(
 					radius, 0, 0, 15, 1, false),
 				sphereMaterial);
-			
+			*/
 
+			var sphere = new THREE.Mesh(
+				new THREE.CylinderGeometry(
+					radius, 0, 0, 15, 1, false),
+				new THREE.MeshLambertMaterial(
+					{
+						color: 0x999999
+					}));
+			
 			sphere.position.x = nodes[i].x;
 			sphere.position.y = nodes[i].y;
+			sphere.position.z = 10;
 			sphere.rotation.x = 90;
 			spheres[spheres.length] = sphere;
 			// add the sphere to the scene
 			scene.add(sphere);
 
 			sphere.node = nodes[i];
-		}
-
-
-
-		var lineMaterial = new THREE.LineBasicMaterial({
-			color: 0x0000ff
-		});
-
-		var lines = [];
-
-		/*
-		var startNode, endNode;
-		for (var i = 0; i < edges.length; i++) {
 			
-			startNode = nodes[edges[i].start];
-			endNode = nodes[edges[i].end];
-
-			var lineGeometry = new THREE.Geometry();
-			
-			lineGeometry.vertices.push(new THREE.Vertex(
-				new Three.Vector3(startNode.x, startNode.y, 0)));
-			lineGeometry.vertices.push(new THREE.Vertex(
-				new Three.Vector3(endNode.x, endNode.y, 0)));	
-
-			var line = new THREE.Line(lineGeometry, lineMaterial);
-
-			scene.add(line);
-			edges[i].line = line;
+			// sphere.scale.set(2, 2, 2);
 		}
-		*/
-		
 
 		// and the camera
 		scene.add(camera);
 
 		// create a point light
-		var pointLight = new THREE.PointLight( 0xFFFFFF );
+		var pointLight = new THREE.PointLight( 0xAAAACC );
 
 		// set its position
 		pointLight.position.x = 10;
 		pointLight.position.y = 50;
-		pointLight.position.z = 130;
+		pointLight.position.z = 170;
 
 		// add to the scene
 		scene.add(pointLight);
-
+		
+		var ambientLight = new THREE.AmbientLight(0x333333);
+		scene.add(ambientLight);
+		
 		// draw!
 		renderer.render(scene, camera);
+		
+		renderer.domElement.addEventListener("mousemove", onDocumentMouseMove, false);
+		renderer.domElement.addEventListener("mousedown", onDocumentMouseDown, false);
+		renderer.domElement.addEventListener("mouseup", onDocumentMouseUp, false);
+		
+		function onDocumentMouseMove(event) {
+			event.preventDefault();
+			
+			var mouseX = event.clientX - renderer.domElement.offsetLeft;
+			var mouseY = HEIGHT - (event.clientY - renderer.domElement.offsetTop);
+				
+			if (mouseDown && selected != null) {
+				selected.node.x = mouseX + selectOffsetX;
+				selected.node.y = mouseY + selectOffsetY;
+				selected.position.x = mouseX + selectOffsetX;
+				selected.position.y = mouseY + selectOffsetY;
+				
+				var lineMesh;
+				var currentEdge;
+				for (var i = 0; i < selected.node.inEdges.length; i++) {
+					currentEdge = selected.node.inEdges[i];
+					lineMesh = currentEdge.line;			
+					
+					
+					lineTransformer.transform(lineMesh, nodes[currentEdge.start].x,
+						nodes[currentEdge.start].y, selected.node.x,
+						selected.node.y);
+				}
+				
+				for (var i = 0; i < selected.node.outEdges.length; i++) {
+					currentEdge = selected.node.outEdges[i];
+					lineMesh = currentEdge.line;
+					
+					lineTransformer.transform(lineMesh, selected.node.x,
+						selected.node.y, nodes[currentEdge.end].x,
+						nodes[currentEdge.end].y);
+				}
+				
+				
+				renderer.render(scene, camera);
+			} else {
+				var vector = new THREE.Vector3(mouseX, mouseY, 0);
+			
+				projector.unprojectVector(vector, camera);
+				
+				var ray = new THREE.Ray();
+				ray.origin.set(mouseX, mouseY, 20);
+				ray.direction.set(0, 0, -1);
+				ray.direction.normalize();
+				
+				// alert("ray: " + ray);
+				
+				var intersects = ray.intersectObjects(spheres);
+				
+				// alert("intersects: " + intersects.length);
+				if (hovered != null) {
+					hovered.scale.set(1, 1, 1);
+					hovered.material.color = new THREE.Color(0x999999);
+				}
+				
+				if (intersects.length > 0) {
+					// intersects[0].object.scale.set(2, 2, 2);
+					hovered = intersects[0].object;
+					hovered.scale.set(1.5, 1.5, 1.5);
+					hovered.material.color = new THREE.Color(0xFFDD99);
+				} else {
+					hovered = null;
+				}
+				
+				renderer.render(scene, camera);
+			}
+		}
+		
+		function onDocumentMouseDown(event) {
+			event.preventDefault();
+			
+			mouseDown = true;
+			
+			/*
+			var output = "";
+			for (property in renderer.domElement) {
+				output += property + ": " + renderer.domElement[property];
+			}
+			// offsetLeft and offsetTop?
+			*/
+			
+			// alert(output);
+			
+			// var mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+			// var mouseY = - (event.clientY / window.innerHeight) * 2 + 1;
+			
+			var mouseX = event.clientX - renderer.domElement.offsetLeft;
+			var mouseY = HEIGHT - (event.clientY - renderer.domElement.offsetTop);
+			
+			// alert(mouseX + ", " + mouseY);
+			
+			var vector = new THREE.Vector3(mouseX, mouseY, 0);
+			
+			projector.unprojectVector(vector, camera);
+			
+			var ray = new THREE.Ray();
+			ray.origin.set(mouseX, mouseY, 20);
+			ray.direction.set(0, 0, -1);
+			ray.direction.normalize();
+			
+			// alert("ray: " + ray);
+			
+			var intersects = ray.intersectObjects(spheres);
+			
+			// alert("intersects: " + intersects.length);
+					
+			if (intersects.length > 0) {
+				// intersects[0].object.scale.set(2, 2, 2);
+				selected = intersects[0].object;
+				selectOffsetX = selected.position.x - mouseX;
+				selectOffsetY = selected.position.y - mouseY;
+			}
+			
+			renderer.render(scene, camera);
+			// alert("transformed coords: " + mouseX + ", " + mouseY);
+		}
+						
+		function onDocumentMouseUp(event) {
+		
+			mouseDown = false;
+			selected = null;
+				
+			event.preventDefault();
+		}
+		
+				
 	</script>
 
 </html>

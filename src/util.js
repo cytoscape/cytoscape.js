@@ -15,6 +15,19 @@
 			}
 		},
 		
+		mapEmpty: function( map ){
+			var empty = true;
+
+			if( map != null ){
+				for(var i in map){
+					empty = false;
+					break;
+				}
+			}
+
+			return empty;
+		},
+
 		// sets the value in a map (map may not be built)
 		setMap: function( options ){
 			var obj = options.map;

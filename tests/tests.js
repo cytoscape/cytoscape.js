@@ -96,6 +96,7 @@
 					},
 					ready: function(cy){
 						window.cy = cy;
+
 						start();
 					}
 				});

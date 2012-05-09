@@ -4,7 +4,7 @@
 		nodes: function(selector){
 			return this.filter(function(i, element){
 				return element.isNode();
-			});
+			}).filter(selector);
 		}
 	});
 
@@ -12,7 +12,7 @@
 		edges: function(selector){
 			return this.filter(function(i, element){
 				return element.isEdge();
-			});
+			}).filter(selector);
 		}
 	});
 
@@ -145,6 +145,11 @@
 		}
 	});
 
+
+
+	// Neighbourhood functions
+	//////////////////////////
+
 	$$.fn.collection({
 		neighborhood: function(selector){
 			var elements = [];
@@ -178,12 +183,16 @@
 	});
 	$$.fn.collection({ openNeighbourhood: function(selector){ return this.openNeighborhood(selector); } });
 	
+
+
+	// Edge functions
+	/////////////////
+
 	$$.fn.collection({
 		source: function(){
 			var ele = this.element();
 
 			if( ele.isNode() ){
-				$$.console.warn("Can call `source()` only on edges---tried to call on node `%s`", ele._private.data.id);
 				return new $$.CyCollection( ele.cy() );
 			}
 			
@@ -196,7 +205,6 @@
 			var ele = this.element();
 			
 			if( ele.isNode() ){
-				$$.console.warn("Can call `target()` only on edges---tried to call on node `%s`", ele._private.data.id);
 				return new $$.CyCollection( ele.cy() );
 			}
 			
@@ -321,5 +329,79 @@
 		};
 	
 	}
+
+
+
+
+	// Compound functions
+	/////////////////////
+
+	$$.fn.collection({
+		parent: function( selector ){
+			var parents = [];
+
+			this.each(function(){
+				var parent = this.cy().getElementById( this.data("parent") );
+
+				if( parent.size() > 0 ){
+					parents.push( parent.element() );
+				}
+			});
+			
+			return new $$.CyCollection( this.cy(), parents ).filter( selector );
+		},
+
+		parents: function( selector ){
+			var parents = [];
+
+			var eles = this;
+			while( eles.hasParent() ){
+				eles.each(function(){
+					parents.push( this.element() );
+				});
+
+				eles = eles.parent();
+			}
+
+			return new $$.CyCollection( this.cy(), parents ).filter( selector );
+		},
+
+		children: function( selector ){
+			var children = [];
+
+			this.each(function(){
+				var ele = this.element();
+
+				$.each(ele._private.children, function(id, child){
+					children.push( child );
+				});
+			});
+
+			return new $$.CyCollection( this.cy(), children ).filter( selector );
+		},
+
+		siblings: function( selector ){
+			return this.parent().children( selector );
+		},
+
+		descendants: function( selector ){
+			var elements = [];
+
+			function add( eles ){
+				eles.each(function(){
+					elements.push( this.element() );
+
+					if( this.hasChildren() ){
+						add( eles.children() );
+					}
+				});
+			}
+
+			add( this );
+
+			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+		}
+	});
+
 	
 })(jQuery, jQuery.cytoscapeweb);

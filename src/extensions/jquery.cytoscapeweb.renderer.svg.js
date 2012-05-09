@@ -1494,19 +1494,18 @@
 		return element.style(false).visibility != "hidden";
 	};
 	
-	SvgRenderer.prototype.renderedDimensions = function(element){
+	SvgRenderer.prototype.renderedStyle = function(element){
 		var self = this;
-		
-		if( element.isNode() ){
-			return {
-				height: element.style("height") * self.zoom(),
-				width: element.style("width") * self.zoom()
-			};
-		} else {
-			return {
-				width: element.style("width") * self.zoom()
-			};
-		}
+		var style = element.style();
+		var fields = ["width", "height", "borderWidth", "labelOutlineWidth"];
+
+		$.each(fields, function(i, field){
+			if( style[field] != null ){
+				style[field] = style[field] * self.zoom();
+			}
+		});
+
+		return style;
 	};
 	
 	SvgRenderer.prototype.unselectElements = function(collection){
@@ -1540,8 +1539,8 @@
 			var zoom = self.zoom();
 			var x = element.renderedPosition().x;
 			var y = element.renderedPosition().y;
-			var w = element.renderedDimensions().width + element.style("borderWidth") * zoom;
-			var h = element.renderedDimensions().height + element.style("borderWidth") * zoom;
+			var w = element.renderedStyle().width + element.style("borderWidth") * zoom;
+			var h = element.renderedStyle().height + element.style("borderWidth") * zoom;
 			
 			// rendered selection square
 			var x1 = selectionBounds.x1;

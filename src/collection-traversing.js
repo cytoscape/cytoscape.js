@@ -190,25 +190,21 @@
 
 	$$.fn.collection({
 		source: function(){
-			var ele = this.element();
-
-			if( ele.isNode() ){
-				return new $$.CyCollection( ele.cy() );
+			if( this.isNode() ){
+				return new $$.CyCollection( this.cy() );
 			}
 			
-			return ele.cy().getElementById( ele._private.data.source ).collection();
+			return this.cy().getElementById( this.data("source") ).collection();
 		}
 	});
 	
 	$$.fn.collection({
 		target: function(){
-			var ele = this.element();
-			
-			if( ele.isNode() ){
-				return new $$.CyCollection( ele.cy() );
+			if( this.isNode() ){
+				return new $$.CyCollection( this.cy() );
 			}
 			
-			return ele.cy().getElementById( ele._private.data.target ).collection();
+			return this.cy().getElementById( this.data("target") ).collection();
 		}
 	});
 	
@@ -354,8 +350,8 @@
 		parents: function( selector ){
 			var parents = [];
 
-			var eles = this;
-			while( eles.hasParent() ){
+			var eles = this.parent();
+			while( eles.nonempty() ){
 				eles.each(function(){
 					parents.push( this.element() );
 				});
@@ -381,7 +377,7 @@
 		},
 
 		siblings: function( selector ){
-			return this.parent().children( selector );
+			return this.parent().children().not( this ).filter( selector );
 		},
 
 		descendants: function( selector ){
@@ -391,13 +387,13 @@
 				eles.each(function(){
 					elements.push( this.element() );
 
-					if( this.hasChildren() ){
+					if( this.children().nonempty() ){
 						add( eles.children() );
 					}
 				});
 			}
 
-			add( this );
+			add( this.children() );
 
 			return new $$.CyCollection( this.cy(), elements ).filter( selector );
 		}

@@ -367,21 +367,27 @@
 				var parentId = this._private.data.parent;
 
 				if( parentId != null ){
-					var parent = this.cy.getElementById( parentId );
+					var parent = this.cy().getElementById( parentId );
 
 					if( parent.empty() ){
 						$$.console.error("Node with id `%s` specifies non-existant parent `%s`; hierarchy will be ignored", this.id(), parentId);
 					} else {
 
 						var selfAsParent = false;
-						while( !parent.empty() ){
-							if( this.same(parent) ){
+						var ancestor = parent;
+						while( !ancestor.empty() ){
+							if( this.same(ancestor) ){
 								$$.console.error("Node with id `%s` has self as ancestor; hierarchy will be ignored", this.id());
+								
+								// mark self as parent and remove from data
 								selfAsParent = true;
+								delete this.element()._private.data.parent;
+
+								// exit or we loop forever
 								break;
 							}
 
-							parent = parent.parent();
+							ancestor = ancestor.parent();
 						}
 
 						if( !selfAsParent ){

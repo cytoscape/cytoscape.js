@@ -59,5 +59,39 @@ $v(function(jQuery, $, version){
 		equal(2, eles.edges().size(), "2 edges");
 		equal(1, eles.edges("#n1n2").size(), "#n1n2 filter worked");
 	});
+
+	asyncTest("eles.parent() et al", function(){
+		$("#cytoscapeweb").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+					{ data: { id: "father" } },
+					{ data: { id: "son", parent: "father" } },
+					{ data: { id: "grandson", parent: "son" } },
+					{ data: { id: "son2", parent: "father" } }
+				]
+			},
+			ready: function(cy){
+				var f = cy.$("#father");
+				var s = cy.$("#son");
+				var g = cy.$("#grandson");
+				var s2 = cy.$("#son2");
+
+				ok( f.parent().empty(), "father has no parent" );
+				ok( f.children().allSame( s.add(s2) ), "father has son and son2 as children" );
+				ok( f.descendants().allSame( s.add(s2).add(g) ), "father's descendants correct" );
+				ok( s.siblings().allSame( s2 ), "son2 sibling of son" );
+				ok( g.parents().allSame( f.add(s) ), "grandson has father and son as parents" );
+				
+				start();
+				window.cy = cy;
+			}
+		});
+	});
 	
 });

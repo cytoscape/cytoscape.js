@@ -7,7 +7,8 @@ function Network(nodeCount, edgeCount) {
 		node = new Node(i);
 		node.x = 5;
 		node.y = 5;
-
+		node.name = "n" + i;
+				
 		this.nodes[i] = node;
 	}
 
@@ -50,6 +51,7 @@ function Node(index) {
 	this.y = 0;
 	this.outEdges = [];
 	this.inEdges = [];
+	this.name = "";
 }
 
 Node.prototype.toString = function nodeToString() {

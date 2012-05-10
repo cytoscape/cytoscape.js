@@ -1,8 +1,8 @@
 $v(function(jQuery, $, version){
 	
-	defaultModule("Navigation");
+	defaultModule("Traversing");
 	
-	test("Parallel edges", function(){
+	test("eles.parallelEdges()", function(){
 		cy.add({
 			edges: [
 			        { data: { source: "n1", target: "n2", id: "ep1" } },
@@ -18,7 +18,7 @@ $v(function(jQuery, $, version){
 		ok( edges.anySame( cy.edges("#n1n2") ), "has n1n2" );
 	});
 	
-	test("Neighborhood", function(){
+	test("eles.neighborhood()", function(){
 		var n1 = cy.nodes("#n1");
 		var n2 = cy.nodes("#n2");
 		var n3 = cy.nodes("#n3");
@@ -44,6 +44,54 @@ $v(function(jQuery, $, version){
 		equal( n2.allAreNeighbors( n1.add(n3) ), true, "n1 and n3 neighbours of n2" );
 		equal( n1.allAreNeighbors(n3), false, "n1 and n3 neighbours" );
 		equal( n1.allAreNeighbors( n2.add(n3) ), false, "(n2, n3) all neighbours of n1" );
+	});
+
+	test("eles.nodes()", function(){
+		var eles = cy.elements();
+
+		equal(3, eles.nodes().size(), "3 nodes");
+		equal(1, eles.nodes("#n1").size(), "#n1 filter worked");
+	});
+
+	test("eles.edges()", function(){
+		var eles = cy.elements();
+
+		equal(2, eles.edges().size(), "2 edges");
+		equal(1, eles.edges("#n1n2").size(), "#n1n2 filter worked");
+	});
+
+	asyncTest("eles.parent() et al", function(){
+		$("#cytoscapeweb").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+					{ data: { id: "father" } },
+					{ data: { id: "son", parent: "father" } },
+					{ data: { id: "grandson", parent: "son" } },
+					{ data: { id: "son2", parent: "father" } }
+				]
+			},
+			ready: function(cy){
+				var f = cy.$("#father");
+				var s = cy.$("#son");
+				var g = cy.$("#grandson");
+				var s2 = cy.$("#son2");
+
+				ok( f.parent().empty(), "father has no parent" );
+				ok( f.children().allSame( s.add(s2) ), "father has son and son2 as children" );
+				ok( f.descendants().allSame( s.add(s2).add(g) ), "father's descendants correct" );
+				ok( s.siblings().allSame( s2 ), "son2 sibling of son" );
+				ok( g.parents().allSame( f.add(s) ), "grandson has father and son as parents" );
+				
+				start();
+				window.cy = cy;
+			}
+		});
 	});
 	
 });

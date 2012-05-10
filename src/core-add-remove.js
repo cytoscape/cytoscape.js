@@ -3,59 +3,54 @@
 	$$.fn.core({
 		add: function(opts){
 			
-			var elements = [];
+			var elements;
+			var cy = this;
 			
-			this.noNotifications(function(){
-				
-				// add the element
-				if( $$.is.element(opts) ){
-					var element = opts;
-					elements.push(element);
-					
-					element.restore();
-				}
-				
-				// add the collection
-				else if( $$.is.collection(opts) ){
-					var collection = opts;
-					collection.each(function(i, ele){
-						elements.push(ele);
-					});
-					
-					collection.restore();
-				} 
-				
-				// specify an array of options
-				else if( $$.is.array(opts) ){
-					$.each(opts, function(i, elementParams){
-						elements.push(new $$.CyElement( cy, elementParams ));
-					});
-				}
-				
-				// specify via opts.nodes and opts.edges
-				else if( $$.is.plainObject(opts) && ($$.is.array(opts.nodes) || $$.is.array(opts.edges)) ){
-					$.each(["nodes", "edges"], function(i, group){
-						if( $$.is.array(opts[group]) ){
-							$.each(opts[group], function(i, eleOpts){
-								elements.push(new $$.CyElement( cy, $.extend({}, eleOpts, { group: group }) ));
-							});
-						} 
-					});
-				}
-				
-				// specify options for one element
-				else {
-					elements.push(new $$.CyElement( cy, opts ));
-				}
+			// add the element
+			if( $$.is.element(opts) ){
+				var element = opts;
+				elements = element.collection().restore();
+			}
+			
+			// add the collection
+			else if( $$.is.collection(opts) ){
+				var collection = opts;
+				elements = collection.restore();
+			} 
+			
+			// specify an array of options
+			else if( $$.is.array(opts) ){
+				var jsons = opts;
+
+				elements = new $$.CyCollection(cy, jsons);
+			}
+			
+			// specify via opts.nodes and opts.edges
+			else if( $$.is.plainObject(opts) && ($$.is.array(opts.nodes) || $$.is.array(opts.edges)) ){
+				var groups = opts;
+				var jsons = [];
+
+				$.each(["nodes", "edges"], function(i, group){
+					if( $$.is.array(groups[group]) ){
+						$.each(groups[group], function(j, json){
+							var mjson = $.extend({}, json, { group: group });
+							jsons.push( mjson );
+						});
+					} 
+				});
+
+				elements = new $$.CyCollection(cy, jsons);
+			}
+			
+			// specify options for one element
+			else {
+				var json = opts;
+				elements = (new $$.CyElement( cy, json )).collection();
+			}
+			
+			return elements.filter(function(){
+				return !this.removed();
 			});
-			
-			this.notify({
-				type: "add",
-				collection: elements
-			});
-			
-			
-			return new $$.CyCollection( cy, elements );
 		},
 		
 		remove: function(collection){
@@ -77,27 +72,18 @@
 
 			cy.notifications(false);
 			
-			if( elements != null ){
-				if( $$.is.plainObject(elements) ){
-					$.each(["nodes", "edges"], function(i, group){
+			var processedElements = [];
 
-						var elementsInGroup = elements[group];
-						if( elementsInGroup != null ){
-							$.each(elementsInGroup, function(i, params){
-								var element = new $$.CyElement( cy, $.extend({}, params, { group: group }) );
-							});
-						}
-					});
-				} else if( $$.is.array(elements) ){
-					$.each(elements, function(i, params){
-						var element = new $$.CyElement( cy, params );
-					});
-				}
+			if( elements != null ){
+				if( $$.is.plainObject(elements) || $$.is.array(elements) ){
+					cy.add( elements );
+				} 
 			}
 			
 			function callback(){				
-				cy.one("layoutready", function(){
+				cy.one("layoutready", function(e){
 					cy.notifications(true);
+					cy.trigger(e); // we missed this event by turning notifications off, so pass it on
 
 					cy.notify({
 						type: "load",

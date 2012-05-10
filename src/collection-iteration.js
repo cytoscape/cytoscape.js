@@ -8,15 +8,12 @@
 			if( $$.is.fn(fn) ){
 				for(var i = 0; i < this.size(); i++){
 					var ele = this.eq(i).element();
-					fn.apply( ele, [ i, ele ] );				
+					fn.apply( ele, [ i, ele ] );
 				}
 			}
 			return this;
-		}
-	});
-	
-	
-	$$.fn.collection({
+		},
+
 		toArray: function(){
 			var array = [];
 			
@@ -25,10 +22,8 @@
 			}
 			
 			return array;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		slice: function(start, end){
 			var array = [];
 			
@@ -45,24 +40,22 @@
 			}
 			
 			return new $$.CyCollection(this.cy(), array);
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		size: function(){
 			return this.length;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		eq: function(i){
 			return this[i];
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		empty: function(){
 			return this.size() == 0;
+		},
+
+		nonempty: function(){
+			return !this.empty();
 		}
 	});
 	

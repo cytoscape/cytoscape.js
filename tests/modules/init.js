@@ -95,7 +95,49 @@ $v(function(jQuery, $, version){
 			}
 		});
 		
-		
+	});
+
+	asyncTest("Node has self as parent", function(){
+		$("#cytoscapeweb").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [ { data: { id: "n1", parent: "n1" } } ]
+			},
+			ready: function(cy){
+				ok( cy.nodes().size() == 1, "The node is still there" );
+				ok( cy.nodes().eq(0).parent().empty(), "The node has no parent" );
+				
+				start();
+			}
+		});
+	});
+
+	asyncTest("Two nodes have a parent cycle", function(){
+		$("#cytoscapeweb").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+					{ data: { id: "n1", parent: "n2" } },
+					{ data: { id: "n2", parent: "n1" } }
+				]
+			},
+			ready: function(cy){
+				ok( cy.nodes().size() == 2, "The nodes are still there" );
+				ok( cy.nodes().eq(0).parent().empty(), "The nodes have no parents" );
+				
+				start();
+			}
+		});
 	});
 	
 });

@@ -14,6 +14,19 @@ $v(function(jQuery, $, version){
 		ok( cy.$("#n3").size() == 1, "n3 still there" );
 		ok( n1.removed(), "Node has removed state" );
 	});
+
+	test("Remove a node vi cy.remove()", function(){
+		var n1 = cy.$("#n1");
+		var n2 = cy.$("#n2");
+		var n3 = cy.$("#n3");
+		
+		cy.remove( n1 );
+		
+		equal( cy.nodes().size(), 2, "Expected number of nodes" );
+		ok( cy.$("#n2").size() == 1, "n2 still there" );
+		ok( cy.$("#n3").size() == 1, "n3 still there" );
+		ok( n1.removed(), "Node has removed state" );
+	});
 	
 	test("Restore a node", function(){
 		var n1 = cy.$("#n1");

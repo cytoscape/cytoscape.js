@@ -146,15 +146,15 @@
 	});
 	
 	$$.fn.collection({
-		renderedDimensions: function( dimension ){
+		renderedStyle: function( property ){
 			var ele = this.element();
 			var renderer = ele.cy().renderer(); // TODO remove reference after refactoring
-			var dim = renderer.renderedDimensions(ele);
+			var rstyle = renderer.renderedStyle( ele );
 			
-			if( dimension === undefined ){
-				return dim;
+			if( property === undefined ){
+				return rstyle;
 			} else {
-				return dim[dimension];
+				return rstyle[property];
 			}
 		}
 	});

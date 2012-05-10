@@ -269,7 +269,7 @@
 						var node = this;
 						var source = this;
 						var p = node.renderedPosition();
-						var d = node.renderedDimensions();
+						var d = node.renderedStyle();
 						
 						// remove old handle
 						safelyRemoveCySvgChild( handle );

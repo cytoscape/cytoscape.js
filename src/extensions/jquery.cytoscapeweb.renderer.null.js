@@ -25,15 +25,9 @@
 	};
 	
 	NullRenderer.prototype.showElements = function(element){
-		element.collection().each(function(){
-			this._private.visible = true;
-		});
 	};
 	
 	NullRenderer.prototype.hideElements = function(element){
-		element.collection().each(function(){
-			this._private.visible = false;
-		});
 	};
 	
 	NullRenderer.prototype.elementIsVisible = function(element){
@@ -41,6 +35,10 @@
 	};
 	
 	NullRenderer.prototype.renderedDimensions = function(){
+		return {};
+	};
+
+	NullRenderer.prototype.dimensions = function(){
 		return {};
 	};
 	

@@ -13,6 +13,7 @@
 					case "id":
 					case "source":
 					case "target":
+					case "parent":
 						return false;
 					default:
 						return true;
@@ -43,7 +44,7 @@
 					return true;
 				}
 			},
-			essentialKeys: [ "id", "source", "target" ] // keys that remain even when deleting all
+			essentialKeys: [ "id", "source", "target", "parent" ] // keys that remain even when deleting all
 		}) 
 	});
 	

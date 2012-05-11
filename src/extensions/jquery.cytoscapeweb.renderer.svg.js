@@ -1304,6 +1304,14 @@
 				originY = mousedownEvent.pageY;
 			}
 			
+			var elements;
+				
+			if( element.selected() ){
+				elements = self.selectedElements.add(element).filter(":grabbable");
+			} else {
+				elements = element.collection();
+			}
+
 			var justStartedDragging = true;
 			var dragHandler = function(dragEvent){
 				
@@ -1328,14 +1336,6 @@
 				// new origin each event
 				originX = dragX;
 				originY = dragY;
-				
-				var elements;
-				
-				if( element.selected() ){
-					elements = self.selectedElements.add(element);
-				} else {
-					elements = element.collection();
-				}
 				
 				elements.each(function(i, e){
 					e.element()._private.position.x += dx;

@@ -31,13 +31,15 @@
 				});
 				
 				return new $$.CyCollection(this.cy(), elements);
-			} else if( $$.is.string(filter) ){
+			
+			} else if( $$.is.string(filter) || $$.is.elementOrCollection(filter) ){
 				return new $$.CySelector(this.cy(), filter).filter(this);
+			
 			} else if( filter === undefined ){
 				return this;
 			}
 
-			$$.console.warn("You must pass a function or a selector to `filter`");
+			$$.console.warn("You must pass a function or a selector to cy.filter() et al");
 			return new $$.CyCollection( this.cy() );
 		}
 	});
@@ -156,8 +158,12 @@
 			
 			this.nodes().each(function(i, node){
 				node.connectedEdges().each(function(j, edge){
-					var otherNode = edge.connectedNodes().not(node).element();
-					elements.push( otherNode ); // add node 1 hop away
+					var otherNode = edge.connectedNodes().not(node);
+
+					// need check in case of loop
+					if( otherNode.size() > 0 ){
+						elements.push( otherNode.element() ); // add node 1 hop away
+					}
 					
 					// add connected edge
 					elements.push( edge.element() );
@@ -189,25 +195,30 @@
 	/////////////////
 
 	$$.fn.collection({
-		source: function(){
-			if( this.isNode() ){
-				return new $$.CyCollection( this.cy() );
-			}
-			
-			return this.cy().getElementById( this.data("source") ).collection();
-		}
+		source: defineSourceFunction({
+			attr: "source"
+		})
 	});
 	
 	$$.fn.collection({
-		target: function(){
-			if( this.isNode() ){
-				return new $$.CyCollection( this.cy() );
-			}
-			
-			return this.cy().getElementById( this.data("target") ).collection();
-		}
+		target: defineSourceFunction({
+			attr: "target"
+		})
 	});
 	
+	function defineSourceFunction( params ){
+		return function( selector ){
+			var sources = [];
+
+			this.edges().each(function(){
+				var src = this.cy().getElementById( this.data(params.attr) ).element();
+				sources.push( src );
+			});
+			
+			return new $$.CyCollection( this.cy(), sources ).filter( selector );
+		}
+	}
+
 	$$.fn.collection({
 		edgesWith: defineEdgesWithFunction()
 	});
@@ -216,14 +227,6 @@
 		edgesTo: defineEdgesWithFunction({
 			include: function( node, otherNode, edgeStruct ){
 				return edgeStruct.target.same( otherNode );
-			}
-		})
-	});
-	
-	$$.fn.collection({
-		edgesFrom: defineEdgesWithFunction({
-			include: function( node, otherNode, edgeStruct ){
-				return edgeStruct.source.same( node );
 			}
 		})
 	});
@@ -238,6 +241,11 @@
 		
 		return function(otherNodes){
 			var elements = [];
+
+			// get elements if a selector is specified
+			if( $$.is.string(otherNodes) ){
+				otherNodes = this.cy.$( otherNodes );
+			}
 			
 			this.nodes().each(function(i, node){
 				otherNodes.nodes().each(function(j, otherNode){
@@ -275,14 +283,7 @@
 	
 	$$.fn.collection({
 		connectedNodes: function( selector ){
-			var elements = [];
-			
-			this.edges().each(function(i, edge){
-				elements.push( edge.source().element() );
-				elements.push( edge.target().element() );
-			});
-			
-			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+			return this.source().add( this.target() ).filter( selector );
 		}
 	});
 	
@@ -293,7 +294,8 @@
 	$$.fn.collection({
 		codirectedEdges: defineParallelEdgesFunction({
 			include: function( source, target, edgeStruct ){
-				return edgeStruct.source;
+				return edgeStruct.source.same( source ) &&
+					edgeStruct.target.same( target );
 			}
 		})
 	});

@@ -1,54 +1,27 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<style type="text/css">
-			#canvas2d {
-				background-color: transparent;
-				position: absolute;
-				left: 8;
-				top: 22;
-				z-index: 2;	
-			}
-	
-			#canvas {
-				position: absolute;
-				left: 8;
-				top: 22;
-				z-index: 3;
-			}
-		</style>
 	</head>
 
 	<body>
-		<h2> Three.js with Canvas 2D context font rendering </h2>
+		<h2> Three.js WebGL with Canvas 2D context font rendering </h2>
 		
-		<canvas id="canvas2d" width="800" height="600"></canvas>
-		<canvas id="canvas" width="800" height="600"></canvas>
+		<div id="container"> </div>
 		
+		<div> Test div </div>
 		
+		<p> Test paragraph </p>
 	</body>
-
-
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 
 	<script type="text/javascript" src="http://mrdoob.github.com/three.js/build/Three.js"></script>
 	<script type="text/javascript" src="data.js"></script>
 	<script type="text/javascript" src="line-transformer.js"></script>
 
-	
-	<!--
-	<script src="http://mrdoob.github.com/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
-	-->
-	
-	<!--
-	<script src="http://mrdoob.github.com/three.js/examples/fonts/helvetiker_bold.typeface.js"></script>
-	-->
-
 	<script>
 		var WIDTH = 800;
 		var HEIGHT = 600;
 
-		var testNetwork = new Network(2000, 2000);
+		var testNetwork = new Network(40, 400);
 		var nodes = testNetwork.nodes;
 		var edges = testNetwork.edges;
 
@@ -59,29 +32,32 @@
 		var selectOffsetX;
 		var selectOffsetY;
 		var hovered = null;
-				
-		var canvas = document.getElementById("canvas");
-		var canvas2d = document.getElementById("canvas2d");
 		
-		// create a WebGL renderer, camera
-		// and a scene
-		var renderer = new THREE.WebGLRenderer({canvas: canvas});
-		var renderer2d = new THREE.CanvasRenderer({canvas: canvas2d});
-
-		var camera = new THREE.OrthographicCamera(0,
-			WIDTH, HEIGHT, 0, -1000, 1000);
-
-		var scene = new THREE.Scene();
-		
-		// the camera starts at 0,0,0 so pull it back
-		camera.position.z = 300;
-
-		// start the renderer
+		var renderer = new THREE.WebGLRenderer();
 		renderer.setSize(WIDTH, HEIGHT);
 
-		// attach the render-supplied DOM element
-	//	$container.append(renderer.domElement);
+		var container = document.getElementById("container");
+		container.style.position = "relative";
+		container.style.width = WIDTH + "px";
+		container.style.height = HEIGHT + "px";
+		
+		renderer.domElement.style.position = "absolute";
+		renderer.domElement.style.zIndex = 2;
+		container.appendChild(renderer.domElement);
+		
+		var canvas2d = document.createElement("canvas");
+		canvas2d.width = 800;
+		canvas2d.height = 600;
+		canvas2d.style.position = "absolute";
+		canvas2d.style.zIndex = 3;
+		container.appendChild(canvas2d);
 
+		var camera = new THREE.OrthographicCamera(0,
+			WIDTH, HEIGHT, 0, -500, 500);
+		camera.position.z = 300;
+		
+		var scene = new THREE.Scene();
+				
 		// Spread nodes
 		for (var i = 0; i < nodes.length; i++) {
 			nodes[i].x = Math.random() * WIDTH;
@@ -124,7 +100,6 @@
 			
 			scene.add(line);
 		}
-		
 
 		// Create circles for nodes
 		var sphereMaterial = new THREE.MeshLambertMaterial(
@@ -134,9 +109,6 @@
 
 		// set up the sphere vars
 		var radius = 8, segments = 16, rings = 16;
-
-		// create a new mesh with sphere geometry -
-		// we will cover the sphereMaterial next!
 		
 		var spheres = [];
 		for (var i = 0; i < nodes.length; i++) {
@@ -162,62 +134,11 @@
 			// sphere.scale.set(2, 2, 2);
 		}
 
-
-		// Create text for the node names
-		var textMaterial = new THREE.MeshBasicMaterial({
-			color: 0x000000
-		});
-		
-		var context2d = renderer2d.domElement.getContext("2d");
-		context2d.clearRect(0, 0, 800, 600);
-		context2d.font = "normal 12px Calibri";
-		context2d.textAlign = "center";
-		context2d.textBaseline = "middle";
-		
-		var boundingBox, centerOffsetX;
-		var textMeshes = [];
-		for (var i = 0; i < nodes.length; i++) {
-			
-			/*
-			//nodes[i].name
-			var textGeometry = new THREE.TextGeometry(nodes[i].name, {
-				size: 11,
-				curveSegments: 4,
-				height: 0
-			});
-			
-			textGeometry.computeBoundingBox();
-			
-			boundingBox = textGeometry.boundingBox;
-			centerOffsetX = (boundingBox.max.x - boundingBox.min.x) / 2;
-			
-			
-			var textMesh = new THREE.Mesh(textGeometry, textMaterial);
-			
-			textMesh.centerOffsetX = centerOffsetX;
-			textMesh.position.x = nodes[i].x - centerOffsetX;
-			textMesh.position.y = nodes[i].y + 12;
-			
-			spheres[i].text = textMesh;
-			
-			scene.add(textMesh);
-			*/
-			
-			// context2d.fillText(nodes[i].name, nodes[i].x, 600 - nodes[i].y - 15);
-			
-			/*
-			var textDiv = document.createElement("div");
-			textDiv.style.position = "absolute";
-			textDiv.innerHTML = nodes[i].name;
-			textDiv.style.left = nodes[i].x + "px";
-			textDiv.style.top = nodes[i].y + "px";
-			*/
-		}
-		
+		// Draw text
 		updateText();
 		
 		function updateText() {
-			var context2d = renderer2d.domElement.getContext("2d");
+			var context2d = canvas2d.getContext("2d");
 			context2d.clearRect(0, 0, 800, 600);
 			context2d.font = "normal 14px Verdana";
 			context2d.textAlign = "center";
@@ -228,7 +149,6 @@
 			}
 		}
 	
-
 		scene.add(camera);
 
 		// create a point light
@@ -240,7 +160,7 @@
 		pointLight.position.z = 170;
 
 		// add to the scene
-		// scene.add(pointLight);
+		scene.add(pointLight);
 		
 		var ambientLight = new THREE.AmbientLight(0x333333);
 		scene.add(ambientLight);
@@ -248,15 +168,15 @@
 		// draw!
 		renderer.render(scene, camera);
 		
-		renderer.domElement.addEventListener("mousemove", onDocumentMouseMove, false);
-		renderer.domElement.addEventListener("mousedown", onDocumentMouseDown, false);
-		renderer.domElement.addEventListener("mouseup", onDocumentMouseUp, false);
+		container.addEventListener("mousemove", onDocumentMouseMove, false);
+		container.addEventListener("mousedown", onDocumentMouseDown, false);
+		container.addEventListener("mouseup", onDocumentMouseUp, false);
 		
 		function onDocumentMouseMove(event) {
 			event.preventDefault();
 			
-			var mouseX = event.clientX - renderer.domElement.offsetLeft;
-			var mouseY = HEIGHT - (event.clientY - renderer.domElement.offsetTop);
+			var mouseX = event.clientX - container.offsetLeft;
+			var mouseY = HEIGHT - (event.clientY - container.offsetTop);
 			
 			var textMesh;
 			if (mouseDown && selected != null) {
@@ -270,7 +190,6 @@
 				for (var i = 0; i < selected.node.inEdges.length; i++) {
 					currentEdge = selected.node.inEdges[i];
 					lineMesh = currentEdge.line;			
-					
 					
 					lineTransformer.transform(lineMesh, nodes[currentEdge.start].x,
 						nodes[currentEdge.start].y, selected.node.x,
@@ -286,27 +205,10 @@
 						nodes[currentEdge.end].y);
 				}
 				
-				/*
-				textMesh = selected.text;
-				textMesh.position.x = selected.node.x - textMesh.centerOffsetX;
-				textMesh.position.y = selected.node.y + 12;
-				*/
-				
 				updateText();
 				renderer.render(scene, camera);
 			} else {
-				var vector = new THREE.Vector3(mouseX, mouseY, 0);
-			
-				projector.unprojectVector(vector, camera);
-				
-				var ray = new THREE.Ray();
-				ray.origin.set(mouseX, mouseY, 20);
-				ray.direction.set(0, 0, -1);
-				ray.direction.normalize();
-				
-				// alert("ray: " + ray);
-				
-				var intersects = ray.intersectObjects(spheres);
+				var intersects = findIntersections(mouseX, mouseY, spheres);
 				
 				// alert("intersects: " + intersects.length);
 				if (hovered != null) {
@@ -332,64 +234,34 @@
 			
 			mouseDown = true;
 			
-			/*
-			var output = "";
-			for (property in renderer.domElement) {
-				output += property + ": " + renderer.domElement[property];
-			}
-			// offsetLeft and offsetTop?
-			*/
+			var mouseX = event.clientX - container.offsetLeft;
+			var mouseY = HEIGHT - (event.clientY - container.offsetTop);
 			
-			// alert(output);
-			
-			// var mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-			// var mouseY = - (event.clientY / window.innerHeight) * 2 + 1;
-			
-			var mouseX = event.clientX - renderer.domElement.offsetLeft;
-			var mouseY = HEIGHT - (event.clientY - renderer.domElement.offsetTop);
-			
-			// alert(mouseX + ", " + mouseY);
-			
-			var vector = new THREE.Vector3(mouseX, mouseY, 0);
-			
-			projector.unprojectVector(vector, camera);
-			
-			var ray = new THREE.Ray();
-			ray.origin.set(mouseX, mouseY, 20);
-			ray.direction.set(0, 0, -1);
-			ray.direction.normalize();
-			
-			// alert("ray: " + ray);
-			
-			var intersects = ray.intersectObjects(spheres);
-			
-			// alert("intersects: " + intersects.length);
-			
+			var intersects = findIntersections(mouseX, mouseY, spheres);
 			if (intersects.length > 0) {
 				// intersects[0].object.scale.set(2, 2, 2);
 				selected = intersects[0].object;
 				selectOffsetX = selected.position.x - mouseX;
 				selectOffsetY = selected.position.y - mouseY;
 			}
-			
-			var intersects2 = ray.intersectObjects(lines);
-			
-			if (intersects2.length > 0) {
-				alert("edges: " + intersects2.length);
-			}
-			
 			renderer.render(scene, camera);
-			// alert("transformed coords: " + mouseX + ", " + mouseY);
 		}
 						
 		function onDocumentMouseUp(event) {
-		
 			mouseDown = false;
 			selected = null;
 				
 			event.preventDefault();
 		}
 		
+		function findIntersections(x, y, meshes) {
+			var ray = new THREE.Ray();
+			ray.origin.set(x, y, 20);
+			ray.direction.set(0, 0, -1);
+			ray.direction.normalize();
+			
+			return ray.intersectObjects(meshes);
+		}
 				
 	</script>
 

@@ -1,7 +1,14 @@
 ;(function($, $$){
 	
 	$$.fn.core({
-		collection: function(){
+		collection: function( eles ){
+
+			if( $$.is.string(eles) ){
+				return this.$( eles );
+			} else if( $$.is.elementOrCollection(eles) ){
+				return eles.collection();
+			}
+
 			return new $$.CyCollection( this );
 		},
 		

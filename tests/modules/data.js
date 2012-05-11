@@ -141,7 +141,7 @@ $v(function(jQuery, $, version){
 		});
 	});
 	
-	test("position", function(){
+	test("Position", function(){
 		var n1 = cy.$("#n1");
 		
 		n1.one("position", function(){
@@ -226,6 +226,23 @@ $v(function(jQuery, $, version){
 		equal( cy.nodes("#n1").scratch("foo"), null, "foo deleted" );
 		equal( cy.nodes("#n1").scratch("baz"), null, "baz deleted" );
 		
+	});
+
+	test("Immutable data", function(){
+		var n = cy.$("#n1");
+		var e = cy.$("#n1n2");
+
+		n.data("id", "foo");
+		equal( n.data("id"), "n1", "id unchanged" );
+
+		n.data("parent", "n3");
+		ok( n.data("parent") == null, "can't change parent" );
+
+		e.data("target", "n3");
+		equal( e.data("target"), "n2", "target unchanged" );
+
+		e.data("source", "n3");
+		equal( e.data("source"), "n1", "source unchanged" );
 	});
 	
 });

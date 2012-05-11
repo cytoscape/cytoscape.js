@@ -2,7 +2,7 @@ $v(function(jQuery, $, version){
 	
 	defaultModule("Iteration");
 	
-	test("each", function(){
+	test("eles.each()", function(){
 		var visited = { n1: false, n2: false, n3: false };
 		
 		// native cytoweb each
@@ -25,7 +25,7 @@ $v(function(jQuery, $, version){
 		});
 	});
 	
-	test("eq", function(){
+	test("eles.eq()", function(){
 		var list = [];
 		var nodes = cy.nodes();
 		
@@ -38,12 +38,19 @@ $v(function(jQuery, $, version){
 		});
 	});
 	
-	test("size", function(){
+	test("eles.size()", function(){
 		equal( cy.nodes().size(), cy.nodes().length, "Size and length the same" );
 		equal( cy.nodes().size(), 3, "Should have 3 nodes" );
 	});
+
+	test("eles.empty() et al", function(){
+		ok( cy.$("#notgonnamatch").empty(), "empty collection is empty" );
+		ok( !cy.$("#n1").empty(), "nonempty collection is !empty" );
+		ok( !cy.$("#notgonnamatch").nonempty(), "empty collection is !nonempty" );
+		ok( cy.$("#n1").nonempty(), "nonempty collection is nonempty" );
+	})
 	
-	test("slice", function(){
+	test("eles.slice()", function(){
 		var array = [];
 		var nodes = cy.nodes();
 		
@@ -63,6 +70,15 @@ $v(function(jQuery, $, version){
 				});
 			}
 		}
+	});
+
+	test("eles.toArray()", function(){
+		var nodes = cy.nodes();
+		var nodesArray = nodes.toArray();
+
+		nodes.each(function(i, node){
+			ok( node.same( nodesArray[i] ), "node " + i + " same" );
+		});
 	});
 	
 });

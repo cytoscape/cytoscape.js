@@ -74,6 +74,7 @@
 		<script type="text/javascript" src="keys.js"></script>
 		<script type="text/javascript" src="layout.js"></script>
 		<script type="text/javascript" src="tests.js"></script>
+		<script type="text/javascript" src="toggles.js"></script>
 		<script type="text/javascript" src="view.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		
@@ -159,6 +160,8 @@
 	    		<option value="free">free</option>
 	    		<option value="grabify">grabify</option>
 	    		<option value="ungrabify">ungrabify</option>
+	    		<option value="selectify">selectify</option>
+	    		<option value="unselectify">unselectify</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	<button id="bind-button">Apply</button>
@@ -191,7 +194,11 @@
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	<button id="core-bind-button">Apply</button>
-	    	
+
+	    	<h2>Toggles on selected</h2>
+	    	<button class="toggler">selectify</button> <button class="toggler">unselectify</button><br />
+	    	<button class="toggler">lock</button> <button class="toggler">unlock</button><br />
+	    	<button class="toggler">grabify</button> <button class="toggler">ungrabify</button>
 	    	
 	    	<h2>Filtering</h2>
 	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />

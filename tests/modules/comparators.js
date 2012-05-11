@@ -2,7 +2,7 @@ $v(function(jQuery, $, version){
 	
 	defaultModule("Comparitors");
 	
-	test("eles.same()", function(){
+	test("eles.same() et al", function(){
 		var n1 = cy.nodes("#n1");
 		var n2 = cy.nodes("#n2");
 		var n3 = cy.nodes("#n3");
@@ -15,7 +15,7 @@ $v(function(jQuery, $, version){
 		ok(!n1.add(n2).allSame(n2.add(n3)), "(n1, n2) not allSame as (n2, n3)");
 	});
 	
-	test("eles.is() etc", function(){
+	test("eles.is() et al", function(){
 		var n1 = cy.nodes("#n1");
 		var n2 = cy.nodes("#n2");
 		var n3 = cy.nodes("#n3");

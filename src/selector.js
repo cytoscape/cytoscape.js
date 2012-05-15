@@ -599,10 +599,10 @@
 					return true;
 				}
 			}
-			confirmRelations( query.parent, element.parent() ) || return false;
-			confirmRelations( query.ancestors, element.parents() ) || return false;
-			confirmRelations( query.child, element.children() ) || return false;
-			confirmRelations( query.descendant, element.descendants() ) || return false;
+			//confirmRelations( query.parent, element.parent() ) ? $.noop() : return false;
+			//confirmRelations( query.ancestor, element.parents() ) || return false;
+			//confirmRelations( query.child, element.children() ) || return false;
+			//confirmRelations( query.descendant, element.descendants() ) || return false;
 
 			// we've reached the end, so we've matched everything for this query
 			return true;

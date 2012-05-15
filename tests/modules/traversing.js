@@ -115,7 +115,7 @@ $v(function(jQuery, $, version){
 		ok( cy.$("#n2").edgesWith("#n1, #n3").allSame("#n1n2, #n2n3, #ep1, #ep2"), "n2 edgesWith {n2, n3} is { n1n2, n2n3, ep1, ep2 }" );
 
 		// edgesTo
-		ok( cy.$.("#n1").edgesTo("#n2").same("#n1n2, #ep1"), "n1 edgesTo n2 is { n1n2, ep1 }" );
+		ok( cy.$("#n1").edgesTo("#n2").same("#n1n2, #ep1"), "n1 edgesTo n2 is { n1n2, ep1 }" );
 	});
 
 	test("edges.source() & edges.target()", function(){

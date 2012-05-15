@@ -69,5 +69,20 @@ $v(function(jQuery, $, version){
 		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );	
 		ok( cy.filter("[weird = 'foo, bar']").allSame(n2), "[weird = 'foo, bar']" );
 	});
+
+	test("Compound selectors", function(){
+		cy.add({
+			nodes: [
+				{ data: { id: "np1" } },
+				{ data: { id: "np2", parent: "np1" } },
+				{ data: { id: "np3", parent: "np2" } }
+			]
+		});
+
+
+
+		ok( $$("#np1 node").same("#np2, #np3") );
+		ok( $$("#np1 > node").same("#np2") );
+	});
 	
 });

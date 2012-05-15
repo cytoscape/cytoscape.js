@@ -586,9 +586,11 @@
 			function confirmRelations( query, elements ){
 				if( query != null ){
 					var matches = false;
+					elements = elements(); // make elements functional so we save cycles if query == null
 
-					for(var i = 0; i < elements.length; i++){
-						if( queryMatches( query, elements[i] ) ){
+					// query must match for at least one element (may be recursive)
+					for(var i = 0; i < elements.size(); i++){
+						if( queryMatches( query, elements.eq(i) ) ){
 							matches = true;
 							break;
 						}
@@ -599,14 +601,26 @@
 					return true;
 				}
 			}
-			//confirmRelations( query.parent, element.parent() ) ? $.noop() : return false;
-			//confirmRelations( query.ancestor, element.parents() ) || return false;
-			//confirmRelations( query.child, element.children() ) || return false;
-			//confirmRelations( query.descendant, element.descendants() ) || return false;
+
+			if (! confirmRelations(query.parent, function(){
+				return element.parent()
+			}) ){ return false }
+
+			if (! confirmRelations(query.ancestor, function(){
+				return element.parents()
+			}) ){ return false }
+
+			if (! confirmRelations(query.child, function(){
+				return element.children()
+			}) ){ return false }
+
+			if (! confirmRelations(query.descendant, function(){
+				return element.descendants()
+			}) ){ return false }
 
 			// we've reached the end, so we've matched everything for this query
 			return true;
-		};
+		}; // queryMatches
 
 		var selectorFunction = function(i, element){
 			for(var j = 0; j < self.length; j++){
@@ -661,7 +675,7 @@
 				});						
 				
 				return this;
-			};
+			}; // live
 			
 			filteredCollection.die = function(event, callback){
 				if( event == null ){
@@ -691,11 +705,11 @@
 				}
 				
 				return this;
-			};
-		}
+			}; // die
+		} // if add live
 		
 		return filteredCollection;
-	};
+	}; // filter
 	
 	// ith query to string
 	CySelector.prototype.toString = CySelector.prototype.selector = function(){

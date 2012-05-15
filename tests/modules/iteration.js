@@ -23,6 +23,16 @@ $v(function(jQuery, $, version){
 		$.each(visited, function(id, didVisit){
 			ok( didVisit, "Visited via jQuery.each " + id );
 		});
+
+		var j;
+		cy.nodes().each(function(i, ele){
+			if( i == 1 ){
+				return false;
+			} else {
+				j = i;
+			}
+		});
+		equal( j, 0, "return false exits each early" );
 	});
 	
 	test("eles.eq()", function(){

@@ -8,7 +8,9 @@
 			if( $$.is.fn(fn) ){
 				for(var i = 0; i < this.size(); i++){
 					var ele = this.eq(i).element();
-					fn.apply( ele, [ i, ele ] );
+					var ret = fn.apply( ele, [ i, ele ] );
+
+					if( ret === false ){ break; } // exit each early on return false
 				}
 			}
 			return this;

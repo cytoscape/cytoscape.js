@@ -30,7 +30,7 @@
 				classes: [], 
 				colonSelectors: [],
 				data: [],
-				group: onlyThisGroup,
+				group: null,
 				ids: [],
 				meta: [],
 
@@ -42,7 +42,7 @@
 				// because we need to go up in CySelector.filter()
 				parent: null, // parent query obj
 				ancestor: null, // ancestor query obj
-				subject: false, // defines subject in compound query
+				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
 
 				// use these only when subject has been defined
 				child: null,
@@ -56,9 +56,8 @@
 				// ignore
 				self.length = 0;
 			} else {
-				
-				// NOTE: need to update this with fields as they are added to logic in else if
 				self[0] = newQuery();
+				self[0].group = onlyThisGroup;
 				self.length = 1;
 			}
 							
@@ -94,7 +93,7 @@
 			var className = variable; // a class name (follows variable conventions)
 			var descendant = "\\s+";
 			var child = "\\s+>\\s+";
-			var subject = "$";
+			var subject = "\\$";
 			var id = variable; // an element id (follows variable conventions)
 			
 			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
@@ -107,6 +106,9 @@
 			$.each( comparatorOp.split("|"), function(i, op){
 				comparatorOp += "|@" + op;
 			} );
+
+			// the current subject in the query
+			var currentSubject = null;
 			
 			// NOTE: add new expression syntax here to have it recognised by the parser;
 			// a query contains all adjacent (i.e. no separator in between) expressions;
@@ -196,6 +198,7 @@
 					populate: function(){
 						// go on to next query
 						self[++i] = newQuery();
+						currentSubject = null;
 					}
 				},
 
@@ -206,6 +209,7 @@
 						// this query is the parent of the following query
 						var childQuery = newQuery();
 						childQuery.parent = this;
+						childQuery.subject = currentSubject;
 
 						// we're now populating the child query with expressions that follow
 						self[i] = childQuery;
@@ -219,6 +223,7 @@
 						// this query is the ancestor of the following query
 						var descendantQuery = newQuery();
 						descendantQuery.ancestor = this;
+						descendantQuery.subject = currentSubject;
 
 						// we're now populating the descendant query with expressions that follow
 						self[i] = descendantQuery;
@@ -229,8 +234,15 @@
 					modifier: true,
 					regex: subject,
 					populate: function(){
-						this.subject = true;
-					}
+						if( currentSubject != null && this.subject != this ){
+							$$.console.error("Redefinition of subject in selector `%s`", selector);
+							return false;
+						}
+
+						currentSubject = this;
+						this.subject = this;
+					},
+
 				}
 			};
 
@@ -239,12 +251,16 @@
 			var i = 0;
 			
 			// of all the expressions, find the first match in the remaining text
-			function consumeExpr(){
+			function consumeExpr( expectation ){
 				var expr;
 				var match;
 				var name;
 				
-				$.each(exprs, function(n, e){
+				$.each(exprs, function(n, e){ // n: name, e: expression
+
+					// ignore this expression if it doesn't meet the expectation function
+					if( $$.is.fn( expectation ) && !expectation(n, e) ){ return }
+
 					var m = remaining.match(new RegExp( "^" + e.regex ));
 					
 					if( m != null ){
@@ -277,15 +293,10 @@
 			}
 			
 			self[0] = newQuery(); // get started
-			
+
 			consumeWhitespace(); // get rid of leading whitespace
 			for(;;){				
 				var check = consumeExpr();
-				
-				if( check.name == "group" && onlyThisGroup != null && self[i].group != onlyThisGroup ){
-					$$.console.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[i].group, onlyThisGroup, selector);
-					return;
-				}
 				
 				if( check.expr == null ){
 					$$.console.error("The selector `%s` is invalid", selector);
@@ -297,7 +308,9 @@
 					}
 					
 					// let the token populate the selector object (i.e. in self[i])
-					check.expr.populate.apply( self[i], args );
+					var ret = check.expr.populate.apply( self[i], args );
+
+					if( ret === false ){ return } // exit if population failed
 				}
 				
 				// we're done when there's nothing left to parse
@@ -308,7 +321,52 @@
 			
 			self.length = i + 1;
 
-			// TODO check for subject in compound queries and adjust references
+			// adjust references for subject
+			for(j = 0; j < self.length; j++){
+				var query = self[j];
+
+				if( query.subject != null ){
+					// go up the tree until we reach the subject
+					for(;;){
+						if( query.subject == query ){ break } // done if subject is self
+
+						if( query.parent != null ){ // swap parent/child reference
+							var parent = query.parent;
+							var child = query;
+
+							child.parent = null;
+							parent.child = child;
+
+							query = parent; // go up the tree
+						} else if( query.ancestor != null ){ // swap ancestor/descendant
+							var ancestor = query.ancestor;
+							var descendant = query;
+
+							descendant.ancestor = null;
+							ancestor.descendant = descendant;
+
+							query = ancestor; // go up the tree
+						} else {
+							$$.console.error("When adjusting references for the selector `%s`, neither parent nor ancestor was found");
+							break;
+						}
+					} // for
+
+					self[j] = query.subject; // subject should be the root query
+				} // if
+			} // for
+
+			// make sure for each query that the subject group matches the implicit group if any
+			if( onlyThisGroup != null ){
+				for(var j = 0; j < self.length; j++){
+					if( self[j].group != null && self[j].group != onlyThisGroup ){
+						$$.console.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[j].group, onlyThisGroup, selector);
+						return;
+					}
+
+					self[j].group = onlyThisGroup; // set to implicit group
+				}
+			}
 			
 		} else {
 			$$.console.error("A selector must be created from a string; found %o", selector);
@@ -318,7 +376,7 @@
 		self._private.invalid = false;
 		
 	}
-	window.CySelector = $$.CySelector = CySelector; // expose
+	$$.CySelector = CySelector; // expose
 	
 	CySelector.prototype.cy = function(){
 		return this._private.cy;

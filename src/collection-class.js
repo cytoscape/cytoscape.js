@@ -20,7 +20,8 @@
 	
 	$$.fn.collection({	
 		hasClass: function(className){
-			return this.element()._private.classes[className] == true;
+			var ele = this.element();
+			return ele != null && ele._private.classes[className] == true;
 		}
 	});
 	

@@ -20,7 +20,11 @@
 	
 	$$.fn.collection({
 		group: function(){
-			return this.element()._private.group;
+			var ele = this.element();
+
+			if( ele != null ){
+				return ele._private.group;
+			}
 		}
 	});
 

@@ -22,6 +22,32 @@ $v(function(jQuery, $, version){
 		});
 	});
 	
+	test("Functions return undefined on empty collection", function(){
+		var eles = cy.collection();
+
+		equal( eles.id(), undefined, "eles.id()" );
+		equal( eles.position(), undefined, "eles.position()" );
+		equal( eles.position("x"), undefined, "eles.position('x')" );
+		equal( eles.group(), undefined, "eles.group()" );
+		equal( eles.json(), undefined, "eles.json()" );
+		equal( eles.renderedPosition(), undefined, "eles.renderedPosition()" );
+		equal( eles.renderedPosition("x"), undefined, "eles.renderedPosition('x')" );
+		equal( eles.grabbed(), undefined, "eles.grabbed()" );
+		equal( eles.grabbable(), undefined, "eles.grabbable()" );
+		equal( eles.locked(), undefined, "eles.locked()" );
+		equal( eles.style(), undefined, "eles.style()" );
+		equal( eles.style("foo"), undefined, "eles.style('foo')" );
+		equal( eles.renderedStyle(), undefined, "eles.renderedStyle()" );
+		equal( eles.renderedStyle('foo'), undefined, "eles.renderedStyle('foo')" );
+		equal( eles.visible(), undefined, "eles.visible()" );
+		equal( eles.animated(), undefined, "eles.animated()" );
+		equal( eles.selected(), undefined, "eles.selected()" );
+		equal( eles.selectable(), undefined, "eles.selectable()" );
+		equal( eles.degree(), undefined, "eles.degree()" );
+		equal( eles.bypass(), undefined, "eles.bypass()" );
+		equal( eles.bypass('x'), undefined, "eles.bypass('x')" );
+	});
+
 	test("Functions are chainable", function(){
 		
 		var fn = {

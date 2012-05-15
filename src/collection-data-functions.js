@@ -50,7 +50,11 @@
 	
 	$$.fn.collection({
 		id: function(){
-			return this.element()._private.data.id;
+			var ele = this.element();
+
+			if( ele != null ){
+				return ele._private.data.id;
+			}
 		}
 	});
 	
@@ -132,7 +136,10 @@
 					rpos[ key ] = val;
 					
 					var mpos = this.cy().renderer().modelPoint( rpos );
-					this.element()._private.position[key] = mpos[key];
+					var ele = this.element();
+					if( ele != null ){
+						ele._private.position[key] = mpos[key];
+					}
 				},
 				forGet: function( key ){
 					var mpos = this.position(false);
@@ -149,6 +156,8 @@
 	$$.fn.collection({
 		renderedStyle: function( property ){
 			var ele = this.element();
+			if( ele == null ){ return undefined }
+
 			var renderer = ele.cy().renderer(); // TODO remove reference after refactoring
 			var rstyle = renderer.renderedStyle( ele );
 			
@@ -164,6 +173,10 @@
 		style: function( key ){
 			var ele = this.element();
 			
+			if( ele == null ){
+				return undefined;
+			}
+
 			if( key === undefined ){
 				return $$.util.copy( ele._private.style );
 			}
@@ -233,6 +246,8 @@
 			var eles = this;
 			
 			function getter(key){
+				if( ele == null ){ return undefined }
+
 				if( params.validKey.forGet.apply(ele, [key]) ){
 					var ret;
 					
@@ -287,6 +302,10 @@
 			}
 			
 			function objGetter( copy ){
+				if( ele == null ){
+					return undefined; // empty collection doesn't return anything
+				}
+
 				var ret;
 				var obj = ele._private[ params.attr ];
 				

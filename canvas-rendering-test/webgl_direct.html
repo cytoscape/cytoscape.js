@@ -9,8 +9,9 @@
 	</head>
 
 	<body>
-		<h2> Direct WebGL with Canvas 2D context font rendering </h2>
-		
+		<!--
+		<h2> Direct WebGL</h2>
+		-->
 		<div id="container"> </div>
 		
 		<div> Test div </div>
@@ -22,9 +23,7 @@
 	<script type="text/javascript" src="data.js"></script>
 	<script type="text/javascript" src="line-transformer.js"></script>
 	
-	<!--
 	<script type="text/javascript" src="gl-matrix-b20120514-min.js"></script>
-	-->
 	
 	<script id="fragment-shader" type="null">
 		precision mediump float;
@@ -35,10 +34,15 @@
 	</script>
 	
 	<script id="vertex-shader" type="null">
-		attribute vec3 vertex;
+		attribute vec2 vertex;
+		const float factor = 10.0;
+		
+		uniform mat3 projectionMatrix;
+		uniform mat3 modelViewMatrix;
 		
 		void main(void) {
-			gl_Position = vec4(vertex, 1.0);
+			// vertex.x = 1.33;
+			gl_Position = vec4(vertex.x / 1.33 / factor + 0.2, 0.2 + vertex.y / factor, 0.0, 1.0);
 		}
 		
 	</script>
@@ -66,7 +70,10 @@
 		canvas.style.zIndex = 1;
 		container.appendChild(canvas);
 
-		var gl = canvas.getContext("experimental-webgl");
+		var gl = canvas.getContext("experimental-webgl")
+			|| canvas.getContext("webkit-3d")
+			|| canvas.getContext("moz-webgl")
+			|| canvas.getContext("webgl");
 		
 		if (gl == null) {
 			alert("webGL not found");
@@ -122,19 +129,39 @@
 		
 		gl.useProgram(shaderProgram);
 		shaderProgram.vertexAttribute = gl.getAttribLocation(shaderProgram, "vertex");
+		shaderProgram.projectionMatrix = gl.getUniformLocation(shaderProgram, "projectionMatrix");
+		shaderProgram.modelViewMatrix = gl.getUniformLocation(shaderProgram, "modelViewMatrix");
 		
 		gl.enableVertexAttribArray(shaderProgram.vertexAttribute);
 		
 		
 		var triangleVertexBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBuffer);
-		var vertices = [0.0, 0.5, 0.2,
-			-0.5, -0.5, 0.2,
-			0.5, -0.5, 0.2];
+		
+		var projectionMatrix = new Float32Array([
+			1.0 / WIDTH, 0, 0,
+			0, 1.0 / HEIGHT, 0,
+			0, 0, 1
+		]);
+		
+		var modelViewMatrix = new Float32Array([
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1
+		]);
+		
+		var vertices = [0.0, 0.0];
+		var segments = 12;
+		var increment = Math.PI * 2 / segments;
+		
+		for (var angle = -increment; angle < Math.PI * 2; angle += increment) {
+			vertices.push(Math.cos(angle), Math.sin(angle));
+		}
+		
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 		
-		gl.vertexAttribPointer(shaderProgram.vertexAttribute, 3, gl.FLOAT, false, 0, 0);
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 3);
+		gl.vertexAttribPointer(shaderProgram.vertexAttribute, 2, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, segments + 2);
 		
 		
 		

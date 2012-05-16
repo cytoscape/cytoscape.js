@@ -21,19 +21,16 @@
 
 	<script type="text/javascript" src="http://mrdoob.github.com/three.js/build/Three.js"></script>
 	<script type="text/javascript" src="data.js"></script>
-	<script type="text/javascript" src="line-transformer.js"></script>
 	
-	<script type="text/javascript" src="gl-matrix-b20120514-min.js"></script>
-	
-	<script id="fragment-shader" type="null">
+	<script id="shader-fs" type="x-shader/x-fragment">
 		precision mediump float;
 		
 		void main(void) {
-			gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+			gl_FragColor = vec4(0.3, 0.3, 0.3, 1.0);
 		}
 	</script>
 	
-	<script id="vertex-shader" type="null">
+	<script id="shader-vs" type="x-shader/x-vertex">
 		attribute vec2 vertex;
 		const float factor = 10.0;
 		
@@ -41,8 +38,10 @@
 		uniform mat3 modelViewMatrix;
 		
 		void main(void) {
-			// vertex.x = 1.33;
-			gl_Position = vec4(vertex.x / 1.33 / factor + 0.2, 0.2 + vertex.y / factor, 0.0, 1.0);
+		
+			vec3 transformed = vec3(vertex, 1.0) * modelViewMatrix * projectionMatrix;
+			
+			gl_Position = vec4(transformed.x, transformed.y, 0.0, transformed.z);
 		}
 		
 	</script>
@@ -79,7 +78,7 @@
 			alert("webGL not found");
 		}
 		
-		var testNetwork = new Network(40, 400);
+		var testNetwork = new Network(4000, 4000);
 		var nodes = testNetwork.nodes;
 		var edges = testNetwork.edges;
 
@@ -89,7 +88,7 @@
 		
 		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		
-		shaderElement = document.getElementById("fragment-shader");
+		shaderElement = document.getElementById("shader-fs");
 		shaderText = shaderElement.innerHTML;
 		
 		gl.shaderSource(fragmentShader, shaderText);
@@ -98,7 +97,7 @@
 		
 		var vertexShader = gl.createShader(gl.VERTEX_SHADER);
 		
-		shaderElement = document.getElementById("vertex-shader");
+		shaderElement = document.getElementById("shader-vs");
 		shaderText = shaderElement.innerHTML;
 		
 		gl.shaderSource(vertexShader, shaderText);
@@ -132,67 +131,110 @@
 		shaderProgram.projectionMatrix = gl.getUniformLocation(shaderProgram, "projectionMatrix");
 		shaderProgram.modelViewMatrix = gl.getUniformLocation(shaderProgram, "modelViewMatrix");
 		
-		gl.enableVertexAttribArray(shaderProgram.vertexAttribute);
 		
-		
-		var triangleVertexBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBuffer);
-		
-		var projectionMatrix = new Float32Array([
-			1.0 / WIDTH, 0, 0,
-			0, 1.0 / HEIGHT, 0,
-			0, 0, 1
-		]);
-		
-		var modelViewMatrix = new Float32Array([
-			1, 0, 0,
-			0, 1, 0,
-			0, 0, 1
-		]);
-		
-		var vertices = [0.0, 0.0];
+		var nodeVertices = [0.0, 0.0];
 		var segments = 12;
 		var increment = Math.PI * 2 / segments;
 		
 		for (var angle = -increment; angle < Math.PI * 2; angle += increment) {
-			vertices.push(Math.cos(angle), Math.sin(angle));
+			nodeVertices.push(Math.cos(angle), Math.sin(angle));
 		}
 		
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	
+		gl.enableVertexAttribArray(shaderProgram.vertexAttribute);
 		
-		gl.vertexAttribPointer(shaderProgram.vertexAttribute, 2, gl.FLOAT, false, 0, 0);
-		gl.drawArrays(gl.TRIANGLE_FAN, 0, segments + 2);
-		
+		var nodeVertexBuffer = gl.createBuffer();
+		var edgeVertexBuffer = gl.createBuffer();
+
+		var projectionMatrix = new Float32Array([
+			1.0 / (WIDTH / 2), 0, 0,
+			0, 1.0 / (HEIGHT / 2), 0,
+			0, 0, 1.0
+		]);
+		gl.uniformMatrix3fv(shaderProgram.projectionMatrix, false, projectionMatrix);
 		
 		
 		// Spread nodes
-		for (var i = 0; i < nodes.length; i++) {
-			nodes[i].x = Math.random() * WIDTH;
-			nodes[i].y = Math.random() * HEIGHT;
+		{
+			var angleIncrement = Math.PI * 2 / nodes.length;
+			var diameter = Math.min(WIDTH, HEIGHT);
+			for (var i = 0; i < nodes.length; i++) {
+				nodes[i].x = Math.random() * WIDTH;
+				nodes[i].y = Math.random() * HEIGHT;
+				
+				var factor = Math.random();
+				nodes[i].x = diameter / 2 * (1 + factor * Math.cos(angleIncrement * i));
+				nodes[i].y = diameter / 2 * (1 + factor * Math.sin(angleIncrement * i));
+			}
 		}
 
-		var startNode, endNode;
-		for (var i = 0; i < edges.length; i++) {
+		
+		var nodeRadius = 6;
+		var nodeRadiusSquared = nodeRadius * nodeRadius;
+
+		function drawScene() {
+			gl.clear(gl.COLOR_BUFFER_BIT);
+		
+			edgeVertices = [];
 			
-			startNode = nodes[edges[i].start];
-			endNode = nodes[edges[i].end];
+			// Draw edges
+			var startNode, endNode;
+			for (var i = 0; i < edges.length; i++) {
+				
+				startNode = nodes[edges[i].start];
+				endNode = nodes[edges[i].end];
+				
+				edgeVertices.push(startNode.x, startNode.y, endNode.x, endNode.y);
+			}
+			
+			// var edgeVertices = new Float32Array(edgeVertices);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, edgeVertexBuffer);		
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(edgeVertices), gl.DYNAMIC_DRAW);
+			gl.vertexAttribPointer(shaderProgram.vertexAttribute, 2, gl.FLOAT, false, 0, 0);
+
+			gl.uniformMatrix3fv(shaderProgram.modelViewMatrix, false, new Float32Array([
+				1, 0, - WIDTH / 2,
+				0, 1, - HEIGHT / 2,
+				0, 0, 1
+			]));
+
+			// console.log(edgeVertices);
+			// gl.drawElements(gl.LINES, edges.length * 2, gl.UNSIGNED_BYTE, 0);
+			gl.drawArrays(gl.LINES, 0, edges.length * 2);
+			
+			// Draw nodes
+			gl.bindBuffer(gl.ARRAY_BUFFER, nodeVertexBuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(nodeVertices), gl.STATIC_DRAW);
+			gl.vertexAttribPointer(shaderProgram.vertexAttribute, 2, gl.FLOAT, false, 0, 0);
+			
+			for (var i = 0; i < nodes.length; i++) {
+				gl.uniformMatrix3fv(shaderProgram.modelViewMatrix, false, new Float32Array([
+					nodeRadius, 0, nodes[i].x - WIDTH / 2,
+					0, nodeRadius, nodes[i].y - HEIGHT / 2,
+					0, 0, 1
+				]));
+				
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, segments + 2);
+			}
+			
+			// Draw text
+			updateText();
 		}
 
-		for (var i = 0; i < nodes.length; i++) {
-		}
+		drawScene();
 
-		// Draw text
-		// updateText();
+		
 		
 		function updateText() {
 			var context2d = canvas2d.getContext("2d");
 			context2d.clearRect(0, 0, WIDTH, HEIGHT);
-			context2d.font = "normal 14px Verdana";
+			context2d.font = "normal 8px Arial";
 			context2d.textAlign = "center";
 			context2d.textBaseline = "middle";
 		
 			for (var i = 0; i < nodes.length; i++) {
-				context2d.fillText(nodes[i].name, nodes[i].x, 600 - nodes[i].y - 15);
+				context2d.fillText(nodes[i].name, nodes[i].x, 600 - nodes[i].y - 9);
 			}
 		}
 		
@@ -200,12 +242,49 @@
 		container.addEventListener("mousedown", onDocumentMouseDown, false);
 		container.addEventListener("mouseup", onDocumentMouseUp, false);
 		
+		var mouseDown = false;
+		var draggedNode = null;
+		var dragOffsetX = null;
+		var dragOffsetY = null;
+		
+		// Finds the first picked
+		function findPicked(mouseX, mouseY) {
+			
+			var displacementX, displacementY;
+			for (var i = 0; i < nodes.length; i++) {
+				displacementX = nodes[i].x - mouseX;
+				displacementY = nodes[i].y - mouseY;
+				
+				if (displacementX * displacementX 
+					+ displacementY * displacementY <= nodeRadiusSquared) {
+					
+					/*
+					console.log("dX: " + displacementX);
+					console.log("dY: " + displacementY);
+					console.log("dist: " + (displacementX * displacementX 
+					+ displacementY * displacementY));
+					console.log("r2: " + nodeRadiusSquared);
+					*/
+											
+					return nodes[i];
+				}
+			}
+			
+			return null;
+		}
+		
 		function onDocumentMouseMove(event) {
 			event.preventDefault();
 			
 			var mouseX = event.clientX - container.offsetLeft;
 			var mouseY = HEIGHT - (event.clientY - container.offsetTop);
 			
+			if (mouseDown && draggedNode != null) {
+				draggedNode.x = mouseX + dragOffsetX;
+				draggedNode.y = mouseY + dragOffsetY;
+				
+				drawScene();
+			}
 		}
 		
 		function onDocumentMouseDown(event) {
@@ -214,11 +293,23 @@
 			var mouseX = event.clientX - container.offsetLeft;
 			var mouseY = HEIGHT - (event.clientY - container.offsetTop);
 			
-			alert("mouse down: " + mouseX + ", " + mouseY);
+			// alert("mouse down: " + mouseX + ", " + mouseY);
+			mouseDown = true;
+			
+			var picked = findPicked(mouseX, mouseY);
+			if (picked != null) {
+				draggedNode = picked;
+				
+				dragOffsetX = picked.x - mouseX;
+				dragOffsetY = picked.y - mouseY;
+			}
 		}
 						
 		function onDocumentMouseUp(event) {
 			event.preventDefault();
+			
+			mouseDown = false;
+			draggedNode = null;
 		}
 		
 	</script>

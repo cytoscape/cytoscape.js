@@ -232,7 +232,10 @@
 	
 	$$.fn.collection({
 		json: function(){
-			var p = this.element()._private;
+			var ele = this.element();
+			if( ele == null ){ return undefined }
+
+			var p = ele._private;
 			
 			var json = $$.util.copy({
 				data: p.data,
@@ -414,7 +417,8 @@
 	
 	$$.fn.collection({
 		removed: function(){
-			return this.element()._private.removed;
+			var ele = this.element();
+			return ele != null && ele._private.removed;
 		},
 
 		inside: function(){

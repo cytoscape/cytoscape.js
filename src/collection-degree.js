@@ -7,6 +7,8 @@
 		return function(){
 			var self = this.element();
 			
+			if( self == null ){ return undefined }
+
 			if( self.isNode() && !self.removed() ){
 				var degree = 0;
 				var node = this;

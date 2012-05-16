@@ -2,7 +2,10 @@
 	
 	$$.fn.collection({
 		animated: function(){
-			return this.element()._private.animation.current.length > 0;
+			var ele = this.element();
+			if( ele != null ){
+				return ele._private.animation.current.length > 0;
+			}
 		}
 	});
 	
@@ -135,7 +138,11 @@
 	
 	$$.fn.collection({
 		visible: function(){
-			return this.cy().renderer().elementIsVisible( this.element() );
+			var ele = this.element();
+			
+			if( ele != null ){
+				return this.cy().renderer().elementIsVisible( ele );
+			}
 		}
 	});
 	

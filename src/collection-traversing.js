@@ -244,7 +244,7 @@
 
 			// get elements if a selector is specified
 			if( $$.is.string(otherNodes) ){
-				otherNodes = this.cy.$( otherNodes );
+				otherNodes = this.cy().$( otherNodes );
 			}
 			
 			this.nodes().each(function(i, node){

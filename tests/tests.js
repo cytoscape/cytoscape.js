@@ -96,6 +96,9 @@
 					},
 					ready: function(cy){
 						window.cy = cy;
+						window.$$ = function(){
+							return cy.$.apply( cy, arguments );
+						}
 
 						start();
 					}

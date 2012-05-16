@@ -46,7 +46,10 @@
 		
 		$$.fn.collection(
 			impl( params.field, function(){
-				return this.element()._private[ params.field ];
+				var ele = this.element();
+				if( ele != null ){
+					return ele._private[ params.field ];
+				}
 			})
 		);
 		
@@ -98,7 +101,10 @@
 	
 	$$.fn.collection({
 		grabbed: function(){
-			return this.element()._private.grabbed;
+			var ele = this.element();
+			if( ele != null ){
+				return ele._private.grabbed;
+			}
 		}
 	});
 	

@@ -68,6 +68,24 @@ $v(function(jQuery, $, version){
 		ok( cy.filter(".one.odd").allSame(n1), ".one.odd" );
 		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").allSame(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );	
 		ok( cy.filter("[weird = 'foo, bar']").allSame(n2), "[weird = 'foo, bar']" );
+		ok( $$("*").same( cy.elements() ), "* gives all elements" );
+	});
+
+	test("Compound selectors", function(){
+		cy.add({
+			nodes: [
+				{ data: { id: "np1" } },
+				{ data: { id: "np2", parent: "np1" } },
+				{ data: { id: "np3a", parent: "np2" }, classes: "foo" },
+				{ data: { id: "np3b", parent: "np2" } }
+			]
+		});
+
+		ok( $$("#np1 node").same("#np2, #np3a, #np3b"), "np1 descendants are { np2, np31a, np3b }" );
+		ok( $$("#np1 > node").same("#np2"), "np1 children are { np2 }" );
+		ok( $$("#np2 > node").same("#np3a, #np3b"), "np2 children { np3a, np3b }" );
+		ok( $$("#np1 .foo").same("#np3a"), "np1 .foo descendants { np3a }" );
+		ok( $$("#np1 > * > *").same("#np3a, #np3b"), "np1 children's children { np3a, np3b }" );
 	});
 	
 });

@@ -53,21 +53,25 @@
 		vec4 applyFXAA(vec2 fragCoord, sampler2D text);
 		
 		void main(void) {
-			vec3 coord = vec3(textureCoord, 0.0);
+			vec2 coord = vec2(textureCoord.x * 800.0, textureCoord.y * 600.0);
 		
-			gl_FragColor = texture2D(sampler, textureCoord);
+			gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) - applyFXAA(coord, sampler) +
+				vec4(0.0, 0.0, 0.0, 1.0);
 			
-			// gl_FragColor = applyFXAA(textureCoord, sampler);
+			//gl_FragColor = texture2D(sampler, textureCoord);	
 			
 			//gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
 		}
 		
 		
+		/*
+		#define FXAA_REDUCE_MIN   (1.0 / 128.0)
+		#define FXAA_REDUCE_MUL   (1.0 / 8.0)
+		#define FXAA_SPAN_MAX     8.0
+		*/
 		
 		#define FXAA_REDUCE_MIN   (1.0 / 128.0)
-		
-		#define FXAA_REDUCE_MUL   (1.0 / 8.0)
-		
+		#define FXAA_REDUCE_MUL   (1.0 / 1.0)
 		#define FXAA_SPAN_MAX     8.0
 		
 		// Based on mitsuhiko's modification [1] of the code from geeks3d.com [2]
@@ -119,7 +123,7 @@
 			else
 				color = vec4(rgbB, 1.0);
 			
-			color = texture2D(tex, fragCoord);
+			// color = texture2D(tex, fragCoord);
 			
 			return color;
 		}
@@ -274,6 +278,20 @@
 		gl.uniformMatrix3fv(shaderProgram.projectionMatrix, false, projectionMatrix);
 		
 		
+		var nodeRadius = 7;
+		var nodeRadiusSquared = nodeRadius * nodeRadius;
+		var defaultNode = {
+			radius: 7,
+			radiusSquared: 49,
+			color: new Float32Array(0.7, 0.7, 0.7, 1.0)
+		};
+		
+		var hoveredNode = {
+			radius: 10,
+			radiusSquared: 100,
+			color: new Float32Array(0.7, 1.0, 0.7, 1.0)
+		};
+		
 		// Spread nodes
 		{
 			var centerX = WIDTH / 2;
@@ -298,12 +316,12 @@
 					nodes[i].x = Math.random() * WIDTH;
 					nodes[i].y = Math.random() * HEIGHT;
 				}
+				
+				nodes[i].radius = nodeRadius;
 			}
 		}
 
 		
-		var nodeRadius = 7;
-		var nodeRadiusSquared = nodeRadius * nodeRadius;
 		
 		gl.lineWidth(1.5);
 		

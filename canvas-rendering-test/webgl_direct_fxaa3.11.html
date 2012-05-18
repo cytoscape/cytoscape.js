@@ -50,7 +50,7 @@
 	<script id="texture-shader-fs" type="x-shader/x-fragment">
 		#define FXAA_PC 1
 		#define FXAA_GLSL_120 1
-		#define FXAA_QUALITY__PRESET 12
+		#define FXAA_QUALITY__PRESET 15
 		
 		#define FXAA_FAST_PIXEL_OFFSET 0
 		#define FXAA_GATHER4_ALPHA 0
@@ -681,8 +681,8 @@
 			#define FxaaHalf2 vec2
 			#define FxaaHalf3 vec3
 			#define FxaaHalf4 vec4
-			#define FxaaInt2 ivec2
-			// #define FxaaInt2 vec2
+			// #define FxaaInt2 ivec2
+			#define FxaaInt2 vec2
 			#define FxaaSat(x) clamp(x, 0.0, 1.0)
 			#define FxaaTex sampler2D
 		#else
@@ -705,8 +705,8 @@
 			// And at least,
 			//  #extension GL_EXT_gpu_shader4 : enable
 			//  (or set FXAA_FAST_PIXEL_OFFSET 1 to work like DX9)
-			#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)
-			//#define FxaaTexTop(t, p) texture2D(t, p)
+			//#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)
+			#define FxaaTexTop(t, p) texture2D(t, p)
 			
 			#if (FXAA_FAST_PIXEL_OFFSET == 1)
 				#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)
@@ -1413,7 +1413,7 @@
 			alert("webGL not found");
 		}
 		
-		var testNetwork = new Network(400, 400);
+		var testNetwork = new Network(8000, 8000);
 		var nodes = testNetwork.nodes;
 		var edges = testNetwork.edges;
 
@@ -1526,7 +1526,7 @@
 		var nodeRadiusSquared = nodeRadius * nodeRadius;
 		var defaultNode = {
 			radius: 9,
-			color: new Float32Array([0.3, 0.3, 0.3, 0.9])
+			color: new Float32Array([0.33, 0.33, 0.33, 1.0])
 		};
 		defaultNode.radiusSquared = defaultNode.radius * defaultNode.radius;
 		
@@ -1534,12 +1534,19 @@
 		
 		var hoveredNode = {
 			radius: 10,
-			color: new Float32Array([0.2, 0.4, 0.7, 1.0])
+			color: new Float32Array([0.15, 0.27, 0.4, 1.0])
 		};
 		hoveredNode.radiusSquared = hoveredNode.radius * hoveredNode.radius;
 		
+		var selectedNode = {
+			radius: 9,
+			color: new Float32Array([0.4, 0.2, 0.4, 1.0])
+		};
+		selectedNode.radiusSquared = selectedNode.radius * selectedNode.radius;
+		
+		
 		var defaultEdge = {
-			color: new Float32Array([0.2, 0.2, 0.2, 0.5])
+			color: new Float32Array([0.2, 0.2, 0.2, 1.0])
 		};
 		
 		// Spread nodes
@@ -1622,22 +1629,8 @@
 					0, 0, 1
 				]));
 				
-				// console.log(nodeStyle);
 				gl.uniform4fv(shaderProgram.color, nodeStyle.color);
-				
-				gl.drawArrays(gl.TRIANGLE_FAN, 0, segments + 2);
-			}
-			
-			if (hovered != null) {
-				gl.uniformMatrix3fv(shaderProgram.modelViewMatrix, false, new Float32Array([
-					hoveredNode.radius, 0, hovered.x - WIDTH / 2,
-					0, hoveredNode.radius, hovered.y - HEIGHT / 2,
-					0, 0, 1
-				]));
-				
-				// console.log(nodeStyle);
-				gl.uniform4fv(shaderProgram.color, hoveredNode.color);
-				
+								
 				gl.drawArrays(gl.TRIANGLE_FAN, 0, segments + 2);
 			}
 		}
@@ -1742,6 +1735,14 @@
 		var dragOffsetY = null;
 		var hovered = null;
 		
+		var selectionBox = false;
+		var selectedNodes = [];
+		var topLeftX = null;
+		var topLeftY = null;
+		
+		var bottomRightX = null;
+		var bottomRightY = null;
+		
 		// Finds the first picked
 		function findPicked(mouseX, mouseY) {
 			
@@ -1768,23 +1769,97 @@
 			return null;
 		}
 		
+		function select(topLeftX, topLeftY, bottomRightX, bottomRightY) {
+			
+			var minX = Math.min(topLeftX, bottomRightX);
+			var minY = Math.min(topLeftY, bottomRightY);
+			
+			var maxX = Math.max(topLeftX, bottomRightX);
+			var maxY = Math.max(topLeftY, bottomRightY);
+			
+			selected = [];
+			var radius;
+			var out = false;
+			var x, y;
+			
+			for (var i = 0; i < nodes.length; i++) {
+				radius = nodes[i].style.radius;
+				
+				x = nodes[i].x;
+				y = nodes[i].y;
+				
+				out = (x + radius) < minX;
+				out = out || (x - radius > maxX);
+				out = out || (y + radius < minY);
+				out = out || (y - radius > maxY);
+				
+				if (!out) {
+					selected.push(nodes[i]);
+					nodes[i].selected = true;
+					nodes[i].style = selectedNode;
+				}
+			}
+			
+			return selected;
+		}
+		
+		function resetSelected() {
+			selectedNodes = [];
+			
+			for (var i = 0; i < nodes.length; i++) {
+				if (nodes[i].style == selectedNode) {
+					nodes[i].style = defaultNode;
+				}
+			}
+		}
+		
 		function onDocumentMouseMove(event) {
 			event.preventDefault();
 			
 			var mouseX = event.clientX - container.offsetLeft;
 			var mouseY = HEIGHT - (event.clientY - container.offsetTop);
 			
-			var picked = findPicked(mouseX, mouseY);
-			if (picked != null) {
-				hovered = picked;
-			} else {
-				hovered = null;
-			}
-			
 			if (mouseDown && draggedNode != null) {
+				/*
 				draggedNode.x = mouseX + dragOffsetX;
 				draggedNode.y = mouseY + dragOffsetY;
-				hovered = draggedNode;
+				*/
+				
+				/*
+				if (draggedNode.style != selectedNode) {
+					hovered = draggedNode;
+				}
+				*/
+				
+				for (var i = 0; i < selectedNodes.length; i++) {
+					selectedNodes[i].x = mouseX + selectedNodes[i].dragOffsetX;
+					selectedNodes[i].y = mouseY + selectedNodes[i].dragOffsetY;
+				}
+			}
+			
+			if (selectionBox) {
+				bottomRightX = mouseX;
+				bottomRightY = mouseY;
+				
+				resetSelected();
+				selectedNodes = select(topLeftX, topLeftY, bottomRightX, bottomRightY);
+			} else {
+				var picked = findPicked(mouseX, mouseY);
+				
+				if (picked != null) {
+					if (hovered != null && hovered.style != selectedNode) {
+						hovered.style = defaultNode;
+					}
+					
+					if (picked.style != selectedNode) {		
+						hovered = picked;
+						hovered.style = hoveredNode;
+					}
+				} else {
+					if (hovered != null && hovered.style == hoveredNode) {
+						hovered.style = defaultNode;
+					}
+				}
 			}
 			
 			drawScene();
@@ -1803,9 +1878,39 @@
 			if (picked != null) {
 				draggedNode = picked;
 				
+				/*
 				dragOffsetX = picked.x - mouseX;
 				dragOffsetY = picked.y - mouseY;
+				*/
+				
+				// Reset selection if clicked outside selection
+				if (picked.style != selectedNode) {
+					resetSelected();
+				}
+				
+				picked.style = selectedNode;
+
+				if (selectedNodes.length == 0) {
+					selectedNodes = [picked];
+				}
+				
+				for (var i = 0; i < selectedNodes.length; i++) {
+					selectedNodes[i].dragOffsetX = selectedNodes[i].x - mouseX;
+					selectedNodes[i].dragOffsetY = selectedNodes[i].y - mouseY;
+				}
+				
+				
+			} else {
+				// If clicked empty space, set down selection box corner
+				selectionBox = true;
+				topLeftX = mouseX;
+				topLeftY = mouseY;
+				
+				// Reset selection
+				resetSelected();
 			}
+			
+			drawScene();
 		}
 						
 		function onDocumentMouseUp(event) {
@@ -1813,6 +1918,11 @@
 			
 			mouseDown = false;
 			draggedNode = null;
+			
+			// Remove selection box
+			if (selectionBox) {
+				selectionBox = false;
+			}
 		}
 		
 	</script>

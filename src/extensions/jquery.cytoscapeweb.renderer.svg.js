@@ -446,8 +446,8 @@
 		
 		// firefox fix :(
 		if( e.offsetX == null || e.offsetY == null ){
-			e.offsetX = e.clientX - self.cy.container().offset().left;
-			e.offsetY = e.clientY - self.cy.container().offset().top;
+			e.offsetX = e.pageX - self.cy.container().offset().left;
+			e.offsetY = e.pageY - self.cy.container().offset().top;
 		}
 	};
 	

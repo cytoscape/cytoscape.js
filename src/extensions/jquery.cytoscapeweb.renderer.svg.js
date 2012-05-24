@@ -463,6 +463,7 @@
 			x: null,
 			y: null
 		};
+		var mmovedScreenTolerance = 0;
 		
 		self.shiftDown = false;
 		$(window).bind("keydown keyup", function(e){
@@ -480,9 +481,11 @@
 			moverThenMoved = false;
 		}).bind("mousemove", function(e){
 			var diffScreenPos = false;
-			if( e.screenX != mmovedScreenPos.x || e.screenY != mmovedScreenPos.y ){
+			if( Math.abs(e.screenX - mmovedScreenPos.x) > mmovedScreenTolerance
+			|| Math.abs(e.screenY - mmovedScreenPos.y) > mmovedScreenTolerance ){
 				diffScreenPos = true;
 			}
+			
 			mmovedScreenPos = {
 				x: e.screenX,
 				y: e.screenY

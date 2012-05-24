@@ -457,6 +457,12 @@
 		
 		var svgDomElement = self.svgRoot;
 		var panDelay = self.options.selectionToPanDelay;
+		var mover = false;
+		var moverThenMoved = false;
+		var mmovedScreenPos = {
+			x: null,
+			y: null
+		};
 		
 		self.shiftDown = false;
 		$(window).bind("keydown keyup", function(e){
@@ -469,6 +475,24 @@
 				|| $(e.target)[0] == self.svgBg;
 		}
 		
+		$(window).bind("blur", function(){
+			mover = false;
+			moverThenMoved = false;
+		}).bind("mousemove", function(e){
+			var diffScreenPos = false;
+			if( e.screenX != mmovedScreenPos.x || e.screenY != mmovedScreenPos.y ){
+				diffScreenPos = true;
+			}
+			mmovedScreenPos = {
+				x: e.screenX,
+				y: e.screenY
+			};
+
+			if( mover && diffScreenPos ){
+				moverThenMoved = true;
+			}
+		});
+
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
 			// ignore right clicks
@@ -623,11 +647,17 @@
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
+		}).bind("mouseover", function(){
+			mover = true;
+			moverThenMoved = false;
+		}).bind("mouseout", function(){
+			mover = false;
+			moverThenMoved = false;
 		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
-			if( !self.cy.panning() || !self.cy.zooming() ){
+			if( !self.cy.panning() || !self.cy.zooming() || !moverThenMoved ){
 				return;
 			}
-			
+
 			self.offsetFix(e.originalEvent);
 
 			var point = {

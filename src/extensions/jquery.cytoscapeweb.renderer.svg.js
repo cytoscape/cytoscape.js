@@ -446,8 +446,8 @@
 		
 		// firefox fix :(
 		if( e.offsetX == null || e.offsetY == null ){
-			e.offsetX = e.clientX - self.cy.container().offset().left;
-			e.offsetY = e.clientY - self.cy.container().offset().top;
+			e.offsetX = e.pageX - self.cy.container().offset().left;
+			e.offsetY = e.pageY - self.cy.container().offset().top;
 		}
 	};
 	
@@ -457,6 +457,13 @@
 		
 		var svgDomElement = self.svgRoot;
 		var panDelay = self.options.selectionToPanDelay;
+		var mover = false;
+		var moverThenMoved = false;
+		var mmovedScreenPos = {
+			x: null,
+			y: null
+		};
+		var mmovedScreenTolerance = 0;
 		
 		self.shiftDown = false;
 		$(window).bind("keydown keyup", function(e){
@@ -469,6 +476,26 @@
 				|| $(e.target)[0] == self.svgBg;
 		}
 		
+		$(window).bind("blur", function(){
+			mover = false;
+			moverThenMoved = false;
+		}).bind("mousemove", function(e){
+			var diffScreenPos = false;
+			if( Math.abs(e.screenX - mmovedScreenPos.x) > mmovedScreenTolerance
+			|| Math.abs(e.screenY - mmovedScreenPos.y) > mmovedScreenTolerance ){
+				diffScreenPos = true;
+			}
+			
+			mmovedScreenPos = {
+				x: e.screenX,
+				y: e.screenY
+			};
+
+			if( mover && diffScreenPos ){
+				moverThenMoved = true;
+			}
+		});
+
 		$(svgDomElement).bind("mousedown", function(mousedownEvent){
 
 			// ignore right clicks
@@ -623,11 +650,17 @@
 				$(window).bind("blur", endHandler);
 				$(svgDomElement).bind("mouseup", endHandler);
 			}
+		}).bind("mouseover", function(){
+			mover = true;
+			moverThenMoved = false;
+		}).bind("mouseout", function(){
+			mover = false;
+			moverThenMoved = false;
 		}).bind("mousewheel", function(e, delta, deltaX, deltaY){
-			if( !self.cy.panning() || !self.cy.zooming() ){
+			if( !self.cy.panning() || !self.cy.zooming() || !moverThenMoved ){
 				return;
 			}
-			
+
 			self.offsetFix(e.originalEvent);
 
 			var point = {

@@ -9,27 +9,24 @@ You can find the documentation in the [wiki](https://github.com/cytoscape/cytosc
 
 A big thanks goes out to Keith Wood for his jQuery SVG library, which is used
 in Cytoscape Web's default SVG renderer implementation.  You can find out more
-about his library at his website (http://keith-wood.name/svg.html).
+about his library at [his website](http://keith-wood.name/svg.html).
 
 We would also like to thank Mark Gibson for his work on the jQuery color
 library, which is used in our continuous mapper calculations.  You can find out
-more about Mark's library at his website
-(http://www.adaptavist.com/display/jQuery/Colour+Library).
+more about Mark's library at [his website](http://www.adaptavist.com/display/jQuery/Colour+Library).
 
 We used Kevin Lindsey's SVG intersection library to calculate the positioning
-of some objects, like edges.  You can find his library at his website
-(http://www.kevlindev.com/gui/math/intersection).
+of some objects, like edges.  You can find his library at [his website](http://www.kevlindev.com/gui/math/intersection).
 
 We used Brandon Aaron's mouse wheel library for providing easy cross-browser
 support for zooming with the mouse wheel in the SVG renderer.  You can find out
-more about his library at his website (http://brandonaaron.net).
+more about his library at [his website](http://brandonaaron.net).
 
 Arbor was used in one of Cytoscape Web's included layouts.  We made some
 modifications to the library, written by Samizdat Drafting Co., so that it
 would work with multiple instances of Cytoscape Web and that it would work
 on lesser browsers, like IE.  Information about this library can be found
-at the Arbor website (http://arborjs.org/) and on GitHub
-(https://github.com/maxkfranz/arbor) where the original code was forked.
+at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
 
 
 ## Build dependencies

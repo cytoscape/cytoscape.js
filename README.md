@@ -2,35 +2,7 @@
 
 ## Documentation
 
-You can find the documentation in the [wiki](https://github.com/cytoscape/cytoscape.js/wiki).
-
-## Usage dependencies
-
-To use cytoscape.js in your HTML document, you must include the following JS:
-
-  * jQuery 1.4 or newer
-	
-  * One of
-	
-    * cytoscape[.min].js
-		    
-      Either the minified or unminified cytoscape.js code WITHOUT ANY
-      dependencies.  When using this file, you must include the
-      appropriate dependencies in the `lib` directory in your HTML file.
-
-      You'll need the dependencies of the SVG renderer.
-		    
-      SVG renderer dependencies (found in the `lib` directory)
-        * 2D.js
-        * jquery.color.js
-        * jquery.mousewheel.js
-        * jquery.svg.js
-		
-    * cytoscape.all[.min].js
-		    
-        Either the minified or unminified Cytoscape Web code WITH ALL
-        dependencies.  When using this file, you do not need to include
-        any of the dependencies for the SVG renderer.
+You can find the documentation in the [wiki](https://github.com/cytoscape/cytoscape.js/wiki).  This readme is mostly for developers of cytoscape.js.
 
 
 ## Acknowledgements
@@ -73,8 +45,7 @@ Linux or Mac OS X---Mac needs XCode with command line tools installed to run
 
 
 
-Build instructions
-===============================================================================
+## Build instructions
 
 Run `make` in the console.  The targets are:
 
@@ -90,9 +61,8 @@ actual release ZIP.
 
 
 
-Tests
-===============================================================================
+## Tests
 
-QUnit tests are found in the `tests` directory.  The tests are automatically
+QUnit tests are found in the [tests](https://github.com/cytoscape/cytoscape.js/tree/master/tests) directory.  The tests are automatically
 run against different versions of jQuery.
 

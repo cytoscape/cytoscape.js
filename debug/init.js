@@ -1,7 +1,7 @@
 $(function(){
 				
-	$.cytoscapeweb("quiet", false);
-	$.cytoscapeweb("debugging", false);
+	$.cytoscape("quiet", false);
+	$.cytoscape("debugging", false);
 	
 	var height, width;
 	
@@ -152,16 +152,16 @@ $(function(){
 		}
 	}
 	
-	var $container = $("#cytoscapeweb");
+	var $container = $("#cytoscape");
 	
 	$container.cy(options).cy(function(){
 		
-		height = $("#cytoscapeweb").height();
-		width = $("#cytoscapeweb").width();
+		height = $container.height();
+		width = $container.width();
 		
-		$container.cytoscapewebPanzoom();
+		$container.cytoscapePanzoom();
 		
-		$container.cytoscapewebEdgehandles({
+		$container.cytoscapeEdgehandles({
 			lineType: "straight",
 			preview: true,
 			handleSize: 12,

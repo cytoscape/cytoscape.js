@@ -23,10 +23,10 @@
 		var options = $.extend(true, {}, defaults, opts);
 		
 		if( options.container == null ){
-			$$.console.error("Cytoscape Web must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
+			$$.console.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
 			return;
 		} else if( $(options.container).size() > 1 ){
-			$$.console.error("Cytoscape Web can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
+			$$.console.error("Cytoscape.js can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
 			return;
 		}
 		
@@ -60,7 +60,7 @@
 		
 		// initial load
 		cy.load(options.elements, function(){ // onready
-			var data = cy.container().data("cytoscapeweb");
+			var data = cy.container().data("cytoscape");
 			
 			if( data == null ){
 				data = {};
@@ -76,7 +76,7 @@
 				data.readies = [];
 			}
 			
-			$(options.container).data("cytoscapeweb", data);
+			$(options.container).data("cytoscape", data);
 			
 			cy.startAnimationLoop();
 			
@@ -130,4 +130,4 @@
 		
 	});	
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

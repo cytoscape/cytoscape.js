@@ -1,5 +1,10 @@
-Usage dependencies
-===============================================================================
+# cytoscape.js
+
+## Documentation
+
+You can find the documentation in the [wiki](https://github.com/cytoscape/cytoscape.js/wiki).
+
+## Usage dependencies
 
 To use cytoscape.js in your HTML document, you must include the following JS:
 
@@ -28,8 +33,7 @@ To use cytoscape.js in your HTML document, you must include the following JS:
         any of the dependencies for the SVG renderer.
 
 
-We'd like to thank the academy...
-===============================================================================
+## Acknowledgements
 
 A big thanks goes out to Keith Wood for his jQuery SVG library, which is used
 in Cytoscape Web's default SVG renderer implementation.  You can find out more
@@ -56,8 +60,7 @@ at the Arbor website (http://arborjs.org/) and on GitHub
 (https://github.com/maxkfranz/arbor) where the original code was forked.
 
 
-Build dependencies
-===============================================================================
+## Build dependencies
 
 You need a number of executables installed on your system to successfully run
 `make` to build the project.
@@ -75,10 +78,10 @@ Build instructions
 
 Run `make` in the console.  The targets are:
 
-  all : build everything (default)
-  minify : build the production minified JS
-  zip : minify and make a ZIP file for release
-  clean : deletes built files
+ * `all` : build everything (default)
+ * `minify` : build the production minified JS
+ * `zip` : minify and make a ZIP file for release
+ * `clean` : deletes built files
 
 A note to developers:
 

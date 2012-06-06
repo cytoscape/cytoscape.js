@@ -107,4 +107,4 @@
 	});
 	
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

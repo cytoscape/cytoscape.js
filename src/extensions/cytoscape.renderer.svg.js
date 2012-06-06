@@ -2618,4 +2618,4 @@
 	$.cytoscapeweb("renderer", "svg", SvgRenderer);
 	$.cytoscapeweb("exporter", "svg", SvgExporter);
 	
-})( jQuery, jQuery.cytoscapeweb );
+})( jQuery, jQuery.cytoscape );

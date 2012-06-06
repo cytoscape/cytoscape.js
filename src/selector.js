@@ -844,4 +844,4 @@
 		return str;
 	};
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

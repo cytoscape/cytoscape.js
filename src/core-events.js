@@ -220,7 +220,7 @@
 					eventObj = $.Event(event);
 				}
 				eventObj.data = listener.data;
-				eventObj.cy = eventObj.cytoscapeweb = cy;
+				eventObj.cy = eventObj.cytoscape = cy;
 				
 				var args = [ eventObj ];
 				
@@ -244,4 +244,4 @@
 		}
 	}
 		
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

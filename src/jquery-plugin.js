@@ -1,19 +1,19 @@
 ;(function($, $$){
 	
-	// allow calls on a jQuery selector by proxying calls to $.cytoscapeweb
-	// e.g. $("#foo").cytoscapeweb(options) => $.cytoscapeweb(options) on #foo
-	$.fn.cytoscapeweb = function(opts){
+	// allow calls on a jQuery selector by proxying calls to $.cytoscape
+	// e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
+	$.fn.cytoscape = function(opts){
 		
 		// get object
 		if( opts == "get" ){
-			var data = $(this).data("cytoscapeweb");
+			var data = $(this).data("cytoscape");
 			return data.cy;
 		}
 		
 		// bind to ready
 		else if( $$.is.fn(opts) ){
 			var ready = opts;
-			var data = $(this).data("cytoscapeweb");
+			var data = $(this).data("cytoscape");
 			
 			if( data != null && data.cy != null && data.ready ){
 				// already ready so just trigger now
@@ -30,7 +30,7 @@
 				}
 				
 				data.readies.push(ready);
-				$(this).data("cytoscapeweb", data);
+				$(this).data("cytoscape", data);
 			} 
 			
 		}
@@ -42,7 +42,7 @@
 					container: $(this)
 				});
 			
-				$.cytoscapeweb(options);
+				$.cytoscape(options);
 			});
 		}
 		
@@ -55,7 +55,7 @@
 			}
 			
 			$(this).each(function(){
-				var data = $(this).data("cytoscapeweb");
+				var data = $(this).data("cytoscape");
 				var cy = data.cy;
 				var fnName = opts;
 				
@@ -77,9 +77,9 @@
 
 	};
 	
-	// allow functional access to cytoweb
-	// e.g. var cytoweb = $.cytoscapeweb({ selector: "#foo", ... });
-	//      var nodes = cytoweb.nodes();
+	// allow functional access to cyto
+	// e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
+	//      var nodes = cyto.nodes();
 	$$.init = function( options ){
 		
 		// create instance
@@ -88,10 +88,10 @@
 		} 
 		
 		// allow for registration of extensions
-		// e.g. $.cytoscapeweb("renderer", "svg", SvgRenderer);
-		// e.g. $.cytoscapeweb("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
-		// e.g. $.cytoscapeweb("core", "doSomething", function(){ /* doSomething code */ });
-		// e.g. $.cytoscapeweb("collection", "doSomething", function(){ /* doSomething code */ });
+		// e.g. $.cytoscape("renderer", "svg", SvgRenderer);
+		// e.g. $.cytoscape("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
+		// e.g. $.cytoscape("core", "doSomething", function(){ /* doSomething code */ });
+		// e.g. $.cytoscape("collection", "doSomething", function(){ /* doSomething code */ });
 		else if( $$.is.string( options ) ) {
 			return $$.extension.apply($$.extension, arguments);
 		}
@@ -99,8 +99,8 @@
 	
 	// use short alias (cy) if not already defined
 	if( $.fn.cy == null && $.cy == null ){
-		$.fn.cy = $.fn.cytoscapeweb;
-		$.cy = $.cytoscapeweb;
+		$.fn.cy = $.fn.cytoscape;
+		$.cy = $.cytoscape;
 	}
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

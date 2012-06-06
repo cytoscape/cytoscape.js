@@ -161,4 +161,4 @@
 	
 	$.cytoscapeweb("layout", "grid", GridLayout);
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

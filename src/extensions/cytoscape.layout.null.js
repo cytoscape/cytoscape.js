@@ -31,4 +31,4 @@
 	
 	$.cytoscapeweb("layout", "null", NullLayout);
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

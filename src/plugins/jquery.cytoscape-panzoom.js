@@ -29,7 +29,7 @@ Depends on
 		autodisableForMobile: true // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
 	};
 	
-	$.fn.cytoscapewebPanzoom = function(params){
+	$.fn.cytoscapePanzoom = function(params){
 		var options = $.extend(true, {}, defaults, params);
 		var fn = params;
 		
@@ -37,7 +37,7 @@ Depends on
 			destroy: function(){
 				var $this = $(this);
 				
-				$this.find(".ui-cytoscapeweb-panzoom").remove();
+				$this.find(".ui-cytoscape-panzoom").remove();
 			},
 				
 			init: function(){
@@ -50,40 +50,40 @@ Depends on
 				return $(this).each(function(){
 					var $container = $(this);
 					
-					var $panzoom = $('<div class="ui-cytoscapeweb-panzoom"></div>');
+					var $panzoom = $('<div class="ui-cytoscape-panzoom"></div>');
 					$container.append( $panzoom );
 					
 					if( options.staticPosition ){
-						$panzoom.addClass("ui-cytoscapeweb-panzoom-static");
+						$panzoom.addClass("ui-cytoscape-panzoom-static");
 					}
 					
-					var $zoomIn = $('<div class="ui-cytoscapeweb-panzoom-zoom-in ui-cytoscapeweb-panzoom-zoom-button"><span class="ui-icon ui-icon-plusthick"></span></div>');
+					var $zoomIn = $('<div class="ui-cytoscape-panzoom-zoom-in ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-plusthick"></span></div>');
 					$panzoom.append( $zoomIn );
 					
-					var $zoomOut = $('<div class="ui-cytoscapeweb-panzoom-zoom-out ui-cytoscapeweb-panzoom-zoom-button"><span class="ui-icon ui-icon-minusthick"></span></div>');
+					var $zoomOut = $('<div class="ui-cytoscape-panzoom-zoom-out ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-minusthick"></span></div>');
 					$panzoom.append( $zoomOut );
 					
-					var $reset = $('<div class="ui-cytoscapeweb-panzoom-reset ui-cytoscapeweb-panzoom-zoom-button"><span class="ui-icon ui-icon-arrowthick-2-ne-sw"></span></div>');
+					var $reset = $('<div class="ui-cytoscape-panzoom-reset ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-arrowthick-2-ne-sw"></span></div>');
 					$panzoom.append( $reset );
 					
-					var $slider = $('<div class="ui-cytoscapeweb-panzoom-slider"></div>');
+					var $slider = $('<div class="ui-cytoscape-panzoom-slider"></div>');
 					$panzoom.append( $slider );
 					
-					$slider.append('<div class="ui-cytoscapeweb-panzoom-slider-background"></div>');
+					$slider.append('<div class="ui-cytoscape-panzoom-slider-background"></div>');
 					
-					var $panner = $('<div class="ui-cytoscapeweb-panzoom-panner"></div>');
+					var $panner = $('<div class="ui-cytoscape-panzoom-panner"></div>');
 					$panzoom.append( $panner );
 					
-					var $pHandle = $('<div class="ui-cytoscapeweb-panzoom-panner-handle"></div>');
+					var $pHandle = $('<div class="ui-cytoscape-panzoom-panner-handle"></div>');
 					$panner.append( $pHandle );
 					
-					var $pUp = $('<div class="ui-cytoscapeweb-panzoom-pan-up ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-n"></span></div>');
-					var $pDown = $('<div class="ui-cytoscapeweb-panzoom-pan-down ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-s"></span></div>');
-					var $pLeft = $('<div class="ui-cytoscapeweb-panzoom-pan-left ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-w"></span></div>');
-					var $pRight = $('<div class="ui-cytoscapeweb-panzoom-pan-right ui-cytoscapeweb-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-e"></span></div>');
+					var $pUp = $('<div class="ui-cytoscape-panzoom-pan-up ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-n"></span></div>');
+					var $pDown = $('<div class="ui-cytoscape-panzoom-pan-down ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-s"></span></div>');
+					var $pLeft = $('<div class="ui-cytoscape-panzoom-pan-left ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-w"></span></div>');
+					var $pRight = $('<div class="ui-cytoscape-panzoom-pan-right ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-e"></span></div>');
 					$panner.append( $pUp ).append( $pDown ).append( $pLeft ).append( $pRight );
 					
-					var $pIndicator = $('<div class="ui-cytoscapeweb-panzoom-pan-indicator"></div>');
+					var $pIndicator = $('<div class="ui-cytoscape-panzoom-pan-indicator"></div>');
 					$panner.append( $pIndicator );
 					
 					function handle2pan(e){
@@ -171,7 +171,7 @@ Depends on
 						
 						positionIndicator(pan);
 						panInterval = setInterval(function(){
-							$container.cytoscapeweb("get").panBy(pan);
+							$container.cytoscape("get").panBy(pan);
 						}, options.panSpeed);
 					};
 					
@@ -212,7 +212,7 @@ Depends on
 					}
 					
 					function setZoomViaSlider(){
-						var cy = $container.cytoscapeweb("get");
+						var cy = $container.cytoscape("get");
 						var val = getSliderVal();
 						
 						var zoom = slider2zoom(val);
@@ -226,7 +226,7 @@ Depends on
 						min: sliderMin,
 						max: sliderMax,
 						step: 1,
-						val: zoom2slider( $container.cytoscapeweb("get").zoom() ),
+						val: zoom2slider( $container.cytoscape("get").zoom() ),
 						orientation: options.staticPosition ? "vertical" : "horizontal",
 						slide: function(e){
 							if( e.originalEvent.type == "keydown" ){
@@ -275,7 +275,7 @@ Depends on
 					});
 					
 					var sliderTimeout;
-					$container.cytoscapeweb("get").bind("zoom", function(){ 
+					$container.cytoscape("get").bind("zoom", function(){ 
 						if( sliderTimeout != null || sliderMdown ){
 							return;
 						}
@@ -327,7 +327,7 @@ Depends on
 							zx = $container.width()/2;
 							zy = $container.height()/2;
 
-							var cy = $container.cytoscapeweb("get");
+							var cy = $container.cytoscape("get");
 							
 							zoomInterval = setInterval(function(){
 								var zoom = cy.zoom();
@@ -366,7 +366,7 @@ Depends on
 							return;
 						}
 						
-						var cy = $container.cytoscapeweb("get");
+						var cy = $container.cytoscape("get");
 						cy.fit();
 
 						var length = Math.max( $container.width(), $container.height() );
@@ -394,7 +394,7 @@ Depends on
 		} else if( typeof fn == 'object' || !fn ) {
 			return functions.init.apply( this, arguments );
 		} else {
-			$.error("No such function `"+ fn +"` for jquery.cytoscapewebPanzoom");
+			$.error("No such function `"+ fn +"` for jquery.cytoscapePanzoom");
 		}
 		
 		return $(this);

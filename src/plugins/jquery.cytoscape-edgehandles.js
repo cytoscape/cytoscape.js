@@ -31,7 +31,7 @@
 		}
 	};
 	
-	$.fn.cytoscapewebEdgehandles = function( params ){
+	$.fn.cytoscapeEdgehandles = function( params ){
 		var fn = params;
 		
 		var functions = {
@@ -140,9 +140,9 @@
 					safelyRemoveCySvgChild( line );
 					
 					cy.nodes()
-						.removeClass("ui-cytoscapeweb-edgehandles-hover")
-						.removeClass("ui-cytoscapeweb-edgehandles-source")
-						.removeClass("ui-cytoscapeweb-edgehandles-target")
+						.removeClass("ui-cytoscape-edgehandles-hover")
+						.removeClass("ui-cytoscape-edgehandles-source")
+						.removeClass("ui-cytoscape-edgehandles-target")
 					;
 
 					linePoints = null;
@@ -155,11 +155,11 @@
 				}
 				
 				function removePreview( source, target ){
-					source.edgesWith(target).filter(".ui-cytoscapeweb-edgehandles-preview").remove();
+					source.edgesWith(target).filter(".ui-cytoscape-edgehandles-preview").remove();
 					
 					target
-						.neighborhood("node.ui-cytoscapeweb-edgehandles-preview")
-						.closedNeighborhood(".ui-cytoscapeweb-edgehandles-preview")
+						.neighborhood("node.ui-cytoscape-edgehandles-preview")
+						.closedNeighborhood(".ui-cytoscape-edgehandles-preview")
 						.remove();
 					
 				}
@@ -168,9 +168,9 @@
 					
 					// console.log("make edges");
 					
-					var source = cy.nodes(".ui-cytoscapeweb-edgehandles-source");
-					var targets = cy.nodes(".ui-cytoscapeweb-edgehandles-target");
-					var classes = preview ? "ui-cytoscapeweb-edgehandles-preview" : "";
+					var source = cy.nodes(".ui-cytoscape-edgehandles-source");
+					var targets = cy.nodes(".ui-cytoscape-edgehandles-target");
+					var classes = preview ? "ui-cytoscape-edgehandles-preview" : "";
 					var added = cy.collection();
 					
 					if( source.size() == 0 || targets.size() == 0 ){
@@ -179,13 +179,13 @@
 					
 					// just remove preview class if we already have the edges
 					if( !preview && options().preview ){
-						added = cy.elements(".ui-cytoscapeweb-edgehandles-preview").removeClass("ui-cytoscapeweb-edgehandles-preview");
+						added = cy.elements(".ui-cytoscape-edgehandles-preview").removeClass("ui-cytoscape-edgehandles-preview");
 						
 						options().complete( source, targets, added );
 						return;
 					} else {
 						// remove old previews
-						cy.elements(".ui-cytoscapeweb-edgehandles-preview").remove();
+						cy.elements(".ui-cytoscape-edgehandles-preview").remove();
 					}
 					
 					targets.each(function(i, target){
@@ -238,7 +238,7 @@
 							break;
 
 						default:
-							target.removeClass("ui-cytoscapeweb-edgehandles-target");
+							target.removeClass("ui-cytoscape-edgehandles-target");
 							break; // don't add anything
 						}
 					});
@@ -248,7 +248,7 @@
 					}
 				}
 				
-				$container.cytoscapeweb(function(e){
+				$container.cytoscape(function(e){
 					cy = this;
 					svg = $container.svg("get");
 					
@@ -259,7 +259,7 @@
 					
 					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler;
 					cy.nodes().live("mouseover", startHandler = function(e){
-						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscapeweb-edgehandles-preview") ){
+						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
 						} 
@@ -297,7 +297,7 @@
 							node.unbind("mouseout", removeHandler);
 							$handle.unbind("mouseout", removeHandler);
 							
-							node.addClass("ui-cytoscapeweb-edgehandles-source");
+							node.addClass("ui-cytoscape-edgehandles-source");
 							
 							function doneMoving(dmEvent){
 //								console.log("doneMoving %o", dmEvent);
@@ -383,7 +383,7 @@
 						var node = this;
 						var target = this;
 
-						if( disabled() || this.hasClass("ui-cytoscapeweb-edgehandles-preview") ){
+						if( disabled() || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // ignore preview nodes
 						}
 						
@@ -391,17 +391,17 @@
 
 							clearTimeout( hoverTimeout );
 							hoverTimeout = setTimeout(function(){
-								var source = cy.nodes(".ui-cytoscapeweb-edgehandles-source");
+								var source = cy.nodes(".ui-cytoscape-edgehandles-source");
 								
-								var isLoop = node.hasClass("ui-cytoscapeweb-edgehandles-source");
+								var isLoop = node.hasClass("ui-cytoscape-edgehandles-source");
 								var loopAllowed = options().loopAllowed( node );
 								
 								if( !isLoop || (isLoop && loopAllowed) ){
-									node.addClass("ui-cytoscapeweb-edgehandles-hover");
-									node.toggleClass("ui-cytoscapeweb-edgehandles-target");
+									node.addClass("ui-cytoscape-edgehandles-hover");
+									node.toggleClass("ui-cytoscape-edgehandles-target");
 									
 									if( options().preview ){
-										if( node.hasClass("ui-cytoscapeweb-edgehandles-target") ){
+										if( node.hasClass("ui-cytoscape-edgehandles-target") ){
 											makePreview( source, target );
 										} else {
 											removePreview( source, target );
@@ -411,7 +411,7 @@
 							}, options().hoverDelay);
 						}
 					}).live("mouseout", leaveHandler = function(){
-						this.removeClass("ui-cytoscapeweb-edgehandles-hover");
+						this.removeClass("ui-cytoscape-edgehandles-hover");
 
 						if( mdownOnHandle ){
 							clearTimeout(hoverTimeout);
@@ -445,7 +445,7 @@
 		} else if( typeof fn == 'object' || !fn ) {
 			return functions.init.apply( this, arguments );
 		} else {
-			$.error("No such function `"+ fn +"` for jquery.cytoscapewebEdgeHandles");
+			$.error("No such function `"+ fn +"` for jquery.cytoscapeEdgeHandles");
 		}
 		
 		return $(this);

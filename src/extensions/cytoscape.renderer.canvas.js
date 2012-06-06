@@ -47,4 +47,4 @@
 
 	$$("renderer", "canvas", CanvasRenderer);
 
-})( jQuery, jQuery.cytoscapeweb );
+})( jQuery, jQuery.cytoscape );

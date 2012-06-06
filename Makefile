@@ -71,12 +71,12 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/selector.js
 
 # the contents of the library when combined into the .all.js file
-DEPS = $(EXTENSIONS_DIR)/jquery.cytoscapeweb.renderer.null.js\
-	$(EXTENSIONS_DIR)/jquery.cytoscapeweb.renderer.svg.js\
-	$(EXTENSIONS_DIR)/jquery.cytoscapeweb.layout.null.js\
-	$(EXTENSIONS_DIR)/jquery.cytoscapeweb.layout.random.js\
-	$(EXTENSIONS_DIR)/jquery.cytoscapeweb.layout.grid.js\
-	$(EXTENSIONS_DIR)/jquery.cytoscapeweb.layout.preset.js\
+DEPS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
+	$(EXTENSIONS_DIR)/cytoscape.renderer.svg.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.null.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.random.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.grid.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.preset.js\
 	$(LIBS)
 
 # extensions (list them manually if you don't want them all)
@@ -86,8 +86,8 @@ EXTENSIONS = $(wildcard $(EXTENSIONS_DIR)/*)
 PLUGINS = $(wildcard $(PLUGINS_DIR)/*)
 
 # names of the cytoscape web release js files
-JS_W_DEPS_FILE = $(BUILD_DIR)/jquery.cytoscapeweb.all.js
-JS_WO_DEPS_FILE = $(BUILD_DIR)/jquery.cytoscapeweb.js
+JS_W_DEPS_FILE = $(BUILD_DIR)/cytoscape.all.js
+JS_WO_DEPS_FILE = $(BUILD_DIR)/cytoscape.js
 MIN_JS_W_DEPS_FILE = $(JS_W_DEPS_FILE:%.js=%.min.js)
 MIN_JS_WO_DEPS_FILE = $(JS_WO_DEPS_FILE:%.js=%.min.js)
 BUILD_PLUGINS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(PLUGINS))
@@ -96,12 +96,12 @@ BUILD_EXTENSIONS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(EXTENSIONS))
 MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
 # configure what files to include in the zip
-ZIP_FILE = $(BUILD_DIR)/jquery.cytoscapeweb-$(VERSION).zip
-ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_EXTENSIONS_DIR) $(BUILD_PLUGINS_DIR) $(LIB_DIR) $(LICENSE) $(README)
-ZIP_DIR = jquery.cytoscapeweb-$(VERSION)
+ZIP_FILE = $(BUILD_DIR)/cytoscape.js-$(VERSION).zip
+ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_EXTENSIONS_DIR) $(BUILD_PLUGINS_DIR) $(LIB_DIR) $(LICENSE)
+ZIP_DIR = cytoscape.js-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = etc/PREAMBLE
-README = README
+README = README.md
 
 # temp stuff
 TEMP = $(BUILD_DIR)/temp

@@ -52,7 +52,7 @@
 				
 			} else {
 				console.log.apply(window.console, arguments);
-				throw "Cytoscape Web encountered the previously logged error";
+				throw "Cytoscape.js encountered the previously logged error";
 				
 				if( window.console.trace != null ){
 					window.console.trace();
@@ -61,4 +61,4 @@
 		}
 	};
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

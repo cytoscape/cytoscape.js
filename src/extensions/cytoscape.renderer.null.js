@@ -44,4 +44,4 @@
 	
 	$.cytoscapeweb("renderer", "null", NullRenderer);
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

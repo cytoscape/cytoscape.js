@@ -1,4 +1,4 @@
-.ui-cytoscapeweb-panzoom {
+.ui-cytoscape-panzoom {
 	border-radius: 25px;
 	border: 2px solid #fff;
 	box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.25);
@@ -15,7 +15,7 @@
 	line-height: 1;
 }
 
-.ui-cytoscapeweb-panzoom-zoom-button {
+.ui-cytoscape-panzoom-zoom-button {
 	cursor: pointer;
 	padding: 3px;
 	text-align: center;
@@ -24,62 +24,62 @@
 	border-radius: 8px;
 }
 
-.ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
+.ui-cytoscape-panzoom-zoom-button .ui-icon {
 	background-image: url("../../debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
 }
 
-.ui-cytoscapeweb-panzoom-pan-button .ui-icon {
+.ui-cytoscape-panzoom-pan-button .ui-icon {
 	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button .ui-icon {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-button .ui-icon {
 	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
 }
 
-.ui-cytoscapeweb-panzoom-pan-button {
+.ui-cytoscape-panzoom-pan-button {
 	position: absolute;
 	z-index: 1;
 	height: 16px;
 	width: 16px;
 }
 
-.ui-cytoscapeweb-panzoom-reset {
+.ui-cytoscape-panzoom-reset {
 	right: 50px;
 }
 
-.ui-cytoscapeweb-panzoom-zoom-in {
+.ui-cytoscape-panzoom-zoom-in {
 	right: 8px;
 }
 
-.ui-cytoscapeweb-panzoom-zoom-out {
+.ui-cytoscape-panzoom-zoom-out {
 	right: 95px;
 }
 
-.ui-cytoscapeweb-panzoom-pan-up {
+.ui-cytoscape-panzoom-pan-up {
 	top: -4px;
 	left: 50%;
 	margin-left: -8px;
 }
 
-.ui-cytoscapeweb-panzoom-pan-down {
+.ui-cytoscape-panzoom-pan-down {
 	bottom: -4px;
 	left: 50%;
 	margin-left: -8px;
 }
 
-.ui-cytoscapeweb-panzoom-pan-left {
+.ui-cytoscape-panzoom-pan-left {
 	top: 50%;
 	left: -4px;
 	margin-top: -8px;
 }
 
-.ui-cytoscapeweb-panzoom-pan-right {
+.ui-cytoscape-panzoom-pan-right {
 	top: 50%;
 	right: -4px;
 	margin-top: -8px;
 }
 
-.ui-cytoscapeweb-panzoom-pan-indicator {
+.ui-cytoscape-panzoom-pan-indicator {
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -96,7 +96,7 @@
 	z-index: 999;
 }
 
-.ui-cytoscapeweb-panzoom-slider {
+.ui-cytoscape-panzoom-slider {
 	background: #fff !impotant;
 	border-radius: 8px !important;
 	border: 0 !important;
@@ -108,7 +108,7 @@
 	box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
-.ui-cytoscapeweb-panzoom-slider .ui-slider-handle {
+.ui-cytoscape-panzoom-slider .ui-slider-handle {
 	background: #000 !important;
 	border: 2px solid #fff !important;
 	border-radius: 10px !important;
@@ -121,7 +121,7 @@
 	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
-.ui-cytoscapeweb-panzoom-panner {
+.ui-cytoscape-panzoom-panner {
 	position: absolute;
 	left: 5px;
 	top: 5px;
@@ -132,7 +132,7 @@
 	border-radius: 40px;
 }
 
-.ui-cytoscapeweb-panzoom-panner-handle {
+.ui-cytoscape-panzoom-panner-handle {
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -143,7 +143,7 @@
 	z-index: 999;
 }
 
-.ui-cytoscapeweb-panzoom-static {
+.ui-cytoscape-panzoom-static {
 	position: absolute;
 	left: 25px;
 	top: 25px;
@@ -154,14 +154,14 @@
 	width: 0;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-panner {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-panner {
 	top: 0;
 	left: 0;
 	border: 1px solid #888;
 	margin-left: -1px;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider {
 	left: 11px;
 	top: 100px;
 	height: 100px !important;
@@ -172,7 +172,7 @@
 	background: transparent;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider .ui-slider-handle {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider .ui-slider-handle {
 	left: 50%;
 	margin-left: -9px;
 	margin-top: 0;
@@ -180,7 +180,7 @@
 	height: 6px;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-button {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-button {
 	border-radius: 4px;
 	height: 16px;
 	width: 16px;
@@ -193,23 +193,23 @@
 	border: 1px solid #888;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-reset {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-reset {
 	top: 55px;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-in {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-in {
 	top: 77px;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-zoom-out {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-out {
 	top: 209px;
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-panner {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-panner {
 	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
-.ui-cytoscapeweb-panzoom-static .ui-cytoscapeweb-panzoom-slider-background {
+.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider-background {
 	position: absolute;
 	left: 50%;
 	top: 0;

@@ -1,6 +1,6 @@
 $(function(){
 
-	$("#cytoscapeweb").cy(function(e){
+	$("#cytoscape").cy(function(e){
 		var cy = e.cy;
 
 		

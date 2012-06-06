@@ -69,7 +69,7 @@
 		}
 		
 		else {
-			$$.console.error("Invalid extension access syntax");
+			$.error("Invalid extension access syntax");
 		}
 	
 	};

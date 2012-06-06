@@ -18,16 +18,10 @@
 		var edges = cy.edges();
 		var $container = cy.container();
 		
-		$$.console.debug("Running grid layout with options (%o)", options);
-		
 		var width = $container.width();
 		var height = $container.height();
 
-		$$.console.debug("Running grid layout on container of size (w, h) = (%i, %i) with %i nodes", width, height, nodes.size());
-		
 		if( height == 0 || width == 0){
-			$.cytoscapeweb("warn", "Running grid layout on container of size 0");
-			
 			nodes.positions(function(){
 				return { x: 0, y: 0 };
 			});
@@ -39,9 +33,7 @@
 			var splits = Math.sqrt( cells * height/width );
 			var rows = Math.round( splits );
 			var cols = Math.round( width/height * splits );
-			
-			$$.console.debug("Grid layout decided on initial (cols, rows) = (%i, %i)", cols, rows);
-			
+
 			function small(val){
 				if( val == undefined ){
 					return Math.min(rows, cols);
@@ -49,10 +41,8 @@
 					var min = Math.min(rows, cols);
 					if( min == rows ){
 						rows = val;
-						$$.console.debug("Grid layout set small number of rows to %i", rows);
 					} else {
 						cols = val;
-						$$.console.debug("Grid layout set small number of columns to %i", cols);
 					}
 				}
 			}
@@ -64,10 +54,8 @@
 					var max = Math.max(rows, cols);
 					if( max == rows ){
 						rows = val;
-						$$.console.debug("Grid layout set large number of rows to %i", rows);
 					} else {
 						cols = val;
-						$$.console.debug("Grid layout set large number of columns to %i", cols);
 					}
 				}
 			}
@@ -91,8 +79,6 @@
 				var sm = small();
 				var lg = large();
 				
-				$$.console.debug("Grid layout is looking to make a reduction");
-				
 				// reducing the small side takes away the most cells, so try it first
 				if( (sm - 1) * lg >= cells ){
 					small(sm - 1);
@@ -100,8 +86,6 @@
 					large(lg - 1);
 				} 
 			} else {
-				
-				$$.console.debug("Grid layout is looking to make an increase");
 				
 				// if rounding was too low, add rows or columns
 				while( cols * rows < cells ){
@@ -116,8 +100,6 @@
 					}
 				}
 			}
-			
-			$$.console.debug("Grid layout split area into cells (cols, rows) = (%i, %i)", cols, rows);
 			
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
@@ -159,6 +141,6 @@
 		// not a continuous layout
 	};
 	
-	$.cytoscapeweb("layout", "grid", GridLayout);
+	$$("layout", "grid", GridLayout);
 	
 })(jQuery, jQuery.cytoscape);

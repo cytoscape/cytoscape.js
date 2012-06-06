@@ -60,6 +60,6 @@ actual release ZIP.
 
 ## Tests
 
-QUnit tests are found in the [tests](https://github.com/cytoscape/cytoscape.js/tree/master/tests) directory.  The tests are automatically
+QUnit tests are found in the [tests directory](https://github.com/cytoscape/cytoscape.js/tree/master/tests).  The tests are automatically
 run against different versions of jQuery.
 

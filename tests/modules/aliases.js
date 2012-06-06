@@ -12,7 +12,7 @@ $v(function(jQuery, $, version){
 	});
 	
 	asyncTest("Test short `cy` notation", function(){
-		$("#cytoscapeweb").cy({
+		$("#cytoscape").cy({
 			renderer: {
 				name: "null"
 			},
@@ -38,7 +38,7 @@ $v(function(jQuery, $, version){
 	});
 	
 	asyncTest("Test jQuery selector style", function(){
-		$("#cytoscapeweb").cy({
+		$("#cytoscape").cy({
 			renderer: {
 				name: "null"
 			},
@@ -53,12 +53,11 @@ $v(function(jQuery, $, version){
 			ready: function(cy){
 				ok( cy != null, "Not null object" );
 				ok( cy.nodes().size() == 1, "Node is there" );
-				ok( $("#cytoscapeweb").cy("nodes").size() == 1, "Node is there via jQuery style" );
+				ok( $("#cytoscape").cy("nodes").size() == 1, "Node is there via jQuery style" );
 				
 				start();
 			}
 		});
-	
 	});
 	
 });

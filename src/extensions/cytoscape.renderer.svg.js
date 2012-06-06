@@ -83,7 +83,7 @@
 	var lineStyles = {};
 	
 	var registerLineStyle = function(style){
-		$.cytoscapeweb("renderer", "svg", "linestyle", style.name, style);
+		$.cytoscape("renderer", "svg", "linestyle", style.name, style);
 		delete style.name;
 	};
 	
@@ -108,7 +108,7 @@
 	});
 	
 	var registerEdgeArrowShape = function(shape){
-		$.cytoscapeweb("renderer", "svg", "edgearrowshape", shape.name, shape);
+		$.cytoscape("renderer", "svg", "edgearrowshape", shape.name, shape);
 		delete shape.name;
 	};
 	
@@ -186,7 +186,7 @@
 	});
 	
 	var registerNodeShape = function(shape){
-		$.cytoscapeweb("renderer", "svg", "nodeshape", shape.name, shape);
+		$.cytoscape("renderer", "svg", "nodeshape", shape.name, shape);
 		delete shape.name;
 	};
 	
@@ -276,7 +276,7 @@
 		if( v != null && typeof v == typeof "" && ( v == "hidden" || v == "visible" ) ){
 			return v;
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid visibility", v);
+			$.error("SVG renderer does not recognise %o as a valid visibility", v);
 		}
 	};
 	
@@ -284,7 +284,7 @@
 		if( p != null && typeof p == typeof 1 && !isNaN(p) &&  0 <= p && p <= 1 ){
 			return p;
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
+			$.error("SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
 		}
 	}
 	
@@ -292,7 +292,7 @@
 		if( c != null && typeof c == typeof "" && $.Color(c) != "" ){
 			return $.Color(c).toHEX();
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid colour", c);
+			$.error("SVG renderer does not recognise %o as a valid colour", c);
 		}
 	}
 	
@@ -300,25 +300,25 @@
 		if( n != null && typeof n == typeof 1 && !isNaN(n) ){
 			return n;
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid number", n);
+			$.error("SVG renderer does not recognise %o as a valid number", n);
 		}
 	}
 	
 	function nodeShape(name){
-		var ret = $.cytoscapeweb("renderer", "svg", "nodeshape", name);
+		var ret = $.cytoscape("renderer", "svg", "nodeshape", name);
 		
 		if( ret == null ){
-			$$.console.error("SVG renderer does not recognise %s as a valid node shape", name);
+			$.error("SVG renderer does not recognise %s as a valid node shape", name);
 		}
 		
 		return ret;
 	}
 	
 	function lineStyle(name){
-		var ret = $.cytoscapeweb("renderer", "svg", "linestyle", name);
+		var ret = $.cytoscape("renderer", "svg", "linestyle", name);
 		
 		if( ret == null ){
-			$$.console.error("SVG renderer does not recognise %s as a valid line style", name);
+			$.error("SVG renderer does not recognise %s as a valid line style", name);
 		}
 		
 		return ret;
@@ -329,14 +329,14 @@
 			return null;
 		}
 		
-		return $.cytoscapeweb("renderer", "svg", "edgearrowshape", name);
+		return $.cytoscape("renderer", "svg", "edgearrowshape", name);
 	}
 	
 	function labelHalign(a){
 		if( a != null && typeof a == typeof "" && ( a == "left" || a == "right" || a == "middle" ) ){
 			return a;
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid label horizonal alignment", a);
+			$.error("SVG renderer does not recognise %o as a valid label horizonal alignment", a);
 		}	
 	}
 	
@@ -344,7 +344,7 @@
 		if( a != null && typeof a == typeof "" && ( a == "top" || a == "bottom" || a == "middle" ) ){
 			return a;
 		} else {
-			$$.console.error("SVG renderer does not recognise %o as a valid label vertical alignment", a);
+			$.error("SVG renderer does not recognise %o as a valid label vertical alignment", a);
 		}	
 	}
 	
@@ -371,13 +371,13 @@
 	}
 	
 	function SvgRenderer(options){
-		$$.console.debug("Creating SVG renderer with options (%o)", options);
+		
 		this.options = $.extend({}, defaults, options);
 		this.setStyle(options.style);
 		this.cy = options.cy;
 		
 		
-		$$.console.debug("SVG renderer is using style (%o)", this.style);
+		
 	}
 	
 	SvgRenderer.prototype.init = function(callback){
@@ -939,11 +939,11 @@
 		}
 		
 		if( elements.is(":removed") ){
-			$$.console.debug("SVG renderer does not take into account removed elements when fitting");
+			
 			elements = elements.filter(":inside");
 		}
 		
-		$$.console.debug("Fit SVG renderer to view bounds");
+		
 		
 		var n = this.nodesGroup.getBBox();
 		//var e = this.edgesGroup.getBBox();
@@ -1050,7 +1050,7 @@
 			return;
 		}
 		
-		$$.console.debug("Relatively pan SVG renderer with position (%o)", position);
+		
 		
 		this.transform({
 			translation: {
@@ -1065,7 +1065,7 @@
 			return;
 		}
 		
-		$$.console.debug("Pan SVG renderer with position (%o)", position);
+		
 		
 		if( position === undefined ){
 			return {
@@ -1075,7 +1075,7 @@
 		}
 		
 		if( position == null || typeof position != typeof {} ){
-			$$.console.error("You can not pan without specifying a proper position object; `%o` is invalid", position);
+			$.error("You can not pan without specifying a proper position object; `%o` is invalid", position);
 			return;
 		}
 		
@@ -1152,12 +1152,12 @@
 		} else {
 		
 			if( params.capScale ){
-				$$.console.debug("Capping zoom level %o to %o", self.scale, capped.scale);
+				
 				self.scale = capped.scale;
 			}
 			
 			if( params.capTranslation ){
-				$$.console.debug("Capping translation %o to %o", self.translation, capped.translation);
+				
 				self.translation = capped.translation;
 			}
 		}
@@ -1676,7 +1676,7 @@
 		var self = this;
 		
 		if( p.x == null || p.y == null ){
-			$$.console.debug("SVG renderer is ignoring creating of node `%s` with position (%o, %o)", element.id(), p.x, p.y);
+			
 			return;
 		}
 		
@@ -1691,7 +1691,7 @@
 		this.makeSvgNodeLabel(element);
 		
 		element.renscratch("svg", svgDomElement);
-		$$.console.debug("SVG renderer made node `%s` with position (%i, %i)", element.id(), p.x, p.y);
+		
 		
 		this.makeSvgNodeInteractive(element);
 		this.updateElementStyle(element, style);
@@ -2034,7 +2034,7 @@
 		var target = element.target().element();
 					
 		if( source == null || target == null ){
-			$$.console.debug("SVG renderer is ignoring creating of edge `%s` with missing nodes");
+			
 			return;
 		}
 		
@@ -2042,7 +2042,7 @@
 		var pt = target.position(false);
 		
 		if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
-			$$.console.debug("SVG renderer is ignoring creating of edge `%s` with position (%o, %o, %o, %o)", element.id(), ps.x, ps.y, pt.x, pt.y);
+			
 			return;
 		}
 		
@@ -2055,7 +2055,7 @@
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
 		this.makeSvgEdgePath(element);
 		
-		$$.console.debug("SVG renderer made edge `%s` with position (%i, %i, %i, %i)", element.id(), ps.x, ps.y, pt.x, pt.y);
+		
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
@@ -2178,7 +2178,7 @@
 		var newShape = element.style(false).shape;
 		
 		if( element.renscratch().svg == null ){
-			$$.console.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
+			$.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
@@ -2252,7 +2252,7 @@
 		// update label position after the node itself
 		this.updateLabelPosition(element, valign, halign);
 		
-		$$.console.debug("SVG renderer collapsed mappers and updated style for node `%s` to %o", element.id(), style);
+		
 	};
 	
 	SvgRenderer.prototype.updateLabelPosition = function(element, valign, halign){
@@ -2336,7 +2336,7 @@
 		var style = element.style(false);
 		
 		if( element.renscratch().svg == null ){
-			$$.console.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
+			$.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
@@ -2426,7 +2426,7 @@
 		element.renscratch().svgLabelOutline.textContent = labelText;
 		this.updateLabelPosition(element, "middle", "middle");
 		
-		$$.console.debug("SVG renderer collapsed mappers and updated style for edge `%s` to %o", element.id(), style);
+		
 	};
 	
 	SvgRenderer.prototype.addElements = function(collection, updateMappers){
@@ -2451,7 +2451,7 @@
 	
 	SvgRenderer.prototype.updatePosition = function(collection){
 		
-		$$.console.debug("SVG renderer is updating node positions");
+		
 		
 		collection = collection.collection();
 		var container = this.cy.container();
@@ -2467,7 +2467,7 @@
 			self.updateNodePositionFromShape(element);
 			self.positionSvgNodeLabel(element);
 
-			$$.console.debug("SVG renderer is moving node `%s` to position (%o, %o)", element.id(), p.x, p.y);
+			
 		});
 		
 		// update connected edges
@@ -2487,7 +2487,7 @@
 			var ps = edge.source().position(false);
 			var pt = edge.target().position(false);
 			
-			$$.console.debug("SVG renderer is moving edge `%s` to position (%o, %o, %o, %o)", edge.id(), ps.x, ps.y, pt.x, pt.y);
+			
 		});
 	};
 	
@@ -2498,7 +2498,7 @@
 	};
 	
 	SvgRenderer.prototype.removeElements = function(collection, updateMappers){
-		$$.console.debug("SVG renderer is removing elements");
+		
 		
 		var container = this.cy.container();
 		var svg = container.svg('get');
@@ -2517,7 +2517,7 @@
 				element.removeRenscratch("svgTargetArrow");
 				element.removeRenscratch("svgLabel");
 			} else {
-				$$.console.debug("Element with group `%s` and ID `%s` has no associated SVG element", element.group(), element.id());
+				
 			}
 		});
 		
@@ -2543,10 +2543,10 @@
 	SvgRenderer.prototype.notify = function(params){
 		var container = this.options.cy.container();
 	
-		$$.console.debug("Notify SVG renderer with params (%o)", params);
+		
 		
 		if( params.type == null ){
-			$$.console.error("The SVG renderer should be notified with a `type` field");
+			$.error("The SVG renderer should be notified with a `type` field");
 			return;
 		}
 		
@@ -2596,7 +2596,7 @@
 				break;
 				
 			default:
-				$$.console.debug("The SVG renderer doesn't consider the `%s` event", params.type);
+				
 				break;
 		}
 	};
@@ -2607,7 +2607,7 @@
 		this.renderer = options.renderer;
 		
 		if( this.renderer.name() != "svg" ){
-			$$.console.error("The SVG exporter can be used only if the SVG renderer is used");
+			$.error("The SVG exporter can be used only if the SVG renderer is used");
 		}
 	}
 	
@@ -2615,7 +2615,7 @@
 		return this.options.cy.container().svg("get").toSVG();
 	};
 	
-	$.cytoscapeweb("renderer", "svg", SvgRenderer);
-	$.cytoscapeweb("exporter", "svg", SvgExporter);
+	$.cytoscape("renderer", "svg", SvgRenderer);
+	$.cytoscape("exporter", "svg", SvgExporter);
 	
 })( jQuery, jQuery.cytoscape );

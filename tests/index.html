@@ -40,7 +40,6 @@
 				"../src/namespace.js",
 				"../src/is.js",
 				"../src/util.js",
-				"../src/console.js",
 				"../src/extension.js",
 				"../src/jquery-plugin.js",
 				"../src/core.js",
@@ -68,21 +67,21 @@
 				"../src/collection-switch-functions.js",
 				"../src/collection-traversing.js",
 				"../src/selector.js",
-				"../src/extensions/jquery.cytoscapeweb.renderer.null.js",
-				"../src/extensions/jquery.cytoscapeweb.renderer.svg.js",
-				"../src/extensions/jquery.cytoscapeweb.layout.null.js",
-				"../src/extensions/jquery.cytoscapeweb.layout.random.js",
-				"../src/extensions/jquery.cytoscapeweb.layout.grid.js",
-				"../src/extensions/jquery.cytoscapeweb.layout.preset.js"
+				"../src/extensions/cytoscape.renderer.null.js",
+				"../src/extensions/cytoscape.renderer.svg.js",
+				"../src/extensions/cytoscape.layout.null.js",
+				"../src/extensions/cytoscape.layout.random.js",
+				"../src/extensions/cytoscape.layout.grid.js",
+				"../src/extensions/cytoscape.layout.preset.js"
 			];
 			
 			// the combined js for cytoscape web
-			var minifiedJS = ["../build/jquery.cytoscapeweb.all.min.js"];
+			var minifiedJS = ["../build/cytoscape.all.min.js"];
 			
 			// extensions we can test
 			var extensionsJS = [
-				"../src/extensions/jquery.cytoscapeweb.layout.springy.js",
-				"../src/extensions/jquery.cytoscapeweb.layout.arbor.js"
+				"../src/extensions/cytoscape.layout.springy.js",
+				"../src/extensions/cytoscape.layout.arbor.js"
 			];
 			
 			// test setup stuff
@@ -146,7 +145,7 @@
 		    <p id="qunit-testresult"></p>
 	    </div>
 	    
-	    <div id="cytoscapeweb"></div>
+	    <div id="cytoscape"></div>
 	    
 	    <script type="text/javascript">
 	    	(function(){

@@ -266,7 +266,7 @@
 		}
 	};
 	
-	$.cytoscape("layout", "arbor", ArborLayout);
+	$$("layout", "arbor", ArborLayout);
 	
 	
 })(jQuery, jQuery.cytoscape);

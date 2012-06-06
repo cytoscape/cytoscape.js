@@ -39,7 +39,7 @@
 				return this;
 			}
 
-			$$.console.warn("You must pass a function or a selector to cy.filter() et al");
+			$.error("You must pass a function or a selector to cy.filter() et al");
 			return new $$.CyCollection( this.cy() );
 		}
 	});
@@ -402,4 +402,4 @@
 	});
 
 	
-})(jQuery, jQuery.cytoscapeweb);
+})(jQuery, jQuery.cytoscape);

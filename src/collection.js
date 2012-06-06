@@ -65,13 +65,13 @@
 		restore = (restore === undefined || restore ? true : false);
 		
 		if( cy === undefined || params === undefined || !(cy instanceof $$.CyCore) ){
-			$$.console.error("An element must have a core reference and parameters set");
+			$.error("An element must have a core reference and parameters set");
 			return;
 		}
 		
 		// validate group
 		if( params.group != "nodes" && params.group != "edges" ){
-			$$.console.error("An element must be of type `nodes` or `edges`; you specified `%s`", params.group);
+			$.error("An element must be of type `nodes` or `edges`; you specified `%s`", params.group);
 			return;
 		}
 		
@@ -146,7 +146,7 @@
 	function CyCollection(cy, elements){
 		
 		if( cy === undefined || !(cy instanceof $$.CyCore) ){
-			$$.console.error("A collection must have a reference to the core");
+			$.error("A collection must have a reference to the core");
 			return;
 		}
 		
@@ -156,11 +156,12 @@
 		
 		if( elements == null ){
 			elements = [];
-		} else if( elements.length > 0 && !$$.is.element( elements[0] ) ){
+		} else if( elements.length > 0 && $$.is.plainObject( elements[0] ) && !$$.is.element( elements[0] ) ){
 			createdElements = true;
 
 			// make elements from json and restore all at once later
 			var eles = [];
+			var elesIds = {};
 			$.each(elements, function(i, json){
 				if( json.data == null ){
 					json.data = {};
@@ -171,13 +172,14 @@
 				// make sure newly created elements have valid ids
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
-				} else if( cy.getElementById( data.id ).size() != 0 ){
-					$$.console.error("Can not create element: an element in the visualisation already has ID `%s`", data.id);
+				} else if( cy.getElementById( data.id ).size() != 0 || elesIds[ data.id ] ){
+					$.error("Can not create element: an element in the visualisation already has ID `" + data.id + "`");
 					return;
 				}
 
 				var ele = new $$.CyElement( cy, json, false );
 				eles.push( ele );
+				elesIds[ data.id ] = true;
 			});
 
 			elements = eles;
@@ -287,7 +289,7 @@
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, ele );
 				} else if( ele.cy().getElementById( data.id ).size() != 0 ){
-					$$.console.error("Can not create element: an element in the visualisation already has ID `%s`", data.id);
+					$.error("Can not create element: an element in the visualisation already has ID " + data.id);
 					return;
 				}
 				
@@ -331,10 +333,10 @@
 						var val = data[field];
 						
 						if( val == null || val == "" ){
-							$$.console.error("Can not create edge with id `%s` since it has no `%s` attribute set in `data` (must be non-empty value)", data.id, field);
+							$.error("Can not create edge with id `" + data.id + "` since it has no `" + field + "` attribute set in `data` (must be non-empty value)");
 							return false;
 						} else if( cy.getElementById(val).empty() ){ 
-							$$.console.error("Can not create edge with id `%s` since it specifies non-existant node as its `%s` attribute with id `%s`",  data.id, field, val);
+							$.error("Can not create edge with id `" + data.id + "` since it specifies non-existant node as its `" + field + "` attribute with id `" + val + "`");
 							return false;
 						}
 					}
@@ -373,14 +375,14 @@
 					var parent = this.cy().getElementById( parentId );
 
 					if( parent.empty() ){
-						$$.console.error("Node with id `%s` specifies non-existant parent `%s`; hierarchy will be ignored", this.id(), parentId);
+						$.error("Node with id `" + this.id() + "` specifies non-existant parent `" + parentId + "`");
 					} else {
 
 						var selfAsParent = false;
 						var ancestor = parent;
 						while( !ancestor.empty() ){
 							if( this.same(ancestor) ){
-								$$.console.error("Node with id `%s` has self as ancestor; hierarchy will be ignored", this.id());
+								$.error("Node with id `" + this.id() + "` has self as ancestor");
 								
 								// mark self as parent and remove from data
 								selfAsParent = true;

@@ -83,7 +83,7 @@ $(function(){
 			description: "Put node to random position on click",
 			setup: function(){
 				
-				var $cy = $("#cytoscapeweb");
+				var $cy = $("#cytoscape");
 				
 				var w = $cy.width();
 				var h = $cy.height();

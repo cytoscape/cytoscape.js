@@ -16,7 +16,7 @@
 					if( listener != null && $$.is.fn(listener.callback) ){
 						var eventData = $$.is.plainObject(event) ? event : $.Event(type);
 						eventData.data = listener.data;
-						eventData.cy = eventData.cytoscapeweb = cy;
+						eventData.cy = eventData.cytoscape = cy;
 						
 						var args = [eventData];
 						
@@ -104,14 +104,12 @@
 	
 	$$.fn.collection({
 		live: function(){
-			$$.console.warn("`live()` can be called only on collections made from top-level selectors");
 			return this;
 		}
 	});
 	
 	$$.fn.collection({
 		die: function(){
-			$$.console.warn("`die()` can be called only on collections made from top-level selectors");
 			return this;
 		}
 	});

@@ -52,7 +52,7 @@
 	};
 
 	// register the layout
-	$.cytoscapeweb(
+	$$(
 		"layout", // we're registering a layout
 		"random", // the layout name
 		RandomLayout // the layout prototype

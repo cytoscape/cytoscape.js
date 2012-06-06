@@ -6,7 +6,7 @@
 	function CySelector(cy, onlyThisGroup, selector){
 		
 		if( cy === undefined || !(cy instanceof $$.CyCore) ){
-			$$.console.error("A selector must have a reference to the core");
+			$.error("A selector must have a reference to the core");
 			return;
 		}
 		
@@ -235,7 +235,7 @@
 					regex: subject,
 					populate: function(){
 						if( currentSubject != null && this.subject != this ){
-							$$.console.error("Redefinition of subject in selector `%s`", selector);
+							$.error("Redefinition of subject in selector `%s`", selector);
 							return false;
 						}
 
@@ -299,7 +299,7 @@
 				var check = consumeExpr();
 				
 				if( check.expr == null ){
-					$$.console.error("The selector `%s` is invalid", selector);
+					$.error("The selector `%s` is invalid", selector);
 					return;
 				} else {
 					var args = [];
@@ -347,7 +347,7 @@
 
 							query = ancestor; // go up the tree
 						} else {
-							$$.console.error("When adjusting references for the selector `%s`, neither parent nor ancestor was found");
+							$.error("When adjusting references for the selector `%s`, neither parent nor ancestor was found");
 							break;
 						}
 					} // for
@@ -360,7 +360,7 @@
 			if( onlyThisGroup != null ){
 				for(var j = 0; j < self.length; j++){
 					if( self[j].group != null && self[j].group != onlyThisGroup ){
-						$$.console.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[j].group, onlyThisGroup, selector);
+						$.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[j].group, onlyThisGroup, selector);
 						return;
 					}
 
@@ -369,7 +369,7 @@
 			}
 			
 		} else {
-			$$.console.error("A selector must be created from a string; found %o", selector);
+			$.error("A selector must be created from a string; found %o", selector);
 			return;
 		}
 

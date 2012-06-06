@@ -23,10 +23,10 @@
 		var options = $.extend(true, {}, defaults, opts);
 		
 		if( options.container == null ){
-			$$.console.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
+			$.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
 			return;
 		} else if( $(options.container).size() > 1 ){
-			$$.console.error("Cytoscape.js can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
+			$.error("Cytoscape.js can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
 			return;
 		}
 		

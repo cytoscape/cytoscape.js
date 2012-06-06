@@ -263,7 +263,7 @@
 					
 					return ret;
 				} else {
-					//$$.console.warn( "Can not access field `%s` for `%s` for collection with element `%s`", key, params.attr, ele._private.data.id );
+					//$.error( "Can not access field `%s` for `%s` for collection with element `%s`", key, params.attr, ele._private.data.id );
 				}
 			}
 			
@@ -282,7 +282,7 @@
 							params.onSet.apply( ele, [key, oldVal, val] );
 						}
 					} else {
-						//$$.console.warn( "Can not set field `%s` for `%s` for element `%s` to value `%o` : invalid value", key, params.attr, ele._private.data.id );
+						//$.error( "Can not set field `%s` for `%s` for element `%s` to value `%o` : invalid value", key, params.attr, ele._private.data.id );
 					}
 				});
 			}
@@ -360,7 +360,7 @@
 				}
 				
 				else {
-					$$.console.warn("Invalid first parameter for `%s()` for collection with element `%s` : expect a key string or an object" + ( params.allowBinding ?  " or a handler function for binding" : "" ), params.attr, ele._private.data.id);
+					$.error("Invalid first parameter for `%s()` for collection with element `%s` : expect a key string or an object" + ( params.allowBinding ?  " or a handler function for binding" : "" ), params.attr, ele._private.data.id);
 				}
 
 			}
@@ -383,7 +383,7 @@
 				}
 				
 				else {
-					$$.console.warn("Invalid parameters for `%s()` for collection with element `%s` : expect a key string and a value" + ( params.allowBinding ?  " or a data object and a handler function for binding" : "" ), params.attr, ele._private.data.id);
+					$.error("Invalid parameters for `%s()` for collection with element `%s` : expect a key string and a value" + ( params.allowBinding ?  " or a data object and a handler function for binding" : "" ), params.attr, ele._private.data.id);
 				}
 				
 			}
@@ -468,7 +468,7 @@
 			} 
 			
 			else {
-				$$.console.warn("Invalid parameters to `%s()` for collection with element `%s` : %o", params.attr, ele._private.data.id, arguments);
+				$.error("Invalid parameters to `%s()` for collection with element `%s` : %o", params.attr, ele._private.data.id, arguments);
 			}
 			
 			return this; // chaining

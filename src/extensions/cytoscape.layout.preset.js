@@ -53,9 +53,9 @@
 		cy.trigger("layoutstop");
 	};
 	
-	$.cytoscapeweb("layout", "preset", PresetLayout);
+	$$("layout", "preset", PresetLayout);
 	
-	$.cytoscapeweb("core", "presetLayout", function(){
+	$$("core", "presetLayout", function(){
 		var cy = this;
 		var layout = {};
 		var elements = {};

@@ -124,7 +124,7 @@ $v(function(jQuery, $, version){
 	});
 
 	asyncTest("eles.parent() et al", function(){
-		$("#cytoscapeweb").cy({
+		$("#cytoscape").cy({
 			renderer: {
 				name: "null"
 			},

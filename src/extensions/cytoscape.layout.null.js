@@ -29,6 +29,6 @@
 		// not a continuous layout
 	};
 	
-	$.cytoscapeweb("layout", "null", NullLayout);
+	$$("layout", "null", NullLayout);
 	
 })(jQuery, jQuery.cytoscape);

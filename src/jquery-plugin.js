@@ -3,7 +3,8 @@
 	// allow calls on a jQuery selector by proxying calls to $.cytoscape
 	// e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
 	$.fn.cytoscape = function(opts){
-		
+		var $this = $(this);
+
 		// get object
 		if( opts == "get" ){
 			var data = $(this).data("cytoscape");
@@ -13,7 +14,7 @@
 		// bind to ready
 		else if( $$.is.fn(opts) ){
 			var ready = opts;
-			var data = $(this).data("cytoscape");
+			var data = $this.data("cytoscape");
 			
 			if( data != null && data.cy != null && data.ready ){
 				// already ready so just trigger now
@@ -37,7 +38,7 @@
 		
 		// proxy to create instance
 		else if( $$.is.plainObject(opts) ){
-			return $(this).each(function(){
+			return $this.each(function(){
 				var options = $.extend({}, opts, {
 					container: $(this)
 				});
@@ -54,7 +55,7 @@
 				args[i - 1] = arguments[i];
 			}
 			
-			$(this).each(function(){
+			$this.each(function(){
 				var data = $(this).data("cytoscape");
 				var cy = data.cy;
 				var fnName = opts;
@@ -77,7 +78,7 @@
 
 	};
 	
-	// allow functional access to cyto
+	// allow functional access to cytoscape.js
 	// e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
 	//      var nodes = cyto.nodes();
 	$$.init = function( options ){

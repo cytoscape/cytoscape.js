@@ -21,7 +21,6 @@
 		var self = this;
 		var options = this.options;
 		var params = options;
-		$.cytoscapeweb("debug", "Running Springy layout with options (%o)", options);
 	
 		var cy = options.cy;
 		var nodes = cy.nodes();
@@ -195,7 +194,7 @@
 		}
 	};
 	
-	$.cytoscapeweb("layout", "springy", SpringyLayout);
+	$$("layout", "springy", SpringyLayout);
 	
 	
 	/**

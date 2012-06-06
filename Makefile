@@ -41,7 +41,6 @@ LIBS = $(LIB_DIR)/jquery.color.js\
 CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/is.js\
 	$(SRC_DIR)/util.js\
-	$(SRC_DIR)/console.js\
 	$(SRC_DIR)/extension.js\
 	$(SRC_DIR)/jquery-plugin.js\
 	$(SRC_DIR)/core.js\

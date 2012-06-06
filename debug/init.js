@@ -1,8 +1,5 @@
 $(function(){
 				
-	$.cytoscape("quiet", false);
-	$.cytoscape("debugging", false);
-	
 	var height, width;
 	
 	window.options = {

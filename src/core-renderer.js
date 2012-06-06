@@ -11,7 +11,7 @@
 			
 			var rendererProto = $$.extension("renderer", options.name);
 			if( rendererProto == null ){
-				$$.console.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.name);
+				$.error("Can not initialise: No such renderer `$s` found; did you include its JS file?", options.name);
 				return;
 			}
 			
@@ -52,7 +52,7 @@
 								var map = styleVal.continuousMapper;
 								
 								if( map.attr.name == null || typeof map.attr.name != typeof "" ){
-									$$.console.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", element.group(), styleName);
+									$.error("For style.%s.%s, `attr.name` must be defined as a string since it's a continuous mapper", element.group(), styleName);
 									return;
 								}
 								
@@ -100,11 +100,11 @@
 
 										ret = $.Color([red, green, blue], "RGB").toHEX().toString();
 									} else {
-										$$.console.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", element.group(), map.styleName, map.mapped.min, map.mapped.max);
+										$.error("Unsupported value used in mapper for `style.%s.%s` with min mapped value `%o` and max `%o` (neither number nor colour)", element.group(), map.styleName, map.mapped.min, map.mapped.max);
 										return;
 									}
 								} else {
-									$$.console.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", element.group(), map.attr.name, element.group(), styleName, element.group(), element.data("id"));
+									$.error("Attribute values for `%s.%s` must be numeric for continuous mapper `style.%s.%s` (offending %s: `%s`)", element.group(), map.attr.name, element.group(), styleName, element.group(), element.data("id"));
 									return;
 								}
 								

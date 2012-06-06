@@ -4,9 +4,6 @@
 	
 	window.cy = null;
 	
-	$.cytoscapeweb("quiet", false);
-	$.cytoscapeweb("debugging", true);
-	
 	if( $.browser.msie ){
 		window.console = {
 			log: function(){},
@@ -63,7 +60,7 @@
 	var width = 500;
 	var height = 500;
 	
-	$("#cytoscapeweb").css({
+	$("#cytoscape").css({
 		width: width,
 		height: height,
 		border: "1px solid #888",
@@ -75,7 +72,7 @@
 			setup: function(){
 				stop();
 				
-				$("#cytoscapeweb").cytoscapeweb({
+				$("#cytoscape").cytoscape({
 					renderer: {
 						name: "null"
 					},

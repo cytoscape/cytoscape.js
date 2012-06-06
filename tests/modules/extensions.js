@@ -10,7 +10,7 @@ $v(function(jQuery, $, version){
 	});
 	
 	function init( callback ){
-		$("#cytoscapeweb").cytoscapeweb({
+		$("#cytoscape").cytoscape({
 			renderer: {
 				name: "null"
 			},
@@ -30,11 +30,11 @@ $v(function(jQuery, $, version){
 	}
 	
 	asyncTest("Add a core function", function(){
-		$.cytoscapeweb("core", "foo", function(){
+		$.cytoscape("core", "foo", function(){
 			return 1;
 		});
 		
-		$.cytoscapeweb("core", "bar", function(){
+		$.cytoscape("core", "bar", function(){
 			return this;
 		});
 		
@@ -46,15 +46,15 @@ $v(function(jQuery, $, version){
 	
 	
 	asyncTest("Add a collection function", function(){
-		$.cytoscapeweb("collection", "oddSize", function(){
+		$.cytoscape("collection", "oddSize", function(){
 			return !this.evenSize();
 		});
 		
-		$.cytoscapeweb("collection", "evenSize", function(){
+		$.cytoscape("collection", "evenSize", function(){
 			return this.size() % 2 == 0;
 		});
 		
-		$.cytoscapeweb("collection", "self", function(){
+		$.cytoscape("collection", "self", function(){
 			return this;
 		});
 		

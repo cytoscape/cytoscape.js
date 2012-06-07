@@ -39,7 +39,6 @@
 				return this;
 			}
 
-			$.error("You must pass a function or a selector to cy.filter() et al");
 			return new $$.CyCollection( this.cy() );
 		}
 	});
@@ -60,7 +59,7 @@
 				
 				this.each(function(i, element){
 					
-					var remove = toRemove._private.ids[ element.id() ];					
+					var remove = toRemove._private.ids[ element.id() ];
 					if( !remove ){
 						elements.push( element.element() );
 					}

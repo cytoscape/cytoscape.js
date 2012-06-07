@@ -3,14 +3,24 @@
 	$$.fn.core({
 		pdata: $$.define.pdata(),
 
-		scratch: function( name, value ){
-			if( value === undefined ){
-				return eval( "this._private.scratch." + name );
-			} else {
-				eval( "this._private.scratch." + name + " = " + value + ";" );
-				return this;
-			}
-		},
+		data: $$.define.data({
+			field: "data",
+			bindingEvent: "data",
+			allowBinding: true,
+			allowSetting: true,
+			settingEvent: "data",
+			settingTriggersEvent: true,
+			triggerFnName: "trigger",
+			allowGetting: true
+		}),
+
+		scratch: $$.define.data({
+			field: "scratch",
+			allowBinding: false,
+			allowSetting: true,
+			settingTriggersEvent: false,
+			allowGetting: true
+		}),
 		
 		removeScratch: function( name ){
 			if( name === undefined ){

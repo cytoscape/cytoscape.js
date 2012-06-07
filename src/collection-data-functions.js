@@ -2,31 +2,38 @@
 	
 	$$.fn.collection({
 		pdata: $$.define.pdata({
-			each: function(self, callback){ return self.each(callback); },
-			single: function(self, callback){ return self.element().each(callback); }
-		}),
-
-		data: defineAccessor({ // defaults serve as example (data)
-			attr: "data",
-			allowBinding: true,
-			bindingEvent: "data",
-			settingTriggersEvent: true, 
-			settingEvent: "data",
-			validKey: { // already guaranteed that key is a string; `this` refers to the element
-				forSet: function( key ){
-					switch( key ){
-					case "id":
-					case "source":
-					case "target":
-					case "parent":
-						return false;
-					default:
-						return true;
+			each: function(self, callback){
+				var l = self.length; // don't use .each() for speed
+				for(var i = 0; i < l; i++){
+					var ref = self[i];
+					if( ref ){
+						callback( ref );
 					}
 				}
 			},
-			onSet: function( key, oldVal, newVal ){ // callback function to call when setting for an element
-				this.cy().updateContinuousMapperBounds(this, key, oldVal, newVal);
+			single: function(self, callback){
+				var ref = self[0];
+
+				if( ref ){
+					callback( ref ); // don't use .element() for speed
+				}
+			}
+		}),
+
+		data: $$.define.data({
+			field: "data",
+			bindingEvent: "data",
+			allowBinding: true,
+			allowSetting: true,
+			settingEvent: "data",
+			settingTriggersEvent: true,
+			triggerFnName: "rtrigger",
+			allowGetting: true,
+			immutableKeys: {
+				"id": true,
+				"source": true,
+				"target": true,
+				"parent": true
 			}
 		}),
 
@@ -50,12 +57,24 @@
 			essentialKeys: [ "id", "source", "target", "parent" ] // keys that remain even when deleting all
 		}),
 
-		id: function(){
-			var ele = this.element();
+		scratch: $$.define.data({
+			field: "scratch",
+			allowBinding: false,
+			allowSetting: true,
+			settingTriggersEvent: false,
+			allowGetting: true
+		}),
 
-			if( ele != null ){
-				return ele._private.data.id;
-			}
+		renscratch: $$.define.data({
+			field: "renscratch",
+			allowBinding: false,
+			allowSetting: true,
+			settingTriggersEvent: false,
+			allowGetting: true
+		}),
+
+		id: function(){
+			return this.data("id");
 		},
 
 		position: defineAccessor({

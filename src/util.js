@@ -3,7 +3,10 @@
 	// utility functions only for internal use
 
 	$$.util = {
-			
+
+		extend: $.extend,
+		error: $.error,
+
 		// gets a deep copy of the argument
 		copy: function( obj ){
 			if( obj == null ){
@@ -47,15 +50,18 @@
 		// sets the value in a map (map may not be built)
 		setMap: function( options ){
 			var obj = options.map;
-			
-			for(var i = 0; i < options.keys.length; i++){
-				var key = options.keys[i];
+			var key;
+			var keys = options.keys;
+			var l = keys.length;
+
+			for(var i = 0; i < l; i++){
+				var key = keys[i];
 
 				if( $$.is.plainObject( key ) ){
-					$.error("Tried to set map with object key");
+					$$.util.error("Tried to set map with object key");
 				}
 
-				if( i < options.keys.length - 1 ){
+				if( i < keys.length - 1 ){
 					
 					// extend the map if necessary
 					if( obj[key] == null ){
@@ -73,12 +79,14 @@
 		// gets the value in a map even if it's not built in places
 		getMap: function( options ){
 			var obj = options.map;
+			var keys = options.keys;
+			var l = keys.length;
 			
-			for(var i = 0; i < options.keys.length; i++){
-				var key = options.keys[i];
+			for(var i = 0; i < l; i++){
+				var key = keys[i];
 
 				if( $$.is.plainObject( key ) ){
-					$.error("Tried to get map with object key");
+					$$.util.error("Tried to get map with object key");
 				}
 
 				obj = obj[key];
@@ -94,17 +102,30 @@
 		// deletes the entry in the map
 		deleteMap: function( options ){
 			var obj = options.map;
+			var keys = options.keys;
+			var l = keys.length;
+			var keepChildren = options.keepChildren;
 			
-			for(var i = 0; i < options.keys.length; i++){
-				var key = options.keys[i];
+			for(var i = 0; i < l; i++){
+				var key = keys[i];
 
 				if( $$.is.plainObject( key ) ){
-					$.error("Tried to delete map with object key");
+					$$.util.error("Tried to delete map with object key");
 				}
 
 				var lastKey = i === options.keys.length - 1;
 				if( lastKey ){
-					delete obj[key];
+					
+					if( keepChildren ){ // then only delete child fields not in keepChildren
+						for( var child in obj ){
+							if( !keepChildren[child] ){
+								delete obj[child];
+							}
+						}
+					} else {
+						delete obj[key];
+					}
+
 				} else {
 					obj = obj[key];
 				}

@@ -4,15 +4,7 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	$$.fn.collection({
-		scratch: defineAccessor({ attr: "scratch" })
-	});
-	
-	$$.fn.collection({
 		removeScratch: defineRemover({ attr: "scratch" })
-	});
-	
-	$$.fn.collection({
-		renscratch: defineAccessor({ attr: "renscratch" })
 	});
 
 	$$.fn.collection({

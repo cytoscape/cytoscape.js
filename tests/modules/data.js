@@ -213,16 +213,9 @@ $v(function(jQuery, $, version){
 				fields: {}
 			});
 		});
-		
-		// try out dot namespace notation
-		cy.nodes("#n1").scratch("foo", {}).scratch("foo.bar", "hello");
-		equal( cy.nodes("#n1").scratch("foo.bar"), "hello" );
-		cy.nodes("#n1").scratch("foo.uh", "huh").removeScratch("foo.bar");
-		equal( cy.nodes("#n1").scratch("foo.uh"), "huh", "uh: huh there" );
-		equal( cy.nodes("#n1").scratch("foo.bar"), null, "foo.bar deleted" );
-		
+			
 		// delete two scratches at once
-		cy.nodes("#n1").scratch("baz", {}).removeScratch("foo baz");
+		cy.nodes("#n1").scratch("baz", {}).removeScratch("baz").removeScratch("foo");
 		equal( cy.nodes("#n1").scratch("foo"), null, "foo deleted" );
 		equal( cy.nodes("#n1").scratch("baz"), null, "baz deleted" );
 		

@@ -30,6 +30,7 @@ PLUGINS_DIR = $(SRC_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_PLUGINS_DIR = $(BUILD_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_DIR = build
 DEBUG_PAGE = debug/index.html
+TEST_PAGE = tests/index.html
 
 # dependencies for the .all.js file
 LIBS = $(LIB_DIR)/jquery.color.js\
@@ -43,15 +44,16 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/util.js\
 	$(SRC_DIR)/extension.js\
 	$(SRC_DIR)/jquery-plugin.js\
+	$(SRC_DIR)/define.js\
 	$(SRC_DIR)/core.js\
 	$(SRC_DIR)/core-add-remove.js\
 	$(SRC_DIR)/core-animation.js\
+	$(SRC_DIR)/core-data-functions.js\
 	$(SRC_DIR)/core-events.js\
 	$(SRC_DIR)/core-export.js\
 	$(SRC_DIR)/core-layout.js\
 	$(SRC_DIR)/core-notification.js\
 	$(SRC_DIR)/core-renderer.js\
-	$(SRC_DIR)/core-scratch.js\
 	$(SRC_DIR)/core-search.js\
 	$(SRC_DIR)/core-style.js\
 	$(SRC_DIR)/core-viewport.js\
@@ -156,3 +158,7 @@ clean :
 .PHONY: debug
 debug : 
 	$(OPEN) $(DEBUG_PAGE)
+
+.PHONY: test
+test : 
+	$(OPEN) $(TEST_PAGE)

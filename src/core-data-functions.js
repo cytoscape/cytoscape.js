@@ -1,7 +1,8 @@
 ;(function($, $$){
 	
 	$$.fn.core({
-		
+		pdata: $$.define.pdata(),
+
 		scratch: function( name, value ){
 			if( value === undefined ){
 				return eval( "this._private.scratch." + name );
@@ -20,7 +21,6 @@
 			
 			return this;
 		}
-		
-	});	
+	});
 	
 })(jQuery, jQuery.cytoscape);

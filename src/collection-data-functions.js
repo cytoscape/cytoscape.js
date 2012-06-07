@@ -1,6 +1,11 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
+		pdata: $$.define.pdata({
+			each: function(self, callback){ return self.each(callback); },
+			single: function(self, callback){ return self.element().each(callback); }
+		}),
+
 		data: defineAccessor({ // defaults serve as example (data)
 			attr: "data",
 			allowBinding: true,
@@ -23,10 +28,8 @@
 			onSet: function( key, oldVal, newVal ){ // callback function to call when setting for an element
 				this.cy().updateContinuousMapperBounds(this, key, oldVal, newVal);
 			}
-		}) 
-	});
-	
-	$$.fn.collection({
+		}),
+
 		removeData: defineRemover({
 			attr: "data",
 			event: "data",
@@ -45,20 +48,16 @@
 				}
 			},
 			essentialKeys: [ "id", "source", "target", "parent" ] // keys that remain even when deleting all
-		}) 
-	});
-	
-	$$.fn.collection({
+		}),
+
 		id: function(){
 			var ele = this.element();
 
 			if( ele != null ){
 				return ele._private.data.id;
 			}
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		position: defineAccessor({
 			attr: "position",
 			allowBinding: true,
@@ -82,10 +81,8 @@
 			onGet: function( key, val ){
 				// do nothing
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		positions: function(pos){
 			if( $$.is.plainObject(pos) ){
 				
@@ -110,10 +107,8 @@
 				
 				this.rtrigger("position");
 			}
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		renderedPosition: defineAccessor({
 			attr: "position",
 			allowBinding: false,
@@ -150,10 +145,8 @@
 					return this.cy().renderer().renderedPosition( this.element() );
 				}
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		renderedStyle: function( property ){
 			var ele = this.element();
 			if( ele == null ){ return undefined }
@@ -166,10 +159,8 @@
 			} else {
 				return rstyle[property];
 			}
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		style: function( key ){
 			var ele = this.element();
 			
@@ -189,20 +180,16 @@
 			else if( $$.is.string(key) ){
 				return $$.util.copy( ele._private.style[key] );
 			}
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		bypass: defineAccessor({
 			attr: "bypass",
 			allowBinding: true,
 			bindingEvent: "bypass",
 			settingTriggersEvent: true, 
 			settingEvent: "bypass"
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		removeBypass: defineRemover({
 			attr: "bypass",
 			event: "bypass",

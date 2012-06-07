@@ -81,7 +81,7 @@
 		},
 		
 		centre: function(){ // alias to center
-			return this.center.apply(cy, arguments); 
+			return this.center.apply(this, arguments); 
 		},
 		
 		reset: function(){

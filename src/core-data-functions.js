@@ -14,6 +14,10 @@
 			allowGetting: true
 		}),
 
+		removeData: $$.define.removeData({
+
+		}),
+
 		scratch: $$.define.data({
 			field: "scratch",
 			allowBinding: false,

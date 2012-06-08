@@ -27,17 +27,24 @@
 			
 			// specify via opts.nodes and opts.edges
 			else if( $$.is.plainObject(opts) && ($$.is.array(opts.nodes) || $$.is.array(opts.edges)) ){
-				var groups = opts;
+				var elesByGroup = opts;
 				var jsons = [];
 
-				$.each(["nodes", "edges"], function(i, group){
-					if( $$.is.array(groups[group]) ){
-						$.each(groups[group], function(j, json){
+				var grs = ["nodes", "edges"];
+				for( var i = 0, il = grs.length; i < il; i++ ){
+					var group = grs[i];
+					var elesArray = elesByGroup[group];
+
+					if( $$.is.array(elesArray) ){
+
+						for( var j = 0, jl = elesArray.length; j < jl; j++ ){
+							var json = elesArray[j];
+
 							var mjson = $.extend({}, json, { group: group });
 							jsons.push( mjson );
-						});
+						}
 					} 
-				});
+				}
 
 				elements = new $$.CyCollection(cy, jsons);
 			}

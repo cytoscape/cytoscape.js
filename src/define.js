@@ -1,5 +1,7 @@
 ;(function($, $$){
 	
+	// metaprogramming what what
+
 	// use this module to cherry pick functions into your prototype
 	// (useful for functions shared between the core and collections, for example)
 
@@ -10,7 +12,11 @@
 
 	$$.define = {
 
-		// access to _private in a convenient way
+		// access to _private in a convenient way that abstracts away handling array-like prototypes
+		
+		// in other words, you can use .pdata() to access _private for CyCollections without worrying
+		// about whether the collection is empty, whether the collection is actually just an element, etc
+
 		pdata: function( params ){
 			var defaults = {
 			};
@@ -150,6 +156,7 @@
 		},
 
 		// access data field
+		// requires .pdata()
 		data: function( params ){
 			var defaults = { 
 				field: "data",
@@ -167,6 +174,9 @@
 			return function( name, value ){
 				var p = params;
 				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+				var single = selfIsArrayLike ? self[0] : self;
 
 				// .data("foo", ...)
 				if( $$.is.string(name) ){ // set or get property
@@ -184,7 +194,7 @@
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );
 							}
-						}					
+						}
 					}
 
 				// .data({ "foo": "bar" })
@@ -220,6 +230,7 @@
 		},
 
 		// remove data field
+		// requires .pdata()
 		removeData: function( params ){
 			var defaults = { 
 				field: "data",
@@ -348,7 +359,7 @@
 		},
 
 		trigger: function( params ){
-			
+
 		}
 
 	};

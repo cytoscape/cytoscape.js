@@ -11,8 +11,8 @@
 	
 	$$.fn.collection({
 		clearQueue: function(){
-			return this.each(function(){
-				this.element()._private.animation.queue = [];
+			return this.forEach(function(i, ele){
+				ele._private.animation.queue = [];
 			});
 		}
 	});

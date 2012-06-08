@@ -19,9 +19,9 @@ $v(function(jQuery, $, version){
 				},
 				elements: {
 					nodes: [
-					    { data: { id: "n1", foo: "one" } },
-					    { data: { id: "n2", foo: "two" } },
-				    	{ data: { id: "n1", foo: "what is this guy doing here" } }
+						{ data: { id: "n1", foo: "one" } },
+						{ data: { id: "n2", foo: "two" } },
+						{ data: { id: "n1", foo: "what is this guy doing here" } }
 					]
 				}, 
 				ready: function(cy){

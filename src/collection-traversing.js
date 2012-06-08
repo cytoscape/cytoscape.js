@@ -57,11 +57,11 @@
 				var elements = [];
 				toRemove = toRemove.collection();
 				
-				this.each(function(i, element){
+				this.forEach(function(i, element){
 					
 					var remove = toRemove._private.ids[ element.id() ];
 					if( !remove ){
-						elements.push( element.element() );
+						elements.push( element );
 					}
 					
 				});
@@ -82,20 +82,17 @@
 				return this.filter( selector );
 			}
 			
-			if( $$.is.element(other) ){
-				other = other.collection();
-			}
-			
 			var elements = [];
 			var col1 = this;
 			var col2 = other;
-			var col1Smaller = this.size() < other.size();
+			var col1Smaller = this.length < other.length;
 			var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
 			var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
 			
 			$.each(ids1, function(id){
 				if( ids2[ id ] ){
-					elements.push( self.cy().getElementById(id) );
+					var ele = ids2[ id ];
+					elements.push( ele );
 				}
 			});
 			
@@ -337,8 +334,8 @@
 		parent: function( selector ){
 			var parents = [];
 
-			this.each(function(){
-				var parent = this.cy().getElementById( this.data("parent") );
+			this.forEach(function(i, ele){
+				var parent = ele.cy().getElementById( ele.data("parent") );
 
 				if( parent.size() > 0 ){
 					parents.push( parent.element() );
@@ -353,8 +350,8 @@
 
 			var eles = this.parent();
 			while( eles.nonempty() ){
-				eles.each(function(){
-					parents.push( this.element() );
+				eles.forEach(function(i, ele){
+					parents.push( ele );
 				});
 
 				eles = eles.parent();
@@ -369,7 +366,7 @@
 			this.each(function(){
 				var ele = this.element();
 
-				$.each(ele._private.children, function(id, child){
+				$$.util.each(ele._private.children, function(id, child){
 					children.push( child );
 				});
 			});
@@ -385,11 +382,11 @@
 			var elements = [];
 
 			function add( eles ){
-				eles.each(function(){
-					elements.push( this.element() );
+				eles.forEach(function(i, ele){
+					elements.push( ele );
 
-					if( this.children().nonempty() ){
-						add( eles.children() );
+					if( ele.children().nonempty() ){
+						add( ele.children() );
 					}
 				});
 			}

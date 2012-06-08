@@ -6,8 +6,8 @@
 	$$.fn.collection({
 		each: function(fn){
 			if( $$.is.fn(fn) ){
-				for(var i = 0; i < this.size(); i++){
-					var ele = this.eq(i).element();
+				for(var i = 0; i < this.length; i++){
+					var ele = this[i];
 					var ret = fn.apply( ele, [ i, ele ] );
 
 					if( ret === false ){ break; } // exit each early on return false
@@ -16,11 +16,24 @@
 			return this;
 		},
 
+		// use if you don't need the reference to this inside the callback (cheaper)
+		forEach: function(fn){ // like .each() but not as expensive since no fn.apply()
+			if( $$.is.fn(fn) ){
+				for(var i = 0; i < this.length; i++){
+					var ele = this[i];
+					var ret = fn(i, ele);
+
+					if( ret === false ){ break; } // exit early on false
+				}
+			}
+			return this;
+		},
+
 		toArray: function(){
 			var array = [];
 			
-			for(var i = 0; i < this.size(); i++){
-				array.push( this.eq(i).element() );
+			for(var i = 0; i < this.length; i++){
+				array.push( this[i] );
 			}
 			
 			return array;
@@ -28,17 +41,18 @@
 
 		slice: function(start, end){
 			var array = [];
+			var thisSize = this.length;
 			
 			if( end == null ){
-				end = this.size();
+				end = thisSize;
 			}
 			
 			if( start < 0 ){
-				start = this.size() + start;
+				start = thisSize + start;
 			}
 			
-			for(var i = start; i >= 0 && i < end && i < this.size(); i++){
-				array.push( this.eq(i) );
+			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
+				array.push( this[i] );
 			}
 			
 			return new $$.CyCollection(this.cy(), array);
@@ -53,7 +67,7 @@
 		},
 
 		empty: function(){
-			return this.size() == 0;
+			return this.length == 0;
 		},
 
 		nonempty: function(){

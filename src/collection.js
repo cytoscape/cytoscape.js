@@ -19,12 +19,10 @@
 			// collection -- it's more generic.
 			$$.CyCollection.prototype[ name ] = fn;
 			
-			// The element version of the function is then the trivial
-			// case of a collection of size 1.
-			$$.CyElement.prototype[ name ] = function(){
-				var self = this.collection();
-				return fn.apply( self, arguments );
-			};
+			// The element version of the function is now just the same as
+			// that for the collection, since an element should have all
+			// the facilities of a collection.
+			$$.CyElement.prototype[ name ] = fn;
 			
 		});
 	};
@@ -75,6 +73,7 @@
 			return;
 		}
 		
+		// make the element array-like, just like a collection
 		this.length = 1;
 		this[0] = this;
 		
@@ -86,13 +85,13 @@
 			listeners: {}, // map ( type => array of function spec objects )
 			group: params.group, // string; "nodes" or "edges"
 			bypass: $$.util.copy( params.bypass ) || {}, // the bypass object
-			style: {}, // the rendered style populated by the renderer
+			style: {}, // the calculated style
 			removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 			selected: params.selected ? true : false, // whether it's selected
-			selectable: params.selectable || params.selectable === undefined ? true : false, // whether it's selectable
+			selectable: params.selectable === undefined ? true : ( params.selectable ? true : false ), // whether it's selectable
 			locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 			grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
-			grabbable: params.grabbable || params.grabbable === undefined ? true : false, // whether the element can be grabbed
+			grabbable: params.grabbable === undefined ? true : ( params.grabbable ? true : false ), // whether the element can be grabbed
 			classes: {}, // map ( className => true )
 			animation: { // object for currently-running animations
 				current: [],
@@ -112,11 +111,13 @@
 		}
 		
 		if( $$.is.string(params.classes) ){
-			$.each(params.classes.split(/\s+/), function(i, cls){
-				if( cls != "" ){
-					self._private.classes[cls] = true;
-				}
-			});
+			var classes = params.classes.split(/\s+/);
+			for( var i = 0, l = classes.length; i < l; i++ ){
+				var cls = classes[i];
+				if( !cls || cls === "" ){ continue; }
+
+				self._private.classes[cls] = true;
+			}
 		}
 		
 		if( restore === undefined || restore ){
@@ -162,7 +163,10 @@
 			// make elements from json and restore all at once later
 			var eles = [];
 			var elesIds = {};
-			$.each(elements, function(i, json){
+
+			for( var i = 0, l = elements.length; i < l; i++ ){
+				var json = elements[i];
+
 				if( json.data == null ){
 					json.data = {};
 				}
@@ -180,26 +184,24 @@
 				var ele = new $$.CyElement( cy, json, false );
 				eles.push( ele );
 				elesIds[ data.id ] = true;
-			});
+			}
 
 			elements = eles;
 		}
 		
-		$.each(elements, function(i, element){
-			if( element == null ){
-				return;
-			}
+		for( var i = 0, l = elements.length; i < l; i++ ){
+			var element = elements[i];
+			if( !element ){	continue; }
 			
 			var id = element._private.data.id;
 			
-			if( ids[ id ] == null ){
-				ids[ id ] = true;
+			if( !ids[ id ] ){
+				ids[ id ] = element;
 				uniqueElements.push( element );
 			}
-		});
-
+		}
 		
-		for(var i = 0; i < uniqueElements.length; i++){
+		for(var i = 0, l = uniqueElements.length; i < l; i++){
 			this[i] = uniqueElements[i];
 		}
 		this.length = uniqueElements.length;
@@ -269,124 +271,137 @@
 
 	$$.fn.collection({
 		restore: function( notifyRenderer ){
+			var self = this;
 			var restored = [];
+			var cy = self.cy();
 			
 			if( notifyRenderer === undefined ){
 				notifyRenderer = true;
 			}
 
-			function restore(ele, mixin){
+			// create arrays of nodes and edges, since we need to
+			// restore the nodes first
+			var elements = [];
+			var numNodes = 0;
+			var numEdges = 0;
+			for( var i = 0, l = self.length; i < l; i++ ){
+				var ele = self[i];
+				
+				// keep nodes first in the array and edges after
+				if( ele.isNode() ){ // put to front of array if node
+					elements.unshift( ele );
+					numNodes++;
+				} else { // put to end of array if edge
+					elements.push( ele );
+					numEdges++;
+				}
+			}
+
+			// now, restore each element
+			for( var i = 0, l = elements.length; i < l; i++ ){
+				var ele = elements[i];
+
 				if( !ele.removed() ){
 					// don't need to do anything
 					return;
 				}
 				
-				var structs = ele.cy()._private; // TODO remove ref to `structs` after refactoring
-				var data = ele._private.data;
-				var cy = ele.cy();
+				var _private = ele._private;
+				var structs = cy._private; // TODO remove ref to `structs`
+				var data = _private.data;
 				
 				// set id and validate
-				if( data.id == null ){
+				if( data.id === undefined ){
 					data.id = idFactory.generate( cy, ele );
-				} else if( ele.cy().getElementById( data.id ).size() != 0 ){
-					$.error("Can not create element: an element in the visualisation already has ID " + data.id);
-					return;
+				} else if( data.id === "" || !$$.is.string(data.id) ){
+					// can't create element if it has empty string as id or non-string id
+					continue;
+				} else if( cy.getElementById( data.id ).length != 0 ){
+					// can't create element if one already has that id
+					continue;
 				}
+
+				var id = data.id; // id is finalised, now let's keep a ref
 				
-				if( $$.is.fn(mixin) ){
-					var ret = mixin(ele);
+				if( ele.isEdge() ){ // extra checks for edges
 					
-					if( ret !== undefined && !ret ){
-						return;
-					}
-				}
-				 
-				ele._private.removed = false;
-				structs[ ele._private.group ][ data.id ] = ele;
-				
-				// update mapper structs
-				var self = ele;
-				$.each(data, function(name, val){
-					self.cy().addContinuousMapperBounds(self, name, val);
-				});
-				
-				restored.push( ele );
-			}
-
-			var nodes = this.filter(function(){
-				return this.isNode();
-			}).each(function(){
-				restore(this);
-			});
-
-			var edges = this.filter(function(){
-				return this.isEdge();
-			}).each(function(){
-				restore(this, function(ele){
-					var data = ele._private.data;
-					var cy = ele.cy();
-
 					var fields = ["source", "target"];
-					for(var i = 0; i < fields.length; i++){
+					var fieldsLength = fields.length;
+					for(var j = 0; j < fieldsLength; j++){
 						
-						var field = fields[i];
+						var field = fields[j];
 						var val = data[field];
 						
-						if( val == null || val == "" ){
-							$.error("Can not create edge with id `" + data.id + "` since it has no `" + field + "` attribute set in `data` (must be non-empty value)");
-							return false;
+						if( val == null || val === "" ){
+							// can't create if source or target is not defined properly
+							continue;
 						} else if( cy.getElementById(val).empty() ){ 
-							$.error("Can not create edge with id `" + data.id + "` since it specifies non-existant node as its `" + field + "` attribute with id `" + val + "`");
-							return false;
+							// can't create edge if one of its nodes doesn't exist
+							continue;
 						}
 					}
 					
-					var src = ele.cy().getElementById( data.source );
-					var tgt = ele.cy().getElementById( data.target );
+					var src = cy.getElementById( data.source );
+					var tgt = cy.getElementById( data.target );
+					var srcid = src.id();
+					var tgtid = tgt.id();
+					var srcmap = src._private.edges;
+					var tgtmap = tgt._private.edges;
 					
-					function connect( node, otherNode, edge ){
-						var otherId = otherNode.element()._private.data.id;
-						var edgeId = edge.element()._private.data.id;
-						
-						if( node._private.edges[ otherId ] == null ){
-							 node._private.edges[ otherId ] = {};
-						}
-						
-						node._private.edges[ otherId ][ edgeId ] = {
-							edge: edge,
-							source: src,
-							target: tgt
-						};
+					// connect references in the nodes
+					var edgeRef = {
+						source: src,
+						target: tgt,
+						edge: ele
+					};
+
+					if( !srcmap[ tgtid ] ){
+						srcmap[ tgtid ] = {};
 					}
-					
-					// connect reference to source
-					connect( src, tgt, ele );
-					
-					// connect reference to target
-					connect( tgt, src, ele );
-				});
-			});
+					srcmap[ tgtid ][ id ] = edgeRef;
+
+					if( !tgtmap[ srcid ] ){
+						tgtmap[ srcid ] = {};
+					}
+					tgtmap[ srcid ][ id ] = edgeRef;
+
+				} // if is edge
+				 
+				// create mock ids map for element so it can be used like collections
+				_private.ids = {};
+				_private.ids[ data.id ] = ele;
+
+				_private.removed = false;
+				structs[ _private.group ][ data.id ] = ele;
+				
+				restored.push( ele );
+			} // for each element
 
 			// do compound node sanity checks
-			nodes.each(function(){ 
-				var parentId = this._private.data.parent;
+			for( var i = 0; i < numNodes; i++ ){ // each node 
+				var node = elements[i];
+				var data = node._private.data;
+				var id = data.id;
 
-				if( parentId != null ){
-					var parent = this.cy().getElementById( parentId );
+				var parentId = node._private.data.parent;
+				var specifiedParent = parentId != null;
+
+				if( specifiedParent ){
+					var parent = cy.getElementById( parentId );
 
 					if( parent.empty() ){
-						$.error("Node with id `" + this.id() + "` specifies non-existant parent `" + parentId + "`");
+						$.error("Node with id `" + id + "` specifies non-existant parent `" + parentId + "`");
 					} else {
 
 						var selfAsParent = false;
 						var ancestor = parent;
 						while( !ancestor.empty() ){
-							if( this.same(ancestor) ){
-								$.error("Node with id `" + this.id() + "` has self as ancestor");
+							if( node.same(ancestor) ){
+								$.error("Node with id `" + id + "` has self as ancestor");
 								
 								// mark self as parent and remove from data
 								selfAsParent = true;
-								delete this.element()._private.data.parent;
+								delete node.element()._private.data.parent;
 
 								// exit or we loop forever
 								break;
@@ -397,13 +412,13 @@
 
 						if( !selfAsParent ){
 							// connect with children
-							parent.element()._private.children[ this.id() ] = this;
+							parent.element()._private.children[ id ] = node;
 						}
-					}
-				}
-			});
+					} // else
+				} // if specified parent
+			} // for each node
 			
-			restored = new $$.CyCollection( this.cy(), restored );
+			restored = new $$.CyCollection( cy, restored );
 			if( restored.length > 0 ){
 				if( notifyRenderer ){
 					restored.rtrigger("add");
@@ -419,8 +434,8 @@
 	
 	$$.fn.collection({
 		removed: function(){
-			var ele = this.element();
-			return ele != null && ele._private.removed;
+			var ele = this[0];
+			return ele && ele._private.removed;
 		},
 
 		inside: function(){

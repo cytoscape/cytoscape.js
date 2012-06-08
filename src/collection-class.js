@@ -5,13 +5,15 @@
 			classes = classes.split(/\s+/);
 			var self = this;
 			
-			$.each(classes, function(i, cls){
-				if( $$.is.emptyString(cls) ){ return; }
+			for( var i = 0, il = classes.length; i < il; i++ ){
+				var cls = classes[i];
+				if( $$.is.emptyString(cls) ){ continue; }
 				
-				self.each(function(){
-					this._private.classes[cls] = true;
-				});
-			});
+				for( var j = 0, jl = self.length; j < jl; j++ ){
+					var ele = self[j];
+					ele._private.classes[cls] = true;
+				}
+			}
 			
 			self.rtrigger("class");
 			return self;
@@ -20,8 +22,8 @@
 	
 	$$.fn.collection({	
 		hasClass: function(className){
-			var ele = this.element();
-			return ele != null && ele._private.classes[className] == true;
+			var ele = this[0];
+			return ele != null && ele._private.classes[className];
 		}
 	});
 	
@@ -31,43 +33,31 @@
 			var self = this;
 			var toggledElements = [];
 			
-			function remove(self, cls){
-				var toggled = self._private.classes[cls] !== undefined;
-				delete self._private.classes[cls];
-				
-				if( toggled ){
-					toggledElements.push( self );
-				}
-			}
-			
-			function add(self, cls){
-				var toggled = self._private.classes[cls] === undefined;
-				self._private.classes[cls] = true;
-				
-				if( toggled ){
-					toggledElements.push( self );
-				}
-			}
-			
-			self.each(function(){
-				var self = this;
-				
-				$.each(classes, function(i, cls){
-					if( cls == null || cls == "" ){ return; }
+			for( var i = 0, il = self.length; i < il; i++ ){
+				var ele = self[i];
+
+				for( var j = 0, jl = classes.length; j < jl; j++ ){
+					var cls = classes[j];
+
+					if( !cls || cls === "" ){ continue; }
 					
-					if( toggle === undefined ){
-						if( self.hasClass(cls) ){
-							remove(self, cls);
-						} else {
-							add(self, cls);
-						}
-					} else if( toggle ){
-						add(self, cls);
-					} else {
-						remove(self, cls);
+					var hasClass = ele._private.classes[cls];
+					var shouldAdd = toggle || (toggle === undefined && !hasClass);
+					var toggled = false;
+
+					if( shouldAdd ){
+						toggled = hasClass;
+						ele._private.classes[cls] = true;
+					} else { // then remove
+						toggled = !hasClass;
+						ele._private.classes[cls] = false;
 					}
-				});
-			});
+
+					if( toggled ){
+						toggledElements.push( ele );
+					}
+				} // for j classes
+			} // for i eles
 			
 			if( toggledElements.length > 0 ){
 				var collection = new $$.CyCollection( self.cy(), toggledElements );
@@ -84,18 +74,22 @@
 			var self = this;
 			var removedElements = [];
 			
-			$.each(classes, function(i, cls){
-				if( cls == null || cls == "" ){ return; }
-				
-				self.each(function(){
-					var removed = this._private.classes[cls] !== undefined;
-					delete this._private.classes[cls];
+			for( var i = 0, il = self.length; i < il; i++ ){
+				var ele = self[i];
+
+				for( var j = 0, jl = classes.length; j < jl; j++ ){
+					var cls = classes[j];
+					if( !cls || cls === "" ){ continue; }
+
+					var hasClass = ele._private.classes[cls];
+					var removed = hasClass;
+					delete ele._private.classes[cls];
 					
 					if( removed ){
-						removedElements.push( this );
+						removedElements.push( ele );
 					}
-				});
-			});
+				}
+			}
 			
 			if( removedElements.length > 0 ){
 				var collection = new $$.CyCollection( self.cy(), removedElements );

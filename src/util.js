@@ -6,15 +6,26 @@
 
 		extend: $.extend,
 		error: $.error,
+		each: $.each,
 
-		// gets a deep copy of the argument
+		clone: function( obj ){
+			var target = {};
+			for (var i in obj) {
+				if ( obj.hasOwnProperty(i) ) {
+					target[i] = obj[i];
+				}
+			}
+			return target;
+		},
+
+		// gets a shallow copy of the argument
 		copy: function( obj ){
 			if( obj == null ){
 				return obj;
 			} if( $$.is.array(obj) ){
-				return $.extend(true, [], obj);
+				return $.extend([], obj);
 			} else if( $$.is.plainObject(obj) ){
-				return $.extend(true, {}, obj);
+				return $.extend({}, obj);
 			} else {
 				return obj;
 			}

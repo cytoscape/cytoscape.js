@@ -17,7 +17,7 @@ $v(function(jQuery, $, version){
 			
 
 
-			var n = 100000;
+			var n = 100;
 			var nodes = [];
 			for(var i = 0; i < n; i++){
 				nodes.push( {} );
@@ -52,6 +52,33 @@ $v(function(jQuery, $, version){
 		}
 	});
 	
+	test("forEach versus for loop", function(){
+
+		var times = 1000;
+		var t;
+		var eles = cy.elements();
+		var inc = 0;
+
+		console.time("forEach");
+		t = times;
+		while( t-- ){
+			eles.forEach(function(){
+				inc++;
+			});
+		}
+		console.timeEnd("forEach");
+
+		console.time("for");
+		t = times;
+		while( t-- ){
+			for(var i = 0, l = eles.length; i < l; i++){
+				inc++;
+			}
+		}
+		console.timeEnd("for");
+
+	});
+
 	test(".pdata() versus _private with loop", function(){ return;
 		var times = 10000;
 		var eles = cy.elements();

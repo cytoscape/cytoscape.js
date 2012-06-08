@@ -176,9 +176,8 @@
 				// make sure newly created elements have valid ids
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
-				} else if( cy.getElementById( data.id ).size() != 0 || elesIds[ data.id ] ){
-					$.error("Can not create element: an element in the visualisation already has ID `" + data.id + "`");
-					return;
+				} else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
+					return; // can't create element
 				}
 
 				var ele = new $$.CyElement( cy, json, false );
@@ -303,7 +302,7 @@
 
 				if( !ele.removed() ){
 					// don't need to do anything
-					return;
+					continue;
 				}
 				
 				var _private = ele._private;
@@ -325,6 +324,7 @@
 				
 				if( ele.isEdge() ){ // extra checks for edges
 					
+					var edge = ele;
 					var fields = ["source", "target"];
 					var fieldsLength = fields.length;
 					for(var j = 0; j < fieldsLength; j++){
@@ -343,27 +343,18 @@
 					
 					var src = cy.getElementById( data.source );
 					var tgt = cy.getElementById( data.target );
-					var srcid = src.id();
-					var tgtid = tgt.id();
-					var srcmap = src._private.edges;
-					var tgtmap = tgt._private.edges;
-					
-					// connect references in the nodes
-					var edgeRef = {
-						source: src,
-						target: tgt,
-						edge: ele
-					};
 
-					if( !srcmap[ tgtid ] ){
-						srcmap[ tgtid ] = {};
-					}
-					srcmap[ tgtid ][ id ] = edgeRef;
+					$$.util.pushMap({
+						map: src._private.edges,
+						keys: [ tgt.id() ],
+						value: edge
+					});
 
-					if( !tgtmap[ srcid ] ){
-						tgtmap[ srcid ] = {};
-					}
-					tgtmap[ srcid ][ id ] = edgeRef;
+					$$.util.pushMap({
+						map: tgt._private.edges,
+						keys: [ src.id() ],
+						value: edge
+					});
 
 				} // if is edge
 				 
@@ -390,18 +381,17 @@
 					var parent = cy.getElementById( parentId );
 
 					if( parent.empty() ){
-						$.error("Node with id `" + id + "` specifies non-existant parent `" + parentId + "`");
+						// non-existant parent; just remove it
+						delete data.parent;
 					} else {
 
 						var selfAsParent = false;
 						var ancestor = parent;
 						while( !ancestor.empty() ){
 							if( node.same(ancestor) ){
-								$.error("Node with id `" + id + "` has self as ancestor");
-								
 								// mark self as parent and remove from data
 								selfAsParent = true;
-								delete node.element()._private.data.parent;
+								delete data.parent; // remove parent reference
 
 								// exit or we loop forever
 								break;
@@ -428,7 +418,7 @@
 				
 			}
 			
-			return this;
+			return self; // chainability
 		}
 	});
 	
@@ -443,55 +433,61 @@
 		}
 	});
 	
+
+	// TODO refactor .remove() and refactor edge refs in nodes
 	$$.fn.collection({
 		remove: function( notifyRenderer ){
+			var self = this;
 			var removed = [];
-			var edges = {};
-			var nodes = {};
+			var elesToRemove = [];
 			
 			if( notifyRenderer === undefined ){
 				notifyRenderer = true;
 			}
 			
+			// add connected edges
+			function addConnectedEdges(node){
+				var edge
+
+				add(  );
+			}
+			
+
+			// add descendant nodes
+			function addChildren(node){
+				if( node.children().nonempty() ){
+					$.each(node._private.children, function(childId, child){
+						nodes[ childId ] = child;
+
+						// also need to remove connected edges
+						addConnectedEdges( child );
+
+						if( child.children().nonempty() ){
+							addChildren( child );
+						}
+					});
+				}
+			}
+
+			function add( ele ){
+				if( ele.isNode() ){
+					elesToRemove.push( ele ); // nodes are removed last
+
+					addConnectedEdges( ele );
+					addChildren( ele );
+				} else {
+					elesToRemove.unshift( ele ); // edges are removed first
+				}
+			}
+
 			// make the list of elements to remove
 			// (may be removing more than specified due to connected edges etc)
-			this.each(function(){
-				if( this.isNode() ){
-					var node = this.element();
-					nodes[ node.id() ] = this;
-					
-					// add connected edges
-					function removeConnectedEdges(node){
-						$.each(node._private.edges, function(otherNodeId, map){
-							$.each(map, function(edgeId, struct){
-								edges[ edgeId ] = struct.edge;
-							});
-						});
-					}
-					removeConnectedEdges( node );
 
-					// add descendant nodes
-					function addChildren(node){
-						if( node.children().nonempty() ){
-							$.each(node._private.children, function(childId, child){
-								nodes[ childId ] = child;
+			for( var i = 0, l = self.length; i < l; i++ ){
+				var ele = self[i];
 
-								// also need to remove connected edges
-								removeConnectedEdges( child );
-
-								if( child.children().nonempty() ){
-									addChildren( child );
-								}
-							});
-						}
-					}
-					addChildren( node );
-				}
-				
-				if( this.isEdge() ){
-					edges[ this.id() ] = this;
-				}
-			});
+				add( ele );
+			}
 			
 			// now actually remove the elements
 			$.each( [edges, nodes], function(i, elements){
@@ -504,12 +500,7 @@
 					
 					// remove reference from core
 					delete ele.cy()._private[ ele.group() ][ ele.id() ];
-					
-					// remove mapper bounds for all data removed
-					$.each(ele._private.data, function(attr, val){
-						ele.cy().removeContinuousMapperBounds(ele, attr, val);
-					});
-					
+									
 					// add to list of removed elements
 					removed.push( ele );
 					

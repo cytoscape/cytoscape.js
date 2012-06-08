@@ -16,19 +16,6 @@
 			return this;
 		},
 
-		// use if you don't need the reference to this inside the callback (cheaper)
-		forEach: function(fn){ // like .each() but not as expensive since no fn.apply()
-			if( $$.is.fn(fn) ){
-				for(var i = 0; i < this.length; i++){
-					var ele = this[i];
-					var ret = fn(i, ele);
-
-					if( ret === false ){ break; } // exit early on false
-				}
-			}
-			return this;
-		},
-
 		toArray: function(){
 			var array = [];
 			

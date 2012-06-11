@@ -57,7 +57,7 @@
 		};
 
 		cy.initRenderer( options.renderer );
-		
+
 		// initial load
 		cy.load(options.elements, function(){ // onready
 			var data = cy.container().data("cytoscape");
@@ -89,19 +89,27 @@
 	}
 	$$.CyCore = CyCore; // expose
 	
-	$$.fn.core({
-		container: function(){
-			return $( this._private.options.container );
-		}
-	});
-	
-	$$.fn.core({
-		options: function(){
-			return $$.util.copy( this._private.options );
-		}
-	});
 
 	$$.fn.core({
+		getElementById: function( id ){
+			return this._private.nodes[id] || this._private.edges[id] || new $$.CyCollection( this );
+		},
+
+		addToPool: function( ele ){
+			this._private[ ele._private.group ][ ele._private.data.id ] = ele;
+		},
+
+		removeFromPool: function( ele ){
+			delete this._private[ ele._private.group ][ ele._private.data.id ];
+		},
+
+		container: function(){
+			return $( this._private.options.container );
+		},
+
+		options: function(){
+			return $$.util.copy( this._private.options );
+		},
 		
 		json: function(params){
 			var json = {};

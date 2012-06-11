@@ -68,7 +68,7 @@
 		}
 		
 		// validate group
-		if( params.group != "nodes" && params.group != "edges" ){
+		if( params.group !== "nodes" && params.group !== "edges" ){
 			$.error("An element must be of type `nodes` or `edges`; you specified `%s`", params.group);
 			return;
 		}
@@ -99,8 +99,8 @@
 			},
 			renscratch: {}, // object in which the renderer can store information
 			scratch: {}, // scratch objects
-			edges: {}, // map of connected edges ( otherNodeId: { edgeId: { source: true|false, target: true|false, edge: edgeRef } } )
-			children: {} // map of children ( otherNodeId: otherNodeRef )
+			edges: [], // array of connected edges
+			children: [] // array of children
 		};
 		
 		// renderedPosition overrides if specified
@@ -145,7 +145,6 @@
 	
 	// represents a set of nodes, edges, or both together
 	function CyCollection(cy, elements){
-		
 		if( cy === undefined || !(cy instanceof $$.CyCore) ){
 			$.error("A collection must have a reference to the core");
 			return;
@@ -177,7 +176,7 @@
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
 				} else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
-					return; // can't create element
+					continue; // can't create element
 				}
 
 				var ele = new $$.CyElement( cy, json, false );
@@ -346,13 +345,13 @@
 
 					$$.util.pushMap({
 						map: src._private.edges,
-						keys: [ tgt.id() ],
+						keys: [ data.target ],
 						value: edge
 					});
 
 					$$.util.pushMap({
 						map: tgt._private.edges,
-						keys: [ src.id() ],
+						keys: [ data.source ],
 						value: edge
 					});
 
@@ -363,7 +362,7 @@
 				_private.ids[ data.id ] = ele;
 
 				_private.removed = false;
-				structs[ _private.group ][ data.id ] = ele;
+				cy.addToPool( ele );
 				
 				restored.push( ele );
 			} // for each element
@@ -402,7 +401,7 @@
 
 						if( !selfAsParent ){
 							// connect with children
-							parent.element()._private.children[ id ] = node;
+							parent[0]._private.children.push( node );
 						}
 					} // else
 				} // if specified parent
@@ -440,6 +439,7 @@
 			var self = this;
 			var removed = [];
 			var elesToRemove = [];
+			var cy = self._private.cy;
 			
 			if( notifyRenderer === undefined ){
 				notifyRenderer = true;
@@ -447,25 +447,19 @@
 			
 			// add connected edges
 			function addConnectedEdges(node){
-				var edge
-
-				add(  );
+				var edges = node._private.edges; 
+				for( var i = 0; i < edges.length; i++ ){
+					add( edges[i] );
+				}
 			}
 			
 
 			// add descendant nodes
 			function addChildren(node){
-				if( node.children().nonempty() ){
-					$.each(node._private.children, function(childId, child){
-						nodes[ childId ] = child;
-
-						// also need to remove connected edges
-						addConnectedEdges( child );
-
-						if( child.children().nonempty() ){
-							addChildren( child );
-						}
-					});
+				var children = node._private.children;
+				
+				for( var i = 0; i < children.length; i++ ){
+					add( children[i] );
 				}
 			}
 
@@ -489,31 +483,38 @@
 				add( ele );
 			}
 			
-			// now actually remove the elements
-			$.each( [edges, nodes], function(i, elements){
-				$.each(elements, function(id, element){
-					var ele = element.element();
-					var group = ele._private.group;
+			function removeEdgeRef(node, edge){
+				var connectedEdges = node._private.edges;
+				for( var j = 0; j < connectedEdges.length; j++ ){
+					var connectedEdge = connectedEdges[j];
 					
-					// mark self as removed via flag
-					ele._private.removed = true;
-					
-					// remove reference from core
-					delete ele.cy()._private[ ele.group() ][ ele.id() ];
-									
-					// add to list of removed elements
-					removed.push( ele );
-					
-					// if edge, delete references in nodes
-					if( ele.isEdge() ){
-						var src = ele.source().element();
-						var tgt = ele.target().element();
-						
-						delete src._private.edges[ tgt.id() ][ ele.id() ];
-						delete tgt._private.edges[ src.id() ][ ele.id() ];
+					if( edge === connectedEdge ){
+						connectedEdges.splice( j, 1 );
+						break;
 					}
-				});
-			} );
+				}
+			}
+
+			for( var i = 0; i < elesToRemove.length; i++ ){
+				var ele = elesToRemove[i];
+
+				// mark as removed
+				ele._private.removed = true;
+
+				// remove from core pool
+				cy.removeFromPool( ele );
+
+				// add to list of removed elements
+				removed.push( ele );
+
+				if( ele.isEdge() ){ // remove references to this edge in its connected nodes
+					var src = ele.source()[0];
+					var tgt = ele.target()[0];
+
+					removeEdgeRef( src, ele );
+					removeEdgeRef( src, tgt );
+				}
+			}
 			
 			var removedElements = new $$.CyCollection( this.cy(), removed );
 			if( removedElements.size() > 0 ){

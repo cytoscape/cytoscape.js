@@ -2,7 +2,7 @@
 
 	$$.fn.collection({
 		allAre: function(selector){
-			return this.filter(selector).size() == this.size();
+			return this.filter(selector).size() === this.size();
 		},
 
 		is: function(selector){
@@ -13,15 +13,11 @@
 			collection = this.cy().collection( collection );
 
 			// cheap extra check
-			if( this.size() != collection.size() ){
+			if( this.size() !== collection.size() ){
 				return false;
 			}
 
-			return this.intersect( collection ).size() == this.size();
-		},
-
-		allSame: function( collection ){ // just an alias of same
-			return this.same.apply( this, arguments );
+			return this.intersect( collection ).size() === this.size();
 		},
 
 		anySame: function(collection){
@@ -33,11 +29,7 @@
 		allAreNeighbors: function(collection){
 			collection = this.cy().collection( collection );
 
-			return this.neighborhood().intersect( collection ).size() == collection.size();
-		},
-
-		allAreNeighbours: function(){ // english spelling variant
-			return this.allAreNeighbors.apply( this, arguments );
+			return this.neighborhood().intersect( collection ).size() === collection.size();
 		}
 	});
 

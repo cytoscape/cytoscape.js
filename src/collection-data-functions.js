@@ -1,24 +1,6 @@
 ;(function($, $$){
 	
 	$$.fn.collection({
-		pdata: $$.define.pdata({
-			each: function(self, callback){
-				var l = self.length; // don't use .each() for speed
-				for(var i = 0; i < l; i++){
-					var ref = self[i];
-					if( ref ){
-						callback( ref );
-					}
-				}
-			},
-			single: function(self, callback){
-				var ref = self[0];
-
-				if( ref ){
-					callback( ref ); // don't use .element() for speed
-				}
-			}
-		}),
 
 		data: $$.define.data({
 			field: "data",
@@ -74,7 +56,9 @@
 		}),
 
 		id: function(){
-			return this.data("id");
+			if( this[0] ){
+				return this[0]._private.data.id;
+			}
 		},
 
 		position: defineAccessor({

@@ -1,8 +1,6 @@
 ;(function($, $$){
 	
 	$$.fn.core({
-		pdata: $$.define.pdata(),
-
 		data: $$.define.data({
 			field: "data",
 			bindingEvent: "data",

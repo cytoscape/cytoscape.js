@@ -12,10 +12,6 @@
 			return new $$.CyCollection( this );
 		},
 		
-		getElementById: function(id){
-			return this._private.nodes[id] || this._private.edges[id] || new $$.CyCollection( this );
-		},
-		
 		nodes: defineSearch({
 			addLiveFunction: true,
 			group: "nodes"

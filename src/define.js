@@ -12,149 +12,6 @@
 
 	$$.define = {
 
-		// access to _private in a convenient way that abstracts away handling array-like prototypes
-		
-		// in other words, you can use .pdata() to access _private for CyCollections without worrying
-		// about whether the collection is empty, whether the collection is actually just an element, etc
-
-		pdata: function( params ){
-			var defaults = {
-			};
-			params = $$.util.extend({}, defaults, params);
-
-			return function( name, value ){
-				var self = this;
-				var p = params; // put in local scope
-				var selfIsArrayLike = self.length !== undefined;
-				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-				var single = selfIsArrayLike ? self[0] : self;
-				var ret;
-				var l;
-				var i;
-
-				// .pdata(true, ...)
-				if( name === true ){ // treat as a map
-					var command = value;
-					var args = [];
-
-					l = arguments.length;
-					for( i = 2; i < l; i++ ){
-						args.push( arguments[i] );
-					}
-
-					var keepChildren;
-					if( $$.is.plainObject(command) ){ // an object lets us have more options
-						var options = command;
-						keepChildren = options.keepChildren;
-						command = options.command;
-					}
-
-					switch( command ){
-
-					// .pdata(true, "get", ...)
-					case "get":
-
-						if( single ){
-							ret = $$.util.getMap({
-								map: single._private,
-								keys: args
-							});
-						}
-						return ret;
-
-						break;
-
-					// .pdata(true, "set", ...)	
-					case "set":
-						value = args.pop();
-
-						l = all.length;
-						for( i = 0; i < l; i++ ){
-							$$.util.setMap({
-								map: all[i]._private,
-								keys: args,
-								value: value
-							});
-						}
-						break;
-
-					// .pdata(true, "push", ...)	
-					case "push":
-						value = args.pop();
-
-						l = all.length;
-						for( i = 0; i < l; i++ ){
-							$$.util.pushMap({
-								map: all[i]._private,
-								keys: args,
-								value: value
-							});
-						}
-						break;
-
-					// .pdata(true, "delete", ...)
-					case "delete":
-
-						l = all.length;
-						for( i = 0; i < l; i++ ){
-							$$.util.deleteMap({
-								map: all[i]._private,
-								keys: args,
-								keepChildren: keepChildren
-							});
-						}
-						break;
-
-					default:
-						break;
-					}
-
-				// .pdata({ ... })
-				} else if( $$.is.plainObject(name) ){ // extend _private
-					var map = name;
-
-					l = all.length;
-					for( i = 0; i < l; i++ ){
-						$$.util.extend( all[i]._private, map );
-					}
-
-				// .pdata("foo", ...)
-				} else if( $$.is.string(name) ){ // get or set specific field
-
-					// .pdata("foo")
-					if( value === undefined ){ // get
-						var ret;
-
-						if( single ){
-							ret = single._private[name];
-						}
-
-						return ret;
-
-					// .pdata("foo", "bar")
-					} else { // set
-
-						l = all.length;
-						for( i = 0; i < l; i++ ){
-							all[i]._private[name] = value;
-						}
-					}
-
-				// .pdata()
-				} else if( name === undefined ) { // get whole _private
-					var ret;
-
-					if( single ){
-						ret = single._private;
-					}	
-
-					return ret;
-				}
-
-				return self; // maintain chainability
-			}
-		},
-
 		// access data field
 		// requires .pdata()
 		data: function( params ){
@@ -183,13 +40,21 @@
 
 					// .data("foo")
 					if( p.allowGetting && value === undefined ){ // get
-						return self.pdata( true, "get", p.field, name );
+
+						var ret;
+						if( single ){
+							ret = single._private[ p.field ][ name ];
+						}
+						return ret;
 					
 					// .data("foo", "bar")
 					} else if( p.allowSetting && value !== undefined ) { // set
 						var valid = !p.immutableKeys[name];
 						if( valid ){
-							self.pdata( true, "set", p.field, name, value );
+
+							for( var i = 0, l = all.length; i < l; i++ ){
+								all[i]._private[ p.field ][ name ] = value;
+							}
 
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );
@@ -202,12 +67,14 @@
 					var obj = name;
 					var k, v;
 
-					for(k in obj){
-						v = obj[k];
+					for( k in obj ){
+						v = obj[ k ];
 
 						var valid = !p.immutableKeys[k];
 						if( valid ){
-							self.pdata( true, "set", p.field, k, v );
+							for( var i = 0, l = all.length; i < l; i++ ){
+								all[i]._private[ p.field ][ k ] = v;
+							}
 						}
 					}
 					
@@ -222,7 +89,11 @@
 				
 				// .data()
 				} else if( p.allowGetting && name === undefined ){ // get whole object
-					return self.pdata( p.field );
+					var ret;
+					if( single ){
+						ret = single._private[ p.field ];
+					}
+					return ret;
 				}
 
 				return self; // maintain chainability
@@ -244,6 +115,9 @@
 			return function( names ){
 				var p = params;
 				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+				var single = selfIsArrayLike ? self[0] : self;
 				
 				// .removeData("foo bar")
 				if( $$.is.string(names) ){ // then get the list of keys, and delete them
@@ -256,21 +130,30 @@
 
 						var valid = !p.immutableKeys[ key ]; // not valid if immutable
 						if( valid ){
-							self.pdata( true, "delete", p.field, key );
-
-							if( p.triggerEvent ){
-								self[ p.triggerFnName ]( p.event );
+							for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
+								delete all[ i_a ]._private[ p.field ][ key ];
 							}
 						}
+					}
+
+					if( p.triggerEvent ){
+						self[ p.triggerFnName ]( p.event );
 					}
 
 				// .removeData()
 				} else if( names === undefined ){ // then delete all keys
 
-					self.pdata( true, {
-						command: "delete",
-						keepChildren: p.immutableKeys // keep immutable keys
-					}, p.field );
+					for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
+						var _privateFields = all[ i_a ]._private[ p.field ];
+						
+						for( var key in _privateFields ){
+							var validKeyToDelete = !p.immutableKeys[ key ];
+
+							if( validKeyToDelete ){
+								delete _privateFields[ key ];
+							}
+						}
+					}
 
 					if( p.triggerEvent ){
 						self[ p.triggerFnName ]( p.event );

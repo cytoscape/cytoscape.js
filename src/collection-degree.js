@@ -5,21 +5,23 @@
 	
 	function defineDegreeFunction(callback){
 		return function(){
-			var self = this.element();
+			var self = this;
 			
-			if( self == null ){ return undefined }
+			if( self.length === 0 ){ return null; }
 
 			if( self.isNode() && !self.removed() ){
 				var degree = 0;
-				var node = this;
-				
-				node.connectedEdges().each(function(i, edge){
+				var node = this[0];
+				var connectedEdges = node._private.edges;
+
+				for( var i = 0; i < connectedEdges.length; i++ ){
+					var edge = connectedEdges[i];
 					degree += callback( node, edge );
-				});
+				}
 				
 				return degree;
 			} else {
-				return undefined;
+				return null;
 			}
 		};
 	}
@@ -61,13 +63,15 @@
 	function defineDegreeBoundsFunction(degreeFn, callback){
 		return function(){
 			var ret = null;
-			
-			this.nodes().each(function(i, ele){
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){
+				var ele = nodes[i];
 				var degree = ele[degreeFn]();
-				if( degree != null && (ret == null || callback(degree, ret)) ){
+				if( degree !== null && (ret === null || callback(degree, ret)) ){
 					ret = degree;
 				}
-			});
+			}
 			
 			return ret;
 		};
@@ -112,10 +116,11 @@
 	$$.fn.collection({
 		totalDegree: function(){
 			var total = 0;
-			
-			this.nodes().each(function(i, ele){
-				total += ele.degree();
-			});
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){
+				total += nodes[i].degree();
+			}
 
 			return total;
 		}

@@ -75,7 +75,10 @@
 			var cy = this;
 			
 			// remove old elements
-			cy.elements().remove();
+			var oldEles = cy.elements();
+			if( oldEles.length > 0 ){
+				oldEles.remove();
+			}
 
 			cy.notifications(false);
 			

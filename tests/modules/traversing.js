@@ -32,11 +32,11 @@ $v(function(jQuery, $, version){
 		var nodes = cy.nodes();
 		var not_n1 = n2.add(n3);
 
-		ok( nodes.not("#n1").allSame(not_n1), "not with selectors" );
-		ok( nodes.allSame(cy.nodes()), "original collection not modified" );
-		ok( nodes.not(n1).allSame(not_n1), "not with element" );
-		ok( nodes.not("#n2, #n3").allSame(n1), "not with multiple elements via selectors" );
-		ok( nodes.not(n2.add(n3)).allSame(n1), "not with multiple elements via collection" );
+		ok( nodes.not("#n1").same(not_n1), "not with selectors" );
+		ok( nodes.same(cy.nodes()), "original collection not modified" );
+		ok( nodes.not(n1).same(not_n1), "not with element" );
+		ok( nodes.not("#n2, #n3").same(n1), "not with multiple elements via selectors" );
+		ok( nodes.not(n2.add(n3)).same(n1), "not with multiple elements via collection" );
 	});
 	
 	test("eles.neighborhood() et al", function(){
@@ -55,7 +55,7 @@ $v(function(jQuery, $, version){
 		ok( !n2.neighborhood().anySame(n2), "default neighbourhood does not contain self" );
 		ok( !n2.openNeighborhood().anySame(n2), "open neighbourhood does not contain self" );
 		ok( n2.closedNeighborhood().anySame(n2), "closed neighbourhood does contain self" );
-		ok( n2.neighborhood().allSame( n2.openNeighborhood() ), "default neighbourhood is open" );
+		ok( n2.neighborhood().same( n2.openNeighborhood() ), "default neighbourhood is open" );
 		
 		equal( n2.add(n1).neighborhood().nodes().size(), 3, "number of (n2, n1) neighbour nodes" );
 		equal( n1.add(n2).add(n3).neighborhood().size(), 5, "number of (n1, n2, n3) neighbour elements" );
@@ -99,20 +99,20 @@ $v(function(jQuery, $, version){
 		// codirectedEdges
 		var cedges = cy.$("#n1n2").codirectedEdges();
 		equal( cedges.size(), 2, "number of codirected edges" );
-		ok( cedges.allSame( cy.$("#n1n2, #ep1") ), "codirected edges are n1n2 & ep2" );
+		ok( cedges.same( cy.$("#n1n2, #ep1") ), "codirected edges are n1n2 & ep2" );
 
 		// connectedNodes
-		ok( pedges.connectedNodes().allSame( cy.$("#n1, #n2") ), "connected nodes of || edges are n1 & n2" );
-		ok( cy.$("#n1n2").connectedNodes().allSame( cy.$("#n1, #n2") ), "connected nodes of n1n2 are n1 & n2" );
+		ok( pedges.connectedNodes().same( cy.$("#n1, #n2") ), "connected nodes of || edges are n1 & n2" );
+		ok( cy.$("#n1n2").connectedNodes().same( cy.$("#n1, #n2") ), "connected nodes of n1n2 are n1 & n2" );
 
 		// source & target
 		ok( cedges.source().allAre("#n1"), "codirected edges source is n1" );
 		ok( cedges.target().allAre("#n2"), "codirected edges source is n2" );
-		ok( pedges.source().allSame( cy.$("#n1, #n2") ), "source of || edges is n1 & n2" );
+		ok( pedges.source().same( cy.$("#n1, #n2") ), "source of || edges is n1 & n2" );
 
 		// edgesWith
-		ok( cy.$("#n1").edgesWith("#n2").allSame( cy.$("#n1n2, #ep1, #ep2") ), "n1 edgesWith n2 is { n1n2, ep1, ep2 }" );
-		ok( cy.$("#n2").edgesWith("#n1, #n3").allSame("#n1n2, #n2n3, #ep1, #ep2"), "n2 edgesWith {n2, n3} is { n1n2, n2n3, ep1, ep2 }" );
+		ok( cy.$("#n1").edgesWith("#n2").same( cy.$("#n1n2, #ep1, #ep2") ), "n1 edgesWith n2 is { n1n2, ep1, ep2 }" );
+		ok( cy.$("#n2").edgesWith("#n1, #n3").same("#n1n2, #n2n3, #ep1, #ep2"), "n2 edgesWith {n2, n3} is { n1n2, n2n3, ep1, ep2 }" );
 
 		// edgesTo
 		ok( cy.$("#n1").edgesTo("#n2").same("#n1n2, #ep1"), "n1 edgesTo n2 is { n1n2, ep1 }" );
@@ -146,10 +146,10 @@ $v(function(jQuery, $, version){
 				var s2 = cy.$("#son2");
 
 				ok( f.parent().empty(), "father has no parent" );
-				ok( f.children().allSame( s.add(s2) ), "father has son and son2 as children" );
-				ok( f.descendants().allSame( s.add(s2).add(g) ), "father's descendants correct" );
-				ok( s.siblings().allSame( s2 ), "son2 sibling of son" );
-				ok( g.parents().allSame( f.add(s) ), "grandson has father and son as parents" );
+				ok( f.children().same( s.add(s2) ), "father has son and son2 as children" );
+				ok( f.descendants().same( s.add(s2).add(g) ), "father's descendants correct" );
+				ok( s.siblings().same( s2 ), "son2 sibling of son" );
+				ok( g.parents().same( f.add(s) ), "grandson has father and son as parents" );
 				
 				start();
 				window.cy = cy;

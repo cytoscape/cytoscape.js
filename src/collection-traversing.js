@@ -18,55 +18,56 @@
 
 	$$.fn.collection({
 		filter: function(filter){
-			var cy = this.cy();
+			var cy = this._private.cy;
 			
 			if( $$.is.fn(filter) ){
 				var elements = [];
-				this.each(function(i, element){
-					element = element.element();
-					
-					if( filter.apply(element, [i, element]) ){
-						elements.push(element);
+
+				for( var i = 0; i < this.length; i++ ){
+					var ele = this[i];
+
+					if( filter.apply(ele, [i, ele]) ){
+						elements.push(ele);
 					}
-				});
+				}
 				
-				return new $$.CyCollection(this.cy(), elements);
+				return new $$.CyCollection(cy, elements);
 			
 			} else if( $$.is.string(filter) || $$.is.elementOrCollection(filter) ){
-				return new $$.CySelector(this.cy(), filter).filter(this);
+				return new $$.CySelector(cy, filter).filter(this);
 			
 			} else if( filter === undefined ){
 				return this;
 			}
 
-			return new $$.CyCollection( this.cy() );
+			return new $$.CyCollection( cy );
 		}
 	});
 
 	$$.fn.collection({	
 		not: function(toRemove){
-			
-			if( toRemove == null ){
+			var cy = this._private.cy;
+
+			if( !toRemove ){
 				return this;
 			} else {
 			
-				if( $$.is.string(toRemove) ){
-					toRemove = this.filter(toRemove);
+				if( $$.is.string( toRemove ) ){
+					toRemove = this.filter( toRemove );
 				}
 				
 				var elements = [];
-				toRemove = toRemove.collection();
 				
-				this.forEach(function(i, element){
-					
+				for( var i = 0; i < this.length; i++ ){
+					var element = this[i];
+
 					var remove = toRemove._private.ids[ element.id() ];
 					if( !remove ){
 						elements.push( element );
 					}
-					
-				});
+				}
 				
-				return new $$.CyCollection(this.cy(), elements);
+				return new $$.CyCollection( cy, elements );
 			}
 			
 		}
@@ -75,6 +76,7 @@
 	$$.fn.collection({
 		intersect: function( other ){
 			var self = this;
+			var cy = this._private.cy;
 			
 			// if a selector is specified, then filter by it
 			if( $$.is.string(other) ){
@@ -89,57 +91,59 @@
 			var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
 			var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
 			
-			$.each(ids1, function(id){
-				if( ids2[ id ] ){
-					var ele = ids2[ id ];
+			for( var id in ids1 ){
+				var ele = ids2[ id ];
+
+				if( ele ){
 					elements.push( ele );
 				}
-			});
+			}
 			
-			return new $$.CyCollection( this.cy(), elements );
+			return new $$.CyCollection( cy, elements );
 		}
 	});
 	
 	$$.fn.collection({
 		add: function(toAdd){
-			var self = this;			
+			var self = this;
+			var cy = this._private.cy;		
 			
-			if( toAdd == null ){
+			if( !toAdd ){
 				return this;
 			}
 			
 			if( $$.is.string(toAdd) ){
 				var selector = toAdd;
-				toAdd = this.cy().elements(selector);
+				toAdd = cy.elements(selector);
 			}
-			toAdd = toAdd.collection();
 			
 			var elements = [];
 			var ids = {};
 		
 			function add(element){
-				if( element == null ){
+				if( !element ){
 					return;
 				}
 				
-				if( ids[ element.id() ] == null ){
-					elements.push(element);
+				if( !ids[ element.id() ] ){
+					elements.push( element );
 					ids[ element.id() ] = true;
 				}
 			}
 			
 			// add own
-			this.each(function(i, element){
+			for( var i = 0; i < self.length; i++ ){
+				var element = self[i];
 				add(element);
-			});
+			}
 			
 			// add toAdd
-			var collection = toAdd.collection();
-			collection.each(function(i, element){
+			for( var i = 0; i < toAdd.length; i++ ){
+				var element = toAdd[i];
 				add(element);
-			});
+			}
 			
-			return new $$.CyCollection(this.cy(), elements);
+			return new $$.CyCollection(cy, elements);
 		}
 	});
 
@@ -205,13 +209,16 @@
 	function defineSourceFunction( params ){
 		return function( selector ){
 			var sources = [];
+			var edges = this.edges();
+			var cy = this._private.cy;
 
-			this.edges().each(function(){
-				var src = this.cy().getElementById( this.data(params.attr) ).element();
+			for( var i = 0; i < edges.length; i++ ){
+				var edge = edges[i];
+				var src = cy.getElementById( edge.data(params.attr) );
 				sources.push( src );
-			});
+			}
 			
-			return new $$.CyCollection( this.cy(), sources ).filter( selector );
+			return new $$.CyCollection( cy, sources ).filter( selector );
 		}
 	}
 
@@ -221,65 +228,82 @@
 	
 	$$.fn.collection({
 		edgesTo: defineEdgesWithFunction({
-			include: function( node, otherNode, edgeStruct ){
-				return edgeStruct.target.same( otherNode );
-			}
+			thisIs: "source"
 		})
 	});
 	
 	function defineEdgesWithFunction( params ){
 		var defaults = {
-			include: function( node, otherNode, edgeStruct ){
-				return true;
-			}
 		};
 		params = $.extend(true, {}, defaults, params);
 		
 		return function(otherNodes){
 			var elements = [];
+			var cy = this._private.cy;
+			var p = params;
 
 			// get elements if a selector is specified
 			if( $$.is.string(otherNodes) ){
-				otherNodes = this.cy().$( otherNodes );
+				otherNodes = cy.$( otherNodes );
 			}
 			
-			this.nodes().each(function(i, node){
-				otherNodes.nodes().each(function(j, otherNode){
-					var edgesMap = node.element()._private.edges[ otherNode.id() ];
-					
-					if( edgesMap != null ){
-						$.each(edgesMap, function(edgeId, edgeStruct){
-							if( params.include( node, otherNode, edgeStruct ) ){
-								elements.push( edgeStruct.edge );
-							}
-						} );
-					}
-				});
-			});
+			var edges = otherNodes.connectedEdges();
+			var thisIds = this._private.ids;
 			
-			return new $$.CyCollection( this.cy(), elements );
+			for( var i = 0; i < edges.length; i++ ){
+				var edge = edges[i];
+				var foundId;
+
+				if( p.thisIs ){
+					var idToFind = edge._private.data[ p.thisIs ];
+					foundId = thisIds[ idToFind ];
+				} else {
+					foundId = thisIds[ edge._private.data.source ] || thisIds[ edge._private.data.target ];
+				}
+				
+				if( foundId ){
+					elements.push( edge );
+				}
+			}
+			
+			return new $$.CyCollection( cy, elements );
 		};
 	}
 	
 	$$.fn.collection({
 		connectedEdges: function( selector ){
 			var elements = [];
+			var cy = this._private.cy;
 			
-			this.nodes().each(function(i, node){
-				$.each(node.element()._private.edges, function(otherNodeId, edgesById){
-					$.each(edgesById, function(edgeId, edgeStruct){
-						elements.push( edgeStruct.edge );
-					});
-				});
-			});
+			var nodes = this.nodes();
+			for( var i = 0; i < nodes.length; i++ ){
+				var node = nodes[i];
+				var edges = node._private.edges;
+
+				for( var j = 0; j < edges.length; j++ ){
+					var edge = edges[j];					
+					elements.push( edge );
+				}
+			}
 			
-			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+			return new $$.CyCollection( cy, elements ).filter( selector );
 		}
 	});
 	
 	$$.fn.collection({
 		connectedNodes: function( selector ){
-			return this.source().add( this.target() ).filter( selector );
+			var elements = [];
+			var cy = this._private.cy;
+
+			var edges = this.edges();
+			for( var i = 0; i < edges.length; i++ ){
+				var edge = edges[i];
+
+				elements.push( edge.source() );
+				elements.push( edge.target() );
+			}
+
+			return new $$.CyCollection( cy, elements ).filter( selector );
 		}
 	});
 	
@@ -298,33 +322,39 @@
 	
 	function defineParallelEdgesFunction(params){
 		var defaults = {
-			include: function( source, target, edgeStruct ){
-				return true;
-			}
+			codirected: false
 		};
 		params = $.extend(true, {}, defaults, params);
 		
 		return function( selector ){
+			var cy = this._private.cy;
 			var elements = [];
-			
-			this.edges().each(function(i, edge){
-				var src = edge.source().element();
-				var tgt = edge.target().element();
-				
-				// look at edges between src and tgt
-				$.each( src._private.edges[ tgt.id() ], function(id, edgeStruct){
-					if( params.include(src, tgt, edgeStruct) ){
-						elements.push( edgeStruct.edge );
+			var edges = this.edges();
+
+			for( var i = 0; i < edges.length; i++ ){
+				var edge = edges[i];
+				var src = edge.source();
+				var srcid = src.id();
+				var tgt = edge.target();
+				var tgtid = tgt.id();
+
+				var srcEdges = src._private.edges;
+				for( var j = 0; j < srcEdges.length; j++ ){
+					var srcEdge = srcEdges[j];
+					var srcEdgeData = srcEdge._private.data;
+					var codirected = srcEdgeData.target === tgtid && srcEdgeData.source === srcid;
+					var oppdirected = srcEdgeData.source === tgtid && srcEdgeData.target === srcid;
+					
+					if( (p.codirected && codirected) || (codirected || oppdirected) ){
+						elements.push( srcEdge );
 					}
-				});
-			});
+				}
+			}
 			
-			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+			return new $$.CyCollection( cy, elements ).filter( selector );
 		};
 	
 	}
-
-
 
 
 	// Compound functions
@@ -333,16 +363,18 @@
 	$$.fn.collection({
 		parent: function( selector ){
 			var parents = [];
+			var cy = this._private.cy;
 
-			this.forEach(function(i, ele){
-				var parent = ele.cy().getElementById( ele.data("parent") );
+			for( var i = 0; i < this.length; i++ ){
+				var ele = this[i];
+				var parent = cy.getElementById( ele._private.data.parent );
 
 				if( parent.size() > 0 ){
-					parents.push( parent.element() );
+					parents.push( parent );
 				}
-			});
+			}
 			
-			return new $$.CyCollection( this.cy(), parents ).filter( selector );
+			return new $$.CyCollection( cy, parents ).filter( selector );
 		},
 
 		parents: function( selector ){
@@ -350,9 +382,10 @@
 
 			var eles = this.parent();
 			while( eles.nonempty() ){
-				eles.forEach(function(i, ele){
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
 					parents.push( ele );
-				});
+				}
 
 				eles = eles.parent();
 			}
@@ -363,13 +396,10 @@
 		children: function( selector ){
 			var children = [];
 
-			this.each(function(){
-				var ele = this.element();
-
-				$$.util.each(ele._private.children, function(id, child){
-					children.push( child );
-				});
-			});
+			for( var i = 0; i < this.length; i++ ){
+				var ele = this[i];
+				children = children.concat( ele._private.children );
+			}
 
 			return new $$.CyCollection( this.cy(), children ).filter( selector );
 		},
@@ -382,13 +412,15 @@
 			var elements = [];
 
 			function add( eles ){
-				eles.forEach(function(i, ele){
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
+
 					elements.push( ele );
 
 					if( ele.children().nonempty() ){
 						add( ele.children() );
 					}
-				});
+				}
 			}
 
 			add( this.children() );

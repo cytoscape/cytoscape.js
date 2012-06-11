@@ -13,7 +13,8 @@
 		defaultNodeStyle: {
 			shape: "ellipse",
 			height: 10,
-			width: 10
+			width: 10,
+			selected: false
 		},
 		
 		defaultEdgeStyle: {
@@ -105,12 +106,14 @@
 		});
 		
 		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
+			
+			/*
 			console.log("mousewheel");
 			console.log(event);
 			console.log(delta);
 			console.log(deltaX);
 			console.log(deltaY);
-			
+			*/
 			
 			// self.zoomAboutPoint(point, zoom);
 			/*
@@ -118,6 +121,75 @@
 			self.cy.trigger("pan");
 			*/
 		});
+	}
+
+	CanvasRenderer.prototype.distanceToQuadraticBezier = function(x, y, 
+		x1, y1, x2, y2, x3, y3) {
+		
+		// Calculate coefficients of derivative of square distance function
+		
+		// The plan is to find the minima of the distance function.
+		
+		
+		// Note this gives actual coefficients divided by 4 for simplification,
+		// and we don't need the 4 as equation is 0 on right side
+		var a = x1*x1 - 4*x1*x2 + 2*x1*x3 + 4*x2*x2 - 4*x2*x3 + x3*x3
+			+ y1*y1 - 4*y1*y2 + 2*y1*y3 + 4*y2*y2 - 4*y2*y3 + y3*y3;
+		
+		var b = 9*x1*x2 - 3*x1*x1 - 3*x1*x3 - 6*x2*x2 + 3*x2*x3
+			+ 9*y1*y2 - 3*y1*y1 - 3*y1*y3 - 6*y2*y2 + 3*y2*y3;
+		
+		var c = 3*x1*x1 - 6*x1*x2 + x1*x3 - x1*x + 2*x2*y2 + 2*x2*x - x3*x
+			+ 3*y1*y1 - 6*y1*y2 + y1*y3 - y1*y + 2*y2*y2 + 2*y2*y - y3*y;
+			
+		var d = x1*x2 - x1*x1 + x1*x - x2*x
+			+ y1*y2 - y1*y1 + y1*y - y2*y;
+		
+		var root1, root2, root3;
+		
+		var zeroThreshold = 0.0000000001;
+		
+		var qArgument, qRealComponent, qImaginaryComponent;
+		var bSquareMinus3ac = b * b - 3 * a * c;
+		qArgument = Math.pow(2 * Math.pow(b, 3) - 9 * a * b * c + 27 * a * a * d)
+				- 4 * Math.pow(bSquareMinus3ac, 3);
+			
+		if (qArgument < 0) {
+			qImaginaryComponent = 0;
+			qRealComponent = Math.sqrt(-qArgument);
+		} else {
+			qImaginaryComponent = Math.sqrt(qArgument);
+			qRealComponent = 0;
+		}
+		
+		var cArgumentReal, cArgumentImaginary, cRealComponent, cImaginaryComponent;
+		cArgumentReal = 2 * Math.pow(b, 3) - 9 * a * b * c + 27 * a * a * d;
+		cArgumentReal += qRealComponent;
+		cArgumentImaginary += qImaginaryComponent;
+		
+		
+		
+		if (Math.abs(bSquareMinus3ac) < zeroThreshold) {
+			
+		} else {
+			
+			
+			// cArgument = 
+		}
+		
+		// Calculate the discriminant of the cubic
+		var discriminant = 18 * a * b * c * d
+			- 4 * Math.pow(b, 3) * d
+			+ b * b * c * c - 4 * a * Math.pow(c, 3)
+			- 27 * a * a * d * d;
+
+		if (discriminant < 0) {
+			// In this case, only 1 real root
+			
+					
+		}
+		
+		// var root1 = 
 	}
 
 	CanvasRenderer.prototype.initStyle = function() {

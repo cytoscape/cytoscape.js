@@ -35,11 +35,6 @@
 			style: options.style,
 			nodes: {}, // id => node object
 			edges: {}, // id => edge object
-			continuousMapperBounds: { // data attr name => { min, max }
-				nodes: {},
-				edges: {}
-			},
-			continuousMapperUpdates: [],
 			live: {}, // event name => array of callback defns
 			selectors: {}, // selector string => selector for live
 			listeners: {}, // cy || background => event name => array of callback functions

@@ -24,7 +24,7 @@
 			event: "data",
 			triggerEvent: true,
 			onRemove: function( key, val ){ // callback after removing; `this` refers to the element
-				this.cy().removeContinuousMapperBounds(this, key, val);
+				
 			},
 			validKey: function( key ){
 				switch(key){

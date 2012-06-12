@@ -56,11 +56,7 @@
 									return;
 								}
 								
-								var attrBounds = cy._private.continuousMapperBounds[element._private.group][map.attr.name];
-								attrBounds = {
-									min: attrBounds == null ? 0 : attrBounds.min,
-									max: attrBounds == null ? 0 : attrBounds.max
-								};
+								var attrBounds = {};
 								
 								// use defined attr min & max if set in mapper
 								if( map.attr.min != null ){

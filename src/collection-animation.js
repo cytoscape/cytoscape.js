@@ -2,18 +2,20 @@
 	
 	$$.fn.collection({
 		animated: function(){
-			var ele = this.element();
-			if( ele != null ){
-				return ele._private.animation.current.length > 0;
-			}
+			var ele = this[0];
+
+			return ele && ele._private.animation.current.length > 0
 		}
 	});
 	
 	$$.fn.collection({
 		clearQueue: function(){
-			return this.forEach(function(i, ele){
+			for( var i = 0; i < this.length; i++ ){
+				var ele = this[i];
 				ele._private.animation.queue = [];
-			});
+			}
+
+			return this;
 		}
 	});
 	

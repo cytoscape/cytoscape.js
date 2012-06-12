@@ -40,12 +40,22 @@
 			allowGetting: true
 		}),
 
+		removeScratch: $$.define.removeData({
+			field: "scratch",
+			triggerEvent: false
+		}),
+
 		rscratch: $$.define.data({
 			field: "renscratch",
 			allowBinding: false,
 			allowSetting: true,
 			settingTriggersEvent: false,
 			allowGetting: true
+		}),
+
+		removeRscratch: $$.define.removeData({
+			field: "rscratch",
+			triggerEvent: false
 		}),
 
 		id: function(){

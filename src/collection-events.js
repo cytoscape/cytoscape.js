@@ -99,6 +99,8 @@
 			});
 			
 			this.trigger(event, data);
+			
+			return this;
 		}
 	});
 	

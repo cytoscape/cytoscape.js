@@ -9,8 +9,7 @@ $v(function(jQuery, $, version){
 	
 	asyncTest("Two nodes, same ID", function(){
 
-		try {
-			$("#cytoscape").cytoscape({
+		$("#cytoscape").cytoscape({
 				renderer: {
 					name: "null"
 				},
@@ -26,16 +25,13 @@ $v(function(jQuery, $, version){
 				}, 
 				ready: function(cy){
 					window.cy = cy;
-					ok(false, "Didn't get exception");
+					
+					equal( cy.elements().size(), 2, "3rd node not added" );
+					equal( cy.$("#n1").data("foo"), "one", "3rd node doesn't override 1st" );
 					
 					start();
 				}
 			});
-
-		} catch(e) {
-			ok(true, "Got exception");
-			start();
-		}
 
 	});
 	
@@ -116,55 +112,46 @@ $v(function(jQuery, $, version){
 
 	asyncTest("Node has self as parent", function(){
 
-		try {
-			$("#cytoscape").cy({
-				renderer: {
-					name: "null"
-				},
-				layout: {
-					name: "null"
-				},
-				elements: {
-					nodes: [ { data: { id: "n1", parent: "n1" } } ]
-				},
-				ready: function(cy){
-					ok(false, "Didn't get exception");
-					
-					start();
-				}
-			});
-		} catch(e) {
-			ok( true, "Got exception" );
-			start();
-		}
+		$("#cytoscape").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [ { data: { id: "n1", parent: "n1" } } ]
+			},
+			ready: function(cy){
+				equal( cy.$("#n1").parent().size(), 0, "n1 doesn't have parent" );
+				
+				start();
+			}
+		});
 	});
 
 	asyncTest("Two nodes have a parent cycle", function(){
 
-		try {
-			$("#cytoscape").cy({
-				renderer: {
-					name: "null"
-				},
-				layout: {
-					name: "null"
-				},
-				elements: {
-					nodes: [
-						{ data: { id: "n1", parent: "n2" } },
-						{ data: { id: "n2", parent: "n1" } }
-					]
-				},
-				ready: function(cy){
-					ok(false, "Didn't get exception");
-					
-					start();
-				}
-			});
-		} catch(e) {
-			ok( true, "Got exception" );
-			start();
-		}
+		$("#cytoscape").cy({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+					{ data: { id: "n1", parent: "n2" } },
+					{ data: { id: "n2", parent: "n1" } }
+				]
+			},
+			ready: function(cy){
+				ok( cy.$("#n1").parent().same("#n2"), "n1 has parent n2" );
+				ok( cy.$("#n2").parent().size() === 0, "n2 has no parent since it creates a cycle" );
+				
+				start();
+			}
+		});
 	});
 	
 });

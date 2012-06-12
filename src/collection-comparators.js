@@ -2,34 +2,34 @@
 
 	$$.fn.collection({
 		allAre: function(selector){
-			return this.filter(selector).size() === this.size();
+			return this.filter(selector).length === this.length;
 		},
 
 		is: function(selector){
-			return new $$.CySelector(this.cy(), selector).filter(this).size() > 0;
+			return this.filter(selector).length > 0;
 		},
 
 		same: function( collection ){
 			collection = this.cy().collection( collection );
 
 			// cheap extra check
-			if( this.size() !== collection.size() ){
+			if( this.length !== collection.length ){
 				return false;
 			}
 
-			return this.intersect( collection ).size() === this.size();
+			return this.intersect( collection ).length === this.length;
 		},
 
 		anySame: function(collection){
 			collection = this.cy().collection( collection );
 
-			return this.intersect( collection ).size() > 0;
+			return this.intersect( collection ).length > 0;
 		},
 
 		allAreNeighbors: function(collection){
 			collection = this.cy().collection( collection );
 
-			return this.neighborhood().intersect( collection ).size() === collection.size();
+			return this.neighborhood().intersect( collection ).length === collection.length;
 		}
 	});
 

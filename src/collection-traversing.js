@@ -155,40 +155,44 @@
 	$$.fn.collection({
 		neighborhood: function(selector){
 			var elements = [];
-			
-			this.nodes().each(function(i, node){
-				node.connectedEdges().each(function(j, edge){
+			var cy = this._private.cy;
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){ // for all nodes
+				var node = nodes[i];
+				var connectedEdges = node.connectedEdges();
+
+				// for each connected edge, add the edge and the other node
+				for( var j = 0; j < connectedEdges.length; j++ ){
+					var edge = connectedEdges[j];
 					var otherNode = edge.connectedNodes().not(node);
 
 					// need check in case of loop
-					if( otherNode.size() > 0 ){
-						elements.push( otherNode.element() ); // add node 1 hop away
+					if( otherNode.length > 0 ){
+						elements.push( otherNode[0] ); // add node 1 hop away
 					}
 					
 					// add connected edge
-					elements.push( edge.element() );
-				});
-			});
+					elements.push( edge[0] );
+				}
+
+			}
 			
-			return this.connectedNodes().add( new $$.CyCollection( this.cy(), elements ) ).filter( selector );
+			return ( new $$.CyCollection( cy, elements ) ).filter( selector );
 		}
 	});
-	$$.fn.collection({ neighbourhood: function(selector){ return this.neighborhood(selector); } });
-	
+
 	$$.fn.collection({
 		closedNeighborhood: function(selector){
-			return new $$.CySelector(this.cy(), selector).filter( this.neighborhood().add(this) );
+			return this.neighborhood().add(this).filter(selector);
 		}
 	});
-	$$.fn.collection({ closedNeighbourhood: function(selector){ return this.closedNeighborhood(selector); } });
 	
 	$$.fn.collection({
 		openNeighborhood: function(selector){
 			return this.neighborhood(selector);
 		}
-	});
-	$$.fn.collection({ openNeighbourhood: function(selector){ return this.openNeighborhood(selector); } });
-	
+	});	
 
 
 	// Edge functions
@@ -214,8 +218,12 @@
 
 			for( var i = 0; i < edges.length; i++ ){
 				var edge = edges[i];
-				var src = cy.getElementById( edge.data(params.attr) );
-				sources.push( src );
+				var id = edge._private.data[params.attr];
+				var src = cy.getElementById( id );
+
+				if( src.length > 0 ){
+					sources.push( src );
+				}
 			}
 			
 			return new $$.CyCollection( cy, sources ).filter( selector );
@@ -253,12 +261,13 @@
 			for( var i = 0; i < edges.length; i++ ){
 				var edge = edges[i];
 				var foundId;
+				var edgeData = edge._private.data;
 
 				if( p.thisIs ){
-					var idToFind = edge._private.data[ p.thisIs ];
+					var idToFind = edgeData[ p.thisIs ];
 					foundId = thisIds[ idToFind ];
 				} else {
-					foundId = thisIds[ edge._private.data.source ] || thisIds[ edge._private.data.target ];
+					foundId = thisIds[ edgeData.source ] || thisIds[ edgeData.target ];
 				}
 				
 				if( foundId ){
@@ -299,8 +308,8 @@
 			for( var i = 0; i < edges.length; i++ ){
 				var edge = edges[i];
 
-				elements.push( edge.source() );
-				elements.push( edge.target() );
+				elements.push( edge.source()[0] );
+				elements.push( edge.target()[0] );
 			}
 
 			return new $$.CyCollection( cy, elements ).filter( selector );
@@ -313,10 +322,7 @@
 	
 	$$.fn.collection({
 		codirectedEdges: defineParallelEdgesFunction({
-			include: function( source, target, edgeStruct ){
-				return edgeStruct.source.same( source ) &&
-					edgeStruct.target.same( target );
-			}
+			codirected: true
 		})
 	});
 	
@@ -330,23 +336,30 @@
 			var cy = this._private.cy;
 			var elements = [];
 			var edges = this.edges();
+			var p = params;
 
+			// look at all the edges in the collection
 			for( var i = 0; i < edges.length; i++ ){
-				var edge = edges[i];
-				var src = edge.source();
-				var srcid = src.id();
-				var tgt = edge.target();
-				var tgtid = tgt.id();
+				var edge1 = edges[i];
+				var src1 = edge1.source()[0];
+				var srcid1 = src1.id();
+				var tgt1 = edge1.target()[0];
+				var tgtid1 = tgt1.id();
+				var srcEdges1 = src1._private.edges;
 
-				var srcEdges = src._private.edges;
-				for( var j = 0; j < srcEdges.length; j++ ){
-					var srcEdge = srcEdges[j];
-					var srcEdgeData = srcEdge._private.data;
-					var codirected = srcEdgeData.target === tgtid && srcEdgeData.source === srcid;
-					var oppdirected = srcEdgeData.source === tgtid && srcEdgeData.target === srcid;
+				// look at edges connected to the src node of this edge
+				for( var j = 0; j < srcEdges1.length; j++ ){
+					var edge2 = srcEdges1[j];
+					var edge2data = edge2._private.data;
+					var tgtid2 = edge2data.target;
+					var srcid2 = edge2data.source;
+
+					var codirected = tgtid2 === tgtid1 && srcid2 === srcid1;
+					var oppdirected = srcid1 === tgtid2 && tgtid1 === srcid2;
 					
-					if( (p.codirected && codirected) || (codirected || oppdirected) ){
-						elements.push( srcEdge );
+					if( (p.codirected && codirected)
+					|| (!p.codirected && (codirected || oppdirected)) ){
+						elements.push( edge2 );
 					}
 				}
 			}

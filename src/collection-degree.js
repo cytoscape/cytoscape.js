@@ -7,11 +7,11 @@
 		return function(){
 			var self = this;
 			
-			if( self.length === 0 ){ return null; }
+			if( self.length === 0 ){ return; }
 
 			if( self.isNode() && !self.removed() ){
 				var degree = 0;
-				var node = this[0];
+				var node = self[0];
 				var connectedEdges = node._private.edges;
 
 				for( var i = 0; i < connectedEdges.length; i++ ){
@@ -21,7 +21,7 @@
 				
 				return degree;
 			} else {
-				return null;
+				return;
 			}
 		};
 	}
@@ -62,13 +62,13 @@
 	
 	function defineDegreeBoundsFunction(degreeFn, callback){
 		return function(){
-			var ret = null;
+			var ret = undefined;
 			var nodes = this.nodes();
 
 			for( var i = 0; i < nodes.length; i++ ){
 				var ele = nodes[i];
 				var degree = ele[degreeFn]();
-				if( degree !== null && (ret === null || callback(degree, ret)) ){
+				if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
 					ret = degree;
 				}
 			}

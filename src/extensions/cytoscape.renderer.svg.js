@@ -1607,7 +1607,7 @@
 		if( !self.shiftDown ){
 			toUnselect = toUnselect.add(
 				this.cy.elements().filter(function(i, e){
-					return e.selected() && !toSelect.allSame(e);
+					return e.selected() && !toSelect.same(e);
 				})
 			);
 		}

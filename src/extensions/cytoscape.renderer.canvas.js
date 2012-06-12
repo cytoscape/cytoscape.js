@@ -1,5 +1,12 @@
 (function($, $$){
 
+
+	var debug = function(o) {
+		if (false) {
+			console.log(o);
+		}
+	}
+
 	// TODO put default options here
 	var defaults = {
 		minZoom: 0.001,
@@ -12,6 +19,7 @@
 		
 		defaultNodeStyle: {
 			shape: "ellipse",
+			size: 10,
 			height: 10,
 			width: 10,
 			selected: false
@@ -21,6 +29,8 @@
 		}
 	};
 	
+	var debugStats = {};
+	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
 		this.cy = options.cy;
@@ -29,24 +39,90 @@
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
-		console.log("notify call: " + params);
-		console.log(params);
+		debug("notify call: " + params);
+		debug(params);
 		
 		switch (params.type) {
 			case "load":
+				debug("load call");
+				this.initStyle();
+				this.load();
 				break;
 			case "draw":
-				console.log("draw call");
+				debug("draw call");
 				break;
 			default:
-				console.log("event: " + params.type);
+				debug("event: " + params.type);
 		}
 		
 		this.redraw();
 	};
 	
+	
+	CanvasRenderer.prototype.load = function() {
+		var self = this;
+	
+		// var mouseOffsetX = -cy.container
+	
+		var checkEdgeHover = function(mouseMoveEvent, edge) {
+			var distance = cy.renderer().sqDistanceToQuadraticBezier(
+				mouseMoveEvent.clientX - 8 - 2,
+				mouseMoveEvent.clientY - 92 - 4,
+				edge.source().position().x,
+				edge.source().position().y,
+				edge._private.renscratch.cp2x,
+				edge._private.renscratch.cp2y,
+				edge.target().position().x,
+				edge.target().position().y
+			);
+			
+			// debug(distance);
+			if (distance < 40) {
+				edge._private.renscratch.selected = true;
+			} else {
+				edge._private.renscratch.selected = false;
+			}
+		}
+		
+		/*
+		var checkNodeHover = function(mouseMoveEvent, node) {
+			var dX = mouseMoveEvent.clientX 
+			
+			if (node._private.renscratch.boundingRadiusSquared
+				> 
+		}
+		*/
+		
+		var edges = self.cy.edges();
+		var nodes = self.cy.nodes();
+		var hoverHandler = function(mouseMoveEvent) {		
+			for (var index = 0; index < edges.length; index++) {
+				checkEdgeHover(mouseMoveEvent, edges[index]);
+			}
+			
+			for (var index = 0; index < nodes.length; index++) {
+				// checkNodeHover(mouseMoveEvent, nodes[index]);
+			}
+			
+			self.redraw();
+			// debug("hover");
+		}
+		
+		var timeout;
+		$(window).bind("mousemove", function(e){
+			if( timeout ){ return }
+		
+			timeout = setTimeout(function(){
+				timeout = null;		
+			}, 1000/60);
+			
+			hoverHandler(e);
+		});
+		
+	}
+	
 	CanvasRenderer.prototype.init = function() {
-		this.initStyle();
+		
 		
 		var container = this.options.cy.container();
 		var canvas2d = document.createElement("canvas");
@@ -65,6 +141,10 @@
 		var startX, startY;
 		var initialCenter;
 		
+		
+
+		
+		
 		$(window).bind("mousedown", function(mouseDownEvent) {
 			if (mouseDownEvent.button != 0) {
 				return;
@@ -78,16 +158,16 @@
 			startY = mouseDownEvent.clientY;
 			initialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
 			
-			//console.log("mouse down");
-			$(window).bind("mousemove", dragHandler);
-			
-			console.log(mouseDownEvent);
-		});
+			//debug("mouse down");
+			// $(window).bind("mousemove", dragHandler);
 		
+			debug(mouseDownEvent);
+		});
+
 		var dragHandler = function(mouseMoveEvent) {
-			//console.log("mouseDrag");
-			//console.log(mouseMoveEvent);
-			//console.log("start: (" + startX + ", " + startY + ")");
+			//debug("mouseDrag");
+			//debug(mouseMoveEvent);
+			//debug("start: (" + startX + ", " + startY + ")");
 			
 			var offsetX = mouseMoveEvent.clientX - startX;
 			var offsetY = mouseMoveEvent.clientY - startY;
@@ -99,8 +179,8 @@
 		
 		$(window).bind("mouseup", function(mouseUpEvent) {
 			/*
-			console.log("mouse up");
-			console.log(mouseUpEvent);
+			debug("mouse up");
+			debug(mouseUpEvent);
 			*/
 			$(window).unbind("mousemove", dragHandler);
 		});
@@ -108,11 +188,11 @@
 		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
 			
 			/*
-			console.log("mousewheel");
-			console.log(event);
-			console.log(delta);
-			console.log(deltaX);
-			console.log(deltaY);
+			debug("mousewheel");
+			debug(event);
+			debug(delta);
+			debug(deltaX);
+			debug(deltaY);
 			*/
 			
 			// self.zoomAboutPoint(point, zoom);
@@ -121,9 +201,98 @@
 			self.cy.trigger("pan");
 			*/
 		});
+		
+		
+		var test1 = function(a) {
+			a /= 2;
+			debug(a);
+		}
+		
+		var test2 = 3.0;
+		debug(test2);
+		debug(test1(test2));
+		debug(test2);
+		
+		
+				
+		
 	}
 
-	CanvasRenderer.prototype.distanceToQuadraticBezier = function(x, y, 
+	CanvasRenderer.prototype.complexSqrt = function(real, imaginary, zeroThreshold) {
+		var hyp = Math.sqrt(real * real 
+			+ imaginary * imaginary)
+	
+		var gamma = Math.sqrt(0.5 * (real + hyp));
+			
+		var sigma = Math.sqrt(0.5 * (hyp - real));
+		if (imaginary < -zeroThreshold) {
+			sigma = -sigma;
+		} else if (imaginary < zeroThreshold) {
+			sigma = 0;
+		}
+		
+		return [gamma, sigma];
+	}
+
+	// Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
+	// r is the real component, i is the imaginary component
+	CanvasRenderer.prototype.solveCubic = function(a, b, c, d, result) {
+		// Routines from: http://www3.telus.net/thothworks/Quad3Deg.html
+		//
+		// Seems to be an implementation of the Cardano method at 
+		// http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
+		
+		// Get rid of a
+		b /= a;
+		c /= a;
+		d /= a;
+		
+		var discrim, q, r, dum1, s, t, term1, r13;
+
+		q = (3.0*c - (b*b))/9.0;
+		r = -(27.0*d) + b*(9.0*c - 2.0*(b*b));
+		r /= 54.0;
+		
+		discrim = q*q*q + r*r;
+		result[1] = 0; //The first root is always real.
+		term1 = (b/3.0);
+		
+		if (discrim > 0) { // one root real, two are complex
+		 s = r + Math.sqrt(discrim);
+		 s = ((s < 0) ? -Math.pow(-s, (1.0/3.0)) : Math.pow(s, (1.0/3.0)));
+		 t = r - Math.sqrt(discrim);
+		 t = ((t < 0) ? -Math.pow(-t, (1.0/3.0)) : Math.pow(t, (1.0/3.0)));
+		 result[0] = -term1 + s + t;
+		 term1 += (s + t)/2.0;
+		 result[4] = result[2] = -term1;
+		 term1 = Math.sqrt(3.0)*(-t + s)/2;
+		 result[3] = term1;
+		 result[5] = -term1;
+		 return;
+		} // End if (discrim > 0)
+		
+		// The remaining options are all real
+		result[5] = result[3] = 0;
+		
+		if (discrim == 0){ // All roots real, at least two are equal.
+		 r13 = ((r < 0) ? -Math.pow(-r,(1.0/3.0)) : Math.pow(r,(1.0/3.0)));
+		 result[0] = -term1 + 2.0*r13;
+		 result[4] = result[2] = -(r13 + term1);
+		 return;
+		} // End if (discrim == 0)
+		
+		// Only option left is that all roots are real and unequal (to get here, q < 0)
+		q = -q;
+		dum1 = q*q*q;
+		dum1 = Math.acos(r/Math.sqrt(dum1));
+		r13 = 2.0*Math.sqrt(q);
+		result[0] = -term1 + r13*Math.cos(dum1/3.0);
+		result[2] = -term1 + r13*Math.cos((dum1 + 2.0*Math.PI)/3.0);
+		result[4] = -term1 + r13*Math.cos((dum1 + 4.0*Math.PI)/3.0);
+		return;
+	}
+
+	CanvasRenderer.prototype.sqDistanceToQuadraticBezier = function(x, y, 
 		x1, y1, x2, y2, x3, y3) {
 		
 		// Calculate coefficients of derivative of square distance function
@@ -133,63 +302,91 @@
 		
 		// Note this gives actual coefficients divided by 4 for simplification,
 		// and we don't need the 4 as equation is 0 on right side
-		var a = x1*x1 - 4*x1*x2 + 2*x1*x3 + 4*x2*x2 - 4*x2*x3 + x3*x3
+		
+		var a = 1.0 * x1*x1 - 4*x1*x2 + 2*x1*x3 + 4*x2*x2 - 4*x2*x3 + x3*x3
 			+ y1*y1 - 4*y1*y2 + 2*y1*y3 + 4*y2*y2 - 4*y2*y3 + y3*y3;
 		
-		var b = 9*x1*x2 - 3*x1*x1 - 3*x1*x3 - 6*x2*x2 + 3*x2*x3
+		var b = 1.0 * 9*x1*x2 - 3*x1*x1 - 3*x1*x3 - 6*x2*x2 + 3*x2*x3
 			+ 9*y1*y2 - 3*y1*y1 - 3*y1*y3 - 6*y2*y2 + 3*y2*y3;
 		
-		var c = 3*x1*x1 - 6*x1*x2 + x1*x3 - x1*x + 2*x2*y2 + 2*x2*x - x3*x
+		var c = 1.0 * 3*x1*x1 - 6*x1*x2 + x1*x3 - x1*x + 2*x2*x2 + 2*x2*x - x3*x
 			+ 3*y1*y1 - 6*y1*y2 + y1*y3 - y1*y + 2*y2*y2 + 2*y2*y - y3*y;
 			
-		var d = x1*x2 - x1*x1 + x1*x - x2*x
+		var d = 1.0 * x1*x2 - x1*x1 + x1*x - x2*x
 			+ y1*y2 - y1*y1 + y1*y - y2*y;
 		
-		var root1, root2, root3;
+		debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
 		
-		var zeroThreshold = 0.0000000001;
+		var roots = [];
 		
-		var qArgument, qRealComponent, qImaginaryComponent;
-		var bSquareMinus3ac = b * b - 3 * a * c;
-		qArgument = Math.pow(2 * Math.pow(b, 3) - 9 * a * b * c + 27 * a * a * d)
-				- 4 * Math.pow(bSquareMinus3ac, 3);
-			
-		if (qArgument < 0) {
-			qImaginaryComponent = 0;
-			qRealComponent = Math.sqrt(-qArgument);
-		} else {
-			qImaginaryComponent = Math.sqrt(qArgument);
-			qRealComponent = 0;
+		// Use the cubic solving algorithm
+		this.solveCubic(a, b, c, d, roots);
+		
+		var zeroThreshold = 0.0000001;
+		
+		var params = [];
+		
+		for (var index = 0; index < 6; index += 2) {
+			if (Math.abs(roots[index + 1]) < zeroThreshold
+					&& roots[index] >= 0
+					&& roots[index] <= 1.0) {
+				params.push(roots[index]);
+			}
 		}
 		
-		var cArgumentReal, cArgumentImaginary, cRealComponent, cImaginaryComponent;
-		cArgumentReal = 2 * Math.pow(b, 3) - 9 * a * b * c + 27 * a * a * d;
-		cArgumentReal += qRealComponent;
-		cArgumentImaginary += qImaginaryComponent;
-		
-		
-		
-		if (Math.abs(bSquareMinus3ac) < zeroThreshold) {
-			
-		} else {
-			
-			
-			// cArgument = 
+		if (true) {
+			params.push(1.0);
+			params.push(0.0);
 		}
 		
-		// Calculate the discriminant of the cubic
-		var discriminant = 18 * a * b * c * d
-			- 4 * Math.pow(b, 3) * d
-			+ b * b * c * c - 4 * a * Math.pow(c, 3)
-			- 27 * a * a * d * d;
-
-		if (discriminant < 0) {
-			// In this case, only 1 real root
-			
-					
+		var minDistanceSquared = -1;
+		var closestParam;
+		
+		var curX, curY, distSquared;
+		for (var i = 0; i < params.length; i++) {
+			curX = Math.pow(1.0 - params[i], 2.0) * x1
+				+ 2.0 * (1 - params[i]) * params[i] * x2
+				+ params[i] * params[i] * x3;
+				
+			curY = Math.pow(1 - params[i], 2.0) * y1
+				+ 2 * (1.0 - params[i]) * params[i] * y2
+				+ params[i] * params[i] * y3;
+				
+			distSquared = Math.pow(curX - x, 2) + Math.pow(curY - y, 2);
+			debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
+			if (minDistanceSquared >= 0) {
+				if (distSquared < minDistanceSquared) {
+					minDistanceSquared = distSquared;
+					closestParam = params[i];
+				}
+			} else {
+				minDistanceSquared = distSquared;
+				closestParam = params[i];
+			}
 		}
 		
-		// var root1 = 
+		debugStats.clickX = x;
+		debugStats.clickY = y;
+		
+		debugStats.closestX = Math.pow(1.0 - closestParam, 2.0) * x1
+				+ 2.0 * (1.0 - closestParam) * closestParam * x2
+				+ closestParam * closestParam * x3;
+				
+		debugStats.closestY = Math.pow(1.0 - closestParam, 2.0) * y1
+				+ 2.0 * (1.0 - closestParam) * closestParam * y2
+				+ closestParam * closestParam * y3;
+		
+		debug("given: " 
+			+ "( " + x + ", " + y + "), " 
+			+ "( " + x1 + ", " + y1 + "), " 
+			+ "( " + x2 + ", " + y2 + "), "
+			+ "( " + x3 + ", " + y3 + ")");
+		
+		
+		debug("roots: " + roots);
+		debug("params: " + params);
+		debug("closest param: " + closestParam);
+		return minDistanceSquared;
 	}
 
 	CanvasRenderer.prototype.initStyle = function() {
@@ -202,7 +399,8 @@
 			
 			node._private.style = defaults.defaultNodeStyle;
 			
-			node.boundingRadiusSquared = 6;
+			node._private.renscratch.boundingRadiusSquared = 
+				Math.pow(node._private.style.size, 2);
 		}
 		
 		var edge;
@@ -210,6 +408,12 @@
 			edge = edges[index];
 			
 			edge._private.style = defaults.defaultEdgeStyle;
+			
+			edge._private.renscratch.cp2x = Math.random() 
+				* this.options.cy.container().width();
+			edge._private.renscratch.cp2y = Math.random() 
+				* this.options.cy.container().height();
+			
 		}
 	}
 	
@@ -232,13 +436,13 @@
 			this.transform[5] * this.transform[3]);
 		*/
 		
-		//console.log("draw called");
+		//debug("draw called");
 		var nodes = this.options.cy.nodes();
 		var edges = this.options.cy.edges();
 		
 		var edge;
 		
-		context.strokeStyle = "#CDCDCD";
+		
 		
 		var startNode, endNode;
 		for (var index = 0; index < edges.length; index++) {
@@ -246,14 +450,26 @@
 			startNode = edge.source()[0];
 			endNode = edge.target()[0];
 			
-			context.lineWidth = edge._private.data.weight / 16.0;
+			if (edge._private.renscratch.selected) {
+				context.strokeStyle = "#CDFFCD";
+			} else {
+				context.strokeStyle = "#CDCDCD";
+			}
+			
+			context.lineWidth = edge._private.data.weight / 26.0;
 			context.beginPath();
 			
 			context.moveTo(startNode._private.position.x, startNode._private.position.y);
 			
+			/*
 			context.quadraticCurveTo(startNode._private.position.x * 2 / 3, 
 				endNode._private.position.y, endNode._private.position.x, 
 				endNode._private.position.y);
+			*/
+			context.quadraticCurveTo(edge._private.renscratch.cp2x, 
+				edge._private.renscratch.cp2y, endNode._private.position.x, 
+				endNode._private.position.y);
+			
 			
 			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
 			
@@ -271,10 +487,26 @@
 			context.closePath();
 			context.fill();
 		}
+		
+		context.fillStyle = "#5555AA";
+		context.beginPath();
+		context.arc(debugStats.clickX, debugStats.clickY,
+			5.0, 0, Math.PI * 2, false);
+		context.closePath();
+		context.fill();
+		
+		/*
+		context.fillStyle = "#775555";
+		context.beginPath();
+		context.arc(debugStats.closestX, debugStats.closestY,
+			5.0, 0, Math.PI * 2, false);
+		context.closePath();
+		context.fill();
+		*/
 	};
 	
 	CanvasRenderer.prototype.zoom = function(params){
-		// console.log(params);
+		// debug(params);
 		if (params != undefined && params.level != undefined) {
 		
 			this.scale[0] = params.level;
@@ -294,8 +526,8 @@
 	};
 	
 	CanvasRenderer.prototype.pan = function(params){
-		//console.log("pan called:");
-		//console.log(params);
+		//debug("pan called:");
+		//debug(params);
 		
 		if (this.context != undefined) {
 			

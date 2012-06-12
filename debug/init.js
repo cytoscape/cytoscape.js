@@ -20,7 +20,9 @@ $(function(){
 						defaultValue: 1,
 						continuousMapper: {
 							attr: {
-								name: "weight"
+								name: "weight",
+								min: 0,
+								max: 100
 							},
 							mapped: {
 								min: 1,
@@ -45,7 +47,9 @@ $(function(){
 					height: {
 						continuousMapper: {
 							attr: {
-								name: "weight"
+								name: "weight",
+								min: 0,
+								max: 100
 							},
 							mapped: {
 								min: 25,
@@ -56,7 +60,9 @@ $(function(){
 					width: {
 						continuousMapper: {
 							attr: {
-								name: "weight"
+								name: "weight",
+								min: 0,
+								max: 100
 							},
 							mapped: {
 								min: 25,

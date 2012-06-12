@@ -23,7 +23,3 @@
 	
 })(jQuery, jQuery.cytoscape);
 
-		
-		
-		
-		

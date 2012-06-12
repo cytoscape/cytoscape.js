@@ -19,24 +19,17 @@
 			}
 		}),
 
-		removeData: defineRemover({
-			attr: "data",
+		removeData: $$.define.removeData({
+			field: "data",
 			event: "data",
+			triggerFnName: "rtrigger",
 			triggerEvent: true,
-			onRemove: function( key, val ){ // callback after removing; `this` refers to the element
-				
-			},
-			validKey: function( key ){
-				switch(key){
-				case "id":
-				case "source":
-				case "target":
-					return false;
-				default:
-					return true;
-				}
-			},
-			essentialKeys: [ "id", "source", "target", "parent" ] // keys that remain even when deleting all
+			immutableKeys: {
+				"id": true,
+				"source": true,
+				"target": true,
+				"parent": true
+			}
 		}),
 
 		scratch: $$.define.data({

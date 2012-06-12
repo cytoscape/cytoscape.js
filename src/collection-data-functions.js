@@ -54,29 +54,15 @@
 			}
 		},
 
-		position: defineAccessor({
-			attr: "position",
-			allowBinding: true,
+		position: $$.define.data({
+			field: "position",
 			bindingEvent: "position",
-			settingTriggersEvent: true, 
+			allowBinding: true,
+			allowSetting: true,
 			settingEvent: "position",
-			validKey: {
-				forSet: function( key ){
-					return this.isNode();
-				},
-				forGet: function( key ){
-					return this.isNode();
-				}
-			},
-			validValue: function( key, val ){
-				return true;
-			},
-			onSet: function( key, oldVal, newVal ){
-				// do nothing
-			},
-			onGet: function( key, val ){
-				// do nothing
-			}
+			settingTriggersEvent: true,
+			triggerFnName: "rtrigger",
+			allowGetting: true
 		}),
 
 		positions: function(pos){

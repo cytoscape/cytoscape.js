@@ -1272,7 +1272,7 @@
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
 		var style = element.style();
 		var parent = element.renscratch("svgGroup");
-		var position = element.position(false);
+		var position = element.position();
 		
 		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
@@ -1501,7 +1501,7 @@
 	SvgRenderer.prototype.renderedPosition = function(element){
 		var self = this;
 		
-		return self.renderedPoint( element.position(false) );
+		return self.renderedPoint( element.position() );
 	};
 	
 	SvgRenderer.prototype.hideElements = function(collection){
@@ -1672,7 +1672,7 @@
 	};
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
-		var p = element.position(false);
+		var p = element.position();
 		var self = this;
 		
 		if( p.x == null || p.y == null ){
@@ -1898,7 +1898,7 @@
 				y: y2 - tgtShapeObj.centerPoint.y * scale,
 			};
 			var targetCenter = tgtShapeObj.centerPoint;
-			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style() );
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renscratch("svgGroup"), element, element.position(), element.style() );
 			element.renscratch("svgTargetArrow", targetArrow);
 
 			this.svg.change(targetArrow, {
@@ -1917,7 +1917,7 @@
 				y: y1 - srcShapeObj.centerPoint.y * scale,
 			};
 			var sourceCenter = srcShapeObj.centerPoint;
-			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style() );
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renscratch("svgGroup"), element, element.position(), element.style() );
 			element.renscratch().svgSourceArrow = sourceArrow;
 			
 			this.svg.change(sourceArrow, {
@@ -2038,8 +2038,8 @@
 			return;
 		}
 		
-		var ps = source.position(false);
-		var pt = target.position(false);
+		var ps = source.position();
+		var pt = target.position();
 		
 		if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
 			
@@ -2247,7 +2247,7 @@
 		});
 		
 		// update shape specific stuff like position
-		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element.position(false), style);
+		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element.position(), style);
 		
 		// update label position after the node itself
 		this.updateLabelPosition(element, valign, halign);
@@ -2462,7 +2462,7 @@
 		// update nodes
 		collection.nodes().each(function(i, element){
 			var svgEle = self.getSvgElement(element);			
-			var p = element.position(false);
+			var p = element.position();
 			
 			self.updateNodePositionFromShape(element);
 			self.positionSvgNodeLabel(element);
@@ -2484,8 +2484,8 @@
 			}
 			self.makeSvgEdge(edge);
 			
-			var ps = edge.source().position(false);
-			var pt = edge.target().position(false);
+			var ps = edge.source().position();
+			var pt = edge.target().position();
 			
 			
 		});

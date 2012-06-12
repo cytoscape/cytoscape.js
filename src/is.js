@@ -34,13 +34,17 @@
 		},
 		
 		element: function(obj){
-			return obj instanceof $$.Element;
+			return obj instanceof $$.Element && obj._private.single;
 		},
 		
 		collection: function(obj){
-			return obj instanceof $$.Collection;
+			return obj instanceof $$.Collection && !obj._private.single;
 		},
 		
+		core: function(obj){
+			return obj instanceof $$.Core;
+		},
+
 		emptyString: function(obj){
 			if( obj == null ){ // null is empty
 				return true; 

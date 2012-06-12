@@ -7,6 +7,10 @@
 	};
 	
 	function Core( opts ){
+		if( !(this instanceof $$.Core) ){
+			return new $$.Core(opts);
+		}
+
 		var cy = this;
 		
 		var defaults = {

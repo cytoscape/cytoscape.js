@@ -19,11 +19,6 @@
 			// collection -- it's more generic.
 			$$.Collection.prototype[ name ] = fn;
 			
-			// The element version of the function is now just the same as
-			// that for the collection, since an element should have all
-			// the facilities of a collection.
-			$$.Element.prototype[ name ] = fn;
-			
 		});
 	};
 	
@@ -58,18 +53,22 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	// represents a node or an edge
-	function Element(cy, params, restore){
+	$$.Element = function(cy, params, restore){
+		if( !(this instanceof $$.Element) ){
+			return new $$.Element(cy, params, restore);
+		}
+
 		var self = this;
 		restore = (restore === undefined || restore ? true : false);
 		
-		if( cy === undefined || params === undefined || !(cy instanceof $$.Core) ){
-			$.error("An element must have a core reference and parameters set");
+		if( cy === undefined || params === undefined || !$$.is.core(cy) ){
+			$$.util.error("An element must have a core reference and parameters set");
 			return;
 		}
 		
 		// validate group
 		if( params.group !== "nodes" && params.group !== "edges" ){
-			$.error("An element must be of type `nodes` or `edges`; you specified `%s`", params.group);
+			$$.util.error("An element must be of type `nodes` or `edges`; you specified `" + params.group + "`");
 			return;
 		}
 		
@@ -80,6 +79,7 @@
 		// NOTE: when something is added here, add also to ele.json()
 		this._private = {
 			cy: cy,
+			single: true, // indicates this is an element
 			data: $$.util.copy( params.data ) || {}, // data object
 			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 			listeners: {}, // array of bound listeners
@@ -124,19 +124,6 @@
 			this.restore();
 		}
 		
-	}
-	$$.Element = Element; // expose
-	
-	Element.prototype.cy = function(){
-		return this._private.cy;
-	};
-	
-	Element.prototype.element = function(){
-		return this;
-	};
-	
-	Element.prototype.collection = function(){
-		return new Collection(this.cy(), [ this ]);
 	};
 
 	
@@ -144,9 +131,13 @@
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	// represents a set of nodes, edges, or both together
-	function Collection(cy, elements){
-		if( cy === undefined || !(cy instanceof $$.Core) ){
-			$.error("A collection must have a reference to the core");
+	$$.Collection = function(cy, elements){
+		if( !(this instanceof $$.Collection) ){
+			return new $$.Collection(cy, elements);
+		}
+
+		if( cy === undefined || !$$.is.core(cy) ){
+			$$.util.error("A collection must have a reference to the core");
 			return;
 		}
 		
@@ -213,19 +204,26 @@
 		if( createdElements ){
 			this.restore();
 		}
-	}
-	$$.Collection = Collection; // expose
+	};
 
-	Collection.prototype.cy = function(){
+
+	// keep the prototypes in sync (an element has the same functions as a collection)
+	$$.Element.prototype = $$.Collection.prototype;
+
+	$$.Collection.prototype.cy = function(){
 		return this._private.cy;
 	};
 	
-	Collection.prototype.element = function(){
+	$$.Collection.prototype.element = function(){
 		return this[0];
 	};
 	
-	Collection.prototype.collection = function(){
-		return this;
+	$$.Collection.prototype.collection = function(){
+		if( $$.is.collection(this) ){
+			return this;
+		} else { // an element
+			return new $$.Collection( this._private.cy, [this] );
+		}
 	};
 	
 	

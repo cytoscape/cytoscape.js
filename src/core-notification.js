@@ -5,6 +5,7 @@
 			if( !this._private.notificationsEnabled ){ return; } // exit on disabled
 			
 			var renderer = this.renderer();
+			var cy = this;
 			
 			// normalise params.collection 
 			if( $$.is.element(params.collection) ){ // make collection from element

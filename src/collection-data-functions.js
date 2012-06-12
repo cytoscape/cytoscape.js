@@ -67,25 +67,21 @@
 
 		positions: function(pos){
 			if( $$.is.plainObject(pos) ){
-				
-				this.each(function(i, ele){
-					$.each(pos, function(key, val){
-						ele._private.position[ key ] = val;
-					});
-				});
-				
-				this.rtrigger("position");
+				this.position(pos);
 				
 			} else if( $$.is.fn(pos) ){
 				var fn = pos;
 				
-				this.each(function(i, ele){
+				for( var i = 0; i < this.length; i++ ){
+					var ele = this[i];
+
 					var pos = fn.apply(ele, [i, ele]);
 					
-					$.each(pos, function(key, val){
+					for( var key in pos ){
+						var val = pos[key];
 						ele._private.position[ key ] = val;
-					});
-				});
+					}
+				}
 				
 				this.rtrigger("position");
 			}

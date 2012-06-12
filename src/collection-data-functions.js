@@ -40,7 +40,7 @@
 			allowGetting: true
 		}),
 
-		renscratch: $$.define.data({
+		rscratch: $$.define.data({
 			field: "renscratch",
 			allowBinding: false,
 			allowSetting: true,

@@ -42,7 +42,7 @@
 				array.push( this[i] );
 			}
 			
-			return new $$.CyCollection(this.cy(), array);
+			return new $$.Collection(this.cy(), array);
 		},
 
 		size: function(){

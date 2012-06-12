@@ -20,7 +20,7 @@
 			
 			// e.g. cy.nodes().select()
 			else if( args.length == 0 ){
-				var selected = new $$.CyCollection( this.cy() );
+				var selected = new $$.Collection( this.cy() );
 				
 				this.each(function(){
 					if( params.ableField == null || this.element()._private[params.ableField] ){

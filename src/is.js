@@ -34,11 +34,11 @@
 		},
 		
 		element: function(obj){
-			return obj instanceof $$.CyElement;
+			return obj instanceof $$.Element;
 		},
 		
 		collection: function(obj){
-			return obj instanceof $$.CyCollection;
+			return obj instanceof $$.Collection;
 		},
 		
 		emptyString: function(obj){

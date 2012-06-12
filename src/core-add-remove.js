@@ -22,7 +22,7 @@
 			else if( $$.is.array(opts) ){
 				var jsons = opts;
 
-				elements = new $$.CyCollection(cy, jsons);
+				elements = new $$.Collection(cy, jsons);
 			}
 			
 			// specify via opts.nodes and opts.edges
@@ -46,13 +46,13 @@
 					} 
 				}
 
-				elements = new $$.CyCollection(cy, jsons);
+				elements = new $$.Collection(cy, jsons);
 			}
 			
 			// specify options for one element
 			else {
 				var json = opts;
-				elements = (new $$.CyElement( cy, json )).collection();
+				elements = (new $$.Element( cy, json )).collection();
 			}
 			
 			return elements.filter(function(){

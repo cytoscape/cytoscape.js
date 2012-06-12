@@ -31,7 +31,7 @@
 					}
 				}
 				
-				return new $$.CyCollection(cy, elements);
+				return new $$.Collection(cy, elements);
 			
 			} else if( $$.is.string(filter) || $$.is.elementOrCollection(filter) ){
 				return new $$.CySelector(cy, filter).filter(this);
@@ -40,7 +40,7 @@
 				return this;
 			}
 
-			return new $$.CyCollection( cy );
+			return new $$.Collection( cy );
 		}
 	});
 
@@ -67,7 +67,7 @@
 					}
 				}
 				
-				return new $$.CyCollection( cy, elements );
+				return new $$.Collection( cy, elements );
 			}
 			
 		}
@@ -99,7 +99,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, elements );
+			return new $$.Collection( cy, elements );
 		}
 	});
 	
@@ -143,7 +143,7 @@
 				add(element);
 			}
 			
-			return new $$.CyCollection(cy, elements);
+			return new $$.Collection(cy, elements);
 		}
 	});
 
@@ -178,7 +178,7 @@
 
 			}
 			
-			return ( new $$.CyCollection( cy, elements ) ).filter( selector );
+			return ( new $$.Collection( cy, elements ) ).filter( selector );
 		}
 	});
 
@@ -226,7 +226,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, sources ).filter( selector );
+			return new $$.Collection( cy, sources ).filter( selector );
 		}
 	}
 
@@ -275,7 +275,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, elements );
+			return new $$.Collection( cy, elements );
 		};
 	}
 	
@@ -295,7 +295,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, elements ).filter( selector );
 		}
 	});
 	
@@ -312,7 +312,7 @@
 				elements.push( edge.target()[0] );
 			}
 
-			return new $$.CyCollection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, elements ).filter( selector );
 		}
 	});
 	
@@ -364,7 +364,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, elements ).filter( selector );
 		};
 	
 	}
@@ -387,7 +387,7 @@
 				}
 			}
 			
-			return new $$.CyCollection( cy, parents ).filter( selector );
+			return new $$.Collection( cy, parents ).filter( selector );
 		},
 
 		parents: function( selector ){
@@ -403,7 +403,7 @@
 				eles = eles.parent();
 			}
 
-			return new $$.CyCollection( this.cy(), parents ).filter( selector );
+			return new $$.Collection( this.cy(), parents ).filter( selector );
 		},
 
 		children: function( selector ){
@@ -414,7 +414,7 @@
 				children = children.concat( ele._private.children );
 			}
 
-			return new $$.CyCollection( this.cy(), children ).filter( selector );
+			return new $$.Collection( this.cy(), children ).filter( selector );
 		},
 
 		siblings: function( selector ){
@@ -438,7 +438,7 @@
 
 			add( this.children() );
 
-			return new $$.CyCollection( this.cy(), elements ).filter( selector );
+			return new $$.Collection( this.cy(), elements ).filter( selector );
 		}
 	});
 

@@ -2,11 +2,11 @@
 	
 	$$.fn.core = function( impl, options ){
 		$.each(impl, function(name, fn){
-			CyCore.prototype[ name ] = fn;
+			Core.prototype[ name ] = fn;
 		});
 	};
 	
-	function CyCore( opts ){
+	function Core( opts ){
 		var cy = this;
 		
 		var defaults = {
@@ -82,12 +82,12 @@
 			cy.trigger("ready");
 		}, options.done);
 	}
-	$$.CyCore = CyCore; // expose
+	$$.Core = Core; // expose
 	
 
 	$$.fn.core({
 		getElementById: function( id ){
-			return this._private.nodes[id] || this._private.edges[id] || new $$.CyCollection( this );
+			return this._private.nodes[id] || this._private.edges[id] || new $$.Collection( this );
 		},
 
 		addToPool: function( ele ){

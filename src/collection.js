@@ -6,8 +6,8 @@
 	// notification blocking nonsense everywhere.
 	//
 	// Other collection-*.js files depend on this being defined first.
-	// It's a trade off: It simplifies the code for CyCollection and 
-	// CyElement integration so much that it's worth it to create the
+	// It's a trade off: It simplifies the code for Collection and 
+	// Element integration so much that it's worth it to create the
 	// JS dependency.
 	//
 	// Having this integration guarantees that we can call any
@@ -17,12 +17,12 @@
 			
 			// When adding a function, write it from the perspective of a
 			// collection -- it's more generic.
-			$$.CyCollection.prototype[ name ] = fn;
+			$$.Collection.prototype[ name ] = fn;
 			
 			// The element version of the function is now just the same as
 			// that for the collection, since an element should have all
 			// the facilities of a collection.
-			$$.CyElement.prototype[ name ] = fn;
+			$$.Element.prototype[ name ] = fn;
 			
 		});
 	};
@@ -54,15 +54,15 @@
 		}
 	};
 	
-	// CyElement
+	// Element
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	// represents a node or an edge
-	function CyElement(cy, params, restore){
+	function Element(cy, params, restore){
 		var self = this;
 		restore = (restore === undefined || restore ? true : false);
 		
-		if( cy === undefined || params === undefined || !(cy instanceof $$.CyCore) ){
+		if( cy === undefined || params === undefined || !(cy instanceof $$.Core) ){
 			$.error("An element must have a core reference and parameters set");
 			return;
 		}
@@ -82,7 +82,7 @@
 			cy: cy,
 			data: $$.util.copy( params.data ) || {}, // data object
 			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
-			listeners: {}, // map ( type => array of function spec objects )
+			listeners: {}, // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
 			bypass: $$.util.copy( params.bypass ) || {}, // the bypass object
 			style: {}, // the calculated style
@@ -97,7 +97,7 @@
 				current: [],
 				queue: []
 			},
-			renscratch: {}, // object in which the renderer can store information
+			rscratch: {}, // object in which the renderer can store information
 			scratch: {}, // scratch objects
 			edges: [], // array of connected edges
 			children: [] // array of children
@@ -125,27 +125,27 @@
 		}
 		
 	}
-	$$.CyElement = CyElement; // expose
+	$$.Element = Element; // expose
 	
-	CyElement.prototype.cy = function(){
+	Element.prototype.cy = function(){
 		return this._private.cy;
 	};
 	
-	CyElement.prototype.element = function(){
+	Element.prototype.element = function(){
 		return this;
 	};
 	
-	CyElement.prototype.collection = function(){
-		return new CyCollection(this.cy(), [ this ]);
+	Element.prototype.collection = function(){
+		return new Collection(this.cy(), [ this ]);
 	};
 
 	
-	// CyCollection
+	// Collection
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	// represents a set of nodes, edges, or both together
-	function CyCollection(cy, elements){
-		if( cy === undefined || !(cy instanceof $$.CyCore) ){
+	function Collection(cy, elements){
+		if( cy === undefined || !(cy instanceof $$.Core) ){
 			$.error("A collection must have a reference to the core");
 			return;
 		}
@@ -179,7 +179,7 @@
 					continue; // can't create element
 				}
 
-				var ele = new $$.CyElement( cy, json, false );
+				var ele = new $$.Element( cy, json, false );
 				eles.push( ele );
 				elesIds[ data.id ] = true;
 			}
@@ -214,17 +214,17 @@
 			this.restore();
 		}
 	}
-	$$.CyCollection = CyCollection; // expose
+	$$.Collection = Collection; // expose
 
-	CyCollection.prototype.cy = function(){
+	Collection.prototype.cy = function(){
 		return this._private.cy;
 	};
 	
-	CyCollection.prototype.element = function(){
+	Collection.prototype.element = function(){
 		return this[0];
 	};
 	
-	CyCollection.prototype.collection = function(){
+	Collection.prototype.collection = function(){
 		return this;
 	};
 	
@@ -398,7 +398,7 @@
 				} // if specified parent
 			} // for each node
 			
-			restored = new $$.CyCollection( cy, restored );
+			restored = new $$.Collection( cy, restored );
 			if( restored.length > 0 ){
 				if( notifyRenderer ){
 					restored.rtrigger("add");
@@ -507,7 +507,7 @@
 				}
 			}
 			
-			var removedElements = new $$.CyCollection( this.cy(), removed );
+			var removedElements = new $$.Collection( this.cy(), removed );
 			if( removedElements.size() > 0 ){
 				// must manually notify since trigger won't do this automatically once removed
 				

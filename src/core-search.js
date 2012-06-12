@@ -9,7 +9,7 @@
 				return eles.collection();
 			}
 
-			return new $$.CyCollection( this );
+			return new $$.Collection( this );
 		},
 		
 		nodes: defineSearch({
@@ -69,7 +69,7 @@
 				});
 			});
 			
-			var collection = new $$.CyCollection( cy, elements );
+			var collection = new $$.Collection( cy, elements );
 			
 			var selector;
 			if(params.group != null){

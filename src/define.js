@@ -10,6 +10,8 @@
 	//   foo: $$.define.foo({ /* params... */ })
 	// });
 
+	var eventRegex = /(\w+)(\.\w+)?/;
+
 	$$.define = {
 
 		// access data field
@@ -167,12 +169,16 @@
 		// event binding (requires pdata)
 		on: function( params ){
 			var defaults = {
-				listenerObj: null, //function(self){ return {}; }
+				one: false, // trigger once per element
+				once: false // trigger once per element set (e.g. collection)
 			};
 			params = $$.util.extend({}, defaults, params);
 			
 			return function(events, selector, data, callback){
 				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+				var single = selfIsArrayLike ? self[0] : self;
 				var eventsIsString = $$.is.string(events);
 				var p = params;
 
@@ -212,7 +218,7 @@
 
 				for( var event in events ){
 					var callback = events[event];
-					var match = event.match(/(\w+)(\.\w+)?/); // type[.namespace]
+					var match = event.match(eventRegex); // type[.namespace]
 
 					if( match ){
 						var type = match[1];
@@ -222,28 +228,148 @@
 							callback: callback,
 							data: data,
 							delegated: selector !== undefined,
-							selector: selector
+							selector: selector,
+							type: type,
+							namespace: namespace,
+							one: p.one,
+							once: p.once,
+							self: self
 						};
 
-						if( p.listenerObj ){
-							$$.util.extend( listener, p.listenerObj([ self ]) );
+						for( var i = 0; i < all.length; i++ ){
+							all[i]._private.listeners.push( listener );
 						}
-						
-						self.pdata( true, "set", "listeners", type, namespace, listener );
 					}
 				}
 				
 				return self; // maintain chaining
 			};
 		},
-
+/*
 		off: function( params ){
+			var defaults = {
+				one: false, // trigger once per element
+				once: false // trigger once per element set (e.g. collection)
+			};
+			params = $$.util.extend({}, defaults, params);
+			
+			return function(events, selector, callback){
+				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+				var single = selfIsArrayLike ? self[0] : self;
+				var eventsIsString = $$.is.string(events);
+				var p = params;
 
-		},
+				if( $$.is.fn(selector) ){ // selector is actually callback
+					callback = selector;
+					selector = undefined;
+				}
+
+				if( eventsIsString ){ // then make a map
+					var evtstr = events;
+					events = {};
+
+					var eventsArray = evtstr.split(/\s+/);
+					var l = eventsArray.length;
+					for( var i = 0; i < l; i++ ){
+						var event = eventsArray[i];
+						if( $$.is.emptyString(event) ){ continue; }
+
+						events[event] = callback;
+					}
+				}
+
+				for( var event in events ){
+					var callback = events[event];
+					var match = event.match(eventRegex); // type[.namespace]
+
+					if( match ){
+						var type = match[1];
+						var namespace = match[2] ? match[2] : null;
+
+						for( var i = 0; i < all.length; i++ ){
+							var listeners = all[i]._private.listeners;
+
+							for( var j = 0; j < listeners.length; j++ ){
+								var listener = listeners[j];
+
+								// delete listener if it matches
+								if( listener.type === type 
+								&& (!namespace || namespace === listener.namespace)
+								&& (!callback || callback === listener.callback) ){
+									listener.splice(j, 1);
+									j--;
+								}
+							}
+						}
+					}
+				}
+				
+				return self; // maintain chaining
+			};
+		}, 
 
 		trigger: function( params ){
+			var defaults = {};
+			params = $$.util.extend({}, defaults, params);
+			
+			return function(events, selector, callback){
+				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+				var single = selfIsArrayLike ? self[0] : self;
+				var eventsIsString = $$.is.string(events);
+				var p = params;
 
-		}
+				if( $$.is.fn(selector) ){ // selector is actually callback
+					callback = selector;
+					selector = undefined;
+				}
+
+				if( eventsIsString ){ // then make a map
+					var evtstr = events;
+					events = {};
+
+					var eventsArray = evtstr.split(/\s+/);
+					var l = eventsArray.length;
+					for( var i = 0; i < l; i++ ){
+						var event = eventsArray[i];
+						if( $$.is.emptyString(event) ){ continue; }
+
+						events[event] = callback;
+					}
+				}
+
+				for( var event in events ){
+					var callback = events[event];
+					var match = event.match(eventRegex); // type[.namespace]
+
+					if( match ){
+						var type = match[1];
+						var namespace = match[2] ? match[2] : null;
+
+						for( var i = 0; i < all.length; i++ ){
+							var listeners = all[i]._private.listeners;
+
+							for( var j = 0; j < listeners.length; j++ ){
+								var listener = listeners[j];
+
+								// delete listener if it matches
+								if( listener.type === type 
+								&& (!namespace || namespace === listener.namespace)
+								&& (!callback) || callback === listener.callback) ){
+									listener.splice(j, 1);
+									j--;
+								}
+							}
+						}
+					}
+				}
+				
+				return self; // maintain chaining
+			};
+		} */
 
 	};
 	

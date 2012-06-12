@@ -10,7 +10,7 @@
 			var useRequestAnimationFrame = true;
 			
 			// initialise the list
-			structs.animation.elements = new $$.CyCollection( cy );
+			structs.animation.elements = new $$.Collection( cy );
 			
 			// TODO change this when standardised
 			var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
@@ -53,7 +53,7 @@
 					// we might have errors if we edit animation.queue and animation.current
 					// for ele (i.e. by stopping)
 					try{
-						ele = ele.element(); // make sure we've actually got a CyElement
+						ele = ele.element(); // make sure we've actually got a Element
 						var current = ele._private.animation.current;
 						var queue = ele._private.animation.queue;
 						

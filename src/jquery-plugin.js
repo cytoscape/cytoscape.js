@@ -85,7 +85,7 @@
 		
 		// create instance
 		if( $$.is.plainObject( options ) ){
-			return new $$.CyCore( options );
+			return new $$.Core( options );
 		} 
 		
 		// allow for registration of extensions

@@ -46,7 +46,7 @@
 		}),
 
 		rscratch: $$.define.data({
-			field: "renscratch",
+			field: "rscratch",
 			allowBinding: false,
 			allowSetting: true,
 			settingTriggersEvent: false,

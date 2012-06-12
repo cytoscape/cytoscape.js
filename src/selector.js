@@ -5,7 +5,7 @@
 	
 	function CySelector(cy, onlyThisGroup, selector){
 		
-		if( cy === undefined || !(cy instanceof $$.CyCore) ){
+		if( cy === undefined || !(cy instanceof $$.Core) ){
 			$.error("A selector must have a reference to the core");
 			return;
 		}
@@ -62,7 +62,7 @@
 			}
 							
 		} else if( $$.is.element( selector ) ){
-			var collection = new $$.CyCollection(self.cy(), [ selector ]);
+			var collection = new $$.Collection(self.cy(), [ selector ]);
 			
 			self[0] = newQuery();
 			self[0].collection = collection;
@@ -88,7 +88,7 @@
 			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
 			var number = "\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+"; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
 			var value = string + "|" + number; // a value literal, either a string or number
-			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.CyCollection)
+			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
 			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
 			var className = variable; // a class name (follows variable conventions)
 			var descendant = "\\s+";
@@ -401,7 +401,7 @@
 		
 		// don't bother trying if it's invalid
 		if( self._private.invalid ){
-			return new $$.CyCollection( self.cy() );
+			return new $$.Collection( self.cy() );
 		}
 		
 		var queryMatches = function(query, element){

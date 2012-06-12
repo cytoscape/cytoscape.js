@@ -1,5 +1,0 @@
-;(function($, $$){
-
-
-	
-})(jQuery, jQuery.cytoscape);

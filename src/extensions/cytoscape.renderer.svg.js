@@ -1182,7 +1182,7 @@
 		var selectors = self.style.selectors;
 		
 		var field = undefined;
-		var bypassField = element.bypass(false)[fieldName];
+		var bypassField = element.bypass()[fieldName];
 		
 		if( bypassField !== undefined ){
 			field = bypassField;
@@ -1213,7 +1213,7 @@
 		});
 		
 		// apply the bypass
-		style = $.extend(style, element.bypass(false));
+		style = $.extend(style, element.bypass());
 		
 		// compute the individual values (i.e. flatten mappers to actual values)
 		$.each(style, function(styleName, styleVal){
@@ -1270,7 +1270,7 @@
 	};
 	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
-		var style = element.style(false);
+		var style = element.style();
 		var parent = element.renscratch("svgGroup");
 		var position = element.position(false);
 		
@@ -1506,7 +1506,7 @@
 	
 	SvgRenderer.prototype.hideElements = function(collection){
 		collection.each(function(i, element){
-			element.bypass(false).visibility = "hidden";
+			element.bypass().visibility = "hidden";
 		});
 		
 		this.updateBypass(collection);
@@ -1517,14 +1517,14 @@
 		var updated = this.cy.collection();
 		
 		collection.each(function(i, element){
-			element.bypass(false).visibility = "visible";
+			element.bypass().visibility = "visible";
 		});
 		
 		this.updateBypass(collection);
 	};
 	
 	SvgRenderer.prototype.elementIsVisible = function(element){
-		return element.style(false).visibility != "hidden";
+		return element.style().visibility != "hidden";
 	};
 	
 	SvgRenderer.prototype.renderedStyle = function(element){
@@ -1898,7 +1898,7 @@
 				y: y2 - tgtShapeObj.centerPoint.y * scale,
 			};
 			var targetCenter = tgtShapeObj.centerPoint;
-			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style(false) );
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style() );
 			element.renscratch("svgTargetArrow", targetArrow);
 
 			this.svg.change(targetArrow, {
@@ -1917,7 +1917,7 @@
 				y: y1 - srcShapeObj.centerPoint.y * scale,
 			};
 			var sourceCenter = srcShapeObj.centerPoint;
-			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style(false) );
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style() );
 			element.renscratch().svgSourceArrow = sourceArrow;
 			
 			this.svg.change(sourceArrow, {
@@ -2170,12 +2170,12 @@
 	};
 	
 	SvgRenderer.prototype.updateNodeStyle = function(element, newStyle){
-		var oldShape = element.style(false).shape;
+		var oldShape = element.style().shape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element.style(false);
+		var style = element.style();
 		
-		var newShape = element.style(false).shape;
+		var newShape = element.style().shape;
 		
 		if( element.renscratch().svg == null ){
 			$.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
@@ -2277,8 +2277,8 @@
 		}
 		
 		if( element.isNode() ){
-			height = element.style(false).height;
-			width = element.style(false).width;
+			height = element.style().height;
+			width = element.style().width;
 		}
 		
 		if( halign == "middle" ){
@@ -2329,11 +2329,11 @@
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
-		var oldTargetShape = element.style(false).targetArrowShape;
-		var oldSourceShape = element.style(false).sourceArrowShape;
+		var oldTargetShape = element.style().targetArrowShape;
+		var oldSourceShape = element.style().sourceArrowShape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element.style(false);
+		var style = element.style();
 		
 		if( element.renscratch().svg == null ){
 			$.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
@@ -2346,8 +2346,8 @@
 		var newTgtStyle = element.target().style();
 		var oldTgtStyle = element.renscratch().oldTargetStyle || newTgtStyle;
 		
-		var newTargetShape = element.style(false).targetArrowShape;
-		var newSourceShape = element.style(false).sourceArrowShape;
+		var newTargetShape = element.style().targetArrowShape;
+		var newSourceShape = element.style().sourceArrowShape;
 		
 		var nodesStyleChanged = newSrcStyle.height != oldSrcStyle.height || newSrcStyle.width != oldSrcStyle.width ||
 			newTgtStyle.height != oldTgtStyle.height || newTgtStyle.width != oldTgtStyle.width ||

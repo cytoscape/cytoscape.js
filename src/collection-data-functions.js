@@ -157,38 +157,28 @@
 			}
 		},
 
-		style: function( key ){
-			var ele = this.element();
-			
-			if( ele == null ){
-				return undefined;
-			}
-
-			if( key === undefined ){
-				return $$.util.copy( ele._private.style );
-			}
-			
-			// on false, return whole obj but w/o copying
-			else if( key === false ){
-				return ele._private.style;
-			}
-			
-			else if( $$.is.string(key) ){
-				return $$.util.copy( ele._private.style[key] );
-			}
-		},
-
-		bypass: defineAccessor({
-			attr: "bypass",
-			allowBinding: true,
-			bindingEvent: "bypass",
-			settingTriggersEvent: true, 
-			settingEvent: "bypass"
+		style: $$.define.data({
+			field: "style",
+			allowBinding: false,
+			allowSetting: false,
+			allowGetting: true
 		}),
 
-		removeBypass: defineRemover({
-			attr: "bypass",
+		bypass: $$.define.data({
+			field: "bypass",
+			bindingEvent: "bypass",
+			allowBinding: true,
+			allowSetting: true,
+			settingEvent: "bypass",
+			settingTriggersEvent: true,
+			triggerFnName: "rtrigger",
+			allowGetting: true
+		}),
+
+		removeBypass: $$.define.removeData({
+			field: "bypass",
 			event: "bypass",
+			triggerFnName: "rtrigger",
 			triggerEvent: true
 		})
 	});

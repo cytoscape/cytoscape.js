@@ -203,7 +203,7 @@
 		// update unique style attributes for this shape
 		// see http://keith-wood.name/svgRef.html for api reference
 		update: function(svg, parent, node, position, style){
-			svg.change(node.renscratch("svg"), {
+			svg.change(node.rscratch("svg"), {
 				cx: position.x,
 				cy: position.y,
 				rx: style.width / 2,
@@ -221,7 +221,7 @@
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node.renscratch("svg"), {
+			svg.change(node.rscratch("svg"), {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -238,7 +238,7 @@
 			return svg.rect(parent, position.x - style.width/2, position.y - style.height/2, style.width, style.height, style.width/4, style.height/4);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node.renscratch("svg"), {
+			svg.change(node.rscratch("svg"), {
 				x: position.x - style.width/2,
 				y: position.y - style.height/2,
 				width: style.width,
@@ -260,7 +260,7 @@
 					           ]);
 		},
 		update: function(svg, parent, node, position, style){
-			svg.change(node.renscratch("svg"), {
+			svg.change(node.rscratch("svg"), {
 				points: [ 
 			             [position.x,                 position.y - style.height/2], 
 			             [position.x + style.width/2, position.y + style.height/2],
@@ -976,8 +976,8 @@
 		}
 
 		elements.nodes().each(function(){
-			var bb = this.renscratch("svg").getBBox();
-			var bbLabel = this.renscratch("svgLabel").getBBox();
+			var bb = this.rscratch("svg").getBBox();
+			var bbLabel = this.rscratch("svgLabel").getBBox();
 
 			update(bb);
 			update(bbLabel);
@@ -991,7 +991,7 @@
 			var loopFactor = lf = 0.4;
 			
 			if( src == tgt ){
-				var bb = this.renscratch("svg").getBBox();
+				var bb = this.rscratch("svg").getBBox();
 				bb.x2 = bb.x + bb.width;
 				bb.y2 = bb.y + bb.height;
 				bb.x1 = bb.x;
@@ -1003,13 +1003,13 @@
 				bbAdjusted.width = bb.x2 - bbAdjusted.x;
 				bbAdjusted.height = bb.y2 - bbAdjusted.y;
 
-				var bbLabel = this.renscratch("svgLabel").getBBox();
+				var bbLabel = this.rscratch("svgLabel").getBBox();
 
 				update(bbAdjusted);
 				update(bbLabel);
 			} else {
-				var bb = this.renscratch("svg").getBBox();
-				var bbLabel = this.renscratch("svgLabel").getBBox();
+				var bb = this.rscratch("svg").getBBox();
+				var bbLabel = this.rscratch("svgLabel").getBBox();
 
 				update(bb);
 				update(bbLabel);
@@ -1182,7 +1182,7 @@
 		var selectors = self.style.selectors;
 		
 		var field = undefined;
-		var bypassField = element.bypass(false)[fieldName];
+		var bypassField = element.bypass()[fieldName];
 		
 		if( bypassField !== undefined ){
 			field = bypassField;
@@ -1213,7 +1213,7 @@
 		});
 		
 		// apply the bypass
-		style = $.extend(style, element.bypass(false));
+		style = $.extend(style, element.bypass());
 		
 		// compute the individual values (i.e. flatten mappers to actual values)
 		$.each(style, function(styleName, styleVal){
@@ -1270,17 +1270,17 @@
 	};
 	
 	SvgRenderer.prototype.updateNodePositionFromShape = function(element){
-		var style = element.style(false);
-		var parent = element.renscratch("svgGroup");
-		var position = element.position(false);
+		var style = element.style();
+		var parent = element.rscratch("svgGroup");
+		var position = element.position();
 		
 		nodeShape(style.shape).update(this.svg, parent, element, position, style);
 	};
 	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
-		var svgDomElement = element.renscratch("svg");
-		var targetArrow = element.renscratch("svgTargetArrow");
-		var sourceArrow = element.renscratch("svgSourceArrow");
+		var svgDomElement = element.rscratch("svg");
+		var targetArrow = element.rscratch("svgTargetArrow");
+		var sourceArrow = element.rscratch("svgSourceArrow");
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		
@@ -1298,7 +1298,7 @@
 	
 
 	SvgRenderer.prototype.makeSvgNodeInteractive = function(element){
-		var svgDomElement = element.renscratch("svg");
+		var svgDomElement = element.rscratch("svg");
 		var svgCanvas = $(svgDomElement).parents("svg:first")[0];
 		var self = this;
 		var draggedAfterMouseDown = null;
@@ -1501,12 +1501,12 @@
 	SvgRenderer.prototype.renderedPosition = function(element){
 		var self = this;
 		
-		return self.renderedPoint( element.position(false) );
+		return self.renderedPoint( element.position() );
 	};
 	
 	SvgRenderer.prototype.hideElements = function(collection){
 		collection.each(function(i, element){
-			element.bypass(false).visibility = "hidden";
+			element.bypass().visibility = "hidden";
 		});
 		
 		this.updateBypass(collection);
@@ -1517,14 +1517,14 @@
 		var updated = this.cy.collection();
 		
 		collection.each(function(i, element){
-			element.bypass(false).visibility = "visible";
+			element.bypass().visibility = "visible";
 		});
 		
 		this.updateBypass(collection);
 	};
 	
 	SvgRenderer.prototype.elementIsVisible = function(element){
-		return element.style(false).visibility != "hidden";
+		return element.style().visibility != "hidden";
 	};
 	
 	SvgRenderer.prototype.renderedStyle = function(element){
@@ -1565,7 +1565,7 @@
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
 			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
 			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
-			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape( element.renscratch("svg") ));
+			var intersection = Intersection.intersectShapes(new Rectangle(modelRectangle), new shape( element.rscratch("svg") ));
 			self.svgRemove(modelRectangle);
 			
 			// rendered node
@@ -1607,7 +1607,7 @@
 		if( !self.shiftDown ){
 			toUnselect = toUnselect.add(
 				this.cy.elements().filter(function(i, e){
-					return e.selected() && !toSelect.allSame(e);
+					return e.selected() && !toSelect.same(e);
 				})
 			);
 		}
@@ -1661,7 +1661,7 @@
 		var self = this;
 		
 		collection.each(function(i, element){
-			self.svgRemove( element.renscratch("svgGroup") );
+			self.svgRemove( element.rscratch("svgGroup") );
 			self.makeSvgElement(element);
 			self.updatePosition( collection.closedNeighborhood().edges() );
 		});
@@ -1672,7 +1672,7 @@
 	};
 	
 	SvgRenderer.prototype.makeSvgNode = function(element){		
-		var p = element.position(false);
+		var p = element.position();
 		var self = this;
 		
 		if( p.x == null || p.y == null ){
@@ -1684,13 +1684,13 @@
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.nodesGroup);
-		element.renscratch("svgGroup", svgDomGroup);
+		element.rscratch("svgGroup", svgDomGroup);
 		
 		svgDomElement = nodeShape(style.shape).svg(this.svg, svgDomGroup, element, p, style);
-		element.renscratch("svg", svgDomElement);
+		element.rscratch("svg", svgDomElement);
 		this.makeSvgNodeLabel(element);
 		
-		element.renscratch("svg", svgDomElement);
+		element.rscratch("svg", svgDomElement);
 		
 		
 		this.makeSvgNodeInteractive(element);
@@ -1704,9 +1704,9 @@
 		var x = element.position("x");
 		var y = element.position("y");
 		
-		element.renscratch().svgLabelGroup = self.svg.group(element.renscratch().svgGroup);
-		element.renscratch().svgLabelOutline = self.svg.text(element.renscratch().svgLabelGroup, x, y, "label init");
-		element.renscratch().svgLabel = self.svg.text(element.renscratch().svgLabelGroup, x, y, "label init");
+		element.rscratch().svgLabelGroup = self.svg.group(element.rscratch().svgGroup);
+		element.rscratch().svgLabelOutline = self.svg.text(element.rscratch().svgLabelGroup, x, y, "label init");
+		element.rscratch().svgLabel = self.svg.text(element.rscratch().svgLabelGroup, x, y, "label init");
 	};
 	
 	SvgRenderer.prototype.positionSvgNodeLabel = function(element){
@@ -1715,12 +1715,12 @@
 		var x = element.position("x");
 		var y = element.position("y");
 		
-		self.svg.change(element.renscratch().svgLabel, {
+		self.svg.change(element.rscratch().svgLabel, {
 			x: x,
 			y: y
 		});
 		
-		self.svg.change(element.renscratch().svgLabelOutline, {
+		self.svg.change(element.rscratch().svgLabelOutline, {
 			x: x,
 			y: y
 		});
@@ -1774,11 +1774,11 @@
 			}
 			
 			if( loop ){
-				svgPath = self.svg.path( element.renscratch("svgGroup"), path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
+				svgPath = self.svg.path( element.rscratch("svgGroup"), path.move(x1, y1).curveC(cp1.x, cp1.y, cp2.x, cp2.y, x2, y2) );
 			} else if( curved ){
-				svgPath = self.svg.path( element.renscratch("svgGroup"), path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
+				svgPath = self.svg.path( element.rscratch("svgGroup"), path.move(x1, y1).curveQ(cp.x, cp.y, x2, y2) );
 			} else {
-				svgPath = self.svg.path( element.renscratch("svgGroup"), path.move(x1, y1).line(x2, y2) );
+				svgPath = self.svg.path( element.rscratch("svgGroup"), path.move(x1, y1).line(x2, y2) );
 			}
 		}
 		
@@ -1853,10 +1853,10 @@
 		var targetShape = nodeShape(targetShape).intersectionShape;
 		var sourceShape = nodeShape(sourceShape).intersectionShape;
 		
-		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape( tgt.renscratch("svg") ));
+		var intersection = Intersection.intersectShapes(new Path(svgPath), new targetShape( tgt.rscratch("svg") ));
 		var tgtInt = intersection.points[ intersection.points.length - 1 ];
 		
-		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape( src.renscratch("svg") ));
+		intersection = Intersection.intersectShapes(new Path(svgPath), new sourceShape( src.rscratch("svg") ));
 		var srcInt = intersection.points[0];
 		
 		var scale = f * edgeWidth;
@@ -1887,8 +1887,8 @@
 		
 		makePath();
 		
-		if( element.renscratch("svgTargetArrow") != null ){
-			this.svgRemove( element.renscratch("svgTargetArrow") );
+		if( element.rscratch("svgTargetArrow") != null ){
+			this.svgRemove( element.rscratch("svgTargetArrow") );
 		}
 		
 		if( targetArrowShape != "none" ){
@@ -1898,16 +1898,16 @@
 				y: y2 - tgtShapeObj.centerPoint.y * scale,
 			};
 			var targetCenter = tgtShapeObj.centerPoint;
-			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style(false) );
-			element.renscratch("svgTargetArrow", targetArrow);
+			var targetArrow = tgtShapeObj == null ? null : tgtShapeObj.svg( this.svg, element.rscratch("svgGroup"), element, element.position(), element.style() );
+			element.rscratch("svgTargetArrow", targetArrow);
 
 			this.svg.change(targetArrow, {
 				transform: "translate(" + tgtArrowTranslation.x + " " + tgtArrowTranslation.y + ") scale(" + scale + ") rotate(" + targetRotation + " " + targetCenter.x + " " + targetCenter.y + ")"
 			});
 		}
 		
-		if( element.renscratch("svgSourceArrow") != null ){
-			this.svgRemove( element.renscratch("svgSourceArrow") );
+		if( element.rscratch("svgSourceArrow") != null ){
+			this.svgRemove( element.rscratch("svgSourceArrow") );
 		}
 		
 		if( sourceArrowShape != "none" ){		
@@ -1917,8 +1917,8 @@
 				y: y1 - srcShapeObj.centerPoint.y * scale,
 			};
 			var sourceCenter = srcShapeObj.centerPoint;
-			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.renscratch("svgGroup"), element, element.position(false), element.style(false) );
-			element.renscratch().svgSourceArrow = sourceArrow;
+			var sourceArrow = srcShapeObj == null ? null : srcShapeObj.svg(this.svg, element.rscratch("svgGroup"), element, element.position(), element.style() );
+			element.rscratch().svgSourceArrow = sourceArrow;
 			
 			this.svg.change(sourceArrow, {
 				transform: "translate(" + srcArrowTranslation.x + " " + srcArrowTranslation.y + ") scale(" + scale + ") rotate(" + sourceRotation + " " + sourceCenter.x + " " + sourceCenter.y + ")"
@@ -1943,11 +1943,11 @@
 			};
 		}
 		
-		element.renscratch("svgLabelGroup", self.svg.group(element.renscratch().svgGroup) );
-		element.renscratch("svgLabelOutline", self.svg.text(element.renscratch().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
-		element.renscratch("svgLabel", self.svg.text(element.renscratch().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
+		element.rscratch("svgLabelGroup", self.svg.group(element.rscratch().svgGroup) );
+		element.rscratch("svgLabelOutline", self.svg.text(element.rscratch().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
+		element.rscratch("svgLabel", self.svg.text(element.rscratch().svgLabelGroup, labelPosition.x, labelPosition.y, "label init") );
 		
-		element.renscratch().svg = svgPath;
+		element.rscratch().svg = svgPath;
 		return svgPath;
 	};
 	
@@ -2038,8 +2038,8 @@
 			return;
 		}
 		
-		var ps = source.position(false);
-		var pt = target.position(false);
+		var ps = source.position();
+		var pt = target.position();
 		
 		if( ps.x == null || ps.y == null || pt.x == null || pt.y == null ){
 			
@@ -2049,7 +2049,7 @@
 		var style = this.calculateStyle(element);
 		
 		var svgDomGroup = this.svg.group(this.edgesGroup);
-		element.renscratch().svgGroup = svgDomGroup;
+		element.rscratch().svgGroup = svgDomGroup;
 		this.svg.change(svgDomGroup);
 		
 		// notation: (x1, y1, x2, y2) = (source.x, source.y, target.x, target.y)
@@ -2059,7 +2059,7 @@
 		
 		this.makeSvgEdgeInteractive(element);
 		this.updateElementStyle(element, style);
-		return element.renscratch().svg;
+		return element.rscratch().svg;
 	};
 	
 	SvgRenderer.prototype.makeSvgElement = function(element){
@@ -2075,8 +2075,8 @@
 	};
 	
 	SvgRenderer.prototype.getSvgElement = function(element){
-		if( element.renscratch().svg != null ){
-			return element.renscratch().svg;
+		if( element.rscratch().svg != null ){
+			return element.rscratch().svg;
 		} else {
 			return this.makeSvgElement(element);
 		}
@@ -2170,27 +2170,27 @@
 	};
 	
 	SvgRenderer.prototype.updateNodeStyle = function(element, newStyle){
-		var oldShape = element.style(false).shape;
+		var oldShape = element.style().shape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element.style(false);
+		var style = element.style();
 		
-		var newShape = element.style(false).shape;
+		var newShape = element.style().shape;
 		
-		if( element.renscratch().svg == null ){
+		if( element.rscratch().svg == null ){
 			$.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
 		if( newShape != oldShape ){
-			this.svgRemove(element.renscratch().svgGroup);
+			this.svgRemove(element.rscratch().svgGroup);
 			this.makeSvgNode(element);
 			return;
 		}
 			
 		// TODO add more as more styles are added
 		// generic styles go here
-		this.svg.change(element.renscratch().svg, {
+		this.svg.change(element.rscratch().svg, {
 			"pointer-events": "visible", // if visibility:hidden, no events
 			fill: color(style.fillColor),
 			fillOpacity: percent(style.fillOpacity),
@@ -2202,7 +2202,7 @@
 			"visibility": visibility(style.visibility)
 		});
 		
-		this.svg.change(element.renscratch().svgGroup, {
+		this.svg.change(element.rscratch().svgGroup, {
 			opacity: percent(style.opacity)
 		});
 		
@@ -2220,34 +2220,34 @@
 			"text-rendering": "geometricPrecision"
 		};
 		
-		this.svg.change(element.renscratch().svgLabelGroup, {
+		this.svg.change(element.rscratch().svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
-		this.svg.change(element.renscratch().svgLabelOutline, {
+		this.svg.change(element.rscratch().svgLabelOutline, {
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			fill: "none",
 			opacity: percent(style.labelOutlineOpacity)
 		});
 		
-		this.svg.change(element.renscratch().svgLabelOutline, labelOptions);
-		this.svg.change(element.renscratch().svgLabel, labelOptions);
+		this.svg.change(element.rscratch().svgLabelOutline, labelOptions);
+		this.svg.change(element.rscratch().svgLabel, labelOptions);
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element.renscratch().svgLabel.textContent = labelText;
-		element.renscratch().svgLabelOutline.textContent = labelText;
+		element.rscratch().svgLabel.textContent = labelText;
+		element.rscratch().svgLabelOutline.textContent = labelText;
 		
 		var valign = labelValign(style.labelValign);
 		var halign = labelHalign(style.labelHalign);
 		
 		// styles to the group
-		this.svg.change(element.renscratch().svgGroup, {
+		this.svg.change(element.rscratch().svgGroup, {
 			fillOpacity: percent(style.fillOpacity)
 		});
 		
 		// update shape specific stuff like position
-		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element.position(false), style);
+		nodeShape(style.shape).update(this.svg, this.nodesGroup, element, element.position(), style);
 		
 		// update label position after the node itself
 		this.updateLabelPosition(element, valign, halign);
@@ -2261,7 +2261,7 @@
 		var dy = 0;
 		var height = 0;
 		var width = 0;
-		var text = element.renscratch().svgLabel.textContent;
+		var text = element.rscratch().svgLabel.textContent;
 		
 		// update node label x, y
 		if( element.isNode() ){
@@ -2277,8 +2277,8 @@
 		}
 		
 		if( element.isNode() ){
-			height = element.style(false).height;
-			width = element.style(false).width;
+			height = element.style().height;
+			width = element.style().width;
 		}
 		
 		if( halign == "middle" ){
@@ -2298,7 +2298,7 @@
 		}
 		
 		// TODO remove this hack to fix IE when it supports baseline properties properly
-		var fontSize = parseInt(window.getComputedStyle(element.renscratch().svgLabel)["fontSize"]);
+		var fontSize = parseInt(window.getComputedStyle(element.rscratch().svgLabel)["fontSize"]);
 		var ieFix = $.browser.msie ? fontSize/3 : 0;
 	
 		if( valign == "middle" ){
@@ -2324,44 +2324,44 @@
 		
 		var labelOptions = $.extend({}, textAnchor, styleAttr, transform);
 		
-		this.svg.change(element.renscratch().svgLabelOutline, labelOptions);
-		this.svg.change(element.renscratch().svgLabel, labelOptions);
+		this.svg.change(element.rscratch().svgLabelOutline, labelOptions);
+		this.svg.change(element.rscratch().svgLabel, labelOptions);
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
-		var oldTargetShape = element.style(false).targetArrowShape;
-		var oldSourceShape = element.style(false).sourceArrowShape;
+		var oldTargetShape = element.style().targetArrowShape;
+		var oldSourceShape = element.style().sourceArrowShape;
 		
 		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
-		var style = element.style(false);
+		var style = element.style();
 		
-		if( element.renscratch().svg == null ){
+		if( element.rscratch().svg == null ){
 			$.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
 		var newSrcStyle = element.source().style();
-		var oldSrcStyle = element.renscratch().oldSourceStyle || newSrcStyle;
+		var oldSrcStyle = element.rscratch().oldSourceStyle || newSrcStyle;
 		
 		var newTgtStyle = element.target().style();
-		var oldTgtStyle = element.renscratch().oldTargetStyle || newTgtStyle;
+		var oldTgtStyle = element.rscratch().oldTargetStyle || newTgtStyle;
 		
-		var newTargetShape = element.style(false).targetArrowShape;
-		var newSourceShape = element.style(false).sourceArrowShape;
+		var newTargetShape = element.style().targetArrowShape;
+		var newSourceShape = element.style().sourceArrowShape;
 		
 		var nodesStyleChanged = newSrcStyle.height != oldSrcStyle.height || newSrcStyle.width != oldSrcStyle.width ||
 			newTgtStyle.height != oldTgtStyle.height || newTgtStyle.width != oldTgtStyle.width ||
 			newSrcStyle.shape != oldSrcStyle.shape || newTgtStyle.shape != oldTgtStyle.shape ||
 			newSrcStyle.borderWidth != oldSrcStyle.borderWidth || newTgtStyle.borderWidth != oldTgtStyle.borderWidth;
 		
-		var widthChanged = element.renscratch().oldStyle == null || element.renscratch().oldStyle.width != style.width;
+		var widthChanged = element.rscratch().oldStyle == null || element.rscratch().oldStyle.width != style.width;
 		
-		element.renscratch().oldSourceStyle = newSrcStyle;
-		element.renscratch().oldTargetStyle = newTgtStyle;
-		element.renscratch().oldStyle = style;
+		element.rscratch().oldSourceStyle = newSrcStyle;
+		element.rscratch().oldTargetStyle = newTgtStyle;
+		element.rscratch().oldStyle = style;
 		
 		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
-			this.svgRemove(element.renscratch().svgGroup);
+			this.svgRemove(element.rscratch().svgGroup);
 			this.makeSvgEdge(element);
 			
 			return;
@@ -2369,7 +2369,7 @@
 		
 		// TODO add more as more styles are added
 		// generic edge styles go here
-		this.svg.change(element.renscratch().svg, {
+		this.svg.change(element.rscratch().svg, {
 			"pointer-events": "visibleStroke", // on visibility:hidden, no events
 			stroke: color(style.lineColor),
 			strokeWidth: number(style.width),
@@ -2380,17 +2380,17 @@
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element.renscratch().svgGroup, {
+		this.svg.change(element.rscratch().svgGroup, {
 			opacity: percent(style.opacity)
 		});
 		
-		this.svg.change(element.renscratch().svgTargetArrow, {
+		this.svg.change(element.rscratch().svgTargetArrow, {
 			fill: color(style.targetArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
 		});
 		
-		this.svg.change(element.renscratch().svgSourceArrow, {
+		this.svg.change(element.rscratch().svgSourceArrow, {
 			fill: color(style.sourceArrowColor),
 			cursor: cursor(style.cursor),
 			visibility: visibility(style.visibility)
@@ -2409,21 +2409,21 @@
 			"text-rendering": "geometricPrecision"
 		};
 		
-		this.svg.change(element.renscratch().svgLabel, labelOptions);
-		this.svg.change(element.renscratch().svgLabelOutline, $.extend({}, labelOptions, {
+		this.svg.change(element.rscratch().svgLabel, labelOptions);
+		this.svg.change(element.rscratch().svgLabelOutline, $.extend({}, labelOptions, {
 			fill: "none",
 			stroke: color(style.labelOutlineColor),
 			strokeWidth: number(style.labelOutlineWidth) * 2,
 			opacity: percent(style.labelOutlineOpacity),
 		}) );
 		
-		this.svg.change(element.renscratch().svgLabelGroup, {
+		this.svg.change(element.rscratch().svgLabelGroup, {
 			opacity: percent(style.labelOpacity)
 		});
 		
 		var labelText = style.labelText == null ? "" : style.labelText;
-		element.renscratch().svgLabel.textContent = labelText;
-		element.renscratch().svgLabelOutline.textContent = labelText;
+		element.rscratch().svgLabel.textContent = labelText;
+		element.rscratch().svgLabelOutline.textContent = labelText;
 		this.updateLabelPosition(element, "middle", "middle");
 		
 		
@@ -2462,7 +2462,7 @@
 		// update nodes
 		collection.nodes().each(function(i, element){
 			var svgEle = self.getSvgElement(element);			
-			var p = element.position(false);
+			var p = element.position();
 			
 			self.updateNodePositionFromShape(element);
 			self.positionSvgNodeLabel(element);
@@ -2479,13 +2479,13 @@
 		var self = this;
 		
 		edges.each(function(i, edge){
-			if( edge.renscratch().svgGroup != null ){
-				self.svgRemove(edge.renscratch().svgGroup);
+			if( edge.rscratch().svgGroup != null ){
+				self.svgRemove(edge.rscratch().svgGroup);
 			}
 			self.makeSvgEdge(edge);
 			
-			var ps = edge.source().position(false);
-			var pt = edge.target().position(false);
+			var ps = edge.source().position();
+			var pt = edge.target().position();
 			
 			
 		});
@@ -2507,15 +2507,15 @@
 		
 		collection.each(function(i, element){
 			
-			if( element.renscratch().svgGroup != null ){
+			if( element.rscratch().svgGroup != null ){
 				// remove the svg element from the dom
-				svg.remove( element.renscratch().svgGroup );
+				svg.remove( element.rscratch().svgGroup );
 				
-				element.removeRenscratch("svg");
-				element.removeRenscratch("svgGroup");
-				element.removeRenscratch("svgSourceArrow");
-				element.removeRenscratch("svgTargetArrow");
-				element.removeRenscratch("svgLabel");
+				element.removerscratch("svg");
+				element.removerscratch("svgGroup");
+				element.removerscratch("svgSourceArrow");
+				element.removerscratch("svgTargetArrow");
+				element.removerscratch("svgLabel");
 			} else {
 				
 			}

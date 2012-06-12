@@ -19,24 +19,17 @@
 			}
 		}),
 
-		removeData: defineRemover({
-			attr: "data",
+		removeData: $$.define.removeData({
+			field: "data",
 			event: "data",
+			triggerFnName: "rtrigger",
 			triggerEvent: true,
-			onRemove: function( key, val ){ // callback after removing; `this` refers to the element
-				this.cy().removeContinuousMapperBounds(this, key, val);
-			},
-			validKey: function( key ){
-				switch(key){
-				case "id":
-				case "source":
-				case "target":
-					return false;
-				default:
-					return true;
-				}
-			},
-			essentialKeys: [ "id", "source", "target", "parent" ] // keys that remain even when deleting all
+			immutableKeys: {
+				"id": true,
+				"source": true,
+				"target": true,
+				"parent": true
+			}
 		}),
 
 		scratch: $$.define.data({
@@ -47,12 +40,22 @@
 			allowGetting: true
 		}),
 
-		renscratch: $$.define.data({
+		removeScratch: $$.define.removeData({
+			field: "scratch",
+			triggerEvent: false
+		}),
+
+		rscratch: $$.define.data({
 			field: "renscratch",
 			allowBinding: false,
 			allowSetting: true,
 			settingTriggersEvent: false,
 			allowGetting: true
+		}),
+
+		removeRscratch: $$.define.removeData({
+			field: "rscratch",
+			triggerEvent: false
 		}),
 
 		id: function(){
@@ -61,52 +64,34 @@
 			}
 		},
 
-		position: defineAccessor({
-			attr: "position",
-			allowBinding: true,
+		position: $$.define.data({
+			field: "position",
 			bindingEvent: "position",
-			settingTriggersEvent: true, 
+			allowBinding: true,
+			allowSetting: true,
 			settingEvent: "position",
-			validKey: {
-				forSet: function( key ){
-					return this.isNode();
-				},
-				forGet: function( key ){
-					return this.isNode();
-				}
-			},
-			validValue: function( key, val ){
-				return true;
-			},
-			onSet: function( key, oldVal, newVal ){
-				// do nothing
-			},
-			onGet: function( key, val ){
-				// do nothing
-			}
+			settingTriggersEvent: true,
+			triggerFnName: "rtrigger",
+			allowGetting: true
 		}),
 
 		positions: function(pos){
 			if( $$.is.plainObject(pos) ){
-				
-				this.each(function(i, ele){
-					$.each(pos, function(key, val){
-						ele._private.position[ key ] = val;
-					});
-				});
-				
-				this.rtrigger("position");
+				this.position(pos);
 				
 			} else if( $$.is.fn(pos) ){
 				var fn = pos;
 				
-				this.each(function(i, ele){
+				for( var i = 0; i < this.length; i++ ){
+					var ele = this[i];
+
 					var pos = fn.apply(ele, [i, ele]);
 					
-					$.each(pos, function(key, val){
+					for( var key in pos ){
+						var val = pos[key];
 						ele._private.position[ key ] = val;
-					});
-				});
+					}
+				}
 				
 				this.rtrigger("position");
 			}
@@ -164,38 +149,28 @@
 			}
 		},
 
-		style: function( key ){
-			var ele = this.element();
-			
-			if( ele == null ){
-				return undefined;
-			}
-
-			if( key === undefined ){
-				return $$.util.copy( ele._private.style );
-			}
-			
-			// on false, return whole obj but w/o copying
-			else if( key === false ){
-				return ele._private.style;
-			}
-			
-			else if( $$.is.string(key) ){
-				return $$.util.copy( ele._private.style[key] );
-			}
-		},
-
-		bypass: defineAccessor({
-			attr: "bypass",
-			allowBinding: true,
-			bindingEvent: "bypass",
-			settingTriggersEvent: true, 
-			settingEvent: "bypass"
+		style: $$.define.data({
+			field: "style",
+			allowBinding: false,
+			allowSetting: false,
+			allowGetting: true
 		}),
 
-		removeBypass: defineRemover({
-			attr: "bypass",
+		bypass: $$.define.data({
+			field: "bypass",
+			bindingEvent: "bypass",
+			allowBinding: true,
+			allowSetting: true,
+			settingEvent: "bypass",
+			settingTriggersEvent: true,
+			triggerFnName: "rtrigger",
+			allowGetting: true
+		}),
+
+		removeBypass: $$.define.removeData({
+			field: "bypass",
 			event: "bypass",
+			triggerFnName: "rtrigger",
 			triggerEvent: true
 		})
 	});

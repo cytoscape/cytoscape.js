@@ -6,19 +6,15 @@
 			
 			var renderer = this.renderer();
 			
-			if( $$.is.element(params.collection) ){
+			// normalise params.collection 
+			if( $$.is.element(params.collection) ){ // make collection from element
 				var element = params.collection;
 				params.collection = new $$.CyCollection(cy, [ element ]);	
 			
-			} else if( $$.is.array(params.collection) ){
+			} else if( $$.is.array(params.collection) ){ // make collection from elements array
 				var elements = params.collection;
 				params.collection = new $$.CyCollection(cy, elements);	
 			} 
-			
-			if( this.getContinuousMapperUpdates().length != 0 ){
-				params.updateMappers = true;
-				this.clearContinuousMapperUpdates();
-			}
 			
 			renderer.notify(params);
 		},

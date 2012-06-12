@@ -154,7 +154,7 @@
 		var uniqueElements = [];
 		var createdElements = false;
 		
-		if( elements == null ){
+		if( !elements ){
 			elements = [];
 		} else if( elements.length > 0 && $$.is.plainObject( elements[0] ) && !$$.is.element( elements[0] ) ){
 			createdElements = true;
@@ -343,17 +343,8 @@
 					var src = cy.getElementById( data.source );
 					var tgt = cy.getElementById( data.target );
 
-					$$.util.pushMap({
-						map: src._private.edges,
-						keys: [ data.target ],
-						value: edge
-					});
-
-					$$.util.pushMap({
-						map: tgt._private.edges,
-						keys: [ data.source ],
-						value: edge
-					});
+					src._private.edges.push( edge );
+					tgt._private.edges.push( edge );
 
 				} // if is edge
 				 

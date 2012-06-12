@@ -972,7 +972,7 @@
 			
 			if( bottom > y2 || y2 == null ){
 				y2 = bottom;
-			}
+			} 
 		}
 
 		elements.nodes().each(function(){

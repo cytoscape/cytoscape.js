@@ -62,12 +62,10 @@
 	CanvasRenderer.prototype.load = function() {
 		var self = this;
 	
-		// var mouseOffsetX = -cy.container
-	
-		var checkEdgeHover = function(mouseMoveEvent, edge) {
+		var checkEdgeHover = function(mouseX, mouseY, edge) {
 			var distance = cy.renderer().sqDistanceToQuadraticBezier(
-				mouseMoveEvent.clientX - 8 - 2,
-				mouseMoveEvent.clientY - 92 - 4,
+				mouseX,
+				mouseY,
 				edge.source().position().x,
 				edge.source().position().y,
 				edge._private.renscratch.cp2x,
@@ -84,24 +82,66 @@
 			}
 		}
 		
-		/*
-		var checkNodeHover = function(mouseMoveEvent, node) {
-			var dX = mouseMoveEvent.clientX 
+		var checkNodeHover = function(mouseX, mouseY, node) {
+			var dX = mouseX - node.position().x;
+			var dY = mouseY - node.position().y;
 			
-			if (node._private.renscratch.boundingRadiusSquared
-				> 
+			/*
+			console.log(node._private.renscratch.boundingRadiusSquared);
+			console.log(dX * dX + dY * dY);
+			*/
+			
+			var boundingRadiusSquared = node._private.data.weight / 5.0;
+			boundingRadiusSquared *= boundingRadiusSquared;
+			
+			if (boundingRadiusSquared > (dX * dX + dY * dY)) {
+				
+				node._private.renscratch.hovered = true;	
+			} else {
+				node._private.renscratch.hovered = false;
+			}
 		}
-		*/
+		
+		// Offset for Cytoscape container
+		var mouseOffsetX = this.cy.container().offset().left + 2;
+		var mouseOffsetY = this.cy.container().offset().top + 2;
 		
 		var edges = self.cy.edges();
 		var nodes = self.cy.nodes();
-		var hoverHandler = function(mouseMoveEvent) {		
+		var hoverHandler = function(mouseMoveEvent) {
+			var mouseX = mouseMoveEvent.clientX - mouseOffsetX;
+			var mouseY = mouseMoveEvent.clientY - mouseOffsetY;
+			
+	
+			// Project mouse coordinates to world absolute coordinates
+
+			mouseX -= self.options.cy.container().width() / 2;
+			mouseY -= self.options.cy.container().height() / 2;
+			
+			mouseX /= self.scale[0];
+			mouseY /= self.scale[1];
+			
+			mouseX += self.center[0];
+			mouseY += self.center[1];
+			
+			/*
+			var xOffsetFromCenter = mouseX - self.options.cy.container().width() / 2;
+			var yOffsetFromCenter = mouseY - self.options.cy.container().height() / 2;
+			
+			//console.log(self.scale[0]);
+			xOffsetFromCenter /= self.scale[0];
+			yOffsetFromCenter /= self.scale[1];
+			
+			mouseX = self.options.cy.container().width() / 2 + xOffsetFromCenter;
+			mouseY = self.options.cy.container().height() / 2 + yOffsetFromCenter;
+			*/
+			
 			for (var index = 0; index < edges.length; index++) {
-				checkEdgeHover(mouseMoveEvent, edges[index]);
+				checkEdgeHover(mouseX, mouseY, edges[index]);
 			}
 			
 			for (var index = 0; index < nodes.length; index++) {
-				// checkNodeHover(mouseMoveEvent, nodes[index]);
+				checkNodeHover(mouseX, mouseY, nodes[index]);
 			}
 			
 			self.redraw();
@@ -137,6 +177,7 @@
 		this.center = [container.width() / 2, container.height() / 2];
 		this.scale = [1, 1];
 		this.zoomCenter = [container.width() / 2, container.height() / 2];
+		this.zoomLevel = 0;
 		
 		var startX, startY;
 		var initialCenter;
@@ -146,7 +187,7 @@
 		
 		
 		$(window).bind("mousedown", function(mouseDownEvent) {
-			if (mouseDownEvent.button != 0) {
+			if (mouseDownEvent.button != 1) {
 				return;
 			}
 			
@@ -159,7 +200,7 @@
 			initialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
 			
 			//debug("mouse down");
-			// $(window).bind("mousemove", dragHandler);
+			$(window).bind("mousemove", dragHandler);
 		
 			debug(mouseDownEvent);
 		});
@@ -188,13 +229,23 @@
 		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
 			
 			/*
-			debug("mousewheel");
-			debug(event);
-			debug(delta);
-			debug(deltaX);
-			debug(deltaY);
+			console.log("mousewheel");
+			console.log(event);
+			console.log(delta);
+			console.log(deltaX);
+			console.log(deltaY);
 			*/
 			
+			event.preventDefault();
+			
+			cy.renderer().zoomLevel -= deltaY / 10.0;
+			
+			//console.log("zoomLevel: " + cy.renderer().zoomLevel);
+			cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
+			cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
+			
+			
+			cy.renderer().redraw();
 			// self.zoomAboutPoint(point, zoom);
 			/*
 			self.cy.trigger("zoom");
@@ -477,9 +528,14 @@
 		}
 		
 		var node;
-		context.fillStyle = "#AAAAAA";
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
+			
+			if (node._private.renscratch.hovered == true) {
+				context.fillStyle = "#AAAAFF";
+			} else {
+				context.fillStyle = "#AAAAAA";
+			}
 			
 			context.beginPath();
 			context.arc(node._private.position.x, node._private.position.y,
@@ -488,12 +544,14 @@
 			context.fill();
 		}
 		
+		
 		context.fillStyle = "#5555AA";
 		context.beginPath();
 		context.arc(debugStats.clickX, debugStats.clickY,
 			5.0, 0, Math.PI * 2, false);
 		context.closePath();
 		context.fill();
+		
 		
 		/*
 		context.fillStyle = "#775555";

@@ -205,323 +205,313 @@
 			this.restore();
 		}
 	};
-
-
+	
+	
+	// Functions
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	// keep the prototypes in sync (an element has the same functions as a collection)
-	$$.Element.prototype = $$.Collection.prototype;
+	// and use $$.elefn and $$.elesfn as shorthands to the prototypes
+	$$.elefn = $$.elesfn = $$.Element.prototype = $$.Collection.prototype;
 
-	$$.Collection.prototype.cy = function(){
+	$$.elesfn.cy = function(){
 		return this._private.cy;
 	};
 	
-	$$.Collection.prototype.element = function(){
+	$$.elesfn.element = function(){
 		return this[0];
 	};
 	
-	$$.Collection.prototype.collection = function(){
+	$$.elesfn.collection = function(){
 		if( $$.is.collection(this) ){
 			return this;
 		} else { // an element
 			return new $$.Collection( this._private.cy, [this] );
 		}
 	};
-	
-	
-	// Functions
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	$$.fn.collection({
-		json: function(){
-			var ele = this.element();
-			if( ele == null ){ return undefined }
 
-			var p = ele._private;
-			
-			var json = $$.util.copy({
-				data: p.data,
-				position: p.position,
-				group: p.group,
-				bypass: p.bypass,
-				removed: p.removed,
-				selected: p.selected,
-				selectable: p.selectable,
-				locked: p.locked,
-				grabbed: p.grabbed,
-				grabbable: p.grabbable,
-				classes: "",
-				scratch: p.scratch
-			});
-			
-			var classes = [];
-			$.each(p.classes, function(cls, bool){
-				classes.push(cls);
-			});
-			
-			$.each(classes, function(i, cls){
-				json.classes += cls + ( i < classes.length - 1 ? " " : "" );
-			});
-			
-			return json;
+	$$.elesfn.json = function(){
+		var ele = this.element();
+		if( ele == null ){ return undefined }
+
+		var p = ele._private;
+		
+		var json = $$.util.copy({
+			data: p.data,
+			position: p.position,
+			group: p.group,
+			bypass: p.bypass,
+			removed: p.removed,
+			selected: p.selected,
+			selectable: p.selectable,
+			locked: p.locked,
+			grabbed: p.grabbed,
+			grabbable: p.grabbable,
+			classes: "",
+			scratch: p.scratch
+		});
+		
+		var classes = [];
+		$.each(p.classes, function(cls, bool){
+			classes.push(cls);
+		});
+		
+		$.each(classes, function(i, cls){
+			json.classes += cls + ( i < classes.length - 1 ? " " : "" );
+		});
+		
+		return json;
+	};
+
+	$$.elesfn.restore = function( notifyRenderer ){
+		var self = this;
+		var restored = [];
+		var cy = self.cy();
+		
+		if( notifyRenderer === undefined ){
+			notifyRenderer = true;
 		}
-	});
 
-	$$.fn.collection({
-		restore: function( notifyRenderer ){
-			var self = this;
-			var restored = [];
-			var cy = self.cy();
+		// create arrays of nodes and edges, since we need to
+		// restore the nodes first
+		var elements = [];
+		var numNodes = 0;
+		var numEdges = 0;
+		for( var i = 0, l = self.length; i < l; i++ ){
+			var ele = self[i];
 			
-			if( notifyRenderer === undefined ){
-				notifyRenderer = true;
+			// keep nodes first in the array and edges after
+			if( ele.isNode() ){ // put to front of array if node
+				elements.unshift( ele );
+				numNodes++;
+			} else { // put to end of array if edge
+				elements.push( ele );
+				numEdges++;
 			}
-
-			// create arrays of nodes and edges, since we need to
-			// restore the nodes first
-			var elements = [];
-			var numNodes = 0;
-			var numEdges = 0;
-			for( var i = 0, l = self.length; i < l; i++ ){
-				var ele = self[i];
-				
-				// keep nodes first in the array and edges after
-				if( ele.isNode() ){ // put to front of array if node
-					elements.unshift( ele );
-					numNodes++;
-				} else { // put to end of array if edge
-					elements.push( ele );
-					numEdges++;
-				}
-			}
-
-			// now, restore each element
-			for( var i = 0, l = elements.length; i < l; i++ ){
-				var ele = elements[i];
-
-				if( !ele.removed() ){
-					// don't need to do anything
-					continue;
-				}
-				
-				var _private = ele._private;
-				var structs = cy._private; // TODO remove ref to `structs`
-				var data = _private.data;
-				
-				// set id and validate
-				if( data.id === undefined ){
-					data.id = idFactory.generate( cy, ele );
-				} else if( data.id === "" || !$$.is.string(data.id) ){
-					// can't create element if it has empty string as id or non-string id
-					continue;
-				} else if( cy.getElementById( data.id ).length != 0 ){
-					// can't create element if one already has that id
-					continue;
-				}
-
-				var id = data.id; // id is finalised, now let's keep a ref
-				
-				if( ele.isEdge() ){ // extra checks for edges
-					
-					var edge = ele;
-					var fields = ["source", "target"];
-					var fieldsLength = fields.length;
-					for(var j = 0; j < fieldsLength; j++){
-						
-						var field = fields[j];
-						var val = data[field];
-						
-						if( val == null || val === "" ){
-							// can't create if source or target is not defined properly
-							continue;
-						} else if( cy.getElementById(val).empty() ){ 
-							// can't create edge if one of its nodes doesn't exist
-							continue;
-						}
-					}
-					
-					var src = cy.getElementById( data.source );
-					var tgt = cy.getElementById( data.target );
-
-					src._private.edges.push( edge );
-					tgt._private.edges.push( edge );
-
-				} // if is edge
-				 
-				// create mock ids map for element so it can be used like collections
-				_private.ids = {};
-				_private.ids[ data.id ] = ele;
-
-				_private.removed = false;
-				cy.addToPool( ele );
-				
-				restored.push( ele );
-			} // for each element
-
-			// do compound node sanity checks
-			for( var i = 0; i < numNodes; i++ ){ // each node 
-				var node = elements[i];
-				var data = node._private.data;
-				var id = data.id;
-
-				var parentId = node._private.data.parent;
-				var specifiedParent = parentId != null;
-
-				if( specifiedParent ){
-					var parent = cy.getElementById( parentId );
-
-					if( parent.empty() ){
-						// non-existant parent; just remove it
-						delete data.parent;
-					} else {
-
-						var selfAsParent = false;
-						var ancestor = parent;
-						while( !ancestor.empty() ){
-							if( node.same(ancestor) ){
-								// mark self as parent and remove from data
-								selfAsParent = true;
-								delete data.parent; // remove parent reference
-
-								// exit or we loop forever
-								break;
-							}
-
-							ancestor = ancestor.parent();
-						}
-
-						if( !selfAsParent ){
-							// connect with children
-							parent[0]._private.children.push( node );
-						}
-					} // else
-				} // if specified parent
-			} // for each node
-			
-			restored = new $$.Collection( cy, restored );
-			if( restored.length > 0 ){
-				if( notifyRenderer ){
-					restored.rtrigger("add");
-				} else {
-					restored.trigger("add");
-				}
-				
-			}
-			
-			return self; // chainability
 		}
-	});
-	
-	$$.fn.collection({
-		removed: function(){
-			var ele = this[0];
-			return ele && ele._private.removed;
-		},
 
-		inside: function(){
-			return !this.removed();
-		}
-	});
-	
+		// now, restore each element
+		for( var i = 0, l = elements.length; i < l; i++ ){
+			var ele = elements[i];
 
-	// TODO refactor .remove() and refactor edge refs in nodes
-	$$.fn.collection({
-		remove: function( notifyRenderer ){
-			var self = this;
-			var removed = [];
-			var elesToRemove = [];
-			var cy = self._private.cy;
-			
-			if( notifyRenderer === undefined ){
-				notifyRenderer = true;
+			if( !ele.removed() ){
+				// don't need to do anything
+				continue;
 			}
 			
-			// add connected edges
-			function addConnectedEdges(node){
-				var edges = node._private.edges; 
-				for( var i = 0; i < edges.length; i++ ){
-					add( edges[i] );
-				}
-			}
+			var _private = ele._private;
+			var structs = cy._private; // TODO remove ref to `structs`
+			var data = _private.data;
 			
+			// set id and validate
+			if( data.id === undefined ){
+				data.id = idFactory.generate( cy, ele );
+			} else if( data.id === "" || !$$.is.string(data.id) ){
+				// can't create element if it has empty string as id or non-string id
+				continue;
+			} else if( cy.getElementById( data.id ).length != 0 ){
+				// can't create element if one already has that id
+				continue;
+			}
 
-			// add descendant nodes
-			function addChildren(node){
-				var children = node._private.children;
+			var id = data.id; // id is finalised, now let's keep a ref
+			
+			if( ele.isEdge() ){ // extra checks for edges
 				
-				for( var i = 0; i < children.length; i++ ){
-					add( children[i] );
-				}
-			}
-
-			function add( ele ){
-				if( ele.isNode() ){
-					elesToRemove.push( ele ); // nodes are removed last
-
-					addConnectedEdges( ele );
-					addChildren( ele );
-				} else {
-					elesToRemove.unshift( ele ); // edges are removed first
-				}
-			}
-
-			// make the list of elements to remove
-			// (may be removing more than specified due to connected edges etc)
-
-			for( var i = 0, l = self.length; i < l; i++ ){
-				var ele = self[i];
-
-				add( ele );
-			}
-			
-			function removeEdgeRef(node, edge){
-				var connectedEdges = node._private.edges;
-				for( var j = 0; j < connectedEdges.length; j++ ){
-					var connectedEdge = connectedEdges[j];
+				var edge = ele;
+				var fields = ["source", "target"];
+				var fieldsLength = fields.length;
+				for(var j = 0; j < fieldsLength; j++){
 					
-					if( edge === connectedEdge ){
-						connectedEdges.splice( j, 1 );
-						break;
+					var field = fields[j];
+					var val = data[field];
+					
+					if( val == null || val === "" ){
+						// can't create if source or target is not defined properly
+						continue;
+					} else if( cy.getElementById(val).empty() ){ 
+						// can't create edge if one of its nodes doesn't exist
+						continue;
 					}
 				}
-			}
+				
+				var src = cy.getElementById( data.source );
+				var tgt = cy.getElementById( data.target );
 
-			for( var i = 0; i < elesToRemove.length; i++ ){
-				var ele = elesToRemove[i];
+				src._private.edges.push( edge );
+				tgt._private.edges.push( edge );
 
-				// mark as removed
-				ele._private.removed = true;
+			} // if is edge
+			 
+			// create mock ids map for element so it can be used like collections
+			_private.ids = {};
+			_private.ids[ data.id ] = ele;
 
-				// remove from core pool
-				cy.removeFromPool( ele );
+			_private.removed = false;
+			cy.addToPool( ele );
+			
+			restored.push( ele );
+		} // for each element
 
-				// add to list of removed elements
-				removed.push( ele );
+		// do compound node sanity checks
+		for( var i = 0; i < numNodes; i++ ){ // each node 
+			var node = elements[i];
+			var data = node._private.data;
+			var id = data.id;
 
-				if( ele.isEdge() ){ // remove references to this edge in its connected nodes
-					var src = ele.source()[0];
-					var tgt = ele.target()[0];
+			var parentId = node._private.data.parent;
+			var specifiedParent = parentId != null;
 
-					removeEdgeRef( src, ele );
-					removeEdgeRef( src, tgt );
-				}
+			if( specifiedParent ){
+				var parent = cy.getElementById( parentId );
+
+				if( parent.empty() ){
+					// non-existant parent; just remove it
+					delete data.parent;
+				} else {
+
+					var selfAsParent = false;
+					var ancestor = parent;
+					while( !ancestor.empty() ){
+						if( node.same(ancestor) ){
+							// mark self as parent and remove from data
+							selfAsParent = true;
+							delete data.parent; // remove parent reference
+
+							// exit or we loop forever
+							break;
+						}
+
+						ancestor = ancestor.parent();
+					}
+
+					if( !selfAsParent ){
+						// connect with children
+						parent[0]._private.children.push( node );
+					}
+				} // else
+			} // if specified parent
+		} // for each node
+		
+		restored = new $$.Collection( cy, restored );
+		if( restored.length > 0 ){
+			if( notifyRenderer ){
+				restored.rtrigger("add");
+			} else {
+				restored.trigger("add");
 			}
 			
-			var removedElements = new $$.Collection( this.cy(), removed );
-			if( removedElements.size() > 0 ){
-				// must manually notify since trigger won't do this automatically once removed
-				
-				if( notifyRenderer ){
-					this.cy().notify({
-						type: "remove",
-						collection: removedElements
-					});
-				}
-				
-				removedElements.trigger("remove");
-			}
-			
-			return this;
 		}
-	});
+		
+		return self; // chainability
+	};
+	
+	$$.elesfn.removed = function(){
+		var ele = this[0];
+		return ele && ele._private.removed;
+	};
+
+	$$.elesfn.inside = function(){
+		return !this.removed();
+	};
+
+	$$.elesfn.remove = function( notifyRenderer ){
+		var self = this;
+		var removed = [];
+		var elesToRemove = [];
+		var cy = self._private.cy;
+		
+		if( notifyRenderer === undefined ){
+			notifyRenderer = true;
+		}
+		
+		// add connected edges
+		function addConnectedEdges(node){
+			var edges = node._private.edges; 
+			for( var i = 0; i < edges.length; i++ ){
+				add( edges[i] );
+			}
+		}
+		
+
+		// add descendant nodes
+		function addChildren(node){
+			var children = node._private.children;
+			
+			for( var i = 0; i < children.length; i++ ){
+				add( children[i] );
+			}
+		}
+
+		function add( ele ){
+			if( ele.isNode() ){
+				elesToRemove.push( ele ); // nodes are removed last
+
+				addConnectedEdges( ele );
+				addChildren( ele );
+			} else {
+				elesToRemove.unshift( ele ); // edges are removed first
+			}
+		}
+
+		// make the list of elements to remove
+		// (may be removing more than specified due to connected edges etc)
+
+		for( var i = 0, l = self.length; i < l; i++ ){
+			var ele = self[i];
+
+			add( ele );
+		}
+		
+		function removeEdgeRef(node, edge){
+			var connectedEdges = node._private.edges;
+			for( var j = 0; j < connectedEdges.length; j++ ){
+				var connectedEdge = connectedEdges[j];
+				
+				if( edge === connectedEdge ){
+					connectedEdges.splice( j, 1 );
+					break;
+				}
+			}
+		}
+
+		for( var i = 0; i < elesToRemove.length; i++ ){
+			var ele = elesToRemove[i];
+
+			// mark as removed
+			ele._private.removed = true;
+
+			// remove from core pool
+			cy.removeFromPool( ele );
+
+			// add to list of removed elements
+			removed.push( ele );
+
+			if( ele.isEdge() ){ // remove references to this edge in its connected nodes
+				var src = ele.source()[0];
+				var tgt = ele.target()[0];
+
+				removeEdgeRef( src, ele );
+				removeEdgeRef( src, tgt );
+			}
+		}
+		
+		var removedElements = new $$.Collection( this.cy(), removed );
+		if( removedElements.size() > 0 ){
+			// must manually notify since trigger won't do this automatically once removed
+			
+			if( notifyRenderer ){
+				this.cy().notify({
+					type: "remove",
+					collection: removedElements
+				});
+			}
+			
+			removedElements.trigger("remove");
+		}
+		
+		return this;
+	};
 	
 })(jQuery, jQuery.cytoscape);
 

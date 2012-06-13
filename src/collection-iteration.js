@@ -3,7 +3,7 @@
 	// Functions for iterating over collections
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		each: function(fn){
 			if( $$.is.fn(fn) ){
 				for(var i = 0; i < this.length; i++){

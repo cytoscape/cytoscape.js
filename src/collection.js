@@ -12,14 +12,12 @@
 	//
 	// Having this integration guarantees that we can call any
 	// collection function on an element and vice versa.
-	$$.fn.collection = function( impl, options ){
-		$.each(impl, function(name, fn){
-			
-			// When adding a function, write it from the perspective of a
-			// collection -- it's more generic.
+	$$.fn.collection = $$.fn.eles = function( fnMap, options ){
+		for( var name in fnMap ){
+			var fn = fnMap[name];
+
 			$$.Collection.prototype[ name ] = fn;
-			
-		});
+		}
 	};
 	
 	// factory for generating edge ids when no id is specified for a new element

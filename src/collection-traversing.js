@@ -1,22 +1,18 @@
 ;(function($, $$){
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		nodes: function(selector){
 			return this.filter(function(i, element){
 				return element.isNode();
 			}).filter(selector);
-		}
-	});
+		},
 
-	$$.fn.collection({
 		edges: function(selector){
 			return this.filter(function(i, element){
 				return element.isEdge();
 			}).filter(selector);
-		}
-	});
+		},
 
-	$$.fn.collection({
 		filter: function(filter){
 			var cy = this._private.cy;
 			
@@ -41,10 +37,8 @@
 			}
 
 			return new $$.Collection( cy );
-		}
-	});
+		},
 
-	$$.fn.collection({	
 		not: function(toRemove){
 			var cy = this._private.cy;
 
@@ -70,10 +64,8 @@
 				return new $$.Collection( cy, elements );
 			}
 			
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		intersect: function( other ){
 			var self = this;
 			var cy = this._private.cy;
@@ -100,10 +92,8 @@
 			}
 			
 			return new $$.Collection( cy, elements );
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		add: function(toAdd){
 			var self = this;
 			var cy = this._private.cy;		
@@ -152,7 +142,7 @@
 	// Neighbourhood functions
 	//////////////////////////
 
-	$$.fn.collection({
+	$$.fn.eles({
 		neighborhood: function(selector){
 			var elements = [];
 			var cy = this._private.cy;
@@ -179,16 +169,12 @@
 			}
 			
 			return ( new $$.Collection( cy, elements ) ).filter( selector );
-		}
-	});
+		},
 
-	$$.fn.collection({
 		closedNeighborhood: function(selector){
 			return this.neighborhood().add(this).filter(selector);
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		openNeighborhood: function(selector){
 			return this.neighborhood(selector);
 		}
@@ -198,13 +184,11 @@
 	// Edge functions
 	/////////////////
 
-	$$.fn.collection({
+	$$.fn.eles({
 		source: defineSourceFunction({
 			attr: "source"
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		target: defineSourceFunction({
 			attr: "target"
 		})
@@ -230,11 +214,9 @@
 		}
 	}
 
-	$$.fn.collection({
-		edgesWith: defineEdgesWithFunction()
-	});
-	
-	$$.fn.collection({
+	$$.fn.eles({
+		edgesWith: defineEdgesWithFunction(),
+
 		edgesTo: defineEdgesWithFunction({
 			thisIs: "source"
 		})
@@ -279,7 +261,7 @@
 		};
 	}
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		connectedEdges: function( selector ){
 			var elements = [];
 			var cy = this._private.cy;
@@ -296,10 +278,8 @@
 			}
 			
 			return new $$.Collection( cy, elements ).filter( selector );
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		connectedNodes: function( selector ){
 			var elements = [];
 			var cy = this._private.cy;
@@ -313,14 +293,10 @@
 			}
 
 			return new $$.Collection( cy, elements ).filter( selector );
-		}
-	});
-	
-	$$.fn.collection({
-		parallelEdges: defineParallelEdgesFunction()
-	});
-	
-	$$.fn.collection({
+		},
+
+		parallelEdges: defineParallelEdgesFunction(),
+
 		codirectedEdges: defineParallelEdgesFunction({
 			codirected: true
 		})
@@ -373,7 +349,7 @@
 	// Compound functions
 	/////////////////////
 
-	$$.fn.collection({
+	$$.fn.eles({
 		parent: function( selector ){
 			var parents = [];
 			var cy = this._private.cy;

@@ -9,27 +9,28 @@
 			var args = arguments;
 			
 			// e.g. cy.nodes().select( data, handler )
-			if( args.length == 2 ){
-				this.bind( params.event, args[0], args[1] );
+			if( args.length === 2 ){
+				var data = args[0];
+				var handler = args[1];
+				this.bind( params.event, data, handler );
 			} 
 			
 			// e.g. cy.nodes().select( handler )
-			else if( args.length == 1 ){
-				this.bind( params.event, args[0] );
+			else if( args.length === 1 ){
+				var handler = args[0];
+				this.bind( params.event, handler );
 			}
 			
 			// e.g. cy.nodes().select()
-			else if( args.length == 0 ){
-				var selected = new $$.Collection( this.cy() );
-				
-				this.each(function(){
-					if( params.ableField == null || this.element()._private[params.ableField] ){
-						this.element()._private[params.field] = params.value;
-						
-						selected = selected.add( this );
+			else if( args.length === 0 ){
+				for( var i = 0; i < this.length; i++ ){
+					var ele = this[i];
+
+					if( !params.ableField || ele._private[params.ableField] ){
+						ele._private[params.field] = params.value;
 					}
-				});
-				selected.rtrigger(params.event);
+				}
+				this.rtrigger(params.event);
 			}
 
 			return this;
@@ -37,41 +38,26 @@
 	}
 	
 	function defineSwitchSet( params ){
-		function impl(name, fn){
-			var impl = {};
-			impl[ name ] = fn;
-			
-			return impl;
-		}
+		$$.elesfn[ params.field ] = function(){
+			var ele = this[0];
+			if( ele ){
+				return ele._private[ params.field ];
+			}
+		};
 		
-		$$.fn.collection(
-			impl( params.field, function(){
-				var ele = this.element();
-				if( ele != null ){
-					return ele._private[ params.field ];
-				}
-			})
-		);
-		
-		$$.fn.collection(
-			impl( params.on, defineSwitchFunction({
-					event: params.on,
-					field: params.field,
-					ableField: params.ableField,
-					value: true
-				})
-			)
-		);
-	
-		$$.fn.collection(
-			impl( params.off, defineSwitchFunction({
-					event: params.off,
-					field: params.field,
-					ableField: params.ableField,
-					value: false
-				})
-			)
-		);
+		$$.elesfn[ params.on ] = defineSwitchFunction({
+			event: params.on,
+			field: params.field,
+			ableField: params.ableField,
+			value: true
+		});
+
+		$$.elesfn[ params.off ] = defineSwitchFunction({
+			event: params.off,
+			field: params.field,
+			ableField: params.ableField,
+			value: false
+		});
 	}
 	
 	defineSwitchSet({
@@ -99,13 +85,11 @@
 		off: "unselectify"
 	});
 	
-	$$.fn.collection({
-		grabbed: function(){
-			var ele = this.element();
-			if( ele != null ){
-				return ele._private.grabbed;
-			}
+	$$.elesfn.grabbed = function(){
+		var ele = this[0];
+		if( ele ){
+			return ele._private.grabbed;
 		}
-	});
+	};
 	
 })(jQuery, jQuery.cytoscape);

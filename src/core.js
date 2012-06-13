@@ -1,12 +1,13 @@
 ;(function($, $$){
 	
-	$$.fn.core = function( impl, options ){
-		$.each(impl, function(name, fn){
-			Core.prototype[ name ] = fn;
-		});
+	$$.fn.core = function( fnMap, options ){
+		for( var name in fnMap ){
+			var fn = fnMap[name];
+			$$.Core.prototype[ name ] = fn;
+		}
 	};
 	
-	function Core( opts ){
+	$$.Core = function( opts ){
 		if( !(this instanceof $$.Core) ){
 			return new $$.Core(opts);
 		}
@@ -85,8 +86,9 @@
 			
 			cy.trigger("ready");
 		}, options.done);
-	}
-	$$.Core = Core; // expose
+	};
+
+	$$.corefn = $$.Core.prototype; // short alias
 	
 
 	$$.fn.core({

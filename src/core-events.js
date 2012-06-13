@@ -1,5 +1,5 @@
 ;(function($, $$){
-	
+
 	$$.fn.core({	
 		one: defineBind({
 			target: "cy",

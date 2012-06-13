@@ -3,7 +3,7 @@
 	// Functions for binding & triggering events
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		trigger: function(event, data){
 			this.each(function(){
 				var self = this;
@@ -85,10 +85,8 @@
 			});
 			
 			return this;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		rtrigger: function(event, data){
 			// notify renderer unless removed
 			this.cy().notify({
@@ -101,38 +99,28 @@
 			this.trigger(event, data);
 			
 			return this;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		live: function(){
 			return this;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		die: function(){
 			return this;
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		bind: defineBinder({
 			listener: function(){
 				return {};
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		one: defineBinder({
 			listener: function(){
 				return { one: true };
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		once: defineBinder({
 			listener: function( collection, element ){
 				return {
@@ -143,22 +131,16 @@
 			after: function( collection, callback, data ){
 				// do nothing
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		on: function(events, data, callback){
 			return this.bind(events, data, callback);
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		off: function(events, callback){
 			return this.unbind(events, callback);
-		}
-	});
-	
-	$$.fn.collection({
+		},
+
 		unbind: function(events, callback){
 			var eventsArray = (events || "").split(/\s+/);
 			

@@ -1,6 +1,6 @@
 ;(function($, $$){
 	
-	$$.fn.collection({
+	$$.fn.eles({
 
 		data: $$.define.data({
 			field: "data",

@@ -5,7 +5,11 @@
 	
 	function CySelector(cy, onlyThisGroup, selector){
 		
-		if( cy === undefined || !(cy instanceof $$.Core) ){
+		if( !(this instanceof CySelector) ){
+			return new CySelector(cy, onlyThisGroup, selector);
+		}
+
+		if( cy === undefined || !$$.is.core(cy) ){
 			$.error("A selector must have a reference to the core");
 			return;
 		}

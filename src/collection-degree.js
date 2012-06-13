@@ -26,27 +26,23 @@
 		};
 	}
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		degree: defineDegreeFunction(function(node, edge){
 			if( edge.source().same( edge.target() ) ){
 				return 2;
 			} else {
 				return 1;
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		indegree: defineDegreeFunction(function(node, edge){
 			if( edge.target().same(node) ){
 				return 1;
 			} else {
 				return 0;
 			}
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		outdegree: defineDegreeFunction(function(node, edge){
 			if( edge.source().same(node) ){
 				return 1;
@@ -77,43 +73,33 @@
 		};
 	}
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
 			return degree < min;
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
 			return degree > max;
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
 			return degree < min;
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
 			return degree > max;
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
 			return degree < min;
-		})
-	});
-	
-	$$.fn.collection({
+		}),
+
 		maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
 			return degree > max;
 		})
 	});
 	
-	$$.fn.collection({
+	$$.fn.eles({
 		totalDegree: function(){
 			var total = 0;
 			var nodes = this.nodes();

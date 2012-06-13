@@ -6,7 +6,7 @@
 		},
 		
 		fn: function(obj){
-			return obj != null && typeof obj == typeof function(){};
+			return obj != null && typeof obj === typeof function(){};
 		},
 		
 		array: function(obj){
@@ -14,19 +14,19 @@
 		},
 		
 		plainObject: function(obj){
-			return obj != null && typeof obj == typeof {} && !$$.is.array(obj);
+			return obj != null && typeof obj === typeof {} && !$$.is.array(obj);
 		},
 		
 		number: function(obj){
-			return obj != null && typeof obj == typeof 1 && !isNaN(obj);
+			return obj != null && typeof obj === typeof 1 && !isNaN(obj);
 		},
 		
 		color: function(obj){
-			return obj != null && typeof obj == typeof "" && $.Color(obj).toString() != "";
+			return obj != null && typeof obj === typeof "" && $.Color(obj).toString() !== "";
 		},
 		
 		bool: function(obj){
-			return obj != null && typeof obj == typeof true;
+			return obj != null && typeof obj === typeof true;
 		},
 		
 		elementOrCollection: function(obj){
@@ -45,18 +45,28 @@
 			return obj instanceof $$.Core;
 		},
 
+		event: function(obj){
+			return obj instanceof $$.Event;
+		},
+
 		emptyString: function(obj){
-			if( obj == null ){ // null is empty
+			if( !obj ){ // null is empty
 				return true; 
 			} else if( $$.is.string(obj) ){
-				return obj.match(/^\s+$/) != null; // all whitespace is empty
+				if( obj === "" || obj.match(/^\s+$/) ){
+					return true; // empty string is empty
+				}
 			}
 			
 			return false; // otherwise, we don't know what we've got
 		},
 		
 		nonemptyString: function(obj){
-			return obj != null && $$.is.string(obj) && obj.match(/^\s+$/) == null;
+			if( obj && $$.is.string(obj) && obj !== "" && !obj.match(/^\s+$/) ){
+				return true;
+			}
+
+			return false;
 		}
 	};	
 	

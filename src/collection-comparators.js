@@ -1,6 +1,6 @@
 ;(function($, $$){
 
-	$$.fn.collection({
+	$$.fn.eles({
 		allAre: function(selector){
 			return this.filter(selector).length === this.length;
 		},
@@ -32,7 +32,5 @@
 			return this.neighborhood().intersect( collection ).length === collection.length;
 		}
 	});
-
-
 	
 })(jQuery, jQuery.cytoscape);

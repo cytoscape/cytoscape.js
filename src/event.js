@@ -45,7 +45,7 @@
 
 	// jQuery.Event is based on DOM3 Events as specified by the ECMAScript Language Binding
 	// http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
-	jQuery.Event.prototype = {
+	$$.Event.prototype = {
 		preventDefault: function() {
 			this.isDefaultPrevented = returnTrue;
 

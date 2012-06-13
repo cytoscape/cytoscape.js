@@ -3,6 +3,7 @@
 	// set up testing params
 	
 	window.cy = null;
+	window.$$ = null;
 	
 	if( $.browser.msie ){
 		window.console = {
@@ -93,6 +94,9 @@
 					},
 					ready: function(cy){
 						window.cy = cy;
+						window.$$ = function( selector ){
+							return cy.$( selector );
+						};
 
 						start();
 					}

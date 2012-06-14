@@ -476,7 +476,8 @@
 								}
 
 								// run the callback
-								var ret = lis.callback.apply( triggerer, args );
+								var context = lis.delegated ? evt.cyTarget : triggerer;
+								var ret = lis.callback.apply( context, args );
 
 								if( ret === false || evt.isPropagationStopped() ){
 									// then don't bubble

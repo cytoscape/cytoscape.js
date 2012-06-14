@@ -17,7 +17,7 @@ $(function(){
 			});
 		}
 		
-		cy.$("node, edge").live("click", function(e){
+		cy.on("click", "node, edge", function(e){
 			if( e.metaKey ){
 				displayElementData(this);
 			}

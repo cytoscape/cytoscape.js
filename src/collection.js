@@ -80,7 +80,7 @@
 			single: true, // indicates this is an element
 			data: $$.util.copy( params.data ) || {}, // data object
 			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
-			listeners: {}, // array of bound listeners
+			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
 			bypass: $$.util.copy( params.bypass ) || {}, // the bypass object
 			style: {}, // the calculated style

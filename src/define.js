@@ -171,7 +171,7 @@
 			}; // function
 		}, // removeData
 
-		// event binding (requires pdata)
+		// event binding
 		on: function( params ){
 			var defaults = {
 				unbindSelfOnTrigger: false,
@@ -190,6 +190,7 @@
 				if( $$.is.plainObject(selector) ){ // selector is actually data
 					callback = data;
 					data = selector;
+					selector = undefined;
 				} else if( $$.is.fn(selector) ){ // selector is actually callback
 					callback = selector;
 					data = undefined;
@@ -316,6 +317,36 @@
 			}; // function
 		}, // off
 
+		event: {
+			// properties to copy to the event obj
+			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
+
+			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
+
+			aliasesOn: function( thisPrototype ){
+
+				var aliases = $$.define.event.aliases;
+				for( var i = 0; i < aliases.length; i++ ){
+					var eventType = aliases[i];
+
+					thisPrototype[ eventType ] = function(data, callback){
+						if( $$.is.fn(callback) ){
+							this.on(eventType, data, callback);
+
+						} else if( $$.is.fn(data) ){
+							callback = data;
+							this.on(eventType, callback);
+
+						} else {
+							this.trigger(eventType);
+						}
+
+						return this; // maintain chaining
+					};
+				}
+			}
+		},
+
 		trigger: function( params ){
 			var defaults = {};
 			params = $$.util.extend({}, defaults, params);
@@ -327,11 +358,11 @@
 				var single = selfIsArrayLike ? self[0] : self;
 				var eventsIsString = $$.is.string(events);
 				var eventsIsObject = $$.is.plainObject(events);
-				var eventsIsEvent = $$.is.event( events );
+				var eventsIsEvent = $$.is.event(events);
 				var p = params;
 				var cy = this._private.cy || this;
 
-				if( eventsIsString ){ // then make an array of event objects
+				if( eventsIsString ){ // then make a plain event object for each event name
 					var evts = events.split(/\s+/);
 					events = [];
 
@@ -343,49 +374,64 @@
 						var type = match[1];
 						var namespace = match[2] ? match[2] : undefined;
 
-						events.push( new $$.Event(type, {
-							cy: cy,
-							cytarget: all,
+						events.push( {
+							type: type,
 							namespace: namespace
-						}) );
+						} );
 					}
 				} else if( eventsIsObject ){ // put in length 1 array
-					if( eventsIsEvent ){ // just wrap
-						events = [ events ];
-					} else { // wrap normal event obj
+					var eventArgObj = events;
 
-						events = [ new $$.Event(events, {
-							cy: cy,
-							cytarget: all
-						}) ];
-
-					}
+					events = [ eventArgObj ];
 				}
 
-				if( !$$.is.array(extraParams) ){ // make sure extra params are in an array
-					extraParams = [ extraParams ];
+				if( extraParams ){
+					if( !$$.is.array(extraParams) ){ // make sure extra params are in an array if specified
+						extraParams = [ extraParams ];
+					}
+				} else {
+					extraParams = [];
 				}
 
 				for( var i = 0; i < events.length; i++ ){ // trigger each event in order
-					var evt = events[i];
-					var cytarget = evt.cytarget;
-					var cytargetIsElement = $$.is.element( cytarget );
-
+					var evtObj = events[i];
+					
 					for( var j = 0; j < all.length; j++ ){ // for each
-						var target = all[j];
-						var listeners = target._private.listeners;
-						var targetIsElement = $$.is.element(target);
+						var triggerer = all[j];
+						var listeners = triggerer._private.listeners;
+						var triggererIsElement = $$.is.element(triggerer);
+
+						// create the event for this element from the event object
+						var evt;
+
+						if( eventsIsEvent ){ // then just get the object
+							evt = evtObj;
+
+						} else { // then we have to make one
+							evt = new $$.Event( evtObj, {
+								cyTarget: triggerer,
+								cy: cy,
+								namespace: evtObj.namespace
+							} );
+
+							// copy properties like jQuery does
+							var props = $$.define.event.props;
+							for( var k = 0; k < props.length; k++ ){
+								var prop = props[k];
+								evt[ prop ] = evtObj[ prop ];
+							}
+						}
 
 						for( var k = 0; k < listeners.length; k++ ){ // check each listener
 							var lis = listeners[k];
 							var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
-							var typeMatches = lis.type === evt.namespace;
-							var targetMatches = lis.delegated ? ( cytarget !== target && cytargetIsElement && cytarget.is(lis.selector) ) : (true);
+							var typeMatches = lis.type === evt.type;
+							var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && triggererIsElement && triggerer.is(lis.selector) ) : (true);
 							var listenerMatches = nsMatches && typeMatches && targetMatches;
 
 							if( listenerMatches ){ // then trigger it
 								var args = [ evt ];
-								args = args.concat( extraParams );
+								args = args.concat( extraParams ); // add extra params to args list
 
 								if( lis.data ){ // add on data plugged into binding
 									evt.data = lis.data;
@@ -402,7 +448,7 @@
 									var binders = lis.binders;
 									for( var l = 0; l < binders.length; l++ ){
 										var binder = binders[l];
-										if( !binder || binder === target ){ continue; } // already handled target or we can't handle it
+										if( !binder || binder === triggerer ){ continue; } // already handled triggerer or we can't handle it
 
 										var binderListeners = binder._private.listeners;
 										for( var m = 0; m < binderListeners.length; m++ ){
@@ -417,14 +463,18 @@
 								}
 
 								// run the callback
-								var ret = lis.callback.apply( target, args );
+								var ret = lis.callback.apply( triggerer, args );
 
-								if( ret === false || e.isPropagationStopped() ){
+								if( ret === false || evt.isPropagationStopped() ){
 									// then don't bubble
+
+									// returning false is a shorthand for stopping propagation and preventing the def. action
+									evt.stopPropagation();
+									evt.preventDefault();
 								} else {
 									// bubble up event for elements
-									if( targetIsElement ){
-										var parent = target.parent();
+									if( triggererIsElement ){
+										var parent = triggerer.parent();
 										var hasParent = parent.length !== 0;
 
 										if( hasParent ){ // then bubble up to parent
@@ -434,7 +484,7 @@
 											cy.trigger(evt);
 										}
 									}
-								}
+								} // else bubble up
 							} // if listener matches
 						} // for each listener
 					} // for each of all
@@ -446,27 +496,5 @@
 
 	}; // define
 
-	// window.foo = function(){ return {
-
-	// 	_private: {
-	// 		listeners: [],
-	// 		cy: window.cy
-	// 	},
-
-	// 	on: $$.define.on(),
-
-	// 	one: $$.define.on({ unbindSelfOnTrigger: true }),
-
-	// 	once: $$.define.on({ unbindAllBindersOnTrigger: true }),
-
-	// 	off: $$.define.off(),
-
-	// 	trigger: $$.define.trigger(),
-
-	// } };
-
-	// setTimeout(function(){
-	// 	window.f = foo();
-	// }, 1000);
 	
 })(jQuery, jQuery.cytoscape);

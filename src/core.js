@@ -42,7 +42,7 @@
 			edges: {}, // id => edge object
 			live: {}, // event name => array of callback defns
 			selectors: {}, // selector string => selector for live
-			listeners: {}, // cy || background => event name => array of callback functions
+			listeners: [], // list of listeners
 			animation: { 
 				// normally shouldn't use collections here, but animation is not related
 				// to the functioning of CySelectors, so it's ok

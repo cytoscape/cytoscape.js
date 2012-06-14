@@ -851,8 +851,7 @@
 			// only pass along if bg is the target: when an element gets an event, it automatically bubbles up to
 			// core and bg via the core (Element) logic
 			if( backgroundIsTarget(e) ){
-				var event = $.extend({}, e, { cyTarget: self.cy });
-				self.cy.background().trigger(event);
+				var event = e;
 				self.cy.trigger(event);
 			}
 		});

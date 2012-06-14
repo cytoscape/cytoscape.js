@@ -36,7 +36,7 @@
 				return this;
 			}
 
-			return new $$.Collection( cy );
+			return new $$.Collection( cy ); // if not handled by above, give 'em an empty collection
 		},
 
 		not: function(toRemove){

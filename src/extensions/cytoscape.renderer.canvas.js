@@ -31,6 +31,9 @@
 	
 	var debugStats = {};
 	var selectBox = [0, 0, 0, 0, 0];
+	var dragPanMode = false;
+	
+	var shiftDown = false;
 	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
@@ -75,45 +78,130 @@
 		return [x, y];
 	}
 	
+	CanvasRenderer.prototype.boxInBezierVicinity = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
+			return 2;
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
+			return 2;
+		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { 
+			return 1;
+		}
+		
+		var curveMinX = Math.min(x1, x2, x3);
+		var curveMinY = Math.min(y1, y2, y3);
+		var curveMaxX = Math.max(x1, x2, x3);
+		var curveMaxY = Math.max(y1, y2, y3);
+		
+		if (curveMinX > boxMaxX
+			|| curveMaxX < boxMinX
+			|| curveMinY > boxMaxY
+			|| curveMaxY < boxMinY) {
+			
+			return 0;	
+		}
+		
+		return 1;
+	}
+	
 	CanvasRenderer.prototype.checkBezierCrossesBox = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, toleranceSquared) {
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 		
-		if (x1box > x2box) {
-			var temp = x1box;
-			x1box = x2box;
-			x2box = temp;
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
+			return true;
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
+			return true;
 		}
+		
+		var aX = x1 - 2 * x2 + x3;
+		var bX = -2 * x1 + 2 * x2;
+		var cX = x1;
 
-		if (y1box > y2box) {
-			var temp = y1box;
-			y1box = y2box;
-			y2box = temp;
+		var xIntervals = [];
+		
+		// Find when x coordinate of the curve crosses the left side of the box
+		var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
+		var tX1, tX2;
+		if (discriminantX1 > 0) {
+			var sqrt = Math.sqrt(discriminantX1);
+			tX1 = (-bX + sqrt) / (2 * aX);
+			tX2 = (-bX - sqrt) / (2 * aX);
+			
+			xIntervals.push(tX1, tX2);
 		}
 		
-		/*
-		(1-t)^2 2(1-t)t t^2
-		A(1-2t+t^2) + B(2t-2t^2) + C(t^2)
-		*/
+		var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
+		var tX3, tX4;
+		if (discriminantX2 > 0) {
+			var sqrt = Math.sqrt(discriminantX2);
+			tX3 = (-bX + sqrt) / (2 * aX);
+			tX4 = (-bX - sqrt) / (2 * aX);
+			
+			xIntervals.push(tX3, tX4);
+		}
 		
-		var a = x1 - 2 * x2 + x3;
-		var b = -2 * x1 + 2 * x2;
-		var c = x1;
+		xIntervals.sort(function(a, b) { return a - b; });
 
-		// Find parts of curve with matching x
 		
-		// Find location of vertex
-		var vertexX = -b / (2 * a);
+		var aY = y1 - 2 * y2 + y3;
+		var bY = -2 * y1 + 2 * y2;
+		var cY = y1;
 		
-		var criticalX = x1;
-		if (vertexX >= 0 && vertexX <= 1) {
-			criticalX = a * vertexX * vertexX + b * vertexX + c * vertexX;  
+		var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
+		var yIntervals = [];
+		
+		var tY1, tY2;
+		if (discriminantY1 > 0) {
+			var sqrt = Math.sqrt(discriminantY1);
+			tY1 = (-bY + sqrt) / (2 * aY);
+			tY2 = (-bY - sqrt) / (2 * aY);
+			
+			yIntervals.push(tY1, tY2);
 		}
 		
-		var minX = Math.min(criticalX, x1, x3);
-		var maxX = Math.max(criticalX, x1, x3);
+		var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
 		
-		// if (minX > 
+		var tY3, tY4;
+		if (discriminantY2 > 0) {
+			var sqrt = Math.sqrt(discriminantY2);
+			tY3 = (-bY + sqrt) / (2 * aY);
+			tY4 = (-bY - sqrt) / (2 * aY);
+			
+			yIntervals.push(tY3, tY4);
+		}
 		
+		yIntervals.sort(function(a, b) { return a - b; });
+
+		for (var index = 0; index < xIntervals.length; index += 2) {
+			for (var yIndex = 1; yIndex < yIntervals.length; yIndex += 2) {
+				
+				// Check if there exists values for the Bezier curve
+				// parameter between 0 and 1 where both the curve's
+				// x and y coordinates are within the bounds specified by the box
+				if (xIntervals[index] < yIntervals[yIndex]
+					&& yIntervals[yIndex] >= 0.0
+					&& xIntervals[index] <= 1.0
+					&& xIntervals[index + 1] > yIntervals[yIndex - 1]
+					&& yIntervals[yIndex - 1] <= 1.0
+					&& xIntervals[index + 1] >= 0.0) {
+					
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	CanvasRenderer.prototype.inBezierVicinity = function(
@@ -128,24 +216,12 @@
 		var dotProduct, dotSquared, hypSquared;
 		var outside = function(x, y, startX, startY, endX, endY,
 				toleranceSquared, counterClockwise) {
-			/*
-			rotatedDisplacementX = endY - startY;
-			rotatedDisplacementY = startX - endX;
-			
-			offsetX = x - startX;
-			offsetY = y - startY
-			*/
-			
+
 			dotProduct = (endY - startY) * (x - startX) + (startX - endX) * (y - startY);
 			dotSquared = dotProduct * dotProduct;
 			sideSquared = (endY - startY) * (endY - startY) 
 				+ (startX - endX) * (startX - endX);
-			//sideSquared = (x - startX) * (x - startX) + (y - startY) * (y - startY);
 
-			/*
-			console.log("value: " + ((endY - startY) * (x - startX) 
-					+ (startX - endX) * (y - startY)));
-			*/
 			if (counterClockwise) {
 				if (dotProduct > 0) {
 					return false;
@@ -190,6 +266,94 @@
 	CanvasRenderer.prototype.load = function() {
 		var self = this;
 	
+		$(window).keydown(function(e) { 
+			if (e.keyCode == 16 && selectBox[4] != 1) {
+				shiftDown = true;
+			}
+		});
+		
+		$(window).keyup(function(e) { 
+			if (e.keyCode == 16) {
+				selectBox[4] = 0;
+				shiftDown = false;
+			}
+		});
+	
+		var startX, startY;
+		var initialCenter = [this.center[0], this.center[1]];
+		
+		$(window).bind("mousedown", function(mouseDownEvent) {
+			if (mouseDownEvent.button != 1) {
+				return;
+			}
+			
+			if (mouseDownEvent.target != cy.renderer().canvas) {
+				return;
+			}
+			
+			startX = mouseDownEvent.clientX;
+			startY = mouseDownEvent.clientY;
+			
+			initialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
+			
+			//debug("mouse down");
+			//$(window).bind("mousemove", dragHandler);
+			
+			dragPanMode = true;
+		
+			debug(mouseDownEvent);
+		});
+
+		var dragHandler = function(mouseMoveEvent) {
+			//debug("mouseDrag");
+			//debug(mouseMoveEvent);
+			//debug("start: (" + startX + ", " + startY + ")");
+			
+			var offsetX = mouseMoveEvent.clientX - startX;
+			var offsetY = mouseMoveEvent.clientY - startY;
+			
+			cy.renderer().center[0] = initialCenter[0] - offsetX / cy.renderer().scale[0];
+			cy.renderer().center[1] = initialCenter[1] - offsetY / cy.renderer().scale[1];	
+			// cy.renderer().redraw();
+		};
+		
+		$(window).bind("mouseup", function(mouseUpEvent) {
+			/*
+			debug("mouse up");
+			debug(mouseUpEvent);
+			*/
+			//$(window).unbind("mousemove", dragHandler);
+			
+			dragPanMode = false;
+		});
+		
+		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
+			
+			/*
+			console.log("mousewheel");
+			console.log(event);
+			console.log(delta);
+			console.log(deltaX);
+			console.log(deltaY);
+			*/
+			
+			event.preventDefault();
+			
+			cy.renderer().zoomLevel -= deltaY / 5.0;
+			
+			//console.log("zoomLevel: " + cy.renderer().zoomLevel);
+			cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
+			cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
+			
+			
+			cy.renderer().redraw();
+			// self.zoomAboutPoint(point, zoom);
+			/*
+			self.cy.trigger("zoom");
+			self.cy.trigger("pan");
+			*/
+		});
+	
 		var checkEdgeHover = function(mouseX, mouseY, edge) {
 		
 			var squaredDistanceLimit = 40;
@@ -220,13 +384,13 @@
 
 				// debug(distance);
 				if (distance < squaredDistanceLimit) {
-					edge._private.rscratch.selected = true;
+					edge._private.rscratch.hovered = true;
 				} else {
-					edge._private.rscratch.selected = false;
+					edge._private.rscratch.hovered = false;
 				}	
 			} else {
 		
-				edge._private.rscratch.selected = false;
+				edge._private.rscratch.hovered = false;
 			}
 		}
 		
@@ -253,6 +417,8 @@
 		// Offset for Cytoscape container
 		var mouseOffsetX = this.cy.container().offset().left + 2;
 		var mouseOffsetY = this.cy.container().offset().top + 2;
+		
+		
 		
 		var edges = self.cy.edges();
 		var nodes = self.cy.nodes();
@@ -313,10 +479,13 @@
 		
 			timeout = setTimeout(function(){
 				timeout = null;		
-			}, 1000/60);
+			}, 1000/100);
 			
-			hoverHandler(e);
-			
+			// Drag pan
+			if (dragPanMode) {
+				dragHandler(e);
+			}
+	
 			var current = cy.renderer().projectMouse(cy.renderer(),
 				e.clientX,
 				e.clientY,
@@ -326,6 +495,83 @@
 			// Update selection box
 			selectBox[2] = current[0];
 			selectBox[3] = current[1];
+			
+			if (shiftDown && selectBox[4] == 1) {
+				for (var index = 0; index < nodes.length; index++) {
+					if (nodes[index]._private.rscratch.selected) {
+						nodes[index]._private.position.x = 
+							nodes[index]._private.rscratch.dragStartX
+							+ (selectBox[2] - selectBox[0]);
+						nodes[index]._private.position.y = 
+							nodes[index]._private.rscratch.dragStartY
+							+ (selectBox[3] - selectBox[1]);
+					}
+				}
+			}
+						
+			if (!shiftDown && selectBox[4] == 1) {
+				var padding = 5;
+				
+				for (var index = 0; index < edges.length; index++) {
+				
+					var boxInBezierVicinity = cy.renderer().boxInBezierVicinity(
+						selectBox[0], selectBox[1],
+						selectBox[2], selectBox[3],
+						edges[index].source().position().x,
+						edges[index].source().position().y,
+						edges[index]._private.rscratch.cp2x,
+						edges[index]._private.rscratch.cp2y,
+						edges[index].target().position().x,
+						edges[index].target().position().y, padding);
+						
+					if (boxInBezierVicinity != 0 
+						&& (boxInBezierVicinity == 2
+							|| cy.renderer().checkBezierCrossesBox(
+								selectBox[0], selectBox[1],
+								selectBox[2], selectBox[3],
+								edges[index].source().position().x,
+								edges[index].source().position().y,
+								edges[index]._private.rscratch.cp2x,
+								edges[index]._private.rscratch.cp2y,
+								edges[index].target().position().x,
+								edges[index].target().position().y, padding))) {
+							
+						edges[index]._private.rscratch.selected = true;	
+					} else {
+						edges[index]._private.rscratch.selected = false;
+					}
+				}
+				
+				var boxMinX = Math.min(selectBox[0], selectBox[2]);
+				var boxMinY = Math.min(selectBox[1], selectBox[3]);
+				var boxMaxX = Math.max(selectBox[0], selectBox[2]);
+				var boxMaxY = Math.max(selectBox[1], selectBox[3]);
+				
+				var nodePosition, boundingRadiusSquared;
+				for (var index = 0; index < nodes.length; index++) {
+					nodePosition = nodes[index].position();
+					boundingRadius = Math.sqrt(nodes[index].
+						_private.rscratch.boundingRadiusSquared);
+					
+					if (nodePosition.x > boxMinX
+							- boundingRadius
+						&& nodePosition.x < boxMaxX 
+							+ boundingRadius
+						&& nodePosition.y > boxMinY 
+							- boundingRadius
+						&& nodePosition.y < boxMaxY 
+							+ boundingRadius) {
+							
+						nodes[index]._private.rscratch.selected = true;		
+					} else {
+						nodes[index]._private.rscratch.selected = false;
+					}
+				}
+			}
+			
+			hoverHandler(e);
+			
+			self.redraw();
 		});
 		
 		/*
@@ -366,7 +612,17 @@
 			selectBox[0] = start[0];
 			selectBox[1] = start[1];
 			selectBox[4] = 1;
-						
+			
+			if (shiftDown) {
+				for (var index = 0; index < nodes.length; index++) {
+					if (nodes[index]._private.rscratch.selected) {
+						nodes[index]._private.rscratch.dragStartX = 
+							nodes[index]._private.position.x;
+						nodes[index]._private.rscratch.dragStartY =
+							nodes[index]._private.position.y;
+					}
+				}
+			}
 			//$(window).bind("mousemove", selectHandler);
 			
 		});
@@ -374,6 +630,11 @@
 		$(window).bind("mouseup", function(e) {
 			//$(window).unbind("mousemove", selectHandler);
 			selectBox[4] = 0;
+			
+			dragPanMode = false;
+			
+			
+			cy.renderer().redraw();
 		});
 	}
 	
@@ -395,79 +656,7 @@
 		this.zoomCenter = [container.width() / 2, container.height() / 2];
 		this.zoomLevel = 0;
 		
-		var startX, startY;
-		var initialCenter;
 		
-		
-
-		
-		
-		$(window).bind("mousedown", function(mouseDownEvent) {
-			if (mouseDownEvent.button != 1) {
-				return;
-			}
-			
-			if (mouseDownEvent.target != canvas2d) {
-				return;
-			}
-			
-			startX = mouseDownEvent.clientX;
-			startY = mouseDownEvent.clientY;
-			initialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
-			
-			//debug("mouse down");
-			$(window).bind("mousemove", dragHandler);
-		
-			debug(mouseDownEvent);
-		});
-
-		var dragHandler = function(mouseMoveEvent) {
-			//debug("mouseDrag");
-			//debug(mouseMoveEvent);
-			//debug("start: (" + startX + ", " + startY + ")");
-			
-			var offsetX = mouseMoveEvent.clientX - startX;
-			var offsetY = mouseMoveEvent.clientY - startY;
-			
-			cy.renderer().center[0] = initialCenter[0] - offsetX / cy.renderer().scale[0];
-			cy.renderer().center[1] = initialCenter[1] - offsetY / cy.renderer().scale[1];	
-			cy.renderer().redraw();
-		};
-		
-		$(window).bind("mouseup", function(mouseUpEvent) {
-			/*
-			debug("mouse up");
-			debug(mouseUpEvent);
-			*/
-			$(window).unbind("mousemove", dragHandler);
-		});
-		
-		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
-			
-			/*
-			console.log("mousewheel");
-			console.log(event);
-			console.log(delta);
-			console.log(deltaX);
-			console.log(deltaY);
-			*/
-			
-			event.preventDefault();
-			
-			cy.renderer().zoomLevel -= deltaY / 10.0;
-			
-			//console.log("zoomLevel: " + cy.renderer().zoomLevel);
-			cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
-			cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
-			
-			
-			cy.renderer().redraw();
-			// self.zoomAboutPoint(point, zoom);
-			/*
-			self.cy.trigger("zoom");
-			self.cy.trigger("pan");
-			*/
-		});
 		
 		
 		var test1 = function(a) {
@@ -601,10 +790,8 @@
 			}
 		}
 		
-		if (true) {
-			params.push(1.0);
-			params.push(0.0);
-		}
+		params.push(1.0);
+		params.push(0.0);
 		
 		var minDistanceSquared = -1;
 		var closestParam;
@@ -718,9 +905,13 @@
 			endNode = edge.target()[0];
 			
 			if (edge._private.rscratch.selected) {
-				context.strokeStyle = "#CDFFCD";
+				context.strokeStyle = "#AADDAA";
 			} else {
-				context.strokeStyle = "#CDCDCD";
+				if (edge._private.rscratch.hovered) {
+					context.strokeStyle = "#CDCDFF";
+				} else {
+					context.strokeStyle = "#CDCDCD";
+				}
 			}
 			
 			context.lineWidth = edge._private.data.weight / 26.0;
@@ -747,12 +938,16 @@
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
 			
-			if (node._private.rscratch.hovered == true) {
-				context.fillStyle = "#AAAAFF";
+			if (node._private.rscratch.selected == true) {
+				context.fillStyle = "#AADDAA";
 			} else {
-				context.fillStyle = "#AAAAAA";
+				if (node._private.rscratch.hovered == true) {
+					context.fillStyle = "#AAAAFF";
+				} else {
+					context.fillStyle = "#AAAAAA";
+				}
 			}
-			
+						
 			context.beginPath();
 			context.arc(node._private.position.x, node._private.position.y,
 				node._private.data.weight / 5.0, 0, Math.PI * 2, false);
@@ -770,7 +965,7 @@
 		context.fill();
 		*/
 		
-		if (selectBox[4] == 1) {
+		if (!shiftDown && selectBox[4] == 1) {
 			context.lineWidth = 0.001;
 		
 			context.strokeStyle = "rgba(15,15,15,0.5)";

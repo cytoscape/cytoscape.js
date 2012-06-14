@@ -1,12 +1,12 @@
 ;(function($, $$){
 		
-	// CySelector
+	// Selector
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	function CySelector(cy, onlyThisGroup, selector){
+	function Selector(cy, onlyThisGroup, selector){
 		
-		if( !(this instanceof CySelector) ){
-			return new CySelector(cy, onlyThisGroup, selector);
+		if( !(this instanceof Selector) ){
+			return new Selector(cy, onlyThisGroup, selector);
 		}
 
 		if( cy === undefined || !$$.is.core(cy) ){
@@ -28,7 +28,7 @@
 		}
 	
 		// storage for parsed queries
-		// when you add something here, also add to CySelector.toString()
+		// when you add something here, also add to Selector.toString()
 		function newQuery(){
 			return {
 				classes: [], 
@@ -43,7 +43,7 @@
 				filter: null, // filter function
 
 				// these are defined in the upward direction rather than down (e.g. child)
-				// because we need to go up in CySelector.filter()
+				// because we need to go up in Selector.filter()
 				parent: null, // parent query obj
 				ancestor: null, // ancestor query obj
 				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
@@ -101,7 +101,7 @@
 			var id = variable; // an element id (follows variable conventions)
 			
 			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
-			// so that values get compared properly in CySelector.filter()
+			// so that values get compared properly in Selector.filter()
 			function cleanMetaChars(str){
 				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), "\1");
 			}
@@ -117,7 +117,7 @@
 			// NOTE: add new expression syntax here to have it recognised by the parser;
 			// a query contains all adjacent (i.e. no separator in between) expressions;
 			// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
-			// you need to check the query objects in CySelector.filter() for it actually filter properly, but that's pretty straight forward
+			// you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
 			var exprs = {
 				group: {
 					query: true,
@@ -380,27 +380,27 @@
 		self._private.invalid = false;
 		
 	}
-	$$.CySelector = CySelector; // expose
+	$$.Selector = Selector; // expose
 	
-	CySelector.prototype.cy = function(){
+	Selector.prototype.cy = function(){
 		return this._private.cy;
 	};
 	
-	CySelector.prototype.size = function(){
+	Selector.prototype.size = function(){
 		return this.length;
 	};
 	
-	CySelector.prototype.eq = function(i){
+	Selector.prototype.eq = function(i){
 		return this[i];
 	};
 	
 	// get elements from the core and then filter them
-	CySelector.prototype.find = function(){
+	Selector.prototype.find = function(){
 		// TODO impl
 	};
 	
 	// filter an existing collection
-	CySelector.prototype.filter = function(collection, addLiveFunction){
+	Selector.prototype.filter = function(collection, addLiveFunction){
 		var self = this;
 		
 		// don't bother trying if it's invalid
@@ -774,7 +774,7 @@
 	}; // filter
 	
 	// ith query to string
-	CySelector.prototype.toString = CySelector.prototype.selector = function(){
+	Selector.prototype.toString = Selector.prototype.selector = function(){
 		
 		var str = "";
 		

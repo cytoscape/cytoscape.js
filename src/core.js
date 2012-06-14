@@ -45,7 +45,7 @@
 			listeners: [], // list of listeners
 			animation: { 
 				// normally shouldn't use collections here, but animation is not related
-				// to the functioning of CySelectors, so it's ok
+				// to the functioning of Selectors, so it's ok
 				elements: null // elements queued or currently animated
 			},
 			scratch: {}, // scratch object for core

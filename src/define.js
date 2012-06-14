@@ -412,6 +412,7 @@
 						var triggerer = all[j];
 						var listeners = triggerer._private.listeners;
 						var triggererIsElement = $$.is.element(triggerer);
+						var bubbleUp = triggererIsElement;
 
 						// create the event for this element from the event object
 						var evt;
@@ -479,26 +480,30 @@
 
 								if( ret === false || evt.isPropagationStopped() ){
 									// then don't bubble
+									bubbleUp = false;
 
-									// returning false is a shorthand for stopping propagation and preventing the def. action
-									evt.stopPropagation();
-									evt.preventDefault();
-								} else {
-									// bubble up event for elements
-									if( triggererIsElement ){
-										var parent = triggerer.parent();
-										var hasParent = parent.length !== 0;
-
-										if( hasParent ){ // then bubble up to parent
-											parent = parent[0];
-											parent.trigger(evt);
-										} else { // otherwise, bubble up to the core
-											cy.trigger(evt);
-										}
+									if( ret === false ){
+										// returning false is a shorthand for stopping propagation and preventing the def. action
+										evt.stopPropagation();
+										evt.preventDefault();
 									}
-								} // else bubble up
+								}
 							} // if listener matches
 						} // for each listener
+
+						// bubble up event for elements
+						if( bubbleUp ){
+							var parent = triggerer.parent();
+							var hasParent = parent.length !== 0;
+
+							if( hasParent ){ // then bubble up to parent
+								parent = parent[0];
+								parent.trigger(evt);
+							} else { // otherwise, bubble up to the core
+								cy.trigger(evt);
+							}
+						}
+
 					} // for each of all
 				} // for each event
 				

@@ -200,7 +200,7 @@ $v(function(jQuery, $, version){
 			
 			$.each(events, function(i, event){
 				equal(triggered[event], 1, "Handler fired for `" + event + "`");
-				equal(aliasTriggered[event], 1, "Aandler fired for `" + event + "` alias");
+				equal(aliasTriggered[event], 1, "Handler fired for `" + event + "` alias");
 				equal(cyTriggered[event], 1, "Handler bubbled up to core for `" + event + "`");
 			});
 			
@@ -221,7 +221,6 @@ $v(function(jQuery, $, version){
 			self.bind("click", { foo: "bar" }, function(e, param1, param2){
 				equal( e.data.foo, "bar", "eventObj.data passed properly for " + name );
 				ok( e.cy == cy, "eventObj.cy defined for " + name );
-				ok( e.cytoscape == cy, "eventObj.cytoscape defined for " + name );
 
 				equal(param1, "foo", "trigger param1 passed properly for " + name );
 				equal(param2, "bar", "trigger param2 passed properly for " + name);

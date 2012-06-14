@@ -90,8 +90,6 @@ $v(function(jQuery, $, version){
 		           { fn: "lock" },  { fn: "unlock" },
 		           { fn: "select" }, { fn: "unselect" },
 		           { fn: "grabify" }, { fn: "ungrabify" },
-		           { fn: "mouseover" }, { fn: "mouseout" }, { fn: "mousemove" }, { fn: "mousedown" }, { fn: "mouseup" },
-		           { fn: "touchstart" }, { fn: "touchmove" }, { fn: "touchend" },
 		           { fn: "data", args: [ "foo", "bar" ] }, { fn: "data", args: [ { bar: "baz" } ] },
 		           { fn: "removeData", type: "data" }, { fn: "removeData", type: "data", args: [ "foo" ] },
 		           { fn: "position", args: [ "x", 1 ] }, { fn: "position", args: [ { x: 1 } ] },

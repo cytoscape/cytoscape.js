@@ -18,7 +18,7 @@ $v(function(jQuery, $, version){
 	asyncTest("eles.addClass() triggers event", function(){
 		var triggered = {};
 
-		cy.$("node").live("class", function(){
+		cy.$("node").on("class", function(){
 			triggered[ this.id() ] = true;
 		});
 
@@ -44,7 +44,7 @@ $v(function(jQuery, $, version){
 		var triggered = {};
 
 		cy.nodes().addClass("foo");
-		cy.$("node").live("class", function(){
+		cy.$("node").on("class", function(){
 			triggered[ this.id() ] = true;
 		});
 

@@ -3,10 +3,17 @@
 	// Selector
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	function Selector(cy, onlyThisGroup, selector){
+	$$.fn.selector = function(map, options){
+		for( var name in map ){
+			var fn = map[name];
+			$$.Selector.prototype[ name ] = fn;
+		}
+	};
+
+	$$.Selector = function(cy, onlyThisGroup, selector){
 		
-		if( !(this instanceof Selector) ){
-			return new Selector(cy, onlyThisGroup, selector);
+		if( !(this instanceof $$.Selector) ){
+			return new $$.Selector(cy, onlyThisGroup, selector);
 		}
 
 		if( cy === undefined || !$$.is.core(cy) ){
@@ -379,28 +386,29 @@
 
 		self._private.invalid = false;
 		
-	}
-	$$.Selector = Selector; // expose
+	};
+
+	$$.selfn = $$.Selector.prototype;
 	
-	Selector.prototype.cy = function(){
+	$$.selfn.cy = function(){
 		return this._private.cy;
 	};
 	
-	Selector.prototype.size = function(){
+	$$.selfn.size = function(){
 		return this.length;
 	};
 	
-	Selector.prototype.eq = function(i){
+	$$.selfn.eq = function(i){
 		return this[i];
 	};
 	
 	// get elements from the core and then filter them
-	Selector.prototype.find = function(){
-		// TODO impl
+	$$.selfn.find = function(){
+		// TODO impl if we decide to use a DB for storing elements
 	};
 	
 	// filter an existing collection
-	Selector.prototype.filter = function(collection, addLiveFunction){
+	$$.selfn.filter = function(collection, addLiveFunction){
 		var self = this;
 		
 		// don't bother trying if it's invalid
@@ -702,79 +710,11 @@
 		
 		var filteredCollection = collection.filter( selectorFunction );
 		
-		if(addLiveFunction){
-			
-			var key = self.selector();
-			var structs = self.cy()._private; // TODO remove ref to `structs` after refactoring
-			
-			filteredCollection.live = function(events, data, callback){
-				
-				var evts = events.split(/\s+/);
-				$.each(evts, function(i, event){
-				
-					if( $$.is.emptyString(event) ){
-						return;
-					}
-					
-					if( callback === undefined ){
-						callback = data;
-						data = undefined;
-					}
-					
-					if( structs.live[event] == null ){
-						structs.live[event] = {};
-					}
-					
-					if( structs.live[event][key] == null ){
-						structs.live[event][key] = [];
-					}
-					
-					structs.live[event][key].push({
-						callback: callback,
-						data: data
-					});
-					
-				});						
-				
-				return this;
-			}; // live
-			
-			filteredCollection.die = function(event, callback){
-				if( event == null ){
-					$.each(structs.live, function(event){
-						if( structs.live[event] != null ){
-							delete structs.live[event][key];
-						}
-					});
-				} else {
-					var evts = event.split(/\s+/);
-					
-					$.each(evts, function(j, event){
-						if( callback == null ){
-							if( structs.live[event] != null ){
-								delete structs.live[event][key];
-							}
-						} else if( structs.live[event] != null && structs.live[event][key] != null ) {
-							for(var i = 0; i < structs.live[event][key].length; i++){
-								if( structs.live[event][key][i].callback == callback ){
-									structs.live[event][key].splice(i, 1);
-									i--;
-								}
-							}
-						}
-					});
-					
-				}
-				
-				return this;
-			}; // die
-		} // if add live
-		
 		return filteredCollection;
 	}; // filter
 	
 	// ith query to string
-	Selector.prototype.toString = Selector.prototype.selector = function(){
+	$$.selfn.toString = $$.selfn.selector = function(){
 		
 		var str = "";
 		

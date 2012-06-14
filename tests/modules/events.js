@@ -204,28 +204,9 @@ $v(function(jQuery, $, version){
 				equal(cyTriggered[event], 1, "Handler bubbled up to core for `" + event + "`");
 			});
 			
-		}, 500);
-		
-		var bgClick = 0;
-		cy.background().bind("click", function(){
-			bgClick++;
-		});
-		
-		var cyClick = 0;
-		cy.bind("click", function(){
-			cyClick++;
-		});
-		
-		setTimeout(function(){
-			cy.background().trigger("click");
-		}, 100);
-		
-		setTimeout(function(){
-			equal(bgClick, 1, "BG clicked once");
-			equal(cyClick, 1, "BG click bubbled up to core");
-			
 			start();
 		}, 500);
+		
 		
 	});
 

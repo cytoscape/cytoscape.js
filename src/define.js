@@ -10,17 +10,9 @@
 	//   foo: $$.define.foo({ /* params... */ })
 	// });
 
-	var eventRegex = /(\w+)(\.\w+)?/; // regex for matching event strings (e.g. "click.namespace")
-	var eventOptionalTypeRegex = /(\w+)?(\.\w+)?/;
-
-	function generateEventId(){
-		return [ "cyevent", +new Date(), "rand", Math.round(Math.random() * 1000000) ].join("-");
-	}
-
 	$$.define = {
 
 		// access data field
-		// requires .pdata()
 		data: function( params ){
 			var defaults = { 
 				field: "data",
@@ -108,7 +100,6 @@
 		}, // data
 
 		// remove data field
-		// requires .pdata()
 		removeData: function( params ){
 			var defaults = { 
 				field: "data",
@@ -171,6 +162,42 @@
 			}; // function
 		}, // removeData
 
+		// event function reusable stuff
+		event: {
+			regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
+			optionalTypeRegex: /(\w+)?(\.\w+)?/,
+
+			// properties to copy to the event obj
+			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
+
+			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
+
+			aliasesOn: function( thisPrototype ){
+
+				var aliases = $$.define.event.aliases;
+				for( var i = 0; i < aliases.length; i++ ){
+					var eventType = aliases[i];
+
+					thisPrototype[ eventType ] = function(data, callback){
+						if( $$.is.fn(callback) ){
+							this.on(eventType, data, callback);
+
+						} else if( $$.is.fn(data) ){
+							callback = data;
+							this.on(eventType, callback);
+
+						} else {
+							this.trigger(eventType);
+						}
+
+						return this; // maintain chaining
+					};
+				}
+			},
+
+			falseCallback: function(){ return false; }
+		},
+
 		// event binding
 		on: function( params ){
 			var defaults = {
@@ -191,20 +218,20 @@
 					callback = data;
 					data = selector;
 					selector = undefined;
-				} else if( $$.is.fn(selector) ){ // selector is actually callback
+				} else if( $$.is.fn(selector) || selector === false ){ // selector is actually callback
 					callback = selector;
 					data = undefined;
 					selector = undefined;
 				}
 
-				if( $$.is.fn(data) ){ // data is actually callback
+				if( $$.is.fn(data) || data === false ){ // data is actually callback
 					callback = data;
 					data = undefined;
 				}
 
 				// if there isn't a callback, we can't really do anything
 				// (can't speak for mapped events arg version)
-				if( !$$.is.fn(callback) && eventsIsString ){
+				if( !($$.is.fn(callback) || callback === false) && eventsIsString ){
 					return self; // maintain chaining
 				}
 
@@ -216,6 +243,10 @@
 
 				for( var evts in events ){
 					callback = events[evts];
+					if( callback === false ){
+						callback = $$.define.event.falseCallback;
+					}
+
 					if( !$$.is.fn(callback) ){ continue; }
 
 					evts = evts.split(/\s+/);
@@ -223,14 +254,13 @@
 						var evt = evts[i];
 						if( $$.is.emptyString(evt) ){ continue; }
 
-						var match = evt.match(eventRegex); // type[.namespace]
+						var match = evt.match( $$.define.event.regex ); // type[.namespace]
 
 						if( match ){
 							var type = match[1];
 							var namespace = match[2] ? match[2] : undefined;
 
 							var listener = {
-								id: generateEventId(),
 								callback: callback, // callback to run
 								data: data, // extra data in eventObj.data
 								delegated: selector !== undefined, // whether the evt is delegated
@@ -266,7 +296,16 @@
 				var eventsIsString = $$.is.string(events);
 				var p = params;
 
-				if( $$.is.fn(selector) ){ // selector is actually callback
+				if( arguments.length === 0 ){ // then unbind all
+
+					for( var i = 0; i < all.length; i++ ){
+						all[i]._private.listeners = [];
+					}
+
+					return self; // maintain chaining
+				}
+
+				if( $$.is.fn(selector) || selector === false ){ // selector is actually callback
 					callback = selector;
 					selector = undefined;
 				}
@@ -280,12 +319,16 @@
 				for( var evts in events ){
 					callback = events[evts];
 
+					if( callback === false ){
+						callback = $$.define.event.falseCallback;
+					}
+
 					evts = evts.split(/\s+/);
 					for( var h = 0; h < evts.length; h++ ){
 						var evt = evts[h];
 						if( $$.is.emptyString(evt) ){ continue; }
 
-						var match = evt.match(eventOptionalTypeRegex); // [type][.namespace]
+						var match = evt.match( $$.define.event.optionalTypeRegex ); // [type][.namespace]
 						if( match ){
 							var type = match[1] ? match[1] : undefined;
 							var namespace = match[2] ? match[2] : undefined;
@@ -310,42 +353,11 @@
 						} // if match
 					} // for events array
 
-					
 				} // for events map
 				
 				return self; // maintain chaining
 			}; // function
 		}, // off
-
-		event: {
-			// properties to copy to the event obj
-			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
-
-			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
-
-			aliasesOn: function( thisPrototype ){
-
-				var aliases = $$.define.event.aliases;
-				for( var i = 0; i < aliases.length; i++ ){
-					var eventType = aliases[i];
-
-					thisPrototype[ eventType ] = function(data, callback){
-						if( $$.is.fn(callback) ){
-							this.on(eventType, data, callback);
-
-						} else if( $$.is.fn(data) ){
-							callback = data;
-							this.on(eventType, callback);
-
-						} else {
-							this.trigger(eventType);
-						}
-
-						return this; // maintain chaining
-					};
-				}
-			}
-		},
 
 		trigger: function( params ){
 			var defaults = {};
@@ -370,7 +382,7 @@
 						var evt = evts[i];
 						if( $$.is.emptyString(evt) ){ continue; }
 
-						var match = evt.match(eventRegex); // type[.namespace]
+						var match = evt.match( $$.define.event.regex ); // type[.namespace]
 						var type = match[1];
 						var namespace = match[2] ? match[2] : undefined;
 
@@ -389,7 +401,7 @@
 					if( !$$.is.array(extraParams) ){ // make sure extra params are in an array if specified
 						extraParams = [ extraParams ];
 					}
-				} else {
+				} else { // otherwise, we've got nothing
 					extraParams = [];
 				}
 
@@ -426,7 +438,7 @@
 							var lis = listeners[k];
 							var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
 							var typeMatches = lis.type === evt.type;
-							var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && triggererIsElement && triggerer.is(lis.selector) ) : (true);
+							var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && evt.cyTarget.is(lis.selector) ) : (true); // we're not going to validate the hierarchy; that's too expensive
 							var listenerMatches = nsMatches && typeMatches && targetMatches;
 
 							if( listenerMatches ){ // then trigger it

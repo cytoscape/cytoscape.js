@@ -61,7 +61,7 @@ $v(function(jQuery, $, version){
 				        "lock", "unlock",
 				        "show", "hide",
 				        "select", "unselect",
-				        "die", "unbind"
+				        "unbind"
 				        ]
 			},
 					
@@ -89,7 +89,7 @@ $v(function(jQuery, $, version){
 			binders: {
 				args: [ "click", function(){} ],
 				names: [
-			          "bind", "one", "once", "live"
+			          "bind", "one", "once"
 			          ]
 			}
 		};

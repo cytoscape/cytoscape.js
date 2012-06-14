@@ -19,7 +19,7 @@
 				})
 			});
 			
-			this.trigger(event, extraParams);		
+			this.trigger(event, extraParams);
 			return this;
 		}
 	});

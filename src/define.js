@@ -263,7 +263,7 @@
 							var listener = {
 								callback: callback, // callback to run
 								data: data, // extra data in eventObj.data
-								delegated: selector !== undefined, // whether the evt is delegated
+								delegated: selector ? true : false, // whether the evt is delegated
 								selector: selector, // the selector to match for delegated events
 								type: type, // the event type (e.g. "click")
 								namespace: namespace, // the event namespace (e.g. ".foo")

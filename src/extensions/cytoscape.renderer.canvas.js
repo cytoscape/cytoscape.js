@@ -16,17 +16,40 @@
 		selectionToPanDelay: 500,
 		dragToSelect: true,
 		dragToPan: true,
+	};
+	
+	var defaultNode = {
+		shape: "ellipse",
+		sizeFactor: 0.2,
+		selectedColor: "#AADDAA",
+		hoveredColor: "#AAAAFF",
+		regularColor: "#AAAAAA",
+	
+		borderWidth: 6,
+		selectedBorderColor: "#BBDDBB",
+		hoveredBorderColor: "#BBBBFF",
+		regularBorderColor: "#BBBBBB",
 		
-		defaultNodeStyle: {
-			shape: "ellipse",
-			size: 10,
-			height: 10,
-			width: 10,
-			selected: false
-		},
+		labelFontStyle: "normal",
+		labelFontSize: "12px",
+		labelFontFamily: "Arial",
 		
-		defaultEdgeStyle: {
-		}
+		labelTextAlign: "center",
+		labelTextColor: "#666666",
+	};
+	
+	var defaultEdge = {
+		selectedColor: "#AADDAA",
+		hoveredColor: "#CDCDFF",
+		regularColor: "#CDCDCD",
+		
+		/*
+		[ [ ‘font-style’ || ‘font-variant’ || ‘font-weight’ ]? 
+			‘font-size’ [ / ‘line-height’ ]? font-family ] 
+			| caption | icon | menu | message-box | small-caption | status-bar | inherit
+		*/
+		
+		widthFactor: 1 / 26.0,
 	};
 	
 	var debugStats = {};
@@ -40,6 +63,7 @@
 		this.cy = options.cy;
 		
 		this.init();
+		
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
@@ -49,8 +73,8 @@
 		switch (params.type) {
 			case "load":
 				debug("load call");
-				this.initStyle();
 				this.load();
+				this.initStyle();
 				break;
 			case "draw":
 				debug("draw call");
@@ -59,7 +83,7 @@
 				debug("event: " + params.type);
 		}
 		
-		this.redraw();
+		// this.redraw();
 	};
 	
 	CanvasRenderer.prototype.projectMouse = function(self, mouseX, mouseY, xOffset, yOffset) {
@@ -469,7 +493,7 @@
 				checkNodeHover(mouseX, mouseY, nodes[index]);
 			}
 			
-			self.redraw();
+			// self.redraw();
 			// debug("hover");
 		}
 		
@@ -479,7 +503,7 @@
 		
 			timeout = setTimeout(function(){
 				timeout = null;		
-			}, 1000/100);
+			}, 1000/80);
 			
 			// Drag pan
 			if (dragPanMode) {
@@ -547,11 +571,10 @@
 				var boxMaxX = Math.max(selectBox[0], selectBox[2]);
 				var boxMaxY = Math.max(selectBox[1], selectBox[3]);
 				
-				var nodePosition, boundingRadiusSquared;
+				var nodePosition, boundingRadius;
 				for (var index = 0; index < nodes.length; index++) {
 					nodePosition = nodes[index].position();
-					boundingRadius = Math.sqrt(nodes[index].
-						_private.rscratch.boundingRadiusSquared);
+					boundingRadius = Math.sqrt(nodes[index]._private.data.weight / 5.0);
 					
 					if (nodePosition.x > boxMinX
 							- boundingRadius
@@ -847,31 +870,39 @@
 		var nodes = this.options.cy.nodes();
 		var edges = this.options.cy.edges();
 		
+		console.log("initStyle call");
+		console.log(nodes);
+		
 		var node;
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
 			
-			node._private.style = defaults.defaultNodeStyle;
-			
+			/*
 			node._private.rscratch.boundingRadiusSquared = 
 				Math.pow(node._private.style.size, 2);
+				*/
+			node._private.rscratch.override = {};
+			
+			// console.log(node._private.rscratch.override);
 		}
 		
 		var edge;
 		for (var index = 0; index < edges.length; index++) {
 			edge = edges[index];
 			
-			edge._private.style = defaults.defaultEdgeStyle;
-			
 			edge._private.rscratch.cp2x = Math.random() 
 				* this.options.cy.container().width();
 			edge._private.rscratch.cp2y = Math.random() 
 				* this.options.cy.container().height();
 			
+			edge._private.rscratch.override = {};
 		}
 	}
 	
 	CanvasRenderer.prototype.redraw = function() {
+		// console.log("draw call");
+		// this.initStyle();
+	
 		var context = this.context;
 		
 		context.setTransform(1, 0, 0, 1, 0, 0);
@@ -895,7 +926,7 @@
 		var edges = this.options.cy.edges();
 		
 		var edge;
-		
+		var styleValue;
 		
 		
 		var startNode, endNode;
@@ -905,12 +936,15 @@
 			endNode = edge.target()[0];
 			
 			if (edge._private.rscratch.selected) {
-				context.strokeStyle = "#AADDAA";
+				styleValue = edge._private.rscratch.override.regularColor;
+				context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.selectedColor;
 			} else {
 				if (edge._private.rscratch.hovered) {
-					context.strokeStyle = "#CDCDFF";
+					styleValue = edge._private.rscratch.override.hoveredColor;
+					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.hoveredColor;
 				} else {
-					context.strokeStyle = "#CDCDCD";
+					styleValue = edge._private.rscratch.override.regularColor;
+					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.regularColor;
 				}
 			}
 			
@@ -930,21 +964,33 @@
 			
 			
 			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
-			
 			context.stroke();
 		}
 		
-		var node;
+		var node, labelStyle, labelSize, labelFamily;
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
 			
 			if (node._private.rscratch.selected == true) {
-				context.fillStyle = "#AADDAA";
+				styleValue = node._private.rscratch.override.selectedColor;
+				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.selectedColor;
+				
+				styleValue = node._private.rscratch.override.selectedBorderColor;
+				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.selectedBorderColor;
 			} else {
 				if (node._private.rscratch.hovered == true) {
-					context.fillStyle = "#AAAAFF";
+					styleValue = node._private.rscratch.override.hoveredColor;
+					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
+					
+					styleValue = node._private.rscratch.override.hoveredBorderColor;
+					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
 				} else {
-					context.fillStyle = "#AAAAAA";
+					styleValue = node._private.rscratch.override.regularColor;
+					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
+					
+					styleValue = node._private.rscratch.override.regularBorderColor;
+					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
+			
 				}
 			}
 						
@@ -953,6 +999,24 @@
 				node._private.data.weight / 5.0, 0, Math.PI * 2, false);
 			context.closePath();
 			context.fill();
+			
+			styleValue = node._private.rscratch.override.borderWidth;
+			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
+			
+			context.stroke();
+			
+			styleValue = node._private.rscratch.override.labelFontStyle;
+			
+			labelStyle = node._private.rscratch.override.labelFontStyle || defaultNode.labelFontStyle;
+			labelSize = node._private.rscratch.override.labelFontSize || defaultNode.labelFontSize;
+			labelFamily = node._private.rscratch.override.labelFontFamily || defaultNode.labelFontFamily;
+			
+			context.font = labelStyle + " " + labelSize + " " + labelFamily;
+			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
+			
+			context.fillStyle = node._private.rscratch.override.labelTextColor || defaultNode.labelTextColor;
+			context.fillText(String(node.id()), 
+				node._private.position.x, node._private.position.y - node._private.data.weight / 5.0 - 4);
 		}
 		
 		
@@ -1004,7 +1068,7 @@
 			*/
 		}
 		
-		this.redraw();
+		// this.redraw();
 	};
 	
 	CanvasRenderer.prototype.fit = function(params){

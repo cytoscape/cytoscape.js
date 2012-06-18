@@ -64,6 +64,9 @@
 		
 		this.init();
 		
+		// Information about the number of edges between each pair of nodes
+		// used to find different curvatures for the edges
+		this.nodePairEdgeData = {};		
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
@@ -100,6 +103,31 @@
 		y += self.center[1];
 		
 		return [x, y];
+	}
+	
+	CanvasRenderer.prototype.findEdgeMetrics = function(edges) {
+		this.nodePairEdgeData = {};
+		
+		var edge, nodePairId;
+		for (var i = 0; i < edges.length; i++) {
+			edge = edges[i];
+			nodePairId = edge._private.data.source <= edge._private.data.target?
+				edge._private.data.source + edge._private.data.target
+				: edge._private.data.target + edge._private.data.source;
+				
+			if (this.nodePairEdgeData[nodePairId] == undefined) {
+				this.nodePairEdgeData[nodePairId] = 1;
+			} else {
+				this.nodePairEdgeData[nodePairId]++;
+			}
+			
+			edge._private.rscratch.nodePairId = nodePairId;
+			edge._private.rscratch.nodePairEdgeNum = this.nodePairEdgeData[nodePairId];
+			
+		}
+		
+		
+		// console.log(this.nodePairEdgeData);
 	}
 	
 	CanvasRenderer.prototype.boxInBezierVicinity = function(
@@ -899,9 +927,55 @@
 		}
 	}
 	
+	CanvasRenderer.prototype.calculateEdgeMetrics = function(edge) {
+		if (edge._private.data.source == edge._private.data.target) {
+			edge._private.rscratch.selfEdge = true;
+			return;
+		}
+		
+		if (this.nodePairEdgeData[edge._private.rscratch.nodePairId] == 1) {
+			edge._private.rscratch.straightEdge = true;
+			return;
+		}
+		
+		// Calculate the 2nd control point
+		var startNode = edge._private.data.source < edge._private.data.target ?
+			edge.source()[0] : edge.target()[0];
+		var endNode = edge._private.data.target < edge._private.data.source ? 
+			edge.source()[0] : edge.target()[0];
+		
+		/*
+		console.log(startNode._private);
+		console.log(endNode._private);
+		*/
+		
+		var numerator = edge._private.rscratch.nodePairEdgeNum - 1;
+		var denominator = this.nodePairEdgeData[edge._private.rscratch.nodePairId] - 1;
+		var offsetFactor = (numerator / denominator - 0.5);
+		
+		if (Math.abs(offsetFactor) < 0.0001) {
+			edge._private.rscratch.straightEdge = true;
+			return;
+		}
+		
+		var middlePointX = 0.5 * (startNode._private.position.x + endNode._private.position.x);
+		var middlePointY = 0.5 * (startNode._private.position.y + endNode._private.position.y);
+			
+		var displacementX = endNode._private.position.x - startNode._private.position.x;
+		var displacementY = endNode._private.position.y - startNode._private.position.y;
+		
+		var offsetX = displacementY * offsetFactor;
+		var offsetY = -displacementX * offsetFactor;
+		
+		edge._private.rscratch.cp2x = middlePointX + offsetX;
+		edge._private.rscratch.cp2y = middlePointY + offsetY;
+	}
+	
+	
 	CanvasRenderer.prototype.redraw = function() {
 		// console.log("draw call");
 		// this.initStyle();
+		this.findEdgeMetrics(this.options.cy.edges());
 	
 		var context = this.context;
 		
@@ -953,14 +1027,18 @@
 			
 			context.moveTo(startNode._private.position.x, startNode._private.position.y);
 			
-			/*
-			context.quadraticCurveTo(startNode._private.position.x * 2 / 3, 
-				endNode._private.position.y, endNode._private.position.x, 
-				endNode._private.position.y);
-			*/
-			context.quadraticCurveTo(edge._private.rscratch.cp2x, 
-				edge._private.rscratch.cp2y, endNode._private.position.x, 
-				endNode._private.position.y);
+
+			this.calculateEdgeMetrics(edge);
+			
+			if (edge._private.rscratch.straightEdge) {
+				context.lineTo(endNode._private.position.x, endNode._private.position.y);
+			} else if (edge._private.rscratch.selfEdge) {
+				
+			} else {
+				context.quadraticCurveTo(edge._private.rscratch.cp2x, 
+					edge._private.rscratch.cp2y, endNode._private.position.x, 
+					endNode._private.position.y);
+			}
 			
 			
 			//context.lineTo(endNode._private.position.x, endNode._private.position.y);

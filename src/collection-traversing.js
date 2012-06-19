@@ -30,7 +30,7 @@
 				return new $$.Collection(cy, elements);
 			
 			} else if( $$.is.string(filter) || $$.is.elementOrCollection(filter) ){
-				return new $$.Selector(cy, filter).filter(this);
+				return new $$.Selector(filter).filter(this);
 			
 			} else if( filter === undefined ){
 				return this;

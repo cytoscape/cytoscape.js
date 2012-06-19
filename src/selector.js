@@ -10,17 +10,12 @@
 		}
 	};
 
-	$$.Selector = function(cy, onlyThisGroup, selector){
+	$$.Selector = function(onlyThisGroup, selector){
 		
 		if( !(this instanceof $$.Selector) ){
-			return new $$.Selector(cy, onlyThisGroup, selector);
+			return new $$.Selector(onlyThisGroup, selector);
 		}
-
-		if( cy === undefined || !$$.is.core(cy) ){
-			$.error("A selector must have a reference to the core");
-			return;
-		}
-		
+	
 		if( selector === undefined && onlyThisGroup !== undefined ){
 			selector = onlyThisGroup;
 			onlyThisGroup = undefined;
@@ -30,8 +25,7 @@
 		
 		self._private = {
 			selectorText: null,
-			invalid: true,
-			cy: cy
+			invalid: true
 		}
 	
 		// storage for parsed queries
@@ -61,7 +55,7 @@
 			};
 		}
 		
-		if( selector == null || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
+		if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
 			
 			if( onlyThisGroup == null ){
 				// ignore
@@ -84,12 +78,12 @@
 			self[0].collection = selector;
 			self.length = 1;
 			
-		} else if( $$.is.fn(selector) ) {
+		} else if( $$.is.fn( selector ) ) {
 			self[0] = newQuery();
 			self[0].filter = selector;
 			self.length = 1;
 			
-		} else if( $$.is.string(selector) ){
+		} else if( $$.is.string( selector ) ){
 		
 			// these are the actual tokens in the query language
 			var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
@@ -97,7 +91,7 @@
 			var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
 			var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
 			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
-			var number = "\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+"; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+			var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
 			var value = string + "|" + number; // a value literal, either a string or number
 			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
 			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
@@ -390,10 +384,6 @@
 
 	$$.selfn = $$.Selector.prototype;
 	
-	$$.selfn.cy = function(){
-		return this._private.cy;
-	};
-	
 	$$.selfn.size = function(){
 		return this.length;
 	};
@@ -410,10 +400,11 @@
 	// filter an existing collection
 	$$.selfn.filter = function(collection, addLiveFunction){
 		var self = this;
+		var cy = collection.cy();
 		
 		// don't bother trying if it's invalid
 		if( self._private.invalid ){
-			return new $$.Collection( self.cy() );
+			return new $$.Collection( cy );
 		}
 		
 		var queryMatches = function(query, element){
@@ -426,7 +417,7 @@
 			var allColonSelectorsMatch = true;
 			for(var k = 0; k < query.colonSelectors.length; k++){
 				var sel = query.colonSelectors[k];
-				var renderer = self.cy().renderer(); // TODO remove reference after refactoring
+				var renderer = cy.renderer(); // TODO remove reference after refactoring
 				
 				switch(sel){
 				case ":selected":

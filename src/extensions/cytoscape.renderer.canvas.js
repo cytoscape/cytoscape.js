@@ -151,6 +151,14 @@
 		var curveMaxX = Math.max(x1, x2, x3);
 		var curveMaxY = Math.max(y1, y2, y3);
 		
+		/*
+		console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX 
+			+ ", " + curveMaxY);
+		if (curveMinX == undefined) {
+			console.log("undefined curveMinX: " + x1 + ", " + x2 + ", " + x3);
+		}
+		*/
+		
 		if (curveMinX > boxMaxX
 			|| curveMaxX < boxMinX
 			|| curveMinY > boxMaxY
@@ -160,6 +168,102 @@
 		}
 		
 		return 1;
+	}
+	
+	CanvasRenderer.prototype.checkStraightEdgeCrossesBox2 = function(x1box, 
+		y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		// Check left + right bounds
+		var aX = x2 - x1;
+		var bX = x1;
+		
+		if (Math.abs(aX) < 0.0001) {
+			return false;
+		}
+		
+		var tLeft = (boxMinX - bX) / aX;
+		if (tLeft > 0 && tLeft <= 1) {
+			//return true;
+		}
+		
+		var tRight = (boxMaxX - bX) / aX;
+		if (tRight > 0 && tRight <= 1) {
+			//return true;
+		}
+		
+		// Top and bottom
+		var aY = y2 - y1;
+		var bY = y1;
+		
+		if (Math.abs(aY) < 0.0001) {
+			return false;
+		}
+		
+		
+		var tTop = (boxMinY - bY) / aY;
+		if (tTop > 0 && tTop <= 1) {
+			//return true;
+		}
+		
+		var tBottom = (boxMaxY - bY) / aY;
+		if (tBottom > 0 && tBottom <= 1) {
+			//return true;
+		}
+		
+		if (((tLeft > 0 && tLeft <= 1) || (tRight > 0 && tRight <= 1))
+			&& ((tTop > 0 && tTop <= 1) || (tBottom > 0 && tBottom <= 1))) {
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.checkStraightEdgeCrossesBox = function(x1box, 
+		y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		// Check left + right bounds
+		var aX = x2 - x1;
+		var bX = x1;
+		var yValue;
+		
+		// Top and bottom
+		var aY = y2 - y1;
+		var bY = y1;
+		
+		if (Math.abs(aX) < 0.0001) {
+			return (x1 >= boxMinX && x1 <= boxMaxX
+				&& Math.min(y1, y2) <= boxMinY
+				&& Math.max(y1, y2) >= boxMaxY);
+		}
+		
+		var tLeft = (boxMinX - bX) / aX;
+		if (tLeft > 0 && tLeft <= 1) {
+			yValue = aY * tLeft + bY;
+			if (yValue >= boxMinY && yValue <= boxMaxY) {
+				return true;
+			} 
+		}
+		
+		var tRight = (boxMaxX - bX) / aX;
+		if (tRight > 0 && tRight <= 1) {
+			yValue = aY * tRight + bY;
+			if (yValue >= boxMinY && yValue <= boxMaxY) {
+				return true;
+			} 
+		}
+		
+		return false;
 	}
 	
 	CanvasRenderer.prototype.checkBezierCrossesBox = function(
@@ -182,25 +286,32 @@
 
 		var xIntervals = [];
 		
-		// Find when x coordinate of the curve crosses the left side of the box
-		var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
-		var tX1, tX2;
-		if (discriminantX1 > 0) {
-			var sqrt = Math.sqrt(discriminantX1);
-			tX1 = (-bX + sqrt) / (2 * aX);
-			tX2 = (-bX - sqrt) / (2 * aX);
+		if (Math.abs(aX) < 0.0001) {
+			var leftParam = (boxMinX - x1) / bX;
+			var rightParam = (boxMaxX - x1) / bX;
 			
-			xIntervals.push(tX1, tX2);
-		}
-		
-		var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
-		var tX3, tX4;
-		if (discriminantX2 > 0) {
-			var sqrt = Math.sqrt(discriminantX2);
-			tX3 = (-bX + sqrt) / (2 * aX);
-			tX4 = (-bX - sqrt) / (2 * aX);
+			xIntervals.push(leftParam, rightParam);
+		} else {
+			// Find when x coordinate of the curve crosses the left side of the box
+			var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
+			var tX1, tX2;
+			if (discriminantX1 > 0) {
+				var sqrt = Math.sqrt(discriminantX1);
+				tX1 = (-bX + sqrt) / (2 * aX);
+				tX2 = (-bX - sqrt) / (2 * aX);
+				
+				xIntervals.push(tX1, tX2);
+			}
 			
-			xIntervals.push(tX3, tX4);
+			var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
+			var tX3, tX4;
+			if (discriminantX2 > 0) {
+				var sqrt = Math.sqrt(discriminantX2);
+				tX3 = (-bX + sqrt) / (2 * aX);
+				tX4 = (-bX - sqrt) / (2 * aX);
+				
+				xIntervals.push(tX3, tX4);
+			}
 		}
 		
 		xIntervals.sort(function(a, b) { return a - b; });
@@ -210,30 +321,52 @@
 		var bY = -2 * y1 + 2 * y2;
 		var cY = y1;
 		
-		var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
 		var yIntervals = [];
 		
-		var tY1, tY2;
-		if (discriminantY1 > 0) {
-			var sqrt = Math.sqrt(discriminantY1);
-			tY1 = (-bY + sqrt) / (2 * aY);
-			tY2 = (-bY - sqrt) / (2 * aY);
+		if (Math.abs(aY) < 0.0001) {
+			var topParam = (boxMinY - y1) / bY;
+			var bottomParam = (boxMaxY - y1) / bY;
 			
-			yIntervals.push(tY1, tY2);
-		}
-		
-		var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
-		
-		var tY3, tY4;
-		if (discriminantY2 > 0) {
-			var sqrt = Math.sqrt(discriminantY2);
-			tY3 = (-bY + sqrt) / (2 * aY);
-			tY4 = (-bY - sqrt) / (2 * aY);
+			 yIntervals.push(topParam, bottomParam);
+		} else {
+			var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
 			
-			yIntervals.push(tY3, tY4);
+			var tY1, tY2;
+			if (discriminantY1 > 0) {
+				var sqrt = Math.sqrt(discriminantY1);
+				tY1 = (-bY + sqrt) / (2 * aY);
+				tY2 = (-bY - sqrt) / (2 * aY);
+				
+				yIntervals.push(tY1, tY2);
+			}
+	
+			var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
+			
+			var tY3, tY4;
+			if (discriminantY2 > 0) {
+				var sqrt = Math.sqrt(discriminantY2);
+				tY3 = (-bY + sqrt) / (2 * aY);
+				tY4 = (-bY - sqrt) / (2 * aY);
+				
+				yIntervals.push(tY3, tY4);
+			}
 		}
-		
+				
 		yIntervals.sort(function(a, b) { return a - b; });
+
+	/*
+		console.log("y's: " + y1 + ", " + y2 + ", " + y3);
+		console.log("aY: " + aY);
+		console.log("xIntervals: " + xIntervals);
+		console.log("yIntervals: " + yIntervals);
+		console.log("test: " + (xIntervals[index] < yIntervals[yIndex]
+					&& yIntervals[yIndex] >= 0.0
+					&& xIntervals[index] <= 1.0
+					&& xIntervals[index + 1] > yIntervals[yIndex - 1]
+					&& yIntervals[yIndex - 1] <= 1.0
+					&& xIntervals[index + 1] >= 0.0));
+	*/	
+		
 
 		for (var index = 0; index < xIntervals.length; index += 2) {
 			for (var yIndex = 1; yIndex < yIntervals.length; yIndex += 2) {
@@ -576,19 +709,36 @@
 						edges[index].target().position().x,
 						edges[index].target().position().y, padding);
 						
-					if (boxInBezierVicinity != 0 
-						&& (boxInBezierVicinity == 2
-							|| cy.renderer().checkBezierCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index].source().position().x,
-								edges[index].source().position().y,
-								edges[index]._private.rscratch.cp2x,
-								edges[index]._private.rscratch.cp2y,
-								edges[index].target().position().x,
-								edges[index].target().position().y, padding))) {
+					if (boxInBezierVicinity == 2) {
+						edges[index]._private.rscratch.selected = true;
+					} else if (boxInBezierVicinity == 1) {
+						
+						if (edges[index]._private.rscratch.straightEdge) {
 							
-						edges[index]._private.rscratch.selected = true;	
+							edges[index]._private.rscratch.selected = 
+								cy.renderer().checkStraightEdgeCrossesBox(
+									selectBox[0], selectBox[1],
+									selectBox[2], selectBox[3],
+									edges[index].source().position().x,
+									edges[index].source().position().y,
+									edges[index].target().position().x,
+									edges[index].target().position().y, padding);
+							
+						} else {
+							
+							edges[index]._private.rscratch.selected = 
+								cy.renderer().checkBezierCrossesBox(
+									selectBox[0], selectBox[1],
+									selectBox[2], selectBox[3],
+									edges[index].source().position().x,
+									edges[index].source().position().y,
+									edges[index]._private.rscratch.cp2x,
+									edges[index]._private.rscratch.cp2y,
+									edges[index].target().position().x,
+									edges[index].target().position().y, padding);
+							
+							// edges[index]._private.rscratch.selected = false;
+						}
 					} else {
 						edges[index]._private.rscratch.selected = false;
 					}
@@ -933,17 +1083,23 @@
 			return;
 		}
 		
-		if (this.nodePairEdgeData[edge._private.rscratch.nodePairId] == 1) {
-			edge._private.rscratch.straightEdge = true;
-			return;
-		}
-		
 		// Calculate the 2nd control point
 		var startNode = edge._private.data.source < edge._private.data.target ?
 			edge.source()[0] : edge.target()[0];
 		var endNode = edge._private.data.target < edge._private.data.source ? 
 			edge.source()[0] : edge.target()[0];
 		
+		var middlePointX = 0.5 * (startNode._private.position.x + endNode._private.position.x);
+		var middlePointY = 0.5 * (startNode._private.position.y + endNode._private.position.y);
+		
+		if (this.nodePairEdgeData[edge._private.rscratch.nodePairId] == 1) {
+			edge._private.rscratch.straightEdge = true;
+			edge._private.rscratch.cp2x = middlePointX;
+			edge._private.rscratch.cp2y = middlePointY;
+			//console.log(edge._private.rscratch.cp2x + ", " + edge._private.rscratch.cp2y);
+			return;
+		}
+	
 		/*
 		console.log(startNode._private);
 		console.log(endNode._private);
@@ -955,11 +1111,12 @@
 		
 		if (Math.abs(offsetFactor) < 0.0001) {
 			edge._private.rscratch.straightEdge = true;
+			edge._private.rscratch.cp2x = middlePointX;
+			edge._private.rscratch.cp2y = middlePointY;
+			//console.log(edge._private.rscratch.cp2x + ", " + edge._private.rscratch.cp2y);
 			return;
 		}
 		
-		var middlePointX = 0.5 * (startNode._private.position.x + endNode._private.position.x);
-		var middlePointY = 0.5 * (startNode._private.position.y + endNode._private.position.y);
 			
 		var displacementX = endNode._private.position.x - startNode._private.position.x;
 		var displacementY = endNode._private.position.y - startNode._private.position.y;

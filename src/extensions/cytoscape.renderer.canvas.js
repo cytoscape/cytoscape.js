@@ -58,6 +58,15 @@
 	
 	var shiftDown = false;
 	
+	var nodeHovered = false;
+	
+	var minDistanceEdge;
+	var minDistanceEdgeValue = 999;
+	
+	var minDistanceNode;
+	var minDistanceNodeValue = 999;
+		
+	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
 		this.cy = options.cy;
@@ -557,7 +566,7 @@
 				
 				// edge._private.rscratch.selected = true;
 				
-				var distance = cy.renderer().sqDistanceToQuadraticBezier(
+				var squaredDistance = cy.renderer().sqDistanceToQuadraticBezier(
 					mouseX,
 					mouseY,
 					edge.source().position().x,
@@ -568,14 +577,58 @@
 					edge.target().position().y);
 
 				// debug(distance);
-				if (distance < squaredDistanceLimit) {
-					edge._private.rscratch.hovered = true;
-				} else {
-					edge._private.rscratch.hovered = false;
+				if (squaredDistance < squaredDistanceLimit) {
+					
+					if (squaredDistance < minDistanceEdgeValue) {
+						minDistanceEdge = edge;
+						minDistanceEdgeValue = squaredDistance;
+					}
 				}	
-			} else {
+			}
+		}
 		
-				edge._private.rscratch.hovered = false;
+		var checkStraightEdgeHover = function(mouseX, mouseY, edge, x1, y1, x2, y2) {
+			
+			var squaredDistanceLimit = 40;
+			
+			var nearEndOffsetX = mouseX - x1;
+			var nearEndOffsetY = mouseY - y1;
+			
+			var farEndOffsetX = mouseX - x2;
+			var farEndOffsetY = mouseY - y2;
+			
+			var displacementX = x2 - x1;
+			var displacementY = y2 - y1;
+			
+			var distanceSquared;
+			
+			if (nearEndOffsetX * displacementX 
+				+ nearEndOffsetY * displacementY <= 0) {
+				
+					distanceSquared = (Math.pow(x1 - mouseX, 2)
+						+ Math.pow(y1 - mouseY, 2));
+						
+			} else if (farEndOffsetX * displacementX 
+				+ farEndOffsetY * displacementY >= 0) {
+				
+					distanceSquared = (Math.pow(x2 - mouseX, 2)
+						+ Math.pow(y2 - mouseY, 2));
+						
+			} else {
+				var rotatedX = displacementY;
+				var rotatedY = -displacementX;
+			
+				// Use projection on rotated vector
+				distanceSquared = Math.pow(nearEndOffsetX * rotatedX 
+					+ nearEndOffsetY * rotatedY, 2)
+					/ (rotatedX * rotatedX + rotatedY * rotatedY);
+			}
+			
+			if (distanceSquared <= squaredDistanceLimit) {
+				if (distanceSquared < minDistanceEdgeValue) {
+					minDistanceEdge = edge;
+					minDistanceEdgeValue = distanceSquared;
+				}
 			}
 		}
 		
@@ -591,11 +644,16 @@
 			var boundingRadiusSquared = node._private.data.weight / 5.0;
 			boundingRadiusSquared *= boundingRadiusSquared;
 			
-			if (boundingRadiusSquared > (dX * dX + dY * dY)) {
+			var distanceSquared = dX * dX + dY * dY;
+			
+			if (boundingRadiusSquared > distanceSquared) {
 				
-				node._private.rscratch.hovered = true;	
-			} else {
-				node._private.rscratch.hovered = false;
+				if (distanceSquared < minDistanceNodeValue) {
+					minDistanceNode = node;
+					minDistanceNodeValue = distanceSquared;
+					
+					nodeHovered = true;
+				}
 			}
 		}
 		
@@ -646,16 +704,43 @@
 			mouseY = self.options.cy.container().height() / 2 + yOffsetFromCenter;
 			*/
 			
-			for (var index = 0; index < edges.length; index++) {
-				checkEdgeHover(mouseX, mouseY, edges[index]);
+			if (minDistanceNode != undefined) {
+				minDistanceNode._private.rscratch.hovered = false;
+				minDistanceNode = undefined;
+				minDistanceNodeValue = 99999;
+		
+			} else if (minDistanceEdge != undefined) {
+				minDistanceEdge._private.rscratch.hovered = false;
+				minDistanceEdge = undefined;
+				minDistanceEdgeValue = 99999;
 			}
+			
+			nodeHovered = false;
 			
 			for (var index = 0; index < nodes.length; index++) {
 				checkNodeHover(mouseX, mouseY, nodes[index]);
 			}
 			
-			// self.redraw();
-			// debug("hover");
+			for (var index = 0; index < edges.length; index++) {
+				if (nodeHovered) {
+				
+				} else if (edges[index]._private.rscratch.straightEdge) {
+					checkStraightEdgeHover(mouseX, mouseY, edges[index],
+						edges[index].source().position().x,
+						edges[index].source().position().y,
+						edges[index].target().position().x,
+						edges[index].target().position().y);
+						
+				} else {
+					checkEdgeHover(mouseX, mouseY, edges[index]);
+				}
+			}
+			
+			if (minDistanceNode != undefined) {
+				minDistanceNode._private.rscratch.hovered = true;
+			} else if (minDistanceEdge != undefined) {
+				minDistanceEdge._private.rscratch.hovered = true;
+			}
 		}
 		
 		var timeout;
@@ -694,7 +779,9 @@
 				}
 			}
 						
-			if (!shiftDown && selectBox[4] == 1) {
+			if (!shiftDown && selectBox[4] == 1
+				&& Math.abs(selectBox[2] - selectBox[0]) 
+					+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
 				var padding = 5;
 				
 				for (var index = 0; index < edges.length; index++) {
@@ -737,7 +824,6 @@
 									edges[index].target().position().x,
 									edges[index].target().position().y, padding);
 							
-							// edges[index]._private.rscratch.selected = false;
 						}
 					} else {
 						edges[index]._private.rscratch.selected = false;
@@ -810,6 +896,24 @@
 				mouseOffsetX,
 				mouseOffsetY);
 			
+			if (!shiftDown) {
+				for (var index = 0; index < nodes.length; index++) {
+					nodes[index]._private.rscratch.selected = false;
+				}
+				
+				for (var index = 0; index < edges.length; index++) {
+					edges[index]._private.rscratch.selected = false;
+				}
+			
+				if (minDistanceNode != undefined) {
+					minDistanceNode._private.rscratch.hovered = false;
+					minDistanceNode._private.rscratch.selected = true;		
+				} else if (minDistanceEdge != undefined) {
+					minDistanceEdge._private.rscratch.hovered = false;
+					minDistanceEdge._private.rscratch.selected = true;
+				}
+			}
+			
 			selectBox[0] = start[0];
 			selectBox[1] = start[1];
 			selectBox[4] = 1;
@@ -824,8 +928,8 @@
 					}
 				}
 			}
-			//$(window).bind("mousemove", selectHandler);
 			
+			cy.renderer().redraw();
 		});
 		
 		$(window).bind("mouseup", function(e) {
@@ -1077,6 +1181,87 @@
 		}
 	}
 	
+	CanvasRenderer.prototype.findBezierIntersection = function(edge, targetRadius) {
+		
+		var x1 = edge.source().position().x;
+		var x3 = edge.target().position().x;
+		var y1 = edge.source().position().y;
+		var y3 = edge.target().position().y;
+		
+		targetRadius = 19;
+		var approxParam;
+		
+		var cp2x = edge._private.rscratch.cp2x;
+		var cp2y = edge._private.rscratch.cp2y;
+		
+		approxParam = 0.5 + (0.5 - 0.5 * targetRadius / Math.sqrt(
+			Math.pow(cp2x - x3, 2) + Math.pow(cp2y - y3, 2)));
+		
+		// console.log("approxParam: " + approxParam);
+		
+		var aX = x1 - 2 * cp2x + x3;
+		var bX = -2 * x1 + 2 * cp2x;
+		var cX = x1;
+
+		var aY = y1 - 2 * cp2y + y3;
+		var bY = -2 * y1 + 2 * cp2y;
+		var cY = y1;
+		
+		var newEndPointX = aX * approxParam * approxParam + bX * approxParam + cX;
+		var newEndPointY = aY * approxParam * approxParam + bY * approxParam + cY;
+		
+		var tan1ax = cp2x - x1;
+		var tan1bx = x1;
+		
+		var tan1ay = cp2y - y1;
+		var tan1by = y1;
+		
+		/*
+		var tan2ax = cp2x - x3;
+		var tan2bx = x3;
+		
+		var tan2ay = cp2y - y3;
+		var tan2by = y3;
+		*/
+		
+		var tan2ax = newEndPointX - x3;
+		var tan2bx = x3;
+		
+		var tan2ay = newEndPointY - y3;
+		var tan2by = y3;
+		
+		
+		var k;
+		if (Math.abs(tan1ax) > 0.0001) {
+			k = (tan1ay / tan1ax * (tan2bx - tan1bx) + tan1by - tan2by)
+				/ (tan2ay - (tan1ay / tan1ax) * tan2ax);
+		} else {
+			k = 0;
+		}
+		
+		// console.log("k: " + k);
+		
+		var newCp2x = tan2ax * k + tan2bx;
+		var newCp2y = tan2ay * k + tan2by;
+
+		edge._private.rscratch.newCp2x = newCp2x;
+		edge._private.rscratch.newCp2y = newCp2y;
+		
+		edge._private.rscratch.newEndPointX = newEndPointX;
+		edge._private.rscratch.newEndPointY = newEndPointY;
+		
+		/*
+		console.log(newCp2x + ", " + newCp2y);
+		console.log(newEndPointX + ", " + newEndPointY);
+		*/
+	}
+	
+	CanvasRenderer.prototype.drawArrowhead = function(edge, target) {
+		
+		
+		return;
+	}
+	
 	CanvasRenderer.prototype.calculateEdgeMetrics = function(edge) {
 		if (edge._private.data.source == edge._private.data.target) {
 			edge._private.rscratch.selfEdge = true;
@@ -1195,6 +1380,52 @@
 				context.quadraticCurveTo(edge._private.rscratch.cp2x, 
 					edge._private.rscratch.cp2y, endNode._private.position.x, 
 					endNode._private.position.y);
+			}
+			
+			
+			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
+			context.stroke();
+		}
+		
+		for (var index = 0; index < edges.length; index++) {
+			edge = edges[index];
+			startNode = edge.source()[0];
+			endNode = edge.target()[0];
+			
+			if (edge._private.rscratch.selected) {
+				styleValue = edge._private.rscratch.override.regularColor;
+				context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.selectedColor;
+			} else {
+				if (edge._private.rscratch.hovered) {
+					styleValue = edge._private.rscratch.override.hoveredColor;
+					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.hoveredColor;
+				} else {
+					styleValue = edge._private.rscratch.override.regularColor;
+					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.regularColor;
+				}
+			}
+			
+			context.strokeStyle = "#AAAA99";
+			
+			context.lineWidth = edge._private.data.weight / 26.0;
+			context.beginPath();
+			
+			context.moveTo(startNode._private.position.x, startNode._private.position.y);
+			
+
+			this.calculateEdgeMetrics(edge);
+			
+			if (edge._private.rscratch.straightEdge) {
+				// context.lineTo(endNode._private.position.x, endNode._private.position.y);
+			} else if (edge._private.rscratch.selfEdge) {
+				
+			} else {
+				
+				this.findBezierIntersection(edge, 3);
+			
+				context.quadraticCurveTo(edge._private.rscratch.newCp2x, 
+					edge._private.rscratch.newCp2y, edge._private.rscratch.newEndPointX, 
+					edge._private.rscratch.newEndPointY);
 			}
 			
 			

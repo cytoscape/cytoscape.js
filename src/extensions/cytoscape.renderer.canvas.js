@@ -49,6 +49,8 @@
 			| caption | icon | menu | message-box | small-caption | status-bar | inherit
 		*/
 		
+		endShape: "arrow",
+		
 		widthFactor: 1 / 26.0,
 	};
 	
@@ -65,7 +67,9 @@
 	
 	var minDistanceNode;
 	var minDistanceNodeValue = 999;
-		
+	
+	var arrowShapeDrawers = {};
+	var nodeShapeDrawers = {};
 	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
@@ -249,11 +253,12 @@
 		// Top and bottom
 		var aY = y2 - y1;
 		var bY = y1;
+		var xValue;
 		
 		if (Math.abs(aX) < 0.0001) {
 			return (x1 >= boxMinX && x1 <= boxMaxX
 				&& Math.min(y1, y2) <= boxMinY
-				&& Math.max(y1, y2) >= boxMaxY);
+				&& Math.max(y1, y2) >= boxMaxY);	
 		}
 		
 		var tLeft = (boxMinX - bX) / aX;
@@ -268,6 +273,22 @@
 		if (tRight > 0 && tRight <= 1) {
 			yValue = aY * tRight + bY;
 			if (yValue >= boxMinY && yValue <= boxMaxY) {
+				return true;
+			} 
+		}
+		
+		var tTop = (boxMinY - bY) / aY;
+		if (tTop > 0 && tTop <= 1) {
+			xValue = aX * tTop + bX;
+			if (xValue >= boxMinX && xValue <= boxMaxX) {
+				return true;
+			} 
+		}
+		
+		var tBottom = (boxMaxY - bY) / aY;
+		if (tBottom > 0 && tBottom <= 1) {
+			xValue = aX * tBottom + bX;
+			if (xValue >= boxMinX && xValue <= boxMaxX) {
 				return true;
 			} 
 		}
@@ -336,7 +357,7 @@
 			var topParam = (boxMinY - y1) / bY;
 			var bottomParam = (boxMaxY - y1) / bY;
 			
-			 yIntervals.push(topParam, bottomParam);
+			yIntervals.push(topParam, bottomParam);
 		} else {
 			var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
 			
@@ -838,7 +859,7 @@
 				var nodePosition, boundingRadius;
 				for (var index = 0; index < nodes.length; index++) {
 					nodePosition = nodes[index].position();
-					boundingRadius = Math.sqrt(nodes[index]._private.data.weight / 5.0);
+					boundingRadius = nodes[index]._private.data.weight / 5.0;
 					
 					if (nodePosition.x > boxMinX
 							- boundingRadius
@@ -1010,23 +1031,23 @@
 		
 		var discrim, q, r, dum1, s, t, term1, r13;
 
-		q = (3.0*c - (b*b))/9.0;
-		r = -(27.0*d) + b*(9.0*c - 2.0*(b*b));
+		q = (3.0 * c - (b * b)) / 9.0;
+		r = -(27.0 * d) + b * (9.0 * c - 2.0 * (b * b));
 		r /= 54.0;
 		
-		discrim = q*q*q + r*r;
+		discrim = q * q * q + r * r;
 		result[1] = 0; //The first root is always real.
-		term1 = (b/3.0);
+		term1 = (b / 3.0);
 		
 		if (discrim > 0) { // one root real, two are complex
 			s = r + Math.sqrt(discrim);
-			s = ((s < 0) ? -Math.pow(-s, (1.0/3.0)) : Math.pow(s, (1.0/3.0)));
+			s = ((s < 0) ? -Math.pow(-s, (1.0 / 3.0)) : Math.pow(s, (1.0 / 3.0)));
 			t = r - Math.sqrt(discrim);
-			t = ((t < 0) ? -Math.pow(-t, (1.0/3.0)) : Math.pow(t, (1.0/3.0)));
+			t = ((t < 0) ? -Math.pow(-t, (1.0 / 3.0)) : Math.pow(t, (1.0 / 3.0)));
 			result[0] = -term1 + s + t;
-			term1 += (s + t)/2.0;
+			term1 += (s + t) / 2.0;
 			result[4] = result[2] = -term1;
-			term1 = Math.sqrt(3.0)*(-t + s)/2;
+			term1 = Math.sqrt(3.0) * (-t + s) / 2;
 			result[3] = term1;
 			result[5] = -term1;
 			return;
@@ -1036,20 +1057,20 @@
 		result[5] = result[3] = 0;
 		
 		if (discrim == 0){ // All roots real, at least two are equal.
-			r13 = ((r < 0) ? -Math.pow(-r,(1.0/3.0)) : Math.pow(r,(1.0/3.0)));
-			result[0] = -term1 + 2.0*r13;
+			r13 = ((r < 0) ? -Math.pow(-r, (1.0 / 3.0)) : Math.pow(r, (1.0 / 3.0)));
+			result[0] = -term1 + 2.0 * r13;
 			result[4] = result[2] = -(r13 + term1);
 			return;
 		} // End if (discrim == 0)
 		
 		// Only option left is that all roots are real and unequal (to get here, q < 0)
 		q = -q;
-		dum1 = q*q*q;
-		dum1 = Math.acos(r/Math.sqrt(dum1));
-		r13 = 2.0*Math.sqrt(q);
-		result[0] = -term1 + r13*Math.cos(dum1/3.0);
-		result[2] = -term1 + r13*Math.cos((dum1 + 2.0*Math.PI)/3.0);
-		result[4] = -term1 + r13*Math.cos((dum1 + 4.0*Math.PI)/3.0);
+		dum1 = q * q * q;
+		dum1 = Math.acos(r / Math.sqrt(dum1));
+		r13 = 2.0 * Math.sqrt(q);
+		result[0] = -term1 + r13 * Math.cos(dum1 / 3.0);
+		result[2] = -term1 + r13 * Math.cos((dum1 + 2.0 * Math.PI) / 3.0);
+		result[4] = -term1 + r13 * Math.cos((dum1 + 4.0 * Math.PI) / 3.0);
 		return;
 	}
 
@@ -1178,6 +1199,10 @@
 				* this.options.cy.container().height();
 			
 			edge._private.rscratch.override = {};
+			
+			if (Math.random() < 0.45) {
+				edge._private.rscratch.override.endShape = "inhibitor";
+			}
 		}
 	}
 	
@@ -1188,7 +1213,7 @@
 		var y1 = edge.source().position().y;
 		var y3 = edge.target().position().y;
 		
-		targetRadius = 19;
+		//targetRadius = 19;
 		var approxParam;
 		
 		var cp2x = edge._private.rscratch.cp2x;
@@ -1236,7 +1261,7 @@
 			k = (tan1ay / tan1ax * (tan2bx - tan1bx) + tan1by - tan2by)
 				/ (tan2ay - (tan1ay / tan1ax) * tan2ax);
 		} else {
-			k = 0;
+			k = (tan1bx - tan2bx) / (tan2ax);
 		}
 		
 		// console.log("k: " + k);
@@ -1256,10 +1281,94 @@
 		*/
 	}
 	
-	CanvasRenderer.prototype.drawArrowhead = function(edge, target) {
+	CanvasRenderer.prototype.findStraightIntersection = function(edge, targetRadius) {
+		var dispX = edge.target().position().x - edge.source().position().x;
+		var dispY = edge.target().position().y - edge.source().position().y;
 		
+		var len = Math.sqrt(dispX * dispX + dispY * dispY);
 		
-		return;
+		var newLength = len - targetRadius;
+		
+		if (newLength < 0) {
+			newLength = 0;
+		}
+		
+		edge._private.rscratch.newStraightEndX = 
+			(newLength / len) * dispX + edge.source().position().x;
+		edge._private.rscratch.newStraightEndY = 
+			(newLength / len) * dispY + edge.source().position().y;
+	}
+	
+	arrowShapeDrawers["arrow"] = function(context) {
+		context.lineTo(-0.2, 0);
+		context.lineTo(0, -0.4);
+		context.lineTo(0.2, 0);
+	} 
+	
+	arrowShapeDrawers["inhibitor"] = function(context) {
+		context.scale(1, 0.5);
+		context.lineTo(-1.5, 0);
+		context.lineTo(-1.5, -0.1);
+		context.lineTo(1.5, -0.1);
+		context.lineTo(1.5, 0);
+	}
+	
+	CanvasRenderer.prototype.drawArrowShape = function(edge, x, y, dispX, dispY) {
+		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
+		
+		// console.log(angle);
+				
+		
+		if (dispX < 0) {
+			//context.strokeStyle = "AA99AA";
+			angle = angle + Math.PI / 2;
+		} else {
+			//context.strokeStyle = "AAAA99";
+			angle = - (Math.PI / 2 + angle);
+		}
+		
+		var context = this.context;
+		
+		context.save();
+		
+		context.translate(x, y);
+		
+		context.moveTo(0, 0);
+		context.rotate(-angle);
+		context.scale(2, 2.1);
+		context.beginPath();
+		
+		arrowShapeDrawers[
+			edge._private.rscratch.override.endShape || defaultEdge.endShape](context);
+		
+		context.closePath();
+		
+		context.stroke();
+		context.restore();
+	}
+	
+	CanvasRenderer.prototype.drawArrowhead = function(edge) {
+		
+		var endShape = edge._private.rscratch.override.endShape;
+		endShape = endShape ? endShape : defaultEdge.endShape;
+		
+		var dispX = edge.target().position().x - edge._private.rscratch.newEndPointX;
+		var dispY = edge.target().position().y - edge._private.rscratch.newEndPointY;
+		
+		this.drawArrowShape(edge, edge._private.rscratch.newEndPointX, 
+			edge._private.rscratch.newEndPointY, dispX, dispY);
+	}
+	
+	CanvasRenderer.prototype.drawStraightArrowhead = function(edge) {
+		
+		var dispX = edge.target().position().x 
+			- edge._private.rscratch.newStraightEndX;
+		var dispY = edge.target().position().y 
+			- edge._private.rscratch.newStraightEndY;
+		
+		this.drawArrowShape(edge, edge._private.rscratch.newStraightEndX,
+			edge._private.rscratch.newStraightEndY,
+			dispX, dispY);
 	}
 	
 	CanvasRenderer.prototype.calculateEdgeMetrics = function(edge) {
@@ -1313,6 +1422,25 @@
 		edge._private.rscratch.cp2y = middlePointY + offsetY;
 	}
 	
+	nodeShapeDrawers["ellipse"] = function(node, size) {
+		context.beginPath();
+		context.arc(node._private.position.x, node._private.position.y,
+			size, 0, Math.PI * 2, false);
+		context.closePath();
+		context.fill();
+		
+		context.lineWidth = node._private.rscratch.override.borderWidth
+			|| defaultNode.borderWidth;
+		
+		context.stroke();
+	}
+	
+	nodeShapeDrawers["square"] = function(node, size) {
+		context.save();
+		
+		
+		context.restore();
+	}
 	
 	CanvasRenderer.prototype.redraw = function() {
 		// console.log("draw call");
@@ -1353,14 +1481,17 @@
 			
 			if (edge._private.rscratch.selected) {
 				styleValue = edge._private.rscratch.override.regularColor;
-				context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.selectedColor;
+				context.strokeStyle = styleValue != undefined ? styleValue 
+					: defaultEdge.selectedColor;
 			} else {
 				if (edge._private.rscratch.hovered) {
 					styleValue = edge._private.rscratch.override.hoveredColor;
-					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.hoveredColor;
+					context.strokeStyle = styleValue != undefined ? styleValue 
+						: defaultEdge.hoveredColor;
 				} else {
 					styleValue = edge._private.rscratch.override.regularColor;
-					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.regularColor;
+					context.strokeStyle = styleValue != undefined ? styleValue 
+						: defaultEdge.regularColor;
 				}
 			}
 			
@@ -1373,65 +1504,33 @@
 			this.calculateEdgeMetrics(edge);
 			
 			if (edge._private.rscratch.straightEdge) {
-				context.lineTo(endNode._private.position.x, endNode._private.position.y);
+				this.findStraightIntersection(edge, 
+					endNode._private.data.weight / 5.0 + 12);
+				
+				context.lineTo(edge._private.rscratch.newStraightEndX, 
+					edge._private.rscratch.newStraightEndY);
+				context.stroke();
+				
+				this.drawStraightArrowhead(edge);
+				
 			} else if (edge._private.rscratch.selfEdge) {
 				
 			} else {
-				context.quadraticCurveTo(edge._private.rscratch.cp2x, 
-					edge._private.rscratch.cp2y, endNode._private.position.x, 
-					endNode._private.position.y);
-			}
-			
-			
-			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
-			context.stroke();
-		}
-		
-		for (var index = 0; index < edges.length; index++) {
-			edge = edges[index];
-			startNode = edge.source()[0];
-			endNode = edge.target()[0];
-			
-			if (edge._private.rscratch.selected) {
-				styleValue = edge._private.rscratch.override.regularColor;
-				context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.selectedColor;
-			} else {
-				if (edge._private.rscratch.hovered) {
-					styleValue = edge._private.rscratch.override.hoveredColor;
-					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.hoveredColor;
-				} else {
-					styleValue = edge._private.rscratch.override.regularColor;
-					context.strokeStyle = styleValue != undefined ? styleValue : defaultEdge.regularColor;
-				}
-			}
-			
-			context.strokeStyle = "#AAAA99";
-			
-			context.lineWidth = edge._private.data.weight / 26.0;
-			context.beginPath();
-			
-			context.moveTo(startNode._private.position.x, startNode._private.position.y);
-			
-
-			this.calculateEdgeMetrics(edge);
-			
-			if (edge._private.rscratch.straightEdge) {
-				// context.lineTo(endNode._private.position.x, endNode._private.position.y);
-			} else if (edge._private.rscratch.selfEdge) {
-				
-			} else {
-				
-				this.findBezierIntersection(edge, 3);
+				this.findBezierIntersection(edge, endNode._private.data.weight / 5.0 + 12);
 			
 				context.quadraticCurveTo(edge._private.rscratch.newCp2x, 
 					edge._private.rscratch.newCp2y, edge._private.rscratch.newEndPointX, 
 					edge._private.rscratch.newEndPointY);
+				context.stroke();
+				
+				this.drawArrowhead(edge);
 			}
 			
 			
 			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
-			context.stroke();
+			
 		}
+		
 		
 		var node, labelStyle, labelSize, labelFamily;
 		for (var index = 0; index < nodes.length; index++) {
@@ -1483,6 +1582,7 @@
 			context.fillStyle = node._private.rscratch.override.labelTextColor || defaultNode.labelTextColor;
 			context.fillText(String(node.id()), 
 				node._private.position.x, node._private.position.y - node._private.data.weight / 5.0 - 4);
+			
 		}
 		
 		

@@ -73,9 +73,9 @@
 			
 			var selector;
 			if(params.group != null){
-				selector = new $$.Selector( cy, params.group, selector );
+				selector = new $$.Selector( params.group, selector );
 			} else {
-				selector = new $$.Selector( cy, selector );
+				selector = new $$.Selector( selector );
 			}
 			
 			return selector.filter( collection, params.addLiveFunction );

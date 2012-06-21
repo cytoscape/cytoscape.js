@@ -94,9 +94,7 @@
 					},
 					ready: function(cy){
 						window.cy = cy;
-						window.$$ = function( selector ){
-							return cy.$( selector );
-						};
+						window.$$ = $.cytoscape;
 
 						start();
 					}

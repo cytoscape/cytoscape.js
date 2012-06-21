@@ -20,6 +20,10 @@
 		number: function(obj){
 			return obj != null && typeof obj === typeof 1 && !isNaN(obj);
 		},
+
+		integer: function( obj ){
+			return $$.is.number(obj) && Math.floor(obj) === obj;
+		},
 		
 		color: function(obj){
 			return obj != null && typeof obj === typeof "" && $.Color(obj).toString() !== "";

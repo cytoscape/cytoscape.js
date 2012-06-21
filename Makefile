@@ -46,6 +46,7 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/jquery-plugin.js\
 	$(SRC_DIR)/event.js\
 	$(SRC_DIR)/define.js\
+	$(SRC_DIR)/style.js\
 	$(SRC_DIR)/core.js\
 	$(SRC_DIR)/core-add-remove.js\
 	$(SRC_DIR)/core-animation.js\

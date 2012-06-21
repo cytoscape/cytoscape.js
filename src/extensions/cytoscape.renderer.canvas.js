@@ -1187,6 +1187,34 @@
 			node._private.rscratch.override = {};
 			
 			// console.log(node._private.rscratch.override);
+			
+			var color = Math.max(Math.random(), 0.6);
+			node._private.rscratch.override.regularColor = "rgba(" 
+				+ String(Math.floor(color * 100 + 125)) + "," 
+				+ String(Math.floor(color * 100 + 125)) + "," 
+				+ String(Math.floor(color * 100 + 125)) + "," + 255 + ")"; 
+			
+			//String(color * 16777215);
+			node._private.rscratch.override.regularBorderColor = "rgba(" 
+				+ String(Math.floor(color * 70 + 160)) + "," 
+				+ String(Math.floor(color * 70 + 160)) + "," 
+				+ String(Math.floor(color * 70 + 160)) + "," + 255 + ")"; 
+			
+			var shape = Math.random();
+			if (shape < 0.35) {
+				node._private.rscratch.override.shape = "ellipse";
+			} else if (shape < 0.49) {
+				node._private.rscratch.override.shape = "hexagon";
+			} else if (shape < 0.76) {
+				node._private.rscratch.override.shape = "square";
+			} else if (shape < 0.91) {
+				node._private.rscratch.override.shape = "pentagon";
+			} else {
+				node._private.rscratch.override.shape = "octogon";
+			}
+			
+			
+			node._private.rscratch.canvas = document.createElement('canvas');
 		}
 		
 		var edge;
@@ -1203,6 +1231,10 @@
 			if (Math.random() < 0.45) {
 				edge._private.rscratch.override.endShape = "inhibitor";
 			}
+			
+			edge._private.rscratch.override.regularColor = 
+				edge.source()[0]._private.rscratch.override.regularBorderColor
+				|| defaultNode.regularColor;
 		}
 	}
 	
@@ -1423,21 +1455,64 @@
 	}
 	
 	nodeShapeDrawers["ellipse"] = function(node, size) {
+		var context = cy.renderer().context;
+	
 		context.beginPath();
 		context.arc(node._private.position.x, node._private.position.y,
 			size, 0, Math.PI * 2, false);
 		context.closePath();
 		context.fill();
 		
-		context.lineWidth = node._private.rscratch.override.borderWidth
-			|| defaultNode.borderWidth;
-		
-		context.stroke();
+	}
+	
+	nodeShapeDrawers["triangle"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 3, size);
 	}
 	
 	nodeShapeDrawers["square"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 4, size);
+	}
+	
+	nodeShapeDrawers["pentagon"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 5, size);
+	}
+	
+	nodeShapeDrawers["hexagon"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 6, size);
+	}
+	
+	nodeShapeDrawers["heptagon"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 7, size);
+	}
+	
+	nodeShapeDrawers["octogon"] = function(node, size) {
+		cy.renderer().drawNgon(node._private.position.x,
+			node._private.position.y, 8, size);
+	}
+	
+	CanvasRenderer.prototype.drawNgon = function(x, y, sides, size) {
+		var context = cy.renderer().context;
 		context.save();
+		context.translate(x, y);
+		context.beginPath();
 		
+		var increment = 1 / sides * 2 * Math.PI;
+		var startAngle = sides % 2 == 0? Math.PI / 2 + increment / 2 : Math.PI / 2;
+		
+		context.moveTo(Math.cos(startAngle) * size, -Math.sin(startAngle) * size);
+		for (var angle = startAngle; 
+			angle < startAngle + 2 * Math.PI; angle += increment) {
+		
+			context.lineTo(Math.cos(angle) * size, -Math.sin(angle) * size);
+		}
+		
+		context.closePath();
+		context.fill();
 		
 		context.restore();
 	}
@@ -1480,7 +1555,7 @@
 			endNode = edge.target()[0];
 			
 			if (edge._private.rscratch.selected) {
-				styleValue = edge._private.rscratch.override.regularColor;
+				styleValue = edge._private.rscratch.override.selectedColor;
 				context.strokeStyle = styleValue != undefined ? styleValue 
 					: defaultEdge.selectedColor;
 			} else {
@@ -1558,7 +1633,10 @@
 			
 				}
 			}
-						
+			
+			nodeShapeDrawers[node._private.rscratch.override.shape || defaultNode.shape](node, node._private.data.weight / 5.0);
+			
+			/*
 			context.beginPath();
 			context.arc(node._private.position.x, node._private.position.y,
 				node._private.data.weight / 5.0, 0, Math.PI * 2, false);
@@ -1568,6 +1646,11 @@
 			styleValue = node._private.rscratch.override.borderWidth;
 			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
 			
+			context.stroke();
+			*/
+			
+			styleValue = node._private.rscratch.override.borderWidth;
+			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
 			context.stroke();
 			
 			styleValue = node._private.rscratch.override.labelFontStyle;

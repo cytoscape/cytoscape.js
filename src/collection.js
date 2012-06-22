@@ -82,9 +82,7 @@
 			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
-			bypass: $$.util.copy( params.css ) || {}, // the bypass object
-			style: {}, // the calculated style
-			rstyle: {}, // the raw calculated style (raw values so you don't have to parse)
+			style: {}, // properties as set by the style
 			removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 			selected: params.selected ? true : false, // whether it's selected
 			selectable: params.selectable === undefined ? true : ( params.selectable ? true : false ), // whether it's selectable

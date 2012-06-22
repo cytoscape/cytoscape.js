@@ -118,6 +118,7 @@ $v(function(jQuery, $, version){
 
 	test(".selector() & .css()", function(){
 		var s = new $$.Style(cy);
+		s.clear();
 
 		s.selector("node:selected");
 		equal( s.length, 1, "one selector in the style" );

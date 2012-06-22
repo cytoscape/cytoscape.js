@@ -37,7 +37,7 @@
 		
 		this._private = {
 			options: options, // cached options
-			style: options.style,
+			style: new $$.Style(),
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
 			listeners: [], // list of listeners

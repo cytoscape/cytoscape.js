@@ -111,26 +111,6 @@
 			});
 			
 			return this;
-		},
-
-		show: function(){
-			this.cy().renderer().showElements( this.collection() );
-			
-			return this;
-		},
-
-		hide: function(){
-			this.cy().renderer().hideElements( this.collection() );
-			
-			return this;
-		},
-
-		visible: function(){
-			var ele = this.element();
-			
-			if( ele != null ){
-				return this.cy().renderer().elementIsVisible( ele );
-			}
 		}
 	});
 	

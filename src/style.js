@@ -16,6 +16,8 @@
 		};
 		
 		this.length = 0;
+
+		this.addDefaultStylesheet();
 	};
 
 	// nice-to-have aliases
@@ -69,6 +71,7 @@
 			{ name: "text-outline-color", type: t.color },
 			{ name: "text-outline-width", type: t.size },
 			{ name: "text-outline-opacity", type: t.zeroOneNumber },
+			{ name: "text-opacity", type: t.zeroOneNumber },
 			{ name: "text-decoration", type: t.textDecoration },
 			{ name: "text-transform", type: t.textTransform },
 			{ name: "font-family", type: t.fontFamily },
@@ -76,6 +79,7 @@
 			{ name: "font-variant", type: t.fontVariant },
 			{ name: "font-weight", type: t.fontWeight },
 			{ name: "visibility", type: t.visibility },
+			{ name: "opacity", type: t.zeroOneNumber },
 			{ name: "z-index", type: t.nonNegativeInt },
 
 			// these are just for nodes
@@ -135,8 +139,18 @@
 		;
 	};
 
+	// remove all contexts
+	$$.styfn.clear = function(){
+		for( var i = 0; i < this.length; i++ ){
+			delete this[i];
+		}
+		this.length = 0;
+	};
+
 	// parse a property; return null on invalid; return parsed property otherwise
-	$$.styfn.parse = function( name, value ){
+	$$.styfn.parse = function( name, value, propIsBypass ){
+		var cy = this._private.cy;
+		var zoom = cy.zoom();
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
 		var property = $$.style.properties[ name ];
 		
@@ -151,6 +165,16 @@
 		var type = property.type;
 		if( !type ){ return null; } // no type, no luck
 
+		// check if bypass is null or empty string (i.e. indication to delete bypass property)
+		if( propIsBypass && (value === "" || value === null) ){
+			return {
+				name: name,
+				value: value,
+				bypass: true,
+				deleteBypass: true
+			};
+		}
+
 		// check if value is mapped
 		var data, mapData;
 		if( !valueIsString ){
@@ -162,7 +186,8 @@
 				value: data,
 				strValue: value,
 				mapped: $$.style.types.data,
-				field: data[1]
+				field: data[1],
+				bypass: propIsBypass
 			};
 
 		} else if( mapData = new RegExp( $$.style.types.mapData.regex ).exec( value ) ){
@@ -209,6 +234,7 @@
 				fieldMax: parseFloat( mapData[3] ),
 				valueMin: valueMin.value,
 				valueMax: valueMax.value,
+				bypass: propIsBypass
 			};
 		}
 
@@ -243,16 +269,20 @@
 				return null;
 			}
 
-			return {
+			var ret = {
 				name: name,
 				value: value,
 				strValue: "" + value + (units ? units : ""),
 				units: units,
+				bypass: propIsBypass,
 				pxValue: type.unitless ?
 					undefined
 					:
 					( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )
 			};
+			ret.rpxValue = ret.pxValue === undefined ? undefined : ret.pxValue * zoom;
+
+			return ret;
 
 		} else if( type.color ){
 			var tuple = $$.util.color2tuple( value );
@@ -260,7 +290,8 @@
 			return {
 				name: name,
 				value: tuple,
-				strValue: value
+				strValue: value,
+				bypass: propIsBypass
 			};
 
 		} else if( type.enums ){
@@ -271,7 +302,8 @@
 					return {
 						name: name,
 						value: value,
-						strValue: value
+						strValue: value,
+						bypass: propIsBypass
 					};
 				}
 			}
@@ -284,7 +316,8 @@
 				return {
 					name: name,
 					value: m,
-					strValue: value
+					strValue: value,
+					bypass: propIsBypass
 				};
 			} else { // regex doesn't match
 				return null; // didn't match the regex so the value is bogus
@@ -295,7 +328,8 @@
 			return {
 				name: name,
 				value: value,
-				strValue: value
+				strValue: value,
+				bypass: propIsBypass
 			};
 
 		} else {
@@ -371,16 +405,45 @@
 
 	// apply a property to the style (for internal use)
 	// returns whether application was successful
+	//
+	// now, this function flattens the property, and here's how:
+	//
+	// for parsedProp:{ bypass: true, deleteBypass: true }
+	// no property is generated, instead the bypass property in the
+	// element's style is replaced by what's pointed to by the `bypassed`
+	// field in the bypass property (i.e. restoring the property the
+	// bypass was overriding)
+	//
+	// for parsedProp:{ mapped: truthy }
+	// the generated flattenedProp:{ mapping: prop }
+	// 
+	// for parsedProp:{ bypass: true }
+	// the generated flattenedProp:{ bypassed: parsedProp } 
 	$$.styfn.applyParsedProperty = function( ele, parsedProp ){
 		var prop = parsedProp;
 		var style = ele._private.style;
-		var rstyle = ele._private.rstyle;
 		var fieldVal, flatProp;
 		var type = $$.style.properties[ prop.name ].type;
+		var propIsBypass = prop.bypass;
+
+		// check if we need to delete the current bypass
+		if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
+			var currentProp = style[ prop.name ];
+
+			// can only delete if the current prop is a bypass and it points to the property it was overriding
+			if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
+				// because the bypassed property was already applied, we can just replace it (no reapplying necessary)
+				style[ prop.name ] = currentProp.bypassed;
+				return true;
+			
+			} else {
+				return false; // we're unsuccessful deleting the bypass
+			}
+		}
 
 		// put the property in the style objects
 		switch( prop.mapped ){ // flatten the property if mapped
-		case $$.style.properties.mapData:
+		case $$.style.types.mapData:
 			fieldVal = ele._private.data[ prop.field ];
 			if( !$$.is.number(fieldVal) ){ return false; } // it had better be a number
 
@@ -397,21 +460,22 @@
 				var a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
 
 				var clr = [
-					( r1 + (r2 - r1)*percent ),
-					( g1 + (g2 - g1)*percent ),
-					( b1 + (b2 - b1)*percent ),
-					( a1 + (a2 - a1)*percent )
+					Math.round( r1 + (r2 - r1)*percent ),
+					Math.round( g1 + (g2 - g1)*percent ),
+					Math.round( b1 + (b2 - b1)*percent ),
+					Math.round( a1 + (a2 - a1)*percent )
 				];
 
 				flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
+					bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
 					name: prop.name,
 					value: clr,
-					strValue: [ "rgba(", clr[0], " ,", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join("") // fake it til you make it
+					strValue: [ "rgba(", clr[0], ", ", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join("") // fake it til you make it
 				};
 			
 			} else if( type.number ){
 				var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
-				flatProp = this.parse( prop.name, calcValue );
+				flatProp = this.parse( prop.name, calcValue, prop.bypass );
 			
 			} else {
 				return false; // can only map to colours and numbers
@@ -424,10 +488,10 @@
 
 			break;
 
-		case $$.style.properties.data: // direct mapping
+		case $$.style.types.data: // direct mapping
 			fieldVal = ele._private.data[ prop.field ];
 
-			flatProp = this.parse( prop.name, fieldVal );
+			flatProp = this.parse( prop.name, fieldVal, prop.bypass );
 			if( !flatProp ){ return false; } // don't apply property if the field isn't a valid prop val
 
 			flatProp.mapping = prop; // keep a reference to the mapping
@@ -441,8 +505,16 @@
 			return false; // danger, will robinson
 		}
 
-		style[ prop.name ] = prop.strValue;
-		rstyle[ prop.name ] = prop;
+		// if the property is a bypass property, then link the resultant property to the original one
+		if( propIsBypass ){
+			var origProp = style[ prop.name ];
+
+			if( origProp ){
+				prop.bypassed = origProp;
+			}
+		}
+
+		style[ prop.name ] = prop;
 		return true;
 	};
 
@@ -458,33 +530,104 @@
 	// apply the style to the element based on
 	// - its bypass
 	// - what selectors match it
-	$$.styfn.apply = function( ele ){
-		for( var i = 0; i < this.length; i++ ){
-			var context = this[i];
-			var contextSelectorMatches = context.selector.filter( ele ).length > 0;
-			var props = context.properties;
+	$$.styfn.apply = function( eles ){
+		for( var ie = 0; ie < eles.length; ie++ ){
+			var ele = eles[ie];
 
-			if( contextSelectorMatches ){ // then apply its properties
-				for( var j = 0; j < props.length; j++ ){
-					var prop = props[j];
+			// apply the styles in reverse order (the last matching selector has priority for its properties)
+			for( var i = this.length - 1; i >= 0; i++ ){
+				var context = this[i];
+				var contextSelectorMatches = context.selector.filter( ele ).length > 0;
+				var props = context.properties;
 
-					this.applyParsedProperty( ele, prop );
+				if( contextSelectorMatches ){ // then apply its properties
+					for( var j = 0; j < props.length; j++ ){
+						var prop = props[j];
+						var alreadyDefinedProp = ele._private.style[ prop.name ];
+						var propIsAlreadyDefined = alreadyDefinedProp ? true : false;
+
+						// TODO sort out bypass nonsense
+						// var alreadyDefinedPropIsBypass = propIsAlreadyDefined && ;
+
+						// if( !propIsAlreadyDefined ||  ){
+							
+
+						// 	this.applyParsedProperty( ele, prop );
+						// }
+					}
+				}
+			} // for context
+
+		} // for elements
+	};
+
+	// builds a rendered style object from the element's current calculated style object
+	$$.styfn.getRenderedStyle = function( ele ){
+		ele = ele[0]; // ensure element ref
+
+		if( ele ){
+			var style = ele._private.style;
+			var ret = {};
+
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var type = prop.type;
+				var sprop = style[ prop.name ];
+
+				if( sprop ){
+					if( type.number && !type.unitless ){ // for a number with units, get the rendered px value
+						ret[ sprop.name ] = sprop.rpxValue + "px";
+					} else { // otherwise, just put the string value
+						ret[ sprop.name ] = sprop.pxValue;
+					}
 				}
 			}
-		}
 
-		// NOTE: this code assumes that the rbypass object is built properly
-		// if nothing is set there, then nothing will happen here
-		var rbypass = ele._private.rbypass;
-		for( var i = 0 ; i < $$.style.properties.length; i++ ){
-			var prop = $$.style.properties[i];
-			var bypassProp = rbypass[ prop.name ];
-			var propIsInBypass = bypassProp !== undefined;
-
-			if( propIsInBypass ){
-				this.applyParsedProperty( ele, bypassProp );
-			}
+			return ret;
 		}
 	};
+
+	// bypasses are applied to an existing style on an element, and just tacked on temporarily
+	$$.styfn.applyBypass( eles, name, value ){
+		var props = [];
+
+		// put all the properties (can specify one or many) in an array after parsing them
+		if( $$.is.string("name") ){ // then parse the single property
+			var parsedProp = this.parse(name, value, true);
+
+			if( parsedProp ){
+				props.push( parsedProp );
+			}
+		} else if( $$.is.plainObject(name) ){ // then parse each property
+			var specifiedProps = name;
+
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var name = prop.name;
+				var value = specifiedProps[ name ];
+
+				if( value !== undefined ){
+					var parsedProp = this.parse(name, value, true);
+					
+					if( parsedProp ){
+						props.push( parsedProp );
+					}
+				}
+			}
+		} else { // can't do anything without well defined properties
+			return;
+		}
+
+		// now, apply the bypass properties on the elements
+		for( var i = 0; i < eles.length; i++ ){ // for each ele
+			var ele = eles[i];
+
+			for( var j = 0; j < props.length; j++ ){ // for each prop
+				var prop = props[i];
+
+				this.applyParsedProperty( prop );
+			}
+		}
+	}
 	
 })(jQuery, jQuery.cytoscape);

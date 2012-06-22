@@ -68,7 +68,7 @@ $v(function(jQuery, $, version){
 		ok( cy.filter(".one.odd").same(n1), ".one.odd" );
 		ok( cy.filter("node.one[weight < 0.5][foo = 'one'].odd:unlocked").same(n1), "node.one[weight < 0.5][foo = 'one'].odd:unlocked" );	
 		ok( cy.filter("[weird = 'foo, bar']").same(n2), "[weird = 'foo, bar']" );
-		ok( $$("*").same( cy.elements() ), "* gives all elements" );
+		ok( cy.$("*").same( cy.elements() ), "* gives all elements" );
 	});
 
 	test("Compound selectors", function(){
@@ -81,11 +81,11 @@ $v(function(jQuery, $, version){
 			]
 		});
 
-		ok( $$("#np1 node").same("#np2, #np3a, #np3b"), "np1 descendants are { np2, np31a, np3b }" );
-		ok( $$("#np1 > node").same("#np2"), "np1 children are { np2 }" );
-		ok( $$("#np2 > node").same("#np3a, #np3b"), "np2 children { np3a, np3b }" );
-		ok( $$("#np1 .foo").same("#np3a"), "np1 .foo descendants { np3a }" );
-		ok( $$("#np1 > * > *").same("#np3a, #np3b"), "np1 children's children { np3a, np3b }" );
+		ok( cy.$("#np1 node").same("#np2, #np3a, #np3b"), "np1 descendants are { np2, np31a, np3b }" );
+		ok( cy.$("#np1 > node").same("#np2"), "np1 children are { np2 }" );
+		ok( cy.$("#np2 > node").same("#np3a, #np3b"), "np2 children { np3a, np3b }" );
+		ok( cy.$("#np1 .foo").same("#np3a"), "np1 .foo descendants { np3a }" );
+		ok( cy.$("#np1 > * > *").same("#np3a, #np3b"), "np1 children's children { np3a, np3b }" );
 	});
 	
 });

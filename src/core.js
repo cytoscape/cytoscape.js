@@ -37,11 +37,9 @@
 		
 		this._private = {
 			options: options, // cached options
-			style: options.style,
-			nodes: {}, // id => node object
-			edges: {}, // id => edge object
-			live: {}, // event name => array of callback defns
-			selectors: {}, // selector string => selector for live
+			style: new $$.Style(),
+			elements: [], // array of elements
+			id2index: {}, // element id => index in elements array
 			listeners: [], // list of listeners
 			animation: { 
 				// normally shouldn't use collections here, but animation is not related
@@ -93,15 +91,58 @@
 
 	$$.fn.core({
 		getElementById: function( id ){
-			return this._private.nodes[id] || this._private.edges[id] || new $$.Collection( this );
+			var index = this._private.id2index[ id ];
+			if( index !== undefined ){
+				return this._private.elements[ index ];
+			}
+
+			// worst case, return an empty collection
+			return new $$.Collection( this );
 		},
 
-		addToPool: function( ele ){
-			this._private[ ele._private.group ][ ele._private.data.id ] = ele;
+		addToPool: function( eles ){
+			var elements = this._private.elements;
+			var id2index = this._private.id2index;
+
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+
+				var id = ele._private.data.id;
+				var index = id2index[ id ];
+				var alreadyInPool = index !== undefined;
+
+				if( !alreadyInPool ){
+					index = elements.length;
+					elements.push( ele )
+					id2index[ id ] = index;
+				}
+			}
+
+			return this; // chaining
 		},
 
-		removeFromPool: function( ele ){
-			delete this._private[ ele._private.group ][ ele._private.data.id ];
+		removeFromPool: function( eles ){
+			var elements = this._private.elements;
+			var id2index = this._private.id2index;
+
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+
+				var id = ele._private.data.id;
+				var index = id2index[ id ];
+				var inPool = index !== undefined;
+
+				if( inPool ){
+					delete this._private.id2index[ id ];
+					elements.splice(index, 1);
+
+					// adjust the index of all elements past this index
+					for( var j = index; j < elements.length; j++ ){
+						var jid = elements[j]._private.data.id;
+						id2index[ jid ]--;
+					}
+				}
+			}
 		},
 
 		container: function(){

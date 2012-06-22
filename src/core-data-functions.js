@@ -13,7 +13,10 @@
 		}),
 
 		removeData: $$.define.removeData({
-
+			field: "data",
+			event: "data",
+			triggerFnName: "trigger",
+			triggerEvent: true
 		}),
 
 		scratch: $$.define.data({
@@ -23,16 +26,11 @@
 			settingTriggersEvent: false,
 			allowGetting: true
 		}),
-		
-		removeScratch: function( name ){
-			if( name === undefined ){
-				structs.scratch = {};
-			} else {
-				eval( "delete this._private.scratch." + name + ";" );
-			}
-			
-			return this;
-		}
+
+		removeScratch: $$.define.removeData({
+			field: "scratch",
+			triggerEvent: false
+		}),
 	});
 	
 })(jQuery, jQuery.cytoscape);

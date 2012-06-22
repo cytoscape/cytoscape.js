@@ -69,6 +69,7 @@
 			{ name: "text-outline-color", type: t.color },
 			{ name: "text-outline-width", type: t.size },
 			{ name: "text-outline-opacity", type: t.zeroOneNumber },
+			{ name: "text-opacity", type: t.zeroOneNumber },
 			{ name: "text-decoration", type: t.textDecoration },
 			{ name: "text-transform", type: t.textTransform },
 			{ name: "font-family", type: t.fontFamily },
@@ -76,6 +77,7 @@
 			{ name: "font-variant", type: t.fontVariant },
 			{ name: "font-weight", type: t.fontWeight },
 			{ name: "visibility", type: t.visibility },
+			{ name: "opacity", type: t.zeroOneNumber },
 			{ name: "z-index", type: t.nonNegativeInt },
 
 			// these are just for nodes
@@ -380,7 +382,7 @@
 
 		// put the property in the style objects
 		switch( prop.mapped ){ // flatten the property if mapped
-		case $$.style.properties.mapData:
+		case $$.style.types.mapData:
 			fieldVal = ele._private.data[ prop.field ];
 			if( !$$.is.number(fieldVal) ){ return false; } // it had better be a number
 
@@ -397,16 +399,16 @@
 				var a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
 
 				var clr = [
-					( r1 + (r2 - r1)*percent ),
-					( g1 + (g2 - g1)*percent ),
-					( b1 + (b2 - b1)*percent ),
-					( a1 + (a2 - a1)*percent )
+					Math.round( r1 + (r2 - r1)*percent ),
+					Math.round( g1 + (g2 - g1)*percent ),
+					Math.round( b1 + (b2 - b1)*percent ),
+					Math.round( a1 + (a2 - a1)*percent )
 				];
 
 				flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
 					name: prop.name,
 					value: clr,
-					strValue: [ "rgba(", clr[0], " ,", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join("") // fake it til you make it
+					strValue: [ "rgba(", clr[0], ", ", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join("") // fake it til you make it
 				};
 			
 			} else if( type.number ){
@@ -424,7 +426,7 @@
 
 			break;
 
-		case $$.style.properties.data: // direct mapping
+		case $$.style.types.data: // direct mapping
 			fieldVal = ele._private.data[ prop.field ];
 
 			flatProp = this.parse( prop.name, fieldVal );
@@ -458,33 +460,44 @@
 	// apply the style to the element based on
 	// - its bypass
 	// - what selectors match it
-	$$.styfn.apply = function( ele ){
-		for( var i = 0; i < this.length; i++ ){
-			var context = this[i];
-			var contextSelectorMatches = context.selector.filter( ele ).length > 0;
-			var props = context.properties;
+	$$.styfn.apply = function( eles ){
+		for( var ie = 0; ie < eles.length; ie++ ){
+			var ele = eles[ie];
 
-			if( contextSelectorMatches ){ // then apply its properties
-				for( var j = 0; j < props.length; j++ ){
-					var prop = props[j];
+			// reset style objects since we're recalculating style
+			ele._private.style = {};
+			ele._private.rstyle = {};
 
-					this.applyParsedProperty( ele, prop );
+			// parse and apply the bypass
+			var bypass = ele._private.bypass;
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var bypassVal = bypass[ prop.name ];
+				var propIsDefinedInBypass = bypassVal ? true : false;
+
+				if( propIsDefinedInBypass ){
+					this.applyProperty( ele, prop.name, bypassVal );
 				}
 			}
-		}
 
-		// NOTE: this code assumes that the rbypass object is built properly
-		// if nothing is set there, then nothing will happen here
-		var rbypass = ele._private.rbypass;
-		for( var i = 0 ; i < $$.style.properties.length; i++ ){
-			var prop = $$.style.properties[i];
-			var bypassProp = rbypass[ prop.name ];
-			var propIsInBypass = bypassProp !== undefined;
+			// apply the styles in reverse order (the last matching selector has priority for its properties)
+			for( var i = this.length - 1; i >= 0; i++ ){
+				var context = this[i];
+				var contextSelectorMatches = context.selector.filter( ele ).length > 0;
+				var props = context.properties;
 
-			if( propIsInBypass ){
-				this.applyParsedProperty( ele, bypassProp );
-			}
-		}
+				if( contextSelectorMatches ){ // then apply its properties
+					for( var j = 0; j < props.length; j++ ){
+						var prop = props[j];
+						var propIsAlreadyDefined = ele._private.style[ prop.name ] ? true : false;
+
+						if( !propIsAlreadyDefined ){
+							this.applyParsedProperty( ele, prop );
+						}
+					}
+				}
+			} // for contextx
+		} // for elements
 	};
 	
 })(jQuery, jQuery.cytoscape);

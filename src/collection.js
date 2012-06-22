@@ -82,8 +82,9 @@
 			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
-			bypass: $$.util.copy( params.bypass ) || {}, // the bypass object
+			bypass: $$.util.copy( params.css ) || {}, // the bypass object
 			style: {}, // the calculated style
+			rstyle: {}, // the raw calculated style (raw values so you don't have to parse)
 			removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 			selected: params.selected ? true : false, // whether it's selected
 			selectable: params.selectable === undefined ? true : ( params.selectable ? true : false ), // whether it's selectable
@@ -298,7 +299,6 @@
 			}
 			
 			var _private = ele._private;
-			var structs = cy._private; // TODO remove ref to `structs`
 			var data = _private.data;
 			
 			// set id and validate
@@ -410,13 +410,15 @@
 	};
 
 	$$.elesfn.inside = function(){
-		return !this.removed();
+		var ele = this[0];
+		return ele && !ele._private.removed;
 	};
 
 	$$.elesfn.remove = function( notifyRenderer ){
 		var self = this;
 		var removed = [];
 		var elesToRemove = [];
+		var elesToRemoveIds = {};
 		var cy = self._private.cy;
 		
 		if( notifyRenderer === undefined ){
@@ -442,6 +444,13 @@
 		}
 
 		function add( ele ){
+			var alreadyAdded =  elesToRemoveIds[ ele.id() ];
+			if( alreadyAdded ){
+				return;
+			} else {
+				elesToRemoveIds[ ele.id() ] = true;
+			}
+
 			if( ele.isNode() ){
 				elesToRemove.push( ele ); // nodes are removed last
 

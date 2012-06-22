@@ -141,7 +141,54 @@ $v(function(jQuery, $, version){
 		});
 		s.css("z-index", 2);
 		equal( s[1].properties.length, 3, "3 css properties" );
+		equal( s[0].properties.length, 1, "1 css property in 1st selector (not modified by 2nd)" );
 		
+	});
+
+	test(".applyParsedProperty()", function(){
+		var ele = cy.$("#n1")[0]; // weight 0.25
+		var style = new $$.Style(cy);
+		var prop = style.parse("background-color", "red");
+
+		// try a flat property
+		style.applyParsedProperty( ele, prop );
+		equal( ele._private.style["background-color"], "red", "style is correct" );
+		deep( ele._private.rstyle["background-color"], prop, "rstyle is correct" );
+
+		// try a mapData with colour
+		prop = style.parse("background-color", "mapData(weight, 0, 0.5, black, red)");
+		style.applyParsedProperty( ele, prop );
+		equal( ele._private.style["background-color"], "rgba(128, 0, 0, 1)", "colour is calculated properly" );
+		deep( ele._private.rstyle["background-color"], {
+			value: [ 128, 0, 0, 1 ],
+			name: "background-color",
+			strValue: "rgba(128, 0, 0, 1)"
+		}, "raw style is correct" );
+		equal( ele._private.rstyle["background-color"].mapping, prop, "mapped colour raw sytle has a reference to the original mapped property" );
+
+		// try a mapData with number
+		prop = style.parse("height", "mapData(weight, 0, 1, 0, 100)");
+		style.applyParsedProperty( ele, prop );
+		equal( ele._private.style["height"], "25px", "height is calculated properly" );
+		deep( ele._private.rstyle["height"], {
+			value: 25,
+			name: "height",
+			strValue: "25px",
+			units: "px",
+			pxValue: 25
+		}, "raw style is correct" );
+		equal( ele._private.rstyle["height"].mapping, prop, "mapped height raw sytle has a reference to the original mapped property" );
+
+		// try a data
+		prop = style.parse("opacity", "data(weight)");
+		style.applyParsedProperty( ele, prop );
+		equal( ele._private.style["opacity"], "0.25", "opacity is calculated properly" );
+		deep( ele._private.rstyle["opacity"], {
+			value: 0.25,
+			name: "opacity",
+			strValue: "0.25"
+		}, "raw style is correct" );
+		equal( ele._private.rstyle["opacity"].mapping, prop, "mapped opacity raw sytle has a reference to the original mapped property" );
 	});
 	
 });

@@ -41,7 +41,6 @@
 				} else {
 					exec();
 				}
-				
 			}
 			
 			globalAnimationStep(); // first call

@@ -5,7 +5,7 @@ $v(function(jQuery, $, version){
 	test("constructor", function(){
 		var style = new $$.Style(cy);
 
-		equal( style.length, 0, "style is empty" );
+		ok( style.length > 0, "style is nonempty (default styles applied)" );
 	});
 
 	function deep(actual, expected, msg){
@@ -150,46 +150,92 @@ $v(function(jQuery, $, version){
 		var ele = cy.$("#n1")[0]; // weight 0.25
 		var style = new $$.Style(cy);
 		var prop = style.parse("background-color", "red");
+		var eleStyle = ele._private.style;
 
 		// try a flat property
 		style.applyParsedProperty( ele, prop );
-		equal( ele._private.style["background-color"], "red", "style is correct" );
-		deep( ele._private.rstyle["background-color"], prop, "rstyle is correct" );
+		deep( ele._private.style["background-color"], prop, "rstyle is correct" );
 
 		// try a mapData with colour
 		prop = style.parse("background-color", "mapData(weight, 0, 0.5, black, red)");
 		style.applyParsedProperty( ele, prop );
-		equal( ele._private.style["background-color"], "rgba(128, 0, 0, 1)", "colour is calculated properly" );
-		deep( ele._private.rstyle["background-color"], {
+		deep( ele._private.style["background-color"], {
 			value: [ 128, 0, 0, 1 ],
 			name: "background-color",
 			strValue: "rgba(128, 0, 0, 1)"
 		}, "raw style is correct" );
-		equal( ele._private.rstyle["background-color"].mapping, prop, "mapped colour raw sytle has a reference to the original mapped property" );
+		equal( ele._private.style["background-color"].mapping, prop, "mapped colour raw sytle has a reference to the original mapped property" );
 
 		// try a mapData with number
 		prop = style.parse("height", "mapData(weight, 0, 1, 0, 100)");
 		style.applyParsedProperty( ele, prop );
-		equal( ele._private.style["height"], "25px", "height is calculated properly" );
-		deep( ele._private.rstyle["height"], {
+		deep( ele._private.style["height"], {
 			value: 25,
 			name: "height",
 			strValue: "25px",
 			units: "px",
 			pxValue: 25
 		}, "raw style is correct" );
-		equal( ele._private.rstyle["height"].mapping, prop, "mapped height raw sytle has a reference to the original mapped property" );
+		equal( ele._private.style["height"].mapping, prop, "mapped height raw sytle has a reference to the original mapped property" );
 
 		// try a data
 		prop = style.parse("opacity", "data(weight)");
 		style.applyParsedProperty( ele, prop );
-		equal( ele._private.style["opacity"], "0.25", "opacity is calculated properly" );
-		deep( ele._private.rstyle["opacity"], {
+		deep( ele._private.style["opacity"], {
 			value: 0.25,
 			name: "opacity",
 			strValue: "0.25"
 		}, "raw style is correct" );
-		equal( ele._private.rstyle["opacity"].mapping, prop, "mapped opacity raw sytle has a reference to the original mapped property" );
+		equal( ele._private.style["opacity"].mapping, prop, "mapped opacity raw sytle has a reference to the original mapped property" );
+
+		// try a bypass
+		prop = style.parse("background-color", "red");
+		style.applyParsedProperty( ele, prop );
+		var bypass = style.parse("background-color", "blue", true);
+		style.applyParsedProperty( ele, bypass );
+		equal( ele._private.style["background-color"], bypass, "bypass is applied over top" );
+		equal( ele._private.style["background-color"].bypassed, prop, "bypass points to prop" );
+		
+		// apply a style with an existing bypass
+		prop = style.parse("background-color", "yellow");
+		style.applyParsedProperty( ele, prop );
+		equal( ele._private.style["background-color"], bypass, "bypass isn't overwritten by new style" );
+		equal( ele._private.style["background-color"].bypassed, prop, "bypass points to new prop" );
+
+		// apply a new bypass over the old one
+		bypass = style.parse("background-color", "orange", true);
+		style.applyParsedProperty( ele, bypass );
+		equal( eleStyle["background-color"], bypass, "new bypass is there" );
+		equal( eleStyle["background-color"].bypassed, prop, "old prop is pointed to by new bypass" );
+
+	});
+
+	test(".apply() & .applyBypass()", function(){
+		var ele = cy.$("#n1")[0]; // weight 0.25
+		var style = new $$.Style(cy);
+		var eleStyle = ele._private.style;
+
+		// empty the style
+		style
+			.clear()
+			.selector("node")
+				.css({
+					"background-color": "red",
+					"height": "30",
+					"width": "30"
+				})
+		;
+
+		// apply the style to ele
+		style.apply( ele );
+		deepEqual( eleStyle["background-color"].value, [255, 0, 0], "bg colour ok" );
+		deepEqual( eleStyle["height"].value, 30, "height ok" );
+		deepEqual( eleStyle["width"].value, 30, "width ok" );
+
+		// apply a bypass
+		style.applyBypass( ele, "height", 33 );
+		deepEqual( eleStyle["height"].value, 33 );
+
 	});
 	
 });

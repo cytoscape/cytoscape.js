@@ -145,9 +145,16 @@
 			delete this[i];
 		}
 		this.length = 0;
+
+		return this; // chaining
 	};
 
 	// parse a property; return null on invalid; return parsed property otherwise
+	// fields :
+	// - name : the name of the property
+	// - value : the parsed, native-typed value of the property
+	// - strValue : a string value that represents the property value in valid css
+	// - bypass : true iff the property is a bypass property
 	$$.styfn.parse = function( name, value, propIsBypass ){
 		var cy = this._private.cy;
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
@@ -424,6 +431,8 @@
 		var fieldVal, flatProp;
 		var type = $$.style.properties[ prop.name ].type;
 		var propIsBypass = prop.bypass;
+		var origProp = style[ prop.name ];
+		var origPropIsBypass = origProp && origProp.bypass;
 
 		// check if we need to delete the current bypass
 		if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
@@ -431,7 +440,8 @@
 
 			// can only delete if the current prop is a bypass and it points to the property it was overriding
 			if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
-				// because the bypassed property was already applied, we can just replace it (no reapplying necessary)
+				
+				// because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
 				style[ prop.name ] = currentProp.bypassed;
 				return true;
 			
@@ -506,14 +516,22 @@
 
 		// if the property is a bypass property, then link the resultant property to the original one
 		if( propIsBypass ){
-			var origProp = style[ prop.name ];
-
-			if( origProp ){
+			if( origPropIsBypass ){ // then this bypass overrides the existing one
+				prop.bypassed = origProp.bypassed; // steal bypassed prop from old bypass
+			} else { // then link the orig prop to the new bypass
 				prop.bypassed = origProp;
+			}
+
+			style[ prop.name ] = prop; // and set
+		
+		} else { // prop is not bypass
+			if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
+				origProp.bypassed = prop;
+			} else { // then just replace the old prop with the new one
+				style[ prop.name ] = prop; 
 			}
 		}
 
-		style[ prop.name ] = prop;
 		return true;
 	};
 
@@ -534,25 +552,15 @@
 			var ele = eles[ie];
 
 			// apply the styles in reverse order (the last matching selector has priority for its properties)
-			for( var i = this.length - 1; i >= 0; i++ ){
+			for( var i = this.length - 1; i >= 0; i-- ){
 				var context = this[i];
 				var contextSelectorMatches = context.selector.filter( ele ).length > 0;
 				var props = context.properties;
 
 				if( contextSelectorMatches ){ // then apply its properties
-					for( var j = 0; j < props.length; j++ ){
+					for( var j = 0; j < props.length; j++ ){ // for each prop
 						var prop = props[j];
-						var alreadyDefinedProp = ele._private.style[ prop.name ];
-						var propIsAlreadyDefined = alreadyDefinedProp ? true : false;
-
-						// TODO sort out bypass nonsense
-						// var alreadyDefinedPropIsBypass = propIsAlreadyDefined && ;
-
-						// if( !propIsAlreadyDefined ||  ){
-							
-
-						// 	this.applyParsedProperty( ele, prop );
-						// }
+						this.applyParsedProperty( ele, prop );
 					}
 				}
 			} // for context
@@ -560,33 +568,8 @@
 		} // for elements
 	};
 
-	// builds a rendered style object from the element's current calculated style object
-	$$.styfn.getRenderedStyle = function( ele ){
-		ele = ele[0]; // ensure element ref
-
-		if( ele ){
-			var style = ele._private.style;
-			var ret = {};
-
-			for( var i = 0; i < $$.style.properties.length; i++ ){
-				var prop = $$.style.properties[i];
-				var type = prop.type;
-				var sprop = style[ prop.name ];
-
-				if( sprop ){
-					if( type.number && !type.unitless ){ // for a number with units, get the rendered px value
-						ret[ sprop.name ] = sprop.rpxValue + "px";
-					} else { // otherwise, just put the string value
-						ret[ sprop.name ] = sprop.pxValue;
-					}
-				}
-			}
-
-			return ret;
-		}
-	};
-
 	// bypasses are applied to an existing style on an element, and just tacked on temporarily
+	// returns true iff application was successful for at least 1 specified property
 	$$.styfn.applyBypass = function( eles, name, value ){
 		var props = [];
 
@@ -614,19 +597,25 @@
 				}
 			}
 		} else { // can't do anything without well defined properties
-			return;
+			return false;
 		}
 
+		// we've failed if there are no valid properties
+		if( props.length === 0 ){ return false; }
+
 		// now, apply the bypass properties on the elements
+		var ret = false; // return true if at least one succesful bypass applied
 		for( var i = 0; i < eles.length; i++ ){ // for each ele
 			var ele = eles[i];
 
 			for( var j = 0; j < props.length; j++ ){ // for each prop
 				var prop = props[i];
 
-				this.applyParsedProperty( prop );
+				ret = ret || this.applyParsedProperty( ele, prop );
 			}
 		}
-	}
+
+		return ret;
+	};
 	
 })(jQuery, jQuery.cytoscape);

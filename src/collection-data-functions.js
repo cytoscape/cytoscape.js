@@ -121,7 +121,7 @@
 					return rpos[ dim ];
 				}
 			}
-		}
+		},
 
 		// get the specified css property as a rendered value (i.e. on-screen value)
 		// or get the whole rendered style if no property specified

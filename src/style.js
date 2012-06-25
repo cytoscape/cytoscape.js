@@ -150,7 +150,6 @@
 	// parse a property; return null on invalid; return parsed property otherwise
 	$$.styfn.parse = function( name, value, propIsBypass ){
 		var cy = this._private.cy;
-		var zoom = cy.zoom();
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
 		var property = $$.style.properties[ name ];
 		
@@ -280,7 +279,7 @@
 					:
 					( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )
 			};
-			ret.rpxValue = ret.pxValue === undefined ? undefined : ret.pxValue * zoom;
+			//ret.rpxValue = ret.pxValue === undefined ? undefined : ret.pxValue * zoom;
 
 			return ret;
 
@@ -588,7 +587,7 @@
 	};
 
 	// bypasses are applied to an existing style on an element, and just tacked on temporarily
-	$$.styfn.applyBypass( eles, name, value ){
+	$$.styfn.applyBypass = function( eles, name, value ){
 		var props = [];
 
 		// put all the properties (can specify one or many) in an array after parsing them

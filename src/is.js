@@ -53,6 +53,10 @@
 			return obj instanceof $$.Style;
 		},
 
+		stylesheet: function(obj){
+			return obj instanceof $$.Stylesheet;
+		},
+
 		event: function(obj){
 			return obj instanceof $$.Event;
 		},

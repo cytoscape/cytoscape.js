@@ -56,7 +56,7 @@
 		};
 
 		// init style
-		this._private.style = $$.is.style(options.style) ? options.style : new $$.Style( cy );
+		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : new $$.Style( cy );
 
 		cy.initRenderer( options.renderer );
 

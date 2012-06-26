@@ -45,9 +45,9 @@ $(function(){
 			description: "Set nodes to red and edges to blue on click",
 			setup: function(){
 				cy.elements().bind("click", function(){
-					this.bypass("fillColor", "red");
+					this.css("background-color", "red");
 					
-					this.bypass({
+					this.css({
 						lineColor: "blue",
 						targetArrowColor: "blue",
 						sourceArrowColor: "blue"
@@ -55,7 +55,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").css("*", "");
 			}
 		});
 		
@@ -65,7 +65,7 @@ $(function(){
 			description: "Set nodes to squares and edge arrows to squares on click",
 			setup: function(){
 				cy.elements().bind("click", function(){
-					this.bypass({
+					this.css({
 						shape: "rectangle",
 						targetArrowShape: "square",
 						sourceArrowShape: "square"
@@ -73,7 +73,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").css("*", "");
 			}
 		});
 		

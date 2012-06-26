@@ -439,10 +439,10 @@
 					allColonSelectorsMatch = !element.locked();
 					break;
 				case ":visible":
-					allColonSelectorsMatch = renderer.elementIsVisible(element);
+					allColonSelectorsMatch = element.visible();
 					break;
 				case ":hidden":
-					allColonSelectorsMatch = !renderer.elementIsVisible(element);
+					allColonSelectorsMatch = !element.visible();
 					break;
 				case ":grabbed":
 					allColonSelectorsMatch = element.grabbed();

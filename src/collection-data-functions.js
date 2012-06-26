@@ -186,7 +186,7 @@
 
 			if( $$.is.plainObject(name) ){ // then extend the bypass
 				var props = name;
-				style.applyBypass( ele, props );
+				style.applyBypass( this, props );
 				this.rtrigger("style"); // let the renderer know we've updated style
 
 			} else if( $$.is.string(name) ){
@@ -216,6 +216,24 @@
 			}
 
 			return this; // chaining
+		},
+
+		show: function(){
+			this.css("visibility", "visible");
+			return this; // chaining
+		},
+
+		hide: function(){
+			this.css("visibility", "hidden");
+			return this; // chaining
+		},
+
+		visible: function(){
+			return this.css("visibility") === "visible";
+		},
+
+		hidden: function(){
+			return !this.visible();
 		},
 
 		// convenience function to get a numerical value for the width of the node/edge

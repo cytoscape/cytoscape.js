@@ -12,7 +12,8 @@
 		}
 
 		this._private = {
-			cy: cy
+			cy: cy,
+			coreStyle: {}
 		};
 		
 		this.length = 0;
@@ -30,6 +31,83 @@
 			var fn = fnMap[ fnName ];
 			$$.Style.prototype = fn;
 		}
+	};
+
+	// a dummy stylesheet object that doesn't need a reference to the core
+	$$.stylesheet = $$.Stylesheet = function(){
+		if( !(this instanceof $$.Stylesheet) ){
+			return new $$.Stylesheet();
+		}
+
+		this.length = 0;
+	};
+
+	// just store the selector to be parsed later
+	$$.Stylesheet.prototype.selector = function( selector ){
+		var i = this.length++;
+
+		this[i] = {
+			selector: selector,
+			properties: []
+		};
+
+		return this; // chaining
+	};
+
+	// just store the property to be parsed later
+	$$.Stylesheet.prototype.css = function( name, value ){
+		var i = this.length - 1;
+
+		if( $$.is.string(name) ){
+			this[i].properties.push({
+				name: name,
+				value: value
+			});
+		} else if( $$.is.plainObject(name) ){
+			map = name;
+
+			for( var j = 0; j < $$.style.properties.length; j++ ){
+				var prop = $$.style.properties[j];
+				var mapVal = map[ prop.name ];
+
+				if( mapVal === undefined ){ // also try camel case name
+					mapVal = map[ $$.util.dash2camel(prop.name) ];
+				}
+
+				if( mapVal !== undefined ){
+					var name = prop.name;
+					var value = mapVal;
+
+					this[i].properties.push({
+						name: name,
+						value: value
+					});
+				}
+			}
+		}
+
+		return this; // chaining
+	};
+
+	// generate a real style object from the dummy stylesheet
+	$$.Stylesheet.prototype.generateStyle = function( cy ){
+		var style = new $$.Style(cy);
+
+		for( var i = 0; i < this.length; i++ ){
+			var context = this[i];
+			var selector = context.selector;
+			var props = context.properties;
+
+			style.selector(selector); // apply selector
+
+			for( var j = 0; j < props.length; j++ ){
+				var prop = props[j];
+
+				style.css( prop.name, prop.value ); // apply property
+			}
+		}
+
+		return style;
 	};
 
 	(function(){
@@ -115,7 +193,7 @@
 		for( var i = 0; i < props.length; i++ ){
 			var prop = props[i];
 			
-			props[ prop.name ] = prop;
+			props[ prop.name ] = prop; // allow lookup by name
 		}
 	})();
 
@@ -199,6 +277,11 @@
 		return this; // chaining
 	};
 
+	// builds a style object for the "core" selector
+	$$.styfn.core = function(){
+		return this._private.coreStyle;
+	};
+
 	// parse a property; return null on invalid; return parsed property otherwise
 	// fields :
 	// - name : the name of the property
@@ -206,7 +289,7 @@
 	// - strValue : a string value that represents the property value in valid css
 	// - bypass : true iff the property is a bypass property
 	$$.styfn.parse = function( name, value, propIsBypass ){
-		var cy = this._private.cy;
+		
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
 		var property = $$.style.properties[ name ];
 		
@@ -454,9 +537,20 @@
 		switch( args.length ){
 		case 1:
 			var map = args[0];
-			for(var name in map){
-				this.cssRule( name, map[name] );
+
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var mapVal = map[ prop.name ];
+
+				if( mapVal === undefined ){
+					mapVal = map[ $$.util.dash2camel(prop.name) ];
+				}
+
+				if( mapVal !== undefined ){
+					this.cssRule( prop.name, mapVal );
+				}
 			}
+
 			break;
 
 		case 2:
@@ -479,6 +573,12 @@
 		if( property ){
 			var i = this.length - 1;
 			this[i].properties.push( property );
+
+			// add to core style if necessary
+			var currentSelectorIsCore = !this[i].selector;
+			if( currentSelectorIsCore ){
+				this._private.coreStyle[ property.name ] = property;
+			}
 		}
 
 		return this; // chaining
@@ -514,7 +614,9 @@
 			var currentProp = style[ prop.name ];
 
 			// can only delete if the current prop is a bypass and it points to the property it was overriding
-			if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
+			if( !currentProp ){
+				return true; // property is already not defined
+			} else if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
 				
 				// because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
 				style[ prop.name ] = currentProp.bypassed;
@@ -626,8 +728,8 @@
 		for( var ie = 0; ie < eles.length; ie++ ){
 			var ele = eles[ie];
 
-			// apply the styles in reverse order (the last matching selector has priority for its properties)
-			for( var i = this.length - 1; i >= 0; i-- ){
+			// apply the styles
+			for( var i = 0; i < this.length; i++ ){
 				var context = this[i];
 				var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for "core"
 				var props = context.properties;
@@ -666,7 +768,9 @@
 				var styleProp = style[ prop.name ];
 
 				if( styleProp ){
-					rstyle[ prop.name ] = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + "px";
+					var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + "px";
+					rstyle[ prop.name ] = val;
+					rstyle[ $$.util.dash2camel(prop.name) ] = val;
 				}
 			}
 
@@ -688,6 +792,7 @@
 
 				if( styleProp ){
 					rstyle[ prop.name ] = styleProp.strValue;
+					rstyle[ $$.util.dash2camel(prop.name) ] = styleProp.strValue;
 				}
 			}
 
@@ -720,7 +825,22 @@
 		var props = [];
 
 		// put all the properties (can specify one or many) in an array after parsing them
-		if( $$.is.string("name") ){ // then parse the single property
+		if( name === "*" || name === "**" ){ // apply to all property names
+
+			if( value !== undefined ){
+				for( var i = 0; i < $$.style.properties.length; i++ ){
+					var prop = $$.style.properties[i];
+					var name = prop.name;
+
+					var parsedProp = this.parse(name, value, true);
+					
+					if( parsedProp ){
+						props.push( parsedProp );
+					}
+				}
+			}
+
+		} else if( $$.is.string(name) ){ // then parse the single property
 			var parsedProp = this.parse(name, value, true);
 
 			if( parsedProp ){
@@ -733,6 +853,10 @@
 				var prop = $$.style.properties[i];
 				var name = prop.name;
 				var value = specifiedProps[ name ];
+
+				if( value === undefined ){ // try camel case name too
+					value = specifiedProps[ $$.util.dash2camel(name) ];
+				}
 
 				if( value !== undefined ){
 					var parsedProp = this.parse(name, value, true);
@@ -755,9 +879,9 @@
 			var ele = eles[i];
 
 			for( var j = 0; j < props.length; j++ ){ // for each prop
-				var prop = props[i];
+				var prop = props[j];
 
-				ret = ret || this.applyParsedProperty( ele, prop );
+				ret = this.applyParsedProperty( ele, prop ) || ret;
 			}
 		}
 

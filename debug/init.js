@@ -11,98 +11,15 @@ $(function(){
 		layout: {
 			name: "grid"
 		},
-		style: {
-			selectors: {
-				"edge": {
-					targetArrowShape: "triangle",
-					sourceArrowShape: "circle",
-					width: {
-						defaultValue: 1,
-						continuousMapper: {
-							attr: {
-								name: "weight",
-								min: 0,
-								max: 100
-							},
-							mapped: {
-								min: 1,
-								max: 4
-							}
-						}
-					}
-				},
-				
-				"edge:selected": {
-					lineColor: "#666",
-					targetArrowColor: "#666",
-					sourceArrowColor: "#666"
-				},
-				
-				"node": {
-					labelText: {
-						defaultValue: "",
-						passthroughMapper: "id"
-					},
-					shape: "ellipse",
-					height: {
-						continuousMapper: {
-							attr: {
-								name: "weight",
-								min: 0,
-								max: 100
-							},
-							mapped: {
-								min: 25,
-								max: 40
-							}
-						}
-					},
-					width: {
-						continuousMapper: {
-							attr: {
-								name: "weight",
-								min: 0,
-								max: 100
-							},
-							mapped: {
-								min: 25,
-								max: 40
-							}
-						}
-					}
-				},
-				
-				"node:selected": {
-					fillColor: "#333"
-				},
-				
-				"node.ui-cytoscapeweb-edgehandles-hover": {
-					
-				},
-				
-				"node.ui-cytoscapeweb-edgehandles-target": {
-					borderColor: "#5CC2ED",
-					borderWidth: 3,
-					borderOpacity: 0.75
-				},
-				
-				".ui-cytoscapeweb-edgehandles-preview": {
-					fillColor: "#5CC2ED",
-					lineColor: "#5CC2ED",
-					sourceArrowColor: "#5CC2ED",
-					targetArrowColor: "#5CC2ED",
-					opacity: 0.75,
-					labelText: ""
-				},
-				
-				"node.intermediate": {
-					height: 16,
-					width: 16,
-					shape: "rectangle",
-					labelText: ""
-				}
-			}
-		},
+		style: $.cytoscape.stylesheet()
+			.selector(":selected")
+				.css({
+					"background-color": "#000",
+					"line-color": "#000",
+					"source-arrow-color": "#000",
+					"target-arrow-color": "#000"
+				})
+		,
 		elements: {
 			nodes: [
 			], 

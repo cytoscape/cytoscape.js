@@ -468,11 +468,12 @@
 				
 				var _setPanCursor = false;
 				function setPanCursor(){
+					var coreStyle = self.cy.style().core();
 					if( _setPanCursor ){ return; }
 					
 					_setPanCursor = true;
 					self.svg.change(svgDomElement, {
-						cursor: cursor(self.style.global.panCursor)
+						cursor: coreStyle["panning-cursor"].value
 					});
 				}
 				
@@ -490,6 +491,7 @@
 				
 				var dragHandler = function(dragEvent){
 					clearTimeout(panDelayTimeout);
+					var coreStyle = self.cy.style().core();
 					
 					var dx = dragEvent.pageX - originX;
 					var dy = dragEvent.pageY - originY;
@@ -513,10 +515,10 @@
 					if( selecting ){
 						if( selectionSquare == null ){
 							selectionSquare = self.svg.rect(selectOriginX, selectOriginY, 0, 0, {
-								fill: color(self.style.global.selectionFillColor),
-								opacity: percent(self.style.global.selectionOpacity),
-								stroke: color(self.style.global.selectionBorderColor),
-								strokeWidth: number(self.style.global.selectionBorderWidth)
+								fill: coreStyle["selection-box-color"].strValue,
+								opacity: coreStyle["selection-box-opacity"].value,
+								stroke: coreStyle["selection-box-border-color"].strValue,
+								strokeWidth: coreStyle["selection-box-border-width"].value
 							});
 						} else {
 							
@@ -1203,7 +1205,7 @@
 		var parent = element.rscratch("svgGroup");
 		var position = element.position();
 		
-		nodeShape(style.shape).update(this.svg, parent, element, position, style);
+		nodeShape(style.shape.strValue).update(this.svg, parent, element, position, style);
 	};
 	
 	SvgRenderer.prototype.makeSvgEdgeInteractive = function(element){
@@ -1442,12 +1444,12 @@
 		
 		function nodeInside(element){
 
-			if( !self.elementIsVisible(element) ){
+			if( !element.visible() ){
 				return false;
 			}
 			
 			// intersect rectangle in the model with the actual node shape in the model
-			var shape = nodeShape( element.style("shape") ).intersectionShape;
+			var shape = nodeShape( element._private.style["shape"].strValue ).intersectionShape;
 			var modelRectangleP1 = self.modelPoint({ x: selectionBounds.x1, y: selectionBounds.y1 });
 			var modelRectangleP2 = self.modelPoint({ x: selectionBounds.x2, y: selectionBounds.y2 });
 			var modelRectangle = self.svg.rect(modelRectangleP1.x, modelRectangleP1.y, modelRectangleP2.x - modelRectangleP1.x, modelRectangleP2.y - modelRectangleP1.y);
@@ -1458,8 +1460,8 @@
 			var zoom = self.zoom();
 			var x = element.renderedPosition().x;
 			var y = element.renderedPosition().y;
-			var w = element.renderedWidth() + element.style("borderWidth") * zoom;
-			var h = element.renderedHeight() + element.style("borderWidth") * zoom;
+			var w = element.renderedOuterWidth();
+			var h = element.renderedOuterHeight();
 			
 			// rendered selection square
 			var x1 = selectionBounds.x1;
@@ -1480,9 +1482,9 @@
 				}
 			} else {
 				// if both node center points are inside, then the edge is inside
-				if( self.elementIsVisible(element) &&
-					nodeInside( element.source() ) &&
-					nodeInside( element.target() ) ){
+				if( element.visible() &&
+					nodeInside( element.source()[0] ) &&
+					nodeInside( element.target()[0] ) ){
 					
 					toSelect = toSelect.add(element);
 				}
@@ -2027,8 +2029,6 @@
 	SvgRenderer.prototype.updateStyle = function(style){
 		var collection = this.cy.elements();
 		
-		this.setStyle(style);
-		
 		this.updateElementsStyle(collection);
 	};
 	
@@ -2215,10 +2215,10 @@
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
-		var oldTargetShape = element._private.style.targetArrowShape;
-		var oldSourceShape = element._private.style.sourceArrowShape;
+		var oldStyle = element.rscratch().oldStyle;
+		var oldTargetShape = !oldStyle ? null : oldStyle["target-arrow-shape"].value;
+		var oldSourceShape = !oldStyle ? null : oldStyle["source-arrow-shape"].value;
 		
-		element._private.style = newStyle != null ? newStyle : this.calculateStyle(element);
 		var style = element._private.style;
 		
 		if( element.rscratch().svg == null ){
@@ -2227,20 +2227,20 @@
 		}
 		
 		var newSrcStyle = element.source()[0]._private.style;
-		var oldSrcStyle = element.rscratch().oldSourceStyle || newSrcStyle;
+		var oldSrcStyle = element.rscratch().oldSourceStyle || null;
 		
 		var newTgtStyle = element.target()[0]._private.style;
-		var oldTgtStyle = element.rscratch().oldTargetStyle || newTgtStyle;
+		var oldTgtStyle = element.rscratch().oldTargetStyle || null;
 		
 		var newTargetShape = element._private.style["target-arrow-shape"].value;
 		var newSourceShape = element._private.style["source-arrow-shape"].value;
 		
-		var nodesStyleChanged = newSrcStyle.height.value != oldSrcStyle.height.value || newSrcStyle.width.value != oldSrcStyle.width.value ||
+		var nodesStyleChanged = !oldStyle || newSrcStyle.height.value != oldSrcStyle.height.value || newSrcStyle.width.value != oldSrcStyle.width.value ||
 			newTgtStyle.height.value != oldTgtStyle.height.value || newTgtStyle.width.value != oldTgtStyle.width.value ||
 			newSrcStyle.shape.value != oldSrcStyle.shape.value || newTgtStyle.shape.value != oldTgtStyle.shape.value ||
-			newSrcStyle.["border-width"].value != oldSrcStyle["border-width"].value || newTgtStyle["border-width"].value != oldTgtStyle["border-width"].value;
+			newSrcStyle["border-width"].value != oldSrcStyle["border-width"].value || newTgtStyle["border-width"].value != oldTgtStyle["border-width"].value;
 		
-		var widthChanged = element.rscratch().oldStyle == null || element.rscratch().oldStyle.width.value != style.width.value;
+		var widthChanged = !oldStyle || oldStyle.width.value != style.width.value;
 		
 		element.rscratch().oldSourceStyle = newSrcStyle;
 		element.rscratch().oldTargetStyle = newTgtStyle;
@@ -2257,54 +2257,54 @@
 		// generic edge styles go here
 		this.svg.change(element.rscratch().svg, {
 			"pointer-events": "visibleStroke", // on visibility:hidden, no events
-			stroke: color(style.lineColor),
-			strokeWidth: number(style.width),
-			strokeDashArray: lineStyle(style.style).array,
+			stroke: style["line-color"].strValue,
+			strokeWidth: style["width"].pxValue,
+			strokeDashArray: style["line-style"].strValue,
 			"stroke-linecap": "butt", // disable for now for markers to line up nicely
-			cursor: cursor(style.cursor),
+			cursor: style["cursor"].value,
 			fill: "none",
-			visibility: visibility(style.visibility)
+			visibility: style["visibility"].value
 		});
 		
 		this.svg.change(element.rscratch().svgGroup, {
-			opacity: percent(style.opacity)
+			opacity: style["opacity"].value
 		});
 		
 		this.svg.change(element.rscratch().svgTargetArrow, {
-			fill: color(style.targetArrowColor),
-			cursor: cursor(style.cursor),
-			visibility: visibility(style.visibility)
+			fill: style["target-arrow-color"].strValue,
+			cursor: style["cursor"].value,
+			visibility: style["visibility"].value
 		});
 		
 		this.svg.change(element.rscratch().svgSourceArrow, {
-			fill: color(style.sourceArrowColor),
-			cursor: cursor(style.cursor),
-			visibility: visibility(style.visibility)
+			fill: style["source-arrow-color"].strValue,
+			cursor: style["cursor"].value,
+			visibility: style["visibility"].value
 		});
 		
 		var labelOptions = {
-			"visibility": visibility(style.visibility),
+			"visibility": style["visibility"].value,
 			"pointer-events": "none",
-			fill: color(style.labelFillColor),
-			"font-family": style.labelFontFamily,
-			"font-weight": style.labelFontWeight,
-			"font-style": style.labelFontStyle,
-			"text-decoration": style.labelFontDecoration,
-			"font-variant": style.labelFontVariant,
-			"font-size": style.labelFontSize,
+			fill: style["color"].strValue,
+			"font-family": style["font-family"].strValue,
+			"font-weight": style["font-weight"].strValue,
+			"font-style": style["font-style"].strValue,
+			"text-decoration": style["text-decoration"].strValue,
+			"font-variant": style["font-variant"].strValue,
+			"font-size": style["font-size"].pxValue,
 			"text-rendering": "geometricPrecision"
 		};
 		
 		this.svg.change(element.rscratch().svgLabel, labelOptions);
 		this.svg.change(element.rscratch().svgLabelOutline, $.extend({}, labelOptions, {
 			fill: "none",
-			stroke: color(style.labelOutlineColor),
-			strokeWidth: number(style.labelOutlineWidth) * 2,
-			opacity: percent(style.labelOutlineOpacity),
+			stroke: style["text-outline-color"].strValue,
+			strokeWidth: style["text-outline-width"].pxValue * 2,
+			opacity: style["text-outline-opacity"].value,
 		}) );
 		
 		this.svg.change(element.rscratch().svgLabelGroup, {
-			opacity: percent(style.labelOpacity)
+			opacity: style["text-opacity"].value
 		});
 		
 		var labelText = style.labelText == null ? "" : style.labelText;

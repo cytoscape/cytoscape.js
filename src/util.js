@@ -173,6 +173,30 @@
 			return ret.join("");
 		},
 
+		dash2camel: function( str ){
+			var ret = [];
+			var nextIsUpper = false;
+
+			for( var i = 0; i < str.length; i++ ){
+				var ch = str[i];
+				var isDash = ch === "-";
+
+				if( isDash ){
+					nextIsUpper = true;
+				} else {
+					if( nextIsUpper ){
+						ret.push( ch.toUpperCase() );
+					} else {
+						ret.push( ch );
+					}
+
+					nextIsUpper = false;
+				}
+			}
+
+			return ret.join("");
+		},
+
 		// strip spaces from beginning of string and end of string
 		trim: function( str ){
 			var first, last;

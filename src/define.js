@@ -24,6 +24,7 @@
 				settingTriggersEvent: false,
 				triggerFnName: "trigger",
 				immutableKeys: {}, // key => true if immutable
+				updateMappers: false
 			};
 			params = $$.util.extend({}, defaults, params);
 
@@ -55,6 +56,9 @@
 								all[i]._private[ p.field ][ name ] = value;
 							}
 
+							// update mappers if asked
+							if( p.updateMappers ){ all[i].updateMappers(); }
+
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );
 							}
@@ -77,6 +81,9 @@
 						}
 					}
 					
+					// update mappers if asked
+					if( p.updateMappers ){ self.updateMappers(); }
+
 					if( p.settingTriggersEvent ){
 						self[ p.triggerFnName ]( p.settingEvent );
 					}

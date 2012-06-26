@@ -30,7 +30,8 @@
 						ele._private[params.field] = params.value;
 					}
 				}
-				this.rtrigger(params.event);
+				this.updateStyle(); // change of state => possible change of style
+				this.trigger(params.event);
 			}
 
 			return this;

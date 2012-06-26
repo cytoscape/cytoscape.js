@@ -78,8 +78,8 @@
 		this._private = {
 			cy: cy,
 			single: true, // indicates this is an element
-			data: $$.util.copy( params.data ) || {}, // data object
-			position: $$.util.copy( params.position ) || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
+			data: params.data || {}, // data object
+			position: params.position || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
 			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
 			style: {}, // properties as set by the style
@@ -365,7 +365,6 @@
 					// non-existant parent; just remove it
 					delete data.parent;
 				} else {
-
 					var selfAsParent = false;
 					var ancestor = parent;
 					while( !ancestor.empty() ){
@@ -391,12 +390,15 @@
 		
 		restored = new $$.Collection( cy, restored );
 		if( restored.length > 0 ){
+
+			restored.updateStyle( false ); // when we restore/add elements, they need their style
+			restored.connectedNodes().updateStyle( notifyRenderer ); // may need to update style b/c of {degree} selectors
+
 			if( notifyRenderer ){
 				restored.rtrigger("add");
 			} else {
 				restored.trigger("add");
 			}
-			
 		}
 		
 		return self; // chainability

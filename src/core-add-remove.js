@@ -6,17 +6,18 @@
 			var elements;
 			var cy = this;
 			
-			// add the element
-			if( $$.is.element(opts) ){
-				var element = opts;
-				elements = element.collection().restore();
+			// add the elements
+			if( $$.is.elementOrCollection(opts) ){
+				var eles = opts;
+				var jsons = [];
+
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
+					jsons.push( ele.json() );
+				}
+
+				elements = new $$.Collection( cy, jsons );
 			}
-			
-			// add the collection
-			else if( $$.is.collection(opts) ){
-				var collection = opts;
-				elements = collection.restore();
-			} 
 			
 			// specify an array of options
 			else if( $$.is.array(opts) ){

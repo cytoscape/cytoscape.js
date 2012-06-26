@@ -327,6 +327,10 @@
 		},
 
 		colors: {
+			// special colour names
+			transparent:			[0,0,0,0], // NB alpha === 0
+
+			// regular colours
 			aliceblue:				[240,248,255],
 			antiquewhite:			[250,235,215],
 			aqua:					[0,255,255],

@@ -37,7 +37,6 @@
 		
 		this._private = {
 			options: options, // cached options
-			style: new $$.Style( cy ),
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
 			listeners: [], // list of listeners
@@ -51,8 +50,13 @@
 			renderer: null,
 			notificationsEnabled: true, // whether notifications are sent to the renderer
 			zoomEnabled: true,
-			panEnabled: true
+			panEnabled: true,
+			zoom: 1,
+			pan: { x: 0, y: 0 }
 		};
+
+		// init style
+		this._private.style = $$.is.style(options.style) ? options.style : new $$.Style( cy );
 
 		cy.initRenderer( options.renderer );
 

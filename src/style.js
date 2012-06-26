@@ -78,6 +78,7 @@
 			{ name: "font-style", type: t.fontStyle },
 			{ name: "font-variant", type: t.fontVariant },
 			{ name: "font-weight", type: t.fontWeight },
+			{ name: "font-size", type: t.size },
 			{ name: "visibility", type: t.visibility },
 			{ name: "opacity", type: t.zeroOneNumber },
 			{ name: "z-index", type: t.nonNegativeInt },
@@ -95,10 +96,11 @@
 
 			// these are just for edges
 			{ name: "source-arrow-shape", type: t.arrowShape },
-			{ name: "target-arrrow-shape", type: t.arrowShape },
+			{ name: "target-arrow-shape", type: t.arrowShape },
 			{ name: "source-arrow-color", type: t.color },
 			{ name: "target-arrow-color", type: t.color },
 			{ name: "line-style", type: t.lineStyle },
+			{ name: "line-color", type: t.color },
 
 			// these are just for the core
 			{ name: "selection-box-color", type: t.color },
@@ -119,22 +121,70 @@
 
 	// adds the default stylesheet to the current style
 	$$.styfn.addDefaultStylesheet = function(){
-		// TODO fill the style with the default stylesheet
+		// to be nice, we build font related style properties from the core container
+		// so that cytoscape matches the style of its container by default
+		var fontFamily = this.containerPropertyAsString("font-family") || "sans-serif";
+		var fontStyle = this.containerPropertyAsString("font-style") || "normal";
+		var fontVariant = this.containerPropertyAsString("font-variant") || "normal";
+		var fontWeight = this.containerPropertyAsString("font-weight") || "normal";
+		var color = this.containerPropertyAsString("color") || "#000";
+		var textTransform = this.containerPropertyAsString("text-transform") || "none";
+		var textDecoration = this.containerPropertyAsString("text-decoration") || "none";
+		var fontSize = this.containerPropertyAsString("font-size") || 12;
+
+		// fill the style with the default stylesheet
 		this
-			.selector("node")
+			.selector("node, edge") // common properties
 				.css({
-					"height": 20,
-					"width": 20,
-					"background-color": "#888"
+					"cursor": "default",
+					"text-valign": "top",
+					"text-halign": "center",
+					"color": color,
+					"content": undefined, // => no label
+					"text-outline-color": "transparent",
+					"text-outline-width": 0,
+					"text-outline-opacity": 1,
+					"text-opacity": 1,
+					"text-decoration": "none",
+					"text-transform": textTransform,
+					"font-family": fontFamily,
+					"font-style": fontStyle,
+					"font-variant": fontVariant,
+					"font-weight": fontWeight,
+					"font-size": fontSize,
+					"visibility": "visible",
+					"opacity": 1,
+					"z-index": 0
 				})
-			.selector("edge")
+			.selector("node") // just node properties
+				.css({
+					"background-color": "#888",
+					"background-opacity": 1,
+					"border-color": "#000",
+					"border-opacity": 1,
+					"border-width": 0,
+					"border-style": "solid",
+					"height": 30,
+					"width": 30,
+					"shape": "ellipse"
+				})
+			.selector("edge") // just edge properties
 				.css({
 					"source-arrow-shape": "none",
-					"target-arrow-shape": "none"
+					"target-arrow-shape": "none",
+					"source-arrow-color": "#bbb",
+					"target-arrow-color": "#bbb",
+					"line-style": "solid",
+					"line-color": "#bbb",
+					"width": 1
 				})
-			.selector("core")
+			.selector("core") // just core properties
 				.css({
-
+					"selection-box-color": "#ddd",
+					"selection-box-opacity": 0.65,
+					"selection-box-border-color": "#aaa",
+					"selection-box-border-width": 1,
+					"panning-cursor": "grabbed"
 				})
 		;
 	};
@@ -286,7 +336,6 @@
 					:
 					( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )
 			};
-			//ret.rpxValue = ret.pxValue === undefined ? undefined : ret.pxValue * zoom;
 
 			return ret;
 
@@ -348,6 +397,7 @@
 	$$.styfn.getEmSizeInPixels = function(){
 		var cy = this._private.cy;
 		var domElement = cy.container();
+		domElement = domElement[0] || domElement; // in case we have a jQuery obj
 
 		if( window && domElement ){
 			var pxAsStr = window.getComputedStyle(domElement).getPropertyValue("font-size");
@@ -355,6 +405,31 @@
 			return px;
 		} else {
 			return 1; // in case we're running outside of the browser
+		}
+	};
+
+	// gets css property from the core container
+	$$.styfn.containerCss = function( propName ){
+		var cy = this._private.cy;
+		var domElement = cy.container();
+		domElement = domElement[0] || domElement; // in case we have a jQuery obj
+
+		if( window && domElement ){
+			return window.getComputedStyle(domElement).getPropertyValue( propName );
+		}
+	};
+
+	$$.styfn.containerProperty = function( propName ){
+		var propStr = this.containerCss( propName );
+		var prop = this.parse( propName, propStr );
+		return prop;
+	};
+
+	$$.styfn.containerPropertyAsString = function( propName ){
+		var prop = this.containerProperty( propName );
+
+		if( prop ){
+			return prop.strValue;
 		}
 	};
 
@@ -554,7 +629,7 @@
 			// apply the styles in reverse order (the last matching selector has priority for its properties)
 			for( var i = this.length - 1; i >= 0; i-- ){
 				var context = this[i];
-				var contextSelectorMatches = context.selector.filter( ele ).length > 0;
+				var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for "core"
 				var props = context.properties;
 
 				if( contextSelectorMatches ){ // then apply its properties
@@ -566,6 +641,77 @@
 			} // for context
 
 		} // for elements
+	};
+
+	// updates the visual style for all elements (useful for manual style modification after init)
+	$$.styfn.update = function(){
+		var cy = this._private.cy;
+		var eles = cy.elements();
+
+		this.apply( eles );
+	};
+
+	// gets the rendered style for an element
+	$$.styfn.getRenderedStyle = function( ele ){
+		var ele = ele[0]; // insure it's an element
+
+		if( ele ){
+			var rstyle = {};
+			var style = ele._private.style;
+			var cy = this._private.cy;
+			var zoom = cy.zoom();
+
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var styleProp = style[ prop.name ];
+
+				if( styleProp ){
+					rstyle[ prop.name ] = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + "px";
+				}
+			}
+
+			return rstyle;
+		}
+	};
+
+	// gets the raw style for an element
+	$$.styfn.getRawStyle = function( ele ){
+		var ele = ele[0]; // insure it's an element
+
+		if( ele ){
+			var rstyle = {};
+			var style = ele._private.style;
+
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var styleProp = style[ prop.name ];
+
+				if( styleProp ){
+					rstyle[ prop.name ] = styleProp.strValue;
+				}
+			}
+
+			return rstyle;
+		}
+	};
+
+	// just update the functional properties (i.e. mappings) in the elements'
+	// styles (less expensive than recalculation)
+	$$.styfn.updateFunctionalProperties = function( eles ){
+		for( var i = 0; i < eles.length; i++ ){ // for each ele
+			var ele = eles[i];
+			var style = ele._private.style;
+
+			for( var j = 0; j < $$.style.properties.length; j++ ){ // for each prop
+				var prop = $$.style.properties[j];
+				var propInStyle = style[ prop.name ];
+
+				if( propInStyle && propInStyle.mapping ){
+					var mapping = propInStyle.mapping;
+					this.applyParsedProperty( ele, mapping ); // reapply the mapping property
+				}
+			}
+		}
 	};
 
 	// bypasses are applied to an existing style on an element, and just tacked on temporarily

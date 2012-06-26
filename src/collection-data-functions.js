@@ -2,6 +2,44 @@
 	
 	$$.fn.eles({
 
+		// fully updates (recalculates) the style for the elements
+		updateStyle: function( notifyRenderer ){
+			var cy = this._private.cy;
+			var style = cy.style();
+			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
+
+			for( var i = 0; i < this.length; i++ ){
+				var ele = this[i];
+				style.apply( ele );
+			}
+
+			if( notifyRenderer ){
+				this.rtrigger("style"); // let renderer know we changed style
+			} else {
+				this.trigger("style"); // just fire the event
+			}
+			return this; // chaining
+		},
+
+		// just update the mappers in the elements' styles; cheaper than eles.updateStyle()
+		updateMappers: function( notifyRenderer ){
+			var cy = this._private.cy;
+			var style = cy.style();
+			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
+
+			for( var i = 0; i < this.length; i++ ){
+				var ele = this[i];
+				style.apply( ele );
+			}
+
+			if( notifyRenderer ){
+				this.rtrigger("style"); // let renderer know we changed style
+			} else {
+				this.trigger("style"); // just fire the event
+			}
+			return this; // chaining
+		},
+
 		data: $$.define.data({
 			field: "data",
 			bindingEvent: "data",
@@ -9,27 +47,29 @@
 			allowSetting: true,
 			settingEvent: "data",
 			settingTriggersEvent: true,
-			triggerFnName: "rtrigger",
+			triggerFnName: "trigger",
 			allowGetting: true,
 			immutableKeys: {
 				"id": true,
 				"source": true,
 				"target": true,
 				"parent": true
-			}
+			},
+			updateMappers: true
 		}),
 
 		removeData: $$.define.removeData({
 			field: "data",
 			event: "data",
-			triggerFnName: "rtrigger",
+			triggerFnName: "trigger",
 			triggerEvent: true,
 			immutableKeys: {
 				"id": true,
 				"source": true,
 				"target": true,
 				"parent": true
-			}
+			},
+			updateMappers: true
 		}),
 
 		scratch: $$.define.data({
@@ -102,6 +142,7 @@
 		},
 
 		// get the rendered (i.e. on screen) positon of the element
+		// TODO allow setting
 		renderedPosition: function( dim ){
 			var ele = this[0];
 			var cy = this.cy();
@@ -124,7 +165,7 @@
 		},
 
 		// get the specified css property as a rendered value (i.e. on-screen value)
-		// or get the whole rendered style if no property specified
+		// or get the whole rendered style if no property specified (NB doesn't allow setting)
 		renderedCss: function( property ){
 			var ele = this[0];
 
@@ -146,6 +187,7 @@
 			if( $$.is.plainObject(name) ){ // then extend the bypass
 				var props = name;
 				style.applyBypass( ele, props );
+				this.rtrigger("style"); // let the renderer know we've updated style
 
 			} else if( $$.is.string(name) ){
 	
@@ -153,17 +195,144 @@
 					var ele = this[0];
 
 					if( ele ){
-						return ele._private.style[ name ];
+						return ele._private.style[ name ].strValue;
 					} else { // empty collection => can't get any value
 						return;
 					}
 
 				} else { // then set the bypass with the property value
 					style.applyBypass( this, name, value );
+					this.rtrigger("style"); // let the renderer know we've updated style
+				}
+
+			} else if( name === undefined ){
+				var ele = this[0];
+
+				if( ele ){
+					return style.getRawStyle( ele );
+				} else { // empty collection => can't get any value
+					return;
 				}
 			}
 
 			return this; // chaining
+		},
+
+		// convenience function to get a numerical value for the width of the node/edge
+		width: function(){
+			var ele = this[0];
+
+			if( ele ){
+				return this._private.style.width.pxValue;
+			}
+		},
+
+		outerWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var style = this._private.style;
+				var width = style.width.pxValue;
+				var border = style["border-width"] ? style["border-width"].pxValue : 0;
+
+				return width + border;
+			}
+		},
+
+		renderedWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var width = this.width();
+				return width * this.cy().zoom();
+			}
+		},
+
+		renderedOuterWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var owidth = this.outerWidth();
+				return owidth * this.cy().zoom();
+			}
+		},
+
+		// convenience function to get a numerical value for the height of the node
+		height: function(){
+			var ele = this[0];
+
+			if( ele && ele.isNode() ){
+				return this._private.style.height.pxValue;
+			}
+		},
+
+		outerHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var style = this._private.style;
+				var height = style.height.pxValue;
+				var border = style["border-width"] ? style["border-width"].pxValue : 0;
+
+				return height + border;
+			}
+		},
+
+		renderedHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var height = this.height();
+				return height * this.cy().zoom();
+			}
+		},
+
+		renderedOuterHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var oheight = this.outerHeight();
+				return oheight * this.cy().zoom();
+			}
+		},
+
+		// get the position of the element relative to the container (i.e. not relative to parent node)
+		offset: function(){
+			var ele = this[0];
+
+			if( ele && ele.isNode() ){
+				var offset = {
+					x: ele._private.position.x,
+					y: ele._private.position.y
+				};
+
+				var parents = ele.parents();
+				for( var i = 0; i < parents.length; i++ ){
+					var parent = parents[i];
+					var parentPos = parent._private.position;
+
+					offset.x += parentPos.x;
+					offset.y += parentPos.y;
+				}
+
+				return offset;
+			}
+		},
+
+		renderedOffset: function(){
+			var ele = this[0];
+
+			if( ele && ele.isNode() ){
+				var offset = this.offset();
+				var cy = this.cy();
+				var zoom = cy.zoom();
+				var pan = cy.pan();
+
+				return {
+					x: offset.x * zoom + pan.x,
+					y: offset.y * zoom + pan.y
+				};
+			}
 		}
 	});
 

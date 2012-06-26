@@ -15,7 +15,7 @@
 				}
 			}
 			
-			self.rtrigger("class");
+			self.updateStyle().rtrigger("class");
 			return self;
 		},
 
@@ -48,7 +48,7 @@
 				} // for j classes
 			} // for i eles
 			
-			self.rtrigger("class");
+			self.updateStyle().rtrigger("class");
 			return self;
 		},
 
@@ -67,7 +67,7 @@
 				}
 			}
 			
-			self.rtrigger("class");
+			self.updateStyle().rtrigger("class");
 			return self;
 		}
 	});

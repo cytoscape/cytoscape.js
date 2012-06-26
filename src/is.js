@@ -49,6 +49,10 @@
 			return obj instanceof $$.Core;
 		},
 
+		style: function(obj){
+			return obj instanceof $$.Style;
+		},
+
 		event: function(obj){
 			return obj instanceof $$.Event;
 		},

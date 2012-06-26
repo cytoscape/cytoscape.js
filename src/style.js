@@ -262,7 +262,7 @@
 					"selection-box-opacity": 0.65,
 					"selection-box-border-color": "#aaa",
 					"selection-box-border-width": 1,
-					"panning-cursor": "grabbed"
+					"panning-cursor": "grabbing"
 				})
 		;
 	};

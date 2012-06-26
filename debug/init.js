@@ -12,6 +12,10 @@ $(function(){
 			name: "grid"
 		},
 		style: $.cytoscape.stylesheet()
+			.selector("node, edge")
+				.css({
+					"content": "data(id)"
+				})
 			.selector(":selected")
 				.css({
 					"background-color": "#000",

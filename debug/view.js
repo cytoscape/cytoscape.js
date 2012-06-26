@@ -4,8 +4,7 @@ $(function(){
 		var cy = this;
 		
 		$("#zoom-pan-button").click(function(){
-			cy.zoom(1);
-			cy.pan({ x: 0, y: 0 });
+			cy.reset();
 		});
 		
 		$("#fit-button").click(function(){

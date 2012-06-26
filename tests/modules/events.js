@@ -172,7 +172,7 @@ $v(function(jQuery, $, version){
 	
 	asyncTest("Manual event binding & triggering", function(){
 		
-		var events = [ "data", "bypass", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify", "grab", "free", "touchstart", "touchmove", "touchend" ];
+		var events = [ "data", "position", "select", "unselect", "lock", "unlock", "mouseover", "mouseout", "mousemove", "mousedown", "mouseup", "click", "grabify", "ungrabify", "grab", "free", "touchstart", "touchmove", "touchend" ];
 		var triggered = {};
 		var cyTriggered = {};
 		var aliasTriggered = {};

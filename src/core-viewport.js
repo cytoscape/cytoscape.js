@@ -69,11 +69,15 @@
 				break; // invalid
 			}
 
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
+
 			return this; // chaining
 		},
 		
 		panBy: function(params){
-			var arg = arguments;
+			var args = arguments;
 			var pan = this._private.pan;
 			var dim, val, dims, x, y;
 
@@ -112,6 +116,10 @@
 				break; // invalid
 			}
 
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
+
 			return this; // chaining
 		},
 		
@@ -143,18 +151,69 @@
 			}
 
 			this.trigger("pan zoom");
+
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
+
 			return this; // chaining
 		},
 		
-		zoom: function(params){
-			var ret = this.renderer().zoom(params);
-			
-			if( ret != null ){
-				return ret;
-			} else {
-				this.trigger("zoom");
-				return this;
+		zoom: function( params ){
+			var pos;
+			var zoom;
+
+			if( params === undefined ){ // then get the zoom
+				return this._private.zoom;
+
+			} else if( $$.is.number(params) ){ // then set the zoom
+				zoom = params;
+				pos = {
+					x: 0,
+					y: 0
+				};
+
+			} else if( $$.is.plainObject(params) ){ // then zoom about a point
+				zoom = params.level;
+
+				if( params.renderedPosition ){
+					var rpos = params.renderedPosition;
+					var p = this._private.pan;
+					var z = this._private.zoom;
+
+					pos = {
+						x: (rpos.x - p.x)/z,
+						y: (rpos.y - p.y)/z
+					};
+				} else if( params.position ){
+					pos = params.position;
+				}
 			}
+
+			if( !$$.is.number(zoom) || !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
+				return this; // can't zoom with invalid params
+			}
+
+			var pan1 = this._private.pan;
+			var zoom1 = this._private.zoom;
+			var zoom2 = zoom;
+			
+			var pan2 = {
+				x: -zoom2/zoom1 * (pos.x - pan1.x) + pos.x,
+				y: -zoom2/zoom1 * (pos.y - pan1.y) + pos.y
+			};
+
+			this._private.zoom = zoom;
+			this._private.pan = pan2;
+
+			var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
+			this.trigger("zoom" + (posChanged ? " pan" : "") );
+
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
+
+			return this; // chaining
 		},
 		
 		// get the bounding box of the elements (in raw model position)
@@ -218,6 +277,11 @@
 			});
 			
 			this.trigger("pan");
+
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
+
 			return this; // chaining
 		},
 		
@@ -227,6 +291,10 @@
 			
 			this.trigger("zoom");
 			this.trigger("pan");
+
+			this.notify({ // notify the renderer that the viewport changed
+				type: "viewport"
+			});
 			
 			return this; // chaining
 		}

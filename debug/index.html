@@ -130,12 +130,12 @@
 	    	
 	    	<h2>Element binding</h2>
 	    	<select id="bind-type-select">
-	    		<option value="bind">Bind</option>
-	    		<option value="one">One</option>
-	    		<option value="once">Once</option>
-	    		<option value="unbind">Unbind</option>
-	    		<option value="live">Live</option>
-	    		<option value="die">Die</option>
+	    		<option value="bind">.bind()</option>
+	    		<option value="one">.one()</option>
+	    		<option value="once">.once()</option>
+	    		<option value="unbind">.unbind()</option>
+	    		<option value="on">.on()</option>
+	    		<option value="off">.off()</option>
 	    	</select>
 	    	to
 	    	<label for="bind-selector">Selector</label> <input type="text" id="bind-selector" />
@@ -165,19 +165,20 @@
 	    		<option value="unselectify">unselectify</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
+	    	with delegate<br />
+	    	<label for="bind-delegate">Selector</label> <input type="text" id="bind-delegate" />
 	    	<button id="bind-button">Apply</button>
 	    	
 	    	<h2>Core binding</h2>
 	    	<select id="core-bind-type-select">
-	    		<option value="bind">Bind</option>
-	    		<option value="one">One</option>
-	    		<option value="unbind">Unbind</option>
+	    		<option value="bind">.bind()</option>
+	    		<option value="one">.one()</option>
+	    		<option value="unbind">.unbind()</option>
+	    		<option value="on">.on()</option>
+	    		<option value="off">.off()</option>
 	    	</select>
 	    	to
-	    	<select id="core-bind-target-select">
-	    		<option value="core">core</option>
-	    		<option value="background">background</option>
-	    	</select>
+	    	core
 	    	for<br />
 	    	<select id="core-bind-event-select">
 	    		<option value="click">click</option>
@@ -192,8 +193,12 @@
 	    		<option value="layoutstart">layoutstart</option>
 	    		<option value="layoutready">layoutready</option>
 	    		<option value="layoutstop">layoutend</option>
+	    		<option value="pan">pan</option>
+	    		<option value="zoom">zoom</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
+	    	with delegate<br />
+	    	<label for="core-bind-delegate">Selector</label> <input type="text" id="core-bind-delegate" />
 	    	<button id="core-bind-button">Apply</button>
 
 	    	<h2>Toggles on selected</h2>

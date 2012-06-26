@@ -504,12 +504,14 @@
 					selectDy += dy;
 					
 					if( panning ){	
-						self.translation.x += dx;
-						self.translation.y += dy;
-						
+						var newPan = {
+							x: self.translation.x + dx,
+							y: self.translation.y + dy
+						};
+
 						setPanCursor();
 						
-						self.pan(self.translation);
+						self.pan(newPan);
 					}
 					
 					if( selecting ){
@@ -981,8 +983,6 @@
 			return;
 		}
 		
-		
-		
 		this.transform({
 			translation: {
 				x: this.translation.x + number(position.x),
@@ -995,8 +995,6 @@
 		if( !this.cy.panningEnabled() ){
 			return;
 		}
-		
-		
 		
 		if( position === undefined ){
 			return {
@@ -1077,6 +1075,12 @@
 		
 		var capped = self.capTransformation(params);
 		
+		var oldScale = self.scale;
+		var oldTranslation = {
+			x: self.translation ? self.translation.x : undefined,
+			y: self.translation ? self.translation.y : undefined
+		};
+
 		if( capped.valid ){
 			self.translation = capped.translation;
 			self.scale = capped.scale;
@@ -1105,6 +1109,27 @@
 		
 		transform(self.nodesGroup);
 		transform(self.edgesGroup);
+
+		if( self.scale === undefined || oldScale !== self.scale ){
+			cy._private.zoom = self.scale;
+			self.cy.trigger("zoom");
+		}
+
+		if( self.translation === undefined || oldTranslation.x !== self.translation.x || oldTranslation.y !== self.translation.y ){
+			cy._private.pan = self.translation;
+			self.cy.trigger("pan");
+		}
+	};
+
+	// update viewport when core sends us updates
+	SvgRenderer.prototype.updateViewport = function(){
+		var zoom = this.cy.zoom();
+		var pan = this.cy.pan();
+
+		this.transform({
+			scale: zoom,
+			translation: pan
+		});
 	};
 	
 	SvgRenderer.prototype.calculateStyleField = function(element, fieldName){
@@ -2462,6 +2487,10 @@
 				
 			case "draw":
 				this.drawElements( params.collection );
+				break;
+
+			case "viewport":
+				this.updateViewport();
 				break;
 				
 			default:

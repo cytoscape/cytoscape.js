@@ -82,30 +82,5 @@ $v(function(jQuery, $, version){
 		teardown: function(){
 		}
 	});
-	
-	test("Collections batch notifications", function(){
 		
-		// TODO specify more batched function notifications as added to the API
-		var fns = [
-		           { fn: "lock" },  { fn: "unlock" },
-		           { fn: "select" }, { fn: "unselect" },
-		           { fn: "grabify" }, { fn: "ungrabify" },
-		           { fn: "data", args: [ "foo", "bar" ] }, { fn: "data", args: [ { bar: "baz" } ] },
-		           { fn: "removeData", type: "data" }, { fn: "removeData", type: "data", args: [ "foo" ] },
-		           { fn: "position", args: [ "x", 1 ] }, { fn: "position", args: [ { x: 1 } ] },
-		           { fn: "positions", type: "position", args: [ function(){ return { x: 1, y: 2 }; } ] },
-		           { fn: "bypass", args: [ "fillColor", "red" ] }, { fn: "bypass", args: [ { fillColor: "red" } ] },
-		           { fn: "removeBypass", type: "bypass" }, { fn: "removeBypass", type: "bypass", args: [ "fillColor" ] }
-		           
-		];
-		$.each(fns, function(i, fnDefn){
-			var fn = fnDefn.fn;
-			var type = fnDefn.type === undefined ? fn : fnDefn.type;
-			var args = fnDefn.args === undefined ? [] : fnDefn.args;
-			
-			verify(type, fn, args);
-		});
-		
-	});
-	
 });

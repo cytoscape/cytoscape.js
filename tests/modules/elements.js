@@ -35,17 +35,15 @@ $v(function(jQuery, $, version){
 		equal( eles.grabbed(), undefined, "eles.grabbed()" );
 		equal( eles.grabbable(), undefined, "eles.grabbable()" );
 		equal( eles.locked(), undefined, "eles.locked()" );
-		equal( eles.style(), undefined, "eles.style()" );
-		equal( eles.style("foo"), undefined, "eles.style('foo')" );
-		equal( eles.renderedStyle(), undefined, "eles.renderedStyle()" );
-		equal( eles.renderedStyle('foo'), undefined, "eles.renderedStyle('foo')" );
+		equal( eles.css(), undefined, "eles.css()" );
+		equal( eles.css("width"), undefined, "eles.css('background-color')" );
+		equal( eles.renderedCss(), undefined, "eles.renderedCss()" );
+		equal( eles.renderedCss('width'), undefined, "eles.renderedCss('width')" );
 		equal( eles.visible(), undefined, "eles.visible()" );
 		equal( eles.animated(), undefined, "eles.animated()" );
 		equal( eles.selected(), undefined, "eles.selected()" );
 		equal( eles.selectable(), undefined, "eles.selectable()" );
 		equal( eles.degree(), undefined, "eles.degree()" );
-		equal( eles.bypass(), undefined, "eles.bypass()" );
-		equal( eles.bypass('x'), undefined, "eles.bypass('x')" );
 	});
 
 	test("Functions are chainable", function(){
@@ -56,7 +54,6 @@ $v(function(jQuery, $, version){
 				names: [
 				        "remove", "restore",
 				        "removeData",
-				        "removeBypass",
 				        "grabify", "ungrabify",
 				        "lock", "unlock",
 				        "show", "hide",
@@ -70,7 +67,6 @@ $v(function(jQuery, $, version){
 				names: [
 				          "data",
 				          "position",
-				          "bypass"
 				          ]
 			},
 			
@@ -82,14 +78,14 @@ $v(function(jQuery, $, version){
 		          "grabify", "ungrabify", "grab", "drag", "free", 
 		          "select", "unselect", 
 		          "lock", "unlock", 
-		          "data", "bypass", "remove", "restore"
+		          "data", "css", "remove", "restore"
 		          ],
 			},
 			
 			binders: {
 				args: [ "click", function(){} ],
 				names: [
-			          "bind", "one", "once"
+			          "bind", "one", "once", "on"
 			          ]
 			}
 		};

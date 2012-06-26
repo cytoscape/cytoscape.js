@@ -101,10 +101,15 @@
 		};
 		
 		// renderedPosition overrides if specified
-		// you shouldn't and can't use this option with cy.load() since we don't have access to the renderer yet
-		// AND the initial state of the graph is such that renderedPosition and position are the same
-		if( params.renderedPosition != null ){
-			this._private.position = this.cy().renderer().modelPoint(params.renderedPosition);
+		if( params.renderedPosition ){
+			var rpos = params.renderedPosition;
+			var pan = cy.pan();
+			var zoom = cy.zoom();
+
+			this._private.position = {
+				x: (rpos.x - pan.x)/zoom,
+				y: (rpos.y - pan.y)/zoom
+			};
 		}
 		
 		if( $$.is.string(params.classes) ){

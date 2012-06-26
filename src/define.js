@@ -57,7 +57,7 @@
 							}
 
 							// update mappers if asked
-							if( p.updateMappers ){ all[i].updateMappers(); }
+							if( p.updateMappers ){ self.updateMappers(); }
 
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );

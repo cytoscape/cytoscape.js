@@ -229,11 +229,19 @@
 		},
 
 		visible: function(){
-			return this.css("visibility") === "visible";
+			var ele = this[0];
+
+			if( ele ){
+				return this.css("visibility") === "visible";
+			}
 		},
 
 		hidden: function(){
-			return !this.visible();
+			var ele = this[0];
+
+			if( ele ){
+				return this.css("visibility") === "hidden";
+			}
 		},
 
 		// convenience function to get a numerical value for the width of the node/edge

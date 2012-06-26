@@ -1952,8 +1952,6 @@
 			return;
 		}
 		
-		self.svgRemove(  element._private.rscratch.svgGroup );
-
 		var ps = source.position();
 		var pt = target.position();
 		
@@ -2044,13 +2042,13 @@
 		for( var i = 0; i < edges.length; i++ ){
 			var edge = edges[i];
 
-			self.makeSvgElement(edge);
+			self.updateElementStyle(edge);
 		}
 		
 		var connectedEdges = collection.connectedEdges().not(edges);
 		for( var i = 0; i < connectedEdges.length; i++ ){
 			var edge = connectedEdges[i];
-			self.makeSvgElement(edge);
+			self.updateElementStyle(edge);
 		}
 	};
 	
@@ -2058,8 +2056,10 @@
 		this.style = $.extend(true, {}, defaults.style, style);
 	};
 	
-	SvgRenderer.prototype.updateStyle = function(eles){
-		this.updateElementsStyle(eles);
+	SvgRenderer.prototype.updateStyle = function(style){
+		var collection = this.cy.elements();
+		
+		this.updateElementsStyle(collection);
 	};
 	
 	SvgRenderer.prototype.updateBypass = function(collection){
@@ -2246,7 +2246,43 @@
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
+		var oldStyle = element.rscratch().oldStyle;
+		var oldTargetShape = !oldStyle ? null : oldStyle["target-arrow-shape"].value;
+		var oldSourceShape = !oldStyle ? null : oldStyle["source-arrow-shape"].value;
+		
 		var style = element._private.style;
+		
+		if( element.rscratch().svg == null ){
+			$.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
+			return;
+		}
+		
+		var newSrcStyle = element.source()[0]._private.style;
+		var oldSrcStyle = element.rscratch().oldSourceStyle || null;
+		
+		var newTgtStyle = element.target()[0]._private.style;
+		var oldTgtStyle = element.rscratch().oldTargetStyle || null;
+		
+		var newTargetShape = element._private.style["target-arrow-shape"].value;
+		var newSourceShape = element._private.style["source-arrow-shape"].value;
+		
+		var nodesStyleChanged = !oldStyle || newSrcStyle.height.value != oldSrcStyle.height.value || newSrcStyle.width.value != oldSrcStyle.width.value ||
+			newTgtStyle.height.value != oldTgtStyle.height.value || newTgtStyle.width.value != oldTgtStyle.width.value ||
+			newSrcStyle.shape.value != oldSrcStyle.shape.value || newTgtStyle.shape.value != oldTgtStyle.shape.value ||
+			newSrcStyle["border-width"].value != oldSrcStyle["border-width"].value || newTgtStyle["border-width"].value != oldTgtStyle["border-width"].value;
+		
+		var widthChanged = !oldStyle || oldStyle.width.value != style.width.value;
+		
+		element.rscratch().oldSourceStyle = newSrcStyle;
+		element.rscratch().oldTargetStyle = newTgtStyle;
+		element.rscratch().oldStyle = style;
+		
+		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
+			this.svgRemove(element.rscratch().svgGroup);
+			this.makeSvgEdge(element);
+			
+			return;
+		}
 		
 		var visible = element.visible();
 

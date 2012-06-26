@@ -183,7 +183,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").css("*", "");
 			}
 		});
 		

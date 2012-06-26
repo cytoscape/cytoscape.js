@@ -232,7 +232,29 @@
 			var ele = this[0];
 
 			if( ele ){
-				return this.css("visibility") === "visible";
+				if( ele.css("visibility") !== "visible" ){
+					return false;
+				}
+				
+				if( ele.isNode() ){
+					var parents = ele.parents();
+					for( var i = 0; i < parents.length; i++ ){
+						var parent = parents[i];
+						var parentVisibility = parent.css("visibility");
+
+						if( parentVisibility !== "visible" ){
+							return false;
+						}
+					}
+
+					return true;
+				} else if( ele.isEdge() ){
+					var src = ele.source();
+					var tgt = ele.target();
+
+					return src.visible() && tgt.visible();
+				}
+
 			}
 		},
 
@@ -240,7 +262,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				return this.css("visibility") === "hidden";
+				return !this.visible();
 			}
 		},
 

@@ -307,7 +307,7 @@
 			// set id and validate
 			if( data.id === undefined ){
 				data.id = idFactory.generate( cy, ele );
-			} else if( data.id === "" || !$$.is.string(data.id) ){
+			} else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
 				// can't create element if it has empty string as id or non-string id
 				continue;
 			} else if( cy.getElementById( data.id ).length != 0 ){

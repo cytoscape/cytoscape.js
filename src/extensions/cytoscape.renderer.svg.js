@@ -2029,22 +2029,27 @@
 	
 	SvgRenderer.prototype.updateElementsStyle = function(collection){
 		var self = this;
-		collection = collection.collection();
+		collection = collection;
 		
 		// update nodes
-		collection.nodes().each(function(i, element){
-			self.updateElementStyle(element);
-		});
+		var nodes = collection.nodes();
+		for( var i = 0; i < nodes.length; i++ ){
+			var node = nodes[i];
+			self.updateElementStyle(node);
+		}
+
+		var edges = collection.edges();
+		for( var i = 0; i < edges.length; i++ ){
+			var edge = edges[i];
+
+			self.updateElementStyle(edge);
+		}
 		
-		// update edges
-		collection.edges().each(function(i, element){
-			self.updateElementStyle(element);
-		});
-		
-		// update positions of connected edges but not those already covered by the update for edges above
-		collection.nodes().neighborhood().edges().not( collection.edges() ).each(function(i, element){
-			self.updatePosition(element);
-		});
+		var connectedEdges = collection.connectedEdges().not(edges);
+		for( var i = 0; i < connectedEdges.length; i++ ){
+			var edge = connectedEdges[i];
+			self.updateElementStyle(edge);
+		}
 	};
 	
 	SvgRenderer.prototype.setStyle = function(style){
@@ -2099,6 +2104,8 @@
 			return;
 		}
 			
+		var visible = element.visible();
+
 		// TODO add more as more styles are added
 		// generic styles go here
 		this.svg.change(element.rscratch().svg, {
@@ -2110,7 +2117,7 @@
 			strokeDashArray: lineStyle( style["border-style"].strValue ).array,
 			strokeOpacity: style["border-opacity"].value,
 			cursor: style["cursor"].strValue,
-			"visibility": style["visibility"].strValue
+			"visibility": visible ? "visible" : "hidden",
 		});
 		
 		this.svg.change(element.rscratch().svgGroup, {
@@ -2119,7 +2126,7 @@
 		
 		// styles for label		
 		var labelOptions = {
-			"visibility": style["visibility"].strValue,
+			"visibility": visible ? "visible" : "hidden",
 			"pointer-events": "none",
 			fill: style["color"].strValue,
 			"font-family": style["font-family"].strValue,
@@ -2161,8 +2168,7 @@
 		nodeShape(style.shape.strValue).update(this.svg, this.nodesGroup, element, element.position(), style);
 		
 		// update label position after the node itself
-		this.updateLabelPosition(element, valign, halign);
-		
+		this.updateLabelPosition(element, valign, halign);	
 		
 	};
 	
@@ -2192,7 +2198,7 @@
 			width = element.width();
 		}
 		
-		if( halign == "middle" ){
+		if( halign == "center" ){
 			textAnchor =  {
 				"text-anchor": "middle"
 			};
@@ -2212,7 +2218,7 @@
 		var fontSize = parseInt(window.getComputedStyle(element.rscratch().svgLabel)["fontSize"]);
 		var ieFix = $.browser.msie ? fontSize/3 : 0;
 	
-		if( valign == "middle" ){
+		if( valign == "center" ){
 			styleAttr = {
 				"style": "alignment-baseline: central; dominant-baseline: central;"
 			};
@@ -2278,6 +2284,8 @@
 			return;
 		}
 		
+		var visible = element.visible();
+
 		// TODO add more as more styles are added
 		// generic edge styles go here
 		this.svg.change(element.rscratch().svg, {
@@ -2288,7 +2296,7 @@
 			"stroke-linecap": "butt", // disable for now for markers to line up nicely
 			cursor: style["cursor"].value,
 			fill: "none",
-			visibility: style["visibility"].value
+			visibility: visible ? "visible" : "hidden"
 		});
 		
 		this.svg.change(element.rscratch().svgGroup, {
@@ -2298,17 +2306,17 @@
 		this.svg.change(element.rscratch().svgTargetArrow, {
 			fill: style["target-arrow-color"].strValue,
 			cursor: style["cursor"].value,
-			visibility: style["visibility"].value
+			visibility: visible ? "visible" : "hidden"
 		});
 		
 		this.svg.change(element.rscratch().svgSourceArrow, {
 			fill: style["source-arrow-color"].strValue,
 			cursor: style["cursor"].value,
-			visibility: style["visibility"].value
+			visibility: visible ? "visible" : "hidden"
 		});
 		
 		var labelOptions = {
-			"visibility": style["visibility"].value,
+			"visibility": visible ? "visible" : "hidden",
 			"pointer-events": "none",
 			fill: style["color"].strValue,
 			"font-family": style["font-family"].strValue,
@@ -2325,7 +2333,7 @@
 			fill: "none",
 			stroke: style["text-outline-color"].strValue,
 			strokeWidth: style["text-outline-width"].pxValue * 2,
-			opacity: style["text-outline-opacity"].value,
+			opacity: style["text-outline-opacity"].value
 		}) );
 		
 		this.svg.change(element.rscratch().svgLabelGroup, {

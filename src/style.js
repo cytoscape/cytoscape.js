@@ -232,7 +232,8 @@
 					"font-size": fontSize,
 					"visibility": "visible",
 					"opacity": 1,
-					"z-index": 0
+					"z-index": 0,
+					"content": ""
 				})
 			.selector("node") // just node properties
 				.css({
@@ -750,7 +751,7 @@
 		var cy = this._private.cy;
 		var eles = cy.elements();
 
-		this.apply( eles );
+		eles.updateStyle();
 	};
 
 	// gets the rendered style for an element

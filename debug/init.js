@@ -54,7 +54,7 @@ $(function(){
 		options.elements.nodes.push({
 			data: {
 				id: "n" + i,
-				weight: Math.random() * 100
+				weight: Math.round( Math.random() * 100 )
 			}
 		});
 	}
@@ -70,7 +70,7 @@ $(function(){
 					id: "e" + (j++),
 					source: srcId,
 					target: tgtId,
-					weight: Math.random() * 100
+					weight: Math.round( Math.random() * 100 )
 				}
 			});
 		}

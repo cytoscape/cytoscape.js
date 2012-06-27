@@ -132,46 +132,13 @@ $(function(){
 			displayName: "Labels with weight",
 			description: "Show weight in node labels",
 			setup: function(){
-				var style = cy.style();
-				
-				style.selectors["edge"].labelText = style.selectors["node"].labelText = {
-					customMapper: function(data){
-						return data.id + " : " + Math.floor(data.weight);
-					}
-				};
-				
-				cy.style( style );
+				cy.elements().css("content", "data(weight)");
 			},
 			teardown: function(){
-				cy.style( window.options.style );
+				cy.elements().css("*" ,"");
 			}
 		});
-		
-		test({
-			name: "labelRendering",
-			displayName: "Label rendering test",
-			description: "Try dragging nodes around and see if there's a redraw issue (trailing pixels)",
-			setup: function(){
-				var style = cy.style();
-				
-				style = $.extend(true, {}, style, {
-					selectors: {
-						"node": {
-							labelText: "a nice, long label",
-							labelValign: "middle",
-							labelFillColor: "white",
-							labelOutlineColor: "#888",
-							labelOutlineWidth: 3
-						}
-					}
-				});
-				
-				cy.style( style );
-			},
-			teardown: function(){
-				cy.style( window.options.style );
-			}
-		});
+
 		
 		test({
 			name: "hideOnClick",
@@ -417,9 +384,47 @@ $(function(){
 						}
 					}
 				});
+
+				var length = cy.style().length;
+
+				cy.style()
+					.selector("node")
+						.css({
+							shape: "rectangle",
+							backgroundColor: "lightblue",
+							borderColor: "black",
+							borderWidth: 1,
+							width: "mapData(weight, 20, 100, 20, 100)",
+							height: 20,
+							labelFontWeight: "normal",
+							labelFontSize: "0.75em",
+							content: "data(weight)",
+							textValign: "center",
+							textHalign: "center"
+						})
+					.selector("edge")
+						.css({
+							lineColor: "mapData(weight, 0, 100, blue, red)",
+							targetArrowShape: "triangle"
+						})
+					.selector("edge:selected")
+						.css({
+							width: 3
+						})
+					.update()
+				;
 			},
+
 			teardown: function(){
-				cy.style(window.options.style);
+				var style = cy.style();
+				var size = 3;
+
+				for( var i = 0; i < size; i++ ){
+					delete style[style.length - 1 - i];
+				}
+				style.length -= size;
+
+				style.update();
 			}
 		});
 	});

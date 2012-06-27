@@ -2460,11 +2460,7 @@
 				// remove the svg element from the dom
 				svg.remove( element.rscratch().svgGroup );
 				
-				element.removerscratch("svg");
-				element.removerscratch("svgGroup");
-				element.removerscratch("svgSourceArrow");
-				element.removerscratch("svgTargetArrow");
-				element.removerscratch("svgLabel");
+				element.rscratch({});
 			} else {
 				
 			}

@@ -2369,10 +2369,16 @@
 			opacity: style["text-opacity"].value
 		});
 		
-		var labelText = style.labelText == null ? "" : style.labelText;
+		var labelText = style["content"];
+		if( !labelText.value ){
+			labelText = "";
+		} else {
+			labelText = labelText.value;
+		}
+
 		element.rscratch().svgLabel.textContent = labelText;
 		element.rscratch().svgLabelOutline.textContent = labelText;
-		this.updateLabelPosition(element, "middle", "middle");
+		this.updateLabelPosition(element, "center", "center");
 		
 		
 	};

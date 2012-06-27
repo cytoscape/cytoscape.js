@@ -117,13 +117,13 @@ $(function(){
 			description: "Change label on click",
 			setup: function(){
 				cy.elements().bind("click", function(){
-					this.bypass({
-						labelText: "clicked"
+					this.css({
+						content: "clicked"
 					});
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").css("*", "");
 			}
 		});
 		

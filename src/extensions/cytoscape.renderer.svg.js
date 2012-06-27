@@ -1946,17 +1946,12 @@
 		var self = this;
 		var source = element.source().element();
 		var target = element.target().element();
-		var rs = element.rscratch();
 					
 		if( source == null || target == null ){
 			
 			return;
 		}
 		
-		self.svgRemove( rs.svg );
-		self.svgRemove( rs.svgSourceArrow );
-		self.svgRemove( rs.svgTargetArrow );
-
 		var ps = source.position();
 		var pt = target.position();
 		
@@ -2047,13 +2042,13 @@
 		for( var i = 0; i < edges.length; i++ ){
 			var edge = edges[i];
 
-			self.makeSvgElement(edge);
+			self.updateElementStyle(edge);
 		}
 		
 		var connectedEdges = collection.connectedEdges().not(edges);
 		for( var i = 0; i < connectedEdges.length; i++ ){
 			var edge = connectedEdges[i];
-			self.makeSvgElement(edge);
+			self.updateElementStyle(edge);
 		}
 	};
 	
@@ -2061,9 +2056,10 @@
 		this.style = $.extend(true, {}, defaults.style, style);
 	};
 	
-	SvgRenderer.prototype.updateStyle = function(eles){
-	
-		this.updateElementsStyle(eles);
+	SvgRenderer.prototype.updateStyle = function(style){
+		var collection = this.cy.elements();
+		
+		this.updateElementsStyle(collection);
 	};
 	
 	SvgRenderer.prototype.updateBypass = function(collection){

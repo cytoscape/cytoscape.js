@@ -136,7 +136,7 @@ $(function(){
 			for(var i = 0; i < n; i++){
 				nodes.push({
 					group: "nodes",
-					data: { id: "n" + (i + numNodes), weight: Math.random() * 100 },
+					data: { id: "n" + (i + numNodes), weight: Math.round( Math.random() * 100 ) },
 					position: { x: Math.random() * width, y: Math.random() * height }
 				});
 			}
@@ -156,7 +156,7 @@ $(function(){
 					group: "edges",
 					data: {
 						id: "e" + (i + numEdges), 
-						weight: Math.random() * 100,
+						weight: Math.round( Math.random() * 100 ),
 						source: nodeId(),
 						target: nodeId()
 					}

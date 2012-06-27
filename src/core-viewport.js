@@ -129,27 +129,15 @@
 
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );
-			var sw, sh; // scaled w & h
+			var zoom;
 
 			if( !isNaN(w) && !isNaN(h) ){
-				var ratio = w/h;
-				var bbRatio = bb.w/bb.h;
+				zoom = this._private.zoom = Math.min( w/bb.w, h/bb.h );
 
-				if( bbRatio > ratio ){ // then scale to width
-					sw = w;
-					sh = sw/bbRatio;
-				} else { // then scale to height
-					sh = h;
-					sw = sh * bbRatio;
-				}
-
-				console.log(sw, sh);
-
-				this._private.zoom = sh / h;
-				this._private.pan = {
-					x: (w - sw) / 2,
-					y: (h - sh) / 2
-				};
+				this.pan({ // now pan to middle
+					x: (w - zoom*( bb.x1 + bb.x2 ))/2,
+					y: (h - zoom*( bb.y1 + bb.y2 ))/2
+				});
 			}
 
 			this.trigger("pan zoom");
@@ -222,7 +210,7 @@
 		boundingBox: function( selector ){
 			var eles;
 
-			if( !selector ){
+			if( !selector || ( $$.is.elementOrCollection(selector) && selector.length === 0 ) ){
 				eles = this.$();
 			} else if( $$.is.string(selector) ){
 				eles = this.$( selector );
@@ -275,10 +263,11 @@
 			var style = this.style();
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );
+			var zoom = this._private.zoom;
 
 			this.pan({ // now pan to middle
-				x: w/2-(bb.x1 + bb.x2)/2,
-				y: h/2-(bb.y1 + bb.y2)/2
+				x: (w - zoom*( bb.x1 + bb.x2 ))/2,
+				y: (h - zoom*( bb.y1 + bb.y2 ))/2
 			});
 			
 			this.trigger("pan");

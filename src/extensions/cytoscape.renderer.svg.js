@@ -2244,10 +2244,7 @@
 	};
 	
 	SvgRenderer.prototype.updateEdgeStyle = function(element, newStyle){
-		var oldStyle = element.rscratch().oldStyle;
-		var oldTargetShape = !oldStyle ? null : oldStyle["target-arrow-shape"].value;
-		var oldSourceShape = !oldStyle ? null : oldStyle["source-arrow-shape"].value;
-		
+		var rs = element.rscratch();		
 		var style = element._private.style;
 		
 		if( element.rscratch().svg == null ){
@@ -2255,27 +2252,62 @@
 			return;
 		}
 		
-		var newSrcStyle = element.source()[0]._private.style;
-		var oldSrcStyle = element.rscratch().oldSourceStyle || null;
+		var src = element.source()[0];
+		var tgt = element.target()[0];
+
+		var oldTargetArrowShape = rs.targetArrowShape;
+		var oldSourceArrowShape = rs.sourceArrowShape;
+		var newTargetArrowShape = style["target-arrow-shape"].value;
+		var newSourceArrowShape = style["source-arrow-shape"].value;
+		rs.targetArrowShape = newTargetArrowShape;
+		rs.sourceArrowShape = newSourceArrowShape;
+		var arrowShapesDifferent = 
+			oldTargetArrowShape !== newTargetArrowShape ||
+			oldSourceArrowShape !== newSourceArrowShape
+		;
+
+		var oldSrcHeight = rs.srcHeight;
+		var oldTgtHeight = rs.tgtHeight;
+		var newSrcHeight = src.outerHeight();
+		var newTgtHeight = tgt.outerHeight();
+		rs.srcHeight = newSrcHeight;
+		rs.tgtHeight = newTgtHeight;
+		var heightDifferent = 
+			oldSrcHeight !== newSrcHeight ||
+			oldTgtHeight !== newTgtHeight
+		;
+
+		var oldSrcWidth = rs.srcWidth;
+		var oldTgtWidth = rs.tgtWidth;
+		var newSrcWidth = src.outerWidth();
+		var newTgtWidth = tgt.outerWidth();
+		rs.srcWidth = newSrcWidth;
+		rs.tgtWidth = newTgtWidth;
+		var widthDifferent = 
+			oldSrcWidth !== newSrcWidth ||
+			oldTgtWidth !== newTgtWidth
+		;
+
+		var oldTargetNodeShape = rs.targetNodeShape;
+		var oldSourceNodeShape = rs.sourceNodeShape;
+		var newTargetNodeShape = tgt._private.style.shape.value;
+		var newSourceNodeShape = src._private.style.shape.value;
+		rs.targetNodeShape = newTargetNodeShape;
+		rs.sourceNodeShape = newSourceNodeShape;
+		var shapeDifferent =
+			oldTargetNodeShape !== newTargetNodeShape ||
+			oldSourceNodeShape !== newSourceNodeShape
+		;
+
 		
-		var newTgtStyle = element.target()[0]._private.style;
-		var oldTgtStyle = element.rscratch().oldTargetStyle || null;
+		var styleChanged = 
+			arrowShapesDifferent ||
+			heightDifferent ||
+			widthDifferent ||
+			shapeDifferent
+		;
 		
-		var newTargetShape = element._private.style["target-arrow-shape"].value;
-		var newSourceShape = element._private.style["source-arrow-shape"].value;
-		
-		var nodesStyleChanged = !oldStyle || newSrcStyle.height.value != oldSrcStyle.height.value || newSrcStyle.width.value != oldSrcStyle.width.value ||
-			newTgtStyle.height.value != oldTgtStyle.height.value || newTgtStyle.width.value != oldTgtStyle.width.value ||
-			newSrcStyle.shape.value != oldSrcStyle.shape.value || newTgtStyle.shape.value != oldTgtStyle.shape.value ||
-			newSrcStyle["border-width"].value != oldSrcStyle["border-width"].value || newTgtStyle["border-width"].value != oldTgtStyle["border-width"].value;
-		
-		var widthChanged = !oldStyle || oldStyle.width.value != style.width.value;
-		
-		element.rscratch().oldSourceStyle = newSrcStyle;
-		element.rscratch().oldTargetStyle = newTgtStyle;
-		element.rscratch().oldStyle = style;
-		
-		if( newTargetShape != oldTargetShape || newSourceShape != oldSourceShape || nodesStyleChanged || widthChanged ){
+		if( styleChanged ){
 			this.svgRemove(element.rscratch().svgGroup);
 			this.makeSvgEdge(element);
 			

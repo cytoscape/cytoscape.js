@@ -133,8 +133,8 @@
 		function setLayoutPositionForElement(element){
 			var fdId = element.scratch("springy.model").id;
 			var fdP = fdRenderer.layout.nodePoints[fdId].p;
-			var pos = element.position(false);
-			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element.position(false)) : {
+			var pos = element.position();
+			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element.position()) : {
 				x: Math.random() * 4 - 2,
 				y: Math.random() * 4 - 2
 			};

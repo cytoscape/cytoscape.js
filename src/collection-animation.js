@@ -4,7 +4,9 @@
 		animated: function(){
 			var ele = this[0];
 
-			return ele && ele._private.animation.current.length > 0
+			if( ele ){
+				ele._private.animation.current.length > 0;
+			}
 		},
 
 		clearQueue: function(){
@@ -28,9 +30,15 @@
 		animate: function( properties, params ){
 			var callTime = +new Date;
 			
-			return this.each(function(){
+			for( var i = 0; i < this.length; i++ ){
+				var self = this[i];
+
 				var self = this;
-				var startPosition = $$.util.copy( self._private.position );
+				var pos = self._private.position;
+				var startPosition = {
+					x: pos.x,
+					y: pos.y
+				};
 				var startStyle = $$.util.copy( self.style() );
 				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
 				
@@ -52,35 +60,21 @@
 				}
 				
 				if( self.animated() && (params.queue === undefined || params.queue) ){
-					enqueue();
-				} else {
-					run();
-				}
-				
-				var q;
-				
-				function enqueue(){
 					q = self._private.animation.queue;
-					add();
-				}
-				
-				function run(){
+				} else {
 					q = self._private.animation.current;
-					add();
-				} 
-				
-				function add(){
-					q.push({
-						properties: properties,
-						params: params,
-						callTime: callTime,
-						startPosition: startPosition,
-						startStyle: startStyle
-					});
-					
-					structs.animation.elements = structs.animation.elements.add( self );
 				}
-			});
+				
+				q.push({
+					properties: properties,
+					params: params,
+					callTime: callTime,
+					startPosition: startPosition,
+					startStyle: startStyle
+				});
+				
+				structs.animation.elements = structs.animation.elements.add( self );
+			}
 		}, // animate
 
 		stop: function(clearQueue, jumpToEnd){

@@ -2248,7 +2248,6 @@
 		var style = element._private.style;
 		
 		if( element.rscratch().svg == null || element.removed() ){
-			$.error("SVG renderer can not update style for edge `%s` since it has no SVG element", element.id());
 			return;
 		}
 		

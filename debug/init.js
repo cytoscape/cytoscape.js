@@ -12,7 +12,7 @@ $(function(){
 			name: "grid"
 		},
 		style: $.cytoscape.stylesheet()
-			.selector("node, edge")
+			.selector("node")
 				.css({
 					"content": "data(id)"
 				})

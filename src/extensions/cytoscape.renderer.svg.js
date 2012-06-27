@@ -2370,7 +2370,7 @@
 		});
 		
 		var labelText = style["content"];
-		if( !labelText.value ){
+		if( !labelText || !labelText.value ){
 			labelText = "";
 		} else {
 			labelText = labelText.value;

@@ -4,7 +4,7 @@
 		handleSize: 10,
 		handleColor: "red",
 		handleLineWidth: 1,
-		hoverDelay: 100,
+		hoverDelay: 150,
 		enabled: true,
 		lineType: "draw", // can be "straight" or "draw"
 		edgeType: function( sourceNode, targetNode ){
@@ -143,11 +143,14 @@
 					safelyRemoveCySvgChild( handle );
 					safelyRemoveCySvgChild( line );
 					
-					cy.nodes()
-						.removeClass("ui-cytoscape-edgehandles-hover")
-						.removeClass("ui-cytoscape-edgehandles-source")
-						.removeClass("ui-cytoscape-edgehandles-target")
-					;
+					setTimeout(function(){
+						cy.nodes()
+							.removeClass("ui-cytoscape-edgehandles-hover")
+							.removeClass("ui-cytoscape-edgehandles-source")
+							.removeClass("ui-cytoscape-edgehandles-target")
+						;
+					}, 1);
+					
 
 					linePoints = null;
 					
@@ -263,7 +266,7 @@
 						safelyRemoveCySvgChild( handle );
 					});
 					
-					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler;
+					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
@@ -425,9 +428,10 @@
 						if( mdownOnHandle ){
 							clearTimeout(hoverTimeout);
 						}
-					}).on("grab", "node", grabNodeHandler = function(){
+					}).on("mousedown", "node", mdownNodeHandler = function(){
+						resetToDefaultState();
+					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;
-						setTimeout(resetToDefaultState, 10);
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 					});
@@ -437,6 +441,7 @@
 							.off("mouseover", "node", startHandler)
 							.off("mouseover", "node", hoverHandler)
 							.off("mouseout", "node", leaveHandler)
+							.off("mousedown", "node", mdownNodeHandler)
 							.off("grab", "node", grabNodeHandler)
 							.off("free", "node", freeNodeHandler)
 						;

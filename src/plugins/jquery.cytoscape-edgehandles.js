@@ -147,7 +147,7 @@
 
 					linePoints = null;
 					
-					cy.zooming(true).panning(true);
+					cy.zoomingEnabled(true).panningEnabled(true);
 				}
 				
 				function makePreview( source, target ){
@@ -258,7 +258,7 @@
 					});
 					
 					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler;
-					cy.nodes().live("mouseover", startHandler = function(e){
+					cy.on("mouseover", "node", startHandler = function(e){
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
@@ -269,13 +269,13 @@
 						var node = this;
 						var source = this;
 						var p = node.renderedPosition();
-						var d = node.renderedStyle();
+						var h = node.renderedHeight();
 						
 						// remove old handle
 						safelyRemoveCySvgChild( handle );
 						
 						hx = p.x;
-						hy = p.y - d.height/2;
+						hy = p.y - h/2;
 						hr = options().handleSize/2;
 						
 						// add new handle
@@ -317,7 +317,7 @@
 							}
 							
 							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
-							cy.zooming(false).panning(false);
+							cy.zoomingEnabled(false).panningEnabled(false);
 							
 							options().start( node );
 						}
@@ -379,7 +379,7 @@
 						$handle.bind("mouseout", removeHandler);
 						$handle.bind("mousedown", mdownHandler);
 						
-					}).live("mouseover", hoverHandler = function(){
+					}).on("mouseover", "node", hoverHandler = function(){
 						var node = this;
 						var target = this;
 
@@ -410,16 +410,16 @@
 								}
 							}, options().hoverDelay);
 						}
-					}).live("mouseout", leaveHandler = function(){
+					}).on("mouseout", "node", leaveHandler = function(){
 						this.removeClass("ui-cytoscape-edgehandles-hover");
 
 						if( mdownOnHandle ){
 							clearTimeout(hoverTimeout);
 						}
-					}).live("grab", grabNodeHandler = function(){
+					}).on("grab", "node", grabNodeHandler = function(){
 						grabbingNode = true;
 						resetToDefaultState();
-					}).live("free", freeNodeHandler = function(){
+					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 					});
 					

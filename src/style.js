@@ -179,6 +179,7 @@
 			{ name: "target-arrow-color", type: t.color },
 			{ name: "line-style", type: t.lineStyle },
 			{ name: "line-color", type: t.color },
+			{ name: "control-point-step-size", type: t.size },
 
 			// these are just for the core
 			{ name: "selection-box-color", type: t.color },
@@ -255,7 +256,8 @@
 					"target-arrow-color": "#bbb",
 					"line-style": "solid",
 					"line-color": "#bbb",
-					"width": 1
+					"width": 1,
+					"control-point-step-size": 20
 				})
 			.selector("core") // just core properties
 				.css({

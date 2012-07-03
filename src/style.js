@@ -120,6 +120,7 @@
 			size: { number: true, min: 0 },
 			color: { color: true },
 			lineStyle: { enums: ["solid", "dotted", "dashed"] },
+			curveStyle: { enums: ["bundled", "bezier"] },
 			fontFamily: { regex: "^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$" },
 			fontVariant: { enums: ["small-caps", "normal"] },
 			fontStyle: { enums: ["italic", "normal", "oblique"] },
@@ -180,6 +181,7 @@
 			{ name: "line-style", type: t.lineStyle },
 			{ name: "line-color", type: t.color },
 			{ name: "control-point-step-size", type: t.size },
+			{ name: "curve-style", type: t.curveStyle }
 
 			// these are just for the core
 			{ name: "selection-box-color", type: t.color },
@@ -257,7 +259,8 @@
 					"line-style": "solid",
 					"line-color": "#bbb",
 					"width": 1,
-					"control-point-step-size": 20
+					"control-point-step-size": 20,
+					"curve-style": "bezier"
 				})
 			.selector("core") // just core properties
 				.css({

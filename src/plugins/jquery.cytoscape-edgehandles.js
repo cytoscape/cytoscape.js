@@ -264,7 +264,7 @@
 							// also don't trigger when grabbing a node
 						} 
 						
-						// console.log("node mover");
+						// console.log("node mouseover");
 						
 						var node = this;
 						var source = this;
@@ -361,9 +361,12 @@
 							
 						}
 						
-						function removeHandler(e){							
-							var newTargetIsHandle = e.toElement == handle;
-							var newTargetIsNode = e.toElement == node.rscratch("svg"); // TODO plugin shouldn't use ele.rscratch
+						function removeHandler(e){		
+							//console.log("remove event", e);
+							// return;
+
+							var newTargetIsHandle = e.relatedTarget == handle;
+							var newTargetIsNode = e.relatedTarget == node.rscratch("svg"); // TODO plugin shouldn't use ele.rscratch
 							
 							if( newTargetIsHandle || newTargetIsNode || mdownOnHandle ){
 								return; // don't consider mouseout
@@ -418,18 +421,18 @@
 						}
 					}).on("grab", "node", grabNodeHandler = function(){
 						grabbingNode = true;
-						resetToDefaultState();
+						setTimeout(resetToDefaultState, 1);
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 					});
 					
 					data.unbind = function(){
-						cy.nodes()
-							.die("mouseover", startHandler)
-							.die("mouseover", hoverHandler)
-							.die("mouseout", leaveHandler)
-							.die("grab", grabNodeHandler)
-							.die("free", freeNodeHandler)
+						cy
+							.off("mouseover", "node", startHandler)
+							.off("mouseover", "node", hoverHandler)
+							.off("mouseout", "node", leaveHandler)
+							.off("grab", "node", grabNodeHandler)
+							.off("free", "node", freeNodeHandler)
 						;
 						
 						cy.unbind("zoom pan", transformHandler);

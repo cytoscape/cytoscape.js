@@ -117,12 +117,16 @@
 				function svgIsInCy( svgDomElement ){
 					var $ele = $(svgDomElement);
 					var inside = false;
-					
-					$ele.parents().each(function(){
-						if( this == $container[0] ){
+					var $parents = $ele.parents();
+
+					for( var i = 0; i < $parents.length; i++ ){
+						var parent = $parents[i];
+
+						if( parent == $container[0] ){
 							inside = true;
+							break;
 						}
-					});
+					}
 					
 					return inside;
 				}
@@ -188,12 +192,14 @@
 						cy.elements(".ui-cytoscape-edgehandles-preview").remove();
 					}
 					
-					targets.each(function(i, target){
+					for( var i = 0; i < targets.length; i++ ){
+						var target = targets[i];
+						
 						switch( options().edgeType( source, target ) ){
 						case "node":
 							
-							var p1 = source.position(false);
-							var p2 = target.position(false);
+							var p1 = source.position();
+							var p2 = target.position();
 							var p = {
 								x: (p1.x + p2.x)/2,
 								y: (p1.y + p2.y)/2
@@ -241,7 +247,7 @@
 							target.removeClass("ui-cytoscape-edgehandles-target");
 							break; // don't add anything
 						}
-					});
+					}
 					
 					if( !preview ){
 						options().complete( source, targets, added );
@@ -421,7 +427,7 @@
 						}
 					}).on("grab", "node", grabNodeHandler = function(){
 						grabbingNode = true;
-						setTimeout(resetToDefaultState, 1);
+						setTimeout(resetToDefaultState, 10);
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 					});

@@ -28,11 +28,21 @@ $(function(){
 					"border-color": "#5CC2ED",
 					"border-width": 3
 				})
-			.selector(".ui-cytoscape-edgehandles-preview, .ui-cytoscape-edgehandles-target")
+			.selector(".ui-cytoscape-edgehandles-target, node.ui-cytoscape-edgehandles-preview")
 				.css({
-					"background-color": "#5CC2ED",
+					"background-color": "#5CC2ED"
+				})
+			.selector("edge.ui-cytoscape-edgehandles-preview")
+				.css({
 					"line-color": "#5CC2ED"
 				})
+			.selector("node.ui-cytoscape-edgehandles-preview, node.intermediate")
+				.css({
+					"shape": "rectangle",
+					"width": 15,
+					"height": 15
+				})
+			
 		,
 		elements: {
 			nodes: [

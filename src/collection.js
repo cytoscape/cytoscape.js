@@ -504,7 +504,7 @@
 				var tgt = ele.target()[0];
 
 				removeEdgeRef( src, ele );
-				removeEdgeRef( src, tgt );
+				removeEdgeRef( tgt, ele );
 			}
 		}
 		

@@ -4,6 +4,7 @@
 		addClass: function(classes){
 			classes = classes.split(/\s+/);
 			var self = this;
+			var changed = [];
 			
 			for( var i = 0; i < classes.length; i++ ){
 				var cls = classes[i];
@@ -11,11 +12,19 @@
 				
 				for( var j = 0; j < self.length; j++ ){
 					var ele = self[j];
+					var hasClass = ele._private.classes[cls];
 					ele._private.classes[cls] = true;
+
+					if( !hasClass ){ // if didn't already have, add to list of changed
+						changed.push( ele );
+					}
 				}
 			}
 			
-			self.updateStyle().rtrigger("class");
+			// trigger update style on those eles that had class changes
+			new $$.Collection(this._private.cy, changed).updateStyle();
+
+			self.trigger("class");
 			return self;
 		},
 
@@ -27,6 +36,7 @@
 		toggleClass: function(classesStr, toggle){
 			var classes = classesStr.split(/\s+/);
 			var self = this;
+			var changed = []; // eles who had classes changed
 			
 			for( var i = 0, il = self.length; i < il; i++ ){
 				var ele = self[i];
@@ -41,33 +51,49 @@
 
 					if( shouldAdd ){
 						ele._private.classes[cls] = true;
+
+						if( !hasClass ){ changed.push(ele); }
 					} else { // then remove
 						ele._private.classes[cls] = false;
+
+						if( hasClass ){ changed.push(ele); }
 					}
 
 				} // for j classes
 			} // for i eles
 			
-			self.updateStyle().rtrigger("class");
+			// trigger update style on those eles that had class changes
+			new $$.Collection(this._private.cy, changed).updateStyle();
+
+			self.trigger("class");
 			return self;
 		},
 
 		removeClass: function(classes){
 			classes = classes.split(/\s+/);
 			var self = this;
-			
-			for( var i = 0, il = self.length; i < il; i++ ){
+			var changed = [];
+
+			for( var i = 0; i < self.length; i++ ){
 				var ele = self[i];
 
-				for( var j = 0, jl = classes.length; j < jl; j++ ){
+				for( var j = 0; j < classes.length; j++ ){
 					var cls = classes[j];
 					if( !cls || cls === "" ){ continue; }
 
+					var hasClass = ele._private.classes[cls];
 					delete ele._private.classes[cls];
+
+					if( hasClass ){ // then we changed its set of classes
+						changed.push( ele );
+					}
 				}
 			}
 			
-			self.updateStyle().rtrigger("class");
+			// trigger update style on those eles that had class changes
+			new $$.Collection(self._private.cy, changed).updateStyle();
+
+			self.trigger("class");
 			return self;
 		}
 	});

@@ -470,21 +470,10 @@
 				function setPanCursor(){
 					var coreStyle = self.cy.style().core();
 					if( _setPanCursor ){ return; }
-					
-					var cursor = coreStyle["panning-cursor"].value;
-					if( cursor === "grab" || cursor === "grabbing" ){
-						if( $.browser.webkit ){
-							cursor = "-webkit-" + cursor;
-						} else if( $.browser.mozilla ){
-							cursor = "-moz-" + cursor;
-						} else {
-							cursor = "move";
-						}
-					}
 
 					_setPanCursor = true;
 					self.svg.change(svgDomElement, {
-						cursor: cursor
+						cursor: cursor( coreStyle["panning-cursor"].value )
 					});
 				}
 				
@@ -1354,8 +1343,8 @@
 					justStartedDragging = false;
 					
 				} else {
-					element.trigger($.extend({}, dragEvent, { type: "position" }));
-					element.trigger($.extend({}, dragEvent, { type: "drag" }));
+					elements.trigger($.extend({}, dragEvent, { type: "position" }));
+					elements.trigger($.extend({}, dragEvent, { type: "drag" }));
 				}
 				
 				

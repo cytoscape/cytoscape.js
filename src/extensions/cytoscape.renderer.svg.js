@@ -206,7 +206,7 @@
 		if( v != null && typeof v == typeof "" && ( v == "hidden" || v == "visible" ) ){
 			return v;
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid visibility", v);
+			//$.error("SVG renderer does not recognise %o as a valid visibility", v);
 		}
 	};
 	
@@ -214,7 +214,7 @@
 		if( p != null && typeof p == typeof 1 && !isNaN(p) &&  0 <= p && p <= 1 ){
 			return p;
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
+			//$.error("SVG renderer does not recognise %o as a valid percent (should be between 0 and 1)", p);
 		}
 	}
 	
@@ -222,7 +222,7 @@
 		if( c != null && typeof c == typeof "" && $.Color(c) != "" ){
 			return $.Color(c).toHEX();
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid colour", c);
+			//$.error("SVG renderer does not recognise %o as a valid colour", c);
 		}
 	}
 	
@@ -230,7 +230,7 @@
 		if( n != null && typeof n == typeof 1 && !isNaN(n) ){
 			return n;
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid number", n);
+			//$.error("SVG renderer does not recognise %o as a valid number", n);
 		}
 	}
 	
@@ -238,7 +238,7 @@
 		var ret = $.cytoscape("renderer", "svg", "nodeshape", name);
 		
 		if( ret == null ){
-			$.error("SVG renderer does not recognise %s as a valid node shape", name);
+			//$.error("SVG renderer does not recognise %s as a valid node shape", name);
 		}
 		
 		return ret;
@@ -248,7 +248,7 @@
 		var ret = $.cytoscape("renderer", "svg", "linestyle", name);
 		
 		if( ret == null ){
-			$.error("SVG renderer does not recognise %s as a valid line style", name);
+			//$.error("SVG renderer does not recognise %s as a valid line style", name);
 		}
 		
 		return ret;
@@ -266,7 +266,7 @@
 		if( a != null && typeof a == typeof "" && ( a == "left" || a == "right" || a == "middle" ) ){
 			return a;
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid label horizonal alignment", a);
+			//$.error("SVG renderer does not recognise %o as a valid label horizonal alignment", a);
 		}	
 	}
 	
@@ -274,7 +274,7 @@
 		if( a != null && typeof a == typeof "" && ( a == "top" || a == "bottom" || a == "middle" ) ){
 			return a;
 		} else {
-			$.error("SVG renderer does not recognise %o as a valid label vertical alignment", a);
+			//$.error("SVG renderer does not recognise %o as a valid label vertical alignment", a);
 		}	
 	}
 	
@@ -1004,7 +1004,7 @@
 		}
 		
 		if( position == null || typeof position != typeof {} ){
-			$.error("You can not pan without specifying a proper position object; `%o` is invalid", position);
+			//$.error("You can not pan without specifying a proper position object; `%o` is invalid", position);
 			return;
 		}
 		
@@ -2092,7 +2092,7 @@
 		var oldShape = element.rscratch().oldShape;
 		
 		if( element.rscratch().svg == null ){
-			$.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
+			//$.error("SVG renderer can not update style for node `%s` since it has no SVG element", element.id());
 			return;
 		}
 		
@@ -2141,7 +2141,7 @@
 		});
 		
 		this.svg.change(element.rscratch().svgLabelOutline, {
-			stroke: style["text-opacity"].value,
+			stroke: style["text-outline-color"].strValue,
 			strokeWidth: style["text-outline-width"].value * 2,
 			fill: "none",
 			opacity: style["text-opacity"].value
@@ -2432,7 +2432,7 @@
 	SvgRenderer.prototype.positionEdges = function(edges){
 		var self = this;
 		
-		edges.each(function(i, edge){
+		edges.filter(':inside').each(function(i, edge){
 			if( edge.rscratch().svgGroup != null ){
 				self.svgRemove(edge.rscratch().svgGroup);
 			}
@@ -2463,7 +2463,7 @@
 			
 			if( element.rscratch().svgGroup != null ){
 				// remove the svg element from the dom
-				svg.remove( element.rscratch().svgGroup );
+				self.svgRemove( element.rscratch().svgGroup );
 				
 				element.rscratch({});
 			} else {
@@ -2483,11 +2483,13 @@
 			edgesToReposition = edgesToReposition.add( src.edgesWith( tgt ) );
 		});
 
+		edgesToReposition = edgesToReposition.not( collection.edges() );
+
 		self.updatePosition( edgesToReposition );
 		
-		if( updateMappers ){
-			this.updateMapperBounds( collection );
-		}
+		// if( updateMappers ){
+		// 	this.updateMapperBounds( collection );
+		// }
 	};
 	
 	SvgRenderer.prototype.notify = function(params){
@@ -2496,7 +2498,7 @@
 		
 		
 		if( params.type == null ){
-			$.error("The SVG renderer should be notified with a `type` field");
+			//$.error("The SVG renderer should be notified with a `type` field");
 			return;
 		}
 		
@@ -2540,7 +2542,7 @@
 		this.renderer = options.renderer;
 		
 		if( this.renderer.name() != "svg" ){
-			$.error("The SVG exporter can be used only if the SVG renderer is used");
+			//$.error("The SVG exporter can be used only if the SVG renderer is used");
 		}
 	}
 	

@@ -299,7 +299,61 @@
 
 		codirectedEdges: defineParallelEdgesFunction({
 			codirected: true
-		})
+		}),
+
+		parallelIndex: function(){
+			var edge = this[0];
+
+			if( edge.isEdge() ){
+				var src = edge.source()[0];
+				var srcEdges = src._private.edges;
+				var index = 0;
+
+				for( var i = 0; i < srcEdges.length; i++ ){
+					var srcEdge = srcEdges[i];
+					var thisIsTheIndex = srcEdge === edge;
+
+					if( thisIsTheIndex ){
+						return index;
+					}
+
+					var codirected = edge._private.data.source === srcEdge._private.data.source
+						&& edge._private.data.target === srcEdge._private.data.target;
+					var opdirected = edge._private.data.source === srcEdge._private.data.target
+						&& edge._private.data.target === srcEdge._private.data.source;
+					var parallel = codirected || opdirected;
+
+					if( parallel ){ // then increase the count
+						index++;
+					}
+				}
+			}
+		},
+
+		parallelSize: function(){
+			var edge = this[0];
+
+			if( edge.isEdge() ){
+				var src = edge.source()[0];
+				var srcEdges = src._private.edges;
+				var numEdges = 0;
+
+				for( var i = 0; i < srcEdges.length; i++ ){
+					var srcEdge = srcEdges[i];
+					var codirected = edge._private.data.source === srcEdge._private.data.source
+						&& edge._private.data.target === srcEdge._private.data.target;
+					var opdirected = edge._private.data.source === srcEdge._private.data.target
+						&& edge._private.data.target === srcEdge._private.data.source;
+					var parallel = codirected || opdirected;
+
+					if( parallel ){ // then increase the count
+						numEdges++;
+					}
+				}
+
+				return numEdges;
+			}
+		}
 	});
 	
 	function defineParallelEdgesFunction(params){

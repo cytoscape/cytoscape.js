@@ -181,7 +181,7 @@
 			{ name: "line-style", type: t.lineStyle },
 			{ name: "line-color", type: t.color },
 			{ name: "control-point-step-size", type: t.size },
-			{ name: "curve-style", type: t.curveStyle }
+			{ name: "curve-style", type: t.curveStyle },
 
 			// these are just for the core
 			{ name: "selection-box-color", type: t.color },
@@ -893,5 +893,61 @@
 
 		return ret;
 	};
-	
+
+	// gets the control points for the specified edges (assuming bezier curve-style)
+	// 
+	$$.styfn.calculateControlPoints = function( parallelEdges ){
+		var ctrlpts = {};
+
+		var someEdgesAreBundled = false;
+		var numParallelEdges = parallelEdges.length;
+		for( var i = 0; i < parallelEdges.length; i++ ){
+			var e = parallelEdges[i];
+			var isBundled = e._private.style["curve-style"].strValue === "bundled";
+			if( isBundled ){
+				someEdgesAreBundled = true;
+				break;
+			}
+		}
+		var useStraightLineInMiddle = numParallelEdges % 2 !== 0 && !someEdgesAreBundled;
+
+		// calculate the control point for each edge
+		for( var index = 0; i < parallelEdges.length; index++ ){ // index is the parallel index
+			var edge = parallelEdges[i];
+			var id = edge._private.data.id;
+
+			// source & target node stats
+			var src = edge.source();
+			var tgt = edge.target();
+			var srcPos = src.position();
+			var tgtPos = tgt.position();
+			var midpt = {
+				x: (srcPos.x + tgtPos.x)/2,
+				y: (srcPos.y + tgtPos.y)/2
+			};
+
+			var stepSize = edge._private.style["control-point-step-size"].pxValue;
+			var minStep = Math.floor( numParallelEdges / 2 );
+			var step = minStep + index;
+
+			if( step === 0 ){ // special case
+				if( useStraightLineInMiddle ){ // then it's ok
+				} else { // then we can't be in the middle (i.e. step === 0)
+					step++;
+				}
+			}
+
+			var distFromMidpt = step * stepSize; // NB may be negative to indicate other side
+
+			var ctrlpt = {
+				// TODO calculate point perpendicular from the line (srcPos, tgtPos)
+				// and distFromMidpt away from the midpoint
+			};
+
+			ctrlpts[ id ] = ctrlpt;
+		}
+
+		return ctrlpts;
+	};
+
 })(jQuery, jQuery.cytoscape);

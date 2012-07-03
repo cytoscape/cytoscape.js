@@ -471,9 +471,20 @@
 					var coreStyle = self.cy.style().core();
 					if( _setPanCursor ){ return; }
 					
+					var cursor = coreStyle["panning-cursor"].value;
+					if( cursor === "grab" || cursor === "grabbing" ){
+						if( $.browser.webkit ){
+							cursor = "-webkit-" + cursor;
+						} else if( $.browser.mozilla ){
+							cursor = "-moz-" + cursor;
+						} else {
+							cursor = "move";
+						}
+					}
+
 					_setPanCursor = true;
 					self.svg.change(svgDomElement, {
-						cursor: coreStyle["panning-cursor"].value
+						cursor: cursor
 					});
 				}
 				

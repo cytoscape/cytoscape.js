@@ -136,84 +136,45 @@
 			
 			edge._private.rscratch.nodePairId = nodePairId;
 			edge._private.rscratch.nodePairEdgeNum = this.nodePairEdgeData[nodePairId];
-			
 		}
-		
 		
 		// console.log(this.nodePairEdgeData);
 	}
 	
+	CanvasRenderer.prototype.mouseMoveHandler = function(event) {
 	
-	CanvasRenderer.prototype.checkStraightEdgeCrossesBox2 = function(x1box, 
-		y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
-		
-		var boxMinX = Math.min(x1box, x2box) - tolerance;
-		var boxMinY = Math.min(y1box, y2box) - tolerance;
-		var boxMaxX = Math.max(x1box, x2box) + tolerance;
-		var boxMaxY = Math.max(y1box, y2box) + tolerance;
-		
-		// Check left + right bounds
-		var aX = x2 - x1;
-		var bX = x1;
-		
-		if (Math.abs(aX) < 0.0001) {
-			return false;
-		}
-		
-		var tLeft = (boxMinX - bX) / aX;
-		if (tLeft > 0 && tLeft <= 1) {
-			//return true;
-		}
-		
-		var tRight = (boxMaxX - bX) / aX;
-		if (tRight > 0 && tRight <= 1) {
-			//return true;
-		}
-		
-		// Top and bottom
-		var aY = y2 - y1;
-		var bY = y1;
-		
-		if (Math.abs(aY) < 0.0001) {
-			return false;
-		}
-		
-		
-		var tTop = (boxMinY - bY) / aY;
-		if (tTop > 0 && tTop <= 1) {
-			//return true;
-		}
-		
-		var tBottom = (boxMaxY - bY) / aY;
-		if (tBottom > 0 && tBottom <= 1) {
-			//return true;
-		}
-		
-		if (((tLeft > 0 && tLeft <= 1) || (tRight > 0 && tRight <= 1))
-			&& ((tTop > 0 && tTop <= 1) || (tBottom > 0 && tBottom <= 1))) {
-			
-			return true;
-		}
-		
-		return false;
 	}
 	
+	CanvasRenderer.prototype.mouseDownHandler = function(event) {
+	
+	}
+	
+	CanvasRenderer.prototype.mouseUpHandler = function(event) {
+	
+	}
+	
+	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
+	
+	}
+	
+	CanvasRenderer.prototype.keyDownHandler = function(event) {
+		if (event.keyCode == 16 && selectBox[4] != 1) {
+			shiftDown = true;
+		}
+	}
+	
+	CanvasRenderer.prototype.keyUpHandler = function(event) {
+		if (event.keyCode == 16) {
+			selectBox[4] = 0;
+			shiftDown = false;
+		}
+	}
 		
 	CanvasRenderer.prototype.load = function() {
 		var self = this;
 	
-		$(window).keydown(function(e) { 
-			if (e.keyCode == 16 && selectBox[4] != 1) {
-				shiftDown = true;
-			}
-		});
-		
-		$(window).keyup(function(e) { 
-			if (e.keyCode == 16) {
-				selectBox[4] = 0;
-				shiftDown = false;
-			}
-		});
+		document.addEventListener("keydown", this.keyDownHandler, false);
+		document.addEventListener("keyup", this.keyUpHandler, false);
 	
 		var startX, startY;
 		var initialCenter = [this.center[0], this.center[1]];
@@ -294,7 +255,7 @@
 		
 			var squaredDistanceLimit = 40;
 		
-			if (self.inBezierVicinity(
+			if ($$.math.inBezierVicinity(
 					mouseX, mouseY,
 					edge.source().position().x,
 					edge.source().position().y,
@@ -308,7 +269,7 @@
 				
 				// edge._private.rscratch.selected = true;
 				
-				var squaredDistance = cy.renderer().sqDistanceToQuadraticBezier(
+				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
 					mouseX,
 					mouseY,
 					edge.source().position().x,
@@ -528,7 +489,7 @@
 				
 				for (var index = 0; index < edges.length; index++) {
 				
-					var boxInBezierVicinity = cy.renderer().boxInBezierVicinity(
+					var boxInBezierVicinity = $$.math.boxInBezierVicinity(
 						selectBox[0], selectBox[1],
 						selectBox[2], selectBox[3],
 						edges[index].source().position().x,
@@ -545,7 +506,7 @@
 						if (edges[index]._private.rscratch.straightEdge) {
 							
 							edges[index]._private.rscratch.selected = 
-								cy.renderer().checkStraightEdgeCrossesBox(
+								$$.math.checkStraightEdgeCrossesBox(
 									selectBox[0], selectBox[1],
 									selectBox[2], selectBox[3],
 									edges[index].source().position().x,
@@ -556,7 +517,7 @@
 						} else {
 							
 							edges[index]._private.rscratch.selected = 
-								cy.renderer().checkBezierCrossesBox(
+								$$.math.checkBezierCrossesBox(
 									selectBox[0], selectBox[1],
 									selectBox[2], selectBox[3],
 									edges[index].source().position().x,

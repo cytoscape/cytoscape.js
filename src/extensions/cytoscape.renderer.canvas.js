@@ -578,8 +578,6 @@
 		this.mouseMoveHelper.checkStraightEdgeHover = checkStraightEdgeHover;
 		this.mouseMoveHelper.checkNodeHover = checkNodeHover;
 		this.mouseMoveHelper.hoverHandler = hoverHandler;
-		
-		console.log("init");
 	}
 	
 	CanvasRenderer.prototype.load = function() {
@@ -1041,13 +1039,17 @@
 					context.strokeStyle = styleValue != undefined ? styleValue 
 						: defaultEdge.hoveredColor;
 				} else {
-					styleValue = edge._private.rscratch.override.regularColor;
+					styleValue = "rgba(" + edge._private.style.color.value[0] + ","
+						+ edge._private.style.color.value[1] + ","
+						+ edge._private.style.color.value[2] + ","
+						+ edge._private.style.opacity.value + ")";
+					
 					context.strokeStyle = styleValue != undefined ? styleValue 
 						: defaultEdge.regularColor;
 				}
 			}
 			
-			context.lineWidth = edge._private.data.weight / 26.0;
+			context.lineWidth = edge._private.style.width.value * 3.5;
 			context.beginPath();
 			
 			context.moveTo(startNode._private.position.x, startNode._private.position.y);
@@ -1102,10 +1104,17 @@
 					styleValue = node._private.rscratch.override.hoveredBorderColor;
 					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
 				} else {
-					styleValue = node._private.rscratch.override.regularColor;
+					styleValue = "rgba(" + node._private.style.color.value[0] + ","
+						+ node._private.style.color.value[1] + ","
+						+ node._private.style.color.value[2] + ","
+						+ node._private.style.opacity.value + ")";
+						
 					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
 					
-					styleValue = node._private.rscratch.override.regularBorderColor;
+					styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
+						+ node._private.style["border-color"].value[1] + ","
+						+ node._private.style["border-color"].value[2] + ","
+						+ node._private.style["border-opacity"].value + ")";	
 					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
 			
 				}
@@ -1126,7 +1135,7 @@
 			context.stroke();
 			*/
 			
-			styleValue = node._private.rscratch.override.borderWidth;
+			styleValue = node._private.style["border-width"].value;
 			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
 			context.stroke();
 			

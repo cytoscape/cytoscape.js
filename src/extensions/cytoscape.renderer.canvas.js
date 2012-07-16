@@ -55,7 +55,14 @@
 	};
 	
 	var debugStats = {};
+	
+	// The 5th element in the array can be used to indicate whether 
+	// the box should be drawn (0=hide)
 	var selectBox = [0, 0, 0, 0, 0];
+	
+	var dragPanStartX;
+	var dragPanStartY;
+	var dragPanInitialCenter;
 	var dragPanMode = false;
 	
 	var shiftDown = false;
@@ -70,6 +77,9 @@
 	
 	var arrowShapeDrawers = {};
 	var nodeShapeDrawers = {};
+	
+	// Timeout variable used to prevent mouseMove events from being triggered too often
+	var mouseMoveTimeout = 0;
 	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
@@ -141,20 +151,237 @@
 		// console.log(this.nodePairEdgeData);
 	}
 	
-	CanvasRenderer.prototype.mouseMoveHandler = function(event) {
-	
+	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
+		if (mouseMoveTimeout) {return;}
+		
+		mouseMoveTimeout = setTimeout(function(){
+			mouseMoveTimeout = null;		
+		}, 1000/80);
+		
+		var renderer = cy.renderer();
+		
+		// Get references to helper functions
+		var dragHandler = renderer.mouseMoveHelper.dragHandler;
+		var checkEdgeHover = renderer.mouseMoveHelper.checkEdgeHover;
+		var checkStraightEdgeHover = renderer.mouseMoveHelper.checkStraightEdgeHover;
+		var checkNodeHover = renderer.mouseMoveHelper.checkNodeHover;
+		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
+		
+		
+		// Offset for Cytoscape container
+		var mouseOffsetX = cy.container().offset().left + 2;
+		var mouseOffsetY = cy.container().offset().top + 2;
+		
+		var edges = self.cy.edges();
+		var nodes = self.cy.nodes();
+		
+		
+		// Drag pan
+		if (dragPanMode) {
+			dragHandler(e);
+		}
+
+		var current = cy.renderer().projectMouse(cy.renderer(),
+			e.clientX,
+			e.clientY,
+			mouseOffsetX,
+			mouseOffsetY);
+		
+		// Update selection box
+		selectBox[2] = current[0];
+		selectBox[3] = current[1];
+		
+		if (shiftDown && selectBox[4] == 1) {
+			for (var index = 0; index < nodes.length; index++) {
+				if (nodes[index]._private.rscratch.selected) {
+					nodes[index]._private.position.x = 
+						nodes[index]._private.rscratch.dragStartX
+						+ (selectBox[2] - selectBox[0]);
+					nodes[index]._private.position.y = 
+						nodes[index]._private.rscratch.dragStartY
+						+ (selectBox[3] - selectBox[1]);
+				}
+			}
+		}
+					
+		if (!shiftDown && selectBox[4] == 1
+			&& Math.abs(selectBox[2] - selectBox[0]) 
+				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
+			var padding = 5;
+			
+			for (var index = 0; index < edges.length; index++) {
+			
+				var boxInBezierVicinity = $$.math.boxInBezierVicinity(
+					selectBox[0], selectBox[1],
+					selectBox[2], selectBox[3],
+					edges[index].source().position().x,
+					edges[index].source().position().y,
+					edges[index]._private.rscratch.cp2x,
+					edges[index]._private.rscratch.cp2y,
+					edges[index].target().position().x,
+					edges[index].target().position().y, padding);
+					
+				if (boxInBezierVicinity == 2) {
+					edges[index]._private.rscratch.selected = true;
+				} else if (boxInBezierVicinity == 1) {
+					
+					if (edges[index]._private.rscratch.straightEdge) {
+						
+						edges[index]._private.rscratch.selected = 
+							$$.math.checkStraightEdgeCrossesBox(
+								selectBox[0], selectBox[1],
+								selectBox[2], selectBox[3],
+								edges[index].source().position().x,
+								edges[index].source().position().y,
+								edges[index].target().position().x,
+								edges[index].target().position().y, padding);
+						
+					} else {
+						
+						edges[index]._private.rscratch.selected = 
+							$$.math.checkBezierCrossesBox(
+								selectBox[0], selectBox[1],
+								selectBox[2], selectBox[3],
+								edges[index].source().position().x,
+								edges[index].source().position().y,
+								edges[index]._private.rscratch.cp2x,
+								edges[index]._private.rscratch.cp2y,
+								edges[index].target().position().x,
+								edges[index].target().position().y, padding);
+						
+					}
+				} else {
+					edges[index]._private.rscratch.selected = false;
+				}
+			}
+			
+			var boxMinX = Math.min(selectBox[0], selectBox[2]);
+			var boxMinY = Math.min(selectBox[1], selectBox[3]);
+			var boxMaxX = Math.max(selectBox[0], selectBox[2]);
+			var boxMaxY = Math.max(selectBox[1], selectBox[3]);
+			
+			var nodePosition, boundingRadius;
+			for (var index = 0; index < nodes.length; index++) {
+				nodePosition = nodes[index].position();
+				boundingRadius = nodes[index]._private.data.weight / 5.0;
+				
+				if (nodePosition.x > boxMinX
+						- boundingRadius
+					&& nodePosition.x < boxMaxX 
+						+ boundingRadius
+					&& nodePosition.y > boxMinY 
+						- boundingRadius
+					&& nodePosition.y < boxMaxY 
+						+ boundingRadius) {
+						
+					nodes[index]._private.rscratch.selected = true;		
+				} else {
+					nodes[index]._private.rscratch.selected = false;
+				}
+			}
+		}
+		
+		hoverHandler(e);
+		
+		cy.renderer().redraw();
 	}
 	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
+		var mouseDownEvent = event;
 	
+		// Process middle button panning
+		if (mouseDownEvent.button == 1
+				&& mouseDownEvent.target == cy.renderer().canvas) {
+		
+			dragPanStartX = mouseDownEvent.clientX;
+			dragPanStartY = mouseDownEvent.clientY;
+			
+			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
+			
+			//debug("mouse down");
+			//$(window).bind("mousemove", dragHandler);
+			
+			dragPanMode = true;
+		}
+		
+		// Left button drag selection
+		if (mouseDownEvent.button == 0
+				&& mouseDownEvent.target == cy.renderer().canvas) {
+			
+			var start = cy.renderer().projectMouse(cy.renderer(),
+				mouseDownEvent.clientX,
+				mouseDownEvent.clientY,
+				cy.container().offset().left + 2, // container offsets
+				cy.container().offset().top + 2);
+			
+			var nodes = cy.nodes();
+			var edges = cy.edges();
+			
+			
+			if (!shiftDown) {
+				for (var index = 0; index < nodes.length; index++) {
+					nodes[index]._private.rscratch.selected = false;
+				}
+				
+				for (var index = 0; index < edges.length; index++) {
+					edges[index]._private.rscratch.selected = false;
+				}
+			
+				if (minDistanceNode != undefined) {
+					minDistanceNode._private.rscratch.hovered = false;
+					minDistanceNode._private.rscratch.selected = true;		
+				} else if (minDistanceEdge != undefined) {
+					minDistanceEdge._private.rscratch.hovered = false;
+					minDistanceEdge._private.rscratch.selected = true;
+				}
+			}
+			
+			selectBox[0] = start[0];
+			selectBox[1] = start[1];
+			selectBox[4] = 1;
+			
+			if (shiftDown) {
+				for (var index = 0; index < nodes.length; index++) {
+					if (nodes[index]._private.rscratch.selected) {
+						nodes[index]._private.rscratch.dragStartX = 
+							nodes[index]._private.position.x;
+						nodes[index]._private.rscratch.dragStartY =
+							nodes[index]._private.position.y;
+					}
+				}
+			}
+			
+			cy.renderer().redraw();
+		}
 	}
 	
 	CanvasRenderer.prototype.mouseUpHandler = function(event) {
 	
+		// Stop drag panning on mouseup
+		dragPanMode = false;
+		
+		selectBox[4] = 0;
+		cy.renderer().redraw();
 	}
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
-	
+		
+		event.preventDefault();
+		
+		console.log(event);
+		
+		var deltaY = event.wheelDeltaY;
+		
+		cy.renderer().zoomLevel -= deltaY / 5.0 / 500;
+		
+		//console.log("zoomLevel: " + cy.renderer().zoomLevel);
+		cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
+		cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
+		
+		
+		cy.renderer().redraw();
+		
+		
 	}
 	
 	CanvasRenderer.prototype.keyDownHandler = function(event) {
@@ -169,88 +396,16 @@
 			shiftDown = false;
 		}
 	}
-		
-	CanvasRenderer.prototype.load = function() {
-		var self = this;
 	
-		document.addEventListener("keydown", this.keyDownHandler, false);
-		document.addEventListener("keyup", this.keyUpHandler, false);
-	
-		var startX, startY;
-		var initialCenter = [this.center[0], this.center[1]];
-		
-		$(window).bind("mousedown", function(mouseDownEvent) {
-			if (mouseDownEvent.button != 1) {
-				return;
-			}
-			
-			if (mouseDownEvent.target != cy.renderer().canvas) {
-				return;
-			}
-			
-			startX = mouseDownEvent.clientX;
-			startY = mouseDownEvent.clientY;
-			
-			initialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
-			
-			//debug("mouse down");
-			//$(window).bind("mousemove", dragHandler);
-			
-			dragPanMode = true;
-		
-			debug(mouseDownEvent);
-		});
-
+	CanvasRenderer.prototype.mouseMoveHelper = function() {
 		var dragHandler = function(mouseMoveEvent) {
-			//debug("mouseDrag");
-			//debug(mouseMoveEvent);
-			//debug("start: (" + startX + ", " + startY + ")");
+			var offsetX = mouseMoveEvent.clientX - dragPanStartX;
+			var offsetY = mouseMoveEvent.clientY - dragPanStartY;
 			
-			var offsetX = mouseMoveEvent.clientX - startX;
-			var offsetY = mouseMoveEvent.clientY - startY;
-			
-			cy.renderer().center[0] = initialCenter[0] - offsetX / cy.renderer().scale[0];
-			cy.renderer().center[1] = initialCenter[1] - offsetY / cy.renderer().scale[1];	
-			// cy.renderer().redraw();
+			cy.renderer().center[0] = dragPanInitialCenter[0] - offsetX / cy.renderer().scale[0];
+			cy.renderer().center[1] = dragPanInitialCenter[1] - offsetY / cy.renderer().scale[1];
 		};
 		
-		$(window).bind("mouseup", function(mouseUpEvent) {
-			/*
-			debug("mouse up");
-			debug(mouseUpEvent);
-			*/
-			//$(window).unbind("mousemove", dragHandler);
-			
-			dragPanMode = false;
-		});
-		
-		$(window).bind("mousewheel", function(event, delta, deltaX, deltaY){
-			
-			/*
-			console.log("mousewheel");
-			console.log(event);
-			console.log(delta);
-			console.log(deltaX);
-			console.log(deltaY);
-			*/
-			
-			event.preventDefault();
-			
-			cy.renderer().zoomLevel -= deltaY / 5.0;
-			
-			//console.log("zoomLevel: " + cy.renderer().zoomLevel);
-			cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
-			cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
-			
-			
-			cy.renderer().redraw();
-			// self.zoomAboutPoint(point, zoom);
-			/*
-			self.cy.trigger("zoom");
-			self.cy.trigger("pan");
-			*/
-		});
-	
 		var checkEdgeHover = function(mouseX, mouseY, edge) {
 		
 			var squaredDistanceLimit = 40;
@@ -364,18 +519,12 @@
 		var mouseOffsetX = this.cy.container().offset().left + 2;
 		var mouseOffsetY = this.cy.container().offset().top + 2;
 		
-		
-		
-		var edges = self.cy.edges();
-		var nodes = self.cy.nodes();
+		var edges = this.cy.edges();
+		var nodes = this.cy.nodes();
 		var hoverHandler = function(mouseMoveEvent) {
-			/*
-			var mouseX = mouseMoveEvent.clientX - mouseOffsetX;
-			var mouseY = mouseMoveEvent.clientY - mouseOffsetY;
-			*/
 			
 			// Project mouse coordinates to world absolute coordinates
-			var projected = self.projectMouse(self, 
+			var projected = cy.renderer().projectMouse(cy.renderer(), 
 				mouseMoveEvent.clientX,
 				mouseMoveEvent.clientY,
 				mouseOffsetX,
@@ -383,29 +532,6 @@
 			
 			var mouseX = projected[0];
 			var mouseY = projected[1];
-			
-			/*
-			mouseX -= self.options.cy.container().width() / 2;
-			mouseY -= self.options.cy.container().height() / 2;
-			
-			mouseX /= self.scale[0];
-			mouseY /= self.scale[1];
-			
-			mouseX += self.center[0];
-			mouseY += self.center[1];
-			*/
-			
-			/*
-			var xOffsetFromCenter = mouseX - self.options.cy.container().width() / 2;
-			var yOffsetFromCenter = mouseY - self.options.cy.container().height() / 2;
-			
-			//console.log(self.scale[0]);
-			xOffsetFromCenter /= self.scale[0];
-			yOffsetFromCenter /= self.scale[1];
-			
-			mouseX = self.options.cy.container().width() / 2 + xOffsetFromCenter;
-			mouseY = self.options.cy.container().height() / 2 + yOffsetFromCenter;
-			*/
 			
 			if (minDistanceNode != undefined) {
 				minDistanceNode._private.rscratch.hovered = false;
@@ -446,208 +572,34 @@
 			}
 		}
 		
-		var timeout;
-		$(window).bind("mousemove", function(e){
-			if( timeout ){ return }
+		// Make these related functions (they reference each other) available
+		this.mouseMoveHelper.dragHandler = dragHandler;
+		this.mouseMoveHelper.checkEdgeHover = checkEdgeHover;
+		this.mouseMoveHelper.checkStraightEdgeHover = checkStraightEdgeHover;
+		this.mouseMoveHelper.checkNodeHover = checkNodeHover;
+		this.mouseMoveHelper.hoverHandler = hoverHandler;
 		
-			timeout = setTimeout(function(){
-				timeout = null;		
-			}, 1000/80);
-			
-			// Drag pan
-			if (dragPanMode) {
-				dragHandler(e);
-			}
+		console.log("init");
+	}
 	
-			var current = cy.renderer().projectMouse(cy.renderer(),
-				e.clientX,
-				e.clientY,
-				mouseOffsetX,
-				mouseOffsetY);
-			
-			// Update selection box
-			selectBox[2] = current[0];
-			selectBox[3] = current[1];
-			
-			if (shiftDown && selectBox[4] == 1) {
-				for (var index = 0; index < nodes.length; index++) {
-					if (nodes[index]._private.rscratch.selected) {
-						nodes[index]._private.position.x = 
-							nodes[index]._private.rscratch.dragStartX
-							+ (selectBox[2] - selectBox[0]);
-						nodes[index]._private.position.y = 
-							nodes[index]._private.rscratch.dragStartY
-							+ (selectBox[3] - selectBox[1]);
-					}
-				}
-			}
-						
-			if (!shiftDown && selectBox[4] == 1
-				&& Math.abs(selectBox[2] - selectBox[0]) 
-					+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
-				var padding = 5;
-				
-				for (var index = 0; index < edges.length; index++) {
-				
-					var boxInBezierVicinity = $$.math.boxInBezierVicinity(
-						selectBox[0], selectBox[1],
-						selectBox[2], selectBox[3],
-						edges[index].source().position().x,
-						edges[index].source().position().y,
-						edges[index]._private.rscratch.cp2x,
-						edges[index]._private.rscratch.cp2y,
-						edges[index].target().position().x,
-						edges[index].target().position().y, padding);
-						
-					if (boxInBezierVicinity == 2) {
-						edges[index]._private.rscratch.selected = true;
-					} else if (boxInBezierVicinity == 1) {
-						
-						if (edges[index]._private.rscratch.straightEdge) {
-							
-							edges[index]._private.rscratch.selected = 
-								$$.math.checkStraightEdgeCrossesBox(
-									selectBox[0], selectBox[1],
-									selectBox[2], selectBox[3],
-									edges[index].source().position().x,
-									edges[index].source().position().y,
-									edges[index].target().position().x,
-									edges[index].target().position().y, padding);
-							
-						} else {
-							
-							edges[index]._private.rscratch.selected = 
-								$$.math.checkBezierCrossesBox(
-									selectBox[0], selectBox[1],
-									selectBox[2], selectBox[3],
-									edges[index].source().position().x,
-									edges[index].source().position().y,
-									edges[index]._private.rscratch.cp2x,
-									edges[index]._private.rscratch.cp2y,
-									edges[index].target().position().x,
-									edges[index].target().position().y, padding);
-							
-						}
-					} else {
-						edges[index]._private.rscratch.selected = false;
-					}
-				}
-				
-				var boxMinX = Math.min(selectBox[0], selectBox[2]);
-				var boxMinY = Math.min(selectBox[1], selectBox[3]);
-				var boxMaxX = Math.max(selectBox[0], selectBox[2]);
-				var boxMaxY = Math.max(selectBox[1], selectBox[3]);
-				
-				var nodePosition, boundingRadius;
-				for (var index = 0; index < nodes.length; index++) {
-					nodePosition = nodes[index].position();
-					boundingRadius = nodes[index]._private.data.weight / 5.0;
-					
-					if (nodePosition.x > boxMinX
-							- boundingRadius
-						&& nodePosition.x < boxMaxX 
-							+ boundingRadius
-						&& nodePosition.y > boxMinY 
-							- boundingRadius
-						&& nodePosition.y < boxMaxY 
-							+ boundingRadius) {
-							
-						nodes[index]._private.rscratch.selected = true;		
-					} else {
-						nodes[index]._private.rscratch.selected = false;
-					}
-				}
-			}
-			
-			hoverHandler(e);
-			
-			self.redraw();
-		});
+	CanvasRenderer.prototype.load = function() {
+		var self = this;
 		
-		/*
-		// Offset for Cytoscape container
-		var mouseOffsetX = this.cy.container().offset().left + 2;
-		var mouseOffsetY = this.cy.container().offset().top + 2;
-		*/
+		this.mouseMoveHelper();
 		
-		/*
-		//var startX = mouseDownEvent.
-		var selectHandler = function(mouseMoveEvent) {
-			var current = cy.renderer().projectMouse(cy.renderer(),
-				mouseMoveEvent.clientX,
-				mouseMoveEvent.clientY,
-				mouseOffsetX,
-				mouseOffsetY);
-			
-			selectBox[2] = current[0];
-			selectBox[3] = current[1];
-		};
-		*/
+		document.addEventListener("keydown", this.keyDownHandler, false);
+		document.addEventListener("keyup", this.keyUpHandler, false);
+	
+		this.canvas.addEventListener("mousedown", this.mouseDownHandler, false);
+		this.canvas.addEventListener("mouseup", this.mouseUpHandler, false);
+	
+		this.canvas.addEventListener("mousemove", this.mouseMoveHandler, false);
+		this.canvas.addEventListener("mousewheel", this.mouseWheelHandler, false);
 		
-		$(window).bind("mousedown", function(mouseDownEvent) {
-			if (mouseDownEvent.button != 0) {
-				return;
-			}
-			
-			if (mouseDownEvent.target != cy.renderer().canvas) {
-				return;
-			}
-			
-			var start = cy.renderer().projectMouse(cy.renderer(),
-				mouseDownEvent.clientX,
-				mouseDownEvent.clientY,
-				mouseOffsetX,
-				mouseOffsetY);
-			
-			if (!shiftDown) {
-				for (var index = 0; index < nodes.length; index++) {
-					nodes[index]._private.rscratch.selected = false;
-				}
-				
-				for (var index = 0; index < edges.length; index++) {
-					edges[index]._private.rscratch.selected = false;
-				}
-			
-				if (minDistanceNode != undefined) {
-					minDistanceNode._private.rscratch.hovered = false;
-					minDistanceNode._private.rscratch.selected = true;		
-				} else if (minDistanceEdge != undefined) {
-					minDistanceEdge._private.rscratch.hovered = false;
-					minDistanceEdge._private.rscratch.selected = true;
-				}
-			}
-			
-			selectBox[0] = start[0];
-			selectBox[1] = start[1];
-			selectBox[4] = 1;
-			
-			if (shiftDown) {
-				for (var index = 0; index < nodes.length; index++) {
-					if (nodes[index]._private.rscratch.selected) {
-						nodes[index]._private.rscratch.dragStartX = 
-							nodes[index]._private.position.x;
-						nodes[index]._private.rscratch.dragStartY =
-							nodes[index]._private.position.y;
-					}
-				}
-			}
-			
-			cy.renderer().redraw();
-		});
 		
-		$(window).bind("mouseup", function(e) {
-			//$(window).unbind("mousemove", selectHandler);
-			selectBox[4] = 0;
-			
-			dragPanMode = false;
-			
-			
-			cy.renderer().redraw();
-		});
 	}
 	
 	CanvasRenderer.prototype.init = function() {
-		
 		
 		var container = this.options.cy.container();
 		var canvas2d = document.createElement("canvas");
@@ -805,13 +757,6 @@
 		var tan1ay = cp2y - y1;
 		var tan1by = y1;
 		
-		/*
-		var tan2ax = cp2x - x3;
-		var tan2bx = x3;
-		
-		var tan2ay = cp2y - y3;
-		var tan2by = y3;
-		*/
 		
 		var tan2ax = newEndPointX - x3;
 		var tan2bx = x3;

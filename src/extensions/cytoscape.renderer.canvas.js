@@ -151,6 +151,23 @@
 		// console.log(this.nodePairEdgeData);
 	}
 	
+	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+		var visitedEdges = {};
+		
+		var parallelEdges;
+		for (var i = 0; i < edges.length; i++) {
+			if (visitedEdges[edges[i]._private.data.id] == undefined) {
+				parallelEdges = edges[i].parallelEdges();
+				
+				for (var j = 0; j < edges.length; j++) {
+					visitedEdges[edges[i]._private.data.id] = true;
+				}
+				
+				$$.styfn.calculateControlPoints(parallelEdges);
+			}
+		}
+	}
+	
 	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
 		if (mouseMoveTimeout) {return;}
 		
@@ -806,6 +823,64 @@
 			(newLength / len) * dispY + edge.source().position().y;
 	}
 	
+	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
+		radius, farX, farY) {
+		
+		var displacementX = farX - centerX;
+		var displacementY = farY - centerY;
+		var distance = Math.sqrt(displacementX * displacementX 
+			+ displacementY * displacementY);
+		
+		var unitDisplacementX = displacementX / distance;
+		var unitDisplacementY = displacementY / distance;
+		
+		return [centerX + unitDisplacementX * radius, 
+			centerY + unitDisplacementY * radius];
+	}
+	
+	// Finds new endpoints for a bezier edge based on desired source and target radii
+	CanvasRenderer.prototype.findNewEndPoints 
+		= function(startX, startY, cp2x, cp2y, endX, endY, radius1, radius2) {
+		
+		var startNearPt = this.findCircleNearPoint(startX, startY, radius1, cp2x, cp2y);
+		var endNearPt = this.findCircleNearPoint(endX, endY, radius2, cp2x, cp2y);
+		
+		return [startNearPt[0], startNearPt[1], endNearPt[0], endNearPt[1]];
+	}
+	
+	// Calculates new endpoints for all bezier edges based on desired source and 
+	// target radii
+	CanvasRenderer.prototype.calculateNewEndPoints = function() {
+		
+		var edges = cy.edges();
+		var source, target;
+		var endpoints;
+		
+		for (var i = 0; i < edges.length; i++) {
+			source = edges[i].source()[0];
+			target = edges[i].target()[0];
+			
+			if (edges[i]._private.rscratch.isStraightEdge) {
+				continue;
+			}
+			
+			endpoints = this.findNewEndPOints(
+				source.position().x,
+				source.position().y,
+				edges[i]._private.rscratch.controlPointX,
+				edges[i]._private.rscratch.controlPointY,
+				target.position().x,
+				target.position().y
+			);
+				
+			edges[i]._private.rscratch.updatedStartX = endpoints[0];
+			edges[i]._private.rscratch.updatedStartY = endpoints[1];
+			edges[i]._private.rscratch.updatedEndX = endpoints[2];
+			edges[i]._private.rscratch.updatedEndY = endpoints[3];
+		}
+		
+	}
+	
 	arrowShapeDrawers["arrow"] = function(context) {
 		context.lineTo(-0.2, 0);
 		context.lineTo(0, -0.4);
@@ -859,9 +934,11 @@
 		var endShape = edge._private.rscratch.override.endShape;
 		endShape = endShape ? endShape : defaultEdge.endShape;
 		
+		/*
 		var dispX = edge.target().position().x - edge._private.rscratch.newEndPointX;
 		var dispY = edge.target().position().y - edge._private.rscratch.newEndPointY;
-		
+		*/
+				
 		this.drawArrowShape(edge, edge._private.rscratch.newEndPointX, 
 			edge._private.rscratch.newEndPointY, dispX, dispY);
 	}
@@ -877,6 +954,7 @@
 			edge._private.rscratch.newStraightEndY,
 			dispX, dispY);
 	}
+	
 	
 	CanvasRenderer.prototype.calculateEdgeMetrics = function(edge) {
 		if (edge._private.data.source == edge._private.data.target) {
@@ -995,7 +1073,8 @@
 	CanvasRenderer.prototype.redraw = function() {
 		// console.log("draw call");
 		// this.initStyle();
-		this.findEdgeMetrics(this.options.cy.edges());
+		//this.findEdgeMetrics(this.options.cy.edges());
+		this.findEdgeControlPoints(this.options.cy.edges());
 	
 		var context = this.context;
 		
@@ -1009,20 +1088,12 @@
 		context.scale(this.scale[0], this.scale[1])
 		context.translate(-this.center[0], -this.center[1])
 		
-		/*
-		context.transform(this.transform[0], this.transform[1], this.transform[2],
-			this.transform[3], this.transform[4] * this.transform[0], 
-			this.transform[5] * this.transform[3]);
-		*/
-		
-		//debug("draw called");
 		var nodes = this.options.cy.nodes();
 		var edges = this.options.cy.edges();
 		
 		var edge;
 		var styleValue;
-		
-		
+				
 		var startNode, endNode;
 		for (var index = 0; index < edges.length; index++) {
 			edge = edges[index];
@@ -1039,6 +1110,7 @@
 					context.strokeStyle = styleValue != undefined ? styleValue 
 						: defaultEdge.hoveredColor;
 				} else {
+					// Edge color & opacity
 					styleValue = "rgba(" + edge._private.style.color.value[0] + ","
 						+ edge._private.style.color.value[1] + ","
 						+ edge._private.style.color.value[2] + ","
@@ -1049,15 +1121,15 @@
 				}
 			}
 			
+			// Edge line width
 			context.lineWidth = edge._private.style.width.value * 3.5;
 			context.beginPath();
 			
 			context.moveTo(startNode._private.position.x, startNode._private.position.y);
-			
 
 			this.calculateEdgeMetrics(edge);
 			
-			if (edge._private.rscratch.straightEdge) {
+			if (edge._private.rscratch.isStraightEdge) {
 				this.findStraightIntersection(edge, 
 					endNode._private.data.weight / 5.0 + 12);
 				
@@ -1065,30 +1137,39 @@
 					edge._private.rscratch.newStraightEndY);
 				context.stroke();
 				
-				this.drawStraightArrowhead(edge);
+				// ***
+				// this.drawStraightArrowhead(edge);
 				
 			} else if (edge._private.rscratch.selfEdge) {
 				
 			} else {
 				this.findBezierIntersection(edge, endNode._private.data.weight / 5.0 + 12);
 			
+				/*
 				context.quadraticCurveTo(edge._private.rscratch.newCp2x, 
 					edge._private.rscratch.newCp2y, edge._private.rscratch.newEndPointX, 
 					edge._private.rscratch.newEndPointY);
+				*/
+				
+				context.quadraticCurveTo(edge._private.rscratch.controlPointX, 
+					edge._private.rscratch.controlPointY, endNode._private.position.x, 
+					endNode._private.position.y);
 				context.stroke();
 				
-				this.drawArrowhead(edge);
+				// ***
+				// this.drawArrowhead(edge);
 			}
 			
 			
-			//context.lineTo(endNode._private.position.x, endNode._private.position.y);
-			
 		}
-		
 		
 		var node, labelStyle, labelSize, labelFamily;
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
+			
+			if (node._private.style["visibility"].value != "visible") {
+				continue;
+			}
 			
 			if (node._private.rscratch.selected == true) {
 				styleValue = node._private.rscratch.override.selectedColor;
@@ -1104,6 +1185,7 @@
 					styleValue = node._private.rscratch.override.hoveredBorderColor;
 					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
 				} else {
+					// Node color & opacity
 					styleValue = "rgba(" + node._private.style.color.value[0] + ","
 						+ node._private.style.color.value[1] + ","
 						+ node._private.style.color.value[2] + ","
@@ -1111,6 +1193,7 @@
 						
 					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
 					
+					// Node border color & opacity
 					styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
 						+ node._private.style["border-color"].value[1] + ","
 						+ node._private.style["border-color"].value[2] + ","
@@ -1122,29 +1205,17 @@
 			
 			nodeShapeDrawers[node._private.rscratch.override.shape || defaultNode.shape](node, node._private.data.weight / 5.0);
 			
-			/*
-			context.beginPath();
-			context.arc(node._private.position.x, node._private.position.y,
-				node._private.data.weight / 5.0, 0, Math.PI * 2, false);
-			context.closePath();
-			context.fill();
-			
-			styleValue = node._private.rscratch.override.borderWidth;
-			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
-			
-			context.stroke();
-			*/
-			
+			// Node border width			
 			styleValue = node._private.style["border-width"].value;
 			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
 			context.stroke();
 			
+			// Node font style
 			styleValue = node._private.rscratch.override.labelFontStyle;
-			
-			labelStyle = node._private.rscratch.override.labelFontStyle || defaultNode.labelFontStyle;
-			labelSize = node._private.rscratch.override.labelFontSize || defaultNode.labelFontSize;
-			labelFamily = node._private.rscratch.override.labelFontFamily || defaultNode.labelFontFamily;
-			
+			labelStyle = node._private.style["font-style"].strValue || defaultNode.labelFontStyle;
+			labelSize = node._private.style["font-size"].strValue || defaultNode.labelFontSize;
+			labelFamily = node._private.style["font-family"].strValue || defaultNode.labelFontFamily;
+			//console.log(labelStyle + " " + labelSize + " " + labelFamily);
 			context.font = labelStyle + " " + labelSize + " " + labelFamily;
 			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
 			
@@ -1153,16 +1224,6 @@
 				node._private.position.x, node._private.position.y - node._private.data.weight / 5.0 - 4);
 			
 		}
-		
-		
-		/*
-		context.fillStyle = "#5555AA";
-		context.beginPath();
-		context.arc(debugStats.clickX, debugStats.clickY,
-			5.0, 0, Math.PI * 2, false);
-		context.closePath();
-		context.fill();
-		*/
 		
 		if (!shiftDown && selectBox[4] == 1) {
 			context.lineWidth = 0.001;
@@ -1179,15 +1240,6 @@
 				selectBox[2] - selectBox[0],
 				selectBox[3] - selectBox[1]);
 		}
-		
-		/*
-		context.fillStyle = "#775555";
-		context.beginPath();
-		context.arc(debugStats.closestX, debugStats.closestY,
-			5.0, 0, Math.PI * 2, false);
-		context.closePath();
-		context.fill();
-		*/
 	};
 	
 	CanvasRenderer.prototype.zoom = function(params){
@@ -1196,14 +1248,7 @@
 		
 			this.scale[0] = params.level;
 			this.scale[1] = params.level;
-			
-			/*
-			this.transform[4] = this.transform[4] - 300 * params.level;
-			this.transform[5] = this.transform[5] - 300 * params.level;
-			*/
 		}
-		
-		// this.redraw();
 	};
 	
 	CanvasRenderer.prototype.fit = function(params){

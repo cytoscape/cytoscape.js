@@ -259,7 +259,7 @@
 					"line-style": "solid",
 					"line-color": "#bbb",
 					"width": 1,
-					"control-point-step-size": 20,
+					"control-point-step-size": 40,
 					"curve-style": "bezier"
 				})
 			.selector("core") // just core properties
@@ -894,6 +894,25 @@
 		return ret;
 	};
 
+	$$.styfn.calculateControlPoints2 = function(edgeSet) {
+		
+		var visitedEdges = {};
+		
+		var parallelEdges;
+		for (var i = 0; i < edgeSet.length; i++) {
+			if (visitedEdges[edgeSet[i]._private.data.id] == undefined) {
+			
+				parallelEdges = edgeSet[i].parallelEdges();
+				
+				for (var j = 0; j < parallelEdges.length; j++) {
+					visitedEdges[parallelEdges[j]._private.data.id] = true;
+				}
+				
+				this.calculateControlPoints(parallelEdges);
+			}
+		}
+	};
+
 	// gets the control points for the specified edges (assuming bezier curve-style)
 	// 
 	$$.styfn.calculateControlPoints = function( parallelEdges ){
@@ -910,9 +929,9 @@
 			}
 		}
 		var useStraightLineInMiddle = numParallelEdges % 2 !== 0 && !someEdgesAreBundled;
-
+		
 		// calculate the control point for each edge
-		for( var index = 0; i < parallelEdges.length; index++ ){ // index is the parallel index
+		for( var i = 0; i < parallelEdges.length; i++ ){ // index is the parallel index
 			var edge = parallelEdges[i];
 			var id = edge._private.data.id;
 
@@ -927,27 +946,37 @@
 			};
 
 			var stepSize = edge._private.style["control-point-step-size"].pxValue;
-			var minStep = Math.floor( numParallelEdges / 2 );
-			var step = minStep + index;
 
-			if( step === 0 ){ // special case
-				if( useStraightLineInMiddle ){ // then it's ok
-				} else { // then we can't be in the middle (i.e. step === 0)
-					step++;
-				}
+			var start = (numParallelEdges - 1) * -stepSize / 2;
+			
+			var distFromMidpt = start + stepSize * i; // NB may be negative to indicate other side
+
+			if (numParallelEdges % 2 == 1 
+				&& i == Math.floor(numParallelEdges / 2)) {
+				parallelEdges[i]._private.rscratch.isStraightEdge = true;
+				continue;
 			}
-
-			var distFromMidpt = step * stepSize; // NB may be negative to indicate other side
-
-			var ctrlpt = {
-				// TODO calculate point perpendicular from the line (srcPos, tgtPos)
-				// and distFromMidpt away from the midpoint
+			
+			var displacement = {
+				x: tgtPos.y - srcPos.y,
+				y: srcPos.x - tgtPos.x
 			};
-
-			ctrlpts[ id ] = ctrlpt;
+			var displacementLength = Math.sqrt(displacement.x * displacement.x
+				+ displacement.y * displacement.y);
+		
+			if (src.id() > tgt.id()) {
+				displacementLength *= -1;
+			}
+			
+			displacement.x /= displacementLength;
+			displacement.y /= displacementLength;
+			
+			parallelEdges[i]._private.rscratch.controlPointX 
+				= midpt.x + displacement.x * distFromMidpt;
+			
+			parallelEdges[i]._private.rscratch.controlPointY 
+				= midpt.y + displacement.y * distFromMidpt;
 		}
-
-		return ctrlpts;
 	};
 
 })(jQuery, jQuery.cytoscape);

@@ -1018,37 +1018,37 @@
 		
 	}
 	
-	nodeShapeDrawers["triangle"] = function(node, size) {
+	nodeShapeDrawers["triangle"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 3, size);
+			node._private.position.y, 3, width, height);
 	}
 	
-	nodeShapeDrawers["square"] = function(node, size) {
+	nodeShapeDrawers["square"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 4, size);
+			node._private.position.y, 4, width, height);
 	}
 	
-	nodeShapeDrawers["pentagon"] = function(node, size) {
+	nodeShapeDrawers["pentagon"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 5, size);
+			node._private.position.y, 5, width, height);
 	}
 	
-	nodeShapeDrawers["hexagon"] = function(node, size) {
+	nodeShapeDrawers["hexagon"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 6, size);
+			node._private.position.y, 6, width, height);
 	}
 	
-	nodeShapeDrawers["heptagon"] = function(node, size) {
+	nodeShapeDrawers["heptagon"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 7, size);
+			node._private.position.y, 7, width, height);
 	}
 	
-	nodeShapeDrawers["octogon"] = function(node, size) {
+	nodeShapeDrawers["octogon"] = function(node, width, height) {
 		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, 8, size);
+			node._private.position.y, 8, width, height);
 	}
 	
-	CanvasRenderer.prototype.drawNgon = function(x, y, sides, size) {
+	CanvasRenderer.prototype.drawNgon = function(x, y, sides, width, height) {
 		var context = cy.renderer().context;
 		context.save();
 		context.translate(x, y);
@@ -1057,11 +1057,13 @@
 		var increment = 1 / sides * 2 * Math.PI;
 		var startAngle = sides % 2 == 0? Math.PI / 2 + increment / 2 : Math.PI / 2;
 		
-		context.moveTo(Math.cos(startAngle) * size, -Math.sin(startAngle) * size);
+		context.scale(width / 2, height / 2);
+		
+		context.moveTo(Math.cos(startAngle), -Math.sin(startAngle));
 		for (var angle = startAngle; 
 			angle < startAngle + 2 * Math.PI; angle += increment) {
 		
-			context.lineTo(Math.cos(angle) * size, -Math.sin(angle) * size);
+			context.lineTo(Math.cos(angle), -Math.sin(angle));
 		}
 		
 		context.closePath();
@@ -1097,6 +1099,11 @@
 		var startNode, endNode;
 		for (var index = 0; index < edges.length; index++) {
 			edge = edges[index];
+			
+			if (edge._private.style["visibility"].value != "visible") {
+				continue;
+			}
+			
 			startNode = edge.source()[0];
 			endNode = edge.target()[0];
 			
@@ -1159,11 +1166,10 @@
 				// ***
 				// this.drawArrowhead(edge);
 			}
-			
-			
 		}
 		
-		var node, labelStyle, labelSize, labelFamily;
+		var node;
+		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
 			
@@ -1186,10 +1192,11 @@
 					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
 				} else {
 					// Node color & opacity
-					styleValue = "rgba(" + node._private.style.color.value[0] + ","
-						+ node._private.style.color.value[1] + ","
-						+ node._private.style.color.value[2] + ","
-						+ node._private.style.opacity.value + ")";
+					styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
+						+ node._private.style["background-color"].value[1] + ","
+						+ node._private.style["background-color"].value[2] + ","
+						+ (node._private.style["background-opacity"].value 
+						* node._private.style["opacity"].value) + ")";
 						
 					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
 					
@@ -1197,13 +1204,19 @@
 					styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
 						+ node._private.style["border-color"].value[1] + ","
 						+ node._private.style["border-color"].value[2] + ","
-						+ node._private.style["border-opacity"].value + ")";	
+						+ (node._private.style["border-opacity"].value 
+						* node._private.style["opacity"].value) + ")";	
 					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
 			
 				}
 			}
 			
-			nodeShapeDrawers[node._private.rscratch.override.shape || defaultNode.shape](node, node._private.data.weight / 5.0);
+			nodeShapeDrawers[node._private.rscratch.override.shape|| defaultNode.shape](
+				node, 
+				node._private.style["width"].value, 
+				node._private.style["height"].value); //node._private.data.weight / 5.0
+			
+			// console.log(node._private.style["shape"].value);
 			
 			// Node border width			
 			styleValue = node._private.style["border-width"].value;
@@ -1215,13 +1228,31 @@
 			labelStyle = node._private.style["font-style"].strValue || defaultNode.labelFontStyle;
 			labelSize = node._private.style["font-size"].strValue || defaultNode.labelFontSize;
 			labelFamily = node._private.style["font-family"].strValue || defaultNode.labelFontFamily;
+			labelVariant = node._private.style["font-variant"].strValue;
+			labelWeight = node._private.style["font-weight"].strValue;
+						
 			//console.log(labelStyle + " " + labelSize + " " + labelFamily);
-			context.font = labelStyle + " " + labelSize + " " + labelFamily;
+			context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+				+ labelSize + " " + labelFamily;
 			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
 			
-			context.fillStyle = node._private.rscratch.override.labelTextColor || defaultNode.labelTextColor;
-			context.fillText(String(node.id()), 
-				node._private.position.x, node._private.position.y - node._private.data.weight / 5.0 - 4);
+			context.fillStyle = "rgba(" + node._private.style["color"].value[0] + ","
+						+ node._private.style["color"].value[1] + ","
+						+ node._private.style["color"].value[2] + ","
+						+ node._private.style["opacity"].value + ")";
+						
+			var text = String(node._private.style["content"].value);
+			var textTransform = node._private.style["text-transform"].value;
+			
+			if (textTransform == "none") {
+			} else if (textTransform == "uppercase") {
+				text = text.toUpperCase();
+			} else if (textTransform == "lowercase") {
+				text = text.toLowerCase();
+			}
+			
+			context.fillText(text, node._private.position.x, 
+				node._private.position.y - node._private.data.weight / 5.0 - 4);
 			
 		}
 		

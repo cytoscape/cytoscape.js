@@ -1007,15 +1007,18 @@
 		edge._private.rscratch.cp2y = middlePointY + offsetY;
 	}
 	
-	nodeShapeDrawers["ellipse"] = function(node, size) {
+	nodeShapeDrawers["ellipse"] = function(node, width, height) {
 		var context = cy.renderer().context;
 	
 		context.beginPath();
-		context.arc(node._private.position.x, node._private.position.y,
-			size, 0, Math.PI * 2, false);
+		context.save();
+		context.translate(node._private.position.x, node._private.position.y);
+		context.scale(width / 2, height / 2);
+		// At origin, radius 1, 0 to 2pi
+		context.arc(0, 0, 1, 0, Math.PI * 2, false);
 		context.closePath();
+		context.restore();
 		context.fill();
-		
 	}
 	
 	nodeShapeDrawers["triangle"] = function(node, width, height) {
@@ -1097,6 +1100,8 @@
 		var styleValue;
 				
 		var startNode, endNode;
+		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
+		var textX, textY;
 		for (var index = 0; index < edges.length; index++) {
 			edge = edges[index];
 			
@@ -1118,9 +1123,9 @@
 						: defaultEdge.hoveredColor;
 				} else {
 					// Edge color & opacity
-					styleValue = "rgba(" + edge._private.style.color.value[0] + ","
-						+ edge._private.style.color.value[1] + ","
-						+ edge._private.style.color.value[2] + ","
+					styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
+						+ edge._private.style["line-color"].value[1] + ","
+						+ edge._private.style["line-color"].value[2] + ","
 						+ edge._private.style.opacity.value + ")";
 					
 					context.strokeStyle = styleValue != undefined ? styleValue 
@@ -1166,10 +1171,61 @@
 				// ***
 				// this.drawArrowhead(edge);
 			}
+			
+			// Edge label
+			labelStyle = edge._private.style["font-style"].strValue;
+			labelSize = edge._private.style["font-size"].strValue;
+			labelFamily = edge._private.style["font-family"].strValue;
+			labelVariant = edge._private.style["font-variant"].strValue;
+			labelWeight = edge._private.style["font-weight"].strValue;
+						
+			context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+				+ labelSize + " " + labelFamily;
+						
+			var text = String(edge._private.style["content"].value);
+			var textTransform = edge._private.style["text-transform"].value;
+			
+			if (textTransform == "none") {
+			} else if (textTransform == "uppercase") {
+				text = text.toUpperCase();
+			} else if (textTransform == "lowercase") {
+				text = text.toLowerCase();
+			}
+			
+			// Calculate text draw position
+			
+			context.textAlign = "center";
+			context.textBaseline = "middle";
+			
+			textX = edge._private.rscratch.controlPointX;
+			textY = edge._private.rscratch.controlPointY;
+			
+			context.fillStyle = "rgba("
+				+ edge._private.style["color"].value[0] + ","
+				+ edge._private.style["color"].value[1] + ","
+				+ edge._private.style["color"].value[2] + ","
+				+ (edge._private.style["text-opacity"].value
+				* edge._private.style["opacity"].value) + ")";
+			
+			context.strokeStyle = "rgba(" 
+				+ edge._private.style["text-outline-color"].value[0] + ","
+				+ edge._private.style["text-outline-color"].value[1] + ","
+				+ edge._private.style["text-outline-color"].value[2] + ","
+				+ (edge._private.style["text-opacity"].value
+				* edge._private.style["opacity"].value) + ")";
+			
+			context.fillText(text, textX, textY);
+			
+			var lineWidth = edge._private.style["text-outline-width"].value;
+			
+			if (lineWidth > 0) {
+				context.lineWidth = lineWidth;
+				context.strokeText(text, textX, textY);
+			}
 		}
 		
 		var node;
-		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
+		var nodeWidth, nodeHeight;
 		for (var index = 0; index < nodes.length; index++) {
 			node = nodes[index];
 			
@@ -1211,10 +1267,12 @@
 				}
 			}
 			
+			nodeWidth = node._private.style["width"].value;
+			nodeHeight = node._private.style["height"].value;
 			nodeShapeDrawers[node._private.rscratch.override.shape|| defaultNode.shape](
 				node, 
-				node._private.style["width"].value, 
-				node._private.style["height"].value); //node._private.data.weight / 5.0
+				nodeWidth, 
+				nodeHeight); //node._private.data.weight / 5.0
 			
 			// console.log(node._private.style["shape"].value);
 			
@@ -1231,15 +1289,8 @@
 			labelVariant = node._private.style["font-variant"].strValue;
 			labelWeight = node._private.style["font-weight"].strValue;
 						
-			//console.log(labelStyle + " " + labelSize + " " + labelFamily);
 			context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
 				+ labelSize + " " + labelFamily;
-			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
-			
-			context.fillStyle = "rgba(" + node._private.style["color"].value[0] + ","
-						+ node._private.style["color"].value[1] + ","
-						+ node._private.style["color"].value[2] + ","
-						+ node._private.style["opacity"].value + ")";
 						
 			var text = String(node._private.style["content"].value);
 			var textTransform = node._private.style["text-transform"].value;
@@ -1251,9 +1302,66 @@
 				text = text.toLowerCase();
 			}
 			
-			context.fillText(text, node._private.position.x, 
-				node._private.position.y - node._private.data.weight / 5.0 - 4);
+			// Calculate text draw position based on text alignment
 			
+			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
+			
+			styleValue = node._private.style["text-halign"].strValue;
+			if (styleValue == "left") {
+				// Align right boundary of text with left boundary of node
+				context.textAlign = "right";
+				textX = node._private.position.x - nodeWidth / 2;
+			} else if (styleValue == "right") {
+				// Align left boundary of text with right boundary of node
+				context.textAlign = "left";
+				textX = node._private.position.x + nodeWidth / 2;
+			} else if (styleValue == "center") {
+				context.textAlign = "center";
+				textX = node._private.position.x;
+			} else {
+				// Same as center
+				context.textAlign = "center";
+				textX = node._private.position.x;
+			}
+			
+			styleValue = node._private.style["text-valign"].strValue;
+			if (styleValue == "top") {
+				context.textBaseline = "bottom";
+				textY = node._private.position.y - nodeHeight / 2;
+			} else if (styleValue == "bottom") {
+				context.textBaseline = "top";
+				textY = node._private.position.y + nodeHeight / 2;
+			} else if (styleValue == "middle" || styleValue == "center") {
+				context.textBaseline = "middle";
+				textY = node._private.position.y;
+			} else {
+				// same as center
+				context.textBaseline = "middle";
+				textY = node._private.position.y;
+			}
+			
+			context.fillStyle = "rgba(" 
+				+ node._private.style["color"].value[0] + ","
+				+ node._private.style["color"].value[1] + ","
+				+ node._private.style["color"].value[2] + ","
+				+ (node._private.style["text-opacity"].value
+				* node._private.style["opacity"].value) + ")";
+			
+			context.strokeStyle = "rgba(" 
+				+ node._private.style["text-outline-color"].value[0] + ","
+				+ node._private.style["text-outline-color"].value[1] + ","
+				+ node._private.style["text-outline-color"].value[2] + ","
+				+ (node._private.style["text-opacity"].value
+				* node._private.style["opacity"].value) + ")";
+			
+			context.fillText(text, textX, textY);
+			
+			var lineWidth = node._private.style["text-outline-width"].value;
+			
+			if (lineWidth > 0) {
+				context.lineWidth = lineWidth;
+				context.strokeText(text, textX, textY);
+			}
 		}
 		
 		if (!shiftDown && selectBox[4] == 1) {

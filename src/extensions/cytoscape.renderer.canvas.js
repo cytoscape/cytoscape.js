@@ -744,7 +744,6 @@
 		var y1 = edge.source().position().y;
 		var y3 = edge.target().position().y;
 		
-		//targetRadius = 19;
 		var approxParam;
 		
 		var cp2x = edge._private.rscratch.cp2x;
@@ -772,13 +771,11 @@
 		var tan1ay = cp2y - y1;
 		var tan1by = y1;
 		
-		
 		var tan2ax = newEndPointX - x3;
 		var tan2bx = x3;
 		
 		var tan2ay = newEndPointY - y3;
 		var tan2by = y3;
-		
 		
 		var k;
 		if (Math.abs(tan1ax) > 0.0001) {
@@ -805,22 +802,19 @@
 		*/
 	}
 	
-	CanvasRenderer.prototype.findStraightIntersection = function(edge, targetRadius) {
-		var dispX = edge.target().position().x - edge.source().position().x;
-		var dispY = edge.target().position().y - edge.source().position().y;
+	CanvasRenderer.prototype.findIntersection = function(x1, y1, x2, y2, targetRadius) {
+		var dispX = x2 - x1;
+		var dispY = y2 - y1;
 		
 		var len = Math.sqrt(dispX * dispX + dispY * dispY);
 		
 		var newLength = len - targetRadius;
-		
+
 		if (newLength < 0) {
 			newLength = 0;
 		}
 		
-		edge._private.rscratch.newStraightEndX = 
-			(newLength / len) * dispX + edge.source().position().x;
-		edge._private.rscratch.newStraightEndY = 
-			(newLength / len) * dispY + edge.source().position().y;
+		return [(newLength / len) * dispX + x1, (newLength / len) * dispY + y1];
 	}
 	
 	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
@@ -864,7 +858,7 @@
 				continue;
 			}
 			
-			endpoints = this.findNewEndPOints(
+			endpoints = this.findNewEndPoints(
 				source.position().x,
 				source.position().y,
 				edges[i]._private.rscratch.controlPointX,
@@ -885,7 +879,11 @@
 		context.lineTo(-0.2, 0);
 		context.lineTo(0, -0.4);
 		context.lineTo(0.2, 0);
-	} 
+	}
+	
+	arrowShapeDrawers["triangle"] = arrowShapeDrawers["arrow"];
+	
+	arrowShapeDrawers["none"] = function(context) {};
 	
 	arrowShapeDrawers["inhibitor"] = function(context) {
 		context.scale(1, 0.5);
@@ -895,12 +893,11 @@
 		context.lineTo(1.5, 0);
 	}
 	
-	CanvasRenderer.prototype.drawArrowShape = function(edge, x, y, dispX, dispY) {
+	arrowShapeDrawers["tee"] = arrowShapeDrawers["inhibitor"];
+	
+	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
-		
-		// console.log(angle);
-				
-		
+						
 		if (dispX < 0) {
 			//context.strokeStyle = "AA99AA";
 			angle = angle + Math.PI / 2;
@@ -920,13 +917,87 @@
 		context.scale(2, 2.1);
 		context.beginPath();
 		
-		arrowShapeDrawers[
-			edge._private.rscratch.override.endShape || defaultEdge.endShape](context);
+		arrowShapeDrawers[shape](context);
 		
 		context.closePath();
 		
 		context.stroke();
+//		context.fill();
 		context.restore();
+	}
+	
+	CanvasRenderer.prototype.findEndpoints = function(edge) {
+		var intersect;
+		
+		var sourceRadius = Math.max(edge.source()[0]._private.style["width"].value,
+			edge.source()[0]._private.style["height"].value);
+		
+		var targetRadius = Math.max(edge.target()[0]._private.style["width"].value,
+			edge.target()[0]._private.style["height"].value);
+		
+		
+		sourceRadius = 0;
+		targetRadius /= 1.1;
+		
+		
+		var start = [edge.source().position().x, edge.source().position().y];
+		var end = [edge.target().position().x, edge.target().position().y];
+		
+		if (edge._private.rscratch.isSelfEdge) {
+			edge._private.rscratch.endX = end[0];
+			edge._private.rscratch.endY = end[1];
+
+			edge._private.rscratch.startX = start[0];
+			edge._private.rscratch.startY = start[1];
+			
+		} else if (edge._private.rscratch.isStraightEdge) {
+			intersect = this.findIntersection(
+				start[0],
+				start[1],
+				end[0],
+				end[1],
+				targetRadius);
+			
+			edge._private.rscratch.endX = intersect[0];
+			edge._private.rscratch.endY = intersect[1];
+			
+			intersect = this.findIntersection(
+				end[0],
+				end[1],
+				start[0],
+				start[1],
+				sourceRadius);
+			
+			edge._private.rscratch.startX = intersect[0];
+			edge._private.rscratch.startY = intersect[1];
+			
+		} else if (edge._private.rscratch.isBezierEdge) {
+			
+			var cp = [edge._private.rscratch.cp2x, edge._private.rscratch.cp2y];
+			
+			intersect = this.findIntersection(
+				cp[0],
+				cp[1],
+				start[0],
+				start[1],
+				sourceRadius);
+			
+			edge._private.rscratch.startX = intersect[0];
+			edge._private.rscratch.startY = intersect[1];
+			
+			intersect = this.findIntersection(
+				cp[0],
+				cp[1],
+				end[0],
+				end[1],
+				targetRadius);
+			
+			edge._private.rscratch.endX = intersect[0];
+			edge._private.rscratch.endY = intersect[1];
+			
+		} else if (edge._private.rscratch.isArcEdge) {
+			return;
+		}
 	}
 	
 	CanvasRenderer.prototype.drawArrowhead = function(edge) {
@@ -934,13 +1005,46 @@
 		var endShape = edge._private.rscratch.override.endShape;
 		endShape = endShape ? endShape : defaultEdge.endShape;
 		
-		/*
 		var dispX = edge.target().position().x - edge._private.rscratch.newEndPointX;
 		var dispY = edge.target().position().y - edge._private.rscratch.newEndPointY;
-		*/
-				
+		
 		this.drawArrowShape(edge, edge._private.rscratch.newEndPointX, 
 			edge._private.rscratch.newEndPointY, dispX, dispY);
+	}
+	
+	CanvasRenderer.prototype.drawArrowheads = function(edge) {
+		// Displacement gives direction for arrowhead orientation
+		var dispX, dispY;
+				
+		var startX = edge._private.rscratch.startX;
+		var startY = edge._private.rscratch.startY;
+		
+		dispX = startX - edge.source().position().x;
+		dispY = startY - edge.source().position().y;
+		
+		this.context.strokeStyle = "rgba(" 
+			+ edge._private.style["source-arrow-color"].value[0] + ","
+			+ edge._private.style["source-arrow-color"].value[1] + ","
+			+ edge._private.style["source-arrow-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
+		
+		this.drawArrowShape(edge._private.style["source-arrow-shape"].value, 
+			startX, startY, dispX, dispY);
+		
+		var endX = edge._private.rscratch.endX;
+		var endY = edge._private.rscratch.endY;
+		
+		dispX = edge.target().position().x - endX;
+		dispY = edge.target().position().y - endY;
+		
+		this.context.strokeStyle = "rgba(" 
+			+ edge._private.style["target-arrow-color"].value[0] + ","
+			+ edge._private.style["target-arrow-color"].value[1] + ","
+			+ edge._private.style["target-arrow-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
+		
+		this.drawArrowShape(edge._private.style["target-arrow-shape"].value,
+			endX, endY, dispX, dispY);
 	}
 	
 	CanvasRenderer.prototype.drawStraightArrowhead = function(edge) {
@@ -950,7 +1054,8 @@
 		var dispY = edge.target().position().y 
 			- edge._private.rscratch.newStraightEndY;
 		
-		this.drawArrowShape(edge, edge._private.rscratch.newStraightEndX,
+		this.drawArrowShape(
+			edge, edge._private.rscratch.newStraightEndX,
 			edge._private.rscratch.newStraightEndY,
 			dispX, dispY);
 	}
@@ -1076,9 +1181,7 @@
 	}
 	
 	CanvasRenderer.prototype.redraw = function() {
-		// console.log("draw call");
-		// this.initStyle();
-		//this.findEdgeMetrics(this.options.cy.edges());
+		
 		this.findEdgeControlPoints(this.options.cy.edges());
 	
 		var context = this.context;
@@ -1093,277 +1196,37 @@
 		context.scale(this.scale[0], this.scale[1])
 		context.translate(-this.center[0], -this.center[1])
 		
-		var nodes = this.options.cy.nodes();
-		var edges = this.options.cy.edges();
+		var elements = this.options.cy.elements().toArray();
 		
-		var edge;
-		var styleValue;
-				
-		var startNode, endNode;
-		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
-		var textX, textY;
-		for (var index = 0; index < edges.length; index++) {
-			edge = edges[index];
+		elements.sort(function(a, b){
+			var result = a._private.style["z-index"].value
+				- b._private.style["z-index"].value;
 			
-			if (edge._private.style["visibility"].value != "visible") {
-				continue;
-			}
-			
-			startNode = edge.source()[0];
-			endNode = edge.target()[0];
-			
-			if (edge._private.rscratch.selected) {
-				styleValue = edge._private.rscratch.override.selectedColor;
-				context.strokeStyle = styleValue != undefined ? styleValue 
-					: defaultEdge.selectedColor;
-			} else {
-				if (edge._private.rscratch.hovered) {
-					styleValue = edge._private.rscratch.override.hoveredColor;
-					context.strokeStyle = styleValue != undefined ? styleValue 
-						: defaultEdge.hoveredColor;
-				} else {
-					// Edge color & opacity
-					styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
-						+ edge._private.style["line-color"].value[1] + ","
-						+ edge._private.style["line-color"].value[2] + ","
-						+ edge._private.style.opacity.value + ")";
+			if (result == 0) {
+				if (a._private.group == "nodes"
+					&& b._private.group == "edges") {
 					
-					context.strokeStyle = styleValue != undefined ? styleValue 
-						: defaultEdge.regularColor;
+					return 1;	
+				} else if (a._private.group == "edges"
+					&& b._private.group == "nodes") {
+					
+					return -1;
 				}
 			}
 			
-			// Edge line width
-			context.lineWidth = edge._private.style.width.value * 3.5;
-			context.beginPath();
+			return 0;
+		});
+	
+		for (var index = 0; index < elements.length; index++) {
+			element = elements[index];
 			
-			context.moveTo(startNode._private.position.x, startNode._private.position.y);
-
-			this.calculateEdgeMetrics(edge);
-			
-			if (edge._private.rscratch.isStraightEdge) {
-				this.findStraightIntersection(edge, 
-					endNode._private.data.weight / 5.0 + 12);
-				
-				context.lineTo(edge._private.rscratch.newStraightEndX, 
-					edge._private.rscratch.newStraightEndY);
-				context.stroke();
-				
-				// ***
-				// this.drawStraightArrowhead(edge);
-				
-			} else if (edge._private.rscratch.selfEdge) {
-				
-			} else {
-				this.findBezierIntersection(edge, endNode._private.data.weight / 5.0 + 12);
-			
-				/*
-				context.quadraticCurveTo(edge._private.rscratch.newCp2x, 
-					edge._private.rscratch.newCp2y, edge._private.rscratch.newEndPointX, 
-					edge._private.rscratch.newEndPointY);
-				*/
-				
-				context.quadraticCurveTo(edge._private.rscratch.controlPointX, 
-					edge._private.rscratch.controlPointY, endNode._private.position.x, 
-					endNode._private.position.y);
-				context.stroke();
-				
-				// ***
-				// this.drawArrowhead(edge);
-			}
-			
-			// Edge label
-			labelStyle = edge._private.style["font-style"].strValue;
-			labelSize = edge._private.style["font-size"].strValue;
-			labelFamily = edge._private.style["font-family"].strValue;
-			labelVariant = edge._private.style["font-variant"].strValue;
-			labelWeight = edge._private.style["font-weight"].strValue;
-						
-			context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
-				+ labelSize + " " + labelFamily;
-						
-			var text = String(edge._private.style["content"].value);
-			var textTransform = edge._private.style["text-transform"].value;
-			
-			if (textTransform == "none") {
-			} else if (textTransform == "uppercase") {
-				text = text.toUpperCase();
-			} else if (textTransform == "lowercase") {
-				text = text.toLowerCase();
-			}
-			
-			// Calculate text draw position
-			
-			context.textAlign = "center";
-			context.textBaseline = "middle";
-			
-			textX = edge._private.rscratch.controlPointX;
-			textY = edge._private.rscratch.controlPointY;
-			
-			context.fillStyle = "rgba("
-				+ edge._private.style["color"].value[0] + ","
-				+ edge._private.style["color"].value[1] + ","
-				+ edge._private.style["color"].value[2] + ","
-				+ (edge._private.style["text-opacity"].value
-				* edge._private.style["opacity"].value) + ")";
-			
-			context.strokeStyle = "rgba(" 
-				+ edge._private.style["text-outline-color"].value[0] + ","
-				+ edge._private.style["text-outline-color"].value[1] + ","
-				+ edge._private.style["text-outline-color"].value[2] + ","
-				+ (edge._private.style["text-opacity"].value
-				* edge._private.style["opacity"].value) + ")";
-			
-			context.fillText(text, textX, textY);
-			
-			var lineWidth = edge._private.style["text-outline-width"].value;
-			
-			if (lineWidth > 0) {
-				context.lineWidth = lineWidth;
-				context.strokeText(text, textX, textY);
+			if (element._private.group == "nodes") {
+				this.drawNode(element);
+			} else if (element._private.group == "edges") {
+				this.drawEdge(element);
 			}
 		}
-		
-		var node;
-		var nodeWidth, nodeHeight;
-		for (var index = 0; index < nodes.length; index++) {
-			node = nodes[index];
-			
-			if (node._private.style["visibility"].value != "visible") {
-				continue;
-			}
-			
-			if (node._private.rscratch.selected == true) {
-				styleValue = node._private.rscratch.override.selectedColor;
-				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.selectedColor;
 				
-				styleValue = node._private.rscratch.override.selectedBorderColor;
-				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.selectedBorderColor;
-			} else {
-				if (node._private.rscratch.hovered == true) {
-					styleValue = node._private.rscratch.override.hoveredColor;
-					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
-					
-					styleValue = node._private.rscratch.override.hoveredBorderColor;
-					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
-				} else {
-					// Node color & opacity
-					styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
-						+ node._private.style["background-color"].value[1] + ","
-						+ node._private.style["background-color"].value[2] + ","
-						+ (node._private.style["background-opacity"].value 
-						* node._private.style["opacity"].value) + ")";
-						
-					context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
-					
-					// Node border color & opacity
-					styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
-						+ node._private.style["border-color"].value[1] + ","
-						+ node._private.style["border-color"].value[2] + ","
-						+ (node._private.style["border-opacity"].value 
-						* node._private.style["opacity"].value) + ")";	
-					context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
-			
-				}
-			}
-			
-			nodeWidth = node._private.style["width"].value;
-			nodeHeight = node._private.style["height"].value;
-			nodeShapeDrawers[node._private.rscratch.override.shape|| defaultNode.shape](
-				node, 
-				nodeWidth, 
-				nodeHeight); //node._private.data.weight / 5.0
-			
-			// console.log(node._private.style["shape"].value);
-			
-			// Node border width			
-			styleValue = node._private.style["border-width"].value;
-			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
-			context.stroke();
-			
-			// Node font style
-			styleValue = node._private.rscratch.override.labelFontStyle;
-			labelStyle = node._private.style["font-style"].strValue || defaultNode.labelFontStyle;
-			labelSize = node._private.style["font-size"].strValue || defaultNode.labelFontSize;
-			labelFamily = node._private.style["font-family"].strValue || defaultNode.labelFontFamily;
-			labelVariant = node._private.style["font-variant"].strValue;
-			labelWeight = node._private.style["font-weight"].strValue;
-						
-			context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
-				+ labelSize + " " + labelFamily;
-						
-			var text = String(node._private.style["content"].value);
-			var textTransform = node._private.style["text-transform"].value;
-			
-			if (textTransform == "none") {
-			} else if (textTransform == "uppercase") {
-				text = text.toUpperCase();
-			} else if (textTransform == "lowercase") {
-				text = text.toLowerCase();
-			}
-			
-			// Calculate text draw position based on text alignment
-			
-			context.textAlign = node._private.rscratch.override.labelTextAlign || defaultNode.labelTextAlign;
-			
-			styleValue = node._private.style["text-halign"].strValue;
-			if (styleValue == "left") {
-				// Align right boundary of text with left boundary of node
-				context.textAlign = "right";
-				textX = node._private.position.x - nodeWidth / 2;
-			} else if (styleValue == "right") {
-				// Align left boundary of text with right boundary of node
-				context.textAlign = "left";
-				textX = node._private.position.x + nodeWidth / 2;
-			} else if (styleValue == "center") {
-				context.textAlign = "center";
-				textX = node._private.position.x;
-			} else {
-				// Same as center
-				context.textAlign = "center";
-				textX = node._private.position.x;
-			}
-			
-			styleValue = node._private.style["text-valign"].strValue;
-			if (styleValue == "top") {
-				context.textBaseline = "bottom";
-				textY = node._private.position.y - nodeHeight / 2;
-			} else if (styleValue == "bottom") {
-				context.textBaseline = "top";
-				textY = node._private.position.y + nodeHeight / 2;
-			} else if (styleValue == "middle" || styleValue == "center") {
-				context.textBaseline = "middle";
-				textY = node._private.position.y;
-			} else {
-				// same as center
-				context.textBaseline = "middle";
-				textY = node._private.position.y;
-			}
-			
-			context.fillStyle = "rgba(" 
-				+ node._private.style["color"].value[0] + ","
-				+ node._private.style["color"].value[1] + ","
-				+ node._private.style["color"].value[2] + ","
-				+ (node._private.style["text-opacity"].value
-				* node._private.style["opacity"].value) + ")";
-			
-			context.strokeStyle = "rgba(" 
-				+ node._private.style["text-outline-color"].value[0] + ","
-				+ node._private.style["text-outline-color"].value[1] + ","
-				+ node._private.style["text-outline-color"].value[2] + ","
-				+ (node._private.style["text-opacity"].value
-				* node._private.style["opacity"].value) + ")";
-			
-			context.fillText(text, textX, textY);
-			
-			var lineWidth = node._private.style["text-outline-width"].value;
-			
-			if (lineWidth > 0) {
-				context.lineWidth = lineWidth;
-				context.strokeText(text, textX, textY);
-			}
-		}
-		
 		if (!shiftDown && selectBox[4] == 1) {
 			context.lineWidth = 0.001;
 		
@@ -1380,6 +1243,245 @@
 				selectBox[3] - selectBox[1]);
 		}
 	};
+	
+	CanvasRenderer.prototype.drawEdge = function(edge) {
+		var context = this.context;
+		var styleValue;
+		
+		var startNode, endNode;
+		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
+		var textX, textY;
+
+		if (edge._private.style["visibility"].value != "visible") {
+			return;
+		}
+		
+		startNode = edge.source()[0];
+		endNode = edge.target()[0];
+		
+		if (edge._private.rscratch.selected) {
+			styleValue = edge._private.rscratch.override.selectedColor;
+			context.strokeStyle = styleValue != undefined ? styleValue 
+				: defaultEdge.selectedColor;
+		} else {
+			if (edge._private.rscratch.hovered) {
+				styleValue = edge._private.rscratch.override.hoveredColor;
+				context.strokeStyle = styleValue != undefined ? styleValue 
+					: defaultEdge.hoveredColor;
+			} else {
+				// Edge color & opacity
+				styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
+					+ edge._private.style["line-color"].value[1] + ","
+					+ edge._private.style["line-color"].value[2] + ","
+					+ edge._private.style.opacity.value + ")";
+				
+				context.strokeStyle = styleValue != undefined ? styleValue 
+					: defaultEdge.regularColor;
+			}
+		}
+		
+		// Edge line width
+		context.lineWidth = edge._private.style.width.value * 2;
+		
+		// this.calculateEdgeMetrics(edge);
+		this.findEndpoints(edge);
+		
+		if (edge._private.rscratch.isSelfEdge) {
+		
+		} else if (edge._private.rscratch.isStraightEdge) {
+			
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY);
+
+			context.lineTo(edge._private.rscratch.endX, 
+				edge._private.rscratch.endY);
+			context.stroke();
+			
+			// ***
+			// this.drawStraightArrowhead(edge);
+						
+		} else {
+		
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY);
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2x, 
+				edge._private.rscratch.cp2y, 
+				edge._private.rscratch.endX, 
+				edge._private.rscratch.endY);
+			context.stroke();
+			
+			// ***
+			// this.drawArrowhead(edge);
+		}
+		
+		this.drawArrowheads(edge);
+		
+		// Calculate text draw position
+		
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+		
+		textX = edge._private.rscratch.controlPointX;
+		textY = edge._private.rscratch.controlPointY;
+		
+		this.drawText(edge, textX, textY);
+	}
+	
+	CanvasRenderer.prototype.drawNode = function(node) {
+		var context = this.context;
+		var styleValue;
+		
+		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
+		var textX, textY;
+		
+		var nodeWidth, nodeHeight;
+		
+		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+		
+		if (node._private.rscratch.selected == true) {
+			styleValue = node._private.rscratch.override.selectedColor;
+			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.selectedColor;
+			
+			styleValue = node._private.rscratch.override.selectedBorderColor;
+			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.selectedBorderColor;
+		} else {
+			if (node._private.rscratch.hovered == true) {
+				styleValue = node._private.rscratch.override.hoveredColor;
+				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
+				
+				styleValue = node._private.rscratch.override.hoveredBorderColor;
+				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
+			} else {
+				// Node color & opacity
+				styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
+					+ node._private.style["background-color"].value[1] + ","
+					+ node._private.style["background-color"].value[2] + ","
+					+ (node._private.style["background-opacity"].value 
+					* node._private.style["opacity"].value) + ")";
+					
+				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
+				
+				// Node border color & opacity
+				styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
+					+ node._private.style["border-color"].value[1] + ","
+					+ node._private.style["border-color"].value[2] + ","
+					+ (node._private.style["border-opacity"].value 
+					* node._private.style["opacity"].value) + ")";	
+				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
+		
+			}
+		}
+		
+		nodeWidth = node._private.style["width"].value;
+		nodeHeight = node._private.style["height"].value;
+		nodeShapeDrawers[node._private.rscratch.override.shape|| defaultNode.shape](
+			node, 
+			nodeWidth, 
+			nodeHeight); //node._private.data.weight / 5.0
+		
+		// Node border width
+		styleValue = node._private.style["border-width"].value;
+		if (styleValue > 0) {
+			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
+			context.stroke();
+		}
+		
+		// Find text position
+		styleValue = node._private.style["text-halign"].strValue;
+		if (styleValue == "left") {
+			// Align right boundary of text with left boundary of node
+			context.textAlign = "right";
+			textX = node._private.position.x - nodeWidth / 2;
+		} else if (styleValue == "right") {
+			// Align left boundary of text with right boundary of node
+			context.textAlign = "left";
+			textX = node._private.position.x + nodeWidth / 2;
+		} else if (styleValue == "center") {
+			context.textAlign = "center";
+			textX = node._private.position.x;
+		} else {
+			// Same as center
+			context.textAlign = "center";
+			textX = node._private.position.x;
+		}
+		
+		styleValue = node._private.style["text-valign"].strValue;
+		if (styleValue == "top") {
+			context.textBaseline = "bottom";
+			textY = node._private.position.y - nodeHeight / 2;
+		} else if (styleValue == "bottom") {
+			context.textBaseline = "top";
+			textY = node._private.position.y + nodeHeight / 2;
+		} else if (styleValue == "middle" || styleValue == "center") {
+			context.textBaseline = "middle";
+			textY = node._private.position.y;
+		} else {
+			// same as center
+			context.textBaseline = "middle";
+			textY = node._private.position.y;
+		}
+		
+		this.drawText(node, textX, textY);
+	}
+	
+	CanvasRenderer.prototype.drawText = function(element, textX, textY) {
+		var context = this.context;
+		var styleValue;
+		
+		// Font style
+		styleValue = element._private.rscratch.override.labelFontStyle;
+		labelStyle = element._private.style["font-style"].strValue;
+		labelSize = element._private.style["font-size"].strValue;
+		labelFamily = element._private.style["font-family"].strValue;
+		labelVariant = element._private.style["font-variant"].strValue;
+		labelWeight = element._private.style["font-weight"].strValue;
+					
+		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+			+ labelSize + " " + labelFamily;
+					
+		var text = String(element._private.style["content"].value);
+		var textTransform = element._private.style["text-transform"].value;
+		
+		if (textTransform == "none") {
+		} else if (textTransform == "uppercase") {
+			text = text.toUpperCase();
+		} else if (textTransform == "lowercase") {
+			text = text.toLowerCase();
+		}
+		
+		// Calculate text draw position based on text alignment
+		
+		context.fillStyle = "rgba(" 
+			+ element._private.style["color"].value[0] + ","
+			+ element._private.style["color"].value[1] + ","
+			+ element._private.style["color"].value[2] + ","
+			+ (element._private.style["text-opacity"].value
+			* element._private.style["opacity"].value) + ")";
+		
+		context.strokeStyle = "rgba(" 
+			+ element._private.style["text-outline-color"].value[0] + ","
+			+ element._private.style["text-outline-color"].value[1] + ","
+			+ element._private.style["text-outline-color"].value[2] + ","
+			+ (element._private.style["text-opacity"].value
+			* element._private.style["opacity"].value) + ")";
+		
+		context.fillText(text, textX, textY);
+		
+		var lineWidth = element._private.style["text-outline-width"].value;
+		
+		if (lineWidth > 0) {
+			context.lineWidth = lineWidth;
+			context.strokeText(text, textX, textY);
+		}
+	}
 	
 	CanvasRenderer.prototype.zoom = function(params){
 		// debug(params);

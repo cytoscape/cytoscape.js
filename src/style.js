@@ -948,7 +948,12 @@
 			var stepSize = edge._private.style["control-point-step-size"].pxValue;
 
 			var start = (numParallelEdges - 1) * -stepSize / 2;
-			
+
+			if (src.id() == tgt.id()) {
+				parallelEdges[i]._private.rscratch.isSelfEdge = true;
+				continue;
+			}
+		
 			var distFromMidpt = start + stepSize * i; // NB may be negative to indicate other side
 
 			if (numParallelEdges % 2 == 1 
@@ -956,6 +961,8 @@
 				parallelEdges[i]._private.rscratch.isStraightEdge = true;
 				continue;
 			}
+			
+			parallelEdges[i]._private.rscratch.isBezierEdge = true;
 			
 			var displacement = {
 				x: tgtPos.y - srcPos.y,
@@ -971,10 +978,10 @@
 			displacement.x /= displacementLength;
 			displacement.y /= displacementLength;
 			
-			parallelEdges[i]._private.rscratch.controlPointX 
+			parallelEdges[i]._private.rscratch.cp2x
 				= midpt.x + displacement.x * distFromMidpt;
 			
-			parallelEdges[i]._private.rscratch.controlPointY 
+			parallelEdges[i]._private.rscratch.cp2y
 				= midpt.y + displacement.y * distFromMidpt;
 		}
 	};

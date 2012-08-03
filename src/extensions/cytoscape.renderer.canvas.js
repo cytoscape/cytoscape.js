@@ -93,8 +93,8 @@
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
-		debug("notify call: " + params);
-		debug(params);
+//		console.log("notify call: " + params);
+//		console.log(params);
 		
 		switch (params.type) {
 			case "load":
@@ -105,8 +105,20 @@
 			case "draw":
 				debug("draw call");
 				break;
+			case "viewport":
+				console.log("zoom: " + cy.zoom());
+				console.log("pan: " + cy.pan().x + ", " + cy.pan().y);
+				
+				cy.renderer().scale[0] = cy.zoom();
+				cy.renderer().scale[1] = cy.zoom();
+				
+				cy.renderer().center[0] = 200; //cy.renderer().zoomCenter[0] + cy.pan().x;
+				cy.renderer().center[1] = 200; //cy.renderer().zoomCenter[1] + cy.pan().y;
+				
+				this.redraw();
+				break;
 			default:
-				debug("event: " + params.type);
+				console.log("event: " + params.type);
 		}
 		
 		// this.redraw();
@@ -192,12 +204,20 @@
 		var edges = self.cy.edges();
 		var nodes = self.cy.nodes();
 		
+		//cy.renderer().canvas.style.cursor = "default";
 		
 		// Drag pan
 		if (dragPanMode) {
 			dragHandler(e);
 		}
-
+		
+		/*
+		if (shiftDown) {
+			cy.renderer().canvas.style.cursor = "pointer";
+			console.log("pointer");
+		}
+		*/
+		
 		var current = cy.renderer().projectMouse(cy.renderer(),
 			e.clientX,
 			e.clientY,
@@ -231,27 +251,27 @@
 				var boxInBezierVicinity = $$.math.boxInBezierVicinity(
 					selectBox[0], selectBox[1],
 					selectBox[2], selectBox[3],
-					edges[index].source().position().x,
-					edges[index].source().position().y,
+					edges[index]._private.rscratch.startX,
+					edges[index]._private.rscratch.startY,
 					edges[index]._private.rscratch.cp2x,
 					edges[index]._private.rscratch.cp2y,
-					edges[index].target().position().x,
-					edges[index].target().position().y, padding);
-					
+					edges[index]._private.rscratch.endX,
+					edges[index]._private.rscratch.endY, padding);
+				
 				if (boxInBezierVicinity == 2) {
 					edges[index]._private.rscratch.selected = true;
 				} else if (boxInBezierVicinity == 1) {
 					
-					if (edges[index]._private.rscratch.straightEdge) {
+					if (edges[index]._private.rscratch.isStraightEdge) {
 						
 						edges[index]._private.rscratch.selected = 
 							$$.math.checkStraightEdgeCrossesBox(
 								selectBox[0], selectBox[1],
 								selectBox[2], selectBox[3],
-								edges[index].source().position().x,
-								edges[index].source().position().y,
-								edges[index].target().position().x,
-								edges[index].target().position().y, padding);
+								edges[index]._private.rscratch.startX,
+								edges[index]._private.rscratch.startY,
+								edges[index]._private.rscratch.endX,
+								edges[index]._private.rscratch.endY, padding);
 						
 					} else {
 						
@@ -259,12 +279,12 @@
 							$$.math.checkBezierCrossesBox(
 								selectBox[0], selectBox[1],
 								selectBox[2], selectBox[3],
-								edges[index].source().position().x,
-								edges[index].source().position().y,
+								edges[index]._private.rscratch.startX,
+								edges[index]._private.rscratch.startY,
 								edges[index]._private.rscratch.cp2x,
 								edges[index]._private.rscratch.cp2y,
-								edges[index].target().position().x,
-								edges[index].target().position().y, padding);
+								edges[index]._private.rscratch.endX,
+								edges[index]._private.rscratch.endY, padding);
 						
 					}
 				} else {
@@ -385,7 +405,7 @@
 		
 		event.preventDefault();
 		
-		console.log(event);
+		// console.log(event);
 		
 		var deltaY = event.wheelDeltaY;
 		
@@ -395,10 +415,7 @@
 		cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
 		cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
 		
-		
 		cy.renderer().redraw();
-		
-		
 	}
 	
 	CanvasRenderer.prototype.keyDownHandler = function(event) {
@@ -429,12 +446,12 @@
 		
 			if ($$.math.inBezierVicinity(
 					mouseX, mouseY,
-					edge.source().position().x,
-					edge.source().position().y,
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY,
 					edge._private.rscratch.cp2x,
 					edge._private.rscratch.cp2y,
-					edge.target().position().x,
-					edge.target().position().y,
+					edge._private.rscratch.endX,
+					edge._private.rscratch.endY,
 					squaredDistanceLimit)) {
 				
 				//console.log("in vicinity")
@@ -444,12 +461,12 @@
 				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
 					mouseX,
 					mouseY,
-					edge.source().position().x,
-					edge.source().position().y,
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY,
 					edge._private.rscratch.cp2x,
 					edge._private.rscratch.cp2y,
-					edge.target().position().x,
-					edge.target().position().y);
+					edge._private.rscratch.endX,
+					edge._private.rscratch.endY);
 
 				// debug(distance);
 				if (squaredDistance < squaredDistanceLimit) {
@@ -482,7 +499,7 @@
 				
 					distanceSquared = (Math.pow(x1 - mouseX, 2)
 						+ Math.pow(y1 - mouseY, 2));
-						
+			
 			} else if (farEndOffsetX * displacementX 
 				+ farEndOffsetY * displacementY >= 0) {
 				
@@ -516,8 +533,10 @@
 			console.log(dX * dX + dY * dY);
 			*/
 			
-			var boundingRadiusSquared = node._private.data.weight / 5.0;
-			boundingRadiusSquared *= boundingRadiusSquared;
+			var boundingRadiusSquared = Math.pow(
+				Math.max(
+					node._private.style["width"].value, 
+					node._private.style["height"].value), 2);
 			
 			var distanceSquared = dX * dX + dY * dY;
 			
@@ -570,12 +589,12 @@
 			for (var index = 0; index < edges.length; index++) {
 				if (nodeHovered) {
 				
-				} else if (edges[index]._private.rscratch.straightEdge) {
+				} else if (edges[index]._private.rscratch.isStraightEdge) {
 					checkStraightEdgeHover(mouseX, mouseY, edges[index],
-						edges[index].source().position().x,
-						edges[index].source().position().y,
-						edges[index].target().position().x,
-						edges[index].target().position().y);
+						edges[index]._private.rscratch.startX,
+						edges[index]._private.rscratch.startY,
+						edges[index]._private.rscratch.endX,
+						edges[index]._private.rscratch.endY);
 						
 				} else {
 					checkEdgeHover(mouseX, mouseY, edges[index]);
@@ -610,8 +629,6 @@
 	
 		this.canvas.addEventListener("mousemove", this.mouseMoveHandler, false);
 		this.canvas.addEventListener("mousewheel", this.mouseWheelHandler, false);
-		
-		
 	}
 	
 	CanvasRenderer.prototype.init = function() {
@@ -630,23 +647,6 @@
 		this.scale = [1, 1];
 		this.zoomCenter = [container.width() / 2, container.height() / 2];
 		this.zoomLevel = 0;
-		
-		
-		
-		
-		var test1 = function(a) {
-			a /= 2;
-			debug(a);
-		}
-		
-		var test2 = 3.0;
-		debug(test2);
-		debug(test1(test2));
-		debug(test2);
-		
-		
-				
-		
 	}
 
 	CanvasRenderer.prototype.complexSqrt = function(real, imaginary, zeroThreshold) {
@@ -665,15 +665,9 @@
 		return [gamma, sigma];
 	}
 
-	
-	
-
 	CanvasRenderer.prototype.initStyle = function() {
 		var nodes = this.options.cy.nodes();
 		var edges = this.options.cy.edges();
-		
-		console.log("initStyle call");
-		console.log(nodes);
 		
 		var node;
 		for (var index = 0; index < nodes.length; index++) {
@@ -1250,7 +1244,6 @@
 		
 		var startNode, endNode;
 		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
-		var textX, textY;
 
 		if (edge._private.style["visibility"].value != "visible") {
 			return;
@@ -1327,10 +1320,35 @@
 		context.textAlign = "center";
 		context.textBaseline = "middle";
 		
-		textX = edge._private.rscratch.controlPointX;
-		textY = edge._private.rscratch.controlPointY;
+		var textX, textY;	
+		var edgeCenterX, edgeCenterY;
 		
-		this.drawText(edge, textX, textY);
+		if (edge._private.rscratch.isSelfEdge) {
+			textX = undefined;
+			textY = undefined;
+		} else if (edge._private.rscratch.isStraightEdge) {
+			edgeCenterX = (edge._private.rscratch.startX
+				+ edge._private.rscratch.endX) / 2;
+			edgeCenterY = (edge._private.rscratch.startY
+				+ edge._private.rscratch.endY) / 2;
+		} else if (edge._private.rscratch.isBezierEdge) {
+			edgeCenterX = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startX
+				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2x
+				+ (0.5 * 0.5) * edge._private.rscratch.endX;
+			
+			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
+				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
+				+ (0.5 * 0.5) * edge._private.rscratch.endY;			
+		}
+		
+		/*
+		textX = edge._private.rscratch.cp2x;
+		textY = edge._private.rscratch.cp2y;
+		*/
+		
+		if (!edge._private.rscratch.isSelfEdge) {
+			this.drawText(edge, textX, textY);
+		}
 	}
 	
 	CanvasRenderer.prototype.drawNode = function(node) {
@@ -1490,15 +1508,22 @@
 			this.scale[0] = params.level;
 			this.scale[1] = params.level;
 		}
+		
+		console.log("zoom call");
+		console.log(params);
 	};
 	
 	CanvasRenderer.prototype.fit = function(params){
-	
+		console.log("fit call");
+		console.log(params);
 	};
 	
 	CanvasRenderer.prototype.pan = function(params){
 		//debug("pan called:");
 		//debug(params);
+		
+		console.log("pan call");
+		console.log(params);
 		
 		if (this.context != undefined) {
 			
@@ -1513,6 +1538,9 @@
 		this.center[1] -= params.y;
 		
 		this.redraw();
+		
+		console.log("panBy call");
+		console.log(params);
 	};
 	
 	CanvasRenderer.prototype.showElements = function(element){

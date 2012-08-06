@@ -106,16 +106,10 @@
 				debug("draw call");
 				break;
 			case "viewport":
-				console.log("zoom: " + cy.zoom());
-				console.log("pan: " + cy.pan().x + ", " + cy.pan().y);
-				
-				cy.renderer().scale[0] = cy.zoom();
-				cy.renderer().scale[1] = cy.zoom();
-				
-				cy.renderer().center[0] = 200; //cy.renderer().zoomCenter[0] + cy.pan().x;
-				cy.renderer().center[1] = 200; //cy.renderer().zoomCenter[1] + cy.pan().y;
-				
 				this.redraw();
+				break;
+			case "style":
+				//this.redraw();
 				break;
 			default:
 				console.log("event: " + params.type);
@@ -128,14 +122,28 @@
 		var x = mouseX - xOffset;
 		var y = mouseY - yOffset;
 		
+		/*
 		x -= self.options.cy.container().width() / 2;
 		y -= self.options.cy.container().height() / 2;
+		*/
 		
+		/*		
 		x /= self.scale[0];
 		y /= self.scale[1];
+		*/
 		
+		x -= cy.pan().x;
+		y -= cy.pan().y;
+		
+		x /= cy.zoom();
+		y /= cy.zoom();
+		
+		/*
 		x += self.center[0];
 		y += self.center[1];
+		*/
+		
+		
 		
 		return [x, y];
 	}
@@ -196,7 +204,6 @@
 		var checkNodeHover = renderer.mouseMoveHelper.checkNodeHover;
 		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
 		
-		
 		// Offset for Cytoscape container
 		var mouseOffsetX = cy.container().offset().left + 2;
 		var mouseOffsetY = cy.container().offset().top + 2;
@@ -210,13 +217,6 @@
 		if (dragPanMode) {
 			dragHandler(e);
 		}
-		
-		/*
-		if (shiftDown) {
-			cy.renderer().canvas.style.cursor = "pointer";
-			console.log("pointer");
-		}
-		*/
 		
 		var current = cy.renderer().projectMouse(cy.renderer(),
 			e.clientX,
@@ -240,83 +240,6 @@
 				}
 			}
 		}
-					
-		if (!shiftDown && selectBox[4] == 1
-			&& Math.abs(selectBox[2] - selectBox[0]) 
-				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
-			var padding = 5;
-			
-			for (var index = 0; index < edges.length; index++) {
-			
-				var boxInBezierVicinity = $$.math.boxInBezierVicinity(
-					selectBox[0], selectBox[1],
-					selectBox[2], selectBox[3],
-					edges[index]._private.rscratch.startX,
-					edges[index]._private.rscratch.startY,
-					edges[index]._private.rscratch.cp2x,
-					edges[index]._private.rscratch.cp2y,
-					edges[index]._private.rscratch.endX,
-					edges[index]._private.rscratch.endY, padding);
-				
-				if (boxInBezierVicinity == 2) {
-					edges[index]._private.rscratch.selected = true;
-				} else if (boxInBezierVicinity == 1) {
-					
-					if (edges[index]._private.rscratch.isStraightEdge) {
-						
-						edges[index]._private.rscratch.selected = 
-							$$.math.checkStraightEdgeCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.startX,
-								edges[index]._private.rscratch.startY,
-								edges[index]._private.rscratch.endX,
-								edges[index]._private.rscratch.endY, padding);
-						
-					} else {
-						
-						edges[index]._private.rscratch.selected = 
-							$$.math.checkBezierCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.startX,
-								edges[index]._private.rscratch.startY,
-								edges[index]._private.rscratch.cp2x,
-								edges[index]._private.rscratch.cp2y,
-								edges[index]._private.rscratch.endX,
-								edges[index]._private.rscratch.endY, padding);
-						
-					}
-				} else {
-					edges[index]._private.rscratch.selected = false;
-				}
-			}
-			
-			var boxMinX = Math.min(selectBox[0], selectBox[2]);
-			var boxMinY = Math.min(selectBox[1], selectBox[3]);
-			var boxMaxX = Math.max(selectBox[0], selectBox[2]);
-			var boxMaxY = Math.max(selectBox[1], selectBox[3]);
-			
-			var nodePosition, boundingRadius;
-			for (var index = 0; index < nodes.length; index++) {
-				nodePosition = nodes[index].position();
-				boundingRadius = nodes[index]._private.data.weight / 5.0;
-				
-				if (nodePosition.x > boxMinX
-						- boundingRadius
-					&& nodePosition.x < boxMaxX 
-						+ boundingRadius
-					&& nodePosition.y > boxMinY 
-						- boundingRadius
-					&& nodePosition.y < boxMaxY 
-						+ boundingRadius) {
-						
-					nodes[index]._private.rscratch.selected = true;		
-				} else {
-					nodes[index]._private.rscratch.selected = false;
-				}
-			}
-		}
 		
 		hoverHandler(e);
 		
@@ -325,7 +248,7 @@
 	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
 		var mouseDownEvent = event;
-	
+
 		// Process middle button panning
 		if (mouseDownEvent.button == 1
 				&& mouseDownEvent.target == cy.renderer().canvas) {
@@ -334,9 +257,6 @@
 			dragPanStartY = mouseDownEvent.clientY;
 			
 			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
-			
-			//debug("mouse down");
-			//$(window).bind("mousemove", dragHandler);
 			
 			dragPanMode = true;
 		}
@@ -354,14 +274,19 @@
 			var nodes = cy.nodes();
 			var edges = cy.edges();
 			
-			
 			if (!shiftDown) {
 				for (var index = 0; index < nodes.length; index++) {
 					nodes[index]._private.rscratch.selected = false;
+					if (nodes[index]._private.selected) {
+						nodes[index].unselect();
+					}
 				}
 				
 				for (var index = 0; index < edges.length; index++) {
 					edges[index]._private.rscratch.selected = false;
+					if (edges[index]._private.selected) {
+						edges[index].unselect();
+					}
 				}
 			
 				if (minDistanceNode != undefined) {
@@ -393,6 +318,107 @@
 	}
 	
 	CanvasRenderer.prototype.mouseUpHandler = function(event) {
+	
+		var edges = cy.edges();
+		var nodes = cy.nodes();
+	
+		if (!shiftDown && selectBox[4] == 1
+			&& Math.abs(selectBox[2] - selectBox[0]) 
+				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
+			var padding = 5;
+			
+			var edgeSelected;
+			var select;
+			
+			for (var index = 0; index < edges.length; index++) {
+			
+				edgeSelected = edges[index]._private.selected;
+			
+				var boxInBezierVicinity = $$.math.boxInBezierVicinity(
+					selectBox[0], selectBox[1],
+					selectBox[2], selectBox[3],
+					edges[index]._private.rscratch.startX,
+					edges[index]._private.rscratch.startY,
+					edges[index]._private.rscratch.cp2x,
+					edges[index]._private.rscratch.cp2y,
+					edges[index]._private.rscratch.endX,
+					edges[index]._private.rscratch.endY, padding);
+				
+				if (boxInBezierVicinity == 2) {
+					select = true;
+				} else if (boxInBezierVicinity == 1) {
+										
+					if (edges[index]._private.rscratch.isStraightEdge) {
+						
+						select = $$.math.checkStraightEdgeCrossesBox(
+								selectBox[0], selectBox[1],
+								selectBox[2], selectBox[3],
+								edges[index]._private.rscratch.startX,
+								edges[index]._private.rscratch.startY,
+								edges[index]._private.rscratch.endX,
+								edges[index]._private.rscratch.endY, padding);
+	
+					} else {
+						
+						select = $$.math.checkBezierCrossesBox(
+								selectBox[0], selectBox[1],
+								selectBox[2], selectBox[3],
+								edges[index]._private.rscratch.startX,
+								edges[index]._private.rscratch.startY,
+								edges[index]._private.rscratch.cp2x,
+								edges[index]._private.rscratch.cp2y,
+								edges[index]._private.rscratch.endX,
+								edges[index]._private.rscratch.endY, padding);
+						
+					}
+				} else {
+					select = false;
+				}
+				
+				if (select && !edgeSelected) {
+					edges[index].select();
+				} else if (!select && edgeSelected) {
+					edges[index].unselect();
+				}
+			}
+			
+			var boxMinX = Math.min(selectBox[0], selectBox[2]);
+			var boxMinY = Math.min(selectBox[1], selectBox[3]);
+			var boxMaxX = Math.max(selectBox[0], selectBox[2]);
+			var boxMaxY = Math.max(selectBox[1], selectBox[3]);
+			
+			var nodeSelected, select;
+			
+			var nodePosition, boundingRadius;
+			for (var index = 0; index < nodes.length; index++) {
+				nodeSelected = nodes[index]._private.selected;
+
+				nodePosition = nodes[index].position();
+				boundingRadius = nodes[index]._private.data.weight / 5.0;
+				
+				if (nodePosition.x > boxMinX
+						- boundingRadius
+					&& nodePosition.x < boxMaxX 
+						+ boundingRadius
+					&& nodePosition.y > boxMinY 
+						- boundingRadius
+					&& nodePosition.y < boxMaxY 
+						+ boundingRadius) {
+					
+					select = true;
+					nodes[index]._private.rscratch.selected = true;		
+				} else {
+					select = false;
+					nodes[index]._private.rscratch.selected = false;
+				}
+				
+				if (select && !nodeSelected) {
+					nodes[index].select();	
+				} else if (!select && nodeSelected) {
+					nodes[index].unselect();				
+				}
+			}
+		}
 	
 		// Stop drag panning on mouseup
 		dragPanMode = false;
@@ -1074,7 +1100,7 @@
 			edge._private.rscratch.straightEdge = true;
 			edge._private.rscratch.cp2x = middlePointX;
 			edge._private.rscratch.cp2y = middlePointY;
-			//console.log(edge._private.rscratch.cp2x + ", " + edge._private.rscratch.cp2y);
+			
 			return;
 		}
 	
@@ -1183,16 +1209,21 @@
 		context.setTransform(1, 0, 0, 1, 0, 0);
 		context.clearRect(0, 0, this.options.cy.container().width(),
 			this.options.cy.container().height());
-		
+
+		/*		
 		context.translate(this.zoomCenter[0], 
 			this.zoomCenter[1]);
 		
 		context.scale(this.scale[0], this.scale[1])
 		context.translate(-this.center[0], -this.center[1])
+		*/
+		
+		context.translate(cy.pan().x, cy.pan().y);
+		context.scale(cy.zoom(), cy.zoom());
 		
 		var elements = this.options.cy.elements().toArray();
 		
-		elements.sort(function(a, b){
+		elements.sort(function(a, b) {
 			var result = a._private.style["z-index"].value
 				- b._private.style["z-index"].value;
 			
@@ -1200,7 +1231,7 @@
 				if (a._private.group == "nodes"
 					&& b._private.group == "edges") {
 					
-					return 1;	
+					return 1;
 				} else if (a._private.group == "edges"
 					&& b._private.group == "nodes") {
 					
@@ -1230,7 +1261,7 @@
 				selectBox[2] - selectBox[0],
 				selectBox[3] - selectBox[1]);
 				
-			context.fillStyle = "rgba(155,255,155,0.1)";
+			context.fillStyle = "rgba(70,70,70,0.1)";
 			context.fillRect(selectBox[0],
 				selectBox[1],
 				selectBox[2] - selectBox[0],
@@ -1252,25 +1283,19 @@
 		startNode = edge.source()[0];
 		endNode = edge.target()[0];
 		
-		if (edge._private.rscratch.selected) {
-			styleValue = edge._private.rscratch.override.selectedColor;
+		if (false && edge._private.rscratch.hovered) {
+			styleValue = edge._private.rscratch.override.hoveredColor;
 			context.strokeStyle = styleValue != undefined ? styleValue 
-				: defaultEdge.selectedColor;
+				: defaultEdge.hoveredColor;
 		} else {
-			if (edge._private.rscratch.hovered) {
-				styleValue = edge._private.rscratch.override.hoveredColor;
-				context.strokeStyle = styleValue != undefined ? styleValue 
-					: defaultEdge.hoveredColor;
-			} else {
-				// Edge color & opacity
-				styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
-					+ edge._private.style["line-color"].value[1] + ","
-					+ edge._private.style["line-color"].value[2] + ","
-					+ edge._private.style.opacity.value + ")";
-				
-				context.strokeStyle = styleValue != undefined ? styleValue 
-					: defaultEdge.regularColor;
-			}
+			// Edge color & opacity
+			styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
+				+ edge._private.style["line-color"].value[1] + ","
+				+ edge._private.style["line-color"].value[2] + ","
+				+ edge._private.style.opacity.value + ")";
+			
+			context.strokeStyle = styleValue != undefined ? styleValue 
+				: defaultEdge.regularColor;
 		}
 		
 		// Edge line width
@@ -1338,7 +1363,7 @@
 			
 			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
 				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
-				+ (0.5 * 0.5) * edge._private.rscratch.endY;			
+				+ (0.5 * 0.5) * edge._private.rscratch.endY;
 		}
 		
 		/*
@@ -1364,38 +1389,29 @@
 			return;
 		}
 		
-		if (node._private.rscratch.selected == true) {
-			styleValue = node._private.rscratch.override.selectedColor;
-			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.selectedColor;
+		if (false && node._private.rscratch.hovered == true) {
+			styleValue = node._private.rscratch.override.hoveredColor;
+			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
 			
-			styleValue = node._private.rscratch.override.selectedBorderColor;
-			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.selectedBorderColor;
+			styleValue = node._private.rscratch.override.hoveredBorderColor;
+			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
 		} else {
-			if (node._private.rscratch.hovered == true) {
-				styleValue = node._private.rscratch.override.hoveredColor;
-				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
+			// Node color & opacity
+			styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
+				+ node._private.style["background-color"].value[1] + ","
+				+ node._private.style["background-color"].value[2] + ","
+				+ (node._private.style["background-opacity"].value 
+				* node._private.style["opacity"].value) + ")";
 				
-				styleValue = node._private.rscratch.override.hoveredBorderColor;
-				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
-			} else {
-				// Node color & opacity
-				styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
-					+ node._private.style["background-color"].value[1] + ","
-					+ node._private.style["background-color"].value[2] + ","
-					+ (node._private.style["background-opacity"].value 
-					* node._private.style["opacity"].value) + ")";
-					
-				context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
-				
-				// Node border color & opacity
-				styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
-					+ node._private.style["border-color"].value[1] + ","
-					+ node._private.style["border-color"].value[2] + ","
-					+ (node._private.style["border-opacity"].value 
-					* node._private.style["opacity"].value) + ")";	
-				context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
-		
-			}
+			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
+			
+			// Node border color & opacity
+			styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
+				+ node._private.style["border-color"].value[1] + ","
+				+ node._private.style["border-color"].value[2] + ","
+				+ (node._private.style["border-opacity"].value 
+				* node._private.style["opacity"].value) + ")";	
+			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
 		}
 		
 		nodeWidth = node._private.style["width"].value;

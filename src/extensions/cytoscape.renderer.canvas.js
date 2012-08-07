@@ -81,6 +81,9 @@
 	// Timeout variable used to prevent mouseMove events from being triggered too often
 	var mouseMoveTimeout = 0;
 	
+	// Timeout variable to prevent frequent redraws
+	var redrawTimeout = 0;
+	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
 		this.cy = options.cy;
@@ -96,11 +99,14 @@
 //		console.log("notify call: " + params);
 //		console.log(params);
 		
+		var redrawEvents = ["draw", "viewport", "add"];
+		
 		switch (params.type) {
 			case "load":
 				debug("load call");
 				this.load();
 				this.initStyle();
+				// redraw();
 				break;
 			case "draw":
 				debug("draw call");
@@ -109,10 +115,16 @@
 				this.redraw();
 				break;
 			case "style":
-				//this.redraw();
+				// this.redraw();
+				break;
+			case "add":
 				break;
 			default:
 				console.log("event: " + params.type);
+		}
+		
+		if (redrawEvents.indexOf(params.type) != -1) {
+			this.redraw();
 		}
 		
 		// this.redraw();
@@ -142,8 +154,6 @@
 		x += self.center[0];
 		y += self.center[1];
 		*/
-		
-		
 		
 		return [x, y];
 	}
@@ -243,6 +253,22 @@
 		
 		hoverHandler(e);
 		
+		if (minDistanceNode != undefined
+			&& cy.renderer().canvas.style.cursor != 
+				minDistanceNode._private.style["cursor"].value) {
+			cy.renderer().canvas.style.cursor = 
+				minDistanceNode._private.style["cursor"].value;
+		} else if (minDistanceEdge != undefined
+			&& cy.renderer().canvas.style.cursor != 
+				minDistanceEdge._private.style["cursor"].value) {
+			cy.renderer().canvas.style.cursor = 
+				minDistanceEdge._private.style["cursor"].value;
+		} else if (!minDistanceNode
+			&& !minDistanceEdge
+			&& cy.renderer().canvas.style.cursor != "default") {
+			cy.renderer().canvas.style.cursor = "default";
+		}
+		
 		cy.renderer().redraw();
 	}
 	
@@ -259,6 +285,13 @@
 			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
 			
 			dragPanMode = true;
+			
+			if (cy.renderer().canvas.style.cursor 
+				!= cy.style()._private.coreStyle["panning-cursor"].value) {
+
+				cy.renderer().canvas.style.cursor 
+					= cy.style()._private.coreStyle["panning-cursor"].value;
+			}
 		}
 		
 		// Left button drag selection
@@ -291,10 +324,18 @@
 			
 				if (minDistanceNode != undefined) {
 					minDistanceNode._private.rscratch.hovered = false;
-					minDistanceNode._private.rscratch.selected = true;		
+					minDistanceNode._private.rscratch.selected = true;
+					
+					if (!minDistanceNode._private.selected) {
+						minDistanceNode.select();
+					}
 				} else if (minDistanceEdge != undefined) {
 					minDistanceEdge._private.rscratch.hovered = false;
 					minDistanceEdge._private.rscratch.selected = true;
+					
+					if (!minDistanceEdge._private.selected) {
+						minDistanceEdge.select();
+					}
 				}
 			}
 			
@@ -325,7 +366,7 @@
 		if (!shiftDown && selectBox[4] == 1
 			&& Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
-			var padding = 5;
+			var padding = 2;
 			
 			var edgeSelected;
 			var select;
@@ -423,6 +464,10 @@
 		// Stop drag panning on mouseup
 		dragPanMode = false;
 		
+		if (cy.renderer().canvas.style.cursor != "default") {
+			cy.renderer().canvas.style.cursor = "default";
+		}
+		
 		selectBox[4] = 0;
 		cy.renderer().redraw();
 	}
@@ -440,6 +485,36 @@
 		//console.log("zoomLevel: " + cy.renderer().zoomLevel);
 		cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
 		cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
+		
+		
+		var mouseOffsetX = cy.container().offset().left + 2;
+		var mouseOffsetY = cy.container().offset().top + 2;
+		
+		var current = cy.renderer().projectMouse(cy.renderer(),
+			event.clientX,
+			event.clientY,
+			mouseOffsetX,
+			mouseOffsetY);
+
+		console.log(event);
+		console.log(event.offsetX, event.offsetY);
+		console.log(event.clientX - mouseOffsetX, event.clientY - mouseOffsetY);
+		
+		var zoomLevel = cy.zoom() * Math.pow(10, event.wheelDeltaY / 2000);
+		zoomLevel = Math.min(zoomLevel, 10);
+		zoomLevel = Math.max(zoomLevel, 0.1);
+		
+		
+		console.log(zoomLevel);
+		/*
+		cy.zoom({level: zoomLevel, 
+				renderedPosition: {x: event.offsetX, 
+									y: event.offsetY}});
+		*/
+		cy.zoom({level: zoomLevel, 
+				position: {x: current[0], 
+							y: current[1]}});
+		
 		
 		cy.renderer().redraw();
 	}
@@ -462,13 +537,20 @@
 			var offsetX = mouseMoveEvent.clientX - dragPanStartX;
 			var offsetY = mouseMoveEvent.clientY - dragPanStartY;
 			
+			cy.panBy({x: offsetX, y: offsetY});
+
+			dragPanStartX = mouseMoveEvent.clientX;
+			dragPanStartY = mouseMoveEvent.clientY;
+
+			/*
 			cy.renderer().center[0] = dragPanInitialCenter[0] - offsetX / cy.renderer().scale[0];
 			cy.renderer().center[1] = dragPanInitialCenter[1] - offsetY / cy.renderer().scale[1];
+			*/
 		};
 		
 		var checkEdgeHover = function(mouseX, mouseY, edge) {
 		
-			var squaredDistanceLimit = 40;
+			var squaredDistanceLimit = 19; // Math.pow(edge._private.style["width"] * 30, 2);
 		
 			if ($$.math.inBezierVicinity(
 					mouseX, mouseY,
@@ -507,7 +589,7 @@
 		
 		var checkStraightEdgeHover = function(mouseX, mouseY, edge, x1, y1, x2, y2) {
 			
-			var squaredDistanceLimit = 40;
+			var squaredDistanceLimit = 19;
 			
 			var nearEndOffsetX = mouseX - x1;
 			var nearEndOffsetY = mouseY - y1;
@@ -562,7 +644,7 @@
 			var boundingRadiusSquared = Math.pow(
 				Math.max(
 					node._private.style["width"].value, 
-					node._private.style["height"].value), 2);
+					node._private.style["height"].value) / 2, 2);
 			
 			var distanceSquared = dX * dX + dY * dY;
 			
@@ -1202,6 +1284,15 @@
 	
 	CanvasRenderer.prototype.redraw = function() {
 		
+		if (redrawTimeout) {
+			return;
+		}
+		
+		redrawTimeout = setTimeout(function() {
+			redrawTimeout = null;		
+		}, 1000 / 80);
+		
+		
 		this.findEdgeControlPoints(this.options.cy.edges());
 	
 		var context = this.context;
@@ -1253,16 +1344,29 @@
 		}
 				
 		if (!shiftDown && selectBox[4] == 1) {
-			context.lineWidth = 0.001;
+			
+			var coreStyle = cy.style()._private.coreStyle;
 		
-			context.strokeStyle = "rgba(15,15,15,0.5)";
-			context.strokeRect(selectBox[0],
+			context.lineWidth = coreStyle["selection-box-border-width"].value;
+		
+			context.fillStyle = "rgba(" 
+				+ coreStyle["selection-box-color"].value[0] + ","
+				+ coreStyle["selection-box-color"].value[1] + ","
+				+ coreStyle["selection-box-color"].value[2] + ","
+				+ coreStyle["selection-box-opacity"].value + ")";
+			
+			context.fillRect(selectBox[0],
 				selectBox[1],
 				selectBox[2] - selectBox[0],
 				selectBox[3] - selectBox[1]);
-				
-			context.fillStyle = "rgba(70,70,70,0.1)";
-			context.fillRect(selectBox[0],
+		
+			context.strokeStyle = "rgba(" 
+				+ coreStyle["selection-box-border-color"].value[0] + ","
+				+ coreStyle["selection-box-border-color"].value[1] + ","
+				+ coreStyle["selection-box-border-color"].value[2] + ","
+				+ coreStyle["selection-box-opacity"].value + ")";
+			
+			context.strokeRect(selectBox[0],
 				selectBox[1],
 				selectBox[2] - selectBox[0],
 				selectBox[3] - selectBox[1]);
@@ -1416,7 +1520,8 @@
 		
 		nodeWidth = node._private.style["width"].value;
 		nodeHeight = node._private.style["height"].value;
-		nodeShapeDrawers[node._private.rscratch.override.shape|| defaultNode.shape](
+		nodeShapeDrawers[(node._private.rscratch.override ? node._private.rscratch.override.shape : defaultNode.shape) 
+							|| defaultNode.shape](
 			node, 
 			nodeWidth, 
 			nodeHeight); //node._private.data.weight / 5.0
@@ -1471,7 +1576,7 @@
 		var styleValue;
 		
 		// Font style
-		styleValue = element._private.rscratch.override.labelFontStyle;
+//		styleValue = element._private.rscratch.override.labelFontStyle;
 		labelStyle = element._private.style["font-style"].strValue;
 		labelSize = element._private.style["font-size"].strValue;
 		labelFamily = element._private.style["font-family"].strValue;

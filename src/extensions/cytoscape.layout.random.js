@@ -58,4 +58,4 @@
 		RandomLayout // the layout prototype
 	);
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

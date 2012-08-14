@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.Style = function( cy ){
 
@@ -986,4 +986,4 @@
 		}
 	};
 
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// Functions for iterating over collections
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,4 +62,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

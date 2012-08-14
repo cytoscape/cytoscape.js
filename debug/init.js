@@ -11,7 +11,7 @@ $(function(){
 		layout: {
 			name: "grid"
 		},
-		style: $.cytoscape.stylesheet()
+		style: cytoscape.stylesheet()
 			.selector("node")
 				.css({
 					"content": "data(id)"
@@ -53,7 +53,7 @@ $(function(){
 		},
 		ready: function(cy){
 			window.cy = cy;
-			window.$$ = $.cytoscape;
+			window.$$ = cytoscape;
 		}
 	};
 	

@@ -72,4 +72,4 @@
 		return layout;
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

@@ -269,4 +269,4 @@
 	$$("layout", "arbor", ArborLayout);
 	
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

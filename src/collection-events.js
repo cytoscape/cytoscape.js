@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// Functions for binding & triggering events
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,4 +31,4 @@
 	// add event aliases like .click()
 	$$.define.event.aliasesOn( $$.elesfn );
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

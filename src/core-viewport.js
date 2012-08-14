@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.fn.core({
 		
@@ -294,4 +294,4 @@
 		}
 	});	
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

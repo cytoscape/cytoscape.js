@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	$$.fn.eles({
 		allAre: function(selector){
@@ -33,4 +33,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.fn.eles({
 
@@ -385,4 +385,4 @@
 	});
 
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

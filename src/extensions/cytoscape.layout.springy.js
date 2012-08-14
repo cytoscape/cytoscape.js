@@ -747,4 +747,4 @@
 	};
 
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

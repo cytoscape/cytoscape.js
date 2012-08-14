@@ -43,7 +43,7 @@
 					container: $(this)
 				});
 			
-				$.cytoscape(options);
+				cytoscape(options);
 			});
 		}
 		
@@ -104,4 +104,4 @@
 		$.cy = $.cytoscape;
 	}
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

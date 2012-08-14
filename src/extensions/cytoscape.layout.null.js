@@ -1,9 +1,9 @@
-;(function($, $$){
+;(function($$){
 		
 	var defaults = {};
 
 	function NullLayout( options ){
-		this.options = $.extend(true, {}, defaults, options); 
+		this.options = $$.util.extend(true, {}, defaults, options); 
 	}
 	
 	// puts all nodes at (0, 0)
@@ -31,4 +31,4 @@
 	
 	$$("layout", "null", NullLayout);
 	
-})(jQuery, cytoscape);
+})(cytoscape);

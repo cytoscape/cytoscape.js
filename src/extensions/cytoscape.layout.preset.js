@@ -1,11 +1,11 @@
-;(function($, $$){
+;(function($$){
 	
 	var defaults = {
 		fit: true
 	};
 	
 	function PresetLayout( options ){
-		this.options = $.extend(true, {}, defaults, options);
+		this.options = $$.util.extend(true, {}, defaults, options);
 	}
 	
 	PresetLayout.prototype.run = function(){
@@ -72,4 +72,4 @@
 		return layout;
 	});
 	
-})(jQuery, cytoscape);
+})(cytoscape);

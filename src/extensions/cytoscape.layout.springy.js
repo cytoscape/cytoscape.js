@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	var defaults = {
 		maxSimulationTime: 1000,
@@ -8,7 +8,7 @@
 	};
 	
 	function SpringyLayout( options ){
-		this.options = $.extend(true, {}, defaults, options);
+		this.options = $$.util.extend(true, {}, defaults, options);
 	}
 	
 	function exec(fn){
@@ -747,4 +747,4 @@
 	};
 
 	
-})(jQuery, cytoscape);
+})(cytoscape);

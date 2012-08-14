@@ -11,7 +11,7 @@ $v(function(jQuery, $, version){
 	};
 	
 	// register the dummy renderer
-	$.cytoscape("renderer", "test", Renderer);
+	cytoscape("renderer", "test", Renderer);
 	
 	function same(){
 		var args = arguments;

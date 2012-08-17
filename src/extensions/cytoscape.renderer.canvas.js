@@ -82,6 +82,8 @@
 	var draggingSelectedNode = false;
 	var draggedNode;
 	
+	var renderer;
+	
 	// Timeout variable used to prevent mouseMove events from being triggered too often
 	var mouseMoveTimeout = 0;
 	
@@ -97,6 +99,8 @@
 		// Information about the number of edges between each pair of nodes
 		// used to find different curvatures for the edges
 		this.nodePairEdgeData = {};		
+		
+		renderer = this;
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
@@ -111,6 +115,8 @@
 				this.load();
 //				this.initStyle();
 				// redraw();
+				
+				this.redraw();
 				break;
 			case "draw":
 				debug("draw call");
@@ -135,7 +141,31 @@
 		// this.redraw();
 	};
 	
-	CanvasRenderer.prototype.projectMouse = function(self, mouseX, mouseY, xOffset, yOffset) {
+	CanvasRenderer.prototype.projectMouse = function(mouseEvent) {
+		
+		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft;
+		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop;
+
+		x += (mouseEvent.pageX - mouseEvent.clientX);
+		y += (mouseEvent.pageY - mouseEvent.clientY);
+		
+		x -= cy.pan().x;
+		y -= cy.pan().y;
+		
+		x /= cy.zoom();
+		y /= cy.zoom();
+		
+		return [x, y];
+		
+		/*
+		mouseDownEvent.clientX,
+		mouseDownEvent.clientY,
+		cy.container().offset().left + 2, // container offsets
+		cy.container().offset().top + 2);
+		*/
+	}
+	
+	CanvasRenderer.prototype.projectMouseOld = function(self, mouseX, mouseY, xOffset, yOffset) {
 		var x = mouseX - xOffset;
 		var y = mouseY - yOffset;
 		
@@ -205,7 +235,7 @@
 	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
 		var mouseDownEvent = event;
-
+//		console.log(event);
 		var nodes = cy.nodes();
 		var edges = cy.edges();
 
@@ -228,14 +258,12 @@
 			}
 		}
 		
-		var start = cy.renderer().projectMouse(cy.renderer(),
-				mouseDownEvent.clientX,
-				mouseDownEvent.clientY,
-				cy.container().offset().left + 2, // container offsets
-				cy.container().offset().top + 2);
+		var start = cy.renderer().projectMouse(event);
 		
 		selectBox[0] = start[0];
 		selectBox[1] = start[1];
+		
+		console.log("mousedown: " + [start[0], start[1]]);
 		
 		// Left button drag selection
 		if (mouseDownEvent.button == 0
@@ -307,11 +335,7 @@
 			dragHandler(e);
 		}
 		
-		var current = cy.renderer().projectMouse(cy.renderer(),
-			e.clientX,
-			e.clientY,
-			mouseOffsetX,
-			mouseOffsetY);
+		var current = cy.renderer().projectMouse(e);
 		
 		// Update selection box
 		selectBox[2] = current[0];
@@ -550,11 +574,7 @@
 		var mouseOffsetX = cy.container().offset().left + 2;
 		var mouseOffsetY = cy.container().offset().top + 2;
 		
-		var current = cy.renderer().projectMouse(cy.renderer(),
-			event.clientX,
-			event.clientY,
-			mouseOffsetX,
-			mouseOffsetY);
+		var current = cy.renderer().projectMouse(event);
 
 /*
 		console.log(event);
@@ -563,6 +583,9 @@
 */
 		
 		var zoomLevel = cy.zoom() * Math.pow(10, event.wheelDeltaY / 2000);
+
+		// zoomLevel = cy.zoom() * (1 + event.wheelDeltaY * 0.00167);
+
 		zoomLevel = Math.min(zoomLevel, 10);
 		zoomLevel = Math.max(zoomLevel, 0.1);
 		
@@ -570,16 +593,19 @@
 		console.log(zoomLevel);
 */
 
+		console.log(current);
 
-		/*
+		
 		cy.zoom({level: zoomLevel, 
-				renderedPosition: {x: event.offsetX, 
-									y: event.offsetY}});
-		*/
-		cy.zoom({level: zoomLevel, 
-				renderedPosition: {x: event.offsetX, 
+				position: {x: event.offsetX, 
 							y: event.offsetY}});
 		
+		
+		/*
+		cy.zoom({level: zoomLevel, 
+					renderedPosition: {x: current[0], 
+							y: current[1]}});
+		*/
 		
 		cy.renderer().redraw();
 	}
@@ -731,11 +757,7 @@
 		var hoverHandler = function(nodes, edges, mouseMoveEvent) {
 			
 			// Project mouse coordinates to world absolute coordinates
-			var projected = cy.renderer().projectMouse(cy.renderer(), 
-				mouseMoveEvent.clientX,
-				mouseMoveEvent.clientY,
-				mouseOffsetX,
-				mouseOffsetY); 
+			var projected = cy.renderer().projectMouse(mouseMoveEvent); 
 			
 			var mouseX = projected[0];
 			var mouseY = projected[1];
@@ -1278,7 +1300,7 @@
 	}
 	
 	nodeShapeDrawers["ellipse"] = function(node, width, height) {
-		var context = cy.renderer().context;
+		var context = renderer.context;
 	
 		context.beginPath();
 		context.save();
@@ -1372,8 +1394,8 @@
 		context.translate(-this.center[0], -this.center[1])
 		*/
 		
-		context.translate(cy.pan().x, cy.pan().y);
-		context.scale(cy.zoom(), cy.zoom());
+		context.translate(this.cy.pan().x, this.cy.pan().y);
+		context.scale(this.cy.zoom(), this.cy.zoom());
 		
 		var elements = this.options.cy.elements().toArray();
 		
@@ -1473,6 +1495,29 @@
 		
 		if (edge._private.rscratch.isSelfEdge) {
 		
+			/*
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY)
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2ax,
+				edge._private.rscratch.cp2ay,
+				edge._private.rscratch.selfEdgeMidX,
+				edge._private.rscratch.selfEdgeMidY);
+			
+			context.moveTo(
+				edge._private.rscratch.selfEdgeMidX,
+				edge._private.rscratch.selfEdgeMidY);
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2cx,
+				edge._private.rscratch.cp2cy,
+				edge._private.rscratch.endX,
+				edge._private.rscratch.endY);
+			*/
+			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
 			context.beginPath();

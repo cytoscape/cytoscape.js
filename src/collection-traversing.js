@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.fn.eles({
 		nodes: function(selector){
@@ -473,4 +473,4 @@
 	});
 
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

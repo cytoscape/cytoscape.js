@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.fn.core = function( fnMap, options ){
 		for( var name in fnMap ){
@@ -184,4 +184,4 @@
 		
 	});	
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

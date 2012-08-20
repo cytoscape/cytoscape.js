@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// Use this interface to define functions for collections/elements.
 	// This interface is good, because it forces you to think in terms
@@ -525,5 +525,5 @@
 		return this;
 	};
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );
 

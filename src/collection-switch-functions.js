@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// Collection functions that toggle a boolean value
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,4 +93,4 @@
 		}
 	};
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

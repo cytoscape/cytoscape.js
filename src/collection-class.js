@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function( $$ ){
 	
 	$$.fn.eles({
 		addClass: function(classes){
@@ -98,4 +98,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

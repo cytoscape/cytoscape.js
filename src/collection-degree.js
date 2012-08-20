@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function( $$ ){
 	
 	// Regular degree functions (works on single element)
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -112,6 +112,6 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );
 
 	

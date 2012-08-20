@@ -1,17 +1,93 @@
-;(function($, $$){
+;(function($$){
 	
 	// utility functions only for internal use
 
 	$$.util = {
 
-		extend: $.extend,
-		error: $.error,
-		each: $.each,
+		// the jquery extend() function
+		// NB: modified to use $$.is etc since we can't use jquery functions
+		extend: function() {
+			var options, name, src, copy, copyIsArray, clone,
+				target = arguments[0] || {},
+				i = 1,
+				length = arguments.length,
+				deep = false;
+
+			// Handle a deep copy situation
+			if ( typeof target === "boolean" ) {
+				deep = target;
+				target = arguments[1] || {};
+				// skip the boolean and the target
+				i = 2;
+			}
+
+			// Handle case when target is a string or something (possible in deep copy)
+			if ( typeof target !== "object" && !$$.is.fn(target) ) {
+				target = {};
+			}
+
+			// extend jQuery itself if only one argument is passed
+			if ( length === i ) {
+				target = this;
+				--i;
+			}
+
+			for ( ; i < length; i++ ) {
+				// Only deal with non-null/undefined values
+				if ( (options = arguments[ i ]) != null ) {
+					// Extend the base object
+					for ( name in options ) {
+						src = target[ name ];
+						copy = options[ name ];
+
+						// Prevent never-ending loop
+						if ( target === copy ) {
+							continue;
+						}
+
+						// Recurse if we're merging plain objects or arrays
+						if ( deep && copy && ( $$.is.plainObject(copy) || (copyIsArray = $$.is.array(copy)) ) ) {
+							if ( copyIsArray ) {
+								copyIsArray = false;
+								clone = src && $$.is.array(src) ? src : [];
+
+							} else {
+								clone = src && $$.is.plainObject(src) ? src : {};
+							}
+
+							// Never move original objects, clone them
+							target[ name ] = $$.util.extend( deep, clone, copy );
+
+						// Don't bring in undefined values
+						} else if ( copy !== undefined ) {
+							target[ name ] = copy;
+						}
+					}
+				}
+			}
+
+			// Return the modified object
+			return target;
+		},
+
+		error: function( msg ){
+			if( console ){
+				if( console.error ){
+					console.error( msg );
+				} else if( console.log ){
+					console.log( msg );
+				} else {
+					throw msg;
+				}
+			} else {
+				throw msg;
+			}
+		},		
 
 		clone: function( obj ){
 			var target = {};
 			for (var i in obj) {
-				if ( obj.hasOwnProperty(i) ) {
+				if ( obj.hasOwnProperty(i) ) { // TODO is this hasOwnProperty() call necessary for our use?
 					target[i] = obj[i];
 				}
 			}
@@ -23,9 +99,9 @@
 			if( obj == null ){
 				return obj;
 			} if( $$.is.array(obj) ){
-				return $.extend([], obj);
+				return obj.slice();
 			} else if( $$.is.plainObject(obj) ){
-				return $.extend({}, obj);
+				return $$.util.clone( obj );
 			} else {
 				return obj;
 			}
@@ -506,4 +582,4 @@
 			
 	};
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

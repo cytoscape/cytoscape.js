@@ -1,4 +1,4 @@
-(function($, $$){
+(function($$){
 	
 	$$.fn.core({
 		notify: function( params ){
@@ -37,4 +37,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

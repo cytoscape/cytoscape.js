@@ -1,4 +1,6 @@
-;(function($, $$){
+// type testing utility functions
+
+;(function($$){
 	
 	$$.is = {
 		string: function(obj){
@@ -82,4 +84,4 @@
 		}
 	};	
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

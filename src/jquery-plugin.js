@@ -43,7 +43,7 @@
 					container: $(this)
 				});
 			
-				$.cytoscape(options);
+				cytoscape(options);
 			});
 		}
 		
@@ -78,6 +78,9 @@
 
 	};
 	
+	// allow access to the global cytoscape object under jquery for legacy reasons
+	$.cytoscape = cytoscape;
+
 	// allow functional access to cytoscape.js
 	// e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
 	//      var nodes = cyto.nodes();
@@ -104,4 +107,4 @@
 		$.cy = $.cytoscape;
 	}
 	
-})(jQuery, jQuery.cytoscape);
+})(jQuery, cytoscape);

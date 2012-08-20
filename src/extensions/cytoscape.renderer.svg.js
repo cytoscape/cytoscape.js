@@ -13,7 +13,7 @@
 	var lineStyles = {};
 	
 	var registerLineStyle = function(style){
-		$.cytoscape("renderer", "svg", "linestyle", style.name, style);
+		$$("renderer", "svg", "linestyle", style.name, style);
 		delete style.name;
 	};
 	
@@ -38,7 +38,7 @@
 	});
 	
 	var registerEdgeArrowShape = function(shape){
-		$.cytoscape("renderer", "svg", "edgearrowshape", shape.name, shape);
+		$$("renderer", "svg", "edgearrowshape", shape.name, shape);
 		delete shape.name;
 	};
 	
@@ -116,7 +116,7 @@
 	});
 	
 	var registerNodeShape = function(shape){
-		$.cytoscape("renderer", "svg", "nodeshape", shape.name, shape);
+		$$("renderer", "svg", "nodeshape", shape.name, shape);
 		delete shape.name;
 	};
 	
@@ -235,7 +235,7 @@
 	}
 	
 	function nodeShape(name){
-		var ret = $.cytoscape("renderer", "svg", "nodeshape", name);
+		var ret = $$("renderer", "svg", "nodeshape", name);
 		
 		if( ret == null ){
 			//$.error("SVG renderer does not recognise %s as a valid node shape", name);
@@ -245,7 +245,7 @@
 	}
 	
 	function lineStyle(name){
-		var ret = $.cytoscape("renderer", "svg", "linestyle", name);
+		var ret = $$("renderer", "svg", "linestyle", name);
 		
 		if( ret == null ){
 			//$.error("SVG renderer does not recognise %s as a valid line style", name);
@@ -259,7 +259,7 @@
 			return null;
 		}
 		
-		return $.cytoscape("renderer", "svg", "edgearrowshape", name);
+		return $$("renderer", "svg", "edgearrowshape", name);
 	}
 	
 	function labelHalign(a){
@@ -2550,7 +2550,7 @@
 		return this.options.cy.container().svg("get").toSVG();
 	};
 	
-	$.cytoscape("renderer", "svg", SvgRenderer);
-	$.cytoscape("exporter", "svg", SvgExporter);
+	$$("renderer", "svg", SvgRenderer);
+	$$("exporter", "svg", SvgExporter);
 	
-})( jQuery, jQuery.cytoscape );
+})( jQuery, cytoscape );

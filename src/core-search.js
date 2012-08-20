@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	$$.fn.core({
 
@@ -53,4 +53,4 @@
 	// aliases
 	$$.corefn.elements = $$.corefn.filter = $$.corefn.$;	
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

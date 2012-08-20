@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function( $$ ){
 
 	$$.fn.eles({
 		animated: function(){
@@ -108,4 +108,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);	
+})( cytoscape );	

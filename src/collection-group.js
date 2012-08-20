@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	$$.fn.eles({
 		isNode: function(){
@@ -23,4 +23,4 @@
 	});
 
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

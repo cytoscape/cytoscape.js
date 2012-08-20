@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	var defaults = {
 		liveUpdate: true,
@@ -23,7 +23,7 @@
 	};
 	
 	function ArborLayout(options){
-		this.options = $.extend(true, {}, defaults, options);
+		this.options = $$.util.extend(true, {}, defaults, options);
 	}
 		
 	ArborLayout.prototype.run = function(){
@@ -269,4 +269,4 @@
 	$$("layout", "arbor", ArborLayout);
 	
 	
-})(jQuery, jQuery.cytoscape);
+})(cytoscape);

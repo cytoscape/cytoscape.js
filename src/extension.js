@@ -1,6 +1,6 @@
-;(function($, $$){
+;(function($$){
 	
-	// registered extensions to cyto, indexed by name
+	// registered extensions to cytoscape, indexed by name
 	var extensions = {};
 	$$.extensions = extensions;
 	
@@ -74,4 +74,4 @@
 	
 	};
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

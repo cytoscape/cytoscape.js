@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	var defaults = {
 		fit: true,
@@ -7,7 +7,7 @@
 	};
 	
 	function GridLayout( options ){
-		this.options = $.extend({}, defaults, options);
+		this.options = $$.util.extend({}, defaults, options);
 	}
 	
 	GridLayout.prototype.run = function(){
@@ -143,4 +143,4 @@
 	
 	$$("layout", "grid", GridLayout);
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

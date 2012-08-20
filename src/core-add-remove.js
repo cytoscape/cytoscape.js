@@ -1,4 +1,4 @@
-(function($, $$){
+(function($$){
 	
 	$$.fn.core({
 		add: function(opts){
@@ -127,4 +127,4 @@
 		}
 	});
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

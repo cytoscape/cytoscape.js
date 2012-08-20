@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// shamelessly taken from jQuery
 	// https://github.com/jquery/jquery/blob/master/src/event.js
@@ -87,4 +87,4 @@
 	};
 	
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

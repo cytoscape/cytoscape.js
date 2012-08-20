@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	$$.fn.core({
 		on: $$.define.on(), // .on( events [, selector] [, data], handler)
@@ -15,4 +15,4 @@
 	// add event aliases like .click()
 	$$.define.event.aliasesOn( $$.corefn );
 		
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

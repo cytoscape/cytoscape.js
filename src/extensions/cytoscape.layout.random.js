@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	var defaults = {
 		ready: undefined, // callback on layoutready
@@ -7,7 +7,7 @@
 	};
 	
 	function RandomLayout( options ){
-		this.options = $.extend(true, {}, defaults, options);
+		this.options = $$.util.extend(true, {}, defaults, options);
 	}
 	
 	RandomLayout.prototype.run = function(){
@@ -58,4 +58,4 @@
 		RandomLayout // the layout prototype
 	);
 	
-})(jQuery, jQuery.cytoscape);
+})(cytoscape);

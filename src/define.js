@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	// metaprogramming makes me happy
 
@@ -522,4 +522,4 @@
 	}; // define
 
 	
-})(jQuery, jQuery.cytoscape);
+})( cytoscape );

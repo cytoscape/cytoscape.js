@@ -951,6 +951,22 @@
 
 			if (src.id() == tgt.id()) {
 				parallelEdges[i]._private.rscratch.isSelfEdge = true;
+				
+				// For self-edges, use 2 quadratic Beziers, with control points West
+				// and North of the node
+				
+				edge._private.rscratch.cp2ax = srcPos.x;
+				edge._private.rscratch.cp2ay = srcPos.y - 1.3 * stepSize;
+				
+				edge._private.rscratch.cp2cx = srcPos.x - 1.3 * stepSize;
+				edge._private.rscratch.cp2cy = srcPos.y;
+				
+				edge._private.rscratch.selfEdgeMidX =
+					(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
+				
+				edge._private.rscratch.selfEdgeMidY =
+					(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
+				
 				continue;
 			}
 		
@@ -959,6 +975,7 @@
 			if (numParallelEdges % 2 == 1 
 				&& i == Math.floor(numParallelEdges / 2)) {
 				parallelEdges[i]._private.rscratch.isStraightEdge = true;
+				
 				continue;
 			}
 			

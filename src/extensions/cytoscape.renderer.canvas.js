@@ -262,9 +262,7 @@
 		
 		selectBox[0] = start[0];
 		selectBox[1] = start[1];
-		
-		console.log("mousedown: " + [start[0], start[1]]);
-		
+				
 		// Left button drag selection
 		if (mouseDownEvent.button == 0
 				&& mouseDownEvent.target == cy.renderer().canvas
@@ -438,7 +436,18 @@
 			
 				edgeSelected = edges[index]._private.selected;
 			
-				var boxInBezierVicinity = $$.math.boxInBezierVicinity(
+			
+				var boxInBezierVicinity;
+			
+				if (edges[index]._private.rscratch.isStraightEdge) {
+						
+				} else if (edges[index]._private.rscratch.isSelfEdge) {
+				
+				} else {
+				
+				}
+			
+				boxInBezierVicinity = $$.math.boxInBezierVicinity(
 					selectBox[0], selectBox[1],
 					selectBox[2], selectBox[3],
 					edges[index]._private.rscratch.startX,
@@ -447,6 +456,7 @@
 					edges[index]._private.rscratch.cp2y,
 					edges[index]._private.rscratch.endX,
 					edges[index]._private.rscratch.endY, padding);
+				
 				
 				if (boxInBezierVicinity == 2) {
 					select = true;
@@ -678,6 +688,72 @@
 			}
 		}
 		
+		var checkSelfEdgeHover = function(mouseX, mouseY, edge) {
+			
+			var squaredDistanceLimit = 19;
+			var edgeFound = false;
+			
+			if ($$.math.inBezierVicinity(
+					mouseX, mouseY,
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY,
+					edge._private.rscratch.cp2ax,
+					edge._private.rscratch.cp2ay,
+					edge._private.rscratch.selfEdgeMidX,
+					edge._private.rscratch.selfEdgeMidY)) {
+				
+				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
+					mouseX, mouseY,
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY,
+					edge._private.rscratch.cp2ax,
+					edge._private.rscratch.cp2ay,
+					edge._private.rscratch.selfEdgeMidX,
+					edge._private.rscratch.selfEdgeMidY);
+				
+				// debug(distance);
+				if (squaredDistance < squaredDistanceLimit) {
+					
+					if (squaredDistance < minDistanceEdgeValue) {
+						minDistanceEdge = edge;
+						minDistanceEdgeValue = squaredDistance;
+						edgeFound = true;
+					}
+				}
+			}
+			
+			// Perform the check with the second of the 2 quadratic Beziers
+			// making up the self-edge if the first didn't pass
+			if (!edgeFound && $$.math.inBezierVicinity(
+					mouseX, mouseY,
+					edge._private.rscratch.selfEdgeMidX,
+					edge._private.rscratch.selfEdgeMidY,
+					edge._private.rscratch.cp2cx,
+					edge._private.rscratch.cp2cy,
+					edge._private.rscratch.endX,
+					edge._private.rscratch.endY)) {
+				
+				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
+					mouseX, mouseY,
+					edge._private.rscratch.selfEdgeMidX,
+					edge._private.rscratch.selfEdgeMidY,
+					edge._private.rscratch.cp2cx,
+					edge._private.rscratch.cp2cy,
+					edge._private.rscratch.endX,
+					edge._private.rscratch.endY);
+					
+				// debug(distance);
+				if (squaredDistance < squaredDistanceLimit) {
+					
+					if (squaredDistance < minDistanceEdgeValue) {
+						minDistanceEdge = edge;
+						minDistanceEdgeValue = squaredDistance;
+						edgeFound = true;
+					}
+				}
+			}
+		}
+		
 		var checkStraightEdgeHover = function(mouseX, mouseY, edge, x1, y1, x2, y2) {
 			
 			var squaredDistanceLimit = 19;
@@ -788,7 +864,8 @@
 						edges[index]._private.rscratch.startY,
 						edges[index]._private.rscratch.endX,
 						edges[index]._private.rscratch.endY);
-						
+				} else if (edges[index]._private.rscratch.isSelfEdge) {
+					checkSelfEdgeHover(mouseX, mouseY, edges[index]);
 				} else {
 					checkEdgeHover(mouseX, mouseY, edges[index]);
 				}
@@ -1131,11 +1208,26 @@
 		var end = [edge.target().position().x, edge.target().position().y];
 		
 		if (edge._private.rscratch.isSelfEdge) {
-			edge._private.rscratch.endX = end[0];
-			edge._private.rscratch.endY = end[1];
+			
+			intersect = this.findIntersection(
+				edge._private.rscratch.cp2cx,
+				edge._private.rscratch.cp2cy,
+				end[0],
+				end[1],
+				targetRadius);
+		
+			edge._private.rscratch.endX = intersect[0];
+			edge._private.rscratch.endY = intersect[1];
 
-			edge._private.rscratch.startX = start[0];
-			edge._private.rscratch.startY = start[1];
+			intersect = this.findIntersection(
+				edge._private.rscratch.cp2ax,
+				edge._private.rscratch.cp2ay,
+				start[0],
+				start[1],
+				sourceRadius);
+
+			edge._private.rscratch.startX = intersect[0];
+			edge._private.rscratch.startY = intersect[1];
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			intersect = this.findIntersection(
@@ -1495,7 +1587,6 @@
 		
 		if (edge._private.rscratch.isSelfEdge) {
 		
-			/*
 			context.beginPath();
 			context.moveTo(
 				edge._private.rscratch.startX,
@@ -1516,7 +1607,8 @@
 				edge._private.rscratch.cp2cy,
 				edge._private.rscratch.endX,
 				edge._private.rscratch.endY);
-			*/
+			
+			context.stroke();
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			

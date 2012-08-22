@@ -12,6 +12,8 @@
 			return new $$.Core(opts);
 		}
 
+		// TODO register instance
+
 		var cy = this;
 		
 		var defaults = {
@@ -25,13 +27,10 @@
 			}
 		};
 		
-		var options = $.extend(true, {}, defaults, opts);
+		var options = $$.util.extend(true, {}, defaults, opts);
 		
 		if( options.container == null ){
-			$.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
-			return;
-		} else if( $(options.container).size() > 1 ){
-			$.error("Cytoscape.js can not be called on multiple elements in the functional call style; use the jQuery selector style instead, e.g. $('.foo').cy({...});");
+			$$.util.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
 			return;
 		}
 		
@@ -71,9 +70,11 @@
 			data.ready = true;
 			
 			if( data.readies != null ){
-				$.each(data.readies, function(i, ready){
+				for( var i = 0; i < data.readies.length; i++ ){
+					var ready = data.readies[i];
+
 					cy.bind("ready", ready);
-				});
+				}
 				
 				data.readies = [];
 			}

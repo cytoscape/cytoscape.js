@@ -12,29 +12,27 @@
 			return new $$.Core(opts);
 		}
 
-		// TODO register instance
+		var reg = $$.getRegistrationForInstance(opts.container);
+		if( reg ){ // already registered => just update ref
+			reg.cy = this;
+		} else { // then we have to register
+			reg = $$.registerInstance( this );
+		}
+		var readies = reg.readies;
 
-		var cy = this;
-		
-		var defaults = {
-			layout: {
-				name: "grid"
-			},
-			renderer: {
-				name: "svg"
-			},
-			style: { // actual default style later specified by renderer
-			}
-		};
-		
-		var options = $$.util.extend(true, {}, defaults, opts);
+		var cy = this;		
+
+		var options = opts;
+		options.layout = $$.util.extend( { name: "grid" }, options.layout );
+		options.renderer = $$.util.extend( { name: "svg" }, options.renderer );
 		
 		if( options.container == null ){
-			$$.util.error("Cytoscape.js must be called on an element; specify `container` in options or call on selector directly with jQuery, e.g. $('#foo').cy({...});");
+			$$.util.error("Cytoscape.js must be called on an element");
 			return;
 		}
 		
 		this._private = {
+			instanceId: reg.id, // the registered instance id (used for prev'ly reg'd ready fns)
 			options: options, // cached options
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
@@ -61,31 +59,20 @@
 
 		// initial load
 		cy.load(options.elements, function(){ // onready
-			var data = cy.container().data("cytoscape");
+			reg.ready = true;
 			
-			if( data == null ){
-				data = {};
-			}
-			data.cy = cy;
-			data.ready = true;
-			
-			if( data.readies != null ){
-				for( var i = 0; i < data.readies.length; i++ ){
-					var ready = data.readies[i];
-
-					cy.bind("ready", ready);
-				}
-				
-				data.readies = [];
+			// bind all the ready handlers registered before creating this instance
+			for( var i = 0; i < readies.length; i++ ){
+				var fn = readies[i];
+				cy.bind("ready", fn);
 			}
 			
-			$(options.container).data("cytoscape", data);
-			
-			cy.startAnimationLoop();
-			
+			// if a ready callback is specified as an option, the bind it
 			if( $$.is.fn( options.ready ) ){
-				options.ready.apply(cy, [cy]);
+				cy.bind("ready", options.ready);
 			}
+
+			cy.startAnimationLoop();
 			
 			cy.trigger("ready");
 		}, options.done);
@@ -151,7 +138,7 @@
 		},
 
 		container: function(){
-			return $( this._private.options.container );
+			return this._private.options.container;
 		},
 
 		options: function(){
@@ -166,7 +153,7 @@
 			cy.elements().each(function(i, ele){
 				var group = ele.group();
 				
-				if( json.elements[group] == null ){
+				if( !json.elements[group] ){
 					json.elements[group] = [];
 				}
 				
@@ -174,11 +161,11 @@
 			});
 
 			json.style = cy.style();
-			json.scratch = $$.util.copy( cy.scratch() );
+			json.scratch = cy.scratch();
 			json.zoomEnabled = cy._private.zoomEnabled;
 			json.panEnabled = cy._private.panEnabled;
-			json.layout = $$.util.copy( cy._private.options.layout );
-			json.renderer = $$.util.copy( cy._private.options.renderer );
+			json.layout = cy._private.options.layout;
+			json.renderer = cy._private.options.renderer;
 			
 			return json;
 		}

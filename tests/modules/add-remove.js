@@ -2,7 +2,7 @@ $v(function(jQuery, $, version){
 	
 	defaultModule("Add/remove elements");
 	
-	test("Remove a node", function(){
+	test("Remove a node", function(){ debugger;
 		var n1 = cy.$("#n1");
 		var n2 = cy.$("#n2");
 		var n3 = cy.$("#n3");

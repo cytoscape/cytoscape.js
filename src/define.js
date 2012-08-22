@@ -370,7 +370,7 @@
 			var defaults = {};
 			params = $$.util.extend({}, defaults, params);
 			
-			return function(events, extraParams){
+			return function(events, extraParams, fnToTrigger){
 				var self = this;
 				var selfIsArrayLike = self.length !== undefined;
 				var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
@@ -440,6 +440,14 @@
 								var prop = props[k];
 								evt[ prop ] = evtObj[ prop ];
 							}
+						}
+
+						if( fnToTrigger ){ // then override the listeners list with just the one we specified
+							listeners = [{
+								namespace: evt.namespace,
+								type: evt.type,
+								callback: fnToTrigger
+							}];
 						}
 
 						for( var k = 0; k < listeners.length; k++ ){ // check each listener

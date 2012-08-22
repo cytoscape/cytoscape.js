@@ -108,9 +108,11 @@
 			}
 			
 			// add @ variants to comparatorOp
-			$.each( comparatorOp.split("|"), function(i, op){
+			var ops = comparatorOp.split("|");
+			for( var i = 0; i < ops.length; i++ ){
+				var op = ops[i];
 				comparatorOp += "|@" + op;
-			} );
+			}
 
 			// the current subject in the query
 			var currentSubject = null;

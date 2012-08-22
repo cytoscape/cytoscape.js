@@ -81,6 +81,10 @@
 			}
 
 			return false;
+		},
+
+		domElement: function(obj){
+			return obj instanceof HTMLElement;
 		}
 	};	
 	

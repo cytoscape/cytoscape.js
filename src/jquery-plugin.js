@@ -6,32 +6,28 @@
 		var $this = $(this);
 
 		// get object
-		if( opts == "get" ){
-			var data = $(this).data("cytoscape");
-			return data.cy;
+		if( opts === "get" ){
+			return $$.getRegistrationForInstance( $this[0] ).cy;
 		}
 		
 		// bind to ready
 		else if( $$.is.fn(opts) ){
 			var ready = opts;
-			var data = $this.data("cytoscape");
+			var domEle = $this[0];
+			var reg = $$.getRegistrationForInstance( domEle );
+
+			if( !reg ){
+				reg = $$.registerInstance( domEle );
+			}
 			
-			if( data != null && data.cy != null && data.ready ){
+			if( reg && reg.cy && reg.ready ){
 				// already ready so just trigger now
-				ready.apply(data.cy, []);
+				reg.cy.trigger("ready", [], ready);
+
 			} else {
 				// not yet ready, so add to readies list
 				
-				if( data == null ){
-					data = {}
-				}
-				
-				if( data.readies == null ){
-					data.readies = [];
-				}
-				
-				data.readies.push(ready);
-				$(this).data("cytoscape", data);
+				reg.readies.push( ready );
 			} 
 			
 		}
@@ -40,7 +36,7 @@
 		else if( $$.is.plainObject(opts) ){
 			return $this.each(function(){
 				var options = $.extend({}, opts, {
-					container: $(this)
+					container: $(this)[0]
 				});
 			
 				cytoscape(options);
@@ -56,8 +52,8 @@
 			}
 			
 			$this.each(function(){
-				var data = $(this).data("cytoscape");
-				var cy = data.cy;
+				var reg = $$.getRegistrationForInstance( domEle );
+				var cy = reg.cy;
 				var fnName = opts;
 				
 				if( cy != null && $$.is.fn( cy[fnName] ) ){

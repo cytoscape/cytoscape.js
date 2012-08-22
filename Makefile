@@ -43,6 +43,7 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/is.js\
 	$(SRC_DIR)/util.js\
 	$(SRC_DIR)/math.js\
+	$(SRC_DIR)/instance-registration.js\
 	$(SRC_DIR)/extension.js\
 	$(SRC_DIR)/jquery-plugin.js\
 	$(SRC_DIR)/event.js\

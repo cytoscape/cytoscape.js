@@ -486,7 +486,6 @@
 	$$.styfn.getEmSizeInPixels = function(){
 		var cy = this._private.cy;
 		var domElement = cy.container();
-		domElement = domElement[0] || domElement; // in case we have a jQuery obj
 
 		if( window && domElement ){
 			var pxAsStr = window.getComputedStyle(domElement).getPropertyValue("font-size");
@@ -501,7 +500,6 @@
 	$$.styfn.containerCss = function( propName ){
 		var cy = this._private.cy;
 		var domElement = cy.container();
-		domElement = domElement[0] || domElement; // in case we have a jQuery obj
 
 		if( window && domElement ){
 			return window.getComputedStyle(domElement).getPropertyValue( propName );

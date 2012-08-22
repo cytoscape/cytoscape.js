@@ -1,5 +1,13 @@
 # cytoscape.js
 
+## Notice
+
+Cytoscape.js has undergone major refactoring, including a change in name from the previous "Cytoscape Web" name.  **The code in the repository is currently unstable and should not be used by developers.**
+
+Rest assured that we will continue development on the project to deliver a high-quality product.  You can still access the old Cytoscape Web 2 prerelease builds in the [Downloads section](https://github.com/cytoscape/cytoscape.js/downloads).  The documentation on the wiki can be used for those prerelease builds.
+
+We are working hard to make Cytoscape.js better and in shape for a full release very soon.  Watch or star the project to keep updated on the project.
+
 ## Documentation
 
 You can find the documentation in the [wiki](https://github.com/cytoscape/cytoscape.js/wiki).  This readme is mostly for developers of cytoscape.js.
@@ -27,6 +35,17 @@ modifications to the library, written by Samizdat Drafting Co., so that it
 would work with multiple instances of Cytoscape Web and that it would work
 on lesser browsers, like IE.  Information about this library can be found
 at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
+
+
+## Adding source files
+
+When adding source (.js) files to the repository, there are several files that should be updated accordingly:
+
+ * `Makefile` : Include the file in the build process so that the concatenated and minified files generated for distribution include the new file.
+
+ * `src/debug/index.html` : Update the `<script>` tag list with the file so that the debug page can continue to be used to visually test the library.
+
+ * `tests/index.html` : Update the list of JavaScript files that the testing framework considers to consistute the library.  Otherwise, the tests will almost certainly fail.
 
 
 ## Build dependencies

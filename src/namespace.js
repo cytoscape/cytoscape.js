@@ -4,7 +4,7 @@ var cytoscape;
 
 (function(){
 
-	// make the jQuery plugin grab what we define init to be later
+	// the object iteself is a function that init's an instance of cytoscape
 	cytoscape = function(){
 		return cytoscape.init.apply(cytoscape, arguments);
 	};
@@ -13,8 +13,8 @@ var cytoscape;
 	cytoscape.fn = {};
 
 	// TODO test that this works:
-	if( typeof exports !== 'undefined' ){ // expose as a commonjs module
-		exports = module.exports = cytoscape;
-	}
+	// if( typeof exports !== 'undefined' ){ // expose as a commonjs module
+	// 	exports = module.exports = cytoscape;
+	// }
 	
 })();

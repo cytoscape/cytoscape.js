@@ -16,10 +16,10 @@
 		var cy = params.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var $container = cy.container();
+		var container = cy.container();
 		
-		var width = $container.width();
-		var height = $container.height();
+		var width = container.clientWidth;
+		var height = container.clientHeight;
 
 		if( height == 0 || width == 0){
 			nodes.positions(function(){

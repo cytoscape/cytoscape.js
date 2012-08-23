@@ -15,7 +15,7 @@
 				return;
 			}
 			
-			this._private.renderer = new rendererProto( $.extend({}, options, {
+			this._private.renderer = new rendererProto( $$.util.extend({}, options, {
 				cy: cy,
 				style: cy._private.style,
 				

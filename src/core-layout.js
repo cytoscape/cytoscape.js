@@ -22,12 +22,12 @@
 		
 		initLayout: function( options ){
 			if( options == null ){
-				$.error("Layout options must be specified to run a layout");
+				$$.util.error("Layout options must be specified to run a layout");
 				return;
 			}
 			
 			if( options.name == null ){
-				$.error("A `name` must be specified to run a layout");
+				$$.util.error("A `name` must be specified to run a layout");
 				return;
 			}
 			
@@ -35,11 +35,11 @@
 			var layoutProto = $$.extension("layout", name);
 			
 			if( layoutProto == null ){
-				$.error("Can not apply layout: No such layout `%s` found; did you include its JS file?", name);
+				$$.util.error("Can not apply layout: No such layout `%s` found; did you include its JS file?", name);
 				return;
 			}
 			
-			this._private.layout = new layoutProto( $.extend({}, options, {
+			this._private.layout = new layoutProto( $$.util.extend({}, options, {
 				renderer: this._private.renderer,
 				cy: this
 			}) );

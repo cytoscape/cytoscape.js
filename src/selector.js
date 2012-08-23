@@ -1,8 +1,6 @@
 ;(function($$){
 		
-	// Selector
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
+
 	$$.fn.selector = function(map, options){
 		for( var name in map ){
 			var fn = map[name];
@@ -242,7 +240,7 @@
 					regex: subject,
 					populate: function(){
 						if( currentSubject != null && this.subject != this ){
-							$.error("Redefinition of subject in selector `%s`", selector);
+							$$.util.error("Redefinition of subject in selector `%s`", selector);
 							return false;
 						}
 
@@ -252,6 +250,15 @@
 
 				}
 			};
+
+			var j = 0;
+			for( var name in exprs ){
+				exprs[j] = exprs[name];
+				exprs[j].name = name;
+
+				j++;
+			}
+			exprs.length = j;
 
 			self._private.selectorText = selector;
 			var remaining = selector;
@@ -263,10 +270,12 @@
 				var match;
 				var name;
 				
-				$.each(exprs, function(n, e){ // n: name, e: expression
+				for( var j = 0; j < exprs.length; j++ ){
+					var e = exprs[j];
+					var n = e.name;
 
 					// ignore this expression if it doesn't meet the expectation function
-					if( $$.is.fn( expectation ) && !expectation(n, e) ){ return }
+					if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
 
 					var m = remaining.match(new RegExp( "^" + e.regex ));
 					
@@ -278,9 +287,9 @@
 						var consumed = m[0];
 						remaining = remaining.substring( consumed.length );								
 						
-						return false;
+						break; // we've consumed one expr, so we can return now
 					}
-				});
+				}
 				
 				return {
 					expr: expr,
@@ -306,7 +315,7 @@
 				var check = consumeExpr();
 				
 				if( check.expr == null ){
-					$.error("The selector `%s` is invalid", selector);
+					$$.util.error("The selector `%s` is invalid", selector);
 					return;
 				} else {
 					var args = [];

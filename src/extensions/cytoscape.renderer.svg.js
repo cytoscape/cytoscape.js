@@ -313,7 +313,7 @@
 	SvgRenderer.prototype.init = function(callback){
 		var self = this;
 		this.cy = this.options.cy;
-		var container = this.cy.container();
+		var container = $( this.cy.container() );
 		var svg = container.svg('get'); 
 		
 		this.container = container;
@@ -376,8 +376,8 @@
 		
 		// firefox fix :(
 		if( e.offsetX == null || e.offsetY == null ){
-			e.offsetX = e.pageX - self.cy.container().offset().left;
-			e.offsetY = e.pageY - self.cy.container().offset().top;
+			e.offsetX = e.pageX - $( self.cy.container() ).offset().left;
+			e.offsetY = e.pageY - $( self.cy.container() ).offset().top;
 		}
 	};
 	
@@ -623,7 +623,7 @@
 		
 		function point(e, i){
 			var x, y;
-			var offset = self.cy.container().offset();
+			var offset = $( self.cy.container() ).offset();
 			var touches = e.originalEvent.touches;
 			var touch = touches[ i ];
 			
@@ -952,8 +952,8 @@
 		var w = x2 - x1;
 		var h = y2 - y1;
 
-		var width = this.cy.container().width();
-		var height = this.cy.container().height();
+		var width = $( this.cy.container() ).width();
+		var height = $(this.cy.container() ).height();
 		
 		var scale = Math.min( width/w, height/h );
 		
@@ -1883,7 +1883,7 @@
 			opacity: 1
 		});
 		
-		var rect = this.svg.rect(0, 0, this.cy.container().width(), this.cy.container().height());
+		var rect = this.svg.rect(0, 0, $(this.cy.container()).width(), $(this.cy.container()).height());
 		this.svgRemove(rect);
 	};
 	
@@ -2408,7 +2408,7 @@
 		
 		
 		collection = collection.collection();
-		var container = this.cy.container();
+		var container = $( this.cy.container() );
 		var svg = container.svg('get');
 		var self = this;
 		var cy = this.options.cy;
@@ -2454,7 +2454,7 @@
 	SvgRenderer.prototype.removeElements = function(collection, updateMappers){
 		
 		
-		var container = this.cy.container();
+		var container = $( this.cy.container() );
 		var svg = container.svg('get');
 		var cy = this.options.cy;
 		var self = this;
@@ -2493,7 +2493,7 @@
 	};
 	
 	SvgRenderer.prototype.notify = function(params){
-		var container = this.options.cy.container();
+		var container = $( this.options.cy.container() );
 	
 		
 		
@@ -2547,7 +2547,7 @@
 	}
 	
 	SvgExporter.prototype.run = function(){
-		return this.options.cy.container().svg("get").toSVG();
+		return $( this.options.cy.container() ).svg("get").toSVG();
 	};
 	
 	$$("renderer", "svg", SvgRenderer);

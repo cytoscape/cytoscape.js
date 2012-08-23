@@ -41,7 +41,7 @@
 						for( var j = 0, jl = elesArray.length; j < jl; j++ ){
 							var json = elesArray[j];
 
-							var mjson = $.extend({}, json, { group: group });
+							var mjson = $$.util.extend({}, json, { group: group });
 							jsons.push( mjson );
 						}
 					} 

@@ -45,23 +45,29 @@
 		return registration;
 	};
 
-	$$.getRegistrationForInstance = function( instance ){
-		var id, domElement;
+	$$.getRegistrationForInstance = function( instance, domElement ){
+		var cy;
 
-		if( $$.is.domElement(instance) ){ // then find the reg by matching to the dom ele
+		if( $$.is.core(instance) ){
+			if( instance.registered() ){ // only want it if it's registered b/c if not it has no reg'd id
+				cy = instance;
+			}
+		} else if( $$.is.domElement(instance) ){
 			domElement = instance;
+		}
 
-			for( var i = $$.instances.length - 1; i >= 0; i-- ){
+		if( $$.is.core(cy) ){
+			var id = cy.instanceId();
+			return $$.instances[ id ];
+
+		} else if( $$.is.domElement(domElement) ){
+			for( var i = $$.instances.length - 1; i >= 0; i-- ){ // look backwards, since most recent is the one we want
 				var reg = $$.instances[i];
 
 				if( reg.domElement === domElement ){
 					return reg;
 				}
 			}
-		} else { // then just look up by id
-			id = instance;
-
-			return $$.instances[ id ];
 		}
 	};
 	

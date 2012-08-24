@@ -18,9 +18,7 @@
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
-			debugger;
 		} else { // then we have to register
-			debugger;
 			reg = $$.registerInstance( cy, container );
 		}
 		var readies = reg.readies;
@@ -38,6 +36,7 @@
 		
 		this._private = {
 			ready: false, // whether ready has been triggered
+			instanceId: null, // the registered instance id
 			options: options, // cached options
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
@@ -64,8 +63,9 @@
 
 		// initial load
 		cy.load(options.elements, function(){ // onready
+			cy.startAnimationLoop();
 			reg.ready = true;
-			
+
 			// bind all the ready handlers registered before creating this instance
 			for( var i = 0; i < readies.length; i++ ){
 				var fn = readies[i];
@@ -76,8 +76,6 @@
 			if( $$.is.fn( options.ready ) ){
 				cy.bind("ready", options.ready);
 			}
-
-			cy.startAnimationLoop();
 			
 			cy.trigger("ready");
 		}, options.done);
@@ -89,6 +87,18 @@
 	$$.fn.core({
 		ready: function(){
 			return this._private.ready;
+		},
+
+		registered: function(){
+			if( this._private && this._private.instanceId != null ){
+				return true;
+			} else {
+				return false;
+			}
+		},
+
+		registeredId: function(){
+			return this._private.instanceId;
 		},
 
 		getElementById: function( id ){

@@ -13,6 +13,8 @@
 		
 		// bind to ready
 		else if( $$.is.fn(opts) ){
+			//debugger;
+
 			var ready = opts;
 			var domEle = $this[0];
 			var reg = $$.getRegistrationForInstance( domEle );
@@ -21,7 +23,7 @@
 				reg = $$.registerInstance( domEle );
 			}
 			
-			if( reg && reg.cy && reg.ready ){
+			if( reg && reg.cy && reg.cy.ready() ){
 				// already ready so just trigger now
 				reg.cy.trigger("ready", [], ready);
 

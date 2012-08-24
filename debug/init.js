@@ -51,8 +51,8 @@ $(function(){
 			edges: [
 			]
 		},
-		ready: function(cy){
-			window.cy = cy;
+		ready: function(){
+			window.cy = this;
 			window.$$ = cytoscape;
 		}
 	};

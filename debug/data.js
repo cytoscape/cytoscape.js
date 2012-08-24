@@ -1,7 +1,7 @@
 $(function(){
 
 	$("#cytoscape").cy(function(e){
-		var cy = e.cy;
+		var cy = this;
 		
 		function displayElementData(element, position){
 			var content = '';

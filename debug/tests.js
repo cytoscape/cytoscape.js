@@ -1,8 +1,11 @@
 $(function(){
 
-	$("#cytoscape").cy(function(e){
-		var cy = e.cy;
+	$("#cytoscape").cy(function(){
+		var cy = this;
 
+		console.log('ready');
+
+		console.log(cy);
 		
 		var tests = {}; // name => setup
 		function test(options){

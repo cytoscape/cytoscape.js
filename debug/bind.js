@@ -1,7 +1,7 @@
 $(function(){
 	
 	$("#cytoscape").cy(function(e){
-		var cy = e.cy;
+		var cy = this;
 		
 		$("#bind-button").click(function(){
 			var action = $("#bind-type-select").val();

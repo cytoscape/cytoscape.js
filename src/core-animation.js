@@ -24,7 +24,7 @@
 				};
 			}
 			
-			var containerDom = cy.container()[0];
+			var containerDom = cy.container();
 			
 			function globalAnimationStep(){
 				function exec(){

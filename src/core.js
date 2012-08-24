@@ -28,10 +28,12 @@
 		options.layout = $$.util.extend( { name: "grid" }, options.layout );
 		options.renderer = $$.util.extend( { name: "svg" }, options.renderer );
 		
-		if( options.container == null ){
-			$$.util.error("Cytoscape.js must be called on an element");
-			return;
-		}
+		// TODO determine whether we need a check like this even though we allow running headless now
+		// 
+		// if( !$$.is.domElement(options.container) ){
+		// 	$$.util.error("Cytoscape.js must be called on an element");
+		// 	return;
+		// }
 		
 		this._private = {
 			ready: false, // whether ready has been triggered

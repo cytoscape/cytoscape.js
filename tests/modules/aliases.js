@@ -60,5 +60,58 @@ $v(function(jQuery, $, version){
 			}
 		});
 	});
+
+	asyncTest("Test plain w/o jQuery style", function(){
+		var container = document.getElementById("cytoscape");
+
+		cytoscape({
+			container: container,
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+				    { data : { foo: "the node" } }
+				]
+			},
+			ready: function(){
+				cy = this;
+
+				ok( cy != null, "Not null object" );
+				ok( cy.nodes().size() == 1, "Node is there" );
+				
+				start();
+			}
+		});
+
+	});
+
+	asyncTest("Test plain w/o jQuery style & no container", function(){
+		cytoscape({
+			renderer: {
+				name: "null"
+			},
+			layout: {
+				name: "null"
+			},
+			elements: {
+				nodes: [
+				    { data : { foo: "the node" } }
+				]
+			},
+			ready: function(){
+				cy = this;
+
+				ok( cy != null, "Not null object" );
+				ok( cy.nodes().size() == 1, "Node is there" );
+				
+				start();
+			}
+		});
+
+	});
 	
 });

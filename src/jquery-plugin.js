@@ -45,6 +45,7 @@
 		
 		// proxy a function call
 		else {
+			var domEle = $this[0];
 			var rets = [];
 			var args = [];
 			for(var i = 1; i < arguments.length; i++){
@@ -56,14 +57,14 @@
 				var cy = reg.cy;
 				var fnName = opts;
 				
-				if( cy != null && $$.is.fn( cy[fnName] ) ){
+				if( cy && $$.is.fn( cy[fnName] ) ){
 					var ret = cy[fnName].apply(cy, args);
 					rets.push(ret);
 				}
 			});
 			
 			// if only one instance, don't need to return array
-			if( rets.length == 1 ){
+			if( rets.length === 1 ){
 				rets = rets[0];
 			} else if( rets.length == 0 ){
 				rets = $(this);

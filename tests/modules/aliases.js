@@ -24,9 +24,8 @@ $v(function(jQuery, $, version){
 				    { data: { foo: "the node" } }
 				]
 			},
-			ready: function(cy){
-				console.log("tests");
-				console.log(cy);
+			ready: function(){
+				cy = this;
 				
 				ok( cy != null, "Not null object" );
 				ok( cy.nodes().size() == 1, "Node is there" );
@@ -50,7 +49,9 @@ $v(function(jQuery, $, version){
 				    { data : { foo: "the node" } }
 				]
 			},
-			ready: function(cy){
+			ready: function(){
+				cy = this;
+
 				ok( cy != null, "Not null object" );
 				ok( cy.nodes().size() == 1, "Node is there" );
 				ok( $("#cytoscape").cy("nodes").size() == 1, "Node is there via jQuery style" );

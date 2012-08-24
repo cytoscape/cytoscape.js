@@ -7,8 +7,8 @@
 	$$.instanceCounter = 0;
 	$$.lastInstanceTime;
 
-	$$.registerInstance = function( instance ){
-		var cy, domElement;
+	$$.registerInstance = function( instance, domElement ){
+		var cy;
 
 		if( $$.is.core(instance) ){
 			cy = instance;
@@ -51,7 +51,7 @@
 		if( $$.is.domElement(instance) ){ // then find the reg by matching to the dom ele
 			domElement = instance;
 
-			for( var i = 0; i < $$.instances.length; i++ ){
+			for( var i = $$.instances.length - 1; i >= 0; i-- ){
 				var reg = $$.instances[i];
 
 				if( reg.domElement === domElement ){

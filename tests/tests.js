@@ -72,7 +72,7 @@
 		module(name, {
 			setup: function(){
 				stop();
-				
+
 				$("#cytoscape").cytoscape({
 					renderer: {
 						name: "null"
@@ -92,7 +92,8 @@
 					    	{ data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
 						]
 					},
-					ready: function(cy){
+					ready: function(){
+						var cy = this;
 						window.cy = cy;
 						window.$$ = cytoscape;
 

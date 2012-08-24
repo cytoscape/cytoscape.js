@@ -23,8 +23,8 @@ $v(function(jQuery, $, version){
 						{ data: { id: "n1", foo: "what is this guy doing here" } }
 					]
 				}, 
-				ready: function(cy){
-					window.cy = cy;
+				ready: function(){
+					window.cy = this;
 					
 					equal( cy.elements().size(), 2, "3rd node not added" );
 					equal( cy.$("#n1").data("foo"), "one", "3rd node doesn't override 1st" );
@@ -48,7 +48,7 @@ $v(function(jQuery, $, version){
 				elements: {
 					edges: [ { data: { source: "n1", target: "n2" } } ]
 				},
-				ready: function(cy){
+				ready: function(){
 					ok( false, "Didn't get exception" );
 					
 					start();
@@ -75,7 +75,9 @@ $v(function(jQuery, $, version){
 					nodes: [ { data: { id: "n1" } } ],
 					edges: [ { data: { source: "n1", target: "n2" } } ]
 				},
-				ready: function(cy){
+				ready: function(){
+					window.cy = this;
+
 					ok( cy.edges().size() == 0, "There are no edges" );
 					ok( cy.nodes().size() == 1, "The node is still there" );
 					
@@ -100,7 +102,9 @@ $v(function(jQuery, $, version){
 				nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
 				edges: [ { data: { source: "n1", target: "n2" } } ]
 			},
-			ready: function(cy){
+			ready: function(){
+				window.cy = this;
+
 				ok( cy.edges().size() == 1, "The edge exists" );
 				ok( cy.nodes().size() == 2, "The nodes are still there" );
 				
@@ -122,7 +126,9 @@ $v(function(jQuery, $, version){
 			elements: {
 				nodes: [ { data: { id: "n1", parent: "n1" } } ]
 			},
-			ready: function(cy){
+			ready: function(){
+				window.cy = this;
+
 				equal( cy.$("#n1").parent().size(), 0, "n1 doesn't have parent" );
 				
 				start();
@@ -145,7 +151,9 @@ $v(function(jQuery, $, version){
 					{ data: { id: "n2", parent: "n1" } }
 				]
 			},
-			ready: function(cy){
+			ready: function(){
+				window.cy = this;
+
 				ok( cy.$("#n1").parent().same("#n2"), "n1 has parent n2" );
 				ok( cy.$("#n2").parent().size() === 0, "n2 has no parent since it creates a cycle" );
 				

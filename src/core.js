@@ -12,11 +12,13 @@
 			return new $$.Core(opts);
 		}
 
-		var reg = $$.getRegistrationForInstance(opts.container);
+		var container = opts.container;
+		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
+			reg.domElement = container;
 		} else { // then we have to register
-			reg = $$.registerInstance( this );
+			reg = $$.registerInstance( cy, container );
 		}
 		var readies = reg.readies;
 
@@ -32,7 +34,7 @@
 		}
 		
 		this._private = {
-			instanceId: reg.id, // the registered instance id (used for prev'ly reg'd ready fns)
+			ready: false, // whether ready has been triggered
 			options: options, // cached options
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
@@ -82,6 +84,10 @@
 	
 
 	$$.fn.core({
+		ready: function(){
+			return this._private.ready;
+		},
+
 		getElementById: function( id ){
 			var index = this._private.id2index[ id ];
 			if( index !== undefined ){

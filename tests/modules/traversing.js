@@ -139,7 +139,9 @@ $v(function(jQuery, $, version){
 					{ data: { id: "son2", parent: "father" } }
 				]
 			},
-			ready: function(cy){
+			ready: function(){
+				window.cy = this;
+
 				var f = cy.$("#father");
 				var s = cy.$("#son");
 				var g = cy.$("#grandson");

@@ -20,8 +20,8 @@ $v(function(jQuery, $, version){
 			elements: {
 				nodes: [{}, {}]
 			},
-			ready: function(cy){
-				window.cy = cy;
+			ready: function(){
+				window.cy = this;
 				
 				callback();
 				start();

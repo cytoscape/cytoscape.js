@@ -16,7 +16,7 @@
 		},
 		
 		plainObject: function(obj){
-			return obj != null && typeof obj === typeof {} && !$$.is.array(obj);
+			return obj != null && typeof obj === typeof {} && !$$.is.array(obj) && obj.constructor === Object;
 		},
 		
 		number: function(obj){

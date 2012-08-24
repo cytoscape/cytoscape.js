@@ -11,18 +11,19 @@
 		if( !(this instanceof $$.Core) ){
 			return new $$.Core(opts);
 		}
+		var cy = this;
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
+			debugger;
 		} else { // then we have to register
+			debugger;
 			reg = $$.registerInstance( cy, container );
 		}
 		var readies = reg.readies;
-
-		var cy = this;		
 
 		var options = opts;
 		options.layout = $$.util.extend( { name: "grid" }, options.layout );

@@ -7,7 +7,8 @@
 
 		// get object
 		if( opts === "get" ){
-			return $$.getRegistrationForInstance( $this[0] ).cy;
+			var reg = $$.getRegistrationForInstance( $this[0] );
+			return reg.cy;
 		}
 		
 		// bind to ready

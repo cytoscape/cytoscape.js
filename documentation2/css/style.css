@@ -1,0 +1,46 @@
+body {
+	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+}
+
+#navigation {
+	position: fixed;
+	left: 0;
+	top: 0;
+	height: 100%;
+	width: 14em;
+	background: #f5f5f5;
+	border-right: 2px solid #f0f0f0;
+	z-index: 1;
+}
+
+#content {
+	padding-left: 14em;
+	margin: 1em;
+}
+
+.title {
+	font-weight: 200;
+	font-size: 4em;
+	line-height: 1.25;
+}
+
+.subtitle {
+	font-weight: 200;
+}
+
+h1 {
+	font-size: 2em;
+	margin: 0.5em 0;
+	font-weight: 200;
+}
+
+h2 {
+	font-size: 1em;
+	margin: 1em 0;
+	font-weight: 200;
+}
+
+p {
+	margin: 1em 0;
+}

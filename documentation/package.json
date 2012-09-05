@@ -1,0 +1,9 @@
+{
+  "name": "docmaker",
+  "version": "0.0.0",
+  "main": "./docmaker.js",
+  "dependencies": {
+    "robotskirt": "0.2.5"
+  },
+  "private": true
+}

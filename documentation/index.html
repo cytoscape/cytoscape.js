@@ -7,10 +7,8 @@
 		<link href="css/font-awesome.css" rel="stylesheet" />
 		<link href="css/style.css" rel="stylesheet" />
 
-		<script src="js/jquery-1.8.0.min.js"></script>
-		<script src="js/handlebars-1.0.0.beta.6.js"></script>
-		<script src="js/doc-spec.js"></script>
-		<script src="js/doc-generator.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/scroll.js"></script>
 	</head>
 
 	<body>
@@ -23,19 +21,53 @@
 
 				
 					<div class="section lvl2"><a href="#introduction/about"><span class="icon-bookmark"></span> About</a></div>
+
+					
 				
 					<div class="section lvl2"><a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span> Cytoscape.js &amp; Cytoscape</a></div>
+
+					
 				
 					<div class="section lvl2"><a href="#introduction/contact"><span class="icon-bookmark"></span> Contact</a></div>
+
+					
 				
 					<div class="section lvl2"><a href="#introduction/licensing"><span class="icon-bookmark"></span> Licensing</a></div>
+
+					
 				
 			
+				<div class="section lvl1"><a href="#core"><span class="icon-bookmark"></span> Core</a></div>
+
+				
+					<div class="section lvl2"><a href="#core/notation"><span class="icon-bookmark"></span> Notation</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#core/initialisation"><span class="icon-bookmark"></span> Initialisation</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#core/viewport-manipulation"><span class="icon-bookmark"></span> Viewport manipulation</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span> cy.center()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span> cy.fit()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span> cy.pan()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span> cy.panBy()</a></div>
+					
+				
+			
+
+			<p><span class="icon-sign-blank"></span></p>
 		</div>
 
 		<div id="content">
 
-			<div class="title">Cytoscape.js <span class="version">2.0-beta</span></div>
+			<div class="title">Cytoscape.js <span class="version">2.0.0-alpha</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
 			<div class="links">
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -49,37 +81,436 @@
 
 				
 					<h2 id="introduction/about">About <a href="#introduction/about"><span class="icon-bookmark"></span></a></h2>
+<p>Cytoscape.js is an open-source <a href="http://en.wikipedia.org/wiki/Graph_theory">graph</a> visualisation library for the web.  It is written in JavaScript as a <a href="http://jquery.com">jQuery</a> library.
 
-<p>Cytoscape.js is an open-source <a href="http://en.wikipedia.org/wiki/Graph_theory">graph</a> visualisation library for the web.  It is written in JavaScript as a <a href="http://jquery.com">jQuery</a> library.</p>
+</p>
+<p>Cytoscape.js allows you to easily display graphs in your websites.  Because cytoscape.js allows the user to interact with the graph and the library allows the client to hook into user events, cytoscape.js is easily integrated into your webapp, especially since cytoscape.js supports both desktop browsers, like Chrome, and iOS browsers, like on the iPad.
 
-<p>Cytoscape.js allows you to easily display graphs in your websites.  Because cytoscape.js allows the user to interact with the graph and the library allows the client to hook into user events, cytoscape.js is easily integrated into your webapp, especially since cytoscape.js supports both desktop browsers, like Chrome, and iOS browsers, like on the iPad.</p>
+</p>
+<p>Cytoscape.js also has graph analysis in mind:  The library contains a slew of useful functions in graph theory.
 
-<p>Cytoscape.js also has graph analysis in mind:  The library contains a slew of useful functions in graph theory.</p>
+</p>
+<p>The library was developed at the <a href="http://tdccbr.med.utoronto.ca/">Donnelly Centre</a> at the <a href="http://www.utoronto.ca/">University of Toronto</a>.
 
-<p>The library was developed at the <a href="http://tdccbr.med.utoronto.ca/">Donnelly Centre</a> at the <a href="http://www.utoronto.ca/">University of Toronto</a>.</p>
-
+</p>
 <h2 id="introduction/cytoscape.js-amp-cytoscape">Cytoscape.js &amp; Cytoscape <a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span></a></h2>
+<p>Though cytoscape.js shares its name with Cytoscape, cytoscape.js is not Cytoscape.  cytoscape.js is a JavaScript library for <em>programmers</em>.  It is not an app for end-users, nor can you just copy-paste some code to &quot;automagically&quot; make you a webapp.
 
-<p>Though cytoscape.js shares its name with Cytoscape, cytoscape.js is not Cytoscape.  cytoscape.js is a JavaScript library for <em>programmers</em>.  It is not an app for end-users, nor can you just copy-paste some code to "automagically" make you a webapp.</p>
+</p>
+<p>Cytoscape.js is a jQuery UI plugin:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JS+jQuery code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in cytoscape.js &mdash; written in Java<em>Script</em>.
 
-<p>Cytoscape.js is a jQuery UI plugin:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JS+jQuery code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in cytoscape.js &mdash; written in Java_Script_.</p>
+</p>
+<p>We do follow some similar philosophies with Cytoscape:  Graph style and data should be separate, and the library should provide core functionality with extensions and plugins adding more functionality on top.
 
-<p>We do follow some similar philosophies with Cytoscape:  Graph style and data should be separate, and the library should provide core functionality with extensions and plugins adding more functionality on top.</p>
-
+</p>
 <h2 id="introduction/contact">Contact <a href="#introduction/contact"><span class="icon-bookmark"></span></a></h2>
+<p>The main developers of cytoscape.js are <a href="http://maxfranz.com">Max Franz</a> and Christian Lopes.  Please email <a href="mailto:maxkfranz@gmail.com">Max</a> if you are interested in contributing to cytoscape.js.
 
-<p>The main developers of cytoscape.js are <a href="http://maxfranz.com">Max Franz</a> and Christian Lopes.  Please email <a href="mailto%3amaxkfranz@gmail.com">Max</a> if you are interested in contributing to cytoscape.js.</p>
+</p>
+<p>If you want to ask a question about cytoscape.js, please <a href="http://stackoverflow.com/questions/ask?tags=cytoscape-web">ask it on Stack Overflow</a>, and tag your question with <a href="http://stackoverflow.com/questions/tagged/cytoscape-web"><code>cytoscape-web</code></a>.
 
-<p>If you want to ask a question about cytoscape.js, please <a href="http://stackoverflow.com/questions/ask?tags=cytoscape-web">ask it on Stack Overflow</a>, and tag your question with <a href="http://stackoverflow.com/questions/tagged/cytoscape-web"><code>cytoscape-web</code></a>.</p>
+</p>
+<p>If you want to contact the developers of cytoscape.js, please use the Google group, <a href="https://groups.google.com/forum/?fromgroups#!forum/cytoscapeweb">cytoscapeweb</a>.
 
-<p>If you want to contact the developers of cytoscape.js, please use the Google group, <a href="https://groups.google.com/forum/?fromgroups#!forum/cytoscapeweb">cytoscapeweb</a>.</p>
-
+</p>
 <h2 id="introduction/licensing">Licensing <a href="#introduction/licensing"><span class="icon-bookmark"></span></a></h2>
-
 <p>Cytoscape.js is licensed under the LGPL.  You can find the <a href="https://raw.github.com/cytoscape/cytoscapeweb/master/LGPL-LICENSE.txt">license</a> in the <a href="https://github.com/Cytoweb/cytoscapeweb">source repository</a>.</p>
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			
+				<h1 id="core">Core <a href="#core"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<p>The core object is your interface to the cytoscape.js visualisation.  It is your entry point to cytoscape.js:  All of cytoscape.js&#39;s features are accessed through this object.</p>
+
+				
+
+				
+				
+					<h2 id="core/notation">Notation <a href="#core/notation"><span class="icon-bookmark"></span></a></h2>
+
+					
+						<p>This is the documentation for the core cytoscape.js object, referred to throughout this documentation as <code>cy</code> (i.e. <code>var cy = ...</code>), as &quot;the core object&quot;, or simply as &quot;the core&quot;.
+
+</p>
+<p>There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below.
+
+</p>
+<ul>
+<li><code>cy.func()</code> : works for the core</li>
+<li><code>cy.background().func()</code> : works for the background</li>
+<li><code>eles.func()</code> : works for one or more elements (nodes and edges)<ul>
+<li><code>ele.func()</code> : works only for a single element (node or edge)</li>
+<li><code>nodes.func()</code> : works only for one or more nodes</li>
+<li><code>node.func()</code> : works only for a single node</li>
+<li><code>edges.func()</code> : works only for one or more edges</li>
+<li><code>edge.func()</code> : works only for a single edge</li>
+</ul>
+</li>
+</ul>
+
+					
+
+					
+
+				
+				
+				
+					<h2 id="core/initialisation">Initialisation <a href="#core/initialisation"><span class="icon-bookmark"></span></a></h2>
+
+					
+						<h3>Script includes</h3>
+<p>To use cytoscape.js in your HTML document, you must include the following JS:
+
+</p>
+<ul>
+<li><p>jQuery 1.4 or newer</p>
+</li>
+<li><p>One of</p>
+<ul>
+<li><p><code>cytoscape[.min].js</code></p>
+<p>Either the minified or unminified Cytoscape.js code <em>without any</em> dependencies.  When using this file, you must include the appropriate dependencies:  You&#39;ll need the dependencies of the SVG renderer.</p>
+<p>SVG renderer dependencies (found in the <code>lib</code> directory)</p>
+<ul>
+<li><code>2D.js</code></li>
+<li><code>jquery.color.js</code></li>
+<li><code>jquery.mousewheel.js</code></li>
+<li><code>jquery.svg.js</code></li>
+</ul>
+</li>
+<li><p><code>cytoscape.all[.min].js</code></p>
+<p>  Either the minified or unminified cytoscape.js code <em>with all</em> dependencies.  When using this file, you do not need to include any of the dependencies for the SVG renderer.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Getting started</h3>
+<p>You can initialise cytoscape.js on a HTML element using the traditional jQuery style: 
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({ // for some div with id &#39;cy&#39;
+  ready: function(cy){
+    // you can access the core object API through cy
+  },
+  ...
+});</code></pre>
+<p>This initialises cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
+
+</p>
+<p>For example, 
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options)
+  .css(&quot;background&quot;, &quot;red&quot;)
+  .css(&quot;border-color&quot;, &quot;black&quot;); // can use jquery functions on &#39;cy&#39; div</code></pre>
+<p>Because this style doesn&#39;t give you access to the <code>cy</code> object outside of the callback function, there is an option to get the <code>cy</code> object from a jQuery selector.
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options);
+var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;); // now we have a global reference to `cy`</code></pre>
+<p>Alternatively, you can call functions on the cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
+
+</p>
+<pre><code class="lang-js">// pattern: $(&quot;#cy&quot;).cytoscape(functionName, param1, param2, param3, ...)
+$(&quot;#cy&quot;).cytoscape(&quot;elements&quot;, &quot;[weight&gt;20]&quot;);
+cy.elements(&quot;[weight&gt;20]&quot;); // functionally the same as the above line</code></pre>
+<h3>The ready callback</h3>
+<p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.
+
+</p>
+<p>Because the <code>ready</code> event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in <code>options.ready</code>.
+
+</p>
+<pre><code class="lang-js">// in foo.js
+$(function(){ // on jquery ready
+
+  $(&quot;#cy&quot;).cytoscape(function(eventObject){ // on cytoscape.js ready on the `cy` div
+    // this code executes when cytoscape.js is ready even though we
+    // don&#39;t actually initialise cytoscape.js on the `cy` div until
+    // bar.js is loaded
+
+    var cy = this; // `this` holds the reference to the core object
+    var alsoCy = eventObject.cy; // you can access the core object also from the event
+
+    console.log(&quot;Ready, Freddie!&quot;);
+  });
+
+});
+
+// in bar.js (should be after foo.js in your js includes)
+$(function(){ // on jquery ready
+  $(&quot;#cy&quot;).cytoscape(options);
+});</code></pre>
+<h3>Initialisation options</h3>
+<p>An instance of cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
+  layout: { ... },
+  renderer: { ... },
+  style: { ... },
+  ready: function(cy){ ... },
+  elements: ...
+});</code></pre>
+<p><strong>layout</strong> : A <a href="ExtensionOptionsObject">layout options object</a>.  By default, the <a href="GridLayout">grid layout</a> is used with default options.
+
+</p>
+<p><strong>renderer</strong> : A <a href="ExtensionOptionsObject">renderer options object</a>.  By default, the <a href="SvgRenderer">SVG renderer</a> is used with default options.
+
+</p>
+<p><strong>style</strong> : A <a href="StyleObject">visual style object</a>.  The default style of the renderer specified in <code>renderer</code> is used by default.
+
+</p>
+<p><strong>ready</strong> : A callback function that is called when cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.
+
+</p>
+<p><strong>elements</strong> : A set of <a href="ElementObject">raw elements data object</a>.
+
+</p>
+<h3>Short alias</h3>
+<p>cytoscape.js can also be called using a shorter alias, <code>cy</code>, for convenience.
+
+</p>
+<p>For example:
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cy(options); // this line is functionally the same as the longer line below
+$(&quot;#cy&quot;).cytoscape(options);
+
+var cy = $(&quot;#cy&quot;).cy(&quot;get&quot;); // these lines are also the same
+var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;);
+
+$(&quot;#cy&quot;).cy(&quot;nodes&quot;, &quot;:selected&quot;); // these lines are also all the same
+$(&quot;#cy&quot;).cytoscape(&quot;nodes&quot;, &quot;:selected&quot;);
+$(&quot;#cy&quot;).cy(&quot;get&quot;).nodes(&quot;:selected&quot;);
+$(&quot;#cy&quot;).cytoscape(&quot;get&quot;).nodes(&quot;:selected&quot;);</code></pre>
+<p>It is important to note that if <code>jQuery.cy</code> or <code>jQuery.fn.cy</code> has already been defined, then cytoscape.js will not allow the use of the short <code>cy</code> alias to avoid naming collisions.  So if another jQuery plugin uses the <code>cy</code> name, then you have to use the full <code>cytoscape</code> name to use cytoscape.js.</p>
+
+					
+
+					
+
+				
+				
+				
+					<h2 id="core/viewport-manipulation">Viewport manipulation <a href="#core/viewport-manipulation"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.center">cy.center() <a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.center">Pans the graph to the centre of a collection.</div>
+
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.center()</div>
+										
+										<div class="descr">Centres on all elements in the graph.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.center( eles<span class="comma">, </span> )</div>
+										
+										<div class="descr">Centres on the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The collection to centre upon.</span>
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.
+
+</p>
+<h3>Examples</h3>
+<p>Centre the graph on node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
+cy.center(n0);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.fit">cy.fit() <a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.fit">Pans and zooms the graph to fit to a collection.</div>
+
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.fit()</div>
+										
+										<div class="descr">Fits to all elements in the graph.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.fit( eles<span class="comma">, </span> )</div>
+										
+										<div class="descr">Fits to the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The collection to fit to.</span>
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.
+
+</p>
+<h3>Examples</h3>
+<p>Centre the graph on node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
+cy.center(n0);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.pan">cy.pan() <a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.pan">Pans the graph to the specified rendered position.</div>
+
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.pan()</div>
+										
+										<div class="descr">Gets the current panning position.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.pan( renderedPosition<span class="comma">, </span> )</div>
+										
+										<div class="descr">Sets the current panning position.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">renderedPosition</span>
+													<span class="descr">The rendered position to pan the graph to.</span>
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function pans the graph viewport origin to the specified rendered pixel <a href="Position">position</a>.
+
+</p>
+<h3>Examples</h3>
+<p>Pan the graph to (100, 100) rendered pixels.
+</p>
+<pre><code class="lang-js">cy.pan({
+  x: 100, // note these fields work with the SVG renderer
+  y: 100  // but an alternate renderer may use different coordinates
+});
+
+console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.panBy">cy.panBy() <a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.panBy">Relatively pans the graph by a specified rendered position vector.</div>
+
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.panBy( renderedPosition<span class="comma">, </span> )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">renderedPosition</span>
+													<span class="descr">The rendered position vector to pan the graph by.</span>
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function shifts the viewport relatively by the specified position in rendered pixels.  That is, specifying a shift of 100 to the right means a translation of 100 on-screen pixels to the right.
+
+</p>
+<h3>Examples</h3>
+<p>Pan the graph 100 pixels to the right.
+</p>
+<pre><code class="lang-js">cy.panBy({
+  x: 100, // note these fields work with the SVG renderer
+  y: 0  // but an alternate renderer may use different coordinates
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+
+				
 				
 			
 			</div>
+
+			<p><span class="icon-sign-blank"></span></p>
 
 		</div>
 

@@ -1,6 +1,8 @@
 var fs = require('fs');
-var Converter = require('./js/Markdown.Converter').Converter;
-var converter = new Converter();
+// var Converter = require('./js/Markdown.Converter').Converter;
+// var converter = new Converter();
+var marked = require('marked');
+// var mdConvertor = require('node-markdown').Markdown;
 var Handlebars = require('./js/handlebars').Handlebars;
 var config = require('./docmaker.json');
 var encoding = 'utf8';
@@ -13,7 +15,9 @@ function md2html( file ){
   file = file.substr( file.length - 3 ) === '.md' ? file : file + '.md'; // add extension if need be
 
   var md = fs.readFileSync('./md/' + file, 'utf8');
-  var html = converter.makeHtml( md );
+  // var html = converter.makeHtml( md );
+  //var html = mdConvertor( md );
+  var html = marked( md );
 
   return html;
 }
@@ -36,7 +40,7 @@ function parseSubsections( section ){
   var matches = html.match(/\<h2\>.+?\<\/h2\>/g);
   var psubs = [];
 
-  for( var i = 0; i < matches.length; i++ ){
+  for( var i = 0; matches && i < matches.length; i++ ){
     var match = matches[i];
     var name = match.match(/\<h2\>(.+)\<\/h2\>/)[1];
     var id = toUrl(parentName) + '/' + toUrl(name);
@@ -54,7 +58,7 @@ function parseSubsections( section ){
   return psubs;
 }
 
-function compileMarkdown( config ){
+function compileConfig( config ){
   var sections = config.sections;
   var parent = config;
 
@@ -77,13 +81,49 @@ function compileMarkdown( config ){
       section.descr = md2html( section.mddescr );
     }
 
+    if( section.fns ){
+      var fns = section.fns;
+      for( var j = 0; j < fns.length; j++ ){
+        var fn = fns[j];
+
+        fn.id = section.id + '/' + fn.name;
+        fn.bookmark = makeBookmark( fn.id );
+
+        if( fn.md ){
+          fn.html = md2html( fn.md );
+
+          // the html for functions should only have h3 tags, not h1 or h2
+          fn.html = fn.html.replace(/\<h2\>/g, '<h3>');
+          fn.html = fn.html.replace(/\<\/h2\>/g, '</h3>');
+          fn.html = fn.html.replace(/\<h1\>/g, '<h3>');
+          fn.html = fn.html.replace(/\<\/h1\>/g, '</h3>');
+        }
+
+        if( fn.formats ){
+          var formats = fn.formats;
+
+          for( var k = 0; k < formats.length; k++ ){
+            var format = formats[k];
+
+            format.name = fn.name; // copy name to format
+          }
+        } // if
+        
+      } // for
+
+      // sort functions by name within a section
+      fns.sort(function(a, b){
+        return a.name.toLowerCase() > b.name.toLowerCase();
+      });
+    }
+
     if( section.sections ){ // then compile those subsections too
-      compileMarkdown( section );
+      compileConfig( section );
     }
   }
-};
+}
 
-compileMarkdown( config );
+compileConfig( config );
 
 var htmlTemplate = fs.readFileSync('./template.html', encoding);
 var template = Handlebars.compile( htmlTemplate );

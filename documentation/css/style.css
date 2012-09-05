@@ -1,6 +1,7 @@
 body {
 	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
+	overflow: hidden;
 }
 
 #navigation {
@@ -13,6 +14,7 @@ body {
 	border-right: 2px solid #f0f0f0;
 	z-index: 1;
 	padding: 0.25em;
+	overflow-y: auto;
 }
 
 #navigation .toc {
@@ -20,14 +22,25 @@ body {
 	margin: 0.5em 0;
 }
 
+#navigation .lvl1 {
+	margin-top: 0.5em;
+}
+
 #navigation .lvl2 {
 	margin-left: 1em;
 	font-size: 0.8em;
 }
 
+#navigation .lvl3 {
+	margin-left: 2em;
+	font-size: 0.8em;
+	font-family: Andale Mono, monospace;
+}
+
 #content {
-	padding-left: 14em;
-	margin: 1em;
+	margin-left: 15em;
+	overflow-y: auto;
+	height: 100%;
 }
 
 .title {
@@ -51,8 +64,8 @@ body {
 
 h1 {
 	font-size: 2em;
-	margin: 0.5em 0;
-	font-weight: bold;
+	margin: 1em 0 0.5em 0;
+	font-weight: 500;
 }
 
 h1 a {
@@ -61,12 +74,17 @@ h1 a {
 
 h2 {
 	font-size: 1.25em;
-	margin: 0.8em 0;
-	font-weight: bold;
+	margin: 1.6em 0 0.8em 0;
+	font-weight: 600;
 }
 
 h2 a {
 	font-size: 0.8em;
+}
+
+h3 {
+	font-weight: bold;
+	margin: 1em 0;
 }
 
 p {
@@ -76,6 +94,13 @@ p {
 a {
 	color: #4183C4;
 	text-decoration: none;
+}
+
+a:active {
+	background-color: #4183C4;
+	color: #fff;
+	border-radius: 0.125em;
+	box-shadow: 0 0 0 0.2em #4183C4;
 }
 
 code,
@@ -89,4 +114,53 @@ pre {
 
 pre {
 	margin: 1.25em 0;
+}
+
+pre code {
+	background: transparent;
+	border: 0;
+	font-size: 1em;
+}
+
+.function + .function {
+	margin-top: 2em;
+}
+
+.function .name {
+	font-family: Andale Mono, monospace;
+	font-weight: bold;
+}
+
+.function > .name {
+	
+}
+
+.function > .formats,
+.function > .details {
+	padding-left: 0.25em;
+	margin: 0.25em 1em;
+}
+
+.function .formats {
+	margin-top: 1em;
+	border: 1px solid #ddd;
+	background: #fafafa;
+	border-radius: 0.25em;
+}
+
+.function .comma:last-child {
+	display: none;
+}
+
+.function .args {
+	margin-left: 1em;
+	font-size: 0.8em;
+}
+
+.function .format {
+	margin-bottom: 0.5em;
+}
+
+.function .format > .descr {
+	font-size: 0.8em;
 }

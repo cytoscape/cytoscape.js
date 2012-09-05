@@ -1,0 +1,55 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<title>Cytoscape.js</title>
+
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="css/font-awesome.css" rel="stylesheet" />
+		<link href="css/style.css" rel="stylesheet" />
+
+		<script src="js/jquery-1.8.0.min.js"></script>
+		<script src="js/handlebars-1.0.0.beta.6.js"></script>
+		<script src="js/doc-spec.js"></script>
+		<script src="js/doc-generator.js"></script>
+	</head>
+
+	<body>
+
+		<div id="navigation">
+			<div class="toc">Table of contents</div>
+
+			{{#each sections}}
+				<div class="section lvl1"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+
+				{{#each sections}}
+					<div class="section lvl2"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+				{{/each}}
+			{{/each}}
+		</div>
+
+		<div id="content">
+
+			<div class="title">Cytoscape.js <span class="version">{{version}}</span></div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
+			<div class="links">
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="https://groups.google.com/forum/#!forum/cytoscapejs"><span class="icon-comments"></span> Google Group</a>
+			</div>
+
+			<div id="documentation">
+			{{#each sections}}
+				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
+
+				{{#if html}}
+					{{{html}}}
+				{{else}}
+					no html
+				{{/if}}
+			{{/each}}
+			</div>
+
+		</div>
+
+	</body>
+</html>

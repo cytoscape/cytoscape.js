@@ -1,0 +1,9 @@
+{
+  "version": "2.0-beta",
+  "sections": [
+    {
+      "name": "Introduction",
+      "md": "intro"
+    }
+  ]
+}

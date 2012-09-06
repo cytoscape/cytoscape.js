@@ -41,11 +41,7 @@
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array
 			listeners: [], // list of listeners
-			animation: { 
-				// normally shouldn't use collections here, but animation is not related
-				// to the functioning of Selectors, so it's ok
-				elements: null // elements queued or currently animated
-			},
+			aniEles: [], // array of elements being animated
 			scratch: {}, // scratch object for core
 			layout: null,
 			renderer: null,

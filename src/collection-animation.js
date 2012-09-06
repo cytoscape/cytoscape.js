@@ -29,6 +29,7 @@
 
 		animate: function( properties, params ){
 			var callTime = +new Date;
+			var cy = this._private.cy;
 			
 			for( var i = 0; i < this.length; i++ ){
 				var self = this[i];
@@ -39,9 +40,8 @@
 					x: pos.x,
 					y: pos.y
 				};
-				var startStyle = $$.util.copy( self.style() );
-				var structs = this.cy()._private; // TODO remove ref to `structs` after refactoring
-				
+				var startStyle = self.css();
+
 				params = $.extend(true, {}, {
 					duration: 400
 				}, params);
@@ -73,23 +73,27 @@
 					startStyle: startStyle
 				});
 				
-				structs.animation.elements = structs.animation.elements.add( self );
+				cy.addToAnimationPool( self );
 			}
 		}, // animate
 
 		stop: function(clearQueue, jumpToEnd){
 			this.each(function(){
 				var self = this;
-				
-				$.each(self._private.animation.current, function(i, animation){				
+				var anis = self._private.animation.current;
+
+				for( var i = 0; i < anis.length; i++ ){
+					var animation = anis[i];		
 					if( jumpToEnd ){
-						$.each(animation.properties, function(propertyName, property){
-							$.each(property, function(field, value){
+						for( var propertyName in animation.properties ){
+							var property = animation.properties[ propertyName ];
+							for( var field in property ){
+								var value = property[field];
 								self._private[propertyName][field] = value;
-							});
-						});
+							}
+						}
 					}
-				});
+				}
 				
 				self._private.animation.current = [];
 				

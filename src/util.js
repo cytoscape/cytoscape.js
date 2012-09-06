@@ -422,6 +422,24 @@
 				|| $$.util.hsl2tuple(color);
 		},
 
+		tuple2hex: function( tuple ){
+			var r = tuple[0];
+			var g = tuple[1];
+			var b = tuple[2];
+
+			function ch2hex( ch ){
+				var hex = ch.toString(16);
+
+				if( hex.length === 1 ){
+					hex = '0' + hex;
+				}
+
+				return hex;
+			}
+
+			return '#' + ch2hex(r) + ch2hex(g) + ch2hex(b);
+		},
+
 		regex: {
 			number: "(?:\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+)"
 		},

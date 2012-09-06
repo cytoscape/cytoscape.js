@@ -2,15 +2,25 @@
 	
 	$$.fn.core({
 		
+		addToAnimationPool: function( eles ){
+			var cy = this;
+			var aniEles = cy._private.aniEles;
+
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+
+				aniEles.push( ele );
+			}
+		},
+
 		startAnimationLoop: function(){
 			var cy = this;
-			var structs = this._private;
 			var stepDelay = 10;
 			var useTimeout = false;
 			var useRequestAnimationFrame = true;
 			
 			// initialise the list
-			structs.animation.elements = new $$.Collection( cy );
+			cy._private.aniEles = [];
 			
 			// TODO change this when standardised
 			var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
@@ -47,12 +57,14 @@
 			
 			function handleElements(now){
 				
-				structs.animation.elements.each(function(i, ele){
+				var eles = cy._private.aniEles;
+				for( var e = 0; e < eles.length; e++ ){
+					var ele = eles[e];
 					
 					// we might have errors if we edit animation.queue and animation.current
 					// for ele (i.e. by stopping)
-					try{
-						ele = ele.element(); // make sure we've actually got a Element
+					// try{
+
 						var current = ele._private.animation.current;
 						var queue = ele._private.animation.queue;
 						
@@ -83,37 +95,43 @@
 						}
 						
 						// call complete callbacks
-						$.each(completes, function(i, ani){
+						for( var i = 0; i < completes.length; i++ ){
+							var ani = completes[i];
 							var complete = ani.params.complete;
 
 							if( $$.is.fn(complete) ){
 								complete.apply( ele, [ now ] );
 							}
-						});
+						}
 						
-					} catch(e){
-						// do nothing
-					}
+					// } catch(e){
+					// 	// do nothing
+					// }
 					
-				}); // each element
+				} // each element
 				
 				
 				// notify renderer
-				if( structs.animation.elements.size() > 0 ){
+				if( eles.length > 0 ){
 					cy.notify({
 						type: "draw",
-						collection: structs.animation.elements
+						collection: new $$.Collection(cy, eles)
 					});
 				}
 				
 				// remove elements from list of currently animating if its queues are empty
-				structs.animation.elements = structs.animation.elements.filter(function(){
-					var ele = this;
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
 					var queue = ele._private.animation.queue;
 					var current = ele._private.animation.current;
+					var keepEle = current.length > 0 || queue.length > 0;
 					
-					return current.length > 0 || queue.length > 0;
-				});
+					if( !keepEle ){ // then remove from the array
+						eles.splice(i, 1);
+						i--;
+					}
+				}
+
 			} // handleElements
 				
 			function step( self, animation, now ){
@@ -122,7 +140,7 @@
 				var startTime = animation.callTime;
 				var percent;
 				
-				if( params.duration == 0 ){
+				if( params.duration === 0 ){
 					percent = 1;
 				} else {
 					percent = Math.min(1, (now - startTime)/params.duration);
@@ -134,11 +152,12 @@
 						var end = p.end;
 						
 						// for each field in end, update the current value
-						$.each(end, function(name, val){
+						for( var name in end ){
+							var val = end[name];
 							if( valid(start[name], end[name]) ){
 								self._private[p.field][name] = ease( start[name], end[name], percent );
 							}
-						});					
+						}				
 					}
 				}
 				
@@ -185,8 +204,8 @@
 				if( $$.is.number(start) && $$.is.number(end) ){
 					return start + (end - start) * percent;
 				} else if( (start) && (end) ){
-					var c1 = $.Color(start).fix().toRGB();
-					var c2 = $.Color(end).fix().toRGB();
+					var c1 = $$.util.color2tuple( start );
+					var c2 = $$.util.color2tuple( end );
 
 					function ch(ch1, ch2){
 						var diff = ch2 - ch1;
@@ -194,11 +213,11 @@
 						return Math.round( percent * diff + min );
 					}
 					
-					var r = ch( c1.red(), c2.red() );
-					var g = ch( c1.green(), c2.green() );
-					var b = ch( c1.blue(), c2.blue() );
+					var r = ch( c1[0], c2[0] );
+					var g = ch( c1[1], c2[1] );
+					var b = ch( c1[2], c2[2] );
 					
-					return $.Color([r, g, b], "RGB").toHEX().toString();
+					return $$.util.tuple2hex( [r, g, b] );
 				}
 				
 				return undefined;

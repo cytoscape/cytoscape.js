@@ -37,6 +37,10 @@
 					
 				
 			
+				<div class="section lvl1"><a href="#the-model"><span class="icon-bookmark"></span> The model</a></div>
+
+				
+			
 				<div class="section lvl1"><a href="#core"><span class="icon-bookmark"></span> Core</a></div>
 
 				
@@ -46,6 +50,20 @@
 				
 					<div class="section lvl2"><a href="#core/initialisation"><span class="icon-bookmark"></span> Initialisation</a></div>
 
+					
+				
+					<div class="section lvl2"><a href="#core/graph-manipulation"><span class="icon-bookmark"></span> Graph manipulation</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span> cy.$()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.add"><span class="icon-bookmark"></span> cy.add()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span> cy.collection()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span> cy.load()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark"></span> cy.remove()</a></div>
 					
 				
 					<div class="section lvl2"><a href="#core/viewport-manipulation"><span class="icon-bookmark"></span> Viewport manipulation</a></div>
@@ -58,6 +76,16 @@
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span> cy.pan()</a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span> cy.panBy()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.reset"><span class="icon-bookmark"></span> cy.reset()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span> cy.zoom()</a></div>
+					
+				
+					<div class="section lvl2"><a href="#core/events"><span class="icon-bookmark"></span> Events</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/events/cy.on"><span class="icon-bookmark"></span> cy.on()</a></div>
 					
 				
 			
@@ -130,6 +158,12 @@
 				
 				
 				
+				
+			
+				<h1 id="the-model">The model <a href="#the-model"><span class="icon-bookmark"></span></a></h1>
+
+				
+
 				
 			
 				<h1 id="core">Core <a href="#core"><span class="icon-bookmark"></span></a></h1>
@@ -307,6 +341,453 @@ $(&quot;#cy&quot;).cytoscape(&quot;get&quot;).nodes(&quot;:selected&quot;);</cod
 				
 				
 				
+					<h2 id="core/graph-manipulation">Graph manipulation <a href="#core/graph-manipulation"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.$">cy.$() <a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.$">Get elements in the graph matching a selector or a filter function.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.$( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.elements( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.nodes( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get nodes in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the nodes should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.edges( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get edges in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the edges should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.filter( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.filter( <span class="comma">, </span>function(i, ele) )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, ele)</span>
+													<span class="descr">The filter function that returns true for elements that should be returned.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The counter used for iteration over the elements in the graph.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The current element under consideration for filtering.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If no elements in the graph match the selector, an empty <a href="Collection">collection</a> is returned.
+
+</p>
+<p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It&#39;s just convenient to save you typing.
+
+</p>
+<h3>Examples</h3>
+<p>Get nodes with weight greater than 50:
+</p>
+<pre><code class="lang-js">var collection = cy.nodes(&quot;[weight&gt;50]&quot;);</code></pre>
+<p>Get edges with source node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var collection = cy.edges(&quot;[source=n0]&quot;);</code></pre>
+<p>Get all nodes and edges with weight greater than 50:
+</p>
+<pre><code class="lang-js">var collection = cy.elements(&quot;[weight&gt;50]&quot;);
+collection = cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line</code></pre>
+<p>Get nodes with weight greater than 50 with a filter function:
+</p>
+<pre><code class="lang-js">var collection = cy.filter(function(i, element){
+  if( element.isNode() &amp;&amp; element.data(&quot;weight&quot;) &gt; 50 ){
+    return true;
+  }
+  return false;
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.add">cy.add() <a href="#core/graph-manipulation/cy.add"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.add">Add elements to the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eleObj )</div>
+										
+										<div class="descr">Add a specified element to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObj</span>
+													<span class="descr">A plain object that specifies the element.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eleObjs )</div>
+										
+										<div class="descr">Add the specified elements to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObjs</span>
+													<span class="descr">An array of elements specified by plain objects.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Add the specified elements to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">A collection of elements.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If plain element objects are used, then <a href="ElementObject">a specific format for the objects</a> must be followed.  It is important to note that the <code>group</code> attribute must be specified for plain objects, as this function can not infer whether the elements added are nodes or edges.
+
+</p>
+<h3>Examples</h3>
+<p>Add a node from a plain object.
+
+</p>
+<pre><code class="lang-js">cy.add({ group: &quot;nodes&quot;, data: { id: &quot;n0&quot; } });</code></pre>
+<p>Add nodes and edges to the graph as plain objects:
+
+</p>
+<pre><code class="lang-js">// can use reference to eles later
+var eles = cy.add([
+  { group: &quot;nodes&quot;, data: { id: &quot;n0&quot; }, position: { x: 100, y: 100 } },
+  { group: &quot;nodes&quot;, data: { id: &quot;n1&quot; }, position: { x: 200, y: 200 } },
+  { group: &quot;edges&quot;, data: { id: &quot;e0&quot;, source: &quot;n0&quot;, target: &quot;n1&quot; } }
+]);</code></pre>
+<p>Add elements:
+
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n1&quot;);
+var n1 = cy.node(&quot;n2&quot;);
+var e0 = cy.edge(&quot;e0&quot;);
+n1.collection().add(n2).add(n3).remove(); // remove n0, n1, and e0
+
+var n1e0 = n1.collection().add(e0);
+cy.add(n0); // add a single element, n0
+cy.add(n1e0); // add the collection of n1 and e0</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.collection">cy.collection() <a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.collection">Return a new, empty collection.</div>
+
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function is useful for starting a collection that may have things added to it.
+
+</p>
+<h3>Examples</h3>
+<p>Keep a collection of nodes that have been clicked:
+</p>
+<pre><code class="lang-js">var collection = cy.collection();
+cy.nodes().live(&quot;click&quot;, function(){
+  collection = collection.add(this);
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.load">cy.load() <a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.load">Load a graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.load( <span class="comma">, </span>eleObjs [<span class="comma">, </span>load] [<span class="comma">, </span>done] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObjs</span>
+													<span class="descr">An array of plain objects that specify the elements to load.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">load</span>
+													<span class="descr">A callback function called when the graph has loaded.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">done</span>
+													<span class="descr">A callback function called after the graph is loaded and just after the layout finishes.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that <code>eleObjs</code> can be specified as an array with each element specifying its <code>group</code>, or alternatively, <code>eleObjs</code> can be specified as a <code>group</code>-indexed map.
+
+</p>
+<h3>Examples</h3>
+<p>As an array:
+</p>
+<pre><code class="lang-js">cy.load([
+  { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; },
+  { data: { id: &quot;n2&quot; }, group: &quot;nodes&quot; },
+  { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; }, group: &quot;edges&quot; }
+]);</code></pre>
+<p>As a <code>group</code>-indexed map:
+</p>
+<pre><code class="lang-js">cy.load({
+  nodes: [
+    { data: { id: &quot;n1&quot; } },
+    { data: { id: &quot;n2&quot; } }
+  ],
+
+  edges: [
+    { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; } }
+  ]
+});</code></pre>
+<p>With specified callbacks:
+</p>
+<pre><code class="lang-js">cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ], function(e){
+  console.log(&quot;cy loaded elements&quot;);
+}, function(e){
+  console.log(&quot;cy laid out elements&quot;);
+});</code></pre>
+<p>This is equivalent to:
+</p>
+<pre><code class="lang-js">cy.one(&quot;load&quot;, function(e){
+  console.log(&quot;cy loaded elements&quot;);
+}).one(&quot;layoutdone&quot;, function(e){
+  console.log(&quot;cy laid out elements&quot;);
+});
+
+cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.remove">cy.remove() <a href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.remove">Remove elements from the graph and return them.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.remove( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Remove the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">A collection of elements to remove.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.remove( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Remove elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">Elements matching this selector are removed.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, some functions will not work on removed elements.  For example, the <code>neighborhood</code> function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.
+
+</p>
+<h3>Examples</h3>
+<p>Remove an element:
+
+</p>
+<pre><code class="lang-js">var n0 = cy.nodes(&quot;#n0&quot;);
+cy.remove(n0);</code></pre>
+<p>Remove a collection:
+
+</p>
+<pre><code class="lang-js">var collection = cy.elements(&quot;node[weight&gt;50]&quot;);
+cy.remove(collection);</code></pre>
+<p>Remove elements matching a selector:
+
+</p>
+<pre><code class="lang-js">cy.remove(&quot;node[weight&gt;50]&quot;); // remove nodes with weight greater than 50</code></pre>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
 					<h2 id="core/viewport-manipulation">Viewport manipulation <a href="#core/viewport-manipulation"><span class="icon-bookmark"></span></a></h2>
 
 					
@@ -314,15 +795,16 @@ $(&quot;#cy&quot;).cytoscape(&quot;get&quot;).nodes(&quot;:selected&quot;);</cod
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.center">cy.center() <a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.center">Pans the graph to the centre of a collection.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.center">Pan the graph to the centre of a collection.</div>
 
+							
 							<div class="formats">
 								
 									<div class="format">
 										
 											<div class="name">cy.center()</div>
 										
-										<div class="descr">Centres on all elements in the graph.</div>
+										<div class="descr">Centre on all elements in the graph.</div>
 										<ul class="args">
 											
 										</ul>
@@ -330,20 +812,23 @@ $(&quot;#cy&quot;).cytoscape(&quot;get&quot;).nodes(&quot;:selected&quot;);</cod
 								
 									<div class="format">
 										
-											<div class="name">cy.center( eles<span class="comma">, </span> )</div>
+											<div class="name">cy.center( <span class="comma">, </span>eles )</div>
 										
-										<div class="descr">Centres on the specified elements.</div>
+										<div class="descr">Centre on the specified elements.</div>
 										<ul class="args">
 											
 												<li>
 													<span class="name">eles</span>
 													<span class="descr">The collection to centre upon.</span>
+
+													
 												</li>
 											
 										</ul>
 									</div>
 								
 							</div>
+							
 
 							<div class="details">
 								
@@ -363,15 +848,16 @@ cy.center(n0);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.fit">cy.fit() <a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.fit">Pans and zooms the graph to fit to a collection.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.fit">Pan and zooms the graph to fit to a collection.</div>
 
+							
 							<div class="formats">
 								
 									<div class="format">
 										
 											<div class="name">cy.fit()</div>
 										
-										<div class="descr">Fits to all elements in the graph.</div>
+										<div class="descr">Fit to all elements in the graph.</div>
 										<ul class="args">
 											
 										</ul>
@@ -379,20 +865,23 @@ cy.center(n0);</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">cy.fit( eles<span class="comma">, </span> )</div>
+											<div class="name">cy.fit( <span class="comma">, </span>eles )</div>
 										
-										<div class="descr">Fits to the specified elements.</div>
+										<div class="descr">Fit to the specified elements.</div>
 										<ul class="args">
 											
 												<li>
 													<span class="name">eles</span>
 													<span class="descr">The collection to fit to.</span>
+
+													
 												</li>
 											
 										</ul>
 									</div>
 								
 							</div>
+							
 
 							<div class="details">
 								
@@ -412,15 +901,16 @@ cy.center(n0);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.pan">cy.pan() <a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.pan">Pans the graph to the specified rendered position.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.pan">Get or set the panning position of the graph.</div>
 
+							
 							<div class="formats">
 								
 									<div class="format">
 										
 											<div class="name">cy.pan()</div>
 										
-										<div class="descr">Gets the current panning position.</div>
+										<div class="descr">Get the current panning position.</div>
 										<ul class="args">
 											
 										</ul>
@@ -428,20 +918,23 @@ cy.center(n0);</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">cy.pan( renderedPosition<span class="comma">, </span> )</div>
+											<div class="name">cy.pan( <span class="comma">, </span>renderedPosition )</div>
 										
-										<div class="descr">Sets the current panning position.</div>
+										<div class="descr">Set the current panning position.</div>
 										<ul class="args">
 											
 												<li>
 													<span class="name">renderedPosition</span>
 													<span class="descr">The rendered position to pan the graph to.</span>
+
+													
 												</li>
 											
 										</ul>
 									</div>
 								
 							</div>
+							
 
 							<div class="details">
 								
@@ -465,13 +958,14 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.panBy">cy.panBy() <a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.panBy">Relatively pans the graph by a specified rendered position vector.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.panBy">Relatively pan the graph by a specified rendered position vector.</div>
 
+							
 							<div class="formats">
 								
 									<div class="format">
 										
-											<div class="name">cy.panBy( renderedPosition<span class="comma">, </span> )</div>
+											<div class="name">cy.panBy( <span class="comma">, </span>renderedPosition )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -479,12 +973,15 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 												<li>
 													<span class="name">renderedPosition</span>
 													<span class="descr">The rendered position vector to pan the graph by.</span>
+
+													
 												</li>
 											
 										</ul>
 									</div>
 								
 							</div>
+							
 
 							<div class="details">
 								
@@ -500,6 +997,266 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
   y: 0  // but an alternate renderer may use different coordinates
 });</code></pre>
 
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.reset">cy.reset() <a href="#core/viewport-manipulation/cy.reset"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.reset">Reset the graph to the default zoom level and panning position.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.reset()</div>
+										
+										<div class="descr">Resets the zoom and pan.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This resets the viewport to its state when Cytoscape Web was last loaded with <a href="Core-load">cy.load()</a> &mdash; that is, the default viewport state or origin of the graph.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.pan( somePosition );
+cy.zoom( someZoomLevel );
+cy.reset(); // reset back to the viewport state at (1)</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.zoom">cy.zoom() <a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.zoom">Get or set the zoom level of the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom()</div>
+										
+										<div class="descr">Get the zoom level.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom( <span class="comma">, </span>level )</div>
+										
+										<div class="descr">Set the zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">level</span>
+													<span class="descr">The zoom level to set.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom( <span class="comma">, </span>options )</div>
+										
+										<div class="descr">Set the zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">The options for zooming.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">level</span>
+															<span class="descr">The zoom level to set.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">position</span>
+															<span class="descr">The position about which to zoom.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">renderedPosition</span>
+															<span class="descr">The rendered position about which to zoom.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>The zoom level must be a positive number.  Zoom levels that are not numbers are ignored; zoom levels that are numbers but outside of the range of valid zoom levels are considered to be the closest, valid zoom level.
+
+</p>
+<p>When zooming about a point via <code>cy.zoom( options )</code>, the options are defined as follows.
+
+</p>
+<p>For zooming about a <a href="PositionObject">rendered position</a> (i.e. a position on-screen):
+
+</p>
+<pre><code class="lang-js">var options = {
+  level: 2.0, // the zoom level
+  renderedPosition: { x: 100, y: 100 }
+};</code></pre>
+<p>For zooming about a <a href="PositionObject">model position</a>:
+
+</p>
+<pre><code class="lang-js">var options = {
+  level: 2.0, // the zoom level
+  position: { x: 500, y: 625 }
+};</code></pre>
+<p>For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.
+
+</p>
+<h3>Examples</h3>
+<p>Zoom in to factor 2
+</p>
+<pre><code class="lang-js">cy.zoom(2);</code></pre>
+<p>Zoom in to the minimum zoom factor
+</p>
+<pre><code class="lang-js">cy.zoom(0); // 0 is outside of the valid range and
+            // its closest valid level is the min</code></pre>
+<p>Zoom in to the maximum zoom factor
+</p>
+<pre><code class="lang-js">cy.zoom(1/0); // infinity is outside of the valid range and
+              // its closest valid level is the max</code></pre>
+<p>Zoom about a node
+</p>
+<pre><code class="lang-js">var pos = cy.nodes(&quot;#n0&quot;).position();
+cy.zoom({
+  level: 2.5,
+  position: pos
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="core/events">Events <a href="#core/events"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.on">cy.on() <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/events/cy.on">Bind to events that occur in the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													<span class="descr">The handler function that is called when one of the specified events occurs.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">evt</span>
+															<span class="descr">The event object.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
 								
 							</div>		
 						</div>

@@ -63,11 +63,12 @@
 							<div class="name" id="{{id}}">{{name}}() {{{bookmark}}}</div>
 							<div class="descr" id="{{id}}">{{{descr}}}</div>
 
+							{{#if formats}}
 							<div class="formats">
 								{{#each formats}}
 									<div class="format">
 										{{#if args}}
-											<div class="name">{{name}}( {{#each args}}{{name}}<span class="comma">, </span>{{/each}} )</div>
+											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{name}}{{#if optional}}]{{/if}}{{/each}} )</div>
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}
@@ -77,12 +78,24 @@
 												<li>
 													<span class="name">{{name}}</span>
 													<span class="descr">{{descr}}</span>
+
+													{{#if fields}}
+													<ul class="fields">
+														{{#each fields}}
+														<li>&ndash;
+															<span class="name">{{name}}</span>
+															<span class="descr">{{descr}}</span>
+														</li>
+														{{/each}}
+													</ul>
+													{{/if}}
 												</li>
 											{{/each}}
 										</ul>
 									</div>
 								{{/each}}
 							</div>
+							{{/if}}
 
 							<div class="details">
 								{{#if html}}

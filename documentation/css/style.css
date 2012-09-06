@@ -108,7 +108,7 @@ pre {
 	font-family: Andale Mono, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	font-size: 0.8em;
+	font-size: 0.9em;
 	background: #fafafa;
 }
 
@@ -148,7 +148,7 @@ pre code {
 	border-radius: 0.25em;
 }
 
-.function .comma:last-child {
+.function .comma:first-child {
 	display: none;
 }
 
@@ -163,4 +163,16 @@ pre code {
 
 .function .format > .descr {
 	font-size: 0.8em;
+}
+
+.args .name {
+	margin-right: 0.25em;
+}
+
+.args .fields {
+	margin-left: 1em;
+}
+
+.args .fields .name {
+	margin-left: 0.5em;
 }

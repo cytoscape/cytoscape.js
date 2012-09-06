@@ -2,10 +2,13 @@
   "version": "2.0.0-alpha",
 
   "templates": {
+    "TODO": "we are not using function templates yet but it might be nice"
   },
 
   "sections": [
     { "name": "Introduction", "md": "intro" },
+
+    { "name": "The model", "md": "model" },
 
     {
       "name": "Core",
@@ -14,33 +17,131 @@
       "sections": [
         { "name": "Notation", "md": "core/notation" },
         { "name": "Initialisation", "md": "core/init" },
+
+        {
+          "name": "Graph manipulation",
+          "fns": [
+            {
+              "name": "cy.add",
+              "descr": "Add elements to the graph.",
+              "formats": [
+                { "descr": "Add a specified element to the graph.", "args": [ { "name": "eleObj", "descr": "A plain object that specifies the element." } ] },
+                { "descr": "Add the specified elements to the graph.", "args": [ { "name": "eleObjs", "descr": "An array of elements specified by plain objects." } ] },
+                { "descr": "Add the specified elements to the graph.", "args": [ { "name": "eles", "descr": "A collection of elements." } ] }
+              ],
+              "md": "core/add"
+            },
+
+            {
+              "name": "cy.remove",
+              "descr": "Remove elements from the graph and return them.",
+              "formats": [
+                { "descr": "Remove the specified elements.", "args": [ { "name": "eles", "descr": "A collection of elements to remove." } ] },
+                { "descr": "Remove elements in the graph matching the specified selector.", "args": [ { "name": "selector", "descr": "Elements matching this selector are removed." } ] }
+              ],
+              "md": "core/remove"
+            },
+
+            {
+              "name": "cy.load",
+              "descr": "Load a graph.",
+              "formats": [
+                { "args": [
+                  { "name": "eleObjs", "descr": "An array of plain objects that specify the elements to load." },
+                  { "name": "load", "descr": "A callback function called when the graph has loaded.", "optional": true },
+                  { "name": "done", "descr": "A callback function called after the graph is loaded and just after the layout finishes.", "optional": true }
+                ] }
+              ],
+              "md": "core/load"
+            },
+
+            {
+              "name": "cy.collection",
+              "descr": "Return a new, empty collection.",
+              "md": "core/collection"
+            },
+
+            {
+              "name": "cy.$",
+              "descr": "Get elements in the graph matching a selector or a filter function.",
+              "formats": [
+                {
+                  "name": "cy.$",
+                  "descr": "Get elements in the graph matching the specified selector.",
+                  "args": [ { "name": "selector", "descr": "The selector the elements should match." } ]
+                },
+
+                {
+                  "name": "cy.elements",
+                  "descr": "Get elements in the graph matching the specified selector.",
+                  "args": [ { "name": "selector", "descr": "The selector the elements should match." } ]
+                },
+
+                {
+                  "name": "cy.nodes",
+                  "descr": "Get nodes in the graph matching the specified selector.",
+                  "args": [ { "name": "selector", "descr": "The selector the nodes should match." } ]
+                },
+
+                {
+                  "name": "cy.edges",
+                  "descr": "Get edges in the graph matching the specified selector.",
+                  "args": [ { "name": "selector", "descr": "The selector the edges should match." } ]
+                },
+
+                {
+                  "name": "cy.filter",
+                  "descr": "Get elements in the graph matching the specified selector.",
+                  "args": [ { "name": "selector", "descr": "The selector the elements should match." } ]
+                },
+
+                {
+                  "name": "cy.filter",
+                  "descr": "Get elements in the graph matching the specified selector.",
+                  "args": [
+                    { 
+                      "name": "function(i, ele)", 
+                      "descr": "The filter function that returns true for elements that should be returned.",
+                      "fields": [
+                        { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
+                        { "name": "ele", "descr": "The current element under consideration for filtering." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "core/elements"
+            }
+          ]
+        },
+
         { 
           "name": "Viewport manipulation",
 
           "fns": [
             {
               "name": "cy.center", 
-              "descr": "Pans the graph to the centre of a collection.",
+              "descr": "Pan the graph to the centre of a collection.",
               "formats": [
-                { "descr": "Centres on all elements in the graph." },
-                { "descr": "Centres on the specified elements.", "args": [ { "name": "eles", "descr": "The collection to centre upon." } ] }
+                { "descr": "Centre on all elements in the graph." },
+                { "descr": "Centre on the specified elements.", "args": [ { "name": "eles", "descr": "The collection to centre upon." } ] }
               ],
               "md": "core/center"
             },
 
             {
               "name": "cy.fit", 
-              "descr": "Pans and zooms the graph to fit to a collection.",
+              "descr": "Pan and zooms the graph to fit to a collection.",
               "formats": [
-                { "descr": "Fits to all elements in the graph." },
-                { "descr": "Fits to the specified elements.", "args": [ { "name": "eles", "descr": "The collection to fit to." } ] }
+                { "descr": "Fit to all elements in the graph." },
+                { "descr": "Fit to the specified elements.", "args": [ { "name": "eles", "descr": "The collection to fit to." } ] }
               ],
               "md": "core/center"
             },
 
             {
               "name": "cy.panBy", 
-              "descr": "Relatively pans the graph by a specified rendered position vector.",
+              "descr": "Relatively pan the graph by a specified rendered position vector.",
               "formats": [
                 { "args": [ { "name": "renderedPosition", "descr": "The rendered position vector to pan the graph by." } ] }
               ],
@@ -49,16 +150,149 @@
 
             {
               "name": "cy.pan", 
-              "descr": "Pans the graph to the specified rendered position.",
+              "descr": "Get or set the panning position of the graph.",
               "formats": [
-                { "descr": "Gets the current panning position." },
-                { "descr": "Sets the current panning position.", "args": [ { "name": "renderedPosition", "descr": "The rendered position to pan the graph to." } ] }
+                { "descr": "Get the current panning position." },
+                { "descr": "Set the current panning position.", "args": [ { "name": "renderedPosition", "descr": "The rendered position to pan the graph to." } ] }
               ],
               "md": "core/pan"
+            },
+
+            {
+              "name": "cy.reset", 
+              "descr": "Reset the graph to the default zoom level and panning position.",
+              "formats": [
+                { "descr": "Resets the zoom and pan." }
+              ],
+              "md": "core/reset"
+            },
+
+            {
+              "name": "cy.zoom", 
+              "descr": "Get or set the zoom level of the graph.",
+              "formats": [
+                { "descr": "Get the zoom level." },
+                { "descr": "Set the zoom level.", "args": [ { "name": "level", "descr": "The zoom level to set." } ] },
+                {
+                  "descr": "Set the zoom level.",
+                  "args": [
+                    { 
+                      "name": "options",
+                      "descr": "The options for zooming.",
+                      "fields": [
+                        { "name": "level", "descr": "The zoom level to set." },
+                        { "name": "position", "descr": "The position about which to zoom." },
+                        { "name": "renderedPosition", "descr": "The rendered position about which to zoom." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "core/zoom"
             }
           ]
 
+        },
+
+        {
+          "name": "Events",
+
+          "fns": [
+            {
+              "name": "cy.on",
+              "descr": "Bind to events that occur in the graph.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/on"
+            },
+
+            {
+              "name": "cy.one",
+              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/one"
+            },
+
+            {
+              "name": "cy.off",
+              "descr": "Remove event handlers.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/off"
+            },
+
+            {
+              "name": "cy.trigger",
+              "descr": "Trigger one or more events.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/off"
+            }
+
+
+          ]
         }
+
+
       ]
     }
 

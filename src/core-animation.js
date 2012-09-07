@@ -157,22 +157,40 @@
 							if( valid(start[name], end[name]) ){
 								self._private[p.field][name] = ease( start[name], end[name], percent );
 							}
-						}				
+						}
 					}
 				}
 				
 				if( properties.delay == null ){
-					update({
-						end: properties.position,
-						start: animation.startPosition,
-						field: "position"
-					});
-					
-					update({
-						end: properties.bypass,
-						start: animation.startStyle,
-						field: "bypass"
-					});
+
+					// update the position
+					var startPos = animation.startPosition;
+					var endPos = properties.position;
+					var pos = self._private.position;
+					if( endPos ){
+						if( valid( startPos.x, endPos.x ) ){
+							pos.x = ease( startPos.x, endPos.x );
+						}
+
+						if( valid( startPos.y, endPos.y ) ){
+							pos.y = ease( startPos.y, endPos.y );
+						}
+					}
+
+					if( properties.css ){
+						var props = $$.style.properties;
+						for( var i = 0; i < props; i++ ){
+							var name = props[i].name;
+							var end = properties.css[ name ];
+
+							if( end !== undefined ){
+								var start = animation.startStyle[ name ];
+								var easedVal = ease( start, end, percent );
+								
+								$$.style.applyBypass( self, name, easedVal );
+							}
+						} // for props
+					} // if 
 				}
 				
 				if( $$.is.fn(params.step) ){
@@ -203,9 +221,10 @@
 			function ease(start, end, percent){
 				if( $$.is.number(start) && $$.is.number(end) ){
 					return start + (end - start) * percent;
-				} else if( (start) && (end) ){
-					var c1 = $$.util.color2tuple( start );
-					var c2 = $$.util.color2tuple( end );
+
+				} else if( $$.is.number(start[0]) && $$.is.number(end[0]) ){ // then assume a colour
+					var c1 = start;
+					var c2 = end;
 
 					function ch(ch1, ch2){
 						var diff = ch2 - ch1;

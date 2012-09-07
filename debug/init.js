@@ -16,6 +16,12 @@ $(function(){
 				.css({
 					"content": "data(id)"
 				})
+			.selector("edge")
+				.css({
+					"width": "mapData(weight, 0, 100, 1, 5)",
+					"target-arrow-shape": "triangle",
+					"source-arrow-shape": "circle"
+				})
 			.selector(":selected")
 				.css({
 					"background-color": "#000",

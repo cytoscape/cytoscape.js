@@ -110,6 +110,24 @@
 		return style;
 	};
 
+	$$.Stylesheet.prototype.assignToStyle = function( style ){
+		style.clear();
+
+		for( var i = 0; i < this.length; i++ ){
+			var context = this[i];
+			var selector = context.selector;
+			var props = context.properties;
+
+			style.selector(selector); // apply selector
+
+			for( var j = 0; j < props.length; j++ ){
+				var prop = props[j];
+
+				style.css( prop.name, prop.value ); // apply property
+			}
+		}
+	};
+
 	(function(){
 		var number = $$.util.regex.number;
 
@@ -281,6 +299,13 @@
 		this.length = 0;
 
 		return this; // chaining
+	};
+
+	$$.styfn.resetToDefault = function(){
+		this.clear();
+		this.addDefaultStylesheet();
+
+		return this;
 	};
 
 	// builds a style object for the "core" selector
@@ -804,6 +829,33 @@
 		}
 	};
 
+	// gets the value style for an element (useful for things like animations)
+	$$.styfn.getValueStyle = function( ele ){
+		var rstyle, style;
+
+		if( $$.is.element(ele) ){
+			rstyle = {};
+			style = ele._private.style;		
+		} else {
+			rstyle = {};
+			style = ele; // just passed the style itself
+		}
+
+		if( style ){
+			for( var i = 0; i < $$.style.properties.length; i++ ){
+				var prop = $$.style.properties[i];
+				var styleProp = style[ prop.name ];
+
+				if( styleProp ){
+					rstyle[ prop.name ] = styleProp.value;
+					rstyle[ $$.util.dash2camel(prop.name) ] = styleProp.value;
+				}
+			}
+		}
+
+		return rstyle;
+	};
+
 	// just update the functional properties (i.e. mappings) in the elements'
 	// styles (less expensive than recalculation)
 	$$.styfn.updateFunctionalProperties = function( eles ){
@@ -890,6 +942,21 @@
 		}
 
 		return ret;
+	};
+
+	$$.styfn.removeAllBypasses = function( eles ){
+		for( var i = 0; i < $$.style.properties.length; i++ ){
+			var prop = $$.style.properties[i];
+			var name = prop.name;
+			var value = ""; // empty => remove bypass
+
+			var parsedProp = this.parse(name, value, true);
+
+			for( var j = 0; j < eles.length; j++ ){
+				var ele = eles[j];
+				this.applyParsedProperty(ele, parsedProp);
+			}
+		}
 	};
 
 	$$.styfn.calculateControlPoints2 = function(edgeSet) {

@@ -8,10 +8,7 @@
 			var style = cy.style();
 			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
-			for( var i = 0; i < this.length; i++ ){
-				var ele = this[i];
-				style.apply( ele );
-			}
+			style.apply( this );
 
 			if( notifyRenderer ){
 				this.rtrigger("style"); // let renderer know we changed style
@@ -216,6 +213,17 @@
 			}
 
 			return this; // chaining
+		},
+
+		removeCss: function(){
+			var style = this.cy().style();
+			var eles = this;
+
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+
+				style.removeAllBypasses( ele );
+			}
 		},
 
 		show: function(){

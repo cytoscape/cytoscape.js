@@ -293,13 +293,14 @@ $(function(){
 			setup: function(){
 				var on = false;
 				
-				cy.background().bind("click", function(){
+				cy.bind("click", function(){
 					
+					console.log('click');
+
 					if( !on ){
 						cy.nodes().stop().animate({
-							bypass: {
-								fillColor: "red",
-								labelFillColor: "red",
+							css: {
+								backgroundColor: "red",
 								height: 50,
 								width: 50
 							}
@@ -310,15 +311,15 @@ $(function(){
 						
 						on = true;
 					} else {
-						cy.nodes().stop().removeBypass();
+						cy.nodes().stop().removeCss();
 						on = false;
 					}
 					
 				});
 			},
 			teardown: function(){
-				cy.background().unbind("click");
-				cy.nodes().removeBypass();
+				cy.unbind("click");
+				cy.nodes().removeCss();
 			}
 		});
 		
@@ -328,69 +329,10 @@ $(function(){
 			description: "Change the visual style and make sure it takes effect",
 			setup: function(){
 				
-				var edgeColor = {
-					defaultValue: "blue",
-					continuousMapper: {
-						attr: {
-							name: "weight"
-						},
-						mapped: {
-							min: "blue",
-							max: "red"
-						}
-					}
-				};
-				
-				cy.style({
-					selectors: {
-						"node": {
-							shape: "rectangle",
-							fillColor: "lightblue",
-							borderColor: "black",
-							borderWidth: 1,
-							width: {
-								defaultValue: 10,
-								continuousMapper: {
-									attr: {
-										name: "weight",
-										min: 20,
-										max: 100
-									},
-									mapped: {
-										min: 20,
-										max: 100
-									}
-								}
-							},
-							height: 20,
-							labelFontWeight: "normal",
-							labelFontSize: "0.75em",
-							labelText: {
-								defaultValue: "",
-								customMapper: function(data){
-									return Math.round( data.weight );
-								}
-							},
-							labelValign: "middle",
-							labelHalign: "middle"
-						},
-						"node:selected": {
-							borderWidth: 3
-						},
-						"edge": {
-							lineColor: edgeColor,
-							targetArrowShape: "triangle",
-							targetArrowColor: edgeColor
-						},
-						"edge:selected": {
-							width: 3
-						}
-					}
-				});
-
 				var length = cy.style().length;
 
 				cy.style()
+					.resetToDefault()
 					.selector("node")
 						.css({
 							shape: "rectangle",
@@ -414,19 +356,19 @@ $(function(){
 						.css({
 							width: 3
 						})
+					.selector("node:selected")
+						.css({
+							borderWidth: 3
+						})
 					.update()
 				;
 			},
 
 			teardown: function(){
-				var style = cy.style();
-				var size = 3;
+				var stylesheet = window.options.style;
+				var style = cy.style;
 
-				for( var i = 0; i < size; i++ ){
-					delete style[style.length - 1 - i];
-				}
-				style.length -= size;
-
+				stylesheet.assignToStyle( style );
 				style.update();
 			}
 		});

@@ -19,32 +19,36 @@
 		},
 
 		delay: function( time, complete ){
-			return this.animate({
+			this.animate({
 				delay: time
 			}, {
 				duration: time,
 				complete: complete
 			});
+
+			return this;
 		},
 
 		animate: function( properties, params ){
 			var callTime = +new Date;
 			var cy = this._private.cy;
+			var style = cy.style();
+
+			debugger;
 			
 			for( var i = 0; i < this.length; i++ ){
 				var self = this[i];
 
-				var self = this;
 				var pos = self._private.position;
 				var startPosition = {
 					x: pos.x,
 					y: pos.y
 				};
-				var startStyle = self.css();
+				var startStyle = style.getValueStyle( self );
 
-				params = $.extend(true, {}, {
-					duration: 400
-				}, params);
+				if( params.duration === undefined ){
+					params.duration = 400;
+				}
 				
 				switch( params.duration ){
 				case "slow":
@@ -55,8 +59,8 @@
 					break;
 				}
 				
-				if( properties == null || (properties.position == null && properties.bypass == null && properties.delay == null) ){
-					return; // nothing to animate
+				if( properties == null || (properties.position == null && properties.css == null && properties.delay == null) ){
+					continue; // nothing to animate
 				}
 				
 				if( self.animated() && (params.queue === undefined || params.queue) ){
@@ -65,6 +69,10 @@
 					q = self._private.animation.current;
 				}
 				
+				if( properties.css ){
+					properties.css = style.getValueStyle( properties.css );
+				}
+
 				q.push({
 					properties: properties,
 					params: params,
@@ -75,32 +83,29 @@
 				
 				cy.addToAnimationPool( self );
 			}
+
+			return this; // chaining
 		}, // animate
 
 		stop: function(clearQueue, jumpToEnd){
-			this.each(function(){
-				var self = this;
+			for( var i = 0; i < this.length; i++ ){
+				var self = this[i];
 				var anis = self._private.animation.current;
 
-				for( var i = 0; i < anis.length; i++ ){
-					var animation = anis[i];		
+				for( var j = 0; j < anis.length; j++ ){
+					var animation = anis[j];		
 					if( jumpToEnd ){
-						for( var propertyName in animation.properties ){
-							var property = animation.properties[ propertyName ];
-							for( var field in property ){
-								var value = property[field];
-								self._private[propertyName][field] = value;
-							}
-						}
+						// next iteration of the animation loop, the animation
+						// will go straight to the end and be removed
+						animation.params.duration = 0; 
 					}
 				}
 				
-				self._private.animation.current = [];
-				
+				// clear the queue of future animations
 				if( clearQueue ){
 					self._private.animation.queue = [];
 				}
-			});
+			}
 			
 			// we have to notify (the animation loop doesn't do it for us on `stop`)
 			this.cy().notify({

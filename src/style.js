@@ -1021,9 +1021,9 @@
 				// and North of the node
 				
 				edge._private.rscratch.cp2ax = srcPos.x;
-				edge._private.rscratch.cp2ay = srcPos.y - 1.3 * stepSize;
+				edge._private.rscratch.cp2ay = srcPos.y - 1.3 * stepSize * (i / 3 + 1);
 				
-				edge._private.rscratch.cp2cx = srcPos.x - 1.3 * stepSize;
+				edge._private.rscratch.cp2cx = srcPos.x - 1.3 * stepSize * (i / 3 + 1);
 				edge._private.rscratch.cp2cy = srcPos.y;
 				
 				edge._private.rscratch.selfEdgeMidX =

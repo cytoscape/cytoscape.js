@@ -1241,9 +1241,9 @@
 	
 	arrowShapeDrawers["arrow"] = function(context) {
 		// context.scale(context.lineWidth, context.lineWidth);
-		context.lineTo(-0.2, 0.4);
+		context.lineTo(-0.15, 0.3);
 		context.lineTo(0, 0);
-		context.lineTo(0.2, 0.4);
+		context.lineTo(0.15, 0.3);
 	}
 	arrowShapeSpacing["arrow"] = 0;
 	arrowShapeGap["arrow"] = 4;
@@ -1255,6 +1255,13 @@
 	arrowShapeDrawers["none"] = function(context) {};
 	arrowShapeSpacing["none"] = 0;
 	arrowShapeGap["none"] = 0;
+	
+	arrowShapeDrawers["circle"] = function(context) {
+		context.translate(0, -0.15);
+		context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
+	};
+	arrowShapeSpacing["circle"] = 0;
+	arrowShapeGap["circle"] = 0.1;
 	
 	arrowShapeDrawers["inhibitor"] = function(context) {
 		// context.scale(context.lineWidth, context.lineWidth);

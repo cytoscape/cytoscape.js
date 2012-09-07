@@ -76,6 +76,8 @@
 	var minDistanceNodeValue = 999;
 	
 	var arrowShapeDrawers = {};
+	var arrowShapeSpacing = {};
+	var arrowShapeGap = {};
 	var nodeShapeDrawers = {};
 	var nodeShapeIntersectLine = {};
 	var nodeShapePoints = {};
@@ -112,7 +114,7 @@
 //		console.log("notify call: " + params);
 //		console.log(params);
 		
-		var redrawEvents = ["draw", "viewport", "add"];
+		var redrawEvents = ["draw", "viewport", "add", "style"];
 		
 		switch (params.type) {
 			case "load":
@@ -132,6 +134,7 @@
 				break;
 			case "style":
 				// this.redraw();
+				doSingleRedraw = true;
 				break;
 			case "add":
 //				this.initStyle();
@@ -976,13 +979,6 @@
 		var container = this.options.cy.container();
 		var canvas2d = document.createElement("canvas");
 		
-		console.log(canvas2d);
-		console.log(canvas2d);
-		console.log(2);
-		console.log(container);
-		console.log(container);
-		console.log(2);
-		
 		canvas2d.width = container.clientHeight;
 		canvas2d.height = container.clientWidth;
 		
@@ -1244,26 +1240,35 @@
 	}
 	
 	arrowShapeDrawers["arrow"] = function(context) {
-		context.translate(0, 0);
-		context.scale(2, 2);
+		// context.scale(context.lineWidth, context.lineWidth);
 		context.lineTo(-0.2, 0.4);
 		context.lineTo(0, 0);
 		context.lineTo(0.2, 0.4);
 	}
+	arrowShapeSpacing["arrow"] = 0;
+	arrowShapeGap["arrow"] = 4;
 	
 	arrowShapeDrawers["triangle"] = arrowShapeDrawers["arrow"];
+	arrowShapeSpacing["triangle"] = arrowShapeSpacing["arrow"];
+	arrowShapeGap["triangle"] = arrowShapeGap["arrow"];
 	
 	arrowShapeDrawers["none"] = function(context) {};
+	arrowShapeSpacing["none"] = 0;
+	arrowShapeGap["none"] = 0;
 	
 	arrowShapeDrawers["inhibitor"] = function(context) {
-		context.scale(1, 0.5);
-		context.lineTo(-1.5, 0);
-		context.lineTo(-1.5, -0.1);
-		context.lineTo(1.5, -0.1);
-		context.lineTo(1.5, 0);
+		// context.scale(context.lineWidth, context.lineWidth);
+		context.lineTo(-0.25, 0);
+		context.lineTo(-0.25, -0.1);
+		context.lineTo(0.25, -0.1);
+		context.lineTo(0.25, 0);
 	}
+	arrowShapeSpacing["inhibitor"] = 4;
+	arrowShapeGap["inhibitor"] = 4;
 	
 	arrowShapeDrawers["tee"] = arrowShapeDrawers["inhibitor"];
+	arrowShapeSpacing["tee"] = arrowShapeSpacing["inhibitor"];
+	arrowShapeGap["tee"] = arrowShapeGap["inhibitor"];
 	
 	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
@@ -1284,15 +1289,16 @@
 		
 		context.moveTo(0, 0);
 		context.rotate(-angle);
-		context.scale(2, 2.1);
+		context.scale(context.lineWidth * 12, context.lineWidth * 12.1);
+		
 		context.beginPath();
 		
 		arrowShapeDrawers[shape](context);
 		
 		context.closePath();
 		
-		context.stroke();
-//		context.fill();
+//		context.stroke();
+		context.fill();
 		context.restore();
 	}
 	
@@ -1316,25 +1322,47 @@
 		
 		if (edge._private.rscratch.isSelfEdge) {
 			
-			intersect = this.findIntersection(
-				edge._private.rscratch.cp2cx,
-				edge._private.rscratch.cp2cy,
-				end[0],
-				end[1],
-				targetRadius);
-		
-			edge._private.rscratch.endX = intersect[0];
-			edge._private.rscratch.endY = intersect[1];
+			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
+			
+			intersect = nodeShapeIntersectLine[target._private.style["shape"].value](
+				target,
+				target._private.style["width"].value,
+				target._private.style["height"].value,
+				cp[0], //halfPointX,
+				cp[1] //halfPointY
+			);
+			
+			var arrowEnd = this.shortenIntersection(intersect, cp,
+				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+			var edgeEnd = this.shortenIntersection(intersect, cp,
+				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+			
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
+			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			
+			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
 
-			intersect = this.findIntersection(
-				edge._private.rscratch.cp2ax,
-				edge._private.rscratch.cp2ay,
-				start[0],
-				start[1],
-				sourceRadius);
-
-			edge._private.rscratch.startX = intersect[0];
-			edge._private.rscratch.startY = intersect[1];
+			intersect = nodeShapeIntersectLine[source._private.style["shape"].value](
+				source,
+				source._private.style["width"].value,
+				source._private.style["height"].value,
+				cp[0], //halfPointX,
+				cp[1] //halfPointY
+			);
+			
+			var arrowStart = this.shortenIntersection(intersect, cp,
+				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+			var edgeStart = this.shortenIntersection(intersect, cp,
+				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+			
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
@@ -1345,24 +1373,19 @@
 				source.position().x,
 				source.position().y);
 			
-//			console.log("target intersect: " + intersect);
-				
-			/*
-			nodeShapePoints["triangle"] = generateUnitNgonPoints(3, 0);
-	
-			nodeShapeDrawers["triangle"] = function(node, width, height) {
-				cy.renderer().drawPolygon(node._private.position.x,
-					node._private.position.y, width, height, nodeShapePoints["triangle"]);
-			}
+			var arrowEnd = this.shortenIntersection(intersect,
+				[source.position().x, source.position().y],
+				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+			var edgeEnd = this.shortenIntersection(intersect,
+				[source.position().x, source.position().y],
+				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
 			
-			nodeShapeIntersectLine["triangle"] = function(
-			*/
-			
-			edge._private.rscratch.endX = intersect[0];
-			edge._private.rscratch.endY = intersect[1];
-			
-//			console.log("source intersect: " + intersect);
-			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+		
 			intersect = nodeShapeIntersectLine[source._private.style["shape"].value](
 				source,
 				source._private.style["width"].value,
@@ -1370,8 +1393,18 @@
 				target.position().x,
 				target.position().y);
 			
-			edge._private.rscratch.startX = intersect[0];
-			edge._private.rscratch.startY = intersect[1];
+			var arrowStart = this.shortenIntersection(intersect,
+				[target.position().x, target.position().y],
+				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+			var edgeStart = this.shortenIntersection(intersect,
+				[target.position().x, target.position().y],
+				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
 			
 		} else if (edge._private.rscratch.isBezierEdge) {
 			
@@ -1382,28 +1415,44 @@
 			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
 			
 			intersect = nodeShapeIntersectLine[
-				source._private.style["shape"].value](
-				source,
-				source._private.style["width"].value,
-				source._private.style["height"].value,
-				halfPointX,
-				halfPointY
-			);
-			
-			edge._private.rscratch.startX = intersect[0];
-			edge._private.rscratch.startY = intersect[1];
-			
-			intersect = nodeShapeIntersectLine[
 				target._private.style["shape"].value](
 				target,
 				target._private.style["width"].value,
 				target._private.style["height"].value,
-				halfPointX,
-				halfPointY
+				cp[0], //halfPointX,
+				cp[1] //halfPointY
 			);
 			
-			edge._private.rscratch.endX = intersect[0];
-			edge._private.rscratch.endY = intersect[1];
+			var arrowEnd = this.shortenIntersection(intersect, cp,
+				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+			var edgeEnd = this.shortenIntersection(intersect, cp,
+				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+			
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
+			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			
+			intersect = nodeShapeIntersectLine[
+				source._private.style["shape"].value](
+				source,
+				source._private.style["width"].value,
+				source._private.style["height"].value,
+				cp[0], //halfPointX,
+				cp[1] //halfPointY
+			);
+			
+			var arrowStart = this.shortenIntersection(intersect, cp,
+				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+			var edgeStart = this.shortenIntersection(intersect, cp,
+				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+			
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
 			
 		} else if (edge._private.rscratch.isArcEdge) {
 			return;
@@ -1426,32 +1475,38 @@
 		// Displacement gives direction for arrowhead orientation
 		var dispX, dispY;
 
-		var startX = edge._private.rscratch.startX;
-		var startY = edge._private.rscratch.startY;
+		var startX = edge._private.rscratch.arrowStartX;
+		var startY = edge._private.rscratch.arrowStartY;
 		
 		dispX = startX - edge.source().position().x;
 		dispY = startY - edge.source().position().y;
 		
-		this.context.strokeStyle = "rgba(" 
+		//this.context.strokeStyle = "rgba("
+		this.context.fillStyle = "rgba("
 			+ edge._private.style["source-arrow-color"].value[0] + ","
 			+ edge._private.style["source-arrow-color"].value[1] + ","
 			+ edge._private.style["source-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
 		
+		this.context.lineWidth = edge._private.style["width"].value;
+		
 		this.drawArrowShape(edge._private.style["source-arrow-shape"].value, 
 			startX, startY, dispX, dispY);
 		
-		var endX = edge._private.rscratch.endX;
-		var endY = edge._private.rscratch.endY;
+		var endX = edge._private.rscratch.arrowEndX;
+		var endY = edge._private.rscratch.arrowEndY;
 		
 		dispX = edge.target().position().x - endX;
 		dispY = edge.target().position().y - endY;
 		
-		this.context.strokeStyle = "rgba("
+		//this.context.strokeStyle = "rgba("
+		this.context.fillStyle = "rgba("
 			+ edge._private.style["target-arrow-color"].value[0] + ","
 			+ edge._private.style["target-arrow-color"].value[1] + ","
 			+ edge._private.style["target-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
+		
+		this.context.lineWidth = edge._private.style["width"].value;
 		
 		this.drawArrowShape(edge._private.style["target-arrow-shape"].value,
 			endX, endY, dispX, dispY);
@@ -1544,8 +1599,8 @@
 			x, y,
 			node.position().x,
 			node.position().y,
-			width / 2,
-			height / 2);
+			width / 2 + node._private.style["border-width"].value / 2,
+			height / 2 + node._private.style["border-width"].value / 2);
 			
 		return intersect;
 	}
@@ -1564,8 +1619,8 @@
 		for (var i = 0; i < sides; i++) {
 			currentAngle = i * increment + startAngle;
 			
-			points[2 * i] = Math.cos(currentAngle);
-			points[2 * i + 1] = Math.sin(-currentAngle);
+			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
+			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
 		}
 		
 		return points;
@@ -1578,14 +1633,95 @@
 			nodeShapePoints[nodeShape] = generateUnitNgonPoints(numSides, 0);
 		}
 		
-		var intersections = renderer.polygonIntersectLine(x, y,
+		var intersections = renderer.polygonIntersectLine(
+			x, y,
 			nodeShapePoints[nodeShape],
 			node._private.position.x,
 			node._private.position.y,
-			width / 2, height / 2);
+			width / 2, height / 2,
+			node._private.style["border-width"].value / 2);
 		
 		// If there's multiple, only give the nearest
 		return renderer.findNearestIntersection(intersections, x, y);
+	}
+
+	
+	CanvasRenderer.prototype.expandPolygon = function(points, pad) {
+		
+		var expandedLineSet = new Array(points.length * 2);
+		
+		var currentPointX, currentPointY, nextPointX, nextPointY;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			currentPointX = points[i * 2];
+			currentPointY = points[i * 2 + 1];
+			
+			if (i < points.length / 2 - 1) {
+				nextPointX = points[(i + 1) * 2];
+				nextPointY = points[(i + 1) * 2 + 1];
+			} else {
+				nextPointX = points[0];
+				nextPointY = points[1];
+			}
+			
+			// Current line: [currentPointX, currentPointY] to [nextPointX, nextPointY]
+			
+			// Assume CCW polygon winding
+			
+			var offsetX = (nextPointY - currentPointY);
+			var offsetY = -(nextPointX - currentPointX);
+			
+			// Normalize
+			var offsetLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+			var normalizedOffsetX = offsetX / offsetLength;
+			var normalizedOffsetY = offsetY / offsetLength;
+			
+			expandedLineSet[i * 4] = currentPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
+			expandedLineSet[i * 4 + 2] = nextPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 3] = nextPointY + normalizedOffsetY * pad;
+		}
+		
+		return expandedLineSet;
+	}
+	
+	CanvasRenderer.prototype.joinLines = function(lineSet) {
+		
+		var vertices = new Array(lineSet.length / 2);
+		
+		var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
+		var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
+		
+		for (var i = 0; i < lineSet.length / 4; i++) {
+			currentLineStartX = lineSet[i * 4];
+			currentLineStartY = lineSet[i * 4 + 1];
+			currentLineEndX = lineSet[i * 4 + 2];
+			currentLineEndY = lineSet[i * 4 + 3];
+			
+			if (i < lineSet.length / 4 - 1) {
+				nextLineStartX = lineSet[(i + 1) * 4];
+				nextLineStartY = lineSet[(i + 1) * 4 + 1];
+				nextLineEndX = lineSet[(i + 1) * 4 + 2];
+				nextLineEndY = lineSet[(i + 1) * 4 + 3];
+			} else {
+				nextLineStartX = lineSet[0];
+				nextLineStartY = lineSet[1];
+				nextLineEndX = lineSet[2];
+				nextLineEndY = lineSet[3];
+			}
+			
+			var intersection = this.finiteLinesIntersect(
+				currentLineStartX, currentLineStartY,
+				currentLineEndX, currentLineEndY,
+				nextLineStartX, nextLineStartY,
+				nextLineEndX, nextLineEndY,
+				true);
+			
+			vertices[i * 2] = intersection[0];
+			vertices[i * 2 + 1] = intersection[1];
+		}
+		
+		return vertices;
 	}
 	
 	nodeShapeDrawers["triangle"] = function(node, width, height) {
@@ -1696,6 +1832,18 @@
 		
 		return [minDistanceX, minDistanceY];
 	}
+	
+	CanvasRenderer.prototype.shortenIntersection = function(
+		intersection, offset, amount) {
+		
+		var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
+		
+		var length = Math.sqrt(disp[0] * disp[0] + disp[1] * disp[1]);
+		
+		var lenRatio = (length - amount) / length;
+		
+		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]]; 
+	}
 
 	CanvasRenderer.prototype.drawPolygon = function(
 		x, y, width, height, nodeShape, numSides) {
@@ -1725,41 +1873,55 @@
 	}
 
 	CanvasRenderer.prototype.polygonIntersectLine = function(
-		x, y, points, centerX, centerY, width, height) {
-	
+		x, y, basePoints, centerX, centerY, width, height, padding) {
+		
 		var intersections = [];
 		var intersection;
 		
-		for (var i = 0; i < points.length / 2 - 1; i++) {
+		var transformedPoints = new Array(basePoints.length);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = basePoints[i * 2] * width + centerX;
+			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
+		}
+		
+		var expandedLineSet = this.expandPolygon(
+			transformedPoints,
+			-padding);
+		
+		var points = this.joinLines(expandedLineSet);
+		// var points = transformedPoints;
+		
+		var currentX, currentY, nextX, nextY;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+		
+			currentX = points[i * 2];
+			currentY = points[i * 2 + 1];
+
+			if (i < points.length / 2 - 1) {
+				nextX = points[(i + 1) * 2];
+				nextY = points[(i + 1) * 2 + 1];
+			} else {
+				nextX = points[0]; 
+				nextY = points[1];
+			}
 			
 			intersection = this.finiteLinesIntersect(
 				x, y, centerX, centerY,
-				points[i * 2] * width + centerX,
-				points[i * 2 + 1] * height + centerY,
-				points[(i + 1) * 2] * width + centerX,
-				points[(i + 1) * 2 + 1] * height + centerY);
+				currentX, currentY,
+				nextX, nextY);
 			
 			if (intersection.length != 0) {
 				intersections.push(intersection[0], intersection[1]);
 			}
 		}
 		
-		intersection = this.finiteLinesIntersect(
-			x, y, centerX, centerY,
-			points[points.length - 2] * width + centerX,
-			points[points.length - 1] * height + centerY,
-			points[0] * width + centerX,
-			points[1] * height + centerY);
-			
-		if (intersection.length != 0) {
-			intersections.push(intersection[0], intersection[1]);
-		}
-		
 		return intersections;
 	}
 	
 	CanvasRenderer.prototype.finiteLinesIntersect = function(
-		x1, y1, x2, y2, x3, y3, x4, y4) {
+		x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
 		
 		var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
 		var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
@@ -1773,7 +1935,11 @@
 				return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
 				
 			} else {
-				return [];
+				if (!infiniteLines) {
+					return [];
+				} else {
+					return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+				}
 			}
 		} else {
 			if (ua_t == 0 || ub_t == 0) {
@@ -1816,7 +1982,7 @@
 		context.scale(width / 2, height / 2);
 		
 		context.moveTo(Math.cos(startAngle), -Math.sin(startAngle));
-		for (var angle = startAngle; 
+		for (var angle = startAngle;
 			angle < startAngle + 2 * Math.PI; angle += increment) {
 		
 			context.lineTo(Math.cos(angle), -Math.sin(angle));
@@ -1828,14 +1994,23 @@
 		context.restore();
 	}
 	
-	CanvasRenderer.prototype.redraw = function() {
+	var doSingleRedraw = false;
+	
+	CanvasRenderer.prototype.redraw = function(singleRedraw) {
 		
 		if (redrawTimeout) {
-//			return;
+//			doSingleRedraw = true;
+			return;
 		}
 		
 		redrawTimeout = setTimeout(function() {
-			redrawTimeout = null;		
+			redrawTimeout = null;
+			if (doSingleRedraw && !singleRedraw) {
+				renderer.redraw(true);
+				doSingleRedraw = false;
+				
+				// console.log("singleRedraw");
+			}
 		}, 1000 / 80);
 		
 		
@@ -2098,8 +2273,8 @@
 		nodeWidth = node._private.style["width"].value;
 		nodeHeight = node._private.style["height"].value;
 		nodeShapeDrawers[node._private.style["shape"].value](
-			node, 
-			nodeWidth, 
+			node,
+			nodeWidth,
 			nodeHeight); //node._private.data.weight / 5.0
 		
 		// Node border width

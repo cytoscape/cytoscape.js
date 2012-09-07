@@ -1,0 +1,118 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<title>Cytoscape.js</title>
+
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="css/font-awesome.css" rel="stylesheet" />
+		<link href="css/style.css" rel="stylesheet" />
+
+		<script src="js/jquery.js"></script>
+		<script src="js/scroll.js"></script>
+	</head>
+
+	<body>
+
+		<div id="navigation">
+			<div class="toc">Table of contents</div>
+
+			{{#each sections}}
+				<div class="section lvl1"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+
+				{{#each sections}}
+					<div class="section lvl2"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+
+					{{#each fns}}
+						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}()</a></div>
+					{{/each}}
+				{{/each}}
+			{{/each}}
+
+			<p><span class="icon-sign-blank"></span></p>
+		</div>
+
+		<div id="content">
+
+			<div class="title">Cytoscape.js <span class="version">{{version}}</span></div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
+			<div class="links">
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="https://groups.google.com/forum/#!forum/cytoscapejs"><span class="icon-comments"></span> Google Group</a>
+			</div>
+
+			<div id="documentation">
+			{{#each sections}}
+				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
+
+				{{#if html}}
+					{{{html}}}
+				{{/if}}
+
+				{{#each sections}}
+				{{#if fromMd}}
+				{{else}}
+					<h2 id="{{id}}">{{name}} {{{bookmark}}}</h2>
+
+					{{#if html}}
+						{{{html}}}
+					{{/if}}
+
+					{{#each fns}}
+						<div class="function">
+							<div class="name" id="{{id}}">{{name}}() {{{bookmark}}}</div>
+							<div class="descr" id="{{id}}">{{{descr}}}</div>
+
+							{{#if formats}}
+							<div class="formats">
+								{{#each formats}}
+									<div class="format">
+										{{#if args}}
+											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{name}}{{#if optional}}]{{/if}}{{/each}} )</div>
+										{{else}}
+											<div class="name">{{name}}()</div>
+										{{/if}}
+										<div class="descr">{{descr}}</div>
+										<ul class="args">
+											{{#each args}}
+												<li>
+													<span class="name">{{name}}</span>
+													<span class="descr">{{descr}}</span>
+
+													{{#if fields}}
+													<ul class="fields">
+														{{#each fields}}
+														<li>&ndash;
+															<span class="name">{{name}}</span>
+															<span class="descr">{{descr}}</span>
+														</li>
+														{{/each}}
+													</ul>
+													{{/if}}
+												</li>
+											{{/each}}
+										</ul>
+									</div>
+								{{/each}}
+							</div>
+							{{/if}}
+
+							<div class="details">
+								{{#if html}}
+									{{{html}}}
+								{{/if}}
+							</div>		
+						</div>
+					{{/each}}
+
+				{{/if}}
+				{{/each}}
+			{{/each}}
+			</div>
+
+			<p><span class="icon-sign-blank"></span></p>
+
+		</div>
+
+	</body>
+</html>

@@ -5,3 +5,5 @@ build
 
 .DS_Store
 .buildpath
+
+node_modules

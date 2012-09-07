@@ -7,30 +7,1267 @@
 		<link href="css/font-awesome.css" rel="stylesheet" />
 		<link href="css/style.css" rel="stylesheet" />
 
-		<script src="js/jquery-1.8.0.min.js"></script>
-		<script src="js/handlebars-1.0.0.beta.6.js"></script>
-		<script src="js/doc-spec.js"></script>
-		<script src="js/doc-generator.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/scroll.js"></script>
 	</head>
 
 	<body>
 
 		<div id="navigation">
+			<div class="toc">Table of contents</div>
+
+			
+				<div class="section lvl1"><a href="#introduction"><span class="icon-bookmark"></span> Introduction</a></div>
+
+				
+					<div class="section lvl2"><a href="#introduction/about"><span class="icon-bookmark"></span> About</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span> Cytoscape.js &amp; Cytoscape</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#introduction/contact"><span class="icon-bookmark"></span> Contact</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#introduction/licensing"><span class="icon-bookmark"></span> Licensing</a></div>
+
+					
+				
+			
+				<div class="section lvl1"><a href="#the-model"><span class="icon-bookmark"></span> The model</a></div>
+
+				
+			
+				<div class="section lvl1"><a href="#core"><span class="icon-bookmark"></span> Core</a></div>
+
+				
+					<div class="section lvl2"><a href="#core/notation"><span class="icon-bookmark"></span> Notation</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#core/initialisation"><span class="icon-bookmark"></span> Initialisation</a></div>
+
+					
+				
+					<div class="section lvl2"><a href="#core/graph-manipulation"><span class="icon-bookmark"></span> Graph manipulation</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span> cy.$()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.add"><span class="icon-bookmark"></span> cy.add()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span> cy.collection()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span> cy.load()</a></div>
+					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark"></span> cy.remove()</a></div>
+					
+				
+					<div class="section lvl2"><a href="#core/viewport-manipulation"><span class="icon-bookmark"></span> Viewport manipulation</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span> cy.center()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span> cy.fit()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span> cy.pan()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span> cy.panBy()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.reset"><span class="icon-bookmark"></span> cy.reset()</a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span> cy.zoom()</a></div>
+					
+				
+					<div class="section lvl2"><a href="#core/events"><span class="icon-bookmark"></span> Events</a></div>
+
+					
+						<div class="section lvl3"><a href="#core/events/cy.on"><span class="icon-bookmark"></span> cy.on()</a></div>
+					
+				
+			
+
+			<p><span class="icon-sign-blank"></span></p>
 		</div>
 
 		<div id="content">
 
-			<div class="title">Cytoscape.js</div>
+			<div class="title">Cytoscape.js <span class="version">2.0.0-alpha</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
-
-			<p>TODO pic or instance of cytoscape.js</p>
-
-			<h1>Introduction</h1>
-
-			<p>TODO</p>
+			<div class="links">
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
+				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="https://groups.google.com/forum/#!forum/cytoscapejs"><span class="icon-comments"></span> Google Group</a>
+			</div>
 
 			<div id="documentation">
+			
+				<h1 id="introduction">Introduction <a href="#introduction"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<h2 id="introduction/about">About <a href="#introduction/about"><span class="icon-bookmark"></span></a></h2>
+<p>Cytoscape.js is an open-source <a href="http://en.wikipedia.org/wiki/Graph_theory">graph</a> visualisation library for the web.  It is written in JavaScript as a <a href="http://jquery.com">jQuery</a> library.
+
+</p>
+<p>Cytoscape.js allows you to easily display graphs in your websites.  Because cytoscape.js allows the user to interact with the graph and the library allows the client to hook into user events, cytoscape.js is easily integrated into your webapp, especially since cytoscape.js supports both desktop browsers, like Chrome, and iOS browsers, like on the iPad.
+
+</p>
+<p>Cytoscape.js also has graph analysis in mind:  The library contains a slew of useful functions in graph theory.
+
+</p>
+<p>The library was developed at the <a href="http://tdccbr.med.utoronto.ca/">Donnelly Centre</a> at the <a href="http://www.utoronto.ca/">University of Toronto</a>.
+
+</p>
+<h2 id="introduction/cytoscape.js-amp-cytoscape">Cytoscape.js &amp; Cytoscape <a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span></a></h2>
+<p>Though cytoscape.js shares its name with Cytoscape, cytoscape.js is not Cytoscape.  cytoscape.js is a JavaScript library for <em>programmers</em>.  It is not an app for end-users, nor can you just copy-paste some code to &quot;automagically&quot; make you a webapp.
+
+</p>
+<p>Cytoscape.js is a jQuery UI plugin:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JS+jQuery code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in cytoscape.js &mdash; written in Java<em>Script</em>.
+
+</p>
+<p>We do follow some similar philosophies with Cytoscape:  Graph style and data should be separate, and the library should provide core functionality with extensions and plugins adding more functionality on top.
+
+</p>
+<h2 id="introduction/contact">Contact <a href="#introduction/contact"><span class="icon-bookmark"></span></a></h2>
+<p>The main developers of cytoscape.js are <a href="http://maxfranz.com">Max Franz</a> and Christian Lopes.  Please email <a href="mailto:maxkfranz@gmail.com">Max</a> if you are interested in contributing to cytoscape.js.
+
+</p>
+<p>If you want to ask a question about cytoscape.js, please <a href="http://stackoverflow.com/questions/ask?tags=cytoscape-web">ask it on Stack Overflow</a>, and tag your question with <a href="http://stackoverflow.com/questions/tagged/cytoscape-web"><code>cytoscape-web</code></a>.
+
+</p>
+<p>If you want to contact the developers of cytoscape.js, please use the Google group, <a href="https://groups.google.com/forum/?fromgroups#!forum/cytoscapeweb">cytoscapeweb</a>.
+
+</p>
+<h2 id="introduction/licensing">Licensing <a href="#introduction/licensing"><span class="icon-bookmark"></span></a></h2>
+<p>Cytoscape.js is licensed under the LGPL.  You can find the <a href="https://raw.github.com/cytoscape/cytoscapeweb/master/LGPL-LICENSE.txt">license</a> in the <a href="https://github.com/Cytoweb/cytoscapeweb">source repository</a>.</p>
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			
+				<h1 id="the-model">The model <a href="#the-model"><span class="icon-bookmark"></span></a></h1>
+
+				
+
+				
+			
+				<h1 id="core">Core <a href="#core"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<p>The core object is your interface to the cytoscape.js visualisation.  It is your entry point to cytoscape.js:  All of cytoscape.js&#39;s features are accessed through this object.</p>
+
+				
+
+				
+				
+					<h2 id="core/notation">Notation <a href="#core/notation"><span class="icon-bookmark"></span></a></h2>
+
+					
+						<p>This is the documentation for the core cytoscape.js object, referred to throughout this documentation as <code>cy</code> (i.e. <code>var cy = ...</code>), as &quot;the core object&quot;, or simply as &quot;the core&quot;.
+
+</p>
+<p>There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below.
+
+</p>
+<ul>
+<li><code>cy.func()</code> : works for the core</li>
+<li><code>cy.background().func()</code> : works for the background</li>
+<li><code>eles.func()</code> : works for one or more elements (nodes and edges)<ul>
+<li><code>ele.func()</code> : works only for a single element (node or edge)</li>
+<li><code>nodes.func()</code> : works only for one or more nodes</li>
+<li><code>node.func()</code> : works only for a single node</li>
+<li><code>edges.func()</code> : works only for one or more edges</li>
+<li><code>edge.func()</code> : works only for a single edge</li>
+</ul>
+</li>
+</ul>
+
+					
+
+					
+
+				
+				
+				
+					<h2 id="core/initialisation">Initialisation <a href="#core/initialisation"><span class="icon-bookmark"></span></a></h2>
+
+					
+						<h3>Script includes</h3>
+<p>To use cytoscape.js in your HTML document, you must include the following JS:
+
+</p>
+<ul>
+<li><p>jQuery 1.4 or newer</p>
+</li>
+<li><p>One of</p>
+<ul>
+<li><p><code>cytoscape[.min].js</code></p>
+<p>Either the minified or unminified Cytoscape.js code <em>without any</em> dependencies.  When using this file, you must include the appropriate dependencies:  You&#39;ll need the dependencies of the SVG renderer.</p>
+<p>SVG renderer dependencies (found in the <code>lib</code> directory)</p>
+<ul>
+<li><code>2D.js</code></li>
+<li><code>jquery.color.js</code></li>
+<li><code>jquery.mousewheel.js</code></li>
+<li><code>jquery.svg.js</code></li>
+</ul>
+</li>
+<li><p><code>cytoscape.all[.min].js</code></p>
+<p>  Either the minified or unminified cytoscape.js code <em>with all</em> dependencies.  When using this file, you do not need to include any of the dependencies for the SVG renderer.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Getting started</h3>
+<p>You can initialise cytoscape.js on a HTML element using the traditional jQuery style: 
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({ // for some div with id &#39;cy&#39;
+  ready: function(cy){
+    // you can access the core object API through cy
+  },
+  ...
+});</code></pre>
+<p>This initialises cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
+
+</p>
+<p>For example, 
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options)
+  .css(&quot;background&quot;, &quot;red&quot;)
+  .css(&quot;border-color&quot;, &quot;black&quot;); // can use jquery functions on &#39;cy&#39; div</code></pre>
+<p>Because this style doesn&#39;t give you access to the <code>cy</code> object outside of the callback function, there is an option to get the <code>cy</code> object from a jQuery selector.
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options);
+var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;); // now we have a global reference to `cy`</code></pre>
+<p>Alternatively, you can call functions on the cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
+
+</p>
+<pre><code class="lang-js">// pattern: $(&quot;#cy&quot;).cytoscape(functionName, param1, param2, param3, ...)
+$(&quot;#cy&quot;).cytoscape(&quot;elements&quot;, &quot;[weight&gt;20]&quot;);
+cy.elements(&quot;[weight&gt;20]&quot;); // functionally the same as the above line</code></pre>
+<h3>The ready callback</h3>
+<p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.
+
+</p>
+<p>Because the <code>ready</code> event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in <code>options.ready</code>.
+
+</p>
+<pre><code class="lang-js">// in foo.js
+$(function(){ // on jquery ready
+
+  $(&quot;#cy&quot;).cytoscape(function(eventObject){ // on cytoscape.js ready on the `cy` div
+    // this code executes when cytoscape.js is ready even though we
+    // don&#39;t actually initialise cytoscape.js on the `cy` div until
+    // bar.js is loaded
+
+    var cy = this; // `this` holds the reference to the core object
+    var alsoCy = eventObject.cy; // you can access the core object also from the event
+
+    console.log(&quot;Ready, Freddie!&quot;);
+  });
+
+});
+
+// in bar.js (should be after foo.js in your js includes)
+$(function(){ // on jquery ready
+  $(&quot;#cy&quot;).cytoscape(options);
+});</code></pre>
+<h3>Initialisation options</h3>
+<p>An instance of cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
+  layout: { ... },
+  renderer: { ... },
+  style: { ... },
+  ready: function(cy){ ... },
+  elements: ...
+});</code></pre>
+<p><strong>layout</strong> : A <a href="ExtensionOptionsObject">layout options object</a>.  By default, the <a href="GridLayout">grid layout</a> is used with default options.
+
+</p>
+<p><strong>renderer</strong> : A <a href="ExtensionOptionsObject">renderer options object</a>.  By default, the <a href="SvgRenderer">SVG renderer</a> is used with default options.
+
+</p>
+<p><strong>style</strong> : A <a href="StyleObject">visual style object</a>.  The default style of the renderer specified in <code>renderer</code> is used by default.
+
+</p>
+<p><strong>ready</strong> : A callback function that is called when cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.
+
+</p>
+<p><strong>elements</strong> : A set of <a href="ElementObject">raw elements data object</a>.
+
+</p>
+<h3>Short alias</h3>
+<p>cytoscape.js can also be called using a shorter alias, <code>cy</code>, for convenience.
+
+</p>
+<p>For example:
+
+</p>
+<pre><code class="lang-js">$(&quot;#cy&quot;).cy(options); // this line is functionally the same as the longer line below
+$(&quot;#cy&quot;).cytoscape(options);
+
+var cy = $(&quot;#cy&quot;).cy(&quot;get&quot;); // these lines are also the same
+var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;);
+
+$(&quot;#cy&quot;).cy(&quot;nodes&quot;, &quot;:selected&quot;); // these lines are also all the same
+$(&quot;#cy&quot;).cytoscape(&quot;nodes&quot;, &quot;:selected&quot;);
+$(&quot;#cy&quot;).cy(&quot;get&quot;).nodes(&quot;:selected&quot;);
+$(&quot;#cy&quot;).cytoscape(&quot;get&quot;).nodes(&quot;:selected&quot;);</code></pre>
+<p>It is important to note that if <code>jQuery.cy</code> or <code>jQuery.fn.cy</code> has already been defined, then cytoscape.js will not allow the use of the short <code>cy</code> alias to avoid naming collisions.  So if another jQuery plugin uses the <code>cy</code> name, then you have to use the full <code>cytoscape</code> name to use cytoscape.js.</p>
+
+					
+
+					
+
+				
+				
+				
+					<h2 id="core/graph-manipulation">Graph manipulation <a href="#core/graph-manipulation"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.$">cy.$() <a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.$">Get elements in the graph matching a selector or a filter function.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.$( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.elements( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.nodes( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get nodes in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the nodes should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.edges( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get edges in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the edges should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.filter( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector the elements should match.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.filter( <span class="comma">, </span>function(i, ele) )</div>
+										
+										<div class="descr">Get elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, ele)</span>
+													<span class="descr">The filter function that returns true for elements that should be returned.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The counter used for iteration over the elements in the graph.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The current element under consideration for filtering.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If no elements in the graph match the selector, an empty <a href="Collection">collection</a> is returned.
+
+</p>
+<p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It&#39;s just convenient to save you typing.
+
+</p>
+<h3>Examples</h3>
+<p>Get nodes with weight greater than 50:
+</p>
+<pre><code class="lang-js">var collection = cy.nodes(&quot;[weight&gt;50]&quot;);</code></pre>
+<p>Get edges with source node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var collection = cy.edges(&quot;[source=n0]&quot;);</code></pre>
+<p>Get all nodes and edges with weight greater than 50:
+</p>
+<pre><code class="lang-js">var collection = cy.elements(&quot;[weight&gt;50]&quot;);
+collection = cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line</code></pre>
+<p>Get nodes with weight greater than 50 with a filter function:
+</p>
+<pre><code class="lang-js">var collection = cy.filter(function(i, element){
+  if( element.isNode() &amp;&amp; element.data(&quot;weight&quot;) &gt; 50 ){
+    return true;
+  }
+  return false;
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.add">cy.add() <a href="#core/graph-manipulation/cy.add"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.add">Add elements to the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eleObj )</div>
+										
+										<div class="descr">Add a specified element to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObj</span>
+													<span class="descr">A plain object that specifies the element.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eleObjs )</div>
+										
+										<div class="descr">Add the specified elements to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObjs</span>
+													<span class="descr">An array of elements specified by plain objects.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.add( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Add the specified elements to the graph.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">A collection of elements.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If plain element objects are used, then <a href="ElementObject">a specific format for the objects</a> must be followed.  It is important to note that the <code>group</code> attribute must be specified for plain objects, as this function can not infer whether the elements added are nodes or edges.
+
+</p>
+<h3>Examples</h3>
+<p>Add a node from a plain object.
+
+</p>
+<pre><code class="lang-js">cy.add({ group: &quot;nodes&quot;, data: { id: &quot;n0&quot; } });</code></pre>
+<p>Add nodes and edges to the graph as plain objects:
+
+</p>
+<pre><code class="lang-js">// can use reference to eles later
+var eles = cy.add([
+  { group: &quot;nodes&quot;, data: { id: &quot;n0&quot; }, position: { x: 100, y: 100 } },
+  { group: &quot;nodes&quot;, data: { id: &quot;n1&quot; }, position: { x: 200, y: 200 } },
+  { group: &quot;edges&quot;, data: { id: &quot;e0&quot;, source: &quot;n0&quot;, target: &quot;n1&quot; } }
+]);</code></pre>
+<p>Add elements:
+
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n1&quot;);
+var n1 = cy.node(&quot;n2&quot;);
+var e0 = cy.edge(&quot;e0&quot;);
+n1.collection().add(n2).add(n3).remove(); // remove n0, n1, and e0
+
+var n1e0 = n1.collection().add(e0);
+cy.add(n0); // add a single element, n0
+cy.add(n1e0); // add the collection of n1 and e0</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.collection">cy.collection() <a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.collection">Return a new, empty collection.</div>
+
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function is useful for starting a collection that may have things added to it.
+
+</p>
+<h3>Examples</h3>
+<p>Keep a collection of nodes that have been clicked:
+</p>
+<pre><code class="lang-js">var collection = cy.collection();
+cy.nodes().live(&quot;click&quot;, function(){
+  collection = collection.add(this);
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.load">cy.load() <a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.load">Load a graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.load( <span class="comma">, </span>eleObjs [<span class="comma">, </span>load] [<span class="comma">, </span>done] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eleObjs</span>
+													<span class="descr">An array of plain objects that specify the elements to load.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">load</span>
+													<span class="descr">A callback function called when the graph has loaded.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">done</span>
+													<span class="descr">A callback function called after the graph is loaded and just after the layout finishes.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that <code>eleObjs</code> can be specified as an array with each element specifying its <code>group</code>, or alternatively, <code>eleObjs</code> can be specified as a <code>group</code>-indexed map.
+
+</p>
+<h3>Examples</h3>
+<p>As an array:
+</p>
+<pre><code class="lang-js">cy.load([
+  { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; },
+  { data: { id: &quot;n2&quot; }, group: &quot;nodes&quot; },
+  { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; }, group: &quot;edges&quot; }
+]);</code></pre>
+<p>As a <code>group</code>-indexed map:
+</p>
+<pre><code class="lang-js">cy.load({
+  nodes: [
+    { data: { id: &quot;n1&quot; } },
+    { data: { id: &quot;n2&quot; } }
+  ],
+
+  edges: [
+    { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; } }
+  ]
+});</code></pre>
+<p>With specified callbacks:
+</p>
+<pre><code class="lang-js">cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ], function(e){
+  console.log(&quot;cy loaded elements&quot;);
+}, function(e){
+  console.log(&quot;cy laid out elements&quot;);
+});</code></pre>
+<p>This is equivalent to:
+</p>
+<pre><code class="lang-js">cy.one(&quot;load&quot;, function(e){
+  console.log(&quot;cy loaded elements&quot;);
+}).one(&quot;layoutdone&quot;, function(e){
+  console.log(&quot;cy laid out elements&quot;);
+});
+
+cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.remove">cy.remove() <a href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.remove">Remove elements from the graph and return them.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.remove( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Remove the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">A collection of elements to remove.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.remove( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Remove elements in the graph matching the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">Elements matching this selector are removed.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, some functions will not work on removed elements.  For example, the <code>neighborhood</code> function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.
+
+</p>
+<h3>Examples</h3>
+<p>Remove an element:
+
+</p>
+<pre><code class="lang-js">var n0 = cy.nodes(&quot;#n0&quot;);
+cy.remove(n0);</code></pre>
+<p>Remove a collection:
+
+</p>
+<pre><code class="lang-js">var collection = cy.elements(&quot;node[weight&gt;50]&quot;);
+cy.remove(collection);</code></pre>
+<p>Remove elements matching a selector:
+
+</p>
+<pre><code class="lang-js">cy.remove(&quot;node[weight&gt;50]&quot;); // remove nodes with weight greater than 50</code></pre>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="core/viewport-manipulation">Viewport manipulation <a href="#core/viewport-manipulation"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.center">cy.center() <a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.center">Pan the graph to the centre of a collection.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.center()</div>
+										
+										<div class="descr">Centre on all elements in the graph.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.center( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Centre on the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The collection to centre upon.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.
+
+</p>
+<h3>Examples</h3>
+<p>Centre the graph on node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
+cy.center(n0);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.fit">cy.fit() <a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.fit">Pan and zooms the graph to fit to a collection.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.fit()</div>
+										
+										<div class="descr">Fit to all elements in the graph.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.fit( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr">Fit to the specified elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The collection to fit to.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.
+
+</p>
+<h3>Examples</h3>
+<p>Centre the graph on node <code>n0</code>:
+</p>
+<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
+cy.center(n0);</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.pan">cy.pan() <a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.pan">Get or set the panning position of the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.pan()</div>
+										
+										<div class="descr">Get the current panning position.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.pan( <span class="comma">, </span>renderedPosition )</div>
+										
+										<div class="descr">Set the current panning position.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">renderedPosition</span>
+													<span class="descr">The rendered position to pan the graph to.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function pans the graph viewport origin to the specified rendered pixel <a href="Position">position</a>.
+
+</p>
+<h3>Examples</h3>
+<p>Pan the graph to (100, 100) rendered pixels.
+</p>
+<pre><code class="lang-js">cy.pan({
+  x: 100, // note these fields work with the SVG renderer
+  y: 100  // but an alternate renderer may use different coordinates
+});
+
+console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.panBy">cy.panBy() <a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.panBy">Relatively pan the graph by a specified rendered position vector.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.panBy( <span class="comma">, </span>renderedPosition )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">renderedPosition</span>
+													<span class="descr">The rendered position vector to pan the graph by.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function shifts the viewport relatively by the specified position in rendered pixels.  That is, specifying a shift of 100 to the right means a translation of 100 on-screen pixels to the right.
+
+</p>
+<h3>Examples</h3>
+<p>Pan the graph 100 pixels to the right.
+</p>
+<pre><code class="lang-js">cy.panBy({
+  x: 100, // note these fields work with the SVG renderer
+  y: 0  // but an alternate renderer may use different coordinates
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.reset">cy.reset() <a href="#core/viewport-manipulation/cy.reset"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.reset">Reset the graph to the default zoom level and panning position.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.reset()</div>
+										
+										<div class="descr">Resets the zoom and pan.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This resets the viewport to its state when Cytoscape Web was last loaded with <a href="Core-load">cy.load()</a> &mdash; that is, the default viewport state or origin of the graph.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.pan( somePosition );
+cy.zoom( someZoomLevel );
+cy.reset(); // reset back to the viewport state at (1)</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.zoom">cy.zoom() <a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.zoom">Get or set the zoom level of the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom()</div>
+										
+										<div class="descr">Get the zoom level.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom( <span class="comma">, </span>level )</div>
+										
+										<div class="descr">Set the zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">level</span>
+													<span class="descr">The zoom level to set.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.zoom( <span class="comma">, </span>options )</div>
+										
+										<div class="descr">Set the zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">The options for zooming.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">level</span>
+															<span class="descr">The zoom level to set.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">position</span>
+															<span class="descr">The position about which to zoom.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">renderedPosition</span>
+															<span class="descr">The rendered position about which to zoom.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>The zoom level must be a positive number.  Zoom levels that are not numbers are ignored; zoom levels that are numbers but outside of the range of valid zoom levels are considered to be the closest, valid zoom level.
+
+</p>
+<p>When zooming about a point via <code>cy.zoom( options )</code>, the options are defined as follows.
+
+</p>
+<p>For zooming about a <a href="PositionObject">rendered position</a> (i.e. a position on-screen):
+
+</p>
+<pre><code class="lang-js">var options = {
+  level: 2.0, // the zoom level
+  renderedPosition: { x: 100, y: 100 }
+};</code></pre>
+<p>For zooming about a <a href="PositionObject">model position</a>:
+
+</p>
+<pre><code class="lang-js">var options = {
+  level: 2.0, // the zoom level
+  position: { x: 500, y: 625 }
+};</code></pre>
+<p>For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.
+
+</p>
+<h3>Examples</h3>
+<p>Zoom in to factor 2
+</p>
+<pre><code class="lang-js">cy.zoom(2);</code></pre>
+<p>Zoom in to the minimum zoom factor
+</p>
+<pre><code class="lang-js">cy.zoom(0); // 0 is outside of the valid range and
+            // its closest valid level is the min</code></pre>
+<p>Zoom in to the maximum zoom factor
+</p>
+<pre><code class="lang-js">cy.zoom(1/0); // infinity is outside of the valid range and
+              // its closest valid level is the max</code></pre>
+<p>Zoom about a node
+</p>
+<pre><code class="lang-js">var pos = cy.nodes(&quot;#n0&quot;).position();
+cy.zoom({
+  level: 2.5,
+  position: pos
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="core/events">Events <a href="#core/events"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.on">cy.on() <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/events/cy.on">Bind to events that occur in the graph.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													<span class="descr">The handler function that is called when one of the specified events occurs.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">evt</span>
+															<span class="descr">The event object.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+
+				
+				
+			
 			</div>
+
+			<p><span class="icon-sign-blank"></span></p>
 
 		</div>
 

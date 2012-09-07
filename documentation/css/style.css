@@ -1,6 +1,7 @@
 body {
 	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
+	overflow: hidden;
 }
 
 #navigation {
@@ -12,11 +13,34 @@ body {
 	background: #f5f5f5;
 	border-right: 2px solid #f0f0f0;
 	z-index: 1;
+	padding: 0.25em;
+	overflow-y: auto;
+}
+
+#navigation .toc {
+	font-weight: 200;
+	margin: 0.5em 0;
+}
+
+#navigation .lvl1 {
+	margin-top: 0.5em;
+}
+
+#navigation .lvl2 {
+	margin-left: 1em;
+	font-size: 0.8em;
+}
+
+#navigation .lvl3 {
+	margin-left: 2em;
+	font-size: 0.8em;
+	font-family: Andale Mono, monospace;
 }
 
 #content {
-	padding-left: 14em;
-	margin: 1em;
+	margin-left: 15em;
+	overflow-y: auto;
+	height: 100%;
 }
 
 .title {
@@ -25,22 +49,130 @@ body {
 	line-height: 1.25;
 }
 
+.title .version {
+	font-size: 0.25em;
+	color: #888;
+}
+
 .subtitle {
 	font-weight: 200;
 }
 
+.links {
+	color: #ccc;
+}
+
 h1 {
 	font-size: 2em;
-	margin: 0.5em 0;
-	font-weight: 200;
+	margin: 1em 0 0.5em 0;
+	font-weight: 500;
+}
+
+h1 a {
+	font-size: 0.5em;
 }
 
 h2 {
-	font-size: 1em;
+	font-size: 1.25em;
+	margin: 1.6em 0 0.8em 0;
+	font-weight: 600;
+}
+
+h2 a {
+	font-size: 0.8em;
+}
+
+h3 {
+	font-weight: bold;
 	margin: 1em 0;
-	font-weight: 200;
 }
 
 p {
 	margin: 1em 0;
+}
+
+a {
+	color: #4183C4;
+	text-decoration: none;
+}
+
+a:active {
+	background-color: #4183C4;
+	color: #fff;
+	border-radius: 0.125em;
+	box-shadow: 0 0 0 0.2em #4183C4;
+}
+
+code,
+pre {
+	font-family: Andale Mono, monospace;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+	font-size: 0.9em;
+	background: #fafafa;
+}
+
+pre {
+	margin: 1.25em 0;
+}
+
+pre code {
+	background: transparent;
+	border: 0;
+	font-size: 1em;
+}
+
+.function + .function {
+	margin-top: 2em;
+}
+
+.function .name {
+	font-family: Andale Mono, monospace;
+	font-weight: bold;
+}
+
+.function > .name {
+	
+}
+
+.function > .formats,
+.function > .details {
+	padding-left: 0.25em;
+	margin: 0.25em 1em;
+}
+
+.function .formats {
+	margin-top: 1em;
+	border: 1px solid #ddd;
+	background: #fafafa;
+	border-radius: 0.25em;
+}
+
+.function .comma:first-child {
+	display: none;
+}
+
+.function .args {
+	margin-left: 1em;
+	font-size: 0.8em;
+}
+
+.function .format {
+	margin-bottom: 0.5em;
+}
+
+.function .format > .descr {
+	font-size: 0.8em;
+}
+
+.args .name {
+	margin-right: 0.25em;
+}
+
+.args .fields {
+	margin-left: 1em;
+}
+
+.args .fields .name {
+	margin-left: 0.5em;
 }

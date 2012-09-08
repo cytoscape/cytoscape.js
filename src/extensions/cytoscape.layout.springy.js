@@ -25,7 +25,11 @@
 		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
+
 		var container = cy.container();
+		
+		var width = container.clientWidth;
+		var height = container.clientHeight;
 		
 		// make a new graph
 		var graph = new Graph();
@@ -41,8 +45,8 @@
 
 		// connect them with edges
 		edges.each(function(i, edge){
-			fdSrc = edge.source().scratch("springy.model");
-			fdTgt = edge.target().scratch("springy.model");
+			fdSrc = edge.source().scratch("springy");
+			fdTgt = edge.target().scratch("springy");
 			
 			edge.scratch("springy", {
 				model: graph.newEdge(fdSrc, fdTgt, {
@@ -59,15 +63,15 @@
 		// convert to/from screen coordinates
 		var toScreen = function(p) {
 			var size = currentBB.topright.subtract(currentBB.bottomleft);
-			var sx = p.subtract(currentBB.bottomleft).divide(size.x).x * container.width();
-			var sy = p.subtract(currentBB.bottomleft).divide(size.y).y * container.height();
+			var sx = p.subtract(currentBB.bottomleft).divide(size.x).x * width;
+			var sy = p.subtract(currentBB.bottomleft).divide(size.y).y * height;
 			return new Vector(sx, sy);
 		};
 
 		var fromScreen = function(s) {
 			var size = currentBB.topright.subtract(currentBB.bottomleft);
-			var px = (s.x / container.width()) * size.x + currentBB.bottomleft.x;
-			var py = (s.y / container.height()) * size.y + currentBB.bottomleft.y;
+			var px = (s.x / width) * size.x + currentBB.bottomleft.x;
+			var py = (s.y / height) * size.y + currentBB.bottomleft.y;
 			return new Vector(px, py);
 		};
 		
@@ -131,7 +135,7 @@
 		});
 		
 		function setLayoutPositionForElement(element){
-			var fdId = element.scratch("springy.model").id;
+			var fdId = element.scratch("springy").id;
 			var fdP = fdRenderer.layout.nodePoints[fdId].p;
 			var pos = element.position();
 			var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element.position()) : {

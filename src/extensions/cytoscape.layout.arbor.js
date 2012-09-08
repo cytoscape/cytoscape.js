@@ -18,12 +18,12 @@
 		stepSize: 1,
 		stableEnergy: function( energy ){
 			var e = energy; 
-			return (e.max <= 7) || (e.mean <= 5);
+			return (e.max <= 0.5) || (e.mean <= 0.3);
 		}
 	};
 	
 	function ArborLayout(options){
-		this.options = $$.util.extend(true, {}, defaults, options);
+		this.options = $$.util.extend({}, defaults, options);
 	}
 		
 	ArborLayout.prototype.run = function(){
@@ -31,8 +31,10 @@
 		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var $container = cy.container();
-		
+		var container = cy.container();
+		var width = container.clientWidth;
+		var height = container.clientHeight;
+
 		// arbor doesn't work with just 1 node
 		if( cy.nodes().size() <= 1 ){
 			if( options.fit ){
@@ -40,8 +42,8 @@
 			}
 
 			cy.nodes().position({
-				x: $container.width()/2,
-				y: $container.height()/2
+				x: Math.round( width/2 ),
+				y: Math.round( height/2 )
 			});
 
 			cy.one("layoutstop", options.stop);
@@ -54,7 +56,8 @@
 		}
 
 		var sys = this.system = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
-		
+		this.system = sys;
+
 		if( options.liveUpdate && options.fit ){
 			cy.reset();
 		};
@@ -72,7 +75,7 @@
 				var energy = sys.energy();
 
 				// if we're stable (according to the client), we're done
-				if( options.stableEnergy != null && energy != null && options.stableEnergy(energy) ){
+				if( options.stableEnergy != null && energy != null && energy.n > 0 && options.stableEnergy(energy) ){
 					sys.stop();
 					return;
 				}
@@ -117,10 +120,6 @@
 			
 		};
 		sys.renderer = sysRenderer;
-		
-		var width = $container.width();
-		var height = $container.height();
-		
 		sys.screenSize( width, height );
 		sys.screenPadding( options.padding[0], options.padding[1], options.padding[2], options.padding[3] );
 		sys.screenStep( options.stepSize );
@@ -129,9 +128,9 @@
 			if( value == null ){
 				return undefined;
 			} else if( typeof value == typeof function(){} ){
-				return value.apply(element, [element.data(), {
-					nodes: nodes.size(),
-					edges: edges.size(),
+				return value.apply(element, [element._private.data, {
+					nodes: nodes.length,
+					edges: edges.length,
 					element: element
 				}]); 
 			} else {

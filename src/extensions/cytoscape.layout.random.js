@@ -15,10 +15,10 @@
 		var cy = options.cy;
 		var nodes = cy.nodes();
 		var edges = cy.edges();
-		var $container = cy.container(); // the container div for cytoscapeweb
+		var container = cy.container();
 		
-		var width = $container.width();
-		var height = $container.height();
+		var width = container.clientWidth;
+		var height = container.clientHeight;
 		
 
 		nodes.positions(function(i, element){

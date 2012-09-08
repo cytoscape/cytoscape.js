@@ -224,6 +224,8 @@
 
 				style.removeAllBypasses( ele );
 			}
+
+			this.rtrigger('style');
 		},
 
 		show: function(){

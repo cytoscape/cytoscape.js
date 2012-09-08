@@ -33,9 +33,28 @@
 			var callTime = +new Date;
 			var cy = this._private.cy;
 			var style = cy.style();
-
-			debugger;
 			
+			if( params.duration === undefined ){
+				params.duration = 400;
+			}
+			
+			switch( params.duration ){
+			case "slow":
+				params.duration = 600;
+				break;
+			case "fast":
+				params.duration = 200;
+				break;
+			}
+			
+			if( properties == null || (properties.position == null && properties.css == null && properties.delay == null) ){
+				return this; // nothing to animate
+			}
+
+			if( properties.css ){
+				properties.css = style.getValueStyle( properties.css );
+			}
+
 			for( var i = 0; i < this.length; i++ ){
 				var self = this[i];
 
@@ -45,44 +64,24 @@
 					y: pos.y
 				};
 				var startStyle = style.getValueStyle( self );
-
-				if( params.duration === undefined ){
-					params.duration = 400;
-				}
-				
-				switch( params.duration ){
-				case "slow":
-					params.duration = 600;
-					break;
-				case "fast":
-					params.duration = 200;
-					break;
-				}
-				
-				if( properties == null || (properties.position == null && properties.css == null && properties.delay == null) ){
-					continue; // nothing to animate
-				}
 				
 				if( self.animated() && (params.queue === undefined || params.queue) ){
 					q = self._private.animation.queue;
 				} else {
 					q = self._private.animation.current;
 				}
-				
-				if( properties.css ){
-					properties.css = style.getValueStyle( properties.css );
-				}
 
 				q.push({
 					properties: properties,
+					duration: params.duration,
 					params: params,
 					callTime: callTime,
 					startPosition: startPosition,
 					startStyle: startStyle
 				});
-				
-				cy.addToAnimationPool( self );
 			}
+
+			cy.addToAnimationPool( this );
 
 			return this; // chaining
 		}, // animate
@@ -97,7 +96,7 @@
 					if( jumpToEnd ){
 						// next iteration of the animation loop, the animation
 						// will go straight to the end and be removed
-						animation.params.duration = 0; 
+						animation.duration = 0; 
 					}
 				}
 				

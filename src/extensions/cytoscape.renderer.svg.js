@@ -2526,6 +2526,11 @@
 				this.updateStyle( params.collection );
 				break;
 
+			case "draw":
+				this.updateStyle( params.collection );
+				this.updatePosition( params.collection );
+				break;
+
 			case "viewport":
 				this.updateViewport();
 				break;

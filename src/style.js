@@ -844,11 +844,17 @@
 		if( style ){
 			for( var i = 0; i < $$.style.properties.length; i++ ){
 				var prop = $$.style.properties[i];
-				var styleProp = style[ prop.name ];
+				var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
+
+				if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
+					styleProp = this.parse(prop.name, styleProp);
+				}
 
 				if( styleProp ){
-					rstyle[ prop.name ] = styleProp.value;
-					rstyle[ $$.util.dash2camel(prop.name) ] = styleProp.value;
+					var val = styleProp.value === undefined ? styleProp : styleProp.value;
+
+					rstyle[ prop.name ] = val;
+					rstyle[ $$.util.dash2camel(prop.name) ] = val;
 				}
 			}
 		}

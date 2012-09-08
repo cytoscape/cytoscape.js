@@ -5,11 +5,20 @@
 		addToAnimationPool: function( eles ){
 			var cy = this;
 			var aniEles = cy._private.aniEles;
+			var aniElesHas = [];
+
+			for( var i = 0; i < aniEles.length; i++ ){
+				var id = aniEles[i]._private.data.id;
+				aniElesHas[ id ] = true;
+			}
 
 			for( var i = 0; i < eles.length; i++ ){
 				var ele = eles[i];
+				var id = ele._private.data.id;
 
-				aniEles.push( ele );
+				if( !aniElesHas[id] ){
+					aniEles.push( ele );
+				} 
 			}
 		},
 
@@ -56,7 +65,7 @@
 			globalAnimationStep(); // first call
 			
 			function handleElements(now){
-				
+
 				var eles = cy._private.aniEles;
 				for( var e = 0; e < eles.length; e++ ){
 					var ele = eles[e];
@@ -69,7 +78,7 @@
 						var queue = ele._private.animation.queue;
 						
 						// if nothing currently animating, get something from the queue
-						if( current.length == 0 ){
+						if( current.length === 0 ){
 							var q = queue;
 							var next = q.length > 0 ? q.shift() : null;
 							
@@ -115,7 +124,7 @@
 				if( eles.length > 0 ){
 					cy.notify({
 						type: "draw",
-						collection: new $$.Collection(cy, eles)
+						collection: eles
 					});
 				}
 				
@@ -135,15 +144,16 @@
 			} // handleElements
 				
 			function step( self, animation, now ){
+				var style = cy.style();
 				var properties = animation.properties;
 				var params = animation.params;
 				var startTime = animation.callTime;
 				var percent;
 				
-				if( params.duration === 0 ){
+				if( animation.duration === 0 ){
 					percent = 1;
 				} else {
-					percent = Math.min(1, (now - startTime)/params.duration);
+					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
 				
 				function update(p){
@@ -179,7 +189,7 @@
 
 					if( properties.css ){
 						var props = $$.style.properties;
-						for( var i = 0; i < props; i++ ){
+						for( var i = 0; i < props.length; i++ ){
 							var name = props[i].name;
 							var end = properties.css[ name ];
 
@@ -187,7 +197,7 @@
 								var start = animation.startStyle[ name ];
 								var easedVal = ease( start, end, percent );
 								
-								$$.style.applyBypass( self, name, easedVal );
+								style.applyBypass( self, name, easedVal );
 							}
 						} // for props
 					} // if 

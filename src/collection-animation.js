@@ -5,7 +5,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				ele._private.animation.current.length > 0;
+				return ele._private.animation.current.length > 0;
 			}
 		},
 
@@ -34,6 +34,10 @@
 			var cy = this._private.cy;
 			var style = cy.style();
 			
+			if( params === undefined ){
+				params = {};
+			}
+
 			if( params.duration === undefined ){
 				params.duration = 400;
 			}
@@ -66,8 +70,10 @@
 				var startStyle = style.getValueStyle( self );
 				
 				if( self.animated() && (params.queue === undefined || params.queue) ){
+					console.log('adding to q')
 					q = self._private.animation.queue;
 				} else {
+					console.log('adding to current', self.animated())
 					q = self._private.animation.current;
 				}
 

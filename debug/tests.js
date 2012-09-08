@@ -178,8 +178,8 @@ $(function(){
 					var size = rsize();
 					
 					this.stop().animate({
-						bypass: {
-							fillColor: rcolor(),
+						css: {
+							backgroundColor: rcolor(),
 							height: size,
 							width: size
 						}
@@ -189,7 +189,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").removeCss();
 			}
 		});
 		
@@ -203,8 +203,8 @@ $(function(){
 					self
 						.stop(true)
 						.animate({
-							bypass: {
-								fillColor: "orange"
+							css: {
+								backgroundColor: "orange"
 							}
 						},
 						{
@@ -212,7 +212,7 @@ $(function(){
 						})
 						.delay(1000)
 						.animate({
-							bypass: {
+							css: {
 								height: 50,
 								width: 50
 							}
@@ -220,7 +220,7 @@ $(function(){
 						{
 							duration: 1000
 						}).delay(1000, function(){
-							self.removeBypass();
+							self.removeCss();
 						});
 				});
 				
@@ -239,7 +239,7 @@ $(function(){
 						})
 						.delay(1000)
 						.animate({
-							bypass: {
+							css: {
 								width: 7
 							}
 						},
@@ -249,7 +249,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.elements().unbind("click").removeBypass();
+				cy.elements().unbind("click").removeCss();
 			}
 		});
 		

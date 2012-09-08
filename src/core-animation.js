@@ -156,21 +156,8 @@
 					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
 				
-				function update(p){
-					if( p.end != null ){
-						var start = p.start;
-						var end = p.end;
-						
-						// for each field in end, update the current value
-						for( var name in end ){
-							var val = end[name];
-							if( valid(start[name], end[name]) ){
-								self._private[p.field][name] = ease( start[name], end[name], percent );
-							}
-						}
-					}
-				}
-				
+				console.log(animation);
+
 				if( properties.delay == null ){
 
 					// update the position

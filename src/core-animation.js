@@ -156,8 +156,6 @@
 					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
 				
-				console.log(animation);
-
 				if( properties.delay == null ){
 
 					// update the position

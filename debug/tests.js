@@ -262,15 +262,15 @@ $(function(){
 					this
 						.stop(true)
 						.animate({
-							bypass: {
-								fillColor: "blue"
+							css: {
+								backgroundColor: "blue"
 							}
 						},
 						{
 							duration: 1000
 						})
 						.animate({
-							bypass: {
+							css: {
 								height: 50,
 								width: 50
 							}
@@ -282,7 +282,7 @@ $(function(){
 				});
 			},
 			teardown: function(){
-				cy.nodes().unbind("click").removeBypass();
+				cy.nodes().unbind("click").removeCss();
 			}
 		});
 		
@@ -294,8 +294,7 @@ $(function(){
 				var on = false;
 				
 				cy.bind("click", function(){
-					
-					console.log('click');
+				
 
 					if( !on ){
 						cy.nodes().stop().animate({

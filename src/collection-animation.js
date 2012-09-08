@@ -70,10 +70,8 @@
 				var startStyle = style.getValueStyle( self );
 				
 				if( self.animated() && (params.queue === undefined || params.queue) ){
-					console.log('adding to q')
 					q = self._private.animation.queue;
 				} else {
-					console.log('adding to current', self.animated())
 					q = self._private.animation.current;
 				}
 

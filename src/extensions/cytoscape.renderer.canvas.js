@@ -107,6 +107,46 @@
 		// used to find different curvatures for the edges
 		this.nodePairEdgeData = {};		
 		
+		var numCanvases = 5;
+		
+		// Create canvases, place in container
+		
+		this.canvases = new Array(numCanvases);
+		this.canvasContexts = new Array(numCanvases);
+		
+		this.canvasNeedsRedraw = new Array(numCanvases);
+		this.redrawReason = new Array(numCanvases);
+		
+		var container = this.options.cy.container();
+		
+		for (var i = 0; i < numCanvases; i++) {
+			var canvas = document.createElement("canvas");
+		
+			canvas.width = container.clientHeight;
+			canvas.height = container.clientWidth;
+			
+			canvas.style.position = "absolute";
+			canvas.style.zIndex = String(-i);
+			
+			this.canvases[i] = canvas;
+			this.canvasContexts[i] = canvas.getContext("2d");
+			
+			this.canvasNeedsRedraw[i] = false;
+			this.redrawReason[i] = new Array();
+			
+			container.appendChild(canvas);
+		}
+		
+		this.canvas = this.canvases[0];
+		this.context = this.canvasContexts[0];
+		
+		//
+		
+		this.center = [container.clientWidth / 2, container.clientHeight / 2];
+		this.scale = [1, 1];
+		this.zoomLevel = 0;
+		// this.zoomCenter = [container.clientWidth / 2, container.clientHeight / 2];
+		
 		renderer = this;
 	}
 
@@ -123,20 +163,43 @@
 //				this.initStyle();
 				// redraw();
 				
+				this.canvasNeedsRedraw[2] = true;
+				this.redrawReason[2].push("Load");
+				
+				this.canvasNeedsRedraw[4] = true;
+				this.redrawReason[4].push("Load");
+				
 				this.redraw();
 				break;
 			case "draw":
 				debug("draw call");
 				break;
 			case "viewport":
-				// console.log("viewport");
-				// this.redraw();
+				this.canvasNeedsRedraw[2] = true;
+				this.redrawReason[2].push("Viewport change");
+				
+				this.canvasNeedsRedraw[4] = true;
+				this.redrawReason[4].push("Viewport change");
+				
 				break;
 			case "style":
 				// this.redraw();
 				doSingleRedraw = true;
+
+				this.canvasNeedsRedraw[2] = true;
+				this.redrawReason[2].push("Style change");
+				
+				this.canvasNeedsRedraw[4] = true;
+				this.redrawReason[4].push("Style change");
+
 				break;
 			case "add":
+				this.canvasNeedsRedraw[2] = true;
+				this.redrawReason[2].push("Elements added");
+				
+				this.canvasNeedsRedraw[4] = true;
+				this.redrawReason[4].push("Elements added");
+				
 //				this.initStyle();
 				break;
 			default:
@@ -273,7 +336,7 @@
 		selectBox[0] = start[0];
 		selectBox[1] = start[1];
 				
-		// Left button drag selection
+		// Left button drag selectio
 		if (mouseDownEvent.button == 0
 				&& mouseDownEvent.target == cy.renderer().canvas
 				&& minDistanceNode == undefined
@@ -294,6 +357,8 @@
 							nodes[index]._private.position.x;
 						nodes[index]._private.rscratch.dragStartY =
 							nodes[index]._private.position.y;
+						
+//						nodes[index]._private.rscratch.layer2 = true;
 					}
 				}
 				
@@ -305,8 +370,16 @@
 					draggingSelectedNode = false;
 					draggedNode = minDistanceNode;
 					
+//					draggedNode._private.rscratch.layer2 = true;	
 //					console.log(draggedNode);
 				}
+				
+				renderer.canvasNeedsRedraw[4] = true;
+				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
+				
+				renderer.canvasNeedsRedraw[2] = true;
+				renderer.redrawReason[2].push("nodes being dragged, moved to drag layer");
+				
 			}
 		}
 		
@@ -349,7 +422,9 @@
 		selectBox[2] = current[0];
 		selectBox[3] = current[1];
 		
-		hoverHandler(nodes, edges, e);
+		if (!selectBox[4]) {
+			hoverHandler(nodes, edges, e);
+		}
 		
 		if (minDistanceNode != undefined
 			&& cy.renderer().canvas.style.cursor != 
@@ -380,8 +455,11 @@
 						+ (selectBox[3] - selectBox[1]);
 				}
 			}
-		
-		/*
+			
+			renderer.canvasNeedsRedraw[4] = true;
+			renderer.redrawReason[4].push("nodes being dragged");
+			
+			/*
 			if (draggingSelectedNode) {
 				
 			} else {
@@ -402,6 +480,11 @@
 			*/
 		}
 		
+		if (selectBox[4]) {
+			renderer.canvasNeedsRedraw[0] = true;
+			renderer.redrawReason[0].push("selection boxed moved");
+		}
+		
 //		if (dragPanMode || nodeDragging) {
 			cy.renderer().redraw();
 //		}
@@ -416,6 +499,10 @@
 				&& (Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 1);
 	
+		if (draggedNode != undefined) {
+			draggedNode._private.rscratch.layer2 = false;
+		}
+		
 		// Deselect if not dragging or selecting additional
 		if (!shiftDown && 
 			!nodeBeingDragged) {
@@ -428,6 +515,8 @@
 					// nodes[index].unselect();
 					
 					elementsToUnselect = elementsToUnselect.add(nodes[index]);
+					
+					nodes[index]._private.rscratch.layer2 = false;
 				}
 			}
 			
@@ -444,11 +533,12 @@
 				elementsToUnselect.unselect();
 			}
 		}
-			
+		
 		if (selectBox[4] == 1
 			&& !nodeDragging
 			&& Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
+			
 			var padding = 2;
 			
 			var edgeSelected;
@@ -654,10 +744,18 @@
 		
 		selectBox[4] = 0;
 		
+		renderer.canvasNeedsRedraw[0] = true;
+		renderer.redrawReason[0].push("Selection box gone");
+		
+		if (nodeBeingDragged) {
+			renderer.canvasNeedsRedraw[4] = true;
+			renderer.redrawReason[4].push("Node drag completed");
+		}
+		
 		// Stop node dragging on mouseup
 		nodeDragging = false;
 		
-		// cy.renderer().redraw();
+		cy.renderer().redraw();
 	}
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
@@ -974,28 +1072,7 @@
 		this.canvas.addEventListener("mousewheel", this.mouseWheelHandler, false);
 	}
 	
-	CanvasRenderer.prototype.init = function() {
-		
-		var container = this.options.cy.container();
-		var canvas2d = document.createElement("canvas");
-		
-		canvas2d.width = container.clientHeight;
-		canvas2d.height = container.clientWidth;
-		
-		this.canvas = canvas2d;
-		this.context = canvas2d.getContext("2d");
-		
-		container.appendChild(canvas2d);
-		
-		console.log(container);
-		console.log(container);
-		console.log(2);
-
-		this.center = [container.clientWidth / 2, container.clientHeight / 2];
-		this.scale = [1, 1];
-		this.zoomCenter = [container.clientWidth / 2, container.clientHeight / 2];
-		this.zoomLevel = 0;
-	}
+	CanvasRenderer.prototype.init = function() {}
 
 	CanvasRenderer.prototype.complexSqrt = function(real, imaginary, zeroThreshold) {
 		var hyp = Math.sqrt(real * real 
@@ -2007,7 +2084,7 @@
 		
 		if (redrawTimeout) {
 //			doSingleRedraw = true;
-			return;
+			// return;
 		}
 		
 		redrawTimeout = setTimeout(function() {
@@ -2021,92 +2098,145 @@
 		}, 1000 / 80);
 		
 		
-		this.findEdgeControlPoints(this.options.cy.edges());
-	
 		var context = this.context;
-		
-		context.setTransform(1, 0, 0, 1, 0, 0);
-		context.clearRect(0, 0, this.options.cy.container().clientWidth,
-			this.options.cy.container().clientHeight);
-//		console.log(this.options.cy.container);
-//		context.clearRect(0, 0, 600, 600);
-
-		
-		
-		/*		
-		context.translate(this.zoomCenter[0], 
-			this.zoomCenter[1]);
-		
-		context.scale(this.scale[0], this.scale[1])
-		context.translate(-this.center[0], -this.center[1])
-		*/
-		
-		context.translate(this.cy.pan().x, this.cy.pan().y);
-		context.scale(this.cy.zoom(), this.cy.zoom());
+		var contexts = this.canvasContexts;
 		
 		var elements = this.options.cy.elements().toArray();
 		
-		elements.sort(function(a, b) {
-			var result = a._private.style["z-index"].value
-				- b._private.style["z-index"].value;
+		if (this.canvasNeedsRedraw[2] || this.canvasNeedsRedraw[4]) {
+		
+			this.findEdgeControlPoints(this.options.cy.edges());
 			
-			if (result == 0) {
-				if (a._private.group == "nodes"
-					&& b._private.group == "edges") {
-					
-					return 1;
-				} else if (a._private.group == "edges"
-					&& b._private.group == "nodes") {
-					
-					return -1;
+			elements.sort(function(a, b) {
+				var result = a._private.style["z-index"].value
+					- b._private.style["z-index"].value;
+				
+				if (result == 0) {
+					if (a._private.group == "nodes"
+						&& b._private.group == "edges") {
+						
+						return 1;
+					} else if (a._private.group == "edges"
+						&& b._private.group == "nodes") {
+						
+						return -1;
+					}
+				}
+				
+				return 0;
+			});
+		}
+		
+		if (this.canvasNeedsRedraw[2]) {
+			context = this.canvasContexts[2];
+			this.context = context;
+			
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, this.options.cy.container().clientWidth,
+				this.options.cy.container().clientHeight);
+			
+			context.translate(this.cy.pan().x, this.cy.pan().y);
+			context.scale(this.cy.zoom(), this.cy.zoom());
+			
+//			console.log(2, this.redrawReason[2]);
+			
+			var element;
+
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.rscratch.layer2) {
+					if (element._private.group == "nodes") {
+						this.drawNode(element);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(element);
+					}
 				}
 			}
 			
-			return 0;
-		});
-	
-		for (var index = 0; index < elements.length; index++) {
-			element = elements[index];
-			
-			if (element._private.group == "nodes") {
-				this.drawNode(element);
-			} else if (element._private.group == "edges") {
-				this.drawEdge(element);
-			}
+			this.canvasNeedsRedraw[2] = false;
+			this.redrawReason[2] = [];
 		}
+		
+		if (this.canvasNeedsRedraw[4]) {
+			context = this.canvasContexts[4];
+			this.context = context;
+			
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, this.options.cy.container().clientWidth,
+				this.options.cy.container().clientHeight);
+			
+			context.translate(this.cy.pan().x, this.cy.pan().y);
+			context.scale(this.cy.zoom(), this.cy.zoom());
+		
+//			console.log(4, this.redrawReason[4]);
+		
+			var element;
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
 				
-		if (selectBox[4] == 1) {
+				if (!element._private.rscratch.layer2) {
+					if (element._private.group == "nodes") {
+						this.drawNode(element);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(element);
+					}
+				}
+			}
 			
-			var coreStyle = cy.style()._private.coreStyle;
+			this.canvasNeedsRedraw[4] = false;
+			this.redrawReason[4] = [];
+		}
 		
-			context.lineWidth = coreStyle["selection-box-border-width"].value;
-		
-			context.fillStyle = "rgba(" 
-				+ coreStyle["selection-box-color"].value[0] + ","
-				+ coreStyle["selection-box-color"].value[1] + ","
-				+ coreStyle["selection-box-color"].value[2] + ","
-				+ coreStyle["selection-box-opacity"].value + ")";
+		if (this.canvasNeedsRedraw[0]) {
+			context = this.canvasContexts[0];
 			
-			context.fillRect(selectBox[0],
-				selectBox[1],
-				selectBox[2] - selectBox[0],
-				selectBox[3] - selectBox[1]);
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, this.canvases[0].width,
+				this.canvases[0].height);
 		
-			context.strokeStyle = "rgba(" 
-				+ coreStyle["selection-box-border-color"].value[0] + ","
-				+ coreStyle["selection-box-border-color"].value[1] + ","
-				+ coreStyle["selection-box-border-color"].value[2] + ","
-				+ coreStyle["selection-box-opacity"].value + ")";
+			context.translate(this.cy.pan().x, this.cy.pan().y);
+			context.scale(this.cy.zoom(), this.cy.zoom());
 			
-			context.strokeRect(selectBox[0],
-				selectBox[1],
-				selectBox[2] - selectBox[0],
-				selectBox[3] - selectBox[1]);
+			// console.log(0, this.redrawReason[0], selectBox[4]);
+			
+			if (selectBox[4] == 1) {
+	
+				var coreStyle = cy.style()._private.coreStyle;
+			
+				context.lineWidth = coreStyle["selection-box-border-width"].value;
+			
+				context.fillStyle = "rgba(" 
+					+ coreStyle["selection-box-color"].value[0] + ","
+					+ coreStyle["selection-box-color"].value[1] + ","
+					+ coreStyle["selection-box-color"].value[2] + ","
+					+ coreStyle["selection-box-opacity"].value + ")";
+				
+				context.fillRect(selectBox[0],
+					selectBox[1],
+					selectBox[2] - selectBox[0],
+					selectBox[3] - selectBox[1]);
+			
+				context.strokeStyle = "rgba(" 
+					+ coreStyle["selection-box-border-color"].value[0] + ","
+					+ coreStyle["selection-box-border-color"].value[1] + ","
+					+ coreStyle["selection-box-border-color"].value[2] + ","
+					+ coreStyle["selection-box-opacity"].value + ")";
+				
+				context.strokeRect(selectBox[0],
+					selectBox[1],
+					selectBox[2] - selectBox[0],
+					selectBox[3] - selectBox[1]);
+			}
+			
+			this.canvasNeedsRedraw[0] = false;
+			this.redrawReason[0] = [];
 		}
 	};
 	
 	CanvasRenderer.prototype.drawEdge = function(edge) {
-		var context = this.context;
+		var context = renderer.context;
 		var styleValue;
 		
 		var startNode, endNode;
@@ -2240,7 +2370,7 @@
 	}
 	
 	CanvasRenderer.prototype.drawNode = function(node) {
-		var context = this.context;
+		var context = renderer.context;
 		var styleValue;
 		
 		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
@@ -2330,7 +2460,7 @@
 	}
 	
 	CanvasRenderer.prototype.drawText = function(element, textX, textY) {
-		var context = this.context;
+		var context = renderer.context;
 		var styleValue;
 		
 		// Font style

@@ -86,6 +86,9 @@
 	var draggingSelectedNode = false;
 	var draggedNode;
 	
+	var nodesBeingDragged = [];
+	var edgesBeingDragged = [];
+	
 	var cy;
 	var renderer;
 	
@@ -289,7 +292,121 @@
 		// console.log(this.nodePairEdgeData);
 	}
 	
+	CanvasRenderer.prototype.findEdges = function(nodeSet) {
+		
+		var edges = cy.edges();
+		
+		var hashTable = {};
+		var adjacentEdges = [];
+		
+		for (var i = 0; i < nodeSet.length; i++) {
+			hashTable[nodeSet[i]._private.data.id] = nodeSet[i];
+		}
+		
+		for (var i = 0; i < edges.length; i++) {
+			if (hashTable[edges[i]._private.data.source]
+				|| hashTable[edges[i]._private.data.target]) {
+				
+				adjacentEdges.push(edges[i]);
+			}
+		}
+		
+		return adjacentEdges;
+	}
+	
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+		var hashTable = {};
+		
+		var pairId;
+		for (var i = 0; i < edges.length; i++) {
+			
+			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
+				edges[i]._private.data.target + edges[i]._private.data.source :
+				edges[i]._private.data.source + edges[i]._private.data.target;
+
+			if (hashTable[pairId] == undefined) {
+				hashTable[pairId] = [];
+			}
+			
+			hashTable[pairId].push(edges[i]); // ._private.data.id);
+		}
+	
+		var src, tgt;
+	
+		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
+		for (var pairId in hashTable) {
+		
+			src = cy.getElementById(hashTable[pairId][0]._private.data.source);
+			tgt = cy.getElementById(hashTable[pairId][0]._private.data.target);
+			
+			var midPointX = (src._private.position.x + tgt._private.position.x) / 2;
+			var midPointY = (src._private.position.y + tgt._private.position.y) / 2;
+			
+			var displacementX, displacementY;
+			
+			if (hashTable[pairId].length > 1) {
+				displacementX = tgt._private.position.y - src._private.position.y;
+				displacementY = src._private.position.x - tgt._private.position.x;
+				
+				var displacementLength = Math.sqrt(displacementX * displacementX
+					+ displacementY * displacementY);
+				
+				displacementX /= displacementLength;
+				displacementY /= displacementLength;
+			}
+			
+			var edge;
+			
+			for (var i = 0; i < hashTable[pairId].length; i++) {
+				edge = hashTable[pairId][i];
+							
+				// Self-edge
+				if (src._private.data.id == tgt._private.data.id) {
+					var stepSize = edge._private.style["control-point-step-size"].pxValue;
+						
+					edge._private.rscratch.isSelfEdge = true;
+					
+					edge._private.rscratch.cp2ax = src._private.position.x;
+					edge._private.rscratch.cp2ay = src._private.position.y
+						- 1.3 * stepSize * (i / 3 + 1);
+					
+					edge._private.rscratch.cp2cx = src._private.position.x
+						- 1.3 * stepSize * (i / 3 + 1);
+					edge._private.rscratch.cp2cy = src._private.position.y;
+					
+					edge._private.rscratch.selfEdgeMidX =
+						(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
+				
+					edge._private.rscratch.selfEdgeMidY =
+						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
+						
+				// Straight edge	
+				} else if (hashTable[pairId].length % 2 == 1
+					&& i == Math.floor(hashTable[pairId].length / 2)) {
+					
+					edge._private.rscratch.isStraightEdge = true;
+					
+				// Bezier edge
+				} else {
+					var stepSize = edge._private.style["control-point-step-size"].value;
+					var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+					
+					edge._private.rscratch.isBezierEdge = true;
+					
+					edge._private.rscratch.cp2x = midPointX
+						+ displacementX * distanceFromMidpoint;
+					edge._private.rscratch.cp2y = midPointY
+						+ displacementY * distanceFromMidpoint;
+					
+					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
+				}
+			}
+		}
+		
+		return hashTable;
+	}
+	
+	CanvasRenderer.prototype.findEdgeControlPoints2 = function(edges) {
 		var visitedEdges = {};
 		
 		var parallelEdges;
@@ -349,30 +466,48 @@
 				&& mouseDownEvent.target == cy.renderer().canvas) {
 			
 			if (minDistanceNode != undefined) {
-				for (var index = 0; index < nodes.length; index++) {
-					if (nodes[index].selected()
-							|| nodes[index] == minDistanceNode) {
-						
-						nodes[index]._private.rscratch.dragStartX = 
-							nodes[index]._private.position.x;
-						nodes[index]._private.rscratch.dragStartY =
-							nodes[index]._private.position.y;
-						
-//						nodes[index]._private.rscratch.layer2 = true;
-					}
-				}
 				
 				nodeDragging = true;
+				nodesBeingDragged = [];
 				
 				if (minDistanceNode.selected()) {
 					draggingSelectedNode = true;
+					
+					for (var index = 0; index < nodes.length; index++) {
+						if (nodes[index].selected()) {
+							
+							nodes[index]._private.rscratch.dragStartX = 
+								nodes[index]._private.position.x;
+							nodes[index]._private.rscratch.dragStartY =
+								nodes[index]._private.position.y;
+										
+							nodesBeingDragged.push(nodes[index]);
+							nodes[index]._private.rscratch.layer2 = true;
+						}
+					}
+					
 				} else {
 					draggingSelectedNode = false;
 					draggedNode = minDistanceNode;
 					
-//					draggedNode._private.rscratch.layer2 = true;	
+					draggedNode._private.rscratch.dragStartX = 
+						draggedNode._private.position.x;
+					draggedNode._private.rscratch.dragStartY = 
+						draggedNode._private.position.y;
+					
+					nodesBeingDragged.push(draggedNode);
+					draggedNode._private.rscratch.layer2 = true;	
+
 //					console.log(draggedNode);
 				}
+				
+				/*
+				edgesBeingDragged = renderer.findEdges(nodesBeingDragged);
+				
+				for (var i = 0; i < edgesBeingDragged.length; i++) {
+					edgesBeingDragged[i]._private.rscratch.layer2 = true;
+				}
+				*/
 				
 				renderer.canvasNeedsRedraw[4] = true;
 				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
@@ -391,7 +526,7 @@
 		
 		mouseMoveTimeout = setTimeout(function(){
 			mouseMoveTimeout = null;		
-		}, 1000/80);
+		}, 1000/100);
 		
 		var renderer = cy.renderer();
 		
@@ -456,8 +591,8 @@
 				}
 			}
 			
-			renderer.canvasNeedsRedraw[4] = true;
-			renderer.redrawReason[4].push("nodes being dragged");
+			renderer.canvasNeedsRedraw[2] = true;
+			renderer.redrawReason[2].push("nodes being dragged");
 			
 			/*
 			if (draggingSelectedNode) {
@@ -498,9 +633,19 @@
 		var nodeBeingDragged = nodeDragging
 				&& (Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 1);
-	
+
+		/*	
 		if (draggedNode != undefined) {
 			draggedNode._private.rscratch.layer2 = false;
+		}
+		*/
+		
+		for (var i = 0; i < nodesBeingDragged.length; i++) {
+			nodesBeingDragged[i]._private.rscratch.layer2 = false;
+		}
+		
+		for (var i = 0; i < edgesBeingDragged.length; i++) {
+			edgesBeingDragged[i]._private.rscratch.layer2 = false;
 		}
 		
 		// Deselect if not dragging or selecting additional
@@ -515,8 +660,6 @@
 					// nodes[index].unselect();
 					
 					elementsToUnselect = elementsToUnselect.add(nodes[index]);
-					
-					nodes[index]._private.rscratch.layer2 = false;
 				}
 			}
 			
@@ -2102,6 +2245,8 @@
 		var contexts = this.canvasContexts;
 		
 		var elements = this.options.cy.elements().toArray();
+		var elementsLayer2 = [];
+		var elementsLayer4 = [];
 		
 		if (this.canvasNeedsRedraw[2] || this.canvasNeedsRedraw[4]) {
 		

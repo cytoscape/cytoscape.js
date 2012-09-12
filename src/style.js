@@ -965,25 +965,6 @@
 		}
 	};
 
-	$$.styfn.calculateControlPoints2 = function(edgeSet) {
-		
-		var visitedEdges = {};
-		
-		var parallelEdges;
-		for (var i = 0; i < edgeSet.length; i++) {
-			if (visitedEdges[edgeSet[i]._private.data.id] == undefined) {
-			
-				parallelEdges = edgeSet[i].parallelEdges();
-				
-				for (var j = 0; j < parallelEdges.length; j++) {
-					visitedEdges[parallelEdges[j]._private.data.id] = true;
-				}
-				
-				this.calculateControlPoints(parallelEdges);
-			}
-		}
-	};
-
 	// gets the control points for the specified edges (assuming bezier curve-style)
 	// 
 	$$.styfn.calculateControlPoints = function( parallelEdges ){

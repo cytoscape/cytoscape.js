@@ -41,6 +41,7 @@ body {
 	margin-left: 15em;
 	overflow-y: auto;
 	height: 100%;
+	padding: 0 0.25em;
 }
 
 .title {
@@ -91,6 +92,12 @@ p {
 	margin: 1em 0;
 }
 
+hr {
+	height: 1px;
+	background: #ddd;
+	border: 0;
+}
+
 a {
 	color: #4183C4;
 	text-decoration: none;
@@ -101,6 +108,19 @@ a:active {
 	color: #fff;
 	border-radius: 0.125em;
 	box-shadow: 0 0 0 0.2em #4183C4;
+}
+
+em {
+	font-style: oblique;
+}
+
+strong {
+	font-weight: bold;
+}
+
+ul {
+	margin-left: 1.5em;
+	list-style-type: disc;
 }
 
 code,
@@ -133,6 +153,11 @@ pre code {
 
 .function > .name {
 	
+}
+
+.function ul {
+	list-style-type: none;
+	margin-left: 0;
 }
 
 .function > .formats,

@@ -23,7 +23,7 @@
 					<div class="section lvl2"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
 
 					{{#each fns}}
-						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}()</a></div>
+						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
 					{{/each}}
 				{{/each}}
 			{{/each}}
@@ -60,7 +60,7 @@
 
 					{{#each fns}}
 						<div class="function">
-							<div class="name" id="{{id}}">{{name}}() {{{bookmark}}}</div>
+							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
 							<div class="descr" id="{{id}}">{{{descr}}}</div>
 
 							{{#if formats}}

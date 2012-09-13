@@ -99,6 +99,7 @@ function compileConfig( config ){
           fn.html = fn.html.replace(/\<\/h1\>/g, '</h3>');
         }
 
+        var formatsHaveDiffNames = false;
         if( fn.formats ){
           var formats = fn.formats;
 
@@ -106,8 +107,17 @@ function compileConfig( config ){
             var format = formats[k];
 
             format.name = format.name || fn.name; // copy name to format if not specified
+
+            if( format.name !== fn.name ){
+              formatsHaveDiffNames = true;
+            }
           }
         } // if
+
+        // mark as diff names
+        if( formatsHaveDiffNames ){
+          fn.aliases = true;
+        }
         
       } // for
 

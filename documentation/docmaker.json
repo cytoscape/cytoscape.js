@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0-alpha",
+  "version": "2.0.0-beta1",
 
   "templates": {
     "TODO": "we are not using function templates yet but it might be nice"
@@ -8,14 +8,13 @@
   "sections": [
     { "name": "Introduction", "md": "intro" },
 
-    { "name": "The model", "md": "model" },
+    { "name": "Model", "md": "model" },
 
     {
       "name": "Core",
       "md": "core/core",
 
       "sections": [
-        { "name": "Notation", "md": "core/notation" },
         { "name": "Initialisation", "md": "core/init" },
 
         {
@@ -23,7 +22,7 @@
           "fns": [
             {
               "name": "cy.add",
-              "descr": "Add elements to the graph.",
+              "descr": "Add elements to the graph and return them.",
               "formats": [
                 { "descr": "Add a specified element to the graph.", "args": [ { "name": "eleObj", "descr": "A plain object that specifies the element." } ] },
                 { "descr": "Add the specified elements to the graph.", "args": [ { "name": "eleObjs", "descr": "An array of elements specified by plain objects." } ] },
@@ -290,10 +289,226 @@
 
 
           ]
+        },
+
+        {
+          "name": "Visuals",
+
+          "fns": [
+            {
+              "name": "cy.layout",
+              "descr": "Position elements in the graph with a layout.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "",
+                      "optional": true
+                    }
+                  ]
+                }
+              ],
+              "md": "core/layout"
+            },
+
+            {
+              "name": "cy.style",
+              "descr": "Get the entry point to modify the visual style of the graph after initialisation.",
+              "md": "core/style"
+            }
+          ]
         }
 
 
       ]
+    },
+
+    {
+      "name": "Collection",
+      "md": "collection/collection",
+      "sections": [
+        {
+          "name": "Graph manipulation",
+          "fns": [
+            {
+              "name": "eles.remove",
+              "descr": "Remove the elements from the graph."
+            },
+
+            {
+              "name": "ele.removed",
+              "descr": "Get whether the element has been removed from the graph."
+            },
+
+            {
+              "name": "eles.restore",
+              "descr": "Put removed elements back into the graph."
+            }
+          ]
+        },
+
+        {
+          "name": "Data",
+          "fns": [
+            {
+              "name": "eles.data",
+              "descr": "Read and write developer-defined data associated with the elements."
+            },
+
+            {
+              "name": "eles.removeData",
+              "descr": "Remove developer-defined data associated with the elements."
+            },
+
+            {
+              "name": "ele.id",
+              "descr": "A shortcut to get the ID of an element."
+            },
+
+            {
+              "name": "eles.scratch",
+              "descr": "Read and write extension-defined data associated with the elements."
+            },
+
+            {
+              "name": "eles.removeScratch",
+              "descr": "Remove extension-defined data associated with the elements."
+            },
+
+            {
+              "name": "ele.json",
+              "descr": "Get the element's plain JavaScript object representation."
+            },
+
+            {
+              "name": "ele.group",
+              "descr": "Get the group string that defines the type of the element."
+            },
+
+            {
+              "name": "ele.isNode",
+              "descr": "Get whether the element is a node."
+            },
+
+            {
+              "name": "ele.isEdge",
+              "descr": "Get whether the element is an edge."
+            },
+
+            {
+              "name": "ele.isEdge",
+              "descr": "Get whether the element is an edge."
+            }
+
+          ]
+        },
+
+        {
+          "name": "Metadata",
+          "fns": [
+            {
+              "name": "node.degree",
+              "formats": [
+                {
+                  "name": "node.degree",
+                  "descr": "Get the degree of a node."
+                },
+
+                {
+                  "name": "node.indegree",
+                  "descr": "Get the indegree of a node."
+                },
+
+                {
+                  "name": "node.outdegree",
+                  "descr": "Get the outdegree of a node."
+                },
+
+                {
+                  "name": "nodes.totalDegree",
+                  "descr": "Get the total degree of a collection of nodes."
+                },
+
+                {
+                  "name": "nodes.minDegree",
+                  "descr": "Get the minimum degree of the nodes in the collection."
+                },
+
+                {
+                  "name": "nodes.maxDegree",
+                  "descr": "Get the maximum degree of the nodes in the collection."
+                },
+
+                {
+                  "name": "nodes.minIndegree",
+                  "descr": "Get the minimum indegree of the nodes in the collection."
+                },
+
+                {
+                  "name": "nodes.maxIndegree",
+                  "descr": "Get the maximum indegree of the nodes in the collection."
+                },
+
+                {
+                  "name": "nodes.minOutdegree",
+                  "descr": "Get the minimum outdegree of the nodes in the collection."
+                },
+
+                {
+                  "name": "nodes.maxOutdegree",
+                  "descr": "Get the maximum outdegree of the nodes in the collection."
+                }
+              ],
+              "md": "collection/degree"
+            }
+          ]
+        },
+
+        {
+          "name": "Position & dimensions",
+          "fns": []
+        },
+
+        {
+          "name": "Selection",
+          "fns": []
+        },
+
+        {
+          "name": "Events",
+          "fns": []
+        },
+
+        {
+          "name": "Style",
+          "fns": []
+        },
+
+        {
+          "name": "Animation",
+          "fns": []
+        },
+
+        {
+          "name": "Comparison",
+          "fns": []
+        },
+
+        {
+          "name": "Traversing",
+          "fns": []
+        },
+
+        {
+          "name": "Iteration",
+          "fns": []
+        }
+      ]
+    },
+
+    {
+      "name": "Extensions"
     }
 
   ]

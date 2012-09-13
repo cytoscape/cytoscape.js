@@ -3,4 +3,4 @@ all:
 	node docmaker
 
 clean:
-	rm -rf index.html
+	rm -rf index.html node_modules

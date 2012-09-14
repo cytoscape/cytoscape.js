@@ -122,9 +122,9 @@ function compileConfig( config ){
       } // for
 
       // sort functions by name within a section
-      fns.sort(function(a, b){
-        return a.name.toLowerCase() > b.name.toLowerCase();
-      });
+      // fns.sort(function(a, b){
+      //   return a.name.toLowerCase() > b.name.toLowerCase();
+      // });
     }
 
     if( section.sections ){ // then compile those subsections too

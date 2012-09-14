@@ -394,11 +394,6 @@
             {
               "name": "ele.isEdge",
               "descr": "Get whether the element is an edge."
-            },
-
-            {
-              "name": "ele.isEdge",
-              "descr": "Get whether the element is an edge."
             }
 
           ]
@@ -467,32 +462,213 @@
 
         {
           "name": "Position & dimensions",
-          "fns": []
+          "fns": [
+            {
+              "name": "node.position",
+              "descr": "Get or set the position of a node."
+            },
+
+            {
+              "name": "nodes.positions",
+              "descr": "Set the positions of several nodes with a function."
+            },
+
+            {
+              "name": "node.renderedPosition",
+              "descr": "Get or set the rendered position of a node."
+            },
+
+            {
+              "name": "node.grabbed",
+              "descr": "Get whether a node is currently grabbed, meaning the user has hold of the node."
+            },
+
+            {
+              "name": "node.grabbable",
+              "descr": "Get whether the user can grab a node."
+            },
+
+            {
+              "name": "nodes.grabify",
+              "descr": "Allow the user to grab the nodes."
+            },
+
+            {
+              "name": "nodes.ungrabify",
+              "descr": "Disallow the user to grab the nodes."
+            },
+            
+            {
+              "name": "node.locked",
+              "descr": "Get whether a node is locked, meaning that its position can not be changed."
+            },
+
+            {
+              "name": "nodes.lock",
+              "descr": "Lock the nodes such that their positions can not be changed."
+            },
+
+            {
+              "name": "nodes.unlock",
+              "descr": "Unlock the nodes such that their positions can be changed."
+            }
+
+          ]
         },
 
         {
           "name": "Selection",
-          "fns": []
+          "fns": [
+            {
+              "name": "ele.selected",
+              "descr": "Get whether the element is selected."
+            }
+
+            {
+              "name": "eles.select",
+              "descr": "Make the elements selected."
+            },
+
+            {
+              "name": "eles.unselect",
+              "descr": "Make the elements not selected."
+            },
+
+            {
+              "name": "ele.selectable",
+              "descr": "Get whether the element's selection state is mutable."
+            },
+
+            {
+              "name": "eles.selectify",
+              "descr": "Make the selection states of the elements mutable."
+            },
+
+            {
+              "name": "eles.unselectify",
+              "descr": "Make the selection states of the elements immutable."
+            }
+          ]
         },
 
         {
           "name": "Events",
-          "fns": []
+          "fns": [
+            {
+              "name": "eles.on",
+              "descr": "Bind a callback function to specified events that occur on the elements."
+            },
+
+            {
+              "name": "eles.one",
+              "descr": "Bind a callback function that is triggered once per element."
+            },
+            
+            {
+              "name": "eles.once",
+              "descr": "Bind a callback function that is triggered once per collection."
+            },
+
+            {
+              "name": "eles.off",
+              "descr": "Unbind one or more callback functions."
+            }      
+          ]
         },
 
         {
           "name": "Style",
-          "fns": []
+          "fns": [
+            {
+              "name": "eles.css",
+              "descr": "Get the style of the element, or override the style of the elements."
+            },
+
+            {
+              "name": "ele.removeCss",
+              "descr": "Removes overridden style of the elements."
+            },
+
+            {
+              "name": "ele.renderedCss",
+              "descr": "Get the style of the element in rendered dimensions."
+            },
+
+            {
+              "name": "eles.show()",
+              "descr": "Override the style of the elements such that they are visible."
+            },
+
+            {
+              "name": "eles.hide",
+              "descr": "Override the style of the elements such that they are hidden."
+            },
+
+            {
+              "name": "ele.visible",
+              "descr": "Get whether the element is visible."
+            }
+          ]
         },
 
         {
           "name": "Animation",
-          "fns": []
+          "fns": [
+            {
+              "name": "ele.animated()",
+              "descr": "Get whether the element is currently being animated."
+            },
+
+            {
+              "name": "ele.animate",
+              "descr": "Animate the elements."
+            },
+
+            {
+              "name": "eles.stop",
+              "descr": "Stop all animations that are currently running."
+            },
+
+            {
+              "name": "eles.clearQueue",
+              "descr": "Remove all queued animations for the elements."
+            },
+
+            {
+              "name": "eles.delay",
+              "descr": "Add a delay between animations for the elements."
+            }
+          ]
         },
 
         {
           "name": "Comparison",
-          "fns": []
+          "fns": [
+            {
+              "name": "eles.same",
+              "descr": "Determine whether this collection contains exactly the same elements as another collection."
+            },
+
+            {
+              "name": "eles.anySame",
+              "descr": "Determine whether this collection contains any of the same elements as another collection."
+            },
+
+            {
+              "name": "eles.is",
+              "descr": "Determine whether any element in this collection matches a selector."
+            },
+
+            {
+              "name": "eles.allAre",
+              "descr": "Determine whether all elements in the collection match a selector."
+            },
+
+            {
+              "name": "eles.allAreNeighbors",
+              "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection."
+            }
+          ]
         },
 
         {
@@ -502,7 +678,47 @@
 
         {
           "name": "Iteration",
-          "fns": []
+          "fns": [
+            {
+              "name": "eles.size",
+              "descr": "Get the number of elements in the collection."
+            },
+
+            {
+              "name": "eles.empty",
+              "descr": "Get the "
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            },
+
+            {
+              "name": "",
+              "descr": ""
+            }
+          ]
         }
       ]
     },

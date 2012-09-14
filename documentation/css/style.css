@@ -5,7 +5,7 @@ body {
 }
 
 #navigation {
-	position: fixed;
+	position: absolute;
 	left: 0;
 	top: 0;
 	height: 100%;
@@ -33,15 +33,18 @@ body {
 
 #navigation .lvl3 {
 	margin-left: 2em;
-	font-size: 0.8em;
+	font-size: 0.7em;
 	font-family: Andale Mono, monospace;
 }
 
 #content {
-	margin-left: 15em;
-	overflow-y: auto;
-	height: 100%;
 	padding: 0 0.25em;
+	position: absolute;
+	left: 15em;
+	right: 0;
+	top: 0;
+	height: 100%;
+	overflow: auto;
 }
 
 .title {
@@ -134,6 +137,7 @@ pre {
 
 pre {
 	margin: 1.25em 0;
+	overflow: auto;
 }
 
 pre code {

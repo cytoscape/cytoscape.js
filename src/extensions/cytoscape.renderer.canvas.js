@@ -92,6 +92,14 @@
 	var cy;
 	var renderer;
 	
+	var firstTouchFinger, secondTouchFinger;
+	var firstTouchProjection, secondTouchProjection;
+	var twoFingerOffsetDistance;
+	
+	var prevTouch1, prevTouch2, prevTouchDistance;
+	
+	var skipNextViewportRedraw = false;
+	
 	// Timeout variable used to prevent mouseMove events from being triggered too often
 	var mouseMoveTimeout = 0;
 	
@@ -117,31 +125,65 @@
 		this.canvases = new Array(numCanvases);
 		this.canvasContexts = new Array(numCanvases);
 		
+		/*
+		this.canvasBuffers = new Array(numCanvases);
+		this.canvasBufferContexts = new Array(numCanvases);
+		*/
+		
+		this.bufferCanvases = new Array(2);
+		this.bufferCanvasContexts = new Array(2);
+		
 		this.canvasNeedsRedraw = new Array(numCanvases);
 		this.redrawReason = new Array(numCanvases);
 		
 		var container = this.options.cy.container();
+		this.container = container;
 		
-		for (var i = 0; i < numCanvases; i++) {
+		for (var i = 0; i < numCanvases + 2; i++) {
 			var canvas = document.createElement("canvas");
-		
+			
 			canvas.width = container.clientHeight;
 			canvas.height = container.clientWidth;
 			
 			canvas.style.position = "absolute";
-			canvas.style.zIndex = String(-i);
 			
-			this.canvases[i] = canvas;
-			this.canvasContexts[i] = canvas.getContext("2d");
-			
-			this.canvasNeedsRedraw[i] = false;
-			this.redrawReason[i] = new Array();
+			if (i < numCanvases) {
+				// Create main set of canvas layers for drawing
+				canvas.id = "layer" + i;
+				canvas.style.zIndex = String(-i);
+				canvas.style.visibility = "hidden";
+				
+				this.canvases[i] = canvas;
+				this.canvasContexts[i] = canvas.getContext("2d");
+				
+				this.canvasNeedsRedraw[i] = false;
+				this.redrawReason[i] = new Array();
+				
+			} else {
+				// Create the buffer canvas which is the cached drawn result
+				canvas.id = "buffer" + (i - numCanvases);
+				canvas.style.zIndex = String(10 + -(i - numCanvases));
+				
+				this.bufferCanvases[i - numCanvases] = canvas;
+				this.bufferCanvasContexts[i - numCanvases] = canvas.getContext("2d");
+			}
 			
 			container.appendChild(canvas);
 		}
 		
+		this.bufferCanvases[0].style.visibility = "visible";
+//		this.bufferCanvases[0].style.visibility = "hidden";
+		
+		this.bufferCanvases[1].style.visibility = "hidden";
+//		this.bufferCanvases[1].style.visibility = "visible";
+
+/*
 		this.canvas = this.canvases[0];
 		this.context = this.canvasContexts[0];
+*/
+		
+		this.canvas = this.bufferCanvases[0];
+		this.context = this.bufferCanvasContexts[0];
 		
 		//
 		
@@ -178,11 +220,16 @@
 				debug("draw call");
 				break;
 			case "viewport":
-				this.canvasNeedsRedraw[2] = true;
-				this.redrawReason[2].push("Viewport change");
-				
-				this.canvasNeedsRedraw[4] = true;
-				this.redrawReason[4].push("Viewport change");
+			
+				if (!skipNextViewportRedraw) {
+					this.canvasNeedsRedraw[2] = true;
+					this.redrawReason[2].push("Viewport change");
+					
+					this.canvasNeedsRedraw[4] = true;
+					this.redrawReason[4].push("Viewport change");
+				} else {
+					skipNextViewportRedraw = false;
+				}
 				
 				break;
 			case "style":
@@ -423,15 +470,77 @@
 		}
 	}
 	
+	CanvasRenderer.prototype.checkRecordPinchCoordinates = function(touchEvent) {
+		
+		if (touchEvent.touches.length >= 2) {
+			prevTouch1 = touchEvent.touches[0];
+			prevTouch2 = touchEvent.touches[1];
+			
+			prevTouch1.offsetX = prevTouch1.clientX + renderer.canvas.parentElement.offsetLeft;
+			prevTouch1.offsetY = prevTouch1.clientY + renderer.canvas.parentElement.offsetTop;
+			
+			prevTouch2.offsetX = prevTouch2.clientX + renderer.canvas.parentElement.offsetLeft;
+			prevTouch2.offsetY = prevTouch2.clientY + renderer.canvas.parentElement.offsetTop;
+		} else {
+			prevTouch1 = undefined;
+			prevTouch2 = undefined;
+		}
+	}
+	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
-		var mouseDownEvent = event;
 //		console.log(event);
 		var nodes = cy.nodes();
 		var edges = cy.edges();
 
+		if (event.changedTouches) {						
+			event.preventDefault();
+			
+			// Check for 2-finger, prepare for pinch-to-zoom
+			if (event.touches.length >= 2) {
+				firstTouchFinger = event.touches[0];
+				secondTouchFinger = event.touches[1];
+				
+				firstTouchProjection = renderer.projectMouse(firstTouchFinger);
+				secondTouchProjection = renderer.projectMouse(secondTouchFinger);
+				
+				firstTouchFinger.offsetX = firstTouchFinger.clientX + renderer.canvas.parentElement.offsetLeft;
+				firstTouchFinger.offsetY = firstTouchFinger.clientY - renderer.canvas.parentElement.offsetTop;
+				
+				secondTouchFinger.offsetX = secondTouchFinger.clientX + renderer.canvas.parentElement.offsetLeft;
+				secondTouchFinger.offsetY = secondTouchFinger.clientY - renderer.canvas.parentElement.offsetTop;
+				
+				twoFingerOffsetDistance = Math.sqrt(
+					Math.pow(firstTouchProjection[0] - secondTouchProjection[0], 2)
+					+ Math.pow(firstTouchProjection[1] - secondTouchProjection[1], 2));
+					
+				twoFingerOffsetDistance = Math.sqrt(
+					Math.pow(firstTouchFinger.offsetX - secondTouchFinger.offsetX, 2)
+					+ Math.pow(firstTouchFinger.offsetY - secondTouchFinger.offsetY, 2));
+
+				
+			} else {
+				secondTouchFinger = undefined;
+				secondTouchProjection = undefined;
+			}
+			
+			event = event.changedTouches[0];
+			event.button = 0;
+			event.touch = 1;
+			
+			// Look for nodes and edges under the touch event			
+			minDistanceNode = minDistanceEdge = undefined;
+			renderer.mouseMoveHelper.hoverHandler(nodes, edges, event);
+		}
+		
+		var mouseDownEvent = event;
+
 		// Process middle button panning
-		if (mouseDownEvent.button == 1
-				&& mouseDownEvent.target == cy.renderer().canvas) {
+		if ((mouseDownEvent.button == 1
+				&& mouseDownEvent.target == cy.renderer().canvas)
+				||
+			(event.touch
+				&& minDistanceNode == undefined
+				&& minDistanceEdge == undefined)) {
 		
 			dragPanStartX = mouseDownEvent.clientX;
 			dragPanStartY = mouseDownEvent.clientY;
@@ -450,22 +559,43 @@
 		
 		var start = cy.renderer().projectMouse(event);
 		
+		/*
+		console.log("x: " + start[0]);
+		console.log("y: " + start[1]);
+		console.log(mouseDownEvent);
+		console.log(mouseDownEvent.target);
+		console.log(mouseDownEvent.button);
+		*/
+		
 		selectBox[0] = start[0];
 		selectBox[1] = start[1];
-				
-		// Left button drag selectio
+		
+		/*
+		// The lower right corner shouldn't have a coordinate,
+		// but this prevents the default 0, 0 from being used for touch
+		selectBox[2] = start[0];
+		selectBox[3] = start[1];
+		*/
+		
+		// Left button drag selection
 		if (mouseDownEvent.button == 0
 				&& mouseDownEvent.target == cy.renderer().canvas
 				&& minDistanceNode == undefined
 				&& minDistanceEdge == undefined) {
-						
-			selectBox[4] = 1;
+		
+			if (event.touch) {
+				
+			} else {
+				selectBox[4] = 1;
+			}
 		}
 		
 		if (mouseDownEvent.button == 0
 				&& mouseDownEvent.target == cy.renderer().canvas) {
 			
 			if (minDistanceNode != undefined) {
+				
+//				console.log("node found");
 				
 				nodeDragging = true;
 				nodesBeingDragged = [];
@@ -501,13 +631,11 @@
 //					console.log(draggedNode);
 				}
 				
-				/*
 				edgesBeingDragged = renderer.findEdges(nodesBeingDragged);
 				
 				for (var i = 0; i < edgesBeingDragged.length; i++) {
 					edgesBeingDragged[i]._private.rscratch.layer2 = true;
 				}
-				*/
 				
 				renderer.canvasNeedsRedraw[4] = true;
 				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
@@ -522,13 +650,105 @@
 	}
 	
 	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
-		if (mouseMoveTimeout) {return;}
+//		if (mouseMoveTimeout) {return;}
 		
 		mouseMoveTimeout = setTimeout(function(){
 			mouseMoveTimeout = null;		
 		}, 1000/100);
 		
-		var renderer = cy.renderer();
+		if (e.touches) {						
+			e.preventDefault();
+			// console.log("touchdown, " + e.changedTouches.length);
+			
+			if (e.touches.length >= 2) {
+				var first = e.touches[0];
+				var second = e.touches[1];
+				
+				first.offsetX = first.clientX 
+					+ renderer.canvas.parentElement.offsetLeft;
+				first.offsetY = first.clientY 
+					- renderer.canvas.parentElement.offsetTop;
+				
+				second.offsetX = second.clientX 
+					+ renderer.canvas.parentElement.offsetLeft;
+				second.offsetY = second.clientY 
+					- renderer.canvas.parentElement.offsetTop;
+				
+				// Pinch to zoom
+				var firstNewProjection = renderer.projectMouse(first);
+				var secondNewProjection = renderer.projectMouse(second);
+				
+				var firstDisplacement = 
+					[first.offsetX - firstTouchFinger.offsetX,
+					first.offsetY - firstTouchFinger.offsetY];
+					
+				var secondDisplacement = 
+					[second.offsetX - secondTouchFinger.offsetX,
+					second.offsetY - secondTouchFinger.offsetY];
+					
+				var averageDisplacement =
+					[(firstDisplacement[0] + secondDisplacement[0]) / 2,
+					(firstDisplacement[1] + secondDisplacement[1]) / 2];
+				
+				/*
+				var newOffsetDistance = Math.sqrt(
+					Math.pow(firstNewProjection[0] - secondNewProjection[0], 2)
+					+ Math.pow(firstNewProjection[1] - secondNewProjection[1], 2));
+				*/
+				
+				var newOffsetDistance = Math.sqrt(
+					Math.pow(first.offsetX - second.offsetX, 2)
+					+ Math.pow(first.offsetY - second.offsetY, 2));
+				
+				var zoomFactor = newOffsetDistance / twoFingerOffsetDistance ;
+				
+				if (zoomFactor > 1) {
+					zoomFactor = (zoomFactor - 1) * 1.5 + 1;
+				} else {
+					zoomFactor = 1 - (1 - zoomFactor) * 1.5;
+				}
+				
+				skipNextViewportRedraw = true;
+				
+				/*
+				cy.zoom({level: cy.zoom() * zoomFactor,
+					position: {x: (first.offsetX + second.offsetX) / 2,
+								y: (first.offsetY + second.offsetY) / 2}});
+				*/
+				
+				
+				cy.panBy({x: averageDisplacement[0], 
+							y: averageDisplacement[1]});
+				
+				console.log([first.offsetX, first.offsetY]);
+				console.log([firstTouchFinger.offsetX, firstTouchFinger.offsetY]);
+				
+				/*				
+				console.log(firstDisplacement);
+				console.log(secondDisplacement);			
+				console.log(averageDisplacement);
+				*/
+				
+				cy.zoom({level: cy.zoom() * zoomFactor,
+					position: {x: (first.offsetX + second.offsetX) / 2,
+								y: (first.offsetY + second.offsetY) / 2}});
+				
+				
+				
+				firstTouchFinger = first;
+				secondTouchFinger = second;
+				twoFingerOffsetDistance = newOffsetDistance;
+				
+				return;
+			}
+			
+			e = e.touches[0];
+			e.button = 0;
+		}
+		
+		var mouseDownEvent = event;
+		
+//		var renderer = cy.renderer();
 		
 		// Get references to helper functions
 		var dragHandler = renderer.mouseMoveHelper.dragHandler;
@@ -573,8 +793,8 @@
 				minDistanceEdge._private.style["cursor"].value;
 		} else if (!minDistanceNode
 			&& !minDistanceEdge
-			&& cy.renderer().canvas.style.cursor != "auto") {
-			cy.renderer().canvas.style.cursor = "auto";
+			&& cy.renderer().canvas.style.cursor != "default") {
+			cy.renderer().canvas.style.cursor = "default";
 		}
 		
 		if (nodeDragging) {
@@ -620,12 +840,23 @@
 			renderer.redrawReason[0].push("selection boxed moved");
 		}
 		
-//		if (dragPanMode || nodeDragging) {
+		if (dragPanMode || nodeDragging || selectBox[4]) {
 			cy.renderer().redraw();
-//		}
+		}
 	}
 	
 	CanvasRenderer.prototype.mouseUpHandler = function(event) {
+	
+		if (event.changedTouches) {						
+			event.preventDefault();
+			
+//			console.log("touchUp, " + event.changedTouches.length);
+			
+			event = event.changedTouches[0];
+			event.button = 0;
+		}
+		
+		var mouseDownEvent = event;
 	
 		var edges = cy.edges();
 		var nodes = cy.nodes();
@@ -681,6 +912,10 @@
 			&& !nodeDragging
 			&& Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
+			
+			console.log("performing box selection, from (" 
+				+ selectBox[0] + "," + selectBox[1] + ") to "
+				+ "(" + selectBox[2] + "," + selectBox[3] + ")");
 			
 			var padding = 2;
 			
@@ -860,7 +1095,7 @@
 			
 		} else if (selectBox[4] == 0 && !nodeBeingDragged) {
 
-			// Single node/edge selection			
+			// Single node/edge selection
 			if (minDistanceNode != undefined) {
 				minDistanceNode._private.rscratch.hovered = false;
 				minDistanceNode._private.rscratch.selected = true;
@@ -881,8 +1116,8 @@
 		// Stop drag panning on mouseup
 		dragPanMode = false;
 		
-		if (cy.renderer().canvas.style.cursor != "auto") {
-			cy.renderer().canvas.style.cursor = "auto";
+		if (cy.renderer().canvas.style.cursor != "default") {
+			cy.renderer().canvas.style.cursor = "default";
 		}
 		
 		selectBox[4] = 0;
@@ -935,7 +1170,7 @@
 							y: current[1]}});
 		*/
 		
-		cy.renderer().redraw();
+//		cy.renderer().redraw();
 	}
 	
 	CanvasRenderer.prototype.keyDownHandler = function(event) {
@@ -1098,7 +1333,7 @@
 				
 					distanceSquared = (Math.pow(x2 - mouseX, 2)
 						+ Math.pow(y2 - mouseY, 2));
-						
+				
 			} else {
 				var rotatedX = displacementY;
 				var rotatedY = -displacementX;
@@ -1208,11 +1443,15 @@
 		document.addEventListener("keydown", this.keyDownHandler, false);
 		document.addEventListener("keyup", this.keyUpHandler, false);
 	
-		this.canvas.addEventListener("mousedown", this.mouseDownHandler, false);
-		this.canvas.addEventListener("mouseup", this.mouseUpHandler, false);
+		this.bufferCanvases[0].addEventListener("mousedown", this.mouseDownHandler, false);
+		this.bufferCanvases[0].addEventListener("mouseup", this.mouseUpHandler, false);
 	
-		this.canvas.addEventListener("mousemove", this.mouseMoveHandler, false);
-		this.canvas.addEventListener("mousewheel", this.mouseWheelHandler, false);
+		this.bufferCanvases[0].addEventListener("mousemove", this.mouseMoveHandler, false);
+		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
+		
+		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
+		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
+		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
 	}
 	
 	CanvasRenderer.prototype.init = function() {}
@@ -2347,11 +2586,9 @@
 			// console.log(0, this.redrawReason[0], selectBox[4]);
 			
 			if (selectBox[4] == 1) {
-	
 				var coreStyle = cy.style()._private.coreStyle;
 			
 				context.lineWidth = coreStyle["selection-box-border-width"].value;
-			
 				context.fillStyle = "rgba(" 
 					+ coreStyle["selection-box-color"].value[0] + ","
 					+ coreStyle["selection-box-color"].value[1] + ","
@@ -2378,6 +2615,16 @@
 			this.canvasNeedsRedraw[0] = false;
 			this.redrawReason[0] = [];
 		}
+		
+		// Rasterize the layers
+		this.bufferCanvasContexts[1].globalCompositeOperation = "copy";
+		this.bufferCanvasContexts[1].drawImage(this.canvases[4], 0, 0);
+		this.bufferCanvasContexts[1].globalCompositeOperation = "source-over";
+		this.bufferCanvasContexts[1].drawImage(this.canvases[2], 0, 0);
+		this.bufferCanvasContexts[1].drawImage(this.canvases[0], 0, 0);
+
+		this.bufferCanvasContexts[0].globalCompositeOperation = "copy";
+		this.bufferCanvasContexts[0].drawImage(this.bufferCanvases[1], 0, 0);
 	};
 	
 	CanvasRenderer.prototype.drawEdge = function(edge) {

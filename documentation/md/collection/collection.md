@@ -7,4 +7,4 @@ A collection contains a set of nodes and edges.  Calling a function applies the 
 var weight = cy.nodes().data("weight"); // returns 10
 ```
 
-You can insure that you're reading from the element you want by using a [selector](Selector) to narrow down the collection to one element (i.e. `eles.size() == 1`) or the [`eles.eq()`](Collection-eq) function.
+You can insure that you're reading from the element you want by using a [selector](#selectors) to narrow down the collection to one element (i.e. `eles.size() === 1`) or the `eles.eq()` function.

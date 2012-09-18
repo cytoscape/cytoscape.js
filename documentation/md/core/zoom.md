@@ -4,7 +4,7 @@ The zoom level must be a positive number.  Zoom levels that are not numbers are 
 
 When zooming about a point via `cy.zoom( options )`, the options are defined as follows.
 
-For zooming about a [rendered position](PositionObject) (i.e. a position on-screen):
+For zooming about a rendered position (i.e. a position on-screen):
 
 ```js
 var options = {
@@ -13,7 +13,7 @@ var options = {
 };
 ```
 
-For zooming about a [model position](PositionObject):
+For zooming about a model position:
 
 ```js
 var options = {

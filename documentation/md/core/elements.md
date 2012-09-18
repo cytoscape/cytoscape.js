@@ -2,7 +2,7 @@
 
 If no elements in the graph match the selector, an empty [collection](Collection) is returned.
 
-The function `cy.$()` acts as an alias to `cy.filter()`:  It's just convenient to save you typing.
+The function `cy.$()` acts as an alias to `cy.filter()`:  It's just convenient to save you typing.  It is analogous to the jQuery `$` alias used to search the document
 
 ## Examples
 

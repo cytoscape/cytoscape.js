@@ -223,9 +223,6 @@
 	});
 	
 	function defineEdgesWithFunction( params ){
-		var defaults = {
-		};
-		params = $.extend(true, {}, defaults, params);
 		
 		return function(otherNodes){
 			var elements = [];

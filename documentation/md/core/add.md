@@ -1,6 +1,6 @@
 ## Details
 
-If plain element objects are used, then [a specific format for the objects](ElementObject) must be followed.  It is important to note that the `group` attribute must be specified for plain objects, as this function can not infer whether the elements added are nodes or edges.
+If plain element objects are used, then [the same format used at initialisation](#core/initialisation) must be followed.  It is important to note that the `group` attribute must be specified for plain objects, as this function can not infer whether the elements added are nodes or edges.
 
 ## Examples
 

@@ -254,13 +254,14 @@
 		});
 		
 		var classes = [];
-		$.each(p.classes, function(cls, bool){
+		for( var cls in p.classes ){
 			classes.push(cls);
-		});
+		}
 		
-		$.each(classes, function(i, cls){
+		for( var i = 0; i < classes.length; i++ ){
+			var cls = classes[i];
 			json.classes += cls + ( i < classes.length - 1 ? " " : "" );
-		});
+		}
 		
 		return json;
 	};

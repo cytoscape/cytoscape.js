@@ -1,9 +1,11 @@
 ;(function($$){
 	
 	var defaults = {
-		fit: true,
-		rows: undefined,
-		columns: undefined
+		fit: true, // whether to fit the viewport to the graph
+		rows: undefined, // force num of rows in the grid
+		columns: undefined, // force num of cols in the grid
+		ready: undefined, // callback on layoutready
+		stop: undefined // callback on layoutstop
 	};
 	
 	function GridLayout( options ){

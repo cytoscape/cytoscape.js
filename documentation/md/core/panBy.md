@@ -7,7 +7,7 @@ This function shifts the viewport relatively by the specified position in render
 Pan the graph 100 pixels to the right.
 ```js
 cy.panBy({
-  x: 100, // note these fields work with the SVG renderer
-  y: 0  // but an alternate renderer may use different coordinates
+  x: 100,
+  y: 0 
 });
 ```

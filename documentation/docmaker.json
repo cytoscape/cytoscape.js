@@ -8,7 +8,13 @@
   "sections": [
     { "name": "Introduction", "md": "intro" },
 
-    { "name": "Model", "md": "model" },
+    { "name": "Notation", "md": "notation" },
+
+    { "name": "Selectors", "md": "selectors" },
+
+    { "name": "Style", "md": "style" },
+
+    { "name": "Event types", "md": "events" },
 
     {
       "name": "Core",
@@ -139,12 +145,12 @@
             },
 
             {
-              "name": "cy.panBy", 
-              "descr": "Relatively pan the graph by a specified rendered position vector.",
+              "name": "cy.reset", 
+              "descr": "Reset the graph to the default zoom level and panning position.",
               "formats": [
-                { "args": [ { "name": "renderedPosition", "descr": "The rendered position vector to pan the graph by." } ] }
+                { "descr": "Resets the zoom and pan." }
               ],
-              "md": "core/panBy"
+              "md": "core/reset"
             },
 
             {
@@ -158,12 +164,29 @@
             },
 
             {
-              "name": "cy.reset", 
-              "descr": "Reset the graph to the default zoom level and panning position.",
+              "name": "cy.panBy", 
+              "descr": "Relatively pan the graph by a specified rendered position vector.",
               "formats": [
-                { "descr": "Resets the zoom and pan." }
+                { "args": [ { "name": "renderedPosition", "descr": "The rendered position vector to pan the graph by." } ] }
               ],
-              "md": "core/reset"
+              "md": "core/panBy"
+            },
+
+            {
+              "name": "cy.panningEnabled",
+              "descr": "Get or set whether panning is enabled.",
+              "formats": [
+                {
+                  "descr": "Get whether panning is enabled."
+                },
+
+                {
+                  "descr": "Set whether panning is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables panning; a falsey value disables it." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -188,6 +211,23 @@
                 }
               ],
               "md": "core/zoom"
+            },
+
+            {
+              "name": "cy.zoomingEnabled",
+              "descr": "Get or set whether zooming is enabled.",
+              "formats": [
+                {
+                  "descr": "Get whether zooming is enabled."
+                },
+
+                {
+                  "descr": "Set whether zooming is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables zooming; a falsey value disables it." }
+                  ]
+                }
+              ]
             }
           ]
 
@@ -271,20 +311,12 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
-                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
               ],
-              "md": "core/off"
+              "md": "core/trigger"
             }
 
 
@@ -303,8 +335,7 @@
                   "args": [
                     {
                       "name": "options",
-                      "descr": "",
-                      "optional": true
+                      "descr": "The layout options."
                     }
                   ]
                 }
@@ -333,7 +364,8 @@
           "fns": [
             {
               "name": "eles.remove",
-              "descr": "Remove the elements from the graph."
+              "descr": "Remove the elements from the graph.",
+              "md": "collection/remove"
             },
 
             {
@@ -343,7 +375,8 @@
 
             {
               "name": "eles.restore",
-              "descr": "Put removed elements back into the graph."
+              "descr": "Put removed elements back into the graph.",
+              "md": "collection/restore"
             }
           ]
         },
@@ -353,7 +386,37 @@
           "fns": [
             {
               "name": "eles.data",
-              "descr": "Read and write developer-defined data associated with the elements."
+              "descr": "Read and write developer-defined data associated with the elements.",
+              "formats": [
+                {
+                  "name": "ele.data",
+                  "descr": "Get all data for the element."
+                },
+
+                {
+                  "name": "ele.data",
+                  "descr": "Get a particular data field for the element.",
+                  "args": [ { "name": "name", "descr": "The name of the field to get." } ]
+                },
+
+                {
+                  "name": "ele.data",
+                  "descr": "Set a particular data field for the element.",
+                  "args": [
+                    { "name": "name", "descr": "The name of the field to set." },
+                    { "name": "value", "descr": "The value to set for the field." }
+                  ]
+                },
+
+                {
+                  "name": "ele.data",
+                  "descr": "Update multiple data fields at once via an object.",
+                  "args": [
+                    { "name": "obj", "descr": "The object containing name-value pairs to update data fields." }
+                  ]
+                }
+              ],
+              "md": "collection/data"
             },
 
             {
@@ -364,16 +427,6 @@
             {
               "name": "ele.id",
               "descr": "A shortcut to get the ID of an element."
-            },
-
-            {
-              "name": "eles.scratch",
-              "descr": "Read and write extension-defined data associated with the elements."
-            },
-
-            {
-              "name": "eles.removeScratch",
-              "descr": "Remove extension-defined data associated with the elements."
             },
 
             {
@@ -479,6 +532,28 @@
             },
 
             {
+              "name": "ele.width",
+              "descr": "Get the width of the element.",
+              "formats": [
+                { "name": "ele.width", "descr": "Get the width of the element." },
+                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (width & border)." },
+                { "name": "ele.renderedWidth", "descr": "Get the width of the element in rendered dimensions." },
+                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (width & border) in rendered dimensions." }
+              ]
+            },
+
+            {
+              "name": "ele.height",
+              "descr": "Get the height of the element.",
+              "formats": [
+                { "name": "ele.height", "descr": "Get the height of the element." },
+                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (height & border)." },
+                { "name": "ele.renderedHeight", "descr": "Get the height of the element in rendered dimensions." },
+                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (height & border) in rendered dimensions." }
+              ]
+            },
+
+            {
               "name": "node.grabbed",
               "descr": "Get whether a node is currently grabbed, meaning the user has hold of the node."
             },
@@ -522,7 +597,7 @@
             {
               "name": "ele.selected",
               "descr": "Get whether the element is selected."
-            }
+            },
 
             {
               "name": "eles.select",
@@ -571,7 +646,12 @@
 
             {
               "name": "eles.off",
-              "descr": "Unbind one or more callback functions."
+              "descr": "Unbind one or more callback functions on the elements."
+            },
+
+            {
+              "name": "eles.trigger",
+              "descr": "Trigger events on the elements."
             }      
           ]
         },
@@ -595,7 +675,7 @@
             },
 
             {
-              "name": "eles.show()",
+              "name": "eles.show",
               "descr": "Override the style of the elements such that they are visible."
             },
 
@@ -606,7 +686,31 @@
 
             {
               "name": "ele.visible",
-              "descr": "Get whether the element is visible."
+              "descr": "Get whether the element is visible.",
+              "formats": [
+                { "name": "ele.visible", "descr": "Get whether the element is visible." },
+                { "name": "ele.hidden", "descr": "Get whether the element is hidden." }
+              ]
+            },
+
+            {
+              "name": "eles.addClass",
+              "descr": "Add classes to elements."
+            },
+
+            {
+              "name": "eles.removeClass",
+              "descr": "Remove classes from elements."
+            },
+
+            {
+              "name": "eles.toggleClass",
+              "descr": "Toggle whether the elements have the specified classes."
+            },
+
+            {
+              "name": "ele.hasClass",
+              "descr": "Get whether an element has a particular class."
             }
           ]
         },
@@ -615,13 +719,18 @@
           "name": "Animation",
           "fns": [
             {
-              "name": "ele.animated()",
+              "name": "ele.animated",
               "descr": "Get whether the element is currently being animated."
             },
 
             {
               "name": "ele.animate",
               "descr": "Animate the elements."
+            },
+
+            {
+              "name": "eles.delay",
+              "descr": "Add a delay between animations for the elements."
             },
 
             {
@@ -632,11 +741,6 @@
             {
               "name": "eles.clearQueue",
               "descr": "Remove all queued animations for the elements."
-            },
-
-            {
-              "name": "eles.delay",
-              "descr": "Add a delay between animations for the elements."
             }
           ]
         },
@@ -672,11 +776,6 @@
         },
 
         {
-          "name": "Traversing",
-          "fns": []
-        },
-
-        {
           "name": "Iteration",
           "fns": [
             {
@@ -686,45 +785,107 @@
 
             {
               "name": "eles.empty",
-              "descr": "Get the "
+              "descr": "Get whether the collection is empty, meaning it has no elements.",
+              "formats": [
+                { "name": "eles.empty", "descr": "Get whether the collection is empty." },
+                { "name": "eles.nonempty", "descr": "Get whether the collection is non-empty." }
+              ]
             },
 
             {
-              "name": "",
-              "descr": ""
+              "name": "eles.each",
+              "descr": "Iterate over the elements in the collection."
             },
 
             {
-              "name": "",
-              "descr": ""
+              "name": "eles.eq",
+              "descr": "Get an element at a partular index in the collection."
             },
 
             {
-              "name": "",
-              "descr": ""
-            },
-
-            {
-              "name": "",
-              "descr": ""
-            },
-
-            {
-              "name": "",
-              "descr": ""
-            },
-
-            {
-              "name": "",
-              "descr": ""
+              "name": "eles.slice",
+              "descr": "Get a subset of the elements in the collection based on specified indices."
             }
+          ]
+        },
+
+        {
+          "name": "Traversing",
+          "fns": [
+            {
+              "name": "eles.neighborhood"
+            },
+
+            {
+              "name": "eles.closedNeighborhood"
+            },
+
+            {
+              "name": "nodes.edgesWith"
+            },
+
+            {
+              "name": "nodes.edgesTo"
+            },
+
+            {
+              "name": "edges.connectedNodes"
+            },
+
+            {
+              "name": "edges.source"
+            },
+
+            {
+              "name": "edges.target"
+            },
+
+            {
+              "name": "edges.parallelEdges"
+            },
+
+            {
+              "name": "edges.codirectedEdges"
+            }
+          ]
+        },
+
+        {
+          "name": "Building & filtering",
+          "fns": [
+            {
+              "name": "eles.add"
+            },
+
+            {
+              "name": "eles.not",
+              "descr": "",
+              "formats": []
+            },
+
+            {
+              "name": "eles.intersect",
+              "descr": "",
+              "formats": []
+            },
+
+            {
+              "name": "eles.filter",
+              "descr": "",
+              "formats": [
+                {
+                  "name": "eles.nodes"
+                },
+
+                {
+                  "name": "eles.edges"
+                }
+              ]
+            }
+            
           ]
         }
       ]
-    },
-
-    {
-      "name": "Extensions"
     }
 
   ]

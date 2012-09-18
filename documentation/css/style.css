@@ -37,6 +37,33 @@ body {
 	font-family: Andale Mono, monospace;
 }
 
+#navigation .expander {
+	cursor: pointer;
+	display: none;
+	width: 1em;
+	text-align: center;
+}
+
+#navigation .expander .collapsed-icon {
+	display: none;
+}
+
+#navigation .expander.collapsed .collapsed-icon {
+	display: inline;
+}
+
+#navigation .expander .expanded-icon {
+	display: inline;
+}
+
+#navigation .expander.collapsed .expanded-icon {
+	display: none;
+}
+
+#navigation .section.collapsed {
+	display: none;
+}
+
 #content {
 	padding: 0 0.25em;
 	position: absolute;
@@ -131,7 +158,7 @@ pre {
 	font-family: Andale Mono, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	font-size: 0.9em;
+	font-size: 0.85em;
 	background: #fafafa;
 }
 

@@ -1,39 +1,42 @@
 ### Script includes
 
-To use cytoscape.js in your HTML document, you must include the following JS:
+To use Cytoscape.js in your HTML document:
 
-  * jQuery 1.4 or newer
-	
-  * One of
-	
-    * `cytoscape[.min].js`
-		    
-      Either the minified or unminified Cytoscape.js code _without any_ dependencies.  When using this file, you must include the appropriate dependencies:  You'll need the dependencies of the SVG renderer.
-		    
-      SVG renderer dependencies (found in the `lib` directory)
-        * `2D.js`
-        * `jquery.color.js`
-        * `jquery.mousewheel.js`
-        * `jquery.svg.js`
-		
-    * `cytoscape.all[.min].js`
-		    
-        Either the minified or unminified cytoscape.js code _with all_ dependencies.  When using this file, you do not need to include any of the dependencies for the SVG renderer.
+```html
+<script src="cytoscape.js"></script>
+```
+
+To use Cytoscape.js in Node.js:
+
+```js
+var cytoscape = require('cytoscape');
+```
 
 ### Getting started
 
-You can initialise cytoscape.js on a HTML element using the traditional jQuery style: 
+An instance of Cytoscape.js correeponds to a graph.  You can create an instance as follows:
+
+```js
+cytoscape({
+  container: someHtmlDomElement,
+  ready: function(){}
+});
+```
+
+If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.
+
+If you've included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: 
 
 ```js
 $("#cy").cytoscape({ // for some div with id 'cy'
-  ready: function(cy){
+  ready: function(){
     // you can access the core object API through cy
   },
   ...
 });
 ```
 
-This initialises cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
+This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
 
 For example, 
 
@@ -50,7 +53,7 @@ $("#cy").cytoscape(options);
 var cy = $("#cy").cytoscape("get"); // now we have a global reference to `cy`
 ```
 
-Alternatively, you can call functions on the cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
+Alternatively, you can call functions on the Cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
 
 ```js
 // pattern: $("#cy").cytoscape(functionName, param1, param2, param3, ...)
@@ -71,13 +74,12 @@ Because the `ready` event may occur before you can bind to the core, you can use
 // in foo.js
 $(function(){ // on jquery ready
 
-  $("#cy").cytoscape(function(eventObject){ // on cytoscape.js ready on the `cy` div
-    // this code executes when cytoscape.js is ready even though we
-    // don't actually initialise cytoscape.js on the `cy` div until
+  $("#cy").cytoscape(function(eventObject){ // on Cytoscape.js ready on the `cy` div
+    // this code executes when Cytoscape.js is ready even though we
+    // don't actually initialise Cytoscape.js on the `cy` div until
     // bar.js is loaded
 
     var cy = this; // `this` holds the reference to the core object
-    var alsoCy = eventObject.cy; // you can access the core object also from the event
 
     console.log("Ready, Freddie!");
   });
@@ -93,45 +95,108 @@ $(function(){ // on jquery ready
 
 ### Initialisation options
 
-An instance of cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
+An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
 
 ```js
 $("#cy").cytoscape({
   layout: { ... },
   renderer: { ... },
   style: { ... },
-  ready: function(cy){ ... },
+  ready: function(evt){ ... },
   elements: ...
 });
 ```
 
-**layout** : A [layout options object](ExtensionOptionsObject).  By default, the [grid layout](GridLayout) is used with default options.
+**layout** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports.
 
-**renderer** : A [renderer options object](ExtensionOptionsObject).  By default, the [SVG renderer](SvgRenderer) is used with default options.
+**renderer** : A plain object containing options for the renderer to be used.  The `name` field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  
 
-**style** : A [visual style object](StyleObject).  The default style of the renderer specified in `renderer` is used by default.
-
-**ready** : A callback function that is called when cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
-
-**elements** : A set of [raw elements data object](ElementObject).
-
-### Short alias
-
-cytoscape.js can also be called using a shorter alias, `cy`, for convenience.
+**style** : The stylesheet used to style the document.
 
 For example:
 
 ```js
-$("#cy").cy(options); // this line is functionally the same as the longer line below
-$("#cy").cytoscape(options);
+{
+  ...
 
-var cy = $("#cy").cy("get"); // these lines are also the same
-var cy = $("#cy").cytoscape("get");
+  style: cytoscape.stylesheet()
+    .selector('node')
+      .css({
+        'background-color': 'red',
+        'border-color': '#ffff00'
+      })
+    .selector('edge')
+      .css({
+        'line-color': 'blue'
+      })
 
-$("#cy").cy("nodes", ":selected"); // these lines are also all the same
-$("#cy").cytoscape("nodes", ":selected");
-$("#cy").cy("get").nodes(":selected");
-$("#cy").cytoscape("get").nodes(":selected");
+  ...
+}
 ```
 
-It is important to note that if `jQuery.cy` or `jQuery.fn.cy` has already been defined, then cytoscape.js will not allow the use of the short `cy` alias to avoid naming collisions.  So if another jQuery plugin uses the `cy` name, then you have to use the full `cytoscape` name to use cytoscape.js.
+**ready** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
+
+**elements** : An array of elements specified as plain objects.
+
+For example:
+
+```js
+{
+  ...
+
+  elements: [
+    {
+      data: { id: 'foo' }, 
+      group: 'nodes'
+    },
+
+    {
+      data: { id: 'bar' },
+      group: 'nodes'
+    },
+
+    {
+      data: { weight: 100 }, // elided id => autogenerated id 
+      group: 'nodes',
+      position: {
+        x: 100,
+        y: 100
+      },
+      classes: 'className1 className2',
+      selected: true,
+      selectable: true,
+      locked: true,
+      grabbable: true
+    },
+
+    {
+      data: { id: 'baz', source: 'foo', target: 'bar' },
+      group: 'edges'
+    }
+  ]
+
+  ...
+}
+```
+
+You can alternatively specify separate arrays indexed in a object by the group names so you don't have to specify the `group` property over and over for each element:
+
+```js
+{
+  ...
+
+  elements: {
+    nodes: [
+      { data: { id: 'foo' } }, // NB no group specified
+      { ... },
+      { ... }
+    ],
+
+    edges: [
+      { ... }
+    ]
+  }
+
+  ...
+}
+```

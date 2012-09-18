@@ -1,6 +1,6 @@
 ## Details
 
-This function is useful for starting a collection that may have things added to it.
+This function is useful for building up collections.
 
 ## Examples
 

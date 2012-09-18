@@ -15,10 +15,22 @@
 			<div class="toc">Table of contents</div>
 
 			{{#each sections}}
-				<div class="section lvl1"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+				<div class="section lvl1">
+					{{#if sections}}<span class="expander">
+						<span class="icon-caret-down expanded-icon"></span>
+						<span class="icon-caret-right collapsed-icon"></span>
+					</span>{{/if}}
+					<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
+				</div>
 
 				{{#each sections}}
-					<div class="section lvl2"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a></div>
+					<div class="section lvl2">
+						{{#if fns}}<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>{{/if}}
+						<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
+					</div>
 
 					{{#each fns}}
 						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>

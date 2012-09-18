@@ -1,7 +1,12 @@
 ;(function($$){
 	
 	var defaults = {
-		fit: true
+		fit: true, // whether to fit to viewport
+		ready: undefined, // callback on layoutready
+		stop: undefined, // callback on layoutstop
+		positions: undefined, // map of (node id) => (position obj)
+		zoom: undefined, // the zoom level to set (prob want fit = false if set)
+		pan: undefined // the pan level to set (prob want fit = false if set)
 	};
 	
 	function PresetLayout( options ){
@@ -39,6 +44,9 @@
 		
 		if( options.pan != null ){
 			cy.pan( options.pan );
+		}
+
+		if( options.zoom != null ){
 			cy.zoom( options.zoom );
 		}
 

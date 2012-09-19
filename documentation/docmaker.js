@@ -4,9 +4,15 @@ var fs = require('fs');
 var marked = require('marked');
 // var mdConvertor = require('node-markdown').Markdown;
 var Handlebars = require('./js/handlebars').Handlebars;
-var config = require('./docmaker.json');
 var encoding = 'utf8';
+var config;
+var configFile = './docmaker.json';
 
+try {
+  config = require(configFile);
+} catch(e){
+  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://jsonlint.com/';
+}
 
 // var html = converter.makeHtml("**I am bold!**");
 // var html = Handlebars.compile();
@@ -14,7 +20,13 @@ var encoding = 'utf8';
 function md2html( file ){
   file = file.substr( file.length - 3 ) === '.md' ? file : file + '.md'; // add extension if need be
 
-  var md = fs.readFileSync('./md/' + file, 'utf8');
+  var md;
+  try{
+    md = fs.readFileSync('./md/' + file, 'utf8');
+  } catch(e){
+    throw 'A markdown file named `' + file + '` was referenced but could not be read';
+  }
+
   // var html = converter.makeHtml( md );
   //var html = mdConvertor( md );
   var html = marked( md );
@@ -100,7 +112,7 @@ function compileConfig( config ){
         }
 
         var formatsHaveDiffNames = false;
-        if( fn.formats ){
+        if( fn.formats && !fn.formatsSameFn ){
           var formats = fn.formats;
 
           for( var k = 0; k < formats.length; k++ ){

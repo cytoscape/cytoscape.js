@@ -292,7 +292,7 @@
 					</div>
 
 					
-						<div class="section lvl3"><a href="#collection/data/eles.data"><span class="icon-bookmark"></span> eles.data() et al</a></div>
+						<div class="section lvl3"><a href="#collection/data/eles.data"><span class="icon-bookmark"></span> eles.data() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/data/eles.removeData"><span class="icon-bookmark"></span> eles.removeData() </a></div>
 					
@@ -406,7 +406,7 @@
 					
 						<div class="section lvl3"><a href="#collection/style/eles.css"><span class="icon-bookmark"></span> eles.css() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/style/ele.removeCss"><span class="icon-bookmark"></span> ele.removeCss() </a></div>
+						<div class="section lvl3"><a href="#collection/style/eles.removeCss"><span class="icon-bookmark"></span> eles.removeCss() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.renderedCss"><span class="icon-bookmark"></span> ele.renderedCss() </a></div>
 					
@@ -436,7 +436,7 @@
 					
 						<div class="section lvl3"><a href="#collection/animation/ele.animated"><span class="icon-bookmark"></span> ele.animated() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/animation/ele.animate"><span class="icon-bookmark"></span> ele.animate() </a></div>
+						<div class="section lvl3"><a href="#collection/animation/eles.animate"><span class="icon-bookmark"></span> eles.animate() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/animation/eles.delay"><span class="icon-bookmark"></span> eles.delay() </a></div>
 					
@@ -458,11 +458,11 @@
 					
 						<div class="section lvl3"><a href="#collection/comparison/eles.anySame"><span class="icon-bookmark"></span> eles.anySame() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/comparison/eles.allAreNeighbors"><span class="icon-bookmark"></span> eles.allAreNeighbors() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/comparison/eles.is"><span class="icon-bookmark"></span> eles.is() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/comparison/eles.allAre"><span class="icon-bookmark"></span> eles.allAre() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/comparison/eles.allAreNeighbors"><span class="icon-bookmark"></span> eles.allAreNeighbors() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -494,9 +494,7 @@
 					</div>
 
 					
-						<div class="section lvl3"><a href="#collection/traversing/eles.neighborhood"><span class="icon-bookmark"></span> eles.neighborhood() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/traversing/eles.closedNeighborhood"><span class="icon-bookmark"></span> eles.closedNeighborhood() </a></div>
+						<div class="section lvl3"><a href="#collection/traversing/eles.neighborhood"><span class="icon-bookmark"></span> eles.neighborhood() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/traversing/nodes.edgesWith"><span class="icon-bookmark"></span> nodes.edgesWith() </a></div>
 					
@@ -529,6 +527,44 @@
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span> eles.intersect() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span> eles.filter() et al</a></div>
+					
+				
+			
+				<div class="section lvl1">
+					<span class="expander">
+						<span class="icon-caret-down expanded-icon"></span>
+						<span class="icon-caret-right collapsed-icon"></span>
+					</span>
+					<a href="#extensions"><span class="icon-bookmark"></span> Extensions</a>
+				</div>
+
+				
+					<div class="section lvl2">
+						
+						<a href="#extensions/api"><span class="icon-bookmark"></span> API</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#extensions/functions"><span class="icon-bookmark"></span> Functions</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#extensions/layouts"><span class="icon-bookmark"></span> Layouts</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#extensions/renderers"><span class="icon-bookmark"></span> Renderers</a>
+					</div>
+
 					
 				
 			
@@ -2624,7 +2660,7 @@ eles.restore();</code></pre>
 
 					
 						<div class="function">
-							<div class="name" id="collection/data/eles.data"><span class="fn-name">eles.data()</span> et al <a href="#collection/data/eles.data"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/data/eles.data"><span class="fn-name">eles.data()</span>  <a href="#collection/data/eles.data"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/data/eles.data">Read and write developer-defined data associated with the elements.</div>
 
 							
@@ -2703,6 +2739,31 @@ eles.restore();</code></pre>
 
 							<div class="details">
 								
+									<h3>Details</h3>
+<p>The following fields are immutable:
+
+</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge&#39;s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field is a reserved field for the future implementation of compound nodes.</li>
+</ul>
+<h3>Examples</h3>
+<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
+
+// set the weight field in data
+n1.data(&#39;weight&#39;, 75);
+
+// set several fields at once
+n1.data({
+  foo: &#39;some value&#39;,
+  bar: &#39;another value&#39;,
+  baz: &#39;yet another value&#39;
+});
+
+var weight = n1.data(&#39;weight&#39;);</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -2711,8 +2772,50 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/data/eles.removeData">Remove developer-defined data associated with the elements.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.removeData()</div>
+										
+										<div class="descr">Removes all mutable data fields for the elements.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.removeData( <span class="comma">, </span>names )</div>
+										
+										<div class="descr">Removes the specified mutable data fields for the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">names</span>
+													<span class="descr">A space-separated list of fields to delete.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>The following data fields are immutable, and so they can not be removed:
+
+</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge&#39;s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field is a reserved field for the future implementation of compound nodes.</li>
+</ul>
+
 								
 							</div>		
 						</div>
@@ -2746,6 +2849,10 @@ eles.restore();</code></pre>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>The group strings are <code>nodes</code> for nodes and <code>edges</code> for edges.  In general, you should be using <code>ele.isEdge()</code> and <code>ele.isNode()</code> instead of <code>ele.group()</code>.</p>
+
 								
 							</div>		
 						</div>
@@ -2923,8 +3030,101 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/position--dimensions/node.position">Get or set the position of a node.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">node.position()</div>
+										
+										<div class="descr">Get the entire position object.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.position( <span class="comma">, </span>dimension )</div>
+										
+										<div class="descr">Get the value of a specified posisition dimension.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">dimension</span>
+													<span class="descr">The position dimension to get.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.position( <span class="comma">, </span>dimension<span class="comma">, </span>value )</div>
+										
+										<div class="descr">Set the value of a specified posisition dimension.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">dimension</span>
+													<span class="descr">The position dimension to set.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">value</span>
+													<span class="descr">The value to set to the dimension.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.position( <span class="comma">, </span>pos )</div>
+										
+										<div class="descr">Set the position using name-value pairs in the specified object.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">pos</span>
+													<span class="descr">An object specifying name-value pairs representing dimensions to set.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>A position has two fields, <code>x</code> and <code>y</code>, that can take on numerical values.  Non-numerical values are ignored.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">// get x for n1
+var x = cy.$(&#39;#n1&#39;).position(&#39;x&#39;);
+
+// get the whole position for n2
+var pos = cy.$(&#39;#n2&#39;).position();
+
+// set y for n1
+cy.$(&#39;#n1&#39;).position(&#39;y&#39;, 100);
+
+// set multiple
+cy.$(&#39;#n2&#39;).position({
+  x: 123,
+  y: 456
+});</code></pre>
+
 								
 							</div>		
 						</div>
@@ -2933,6 +3133,41 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/position--dimensions/nodes.positions"><span class="fn-name">nodes.positions()</span>  <a href="#collection/position--dimensions/nodes.positions"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/position--dimensions/nodes.positions">Set the positions of several nodes with a function.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.positions( <span class="comma">, </span>fn(i, ele) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">fn(i, ele)</span>
+													<span class="descr">A callback function that returns the position to set for each element.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The index of the element when iterating over the elements in the collection.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The element being iterated over for which the function should return a position to set.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -2944,6 +3179,78 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/position--dimensions/node.renderedPosition"><span class="fn-name">node.renderedPosition()</span>  <a href="#collection/position--dimensions/node.renderedPosition"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/position--dimensions/node.renderedPosition">Get or set the rendered position of a node.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">node.renderedPosition()</div>
+										
+										<div class="descr">Get the entire rendered position object.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.renderedPosition( <span class="comma">, </span>dimension )</div>
+										
+										<div class="descr">Get the value of a specified rendered posisition dimension.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">dimension</span>
+													<span class="descr">The position dimension to get.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.renderedPosition( <span class="comma">, </span>dimension<span class="comma">, </span>value )</div>
+										
+										<div class="descr">Set the value of a specified rendered posisition dimension.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">dimension</span>
+													<span class="descr">The position dimension to set.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">value</span>
+													<span class="descr">The value to set to the dimension.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">node.renderedPosition( <span class="comma">, </span>pos )</div>
+										
+										<div class="descr">Set the rendered position using name-value pairs in the specified object.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">pos</span>
+													<span class="descr">An object specifying name-value pairs representing dimensions to set.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3224,33 +3531,284 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.on"><span class="fn-name">eles.on()</span>  <a href="#collection/events/eles.on"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.on">Bind a callback function to specified events that occur on the elements.</div>
+							<div class="descr" id="collection/events/eles.on">Bind to events that occur on the elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													<span class="descr">The handler function that is called when one of the specified events occurs.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">evt</span>
+															<span class="descr">The event object.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Defails</h3>
+<p>In the handler function, <code>this</code> references the element that triggered the event.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.on(&#39;click&#39;, function(evt){
+  console.log( &#39;clicked &#39; + this.id() );
+});</code></pre>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.one"><span class="fn-name">eles.one()</span>  <a href="#collection/events/eles.one"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.one">Bind a callback function that is triggered once per element.</div>
+							<div class="descr" id="collection/events/eles.one">Bind a callback function that is triggered once per event per element.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													<span class="descr">The handler function that is called when one of the specified events occurs.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">evt</span>
+															<span class="descr">The event object.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element once.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.$(&#39;node&#39;).one(&#39;click&#39;, function(){
+  var ele = this;
+  console.log(&#39;clicked &#39; + ele.id());
+});
+
+cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // clicked n1
+cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // nothing
+cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // clicked n2</code></pre>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.once"><span class="fn-name">eles.once()</span>  <a href="#collection/events/eles.once"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.once">Bind a callback function that is triggered once per collection.</div>
+							<div class="descr" id="collection/events/eles.once">Bind a callback function that is triggered once per event per collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													<span class="descr">The handler function that is called when one of the specified events occurs.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">evt</span>
+															<span class="descr">The event object.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="descr">A plain object which is passed to the handler in the event object argument.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the collection.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.$(&#39;node&#39;).once(&#39;click&#39;, function(){
+  var ele = this;
+  console.log(&#39;clicked &#39; + ele.id());
+});
+
+cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // clicked n1
+cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // nothing
+cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // nothing</code></pre>
+
 								
 							</div>		
 						</div>
@@ -3260,8 +3818,83 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/events/eles.off">Unbind one or more callback functions on the elements.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>handler] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">handler</span>
+													<span class="descr">A reference to the handler function to remove.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eventsMap</span>
+													<span class="descr">A map of event names to handler functions to remove.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The same selector used to bind to the events.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Examples</h3>
+<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
+var handler = function(){ console.log(&#39;click&#39;) };
+
+// bind
+n1.on(&#39;click&#39;, handler);
+
+// bind some other handler
+n1.on(&#39;click&#39;, function(){
+  console.log(&#39;some other handler&#39;);
+});
+
+n1.trigger(&#39;click&#39;); // &#39;click&#39; &amp; &#39;some other handler&#39;
+
+// unbind the renferenced handler
+n1.off(&#39;click&#39;, handler);
+
+n1.trigger(&#39;click&#39;); // some other handler
+
+// unbind all click handlers (including unnamed handler)
+n1.off(&#39;click&#39;);</code></pre>
+
 								
 							</div>		
 						</div>
@@ -3271,8 +3904,46 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/events/eles.trigger">Trigger events on the elements.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">events</span>
+													<span class="descr">A space separated list of event names to trigger.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">extraParams</span>
+													<span class="descr">An array of additional parameters to pass to the handler.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Examples</h3>
+<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
+
+n1.on(&#39;click&#39;, function(){
+  console.log(&#39;click!!&#39;);
+});
+
+n1.trigger(&#39;click&#39;); // click!!</code></pre>
+
 								
 							</div>		
 						</div>
@@ -3291,15 +3962,97 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/style/eles.css">Get the style of the element, or override the style of the elements.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.css()</div>
+										
+										<div class="descr">Get a name-value pair object containing visual style properties and their values for the element.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">ele.css( <span class="comma">, </span>name )</div>
+										
+										<div class="descr">Get a particular style property value.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">name</span>
+													<span class="descr">The name of the visual style property to get.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.css( <span class="comma">, </span>name<span class="comma">, </span>value )</div>
+										
+										<div class="descr">Set the specified visual style property for the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">name</span>
+													<span class="descr">The name of the property to set.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">value</span>
+													<span class="descr">The value to set to the visual style property.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.css( <span class="comma">, </span>props )</div>
+										
+										<div class="descr">Set several visual style properties at once for the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">props</span>
+													<span class="descr">An object with name-value pairs representing properties to set on the elements.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>You should use this function very sparingly, because it <em>overrides</em> the style of an element, despite the state and classes that it has.  In general, it&#39;s much better to specify a better stylesheet at initialisation that reflects your application state rather than programmatically modifying style.
+
+</p>
+<p>Only <a href="#style">defined visual style properties</a> are supported.
+
+</p>
+<p>If you would like to remove a particular overridden style property, set <code>null</code> to it.</p>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/ele.removeCss"><span class="fn-name">ele.removeCss()</span>  <a href="#collection/style/ele.removeCss"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.removeCss">Removes overridden style of the elements.</div>
+							<div class="name" id="collection/style/eles.removeCss"><span class="fn-name">eles.removeCss()</span>  <a href="#collection/style/eles.removeCss"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/eles.removeCss">Removes all overridden style of the elements.</div>
 
 							
 
@@ -3312,6 +4065,37 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/style/ele.renderedCss"><span class="fn-name">ele.renderedCss()</span>  <a href="#collection/style/ele.renderedCss"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/style/ele.renderedCss">Get the style of the element in rendered dimensions.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.renderedCss()</div>
+										
+										<div class="descr">Get a name-value pair object containing rendered visual style properties and their values for the element.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">ele.renderedCss( <span class="comma">, </span>name )</div>
+										
+										<div class="descr">Get a particular rendered style property value.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">name</span>
+													<span class="descr">The name of the visual style property to get.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3381,6 +4165,27 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/style/eles.addClass">Add classes to elements.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.addClass( <span class="comma">, </span>classes )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													<span class="descr">A space-separated list of class names to add to the elements.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
 								
@@ -3391,6 +4196,27 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/style/eles.removeClass"><span class="fn-name">eles.removeClass()</span>  <a href="#collection/style/eles.removeClass"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/style/eles.removeClass">Remove classes from elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.removeClass( <span class="comma">, </span>classes )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													<span class="descr">A space-separated list of class names to remove from the elements.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3403,6 +4229,34 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/style/eles.toggleClass">Toggle whether the elements have the specified classes.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.toggleClass( <span class="comma">, </span>classes [<span class="comma">, </span>toggle] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													<span class="descr">A space-separated list of class names to toggle on the elements.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">toggle</span>
+													<span class="descr">Instead of automatically toggling, adds the classes on &#x60;true&#x60; or removes them on &#x60;false&#x60;.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
 								
@@ -3413,6 +4267,27 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/style/ele.hasClass"><span class="fn-name">ele.hasClass()</span>  <a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/style/ele.hasClass">Get whether an element has a particular class.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.hasClass( <span class="comma">, </span>className )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">className</span>
+													<span class="descr">The name of the class to test for.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3441,12 +4316,87 @@ eles.restore();</code></pre>
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/animation/ele.animate"><span class="fn-name">ele.animate()</span>  <a href="#collection/animation/ele.animate"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/ele.animate">Animate the elements.</div>
+							<div class="name" id="collection/animation/eles.animate"><span class="fn-name">eles.animate()</span>  <a href="#collection/animation/eles.animate"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/animation/eles.animate">Animate the elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.animate( <span class="comma">, </span>props<span class="comma">, </span>options )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">props</span>
+													<span class="descr">An object containing the properties to animate.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">position</span>
+															<span class="descr">A position to which the elements will be animated.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">css</span>
+															<span class="descr">An object containing name-value pairs of style properties to animate.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">An object containing animation options.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">duration</span>
+															<span class="descr">The duration of the animation in milliseconds.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">queue</span>
+															<span class="descr">A boolean indicating whether to queue the animation.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">complete</span>
+															<span class="descr">A function to call when the animation is done.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">step</span>
+															<span class="descr">A function to call each time the animation steps.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Examples</h3>
+<pre><code class="lang-js">cy.nodes().animate({
+  position: { x: 100, y: 100 },
+  css: { backgroundColor: &#39;red&#39; }
+}, {
+  duration: 1000
+});</code></pre>
+
 								
 							</div>		
 						</div>
@@ -3455,6 +4405,34 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/animation/eles.delay"><span class="fn-name">eles.delay()</span>  <a href="#collection/animation/eles.delay"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/animation/eles.delay">Add a delay between animations for the elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.delay( <span class="comma">, </span>duration<span class="comma">, </span>complete )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">duration</span>
+													<span class="descr">How long the delay should be in milliseconds.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">complete</span>
+													<span class="descr">A function to call when the delay is complete.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3466,6 +4444,34 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/animation/eles.stop"><span class="fn-name">eles.stop()</span>  <a href="#collection/animation/eles.stop"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/animation/eles.stop">Stop all animations that are currently running.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.stop( <span class="comma">, </span>clearQueue<span class="comma">, </span>jumpToEnd )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">clearQueue</span>
+													<span class="descr">A boolean, indicating whether the queue of animations should be emptied.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">jumpToEnd</span>
+													<span class="descr">A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3498,6 +4504,27 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/comparison/eles.same">Determine whether this collection contains exactly the same elements as another collection.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.same( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The other elements to compare to.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
 								
@@ -3508,6 +4535,59 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/comparison/eles.anySame"><span class="fn-name">eles.anySame()</span>  <a href="#collection/comparison/eles.anySame"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/comparison/eles.anySame">Determine whether this collection contains any of the same elements as another collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.anySame( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The other elements to compare to.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/comparison/eles.allAreNeighbors"><span class="fn-name">eles.allAreNeighbors()</span>  <a href="#collection/comparison/eles.allAreNeighbors"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/comparison/eles.allAreNeighbors">Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.allAreNeighbors( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The other elements to compare to.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3520,6 +4600,27 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/comparison/eles.is">Determine whether any element in this collection matches a selector.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.is( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
 								
@@ -3531,16 +4632,26 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/comparison/eles.allAre">Determine whether all elements in the collection match a selector.</div>
 
 							
-
-							<div class="details">
+							<div class="formats">
 								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/comparison/eles.allAreNeighbors"><span class="fn-name">eles.allAreNeighbors()</span>  <a href="#collection/comparison/eles.allAreNeighbors"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.allAreNeighbors">Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.</div>
+									<div class="format">
+										
+											<div class="name">eles.allAre( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
 
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3564,6 +4675,10 @@ eles.restore();</code></pre>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that as a non-functional alternative, you may read <code>eles.length</code> instead of <code>eles.size()</code>.  The two are interchangeable.</p>
+
 								
 							</div>		
 						</div>
@@ -3608,16 +4723,78 @@ eles.restore();</code></pre>
 							<div class="descr" id="collection/iteration/eles.each">Iterate over the elements in the collection.</div>
 
 							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.each( <span class="comma">, </span>function(i, ele) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, ele)</span>
+													<span class="descr">The function executed each iteration.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The index of the element in the collection.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The element at the current index.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
 
 							<div class="details">
+								
+									<h3>Examples</h3>
+<pre><code class="lang-js">cy.elements().each(function(i, ele){
+  console.log( ele.id() + &#39; is &#39; + ( ele.selected() ? &#39;selected&#39; : &#39;not selected&#39; ) );
+});</code></pre>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.eq"><span class="fn-name">eles.eq()</span>  <a href="#collection/iteration/eles.eq"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.eq">Get an element at a partular index in the collection.</div>
+							<div class="descr" id="collection/iteration/eles.eq">Get an element at a particular index in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.eq( <span class="comma">, </span>index )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">index</span>
+													<span class="descr">The index of the element to get.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3629,6 +4806,34 @@ eles.restore();</code></pre>
 							<div class="name" id="collection/iteration/eles.slice"><span class="fn-name">eles.slice()</span>  <a href="#collection/iteration/eles.slice"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/iteration/eles.slice">Get a subset of the elements in the collection based on specified indices.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.slice( <span class="comma">, </span>start [<span class="comma">, </span>end] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">start</span>
+													<span class="descr">An integer that specifies where to start the selection (The first element has an index of 0). Use negative numbers to select from the end of an array.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">end</span>
+													<span class="descr">An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3646,31 +4851,106 @@ eles.restore();</code></pre>
 
 					
 						<div class="function">
-							<div class="name" id="collection/traversing/eles.neighborhood"><span class="fn-name">eles.neighborhood()</span>  <a href="#collection/traversing/eles.neighborhood"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/eles.neighborhood"></div>
+							<div class="name" id="collection/traversing/eles.neighborhood"><span class="fn-name">eles.neighborhood()</span> et al <a href="#collection/traversing/eles.neighborhood"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/eles.neighborhood">Get the neighbourhood of the elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.neighborhood(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr">Get the open neighbourhood of the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.openNeighborhood(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr">Get the open neighbourhood of the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.closedNeighborhood(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr">Get the closed neighbourhood of the elements.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
 								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/traversing/eles.closedNeighborhood"><span class="fn-name">eles.closedNeighborhood()</span>  <a href="#collection/traversing/eles.closedNeighborhood"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/eles.closedNeighborhood"></div>
+									<h3>Details</h3>
+<p>The neighbourhood returned by this function is a bit different than the traditional definition of a &quot;neighbourhood&quot;:  This returned neighbourhood includes the edges connecting the collection to the neighbourhood.  This gives you more flexibility.
 
-							
+</p>
+<p>An <strong>open neighbourhood</strong> is one that <strong>does not</strong> include the original set of elements.  If unspecified, a neighbourhood is open by default.
 
-							<div class="details">
+</p>
+<p>A <strong>closed neighbourhood</strong> is one that <strong>does</strong> include the original set of elements. </p>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/nodes.edgesWith"><span class="fn-name">nodes.edgesWith()</span>  <a href="#collection/traversing/nodes.edgesWith"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/nodes.edgesWith"></div>
+							<div class="descr" id="collection/traversing/nodes.edgesWith">Get the edges connecting the collection to another collection.  Direction of the edges does not matter.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.edgesWith(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3680,8 +4960,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/nodes.edgesTo"><span class="fn-name">nodes.edgesTo()</span>  <a href="#collection/traversing/nodes.edgesTo"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/nodes.edgesTo"></div>
+							<div class="descr" id="collection/traversing/nodes.edgesTo">Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.edgesTo(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3691,8 +4992,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.connectedNodes"><span class="fn-name">edges.connectedNodes()</span>  <a href="#collection/traversing/edges.connectedNodes"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.connectedNodes"></div>
+							<div class="descr" id="collection/traversing/edges.connectedNodes">Get the nodes connected to the edges in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.connectedNodes(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3702,8 +5024,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.source"><span class="fn-name">edges.source()</span>  <a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.source"></div>
+							<div class="descr" id="collection/traversing/edges.source">Get source nodes connected to the edges in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.source(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3713,8 +5056,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.target"><span class="fn-name">edges.target()</span>  <a href="#collection/traversing/edges.target"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.target"></div>
+							<div class="descr" id="collection/traversing/edges.target">Get target nodes connected to the edges in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.target(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3724,22 +5088,78 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.parallelEdges"><span class="fn-name">edges.parallelEdges()</span>  <a href="#collection/traversing/edges.parallelEdges"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.parallelEdges"></div>
+							<div class="descr" id="collection/traversing/edges.parallelEdges">Get edges parallel to those in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.parallelEdges(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>Two edges are said to be parallel if they connect the same two nodes.  That is,
+
+</p>
+<ul>
+<li><code>edge1.source() === edge2.source() &amp;&amp; edge1.target() === edge2.target()</code> or </li>
+<li><code>edge1.source() === edge2.target() &amp;&amp; edge1.target() === edge2.source()</code>.</li>
+</ul>
+
 								
 							</div>		
 						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.codirectedEdges"><span class="fn-name">edges.codirectedEdges()</span>  <a href="#collection/traversing/edges.codirectedEdges"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.codirectedEdges"></div>
+							<div class="descr" id="collection/traversing/edges.codirectedEdges">Get edges codirected to those in the collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.codirectedEdges(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>Two edges are said to be codirected if they connect the same two nodes in the same direction.  That is, <code>edge1.source() === edge2.source() &amp;&amp; edge1.target() === edge2.target()</code>.</p>
+
 								
 							</div>		
 						</div>
@@ -3755,8 +5175,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.add"><span class="fn-name">eles.add()</span>  <a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.add"></div>
+							<div class="descr" id="collection/building--filtering/eles.add">Get a new collection, resulting from adding the collection with another one</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.add( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements to add.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3766,8 +5207,46 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.not"><span class="fn-name">eles.not()</span>  <a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.not"></div>
+							<div class="descr" id="collection/building--filtering/eles.not">Get a new collection, resulting from the collection without some specified elements.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.not( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements that will not be in the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.not( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">Elements matching this selector will not be in the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3777,8 +5256,29 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.intersect"><span class="fn-name">eles.intersect()</span>  <a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.intersect"></div>
+							<div class="descr" id="collection/building--filtering/eles.intersect">Get the elements in both this collection and another specified collection.</div>
 
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.intersect( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements to intersect with.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
 							
 
 							<div class="details">
@@ -3788,27 +5288,89 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.filter"><span class="fn-name">eles.filter()</span> et al <a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.filter"></div>
+							<div class="descr" id="collection/building--filtering/eles.filter">Get a new collection containing elements that are accepted by the specified filter.</div>
 
 							
 							<div class="formats">
 								
 									<div class="format">
 										
-											<div class="name">eles.nodes()</div>
+											<div class="name">eles.filter( <span class="comma">, </span>selector )</div>
 										
-										<div class="descr"></div>
+										<div class="descr">Get the elements that match the specified selector.</div>
 										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
 											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">eles.edges()</div>
+											<div class="name">eles.filter( <span class="comma">, </span>function(i, ele) )</div>
 										
-										<div class="descr"></div>
+										<div class="descr">Get the elements that match the specified filter function.</div>
 										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, ele)</span>
+													<span class="descr">The filter function that returns true for elements to include.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The index of the current element being considered.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The element being considered.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.nodes( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get the nodes that match the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.edges( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get the edges that match the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
 											
 										</ul>
 									</div>
@@ -3822,6 +5384,65 @@ eles.restore();</code></pre>
 						</div>
 					
 
+				
+				
+			
+				<h1 id="extensions">Extensions <a href="#extensions"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<h2 id="extensions/api">API <a href="#extensions/api"><span class="icon-bookmark"></span></a></h2>
+<p>The extensions API is very simple, following this format:
+
+</p>
+<pre><code class="lang-js">cytoscape( type, name, extension );</code></pre>
+<p>The value of <code>type</code> can take on the following values:
+
+</p>
+<ul>
+<li><code>core</code> : The extension adds a core function.</li>
+<li><code>collection</code> : The extension adds a collection function.</li>
+<li><code>layout</code> : The extension registers a layout prototype.</li>
+<li><code>renderer</code> : The extension registers a renderer prototype.</li>
+</ul>
+<p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.
+
+
+</p>
+<h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
+<p>Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to <code>return this;</code> at the end of your function.
+
+</p>
+<p>Here is an example collection function:
+
+</p>
+<pre><code class="lang-js">cytoscape(&#39;collection&#39;, &#39;forEach&#39;, function( fn ){
+  for( var i = 0; i &lt; this.length; i++ ){
+    fn.apply( this[i], [ i, this[i] ] );
+  }
+
+  return this; // chainability
+});</code></pre>
+<h2 id="extensions/layouts">Layouts <a href="#extensions/layouts"><span class="icon-bookmark"></span></a></h2>
+<p>For an example layout, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.null.js">null layout source code</a>.  The layout just sets each node to position (0, 0), and it is well documented.
+
+
+</p>
+<h2 id="extensions/renderers">Renderers <a href="#extensions/renderers"><span class="icon-bookmark"></span></a></h2>
+<p>For an example renderer, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.renderer.canvas.js">canvas renderer</a>.  If you&#39;re interested in writing a custom renderer for Cytoscape.js, please <a href="mailto:maxkfranz@gmail.com">send an email to Max</a>.</p>
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				
 				
 			

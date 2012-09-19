@@ -173,8 +173,24 @@ pre code {
 	font-size: 1em;
 }
 
+.function .formats ul {
+	list-style-type: none;
+}
+
+.function pre {
+	font-size: 0.8em;
+}
+
+.function {
+	border-top: 1px solid #eaeaea;
+	padding: 1em 0;
+	border-bottom: 1px solid #eaeaea;
+}
+
 .function + .function {
-	margin-top: 2em;
+	margin-top: 1em;
+	border-top: 0;
+	padding-top: 0;
 }
 
 .function .name {
@@ -184,11 +200,6 @@ pre code {
 
 .function > .name {
 	
-}
-
-.function ul {
-	list-style-type: none;
-	margin-left: 0;
 }
 
 .function > .formats,
@@ -208,7 +219,7 @@ pre code {
 	display: none;
 }
 
-.function .args {
+.function ul.args {
 	margin-left: 1em;
 	font-size: 0.8em;
 }

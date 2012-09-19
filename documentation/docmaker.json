@@ -387,6 +387,7 @@
             {
               "name": "eles.data",
               "descr": "Read and write developer-defined data associated with the elements.",
+              "formatsSameFn": true,
               "formats": [
                 {
                   "name": "ele.data",
@@ -421,7 +422,17 @@
 
             {
               "name": "eles.removeData",
-              "descr": "Remove developer-defined data associated with the elements."
+              "descr": "Remove developer-defined data associated with the elements.",
+              "formats": [
+                { "descr": "Removes all mutable data fields for the elements." },
+                {
+                  "descr": "Removes the specified mutable data fields for the elements.",
+                  "args": [
+                    { "name": "names", "descr": "A space-separated list of fields to delete." }
+                  ]
+                }
+              ],
+              "md": "collection/removeData"
             },
 
             {
@@ -436,7 +447,8 @@
 
             {
               "name": "ele.group",
-              "descr": "Get the group string that defines the type of the element."
+              "descr": "Get the group string that defines the type of the element.",
+              "md": "collection/group"
             },
 
             {
@@ -518,17 +530,86 @@
           "fns": [
             {
               "name": "node.position",
-              "descr": "Get or set the position of a node."
+              "descr": "Get or set the position of a node.",
+              "formats": [
+                {
+                  "descr": "Get the entire position object."
+                },
+
+                {
+                  "descr": "Get the value of a specified posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to get." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the value of a specified posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to set." },
+                    { "name": "value", "descr": "The value to set to the dimension." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the position using name-value pairs in the specified object.",
+                  "args": [
+                    { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to set." }
+                  ]
+                }
+              ],
+              "md": "collection/position"
             },
 
             {
               "name": "nodes.positions",
-              "descr": "Set the positions of several nodes with a function."
+              "descr": "Set the positions of several nodes with a function.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "fn(i, ele)", 
+                      "descr": "A callback function that returns the position to set for each element.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." },
+                        { "name": "ele", "descr": "The element being iterated over for which the function should return a position to set." }
+                      ]
+                    }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "node.renderedPosition",
-              "descr": "Get or set the rendered position of a node."
+              "descr": "Get or set the rendered position of a node.",
+              "formats": [
+                {
+                  "descr": "Get the entire rendered position object."
+                },
+
+                {
+                  "descr": "Get the value of a specified rendered posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to get." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the value of a specified rendered posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to set." },
+                    { "name": "value", "descr": "The value to set to the dimension." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the rendered position using name-value pairs in the specified object.",
+                  "args": [
+                    { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to set." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -631,27 +712,104 @@
           "fns": [
             {
               "name": "eles.on",
-              "descr": "Bind a callback function to specified events that occur on the elements."
+              "descr": "Bind to events that occur on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/on"
             },
 
             {
               "name": "eles.one",
-              "descr": "Bind a callback function that is triggered once per element."
+              "descr": "Bind a callback function that is triggered once per event per element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/one"
             },
             
             {
               "name": "eles.once",
-              "descr": "Bind a callback function that is triggered once per collection."
+              "descr": "Bind a callback function that is triggered once per event per collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/once"
             },
 
             {
               "name": "eles.off",
-              "descr": "Unbind one or more callback functions on the elements."
+              "descr": "Unbind one or more callback functions on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/off"
             },
 
             {
               "name": "eles.trigger",
-              "descr": "Trigger events on the elements."
+              "descr": "Trigger events on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/trigger"
             }      
           ]
         },
@@ -661,17 +819,56 @@
           "fns": [
             {
               "name": "eles.css",
-              "descr": "Get the style of the element, or override the style of the elements."
+              "descr": "Get the style of the element, or override the style of the elements.",
+              "formatsSameFn": true,
+              "formats": [
+                {
+                  "name": "ele.css",
+                  "descr": "Get a name-value pair object containing visual style properties and their values for the element."
+                },
+
+                {
+                  "name": "ele.css",
+                  "descr": "Get a particular style property value.",
+                  "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
+                },
+
+                {
+                  "name": "eles.css",
+                  "descr": "Set the specified visual style property for the elements.",
+                  "args": [
+                    { "name": "name", "descr": "The name of the property to set." },
+                    { "name": "value", "descr": "The value to set to the visual style property." }
+                  ]
+                },
+
+                {
+                  "name": "eles.css",
+                  "descr": "Set several visual style properties at once for the elements.",
+                  "args": [ { "name": "props", "descr": "An object with name-value pairs representing properties to set on the elements." } ]
+                }
+              ],
+              "md": "collection/css"
             },
 
             {
-              "name": "ele.removeCss",
-              "descr": "Removes overridden style of the elements."
+              "name": "eles.removeCss",
+              "descr": "Removes all overridden style of the elements."
             },
 
             {
               "name": "ele.renderedCss",
-              "descr": "Get the style of the element in rendered dimensions."
+              "descr": "Get the style of the element in rendered dimensions.",
+              "formats": [
+                {
+                  "descr": "Get a name-value pair object containing rendered visual style properties and their values for the element."
+                },
+
+                {
+                  "descr": "Get a particular rendered style property value.",
+                  "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
+                }
+              ]
             },
 
             {
@@ -695,22 +892,45 @@
 
             {
               "name": "eles.addClass",
-              "descr": "Add classes to elements."
+              "descr": "Add classes to elements.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to add to the elements." } ]
+                }
+              ]
             },
 
             {
               "name": "eles.removeClass",
-              "descr": "Remove classes from elements."
+              "descr": "Remove classes from elements.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to remove from the elements." } ]
+                }
+              ]
             },
 
             {
               "name": "eles.toggleClass",
-              "descr": "Toggle whether the elements have the specified classes."
+              "descr": "Toggle whether the elements have the specified classes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "classes", "descr": "A space-separated list of class names to toggle on the elements." },
+                    { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on `true` or removes them on `false`.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "ele.hasClass",
-              "descr": "Get whether an element has a particular class."
+              "descr": "Get whether an element has a particular class.",
+              "formats": [
+                {
+                  "args": [ { "name": "className", "descr": "The name of the class to test for." } ]
+                }
+              ]
             }
           ]
         },
@@ -724,18 +944,60 @@
             },
 
             {
-              "name": "ele.animate",
-              "descr": "Animate the elements."
+              "name": "eles.animate",
+              "descr": "Animate the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "props", 
+                      "descr": "An object containing the properties to animate.",
+                      "fields": [
+                        { "name": "position", "descr": "A position to which the elements will be animated." },
+                        { "name": "css", "descr": "An object containing name-value pairs of style properties to animate." }
+                      ]
+                    },
+
+                    {
+                      "name": "options",
+                      "descr": "An object containing animation options.",
+                      "fields": [
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/animate"
             },
 
             {
               "name": "eles.delay",
-              "descr": "Add a delay between animations for the elements."
+              "descr": "Add a delay between animations for the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
+                    { "name": "complete", "descr": "A function to call when the delay is complete." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.stop",
-              "descr": "Stop all animations that are currently running."
+              "descr": "Stop all animations that are currently running.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "clearQueue", "descr": "A boolean, indicating whether the queue of animations should be emptied." },
+                    { "name": "jumpToEnd", "descr": "A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -750,27 +1012,63 @@
           "fns": [
             {
               "name": "eles.same",
-              "descr": "Determine whether this collection contains exactly the same elements as another collection."
+              "descr": "Determine whether this collection contains exactly the same elements as another collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The other elements to compare to." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.anySame",
-              "descr": "Determine whether this collection contains any of the same elements as another collection."
-            },
-
-            {
-              "name": "eles.is",
-              "descr": "Determine whether any element in this collection matches a selector."
-            },
-
-            {
-              "name": "eles.allAre",
-              "descr": "Determine whether all elements in the collection match a selector."
+              "descr": "Determine whether this collection contains any of the same elements as another collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The other elements to compare to." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.allAreNeighbors",
-              "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection."
+              "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The other elements to compare to." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.is",
+              "descr": "Determine whether any element in this collection matches a selector.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.allAre",
+              "descr": "Determine whether all elements in the collection match a selector.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                }
+              ]
+
             }
           ]
         },
@@ -780,7 +1078,8 @@
           "fns": [
             {
               "name": "eles.size",
-              "descr": "Get the number of elements in the collection."
+              "descr": "Get the number of elements in the collection.",
+              "md": "collection/size"
             },
 
             {
@@ -794,17 +1093,47 @@
 
             {
               "name": "eles.each",
-              "descr": "Iterate over the elements in the collection."
+              "descr": "Iterate over the elements in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(i, ele)",
+                      "descr": "The function executed each iteration.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the element in the collection." },
+                        { "name": "ele", "descr": "The element at the current index." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/each"
             },
 
             {
               "name": "eles.eq",
-              "descr": "Get an element at a partular index in the collection."
+              "descr": "Get an element at a particular index in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "index", "descr": "The index of the element to get." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.slice",
-              "descr": "Get a subset of the elements in the collection based on specified indices."
+              "descr": "Get a subset of the elements in the collection based on specified indices.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "start", "descr": "An integer that specifies where to start the selection (The first element has an index of 0). Use negative numbers to select from the end of an array." },
+                    { "name": "end", "descr": "An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.", "optional": true }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -813,39 +1142,120 @@
           "name": "Traversing",
           "fns": [
             {
-              "name": "eles.neighborhood"
+              "name": "eles.neighborhood",
+              "descr": "Get the neighbourhood of the elements.",
+              "formats": [
+                {
+                  "name": "eles.neighborhood",
+                  "descr": "Get the open neighbourhood of the elements.",
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                },
+
+                {
+                  "name": "eles.openNeighborhood",
+                  "descr": "Get the open neighbourhood of the elements.",
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                },
+
+                {
+                  "name": "eles.closedNeighborhood",
+                  "descr": "Get the closed neighbourhood of the elements.",
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/neighborhood"
             },
 
             {
-              "name": "eles.closedNeighborhood"
+              "name": "nodes.edgesWith",
+              "descr": "Get the edges connecting the collection to another collection.  Direction of the edges does not matter.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
-              "name": "nodes.edgesWith"
+              "name": "nodes.edgesTo",
+              "descr": "Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
-              "name": "nodes.edgesTo"
+              "name": "edges.connectedNodes",
+              "descr": "Get the nodes connected to the edges in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
-              "name": "edges.connectedNodes"
+              "name": "edges.source",
+              "descr": "Get source nodes connected to the edges in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
-              "name": "edges.source"
+              "name": "edges.target",
+              "descr": "Get target nodes connected to the edges in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
-              "name": "edges.target"
+              "name": "edges.parallelEdges",
+              "descr": "Get edges parallel to those in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/parallelEdges"
             },
 
             {
-              "name": "edges.parallelEdges"
-            },
-
-            {
-              "name": "edges.codirectedEdges"
+              "name": "edges.codirectedEdges",
+              "descr": "Get edges codirected to those in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/codirectedEdges"
             }
           ]
         },
@@ -854,31 +1264,88 @@
           "name": "Building & filtering",
           "fns": [
             {
-              "name": "eles.add"
+              "name": "eles.add",
+              "descr": "Get a new collection, resulting from adding the collection with another one",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to add." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.not",
-              "descr": "",
-              "formats": []
+              "descr": "Get a new collection, resulting from the collection without some specified elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements that will not be in the resultant collection." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "Elements matching this selector will not be in the resultant collection." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.intersect",
-              "descr": "",
-              "formats": []
+              "descr": "Get the elements in both this collection and another specified collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to intersect with." }
+                  ]
+                }
+              ]
             },
 
             {
               "name": "eles.filter",
-              "descr": "",
+              "descr": "Get a new collection containing elements that are accepted by the specified filter.",
               "formats": [
                 {
-                  "name": "eles.nodes"
+                  "name": "eles.filter",
+                  "descr": "Get the elements that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
                 },
 
                 {
-                  "name": "eles.edges"
+                  "name": "eles.filter",
+                  "descr": "Get the elements that match the specified filter function.",
+                  "args": [
+                    {
+                      "name": "function(i, ele)",
+                      "descr": "The filter function that returns true for elements to include.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the current element being considered." },
+                        { "name": "ele", "descr": "The element being considered." }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "name": "eles.nodes",
+                  "descr": "Get the nodes that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                },
+
+                {
+                  "name": "eles.edges",
+                  "descr": "Get the edges that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
                 }
               ]
             }
@@ -886,6 +1353,11 @@
           ]
         }
       ]
+    },
+
+    {
+      "name": "Extensions",
+      "md": "extensions"
     }
 
   ]

@@ -1,5 +1,7 @@
 # cytoscape.js
 
+
+
 ## Notice
 
 Cytoscape.js has undergone major refactoring, including a change in name from the previous "Cytoscape Web" name.  **The code in the repository is currently unstable and should not be used by developers.**
@@ -8,9 +10,15 @@ Rest assured that we will continue development on the project to deliver a high-
 
 We are working hard to make Cytoscape.js better and in shape for a full release very soon.  Watch or star the project to keep updated on the project.
 
+
+
+
 ## Documentation
 
-You can find the documentation in the [wiki](https://github.com/cytoscape/cytoscape.js/wiki).  This readme is mostly for developers of cytoscape.js.
+You can find the documentation on the [project website](http://cytoscape.github.com/cytoscape.js).  This readme is mostly for developers of Cytoscape.js.
+
+
+
 
 
 ## Acknowledgements
@@ -37,6 +45,9 @@ on lesser browsers, like IE.  Information about this library can be found
 at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
 
 
+
+
+
 ## Adding source files
 
 When adding source (.js) files to the repository, there are several files that should be updated accordingly:
@@ -46,6 +57,8 @@ When adding source (.js) files to the repository, there are several files that s
  * `src/debug/index.html` : Update the `<script>` tag list with the file so that the debug page can continue to be used to visually test the library.
 
  * `tests/index.html` : Update the list of JavaScript files that the testing framework considers to consistute the library.  Otherwise, the tests will almost certainly fail.
+
+
 
 
 ## Build dependencies
@@ -58,6 +71,7 @@ executables and still run `make` successfully.  You should be able to run
 `make` without modification on any well configured Unix-like machine, such as
 Linux or Mac OS X---Mac needs XCode with command line tools installed to run
 `make`.
+
 
 
 
@@ -74,6 +88,7 @@ A note to developers:
 
 For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
 actual release ZIP.
+
 
 
 

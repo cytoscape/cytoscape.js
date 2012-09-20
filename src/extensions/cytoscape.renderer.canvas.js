@@ -1,13 +1,11 @@
 (function($, $$){
 
-
 	var debug = function(o) {
 		if (false) {
 			console.log(o);
 		}
 	}
 
-	// TODO put default options here
 	var defaults = {
 		minZoom: 0.001,
 		maxZoom: 1000,
@@ -16,42 +14,6 @@
 		selectionToPanDelay: 500,
 		dragToSelect: true,
 		dragToPan: true,
-	};
-	
-	var defaultNode = {
-		shape: "ellipse",
-		sizeFactor: 0.2,
-		selectedColor: "#AADDAA",
-		hoveredColor: "#AAAAFF",
-		regularColor: "#AAAAAA",
-	
-		borderWidth: 6,
-		selectedBorderColor: "#BBDDBB",
-		hoveredBorderColor: "#BBBBFF",
-		regularBorderColor: "#BBBBBB",
-		
-		labelFontStyle: "normal",
-		labelFontSize: "12px",
-		labelFontFamily: "Arial",
-		
-		labelTextAlign: "center",
-		labelTextColor: "#666666",
-	};
-	
-	var defaultEdge = {
-		selectedColor: "#AADDAA",
-		hoveredColor: "#CDCDFF",
-		regularColor: "#CDCDCD",
-		
-		/*
-		[ [ ‘font-style’ || ‘font-variant’ || ‘font-weight’ ]? 
-			‘font-size’ [ / ‘line-height’ ]? font-family ] 
-			| caption | icon | menu | message-box | small-caption | status-bar | inherit
-		*/
-		
-		endShape: "arrow",
-		
-		widthFactor: 1 / 26.0,
 	};
 	
 	var debugStats = {};
@@ -92,11 +54,13 @@
 	var cy;
 	var renderer;
 	
-	var firstTouchFinger, secondTouchFinger;
-	var firstTouchProjection, secondTouchProjection;
-	var twoFingerOffsetDistance;
+	var curTouch1Position = new Array(2);
+	var curTouch2Position = new Array(2);
+	var curTouchDistance;
 	
-	var prevTouch1, prevTouch2, prevTouchDistance;
+	var prevTouch1Position = new Array(2);
+	var prevTouch2Position = new Array(2);
+	var prevTouchDistance;
 	
 	var skipNextViewportRedraw = false;
 	
@@ -125,13 +89,9 @@
 		this.canvases = new Array(numCanvases);
 		this.canvasContexts = new Array(numCanvases);
 		
-		/*
-		this.canvasBuffers = new Array(numCanvases);
-		this.canvasBufferContexts = new Array(numCanvases);
-		*/
-		
-		this.bufferCanvases = new Array(2);
-		this.bufferCanvasContexts = new Array(2);
+		var numBufferCanvases = 2;
+		this.bufferCanvases = new Array(numBufferCanvases);
+		this.bufferCanvasContexts = new Array(numBufferCanvases);
 		
 		this.canvasNeedsRedraw = new Array(numCanvases);
 		this.redrawReason = new Array(numCanvases);
@@ -139,7 +99,7 @@
 		var container = this.options.cy.container();
 		this.container = container;
 		
-		for (var i = 0; i < numCanvases + 2; i++) {
+		for (var i = 0; i < numCanvases + numBufferCanvases; i++) {
 			var canvas = document.createElement("canvas");
 			
 			canvas.width = container.clientHeight;
@@ -150,7 +110,7 @@
 			if (i < numCanvases) {
 				// Create main set of canvas layers for drawing
 				canvas.id = "layer" + i;
-				canvas.style.zIndex = String(-i);
+				canvas.style.zIndex = String(-i - numBufferCanvases);
 				canvas.style.visibility = "hidden";
 				
 				this.canvases[i] = canvas;
@@ -162,7 +122,7 @@
 			} else {
 				// Create the buffer canvas which is the cached drawn result
 				canvas.id = "buffer" + (i - numCanvases);
-				canvas.style.zIndex = String(10 + -(i - numCanvases));
+				canvas.style.zIndex = -(i - numCanvases);
 				
 				this.bufferCanvases[i - numCanvases] = canvas;
 				this.bufferCanvasContexts[i - numCanvases] = canvas.getContext("2d");
@@ -176,21 +136,13 @@
 		
 		this.bufferCanvases[1].style.visibility = "hidden";
 //		this.bufferCanvases[1].style.visibility = "visible";
-
-/*
-		this.canvas = this.canvases[0];
-		this.context = this.canvasContexts[0];
-*/
 		
 		this.canvas = this.bufferCanvases[0];
 		this.context = this.bufferCanvasContexts[0];
 		
-		//
-		
 		this.center = [container.clientWidth / 2, container.clientHeight / 2];
 		this.scale = [1, 1];
 		this.zoomLevel = 0;
-		// this.zoomCenter = [container.clientWidth / 2, container.clientHeight / 2];
 		
 		renderer = this;
 	}
@@ -286,34 +238,6 @@
 		cy.container().offset().left + 2, // container offsets
 		cy.container().offset().top + 2);
 		*/
-	}
-	
-	CanvasRenderer.prototype.projectMouseOld = function(self, mouseX, mouseY, xOffset, yOffset) {
-		var x = mouseX - xOffset;
-		var y = mouseY - yOffset;
-		
-		/*
-		x -= self.options.cy.container().width() / 2;
-		y -= self.options.cy.container().height() / 2;
-		*/
-		
-		/*		
-		x /= self.scale[0];
-		y /= self.scale[1];
-		*/
-		
-		x -= cy.pan().x;
-		y -= cy.pan().y;
-		
-		x /= cy.zoom();
-		y /= cy.zoom();
-		
-		/*
-		x += self.center[0];
-		y += self.center[1];
-		*/
-		
-		return [x, y];
 	}
 	
 	CanvasRenderer.prototype.findEdgeMetrics = function(edges) {
@@ -500,27 +424,19 @@
 				firstTouchFinger = event.touches[0];
 				secondTouchFinger = event.touches[1];
 				
-				firstTouchProjection = renderer.projectMouse(firstTouchFinger);
-				secondTouchProjection = renderer.projectMouse(secondTouchFinger);
+				var canvasOffset = [
+					renderer.canvas.parentElement.offsetLeft,
+					-renderer.canvas.parentElement.offsetTop];
 				
-				firstTouchFinger.offsetX = firstTouchFinger.clientX + renderer.canvas.parentElement.offsetLeft;
-				firstTouchFinger.offsetY = firstTouchFinger.clientY - renderer.canvas.parentElement.offsetTop;
+				prevTouch1Position[0] = event.touches[0].clientX + canvasOffset[0];
+				prevTouch1Position[1] = event.touches[0].clientY + canvasOffset[1];
 				
-				secondTouchFinger.offsetX = secondTouchFinger.clientX + renderer.canvas.parentElement.offsetLeft;
-				secondTouchFinger.offsetY = secondTouchFinger.clientY - renderer.canvas.parentElement.offsetTop;
+				prevTouch2Position[0] = event.touches[1].clientX + canvasOffset[0];
+				prevTouch2Position[1] = event.touches[1].clientY + canvasOffset[1];
 				
-				twoFingerOffsetDistance = Math.sqrt(
-					Math.pow(firstTouchProjection[0] - secondTouchProjection[0], 2)
-					+ Math.pow(firstTouchProjection[1] - secondTouchProjection[1], 2));
-					
-				twoFingerOffsetDistance = Math.sqrt(
-					Math.pow(firstTouchFinger.offsetX - secondTouchFinger.offsetX, 2)
-					+ Math.pow(firstTouchFinger.offsetY - secondTouchFinger.offsetY, 2));
-
-				
-			} else {
-				secondTouchFinger = undefined;
-				secondTouchProjection = undefined;
+				prevTouchDistance = Math.sqrt(
+					Math.pow(prevTouch2Position[0] - prevTouch1Position[0], 2)
+					+ Math.pow(prevTouch2Position[1] - prevTouch1Position[1], 2));
 			}
 			
 			event = event.changedTouches[0];
@@ -545,7 +461,7 @@
 			dragPanStartX = mouseDownEvent.clientX;
 			dragPanStartY = mouseDownEvent.clientY;
 			
-			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
+//			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
 			
 			dragPanMode = true;
 			
@@ -583,11 +499,7 @@
 				&& minDistanceNode == undefined
 				&& minDistanceEdge == undefined) {
 		
-			if (event.touch) {
-				
-			} else {
-				selectBox[4] = 1;
-			}
+			selectBox[4] = 1;
 		}
 		
 		if (mouseDownEvent.button == 0
@@ -656,51 +568,41 @@
 			mouseMoveTimeout = null;		
 		}, 1000/100);
 		
+		var event = e;
+		
 		if (e.touches) {						
 			e.preventDefault();
 			// console.log("touchdown, " + e.changedTouches.length);
-			
+
+			// Pinch to zoom
 			if (e.touches.length >= 2) {
-				var first = e.touches[0];
-				var second = e.touches[1];
+				var canvasOffset = [
+					renderer.canvas.parentElement.offsetLeft,
+					-renderer.canvas.parentElement.offsetTop];
 				
-				first.offsetX = first.clientX 
-					+ renderer.canvas.parentElement.offsetLeft;
-				first.offsetY = first.clientY 
-					- renderer.canvas.parentElement.offsetTop;
+				curTouch1Position[0] = event.touches[0].clientX + canvasOffset[0];
+				curTouch1Position[1] = event.touches[0].clientY + canvasOffset[1];
 				
-				second.offsetX = second.clientX 
-					+ renderer.canvas.parentElement.offsetLeft;
-				second.offsetY = second.clientY 
-					- renderer.canvas.parentElement.offsetTop;
+				curTouch2Position[0] = event.touches[1].clientX + canvasOffset[0];
+				curTouch2Position[1] = event.touches[1].clientY + canvasOffset[1];
 				
-				// Pinch to zoom
-				var firstNewProjection = renderer.projectMouse(first);
-				var secondNewProjection = renderer.projectMouse(second);
+				curTouchDistance = Math.sqrt(
+					Math.pow(prevTouch2Position[0] - prevTouch1Position[0], 2)
+					+ Math.pow(prevTouch2Position[1] - prevTouch1Position[1], 2));
 				
-				var firstDisplacement = 
-					[first.offsetX - firstTouchFinger.offsetX,
-					first.offsetY - firstTouchFinger.offsetY];
+				var displacement1 = 
+					[curTouch1Position[0] - prevTouch1Position[0],
+					curTouch1Position[1] - prevTouch1Position[1]];
 					
-				var secondDisplacement = 
-					[second.offsetX - secondTouchFinger.offsetX,
-					second.offsetY - secondTouchFinger.offsetY];
-					
+				var displacement2 = 
+					[curTouch2Position[0] - prevTouch2Position[0],
+					curTouch2Position[1] - prevTouch2Position[1]];
+						
 				var averageDisplacement =
-					[(firstDisplacement[0] + secondDisplacement[0]) / 2,
-					(firstDisplacement[1] + secondDisplacement[1]) / 2];
+					[(displacement1[0] + displacement2[0]) / 2,
+					(displacement2[1] + displacement2[1]) / 2];
 				
-				/*
-				var newOffsetDistance = Math.sqrt(
-					Math.pow(firstNewProjection[0] - secondNewProjection[0], 2)
-					+ Math.pow(firstNewProjection[1] - secondNewProjection[1], 2));
-				*/
-				
-				var newOffsetDistance = Math.sqrt(
-					Math.pow(first.offsetX - second.offsetX, 2)
-					+ Math.pow(first.offsetY - second.offsetY, 2));
-				
-				var zoomFactor = newOffsetDistance / twoFingerOffsetDistance ;
+				var zoomFactor = curTouchDistance / prevTouchDistance;
 				
 				if (zoomFactor > 1) {
 					zoomFactor = (zoomFactor - 1) * 1.5 + 1;
@@ -710,36 +612,22 @@
 				
 				skipNextViewportRedraw = true;
 				
-				/*
-				cy.zoom({level: cy.zoom() * zoomFactor,
-					position: {x: (first.offsetX + second.offsetX) / 2,
-								y: (first.offsetY + second.offsetY) / 2}});
-				*/
-				
-				
 				cy.panBy({x: averageDisplacement[0], 
 							y: averageDisplacement[1]});
 				
-				console.log([first.offsetX, first.offsetY]);
-				console.log([firstTouchFinger.offsetX, firstTouchFinger.offsetY]);
-				
-				/*				
-				console.log(firstDisplacement);
-				console.log(secondDisplacement);			
-				console.log(averageDisplacement);
-				*/
-				
 				cy.zoom({level: cy.zoom() * zoomFactor,
-					position: {x: (first.offsetX + second.offsetX) / 2,
-								y: (first.offsetY + second.offsetY) / 2}});
+					position: {x: (curTouch1Position[0] + curTouch2Position[0]) / 2,
+								y: (curTouch1Position[1] + curTouch2Position[1]) / 2}});
 				
+				prevTouch1Position[0] = curTouch1Position[0];
+				prevTouch1Position[1] = curTouch1Position[1];
 				
+				prevTouch2Position[0] = curTouch2Position[0];
+				prevTouch2Position[1] = curTouch2Position[1];
 				
-				firstTouchFinger = first;
-				secondTouchFinger = second;
-				twoFingerOffsetDistance = newOffsetDistance;
+				prevTouchDistance = curTouchDistance;
 				
-				return;
+				return;	
 			}
 			
 			e = e.touches[0];
@@ -847,10 +735,14 @@
 	
 	CanvasRenderer.prototype.mouseUpHandler = function(event) {
 	
+		var touchEvent;
+		
 		if (event.changedTouches) {						
 			event.preventDefault();
 			
 //			console.log("touchUp, " + event.changedTouches.length);
+			
+			touchEvent = event;
 			
 			event = event.changedTouches[0];
 			event.button = 0;
@@ -1126,6 +1018,11 @@
 		renderer.redrawReason[0].push("Selection box gone");
 		
 		if (nodeBeingDragged) {
+			/*
+			renderer.canvasNeedsRedraw[2] = true;
+			renderer.redrawReason[2].push("Node drag completed");
+			*/
+			
 			renderer.canvasNeedsRedraw[4] = true;
 			renderer.redrawReason[4].push("Node drag completed");
 		}
@@ -1134,6 +1031,20 @@
 		nodeDragging = false;
 		
 		cy.renderer().redraw();
+		
+		if (touchEvent && touchEvent.touches.length == 1) {
+			dragPanStartX = touchEvent.touches[0].clientX;
+			dragPanStartY = touchEvent.touches[0].clientY;
+			
+			dragPanMode = true;
+			
+			if (cy.renderer().canvas.style.cursor 
+				!= cy.style()._private.coreStyle["panning-cursor"].value) {
+
+				cy.renderer().canvas.style.cursor 
+					= cy.style()._private.coreStyle["panning-cursor"].value;
+			}
+		}
 	}
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
@@ -1364,7 +1275,8 @@
 			var boundingRadiusSquared = Math.pow(
 				Math.max(
 					node._private.style["width"].value, 
-					node._private.style["height"].value) / 2, 2);
+					node._private.style["height"].value
+						+ node._private.style["border-width"].value) / 2, 2);
 			
 			var distanceSquared = dX * dX + dY * dY;
 			
@@ -1388,12 +1300,10 @@
 			var mouseY = projected[1];
 			
 			if (minDistanceNode != undefined) {
-				minDistanceNode._private.rscratch.hovered = false;
 				minDistanceNode = undefined;
 				minDistanceNodeValue = 99999;
 		
 			} else if (minDistanceEdge != undefined) {
-				minDistanceEdge._private.rscratch.hovered = false;
 				minDistanceEdge = undefined;
 				minDistanceEdgeValue = 99999;
 			}
@@ -1406,7 +1316,7 @@
 			
 			for (var index = 0; index < edges.length; index++) {
 				if (nodeHovered) {
-				
+					break;
 				} else if (edges[index]._private.rscratch.isStraightEdge) {
 					checkStraightEdgeHover(mouseX, mouseY, edges[index],
 						edges[index]._private.rscratch.startX,
@@ -1839,6 +1749,13 @@
 				source.position().x,
 				source.position().y);
 			
+			if (intersect.length == 0) {
+				edge._private.rscratch.noArrowPlacement = true;
+				return;
+			} else {
+				edge._private.rscratch.noArrowPlacement = false;
+			}
+			
 			var arrowEnd = this.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
 				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
@@ -1859,6 +1776,13 @@
 				target.position().x,
 				target.position().y);
 			
+			if (intersect.length == 0) {
+				edge._private.rscratch.noArrowPlacement = true;
+				return
+			} else {
+				edge._private.rscratch.noArrowPlacement = false;
+			}
+			
 			var arrowStart = this.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
 				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
@@ -1871,7 +1795,7 @@
 			
 			edge._private.rscratch.arrowStartX = arrowStart[0];
 			edge._private.rscratch.arrowStartY = arrowStart[1];
-			
+						
 		} else if (edge._private.rscratch.isBezierEdge) {
 			
 			var cp = [edge._private.rscratch.cp2x, edge._private.rscratch.cp2y];
@@ -2308,7 +2232,11 @@
 		
 		var lenRatio = (length - amount) / length;
 		
-		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]]; 
+		if (lenRatio < 0) {
+			return [];
+		} else {
+			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+		}
 	}
 
 	CanvasRenderer.prototype.drawPolygon = function(
@@ -2629,7 +2557,6 @@
 	
 	CanvasRenderer.prototype.drawEdge = function(edge) {
 		var context = renderer.context;
-		var styleValue;
 		
 		var startNode, endNode;
 		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
@@ -2641,27 +2568,19 @@
 		startNode = edge.source()[0];
 		endNode = edge.target()[0];
 		
-		if (false && edge._private.rscratch.hovered) {
-			styleValue = edge._private.rscratch.override.hoveredColor;
-			context.strokeStyle = styleValue != undefined ? styleValue 
-				: defaultEdge.hoveredColor;
-		} else {
-			// Edge color & opacity
-			styleValue = "rgba(" + edge._private.style["line-color"].value[0] + ","
-				+ edge._private.style["line-color"].value[1] + ","
-				+ edge._private.style["line-color"].value[2] + ","
-				+ edge._private.style.opacity.value + ")";
-			
-			context.strokeStyle = styleValue != undefined ? styleValue 
-				: defaultEdge.regularColor;
-		}
+		// Edge color & opacity
+		context.strokeStyle = "rgba(" 
+			+ edge._private.style["line-color"].value[0] + ","
+			+ edge._private.style["line-color"].value[1] + ","
+			+ edge._private.style["line-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
 		
 		// Edge line width
-		// context.lineWidth = edge._private.style.width.value * 2;
 		context.lineWidth = edge._private.style["width"].value;
-//		console.log(context.lineWidth);
+		if (context.lineWidth <= 0) {
+			return;
+		}
 		
-		// this.calculateEdgeMetrics(edge);
 		this.findEndpoints(edge);
 		
 		if (edge._private.rscratch.isSelfEdge) {
@@ -2699,9 +2618,6 @@
 			context.lineTo(edge._private.rscratch.endX, 
 				edge._private.rscratch.endY);
 			context.stroke();
-			
-			// ***
-			// this.drawStraightArrowhead(edge);
 						
 		} else {
 		
@@ -2716,12 +2632,12 @@
 				edge._private.rscratch.endX, 
 				edge._private.rscratch.endY);
 			context.stroke();
-			
-			// ***
-			// this.drawArrowhead(edge);
+	
 		}
 		
-		this.drawArrowheads(edge);
+		if (!edge._private.rscratch.noArrowPlacement) {
+			this.drawArrowheads(edge);
+		}
 		
 		// Calculate text draw position
 		
@@ -2732,8 +2648,8 @@
 		var edgeCenterX, edgeCenterY;
 		
 		if (edge._private.rscratch.isSelfEdge) {
-			textX = undefined;
-			textY = undefined;
+			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
+			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
 		} else if (edge._private.rscratch.isStraightEdge) {
 			edgeCenterX = (edge._private.rscratch.startX
 				+ edge._private.rscratch.endX) / 2;
@@ -2749,21 +2665,16 @@
 				+ (0.5 * 0.5) * edge._private.rscratch.endY;
 		}
 		
-		
-		//textX = edge._private.rscratch.cp2x;
-		//textY = edge._private.rscratch.cp2y;
-		
 		textX = edgeCenterX;
 		textY = edgeCenterY;
 		
-		if (!edge._private.rscratch.isSelfEdge) {
+//		if (!edge._private.rscratch.isSelfEdge) {
 			this.drawText(edge, textX, textY);
-		}
+//		}
 	}
 	
 	CanvasRenderer.prototype.drawNode = function(node) {
 		var context = renderer.context;
-		var styleValue;
 		
 		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
 		var textX, textY;
@@ -2774,56 +2685,48 @@
 			return;
 		}
 		
-		if (false && node._private.rscratch.hovered == true) {
-			styleValue = node._private.rscratch.override.hoveredColor;
-			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.hoveredColor;
-			
-			styleValue = node._private.rscratch.override.hoveredBorderColor;
-			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.hoveredBorderColor;
-		} else {
-			// Node color & opacity
-			styleValue = "rgba(" + node._private.style["background-color"].value[0] + ","
-				+ node._private.style["background-color"].value[1] + ","
-				+ node._private.style["background-color"].value[2] + ","
-				+ (node._private.style["background-opacity"].value 
-				* node._private.style["opacity"].value) + ")";
-				
-			context.fillStyle = styleValue != undefined ? styleValue : defaultNode.regularColor;
-			
-			// Node border color & opacity
-			styleValue = "rgba(" + node._private.style["border-color"].value[0] + ","
-				+ node._private.style["border-color"].value[1] + ","
-				+ node._private.style["border-color"].value[2] + ","
-				+ (node._private.style["border-opacity"].value 
-				* node._private.style["opacity"].value) + ")";	
-			context.strokeStyle = styleValue != undefined? styleValue : defaultNode.regularBorderColor;
-		}
+		// Node color & opacity
+		context.fillStyle = "rgba(" 
+			+ node._private.style["background-color"].value[0] + ","
+			+ node._private.style["background-color"].value[1] + ","
+			+ node._private.style["background-color"].value[2] + ","
+			+ (node._private.style["background-opacity"].value 
+			* node._private.style["opacity"].value) + ")";
+		
+		// Node border color & opacity
+		context.strokeStyle = "rgba(" 
+			+ node._private.style["border-color"].value[0] + ","
+			+ node._private.style["border-color"].value[1] + ","
+			+ node._private.style["border-color"].value[2] + ","
+			+ (node._private.style["border-opacity"].value 
+			* node._private.style["opacity"].value) + ")";
 		
 		nodeWidth = node._private.style["width"].value;
 		nodeHeight = node._private.style["height"].value;
+		
+		// Draw node
 		nodeShapeDrawers[node._private.style["shape"].value](
 			node,
 			nodeWidth,
 			nodeHeight); //node._private.data.weight / 5.0
 		
-		// Node border width
-		styleValue = node._private.style["border-width"].value;
-		if (styleValue > 0) {
-			context.lineWidth = styleValue != undefined? styleValue : defaultNode.borderWidth;
+		// Border width, draw border
+		context.lineWidth = node._private.style["border-width"].value;
+		if (context.lineWidth > 0) {
 			context.stroke();
 		}
 		
 		// Find text position
-		styleValue = node._private.style["text-halign"].strValue;
-		if (styleValue == "left") {
+		var textHalign = node._private.style["text-halign"].strValue;
+		if (textHalign == "left") {
 			// Align right boundary of text with left boundary of node
 			context.textAlign = "right";
 			textX = node._private.position.x - nodeWidth / 2;
-		} else if (styleValue == "right") {
+		} else if (textHalign == "right") {
 			// Align left boundary of text with right boundary of node
 			context.textAlign = "left";
 			textX = node._private.position.x + nodeWidth / 2;
-		} else if (styleValue == "center") {
+		} else if (textHalign == "center") {
 			context.textAlign = "center";
 			textX = node._private.position.x;
 		} else {
@@ -2832,14 +2735,14 @@
 			textX = node._private.position.x;
 		}
 		
-		styleValue = node._private.style["text-valign"].strValue;
-		if (styleValue == "top") {
+		var textValign = node._private.style["text-valign"].strValue;
+		if (textValign == "top") {
 			context.textBaseline = "bottom";
 			textY = node._private.position.y - nodeHeight / 2;
-		} else if (styleValue == "bottom") {
+		} else if (textValign == "bottom") {
 			context.textBaseline = "top";
 			textY = node._private.position.y + nodeHeight / 2;
-		} else if (styleValue == "middle" || styleValue == "center") {
+		} else if (textValign == "middle" || styleValue == "center") {
 			context.textBaseline = "middle";
 			textY = node._private.position.y;
 		} else {
@@ -2853,10 +2756,8 @@
 	
 	CanvasRenderer.prototype.drawText = function(element, textX, textY) {
 		var context = renderer.context;
-		var styleValue;
 		
 		// Font style
-//		styleValue = element._private.rscratch.override.labelFontStyle;
 		labelStyle = element._private.style["font-style"].strValue;
 		labelSize = element._private.style["font-size"].strValue;
 		labelFamily = element._private.style["font-family"].strValue;
@@ -2920,9 +2821,6 @@
 	};
 	
 	CanvasRenderer.prototype.pan = function(params){
-		//debug("pan called:");
-		//debug(params);
-		
 		console.log("pan call");
 		console.log(params);
 		
@@ -2932,9 +2830,6 @@
 	};
 	
 	CanvasRenderer.prototype.panBy = function(params){
-		// this.transform[4] += params.x;
-		// this.transform[5] += params.y;
-		
 		this.center[0] -= params.x;
 		this.center[1] -= params.y;
 		

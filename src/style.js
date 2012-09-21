@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$, window){
 	
 	$$.Style = function( cy ){
 
@@ -1055,4 +1055,4 @@
 		}
 	};
 
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );

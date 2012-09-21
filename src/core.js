@@ -25,8 +25,8 @@
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: "grid" }, options.layout );
-		options.renderer = $$.util.extend( { name: "svg" }, options.renderer );
+		options.layout = $$.util.extend( { name: typeof module === 'undefined' ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: typeof module === 'undefined' ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 

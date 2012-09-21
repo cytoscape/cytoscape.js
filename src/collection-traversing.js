@@ -357,7 +357,7 @@
 		var defaults = {
 			codirected: false
 		};
-		params = $.extend(true, {}, defaults, params);
+		params = $$.util.extend({}, defaults, params);
 		
 		return function( selector ){
 			var cy = this._private.cy;

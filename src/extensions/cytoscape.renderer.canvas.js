@@ -1,4 +1,4 @@
-(function($, $$){
+(function($$){
 
 	var debug = function(o) {
 		if (false) {
@@ -2841,4 +2841,4 @@
 	
 	$$("renderer", "canvas", CanvasRenderer);
 
-})( jQuery, jQuery.cytoscape );
+})( cytoscape );

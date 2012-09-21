@@ -4,9 +4,7 @@ $(function(){
 	
 	window.options = {
 		renderer: {
-			name: "svg",
-			dragToSelect: true,
-			dragToPan: true
+			name: "canvas"
 		},
 		layout: {
 			name: "grid"

@@ -11,7 +11,7 @@
 			    i = 0,
 			    current,
 			    minified = false,
-			    version = "1.7.1";
+			    version = "1.8";
 			for ( ; i < length; i++ ) {
 			    current = parts[ i ].split( "=" );
 			    if ( current[ 0 ] === "jquery" ) {
@@ -22,12 +22,12 @@
 			}
 			
 			// version of jquery to test against
-			var versions = ["1.4", "1.5", "1.6", "1.7"];
+			var versions = [ "1.4", "1.5", "1.6", "1.7", "1.8" ];
 
 			// use only latest jquery with `latest` url flag set
 			var search = window.location.search;
 			if( search.match(/[\?\&]latest/) && !search.match(/[\?\&]latest\=false/) ){
-				versions = ["1.7"];
+				versions = ["1.8"];
 			}
 			
 			// cytoscape web as separate source files

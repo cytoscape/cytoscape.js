@@ -2,11 +2,13 @@ $v(function(jQuery, $, version){
 	
 	defaultModule("$$.Style");
 	
-	test("constructor", function(){
-		var style = new $$.Style(cy);
+	var $$ = cytoscape;
 
-		ok( style.length > 0, "style is nonempty (default styles applied)" );
-	});
+	// test("constructor", function(){
+	// 	var style = new $$.Style(cy);
+
+	// 	ok( style.length > 0, "style is nonempty (default styles applied)" );
+	// });
 
 	function deep(actual, expected, msg){
 		if( !actual ){ ok(false, "actual is null :: " + msg); return; }

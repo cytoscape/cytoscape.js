@@ -18,6 +18,7 @@
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
+			reg.ready = false; // b/c an old core instance could have been using this reg and this instance is not yet ready
 		} else { // then we have to register
 			reg = $$.registerInstance( cy, container );
 		}
@@ -67,6 +68,7 @@
 				var fn = readies[i];
 				cy.bind("ready", fn);
 			}
+			reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
 			
 			// if a ready callback is specified as an option, the bind it
 			if( $$.is.fn( options.ready ) ){

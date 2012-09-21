@@ -32,11 +32,7 @@
 			
 			// cytoscape web as separate source files
 			var unminifiedJS = [
-				"../lib/jquery.color.js",
 				"../lib/arbor.js",
-				"../lib/jquery.svg.js",
-				"../lib/2D.js",
-				"../lib/jquery.mousewheel.js",
 				"../src/namespace.js",
 				"../src/is.js",
 				"../src/util.js",
@@ -72,7 +68,7 @@
 				"../src/collection-traversing.js",
 				"../src/selector.js",
 				"../src/extensions/cytoscape.renderer.null.js",
-				"../src/extensions/cytoscape.renderer.svg.js",
+				"../src/extensions/cytoscape.renderer.canvas.js",
 				"../src/extensions/cytoscape.layout.null.js",
 				"../src/extensions/cytoscape.layout.random.js",
 				"../src/extensions/cytoscape.layout.grid.js",
@@ -80,7 +76,7 @@
 			];
 			
 			// the combined js for cytoscape web
-			var minifiedJS = ["../build/cytoscape.all.min.js"];
+			var minifiedJS = ["../build/cytoscape.min.js"];
 			
 			// extensions we can test
 			var extensionsJS = [

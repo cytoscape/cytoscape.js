@@ -227,7 +227,7 @@
 		return function(otherNodes){
 			var elements = [];
 			var cy = this._private.cy;
-			var p = params;
+			var p = params || {};
 
 			// get elements if a selector is specified
 			if( $$.is.string(otherNodes) ){
@@ -357,7 +357,7 @@
 		var defaults = {
 			codirected: false
 		};
-		params = $.extend(true, {}, defaults, params);
+		params = $$.util.extend({}, defaults, params);
 		
 		return function( selector ){
 			var cy = this._private.cy;

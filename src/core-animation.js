@@ -32,8 +32,8 @@
 			cy._private.aniEles = [];
 			
 			// TODO change this when standardised
-			var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
-				window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+			var requestAnimationFrame = typeof window === 'undefined' ? function(){} : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+				window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 			
 			if( requestAnimationFrame == null || !useRequestAnimationFrame ){
 				requestAnimationFrame = function(fn){

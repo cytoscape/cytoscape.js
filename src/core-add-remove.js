@@ -1,4 +1,4 @@
-(function($$){
+(function($$, window){
 	
 	$$.fn.core({
 		add: function(opts){
@@ -115,7 +115,7 @@
 
 			// TODO remove timeout when chrome reports dimensions onload properly
 			// only affects when loading the html from localhost, i think...
-			if( window.chrome ){
+			if( window && window.chrome ){
 				setTimeout(function(){
 					callback();
 				}, 30);
@@ -127,4 +127,4 @@
 		}
 	});
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );

@@ -1,5 +1,6 @@
 {
   "version": "2.0.0-beta1",
+  "jqueryVersion": "1.4",
 
   "templates": {
     "TODO": "we are not using function templates yet but it might be nice"
@@ -225,6 +226,40 @@
                   "descr": "Set whether zooming is enabled.",
                   "args": [
                     { "name": "bool", "descr": "A truthy value enables zooming; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.minZoom",
+              "descr": "Get or set the minimum zoom level.",
+              "formats": [
+                {
+                  "descr": "Get the minimum zoom level."
+                },
+
+                {
+                  "descr": "Set the minimum zoom level.",
+                  "args": [
+                    { "name": "zoom", "descr": "The new minimum zoom level to use." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.maxZoom",
+              "descr": "Get or set the maximum zoom level.",
+              "formats": [
+                {
+                  "descr": "Get the maximum zoom level."
+                },
+
+                {
+                  "descr": "Set the maximum zoom level.",
+                  "args": [
+                    { "name": "zoom", "descr": "The new maximum zoom level to use." }
                   ]
                 }
               ]

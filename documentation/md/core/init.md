@@ -53,13 +53,6 @@ $("#cy").cytoscape(options);
 var cy = $("#cy").cytoscape("get"); // now we have a global reference to `cy`
 ```
 
-Alternatively, you can call functions on the Cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
-
-```js
-// pattern: $("#cy").cytoscape(functionName, param1, param2, param3, ...)
-$("#cy").cytoscape("elements", "[weight>20]");
-cy.elements("[weight>20]"); // functionally the same as the above line
-```
 
 
 
@@ -100,6 +93,10 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 ```js
 $("#cy").cytoscape({
   layout: { ... },
+  zoom: 1,
+  minZoom: 1e-50,
+  maxZoom: 1e50,
+  pan: { x: 0, y: 0 },
   renderer: { ... },
   style: { ... },
   ready: function(evt){ ... },
@@ -108,6 +105,10 @@ $("#cy").cytoscape({
 ```
 
 **layout** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports.
+
+**zoom** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.  You can set **minZoom** and **maxZoom** to set restrictions on the zoom level.
+
+**pan** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied. 
 
 **renderer** : A plain object containing options for the renderer to be used.  The `name` field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  
 

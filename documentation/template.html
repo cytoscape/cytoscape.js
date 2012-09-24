@@ -7,6 +7,10 @@
 		<link href="css/font-awesome.css" rel="stylesheet" />
 		<link href="css/style.css" rel="stylesheet" />
 
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.min.js"></script>
+		<script src="js/demo.js"></script>
+
 	</head>
 
 	<body>
@@ -44,12 +48,14 @@
 		<div id="content">
 
 			<div class="title">Cytoscape.js <span class="version">{{version}}</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, and plain JavaScript)</div>
 			<div class="links">
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
-				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="https://github.com/cytoscape/cytoscape.js/downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a href="https://groups.google.com/forum/#!forum/cytoscapejs"><span class="icon-comments"></span> Google Group</a>
 			</div>
+
+			<div id="demo"></div>
 
 			<div id="documentation">
 			{{#each sections}}

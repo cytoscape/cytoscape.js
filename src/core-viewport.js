@@ -33,7 +33,10 @@
 
 			case 1: 
 
-				if( $$.is.string( args[0] ) ){ // .pan("x")
+				if( !this._private.panEnabled ){
+					return this;
+
+				} else if( $$.is.string( args[0] ) ){ // .pan("x")
 					dim = args[0];
 					return pan[ dim ];
 
@@ -55,6 +58,10 @@
 				break;
 
 			case 2: // .pan("x", 100)
+				if( !this._private.panEnabled ){
+					return this;
+				}
+
 				dim = args[0];
 				val = args[1];
 
@@ -80,6 +87,10 @@
 			var args = arguments;
 			var pan = this._private.pan;
 			var dim, val, dims, x, y;
+
+			if( !this._private.panEnabled ){
+				return this;
+			}
 
 			switch( args.length ){
 			case 1: 
@@ -123,21 +134,35 @@
 			return this; // chaining
 		},
 		
-		fit: function( elements ){
+		fit: function( elements, padding ){
+			if( $$.is.number(elements) && padding === undefined ){ // elements is optional
+				padding = elements;
+				elements = undefined;
+			}
+
+			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+				return this;
+			}
+
 			var bb = this.boundingBox( elements );
 			var style = this.style();
 
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );
 			var zoom;
+			padding = $$.is.number(padding) ? padding : 0;
 
 			if( !isNaN(w) && !isNaN(h) ){
-				zoom = this._private.zoom = Math.min( w/bb.w, h/bb.h );
+				zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
-				this.pan({ // now pan to middle
+				// crop zoom
+				zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
+				zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
+
+				this._private.pan = { // now pan to middle
 					x: (w - zoom*( bb.x1 + bb.x2 ))/2,
 					y: (h - zoom*( bb.y1 + bb.y2 ))/2
-				});
+				};
 			}
 
 			this.trigger("pan zoom");
@@ -149,6 +174,26 @@
 			return this; // chaining
 		},
 		
+		minZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.minZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.minZoom = zoom;
+			}
+
+			return this;
+		},
+
+		maxZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.maxZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.maxZoom = zoom;
+			}
+
+			return this;
+		},
+
 		zoom: function( params ){
 			var pos;
 			var zoom;
@@ -178,11 +223,23 @@
 				} else if( params.position ){
 					pos = params.position;
 				}
+
+				if( pos && !this._private.panEnabled ){
+					return this; // panning disabled
+				}
+			}
+
+			if( !this._private.zoomEnabled ){
+				return this; // zooming disabled
 			}
 
 			if( !$$.is.number(zoom) || !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
 				return this; // can't zoom with invalid params
 			}
+
+			// crop zoom
+			zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
+			zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
 
 			var pan1 = this._private.pan;
 			var zoom1 = this._private.zoom;
@@ -259,6 +316,10 @@
 		},
 
 		center: function(elements){
+			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+				return this;
+			}
+
 			var bb = this.boundingBox( elements );
 			var style = this.style();
 			var w = parseFloat( style.containerCss("width") );
@@ -280,11 +341,15 @@
 		},
 		
 		reset: function(){
+			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+				return this;
+			}
+
 			this.pan({ x: 0, y: 0 });
-			this.zoom(1);
-			
-			this.trigger("zoom");
-			this.trigger("pan");
+
+			if( this._private.maxZoom > 1 && this._private.minZoom < 1 ){
+				this.zoom(1);
+			}
 
 			this.notify({ // notify the renderer that the viewport changed
 				type: "viewport"

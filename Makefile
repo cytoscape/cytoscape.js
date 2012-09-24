@@ -15,9 +15,10 @@ LS = ls
 OPEN = open
 AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+MAKE = make
 
 # version (update this when building release zip)
-VERSION := 2.0-prerelease-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+VERSION := 2.0.0beta1-github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 
 # directories
 LIB_DIR = lib
@@ -29,14 +30,12 @@ PLUGINS_DIR_NAME = plugins
 PLUGINS_DIR = $(SRC_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_PLUGINS_DIR = $(BUILD_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_DIR = build
+DOC_DIR = documentation
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
 
 # dependencies for the .all.js file
-LIBS = $(LIB_DIR)/jquery.color.js\
-	$(LIB_DIR)/jquery.svg.js\
-	$(LIB_DIR)/2D.js\
-	$(LIB_DIR)/jquery.mousewheel.js
+LIBS = $(LIB_DIR)/arbor.js
 
 # the files that make up the cytoweb core
 CORE = $(SRC_DIR)/namespace.js\
@@ -74,26 +73,21 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/collection-traversing.js\
 	$(SRC_DIR)/selector.js
 
-# the contents of the library when combined into the .all.js file
-DEPS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
-	$(EXTENSIONS_DIR)/cytoscape.renderer.svg.js\
+# extensions (list them manually if you don't want them all)	$(wildcard $(EXTENSIONS_DIR)/*)
+EXTENSIONS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
+	$(EXTENSIONS_DIR)/cytoscape.renderer.canvas.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.null.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.random.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.grid.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.preset.js\
-	$(LIBS)
-
-# extensions (list them manually if you don't want them all)
-EXTENSIONS = $(wildcard $(EXTENSIONS_DIR)/*)
+	$(EXTENSIONS_DIR)/cytoscape.layout.arbor.js\
 
 # plugins (list them manually if you don't want them all)
 PLUGINS = $(wildcard $(PLUGINS_DIR)/*)
 
 # names of the cytoscape web release js files
-JS_W_DEPS_FILE = $(BUILD_DIR)/cytoscape.all.js
-JS_WO_DEPS_FILE = $(BUILD_DIR)/cytoscape.js
-MIN_JS_W_DEPS_FILE = $(JS_W_DEPS_FILE:%.js=%.min.js)
-MIN_JS_WO_DEPS_FILE = $(JS_WO_DEPS_FILE:%.js=%.min.js)
+JS_FILE = $(BUILD_DIR)/cytoscape.js
+MIN_JS_FILE = $(JS_FILE:%.js=%.min.js)
 BUILD_PLUGINS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(PLUGINS))
 MIN_BUILD_PLUGINS =  $(BUILD_PLUGINS:%.js=%.min.js)
 BUILD_EXTENSIONS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(EXTENSIONS))
@@ -101,7 +95,7 @@ MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
 # configure what files to include in the zip
 ZIP_FILE = $(BUILD_DIR)/cytoscape.js-$(VERSION).zip
-ZIP_CONTENTS = $(JS_W_DEPS_FILE) $(MIN_JS_W_DEPS_FILE) $(JS_WO_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(BUILD_EXTENSIONS_DIR) $(BUILD_PLUGINS_DIR) $(LIB_DIR) $(LICENSE)
+ZIP_CONTENTS = $(JS_FILE) $(MIN_JS_FILE) $(LIBS) $(LICENSE)
 ZIP_DIR = cytoscape.js-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = etc/PREAMBLE
@@ -116,7 +110,11 @@ all : zip
 
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 	
-minify : $(MIN_JS_W_DEPS_FILE) $(MIN_JS_WO_DEPS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
+minify : $(MIN_JS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
+
+docs : minify
+	$(CD) $(DOC_DIR)
+	$(MAKE)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)
@@ -127,12 +125,8 @@ $(ZIP_FILE) : $(ZIP_DIR)
 	$(ZIP) -r $(ZIP_FILE) $(ZIP_DIR)
 	$(RM) $(ZIP_DIR)
 
-$(JS_W_DEPS_FILE) : $(BUILD_DIR)
-	$(AWK_NEWLINE) $(CORE) $(DEPS) > $@
-	$(call PREAMBLIFY)
-
-$(JS_WO_DEPS_FILE) : $(BUILD_DIR)
-	$(AWK_NEWLINE) $(CORE) > $@
+$(JS_FILE) : $(BUILD_DIR)
+	$(AWK_NEWLINE) $(CORE) $(EXTENSIONS) > $@
 	$(call PREAMBLIFY)
 
 $(BUILD_PLUGINS) : $(BUILD_PLUGINS_DIR)

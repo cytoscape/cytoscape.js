@@ -84,7 +84,13 @@
 		},
 
 		domElement: function(obj){
-			return obj instanceof HTMLElement;
+			if( typeof HTMLElement === 'undefined' ){
+				return false; // we're not in a browser so it doesn't matter
+			} else {
+				return obj instanceof HTMLElement;
+			}
+
+			
 		}
 	};	
 	

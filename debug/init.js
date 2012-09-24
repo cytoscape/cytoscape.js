@@ -4,9 +4,7 @@ $(function(){
 	
 	window.options = {
 		renderer: {
-			name: "svg",
-			dragToSelect: true,
-			dragToPan: true
+			name: "canvas"
 		},
 		layout: {
 			name: "grid"
@@ -14,7 +12,8 @@ $(function(){
 		style: cytoscape.stylesheet()
 			.selector("node")
 				.css({
-					"content": "data(id)"
+					"content": "data(id)",
+					"shape": "data(shape)"
 				})
 			.selector("edge")
 				.css({

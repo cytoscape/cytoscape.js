@@ -18,14 +18,15 @@
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
+			reg.ready = false; // b/c an old core instance could have been using this reg and this instance is not yet ready
 		} else { // then we have to register
 			reg = $$.registerInstance( cy, container );
 		}
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: "grid" }, options.layout );
-		options.renderer = $$.util.extend( { name: "svg" }, options.renderer );
+		options.layout = $$.util.extend( { name: typeof module === 'undefined' ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: typeof module === 'undefined' ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 
@@ -46,11 +47,26 @@
 			layout: null,
 			renderer: null,
 			notificationsEnabled: true, // whether notifications are sent to the renderer
+			minZoom: 1e-50,
+			maxZoom: 1e50,
 			zoomEnabled: true,
 			panEnabled: true,
-			zoom: 1,
-			pan: { x: 0, y: 0 }
+			zoom: $$.is.number(options.zoom) ? options.zoom : 1,
+			pan: {
+				x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
+				y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0,
+			}
 		};
+
+		// init zoom bounds
+		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
+			this._private.minZoom = options.minZoom;
+			this._private.maxZoom = options.maxZoom;
+		} else if( $$.is.number(options.minZoom) && options.maxZoom === undefined ){
+			this._private.minZoom = options.minZoom;
+		} else if( $$.is.number(options.maxZoom) && options.minZoom === undefined ){
+			this._private.maxZoom = options.maxZoom;
+		}
 
 		// init style
 		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : new $$.Style( cy );
@@ -67,6 +83,7 @@
 				var fn = readies[i];
 				cy.bind("ready", fn);
 			}
+			reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
 			
 			// if a ready callback is specified as an option, the bind it
 			if( $$.is.fn( options.ready ) ){

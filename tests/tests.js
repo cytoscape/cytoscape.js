@@ -95,7 +95,6 @@
 					ready: function(){
 						var cy = this;
 						window.cy = cy;
-						window.$$ = cytoscape;
 
 						start();
 					}

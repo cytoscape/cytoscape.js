@@ -7,12 +7,17 @@
 		<!-- cytoweb individual scripts (use these) -->
 		
 			<!-- library dependencies -->
-			<script type="text/javascript" src="../lib/jquery.color.js"></script>
 			<script type="text/javascript" src="../lib/arbor.js"></script>
+
+
+			<!-- uncomment for svg renderer -->
+			<!--
 			<script type="text/javascript" src="../lib/jquery.svg.js"></script>
+			<script type="text/javascript" src="../lib/jquery.color.js"></script>
 			<script type="text/javascript" src="../lib/2D.js"></script>
 			<script type="text/javascript" src="../lib/jquery.mousewheel.js"></script>
-			
+			-->
+
 			<!-- the core as split up dev scripts -->
 			<script type="text/javascript" src="../src/namespace.js"></script>
 			<script type="text/javascript" src="../src/is.js"></script>
@@ -51,7 +56,12 @@
 			
 			<!-- extensions -->
 			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.null.js"></script>
+			
+			<!--
 			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.svg.js"></script>
+			-->
+			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.canvas.js"></script>
+
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.null.js"></script>
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.random.js"></script>
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.grid.js"></script>

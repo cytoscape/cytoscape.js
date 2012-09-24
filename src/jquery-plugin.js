@@ -1,5 +1,7 @@
 ;(function($, $$){
 	
+	if( !$ ){ return } // no jquery => don't need this
+
 	// allow calls on a jQuery selector by proxying calls to $.cytoscape
 	// e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
 	$.fn.cytoscape = function(opts){
@@ -80,26 +82,6 @@
 	
 	// allow access to the global cytoscape object under jquery for legacy reasons
 	$.cytoscape = cytoscape;
-
-	// allow functional access to cytoscape.js
-	// e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
-	//      var nodes = cyto.nodes();
-	$$.init = function( options ){
-		
-		// create instance
-		if( $$.is.plainObject( options ) ){
-			return new $$.Core( options );
-		} 
-		
-		// allow for registration of extensions
-		// e.g. $.cytoscape("renderer", "svg", SvgRenderer);
-		// e.g. $.cytoscape("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
-		// e.g. $.cytoscape("core", "doSomething", function(){ /* doSomething code */ });
-		// e.g. $.cytoscape("collection", "doSomething", function(){ /* doSomething code */ });
-		else if( $$.is.string( options ) ) {
-			return $$.extension.apply($$.extension, arguments);
-		}
-	};
 	
 	// use short alias (cy) if not already defined
 	if( $.fn.cy == null && $.cy == null ){
@@ -107,4 +89,4 @@
 		$.cy = $.cytoscape;
 	}
 	
-})(jQuery, cytoscape);
+})(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);

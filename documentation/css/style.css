@@ -74,6 +74,13 @@ body {
 	overflow: auto;
 }
 
+#demo {
+	height: 20em;
+	width: 30em;
+	border: 1px solid #ddd;
+	margin: 1em 0;
+}
+
 .title {
 	font-weight: 200;
 	font-size: 4em;

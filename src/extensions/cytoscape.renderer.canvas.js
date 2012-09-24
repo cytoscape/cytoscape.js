@@ -32,11 +32,14 @@
 	var nodeHovered = false;
 	
 	var minDistanceEdge;
+	var minDistanceEdges = [];
 	var minDistanceEdgeValue = 999;
 	
 	var minDistanceNode;
+	var minDistanceNodes = [];
 	var minDistanceNodeValue = 999;
 	
+	var arrowShapes = {};
 	var arrowShapeDrawers = {};
 	var arrowShapeSpacing = {};
 	var arrowShapeGap = {};
@@ -148,78 +151,60 @@
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
-//		console.log("notify call: " + params);
-//		console.log(params);
-		
-		var redrawEvents = ["draw", "viewport", "add", "style"];
-		
-		switch (params.type) {
-			case "load":
-				debug("load call");
-				this.load();
-//				this.initStyle();
-				// redraw();
+
+		if (params.type == "load") {
+			this.load();
+			
+			this.canvasNeedsRedraw[2] = true;
+			this.redrawReason[2].push("Load");
 				
+			this.canvasNeedsRedraw[4] = true;
+			this.redrawReason[4].push("Load");
+			
+			this.redraw();
+		
+		} else if (params.type == "viewport") {
+		
+			if (!skipNextViewportRedraw) {
 				this.canvasNeedsRedraw[2] = true;
-				this.redrawReason[2].push("Load");
+				this.redrawReason[2].push("Viewport change");
 				
 				this.canvasNeedsRedraw[4] = true;
-				this.redrawReason[4].push("Load");
+				this.redrawReason[4].push("Viewport change");
 				
 				this.redraw();
-				break;
-			case "draw":
-				debug("draw call");
-				break;
-			case "viewport":
+			} else {
+				skipNextViewportRedraw = false;
+			}
+		} else if (params.type == "style") {
 			
-				if (!skipNextViewportRedraw) {
-					this.canvasNeedsRedraw[2] = true;
-					this.redrawReason[2].push("Viewport change");
-					
-					this.canvasNeedsRedraw[4] = true;
-					this.redrawReason[4].push("Viewport change");
-				} else {
-					skipNextViewportRedraw = false;
-				}
-				
-				break;
-			case "style":
-				// this.redraw();
-				doSingleRedraw = true;
+			doSingleRedraw = true;
 
-				this.canvasNeedsRedraw[2] = true;
-				this.redrawReason[2].push("Style change");
-				
-				this.canvasNeedsRedraw[4] = true;
-				this.redrawReason[4].push("Style change");
-
-				break;
-			case "add":
-				this.canvasNeedsRedraw[2] = true;
-				this.redrawReason[2].push("Elements added");
-				
-				this.canvasNeedsRedraw[4] = true;
-				this.redrawReason[4].push("Elements added");
-				
-//				this.initStyle();
-				break;
-			default:
-				console.log("event: " + params.type);
-		}
-		
-//		console.log(params.type);
-		if (redrawEvents.indexOf(params.type) != -1) {
+			this.canvasNeedsRedraw[2] = true;
+			this.redrawReason[2].push("Style change");
+			
+			this.canvasNeedsRedraw[4] = true;
+			this.redrawReason[4].push("Style change");
+			
 			this.redraw();
+			
+		} else if (params.type == "add"
+			|| params.type == "remove") {
+			
+			this.canvasNeedsRedraw[4] = true;
+			this.redrawReason[4].push("Elements added/removed");
+			
+			this.redraw();
+			
+		} else {
+			console.log("event: " + params.type);
 		}
-		
-		// this.redraw();
 	};
 	
 	CanvasRenderer.prototype.projectMouse = function(mouseEvent) {
 		
-		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft;
-		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop;
+		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
+		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
 
 		x += (mouseEvent.pageX - mouseEvent.clientX);
 		y += (mouseEvent.pageY - mouseEvent.clientY);
@@ -640,7 +625,7 @@
 		
 		// Get references to helper functions
 		var dragHandler = renderer.mouseMoveHelper.dragHandler;
-		var checkEdgeHover = renderer.mouseMoveHelper.checkEdgeHover;
+		var checkBezierEdgeHover = renderer.mouseMoveHelper.checkBezierEdgeHover;
 		var checkStraightEdgeHover = renderer.mouseMoveHelper.checkStraightEdgeHover;
 		var checkNodeHover = renderer.mouseMoveHelper.checkNodeHover;
 		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
@@ -1113,9 +1098,11 @@
 			*/
 		};
 		
-		var checkEdgeHover = function(mouseX, mouseY, edge) {
+		var checkBezierEdgeHover = function(mouseX, mouseY, edge) {
 		
-			var squaredDistanceLimit = 19; // Math.pow(edge._private.style["width"] * 30, 2);
+			// var squaredDistanceLimit = 19;
+			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
+			var edgeWithinDistance = false;
 		
 			if ($$.math.inBezierVicinity(
 					mouseX, mouseY,
@@ -1140,9 +1127,10 @@
 					edge._private.rscratch.cp2y,
 					edge._private.rscratch.endX,
 					edge._private.rscratch.endY);
-
+				
 				// debug(distance);
-				if (squaredDistance < squaredDistanceLimit) {
+				if (squaredDistance <= squaredDistanceLimit) {
+					edgeWithinDistance = true;
 					
 					if (squaredDistance < minDistanceEdgeValue) {
 						minDistanceEdge = edge;
@@ -1150,11 +1138,15 @@
 					}
 				}	
 			}
+			
+			return edgeWithinDistance;
 		}
 		
 		var checkSelfEdgeHover = function(mouseX, mouseY, edge) {
 			
-			var squaredDistanceLimit = 19;
+			// var squaredDistanceLimit = 19;
+			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
+			var edgeWithinDistance = false;
 			var edgeFound = false;
 			
 			if ($$.math.inBezierVicinity(
@@ -1177,6 +1169,8 @@
 				
 				// debug(distance);
 				if (squaredDistance < squaredDistanceLimit) {
+					
+					edgeWithinDistance = true;
 					
 					if (squaredDistance < minDistanceEdgeValue) {
 						minDistanceEdge = edge;
@@ -1209,6 +1203,8 @@
 				// debug(distance);
 				if (squaredDistance < squaredDistanceLimit) {
 					
+					edgeWithinDistance = true;
+					
 					if (squaredDistance < minDistanceEdgeValue) {
 						minDistanceEdge = edge;
 						minDistanceEdgeValue = squaredDistance;
@@ -1216,11 +1212,14 @@
 					}
 				}
 			}
+			
+			return edgeWithinDistance;
 		}
 		
 		var checkStraightEdgeHover = function(mouseX, mouseY, edge, x1, y1, x2, y2) {
 			
-			var squaredDistanceLimit = 19;
+			// var squaredDistanceLimit = 19;
+			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
 			
 			var nearEndOffsetX = mouseX - x1;
 			var nearEndOffsetY = mouseY - y1;
@@ -1232,6 +1231,7 @@
 			var displacementY = y2 - y1;
 			
 			var distanceSquared;
+			var edgeWithinDistance = false;
 			
 			if (nearEndOffsetX * displacementX 
 				+ nearEndOffsetY * displacementY <= 0) {
@@ -1256,11 +1256,15 @@
 			}
 			
 			if (distanceSquared <= squaredDistanceLimit) {
+				edgeWithinDistance = true;
+			
 				if (distanceSquared < minDistanceEdgeValue) {
 					minDistanceEdge = edge;
 					minDistanceEdgeValue = distanceSquared;
 				}
 			}
+			
+			return edgeWithinDistance;
 		}
 		
 		var checkNodeHover = function(mouseX, mouseY, node) {
@@ -1314,20 +1318,47 @@
 				checkNodeHover(mouseX, mouseY, nodes[index]);
 			}
 			
+			var edgeWithinDistance = false;
+			var potentialPickedEdges = [];
+			
 			for (var index = 0; index < edges.length; index++) {
 				if (nodeHovered) {
 					break;
 				} else if (edges[index]._private.rscratch.isStraightEdge) {
-					checkStraightEdgeHover(mouseX, mouseY, edges[index],
+					edgeWithinDistance = checkStraightEdgeHover(
+						mouseX, mouseY, edges[index],
 						edges[index]._private.rscratch.startX,
 						edges[index]._private.rscratch.startY,
 						edges[index]._private.rscratch.endX,
 						edges[index]._private.rscratch.endY);
 				} else if (edges[index]._private.rscratch.isSelfEdge) {
-					checkSelfEdgeHover(mouseX, mouseY, edges[index]);
+					edgeWithinDistance = checkSelfEdgeHover(
+						mouseX, mouseY, edges[index]);
 				} else {
-					checkEdgeHover(mouseX, mouseY, edges[index]);
+					edgeWithinDistance = checkBezierEdgeHover(
+						mouseX, mouseY, edges[index]);
 				}
+				
+				if (edgeWithinDistance) {
+					potentialPickedEdges.push(edges[index]);
+				}
+				
+				edgeWithinDistance = false;
+			}
+			
+			if (potentialPickedEdges.length > 0) {
+				potentialPickedEdges.sort(function(a, b) {
+					return b._private.data.id.localeCompare(a._private.data.id);
+				});
+				
+				potentialPickedEdges.sort(function(a, b) {
+					return b._private.style["z-index"].value
+						- a._private.style["z-index"].value
+				});
+				
+				minDistanceEdge = potentialPickedEdges[0];
+			} else {
+				minDistanceEdge = undefined;
 			}
 			
 			if (minDistanceNode != undefined) {
@@ -1339,7 +1370,7 @@
 		
 		// Make these related functions (they reference each other) available
 		this.mouseMoveHelper.dragHandler = dragHandler;
-		this.mouseMoveHelper.checkEdgeHover = checkEdgeHover;
+		this.mouseMoveHelper.checkBezierEdgeHover = checkBezierEdgeHover;
 		this.mouseMoveHelper.checkStraightEdgeHover = checkStraightEdgeHover;
 		this.mouseMoveHelper.checkNodeHover = checkNodeHover;
 		this.mouseMoveHelper.hoverHandler = hoverHandler;
@@ -1608,6 +1639,63 @@
 		
 	}
 	
+	arrowShapes["arrow"] = {
+		draw: function(context) {
+			context.lineTo(-0.15, 0.3);
+			context.lineTo(0, 0);
+			context.lineTo(0.15, 0.3);
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["triangle"] = arrowShapes["arrow"];
+	
+	arrowShapes["none"] = {
+		draw: function(context) {
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return 0;
+		}
+	}
+	
+	arrowShapes["circle"] = {
+		draw: function(context) {
+			context.translate(0, -0.15);
+			context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["inhibitor"] = {
+		draw: function(context) {
+			context.lineTo(-0.25, 0);
+			context.lineTo(-0.25, -0.1);
+			context.lineTo(0.25, -0.1);
+			context.lineTo(0.25, 0);
+		},
+		spacing: function(edge) {
+			return 4;
+		},
+		gap: function(edge) {
+			return 4;
+		}
+	}
+	
+	arrowShapes["tee"] = arrowShapes["inhibitor"];
+	
 	arrowShapeDrawers["arrow"] = function(context) {
 		// context.scale(context.lineWidth, context.lineWidth);
 		context.lineTo(-0.15, 0.3);
@@ -1615,7 +1703,7 @@
 		context.lineTo(0.15, 0.3);
 	}
 	arrowShapeSpacing["arrow"] = 0;
-	arrowShapeGap["arrow"] = 4;
+	arrowShapeGap["arrow"] = 4.5;
 	
 	arrowShapeDrawers["triangle"] = arrowShapeDrawers["arrow"];
 	arrowShapeSpacing["triangle"] = arrowShapeSpacing["arrow"];
@@ -1630,7 +1718,7 @@
 		context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
 	};
 	arrowShapeSpacing["circle"] = 0;
-	arrowShapeGap["circle"] = 0.1;
+	arrowShapeGap["circle"] = 0.3;
 	
 	arrowShapeDrawers["inhibitor"] = function(context) {
 		// context.scale(context.lineWidth, context.lineWidth);
@@ -1638,7 +1726,7 @@
 		context.lineTo(-0.25, -0.1);
 		context.lineTo(0.25, -0.1);
 		context.lineTo(0.25, 0);
-	}
+	};
 	arrowShapeSpacing["inhibitor"] = 4;
 	arrowShapeGap["inhibitor"] = 4;
 	
@@ -1669,7 +1757,7 @@
 		
 		context.beginPath();
 		
-		arrowShapeDrawers[shape](context);
+		arrowShapes[shape].draw(context);
 		
 		context.closePath();
 		
@@ -1709,9 +1797,9 @@
 			);
 			
 			var arrowEnd = this.shortenIntersection(intersect, cp,
-				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
 			var edgeEnd = this.shortenIntersection(intersect, cp,
-				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.endX = edgeEnd[0];
 			edge._private.rscratch.endY = edgeEnd[1];
@@ -1730,9 +1818,9 @@
 			);
 			
 			var arrowStart = this.shortenIntersection(intersect, cp,
-				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
 			var edgeStart = this.shortenIntersection(intersect, cp,
-				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.startX = edgeStart[0];
 			edge._private.rscratch.startY = edgeStart[1];
@@ -1748,20 +1836,20 @@
 				target._private.style["height"].value,
 				source.position().x,
 				source.position().y);
-			
+				
 			if (intersect.length == 0) {
 				edge._private.rscratch.noArrowPlacement = true;
-				return;
+	//			return;
 			} else {
 				edge._private.rscratch.noArrowPlacement = false;
 			}
 			
 			var arrowEnd = this.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
-				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
 			var edgeEnd = this.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
-				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 
 			edge._private.rscratch.endX = edgeEnd[0];
 			edge._private.rscratch.endY = edgeEnd[1];
@@ -1778,17 +1866,17 @@
 			
 			if (intersect.length == 0) {
 				edge._private.rscratch.noArrowPlacement = true;
-				return
+	//			return;
 			} else {
 				edge._private.rscratch.noArrowPlacement = false;
 			}
 			
 			var arrowStart = this.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
-				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
 			var edgeStart = this.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
-				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 
 			edge._private.rscratch.startX = edgeStart[0];
 			edge._private.rscratch.startY = edgeStart[1];
@@ -1814,9 +1902,9 @@
 			);
 			
 			var arrowEnd = this.shortenIntersection(intersect, cp,
-				arrowShapeSpacing[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
 			var edgeEnd = this.shortenIntersection(intersect, cp,
-				arrowShapeGap[edge._private.style["target-arrow-shape"].value]);
+				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.endX = edgeEnd[0];
 			edge._private.rscratch.endY = edgeEnd[1];
@@ -1834,9 +1922,9 @@
 			);
 			
 			var arrowStart = this.shortenIntersection(intersect, cp,
-				arrowShapeSpacing[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
 			var edgeStart = this.shortenIntersection(intersect, cp,
-				arrowShapeGap[edge._private.style["source-arrow-shape"].value]);
+				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.startX = edgeStart[0];
 			edge._private.rscratch.startY = edgeStart[1];
@@ -2450,8 +2538,6 @@
 			context.translate(this.cy.pan().x, this.cy.pan().y);
 			context.scale(this.cy.zoom(), this.cy.zoom());
 			
-//			console.log(2, this.redrawReason[2]);
-			
 			var element;
 
 			for (var index = 0; index < elements.length; index++) {
@@ -2462,6 +2548,18 @@
 						this.drawNode(element);
 					} else if (element._private.group == "edges") {
 						this.drawEdge(element);
+					}
+				}
+			}
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.rscratch.layer2) {
+					if (element._private.group == "nodes") {
+						this.drawNodeText(element);
+					} else if (element._private.group == "edges") {
+						this.drawEdgeText(element);
 					}
 				}
 			}
@@ -2497,6 +2595,18 @@
 				}
 			}
 			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (!element._private.rscratch.layer2) {
+					if (element._private.group == "nodes") {
+						this.drawNodeText(element);
+					} else if (element._private.group == "edges") {
+						this.drawEdgeText(element);
+					}
+				}
+			}
+			
 			this.canvasNeedsRedraw[4] = false;
 			this.redrawReason[4] = [];
 		}
@@ -2515,29 +2625,32 @@
 			
 			if (selectBox[4] == 1) {
 				var coreStyle = cy.style()._private.coreStyle;
-			
-				context.lineWidth = coreStyle["selection-box-border-width"].value;
+				var borderWidth = coreStyle["selection-box-border-width"].value;
+				
+				context.lineWidth = borderWidth;
 				context.fillStyle = "rgba(" 
 					+ coreStyle["selection-box-color"].value[0] + ","
 					+ coreStyle["selection-box-color"].value[1] + ","
 					+ coreStyle["selection-box-color"].value[2] + ","
 					+ coreStyle["selection-box-opacity"].value + ")";
 				
-				context.fillRect(selectBox[0],
-					selectBox[1],
-					selectBox[2] - selectBox[0],
-					selectBox[3] - selectBox[1]);
-			
-				context.strokeStyle = "rgba(" 
-					+ coreStyle["selection-box-border-color"].value[0] + ","
-					+ coreStyle["selection-box-border-color"].value[1] + ","
-					+ coreStyle["selection-box-border-color"].value[2] + ","
-					+ coreStyle["selection-box-opacity"].value + ")";
+				context.fillRect(selectBox[0] + borderWidth / 2,
+					selectBox[1] + borderWidth / 2,
+					selectBox[2] - selectBox[0] - borderWidth / 2,
+					selectBox[3] - selectBox[1] - borderWidth / 2);
 				
-				context.strokeRect(selectBox[0],
-					selectBox[1],
-					selectBox[2] - selectBox[0],
-					selectBox[3] - selectBox[1]);
+				if (borderWidth > 0) {
+					context.strokeStyle = "rgba(" 
+						+ coreStyle["selection-box-border-color"].value[0] + ","
+						+ coreStyle["selection-box-border-color"].value[1] + ","
+						+ coreStyle["selection-box-border-color"].value[2] + ","
+						+ coreStyle["selection-box-opacity"].value + ")";
+					
+					context.strokeRect(selectBox[0] + borderWidth / 2,
+						selectBox[1] + borderWidth / 2,
+						selectBox[2] - selectBox[0] - borderWidth / 2,
+						selectBox[3] - selectBox[1] - borderWidth / 2);
+				}
 			}
 			
 			this.canvasNeedsRedraw[0] = false;
@@ -2559,7 +2672,6 @@
 		var context = renderer.context;
 		
 		var startNode, endNode;
-		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
 
 		if (edge._private.style["visibility"].value != "visible") {
 			return;
@@ -2576,10 +2688,11 @@
 			+ edge._private.style.opacity.value + ")";
 		
 		// Edge line width
-		context.lineWidth = edge._private.style["width"].value;
-		if (context.lineWidth <= 0) {
+		if (edge._private.style["width"].value <= 0) {
 			return;
 		}
+		
+		context.lineWidth = edge._private.style["width"].value;
 		
 		this.findEndpoints(edge);
 		
@@ -2610,15 +2723,29 @@
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
-			context.beginPath();
-			context.moveTo(
-				edge._private.rscratch.startX,
-				edge._private.rscratch.startY);
-
-			context.lineTo(edge._private.rscratch.endX, 
-				edge._private.rscratch.endY);
-			context.stroke();
-						
+			// Check if the edge is inverted due to close node proximity
+			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
+			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
+			
+			var edgeDirectionX = edge._private.rscratch.endX - edge._private.rscratch.startX;
+			var edgeDirectionY = edge._private.rscratch.endY - edge._private.rscratch.startY;
+			
+			if (nodeDirectionX * edgeDirectionX
+				+ nodeDirectionY * edgeDirectionY < 0) {
+				
+				edge._private.rscratch.straightEdgeTooShort = true;	
+			} else {			
+				context.beginPath();
+				context.moveTo(
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY);
+	
+				context.lineTo(edge._private.rscratch.endX, 
+					edge._private.rscratch.endY);
+				context.stroke();
+				
+				edge._private.rscratch.straightEdgeTooShort = false;	
+			}	
 		} else {
 		
 			context.beginPath();
@@ -2634,11 +2761,26 @@
 			context.stroke();
 	
 		}
+	
+		/*
+		if (edge._private.rscratch.straightEdgeTooShort !== undefined) {
+			console.log(edge._private.rscratch.straightEdgeTooShort);
+		}
+		*/
 		
-		if (!edge._private.rscratch.noArrowPlacement) {
+		if (edge._private.rscratch.noArrowPlacement !== true
+				&& edge._private.rscratch.startX !== undefined) {
 			this.drawArrowheads(edge);
 		}
-		
+	}
+	
+	CanvasRenderer.prototype.drawEdgeText = function(edge) {
+		var context = renderer.context;
+	
+		if (edge._private.style["visibility"].value != "visible") {
+			return;
+		}
+	
 		// Calculate text draw position
 		
 		context.textAlign = "center";
@@ -2668,16 +2810,11 @@
 		textX = edgeCenterX;
 		textY = edgeCenterY;
 		
-//		if (!edge._private.rscratch.isSelfEdge) {
-			this.drawText(edge, textX, textY);
-//		}
+		this.drawText(edge, textX, textY);
 	}
 	
 	CanvasRenderer.prototype.drawNode = function(node) {
 		var context = renderer.context;
-		
-		var labelStyle, labelSize, labelFamily, labelVariant, labelWeight;
-		var textX, textY;
 		
 		var nodeWidth, nodeHeight;
 		
@@ -2712,10 +2849,23 @@
 		
 		// Border width, draw border
 		context.lineWidth = node._private.style["border-width"].value;
-		if (context.lineWidth > 0) {
+		if (node._private.style["border-width"].value > 0) {
 			context.stroke();
 		}
+	}
+	
+	CanvasRenderer.prototype.drawNodeText = function(node) {
+		var context = renderer.context;
 		
+		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+	
+		var textX, textY;
+		
+		var nodeWidth = node._private.style["width"].value;
+		var nodeHeight = node._private.style["height"].value;
+	
 		// Find text position
 		var textHalign = node._private.style["text-halign"].strValue;
 		if (textHalign == "left") {
@@ -2758,11 +2908,11 @@
 		var context = renderer.context;
 		
 		// Font style
-		labelStyle = element._private.style["font-style"].strValue;
-		labelSize = element._private.style["font-size"].strValue;
-		labelFamily = element._private.style["font-family"].strValue;
-		labelVariant = element._private.style["font-variant"].strValue;
-		labelWeight = element._private.style["font-weight"].strValue;
+		var labelStyle = element._private.style["font-style"].strValue;
+		var labelSize = element._private.style["font-size"].strValue;
+		var labelFamily = element._private.style["font-family"].strValue;
+		var labelVariant = element._private.style["font-variant"].strValue;
+		var labelWeight = element._private.style["font-weight"].strValue;
 					
 		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
 			+ labelSize + " " + labelFamily;

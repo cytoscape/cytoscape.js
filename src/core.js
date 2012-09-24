@@ -47,6 +47,8 @@
 			layout: null,
 			renderer: null,
 			notificationsEnabled: true, // whether notifications are sent to the renderer
+			minZoom: undefined,
+			maxZoom: undefined,
 			zoomEnabled: true,
 			panEnabled: true,
 			zoom: $$.is.number(options.zoom) ? options.zoom : 1,

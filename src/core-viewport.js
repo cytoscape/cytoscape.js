@@ -123,16 +123,22 @@
 			return this; // chaining
 		},
 		
-		fit: function( elements ){
+		fit: function( elements, padding ){
+			if( $$.is.number(elements) && padding === undefined ){ // elements is optional
+				padding = elements;
+				elements = undefined;
+			}
+
 			var bb = this.boundingBox( elements );
 			var style = this.style();
 
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );
 			var zoom;
+			padding = $$.is.number(padding) ? padding : 0;
 
 			if( !isNaN(w) && !isNaN(h) ){
-				zoom = this._private.zoom = Math.min( w/bb.w, h/bb.h );
+				zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
 				this.pan({ // now pan to middle
 					x: (w - zoom*( bb.x1 + bb.x2 ))/2,

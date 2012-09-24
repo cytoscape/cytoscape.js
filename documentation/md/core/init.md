@@ -53,13 +53,6 @@ $("#cy").cytoscape(options);
 var cy = $("#cy").cytoscape("get"); // now we have a global reference to `cy`
 ```
 
-Alternatively, you can call functions on the Cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
-
-```js
-// pattern: $("#cy").cytoscape(functionName, param1, param2, param3, ...)
-$("#cy").cytoscape("elements", "[weight>20]");
-cy.elements("[weight>20]"); // functionally the same as the above line
-```
 
 
 

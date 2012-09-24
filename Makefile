@@ -15,6 +15,7 @@ LS = ls
 OPEN = open
 AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
+MAKE = make
 
 # version (update this when building release zip)
 VERSION := 2.0.0beta1-github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
@@ -29,6 +30,7 @@ PLUGINS_DIR_NAME = plugins
 PLUGINS_DIR = $(SRC_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_PLUGINS_DIR = $(BUILD_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_DIR = build
+DOC_DIR = documentation
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
 
@@ -109,6 +111,10 @@ all : zip
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 	
 minify : $(MIN_JS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
+
+docs : minify
+	$(CD) $(DOC_DIR)
+	$(MAKE)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)

@@ -12,7 +12,8 @@ $(function(){
 		style: cytoscape.stylesheet()
 			.selector("node")
 				.css({
-					"content": "data(id)"
+					"content": "data(id)",
+					"shape": "data(shape)"
 				})
 			.selector("edge")
 				.css({

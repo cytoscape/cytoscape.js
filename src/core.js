@@ -47,8 +47,8 @@
 			layout: null,
 			renderer: null,
 			notificationsEnabled: true, // whether notifications are sent to the renderer
-			minZoom: undefined,
-			maxZoom: undefined,
+			minZoom: 1e-50,
+			maxZoom: 1e50,
 			zoomEnabled: true,
 			panEnabled: true,
 			zoom: $$.is.number(options.zoom) ? options.zoom : 1,
@@ -57,6 +57,13 @@
 				y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0,
 			}
 		};
+
+		// init zoom bounds
+		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom)
+		&& options.minZoom < options.maxZoom ){
+			this._private.minZoom = options.minZoom;
+			this._private.maxZoom = options.maxZoom;
+		}
 
 		// init style
 		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : new $$.Style( cy );

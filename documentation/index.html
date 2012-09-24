@@ -575,7 +575,7 @@
 		<div id="content">
 
 			<div class="title">Cytoscape.js <span class="version">2.0.0-beta1</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation</div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
@@ -1065,12 +1065,20 @@ $(function(){ // on jquery ready
 </p>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
   layout: { ... },
+  zoom: 1,
+  pan: { x: 0, y: 0 },
   renderer: { ... },
   style: { ... },
   ready: function(evt){ ... },
   elements: ...
 });</code></pre>
 <p><strong>layout</strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports.
+
+</p>
+<p><strong>zoom</strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.
+
+</p>
+<p><strong>pan</strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. 
 
 </p>
 <p><strong>renderer</strong> : A plain object containing options for the renderer to be used.  The <code>name</code> field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  

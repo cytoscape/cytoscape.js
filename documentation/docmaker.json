@@ -1,5 +1,6 @@
 {
   "version": "2.0.0-beta1",
+  "jqueryVersion": "1.4",
 
   "templates": {
     "TODO": "we are not using function templates yet but it might be nice"

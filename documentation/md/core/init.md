@@ -94,6 +94,8 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 $("#cy").cytoscape({
   layout: { ... },
   zoom: 1,
+  minZoom: 1e-50,
+  maxZoom: 1e50,
   pan: { x: 0, y: 0 },
   renderer: { ... },
   style: { ... },
@@ -104,7 +106,7 @@ $("#cy").cytoscape({
 
 **layout** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports.
 
-**zoom** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.
+**zoom** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.  You can set **minZoom** and **maxZoom** to set restrictions on the zoom level.
 
 **pan** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied. 
 

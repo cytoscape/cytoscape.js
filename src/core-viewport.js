@@ -174,6 +174,26 @@
 			return this; // chaining
 		},
 		
+		minZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.minZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.minZoom = zoom;
+			}
+
+			return this;
+		},
+
+		maxZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.maxZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.maxZoom = zoom;
+			}
+
+			return this;
+		},
+
 		zoom: function( params ){
 			var pos;
 			var zoom;

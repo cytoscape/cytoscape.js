@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0beta1-github-snapshot-2012.09.24-16.42.10.
+ * This file is part of cytoscape.js 2.0.0beta1-github-snapshot-2012.09.24-17.32.59.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -3191,9 +3191,12 @@ var cytoscape;
 		};
 
 		// init zoom bounds
-		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom)
-		&& options.minZoom < options.maxZoom ){
+		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
 			this._private.minZoom = options.minZoom;
+			this._private.maxZoom = options.maxZoom;
+		} else if( $$.is.number(options.minZoom) && options.maxZoom === undefined ){
+			this._private.minZoom = options.minZoom;
+		} else if( $$.is.number(options.maxZoom) && options.minZoom === undefined ){
 			this._private.maxZoom = options.maxZoom;
 		}
 
@@ -4140,6 +4143,26 @@ var cytoscape;
 			return this; // chaining
 		},
 		
+		minZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.minZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.minZoom = zoom;
+			}
+
+			return this;
+		},
+
+		maxZoom: function( zoom ){
+			if( zoom === undefined ){
+				return this._private.maxZoom;
+			} else if( $$.is.number(zoom) ){
+				this._private.maxZoom = zoom;
+			}
+
+			return this;
+		},
+
 		zoom: function( params ){
 			var pos;
 			var zoom;

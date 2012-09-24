@@ -59,9 +59,12 @@
 		};
 
 		// init zoom bounds
-		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom)
-		&& options.minZoom < options.maxZoom ){
+		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
 			this._private.minZoom = options.minZoom;
+			this._private.maxZoom = options.maxZoom;
+		} else if( $$.is.number(options.minZoom) && options.maxZoom === undefined ){
+			this._private.minZoom = options.minZoom;
+		} else if( $$.is.number(options.maxZoom) && options.minZoom === undefined ){
 			this._private.maxZoom = options.maxZoom;
 		}
 

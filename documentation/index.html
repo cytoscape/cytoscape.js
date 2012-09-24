@@ -228,6 +228,10 @@
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoomingEnabled"><span class="icon-bookmark"></span> cy.zoomingEnabled() </a></div>
 					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span> cy.minZoom() </a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.maxZoom"><span class="icon-bookmark"></span> cy.maxZoom() </a></div>
+					
 				
 					<div class="section lvl2">
 						<span class="expander">
@@ -582,7 +586,7 @@
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
-				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="https://github.com/cytoscape/cytoscape.js/downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a href="https://groups.google.com/forum/#!forum/cytoscapejs"><span class="icon-comments"></span> Google Group</a>
 			</div>
 
@@ -1033,12 +1037,6 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 </p>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options);
 var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;); // now we have a global reference to `cy`</code></pre>
-<p>Alternatively, you can call functions on the Cytoscape.js object associated with a particular HTML element by using the jQuery function call pattern:
-
-</p>
-<pre><code class="lang-js">// pattern: $(&quot;#cy&quot;).cytoscape(functionName, param1, param2, param3, ...)
-$(&quot;#cy&quot;).cytoscape(&quot;elements&quot;, &quot;[weight&gt;20]&quot;);
-cy.elements(&quot;[weight&gt;20]&quot;); // functionally the same as the above line</code></pre>
 <h3>The ready callback</h3>
 <p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.
 
@@ -1072,6 +1070,8 @@ $(function(){ // on jquery ready
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
   layout: { ... },
   zoom: 1,
+  minZoom: 1e-50,
+  maxZoom: 1e50,
   pan: { x: 0, y: 0 },
   renderer: { ... },
   style: { ... },
@@ -1081,7 +1081,7 @@ $(function(){ // on jquery ready
 <p><strong>layout</strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports.
 
 </p>
-<p><strong>zoom</strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.
+<p><strong>zoom</strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong>minZoom</strong> and <strong>maxZoom</strong> to set restrictions on the zoom level.
 
 </p>
 <p><strong>pan</strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. 
@@ -2072,6 +2072,90 @@ cy.zoom({
 												<li>
 													<span class="name">bool</span>
 													<span class="descr">A truthy value enables zooming; a falsey value disables it.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.minZoom"><span class="fn-name">cy.minZoom()</span>  <a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.minZoom">Get or set the minimum zoom level.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.minZoom()</div>
+										
+										<div class="descr">Get the minimum zoom level.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.minZoom( <span class="comma">, </span>zoom )</div>
+										
+										<div class="descr">Set the minimum zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">zoom</span>
+													<span class="descr">The new minimum zoom level to use.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.maxZoom"><span class="fn-name">cy.maxZoom()</span>  <a href="#core/viewport-manipulation/cy.maxZoom"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.maxZoom">Get or set the maximum zoom level.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.maxZoom()</div>
+										
+										<div class="descr">Get the maximum zoom level.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.maxZoom( <span class="comma">, </span>zoom )</div>
+										
+										<div class="descr">Set the maximum zoom level.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">zoom</span>
+													<span class="descr">The new maximum zoom level to use.</span>
 
 													
 												</li>

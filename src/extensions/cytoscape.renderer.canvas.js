@@ -51,6 +51,7 @@
 	var draggingSelectedNode = false;
 	var draggedNode;
 	
+	var draggedElementsMovedLayer = false;
 	var nodesBeingDragged = [];
 	var edgesBeingDragged = [];
 	
@@ -105,8 +106,8 @@
 		for (var i = 0; i < numCanvases + numBufferCanvases; i++) {
 			var canvas = document.createElement("canvas");
 			
-			canvas.width = container.clientHeight;
-			canvas.height = container.clientWidth;
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
 			
 			canvas.style.position = "absolute";
 			
@@ -195,7 +196,14 @@
 			this.redrawReason[4].push("Elements added/removed");
 			
 			this.redraw();
+		} else if (params.type == "draw") {
+			this.canvasNeedsRedraw[2] = true;
+			this.redrawReason[2].push("Draw call");
 			
+			this.canvasNeedsRedraw[4] = true;
+			this.redrawReason[4].push("Draw call");
+			
+			this.redraw();
 		} else {
 			console.log("event: " + params.type);
 		}
@@ -203,12 +211,20 @@
 	
 	CanvasRenderer.prototype.projectMouse = function(mouseEvent) {
 		
+		/* sept25-2012
 		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
 		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
 
 		x += (mouseEvent.pageX - mouseEvent.clientX);
 		y += (mouseEvent.pageY - mouseEvent.clientY);
+		*/
 		
+		var x, y;
+		if (mouseEvent.offsetX) {
+			x = mouseEvent.offsetX;
+			y = mouseEvent.offsetY;
+		}
+			
 		x -= cy.pan().x;
 		y -= cy.pan().y;
 		
@@ -396,14 +412,20 @@
 		}
 	}
 	
+	var currentMouseDownNode = undefined;
+	var currentMouseDownEdge = undefined;
+	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
-//		console.log(event);
 		var nodes = cy.nodes();
 		var edges = cy.edges();
 
-		if (event.changedTouches) {						
+		var touch = false;
+		
+		var originalEvent = event;
+		if (event.changedTouches) {					
 			event.preventDefault();
-			
+			touch = true;
+				
 			// Check for 2-finger, prepare for pinch-to-zoom
 			if (event.touches.length >= 2) {
 				firstTouchFinger = event.touches[0];
@@ -487,12 +509,9 @@
 			selectBox[4] = 1;
 		}
 		
-		if (mouseDownEvent.button == 0
-				&& mouseDownEvent.target == cy.renderer().canvas) {
-			
+		if (mouseDownEvent.button == 0) {
+		
 			if (minDistanceNode != undefined) {
-				
-//				console.log("node found");
 				
 				nodeDragging = true;
 				nodesBeingDragged = [];
@@ -509,7 +528,11 @@
 								nodes[index]._private.position.y;
 										
 							nodesBeingDragged.push(nodes[index]);
-							nodes[index]._private.rscratch.layer2 = true;
+//**						nodes[index]._private.rscratch.layer2 = true;
+							
+							// Proxy grab() event
+							nodes[index]._private.grabbed = true;
+							nodes[index].trigger("grab");
 						}
 					}
 					
@@ -525,26 +548,51 @@
 					nodesBeingDragged.push(draggedNode);
 					draggedNode._private.rscratch.layer2 = true;	
 
-//					console.log(draggedNode);
+					// Proxy grab() event
+					draggedNode._private.grabbed = true;
+					draggedNode.trigger("grab");
 				}
 				
 				edgesBeingDragged = renderer.findEdges(nodesBeingDragged);
 				
 				for (var i = 0; i < edgesBeingDragged.length; i++) {
-					edgesBeingDragged[i]._private.rscratch.layer2 = true;
+//**				edgesBeingDragged[i]._private.rscratch.layer2 = true;
 				}
 				
+/***
 				renderer.canvasNeedsRedraw[4] = true;
 				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
 				
 				renderer.canvasNeedsRedraw[2] = true;
 				renderer.redrawReason[2].push("nodes being dragged, moved to drag layer");
+***/
+
+				draggedElementsMovedLayer = false;
 				
+				// Proxy touchstart/mousedown to core
+				if (touch) {
+					minDistanceNode.trigger("touchstart");
+				} else {
+					minDistanceNode.trigger("mousedown");
+				}
+				
+				currentMouseDownNode = minDistanceNode;
+			} else if (minDistanceEdge != undefined) {
+				// Proxy touchstart/mousedown to core
+				if (touch) {
+					minDistanceEdge.trigger("touchstart");
+				} else {
+					minDistanceEdge.trigger("mousedown");
+				}
+				
+				currentMouseDownEdge = minDistanceEdge;
 			}
 		}
 		
 		cy.renderer().redraw();
 	}
+	
+	var currentHoveredNode = undefined, currentHoveredEdge = undefined;
 	
 	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
 //		if (mouseMoveTimeout) {return;}
@@ -554,11 +602,12 @@
 		}, 1000/100);
 		
 		var event = e;
+		var touch = false;
 		
 		if (e.touches) {						
 			e.preventDefault();
-			// console.log("touchdown, " + e.changedTouches.length);
-
+			touch = true;
+			
 			// Pinch to zoom
 			if (e.touches.length >= 2) {
 				var canvasOffset = [
@@ -654,33 +703,158 @@
 			hoverHandler(nodes, edges, e);
 		}
 		
-		if (minDistanceNode != undefined
-			&& cy.renderer().canvas.style.cursor != 
+		if (minDistanceNode != undefined) {
+		
+			if (cy.renderer().canvas.style.cursor != 
 				minDistanceNode._private.style["cursor"].value) {
-			cy.renderer().canvas.style.cursor = 
-				minDistanceNode._private.style["cursor"].value;
-		} else if (minDistanceEdge != undefined
-			&& cy.renderer().canvas.style.cursor != 
+
+				cy.renderer().canvas.style.cursor = 
+					minDistanceNode._private.style["cursor"].value;
+			}
+			
+			if (currentHoveredNode !== minDistanceNode) {
+
+				// Proxy mouseout
+				if (currentHoveredNode !== undefined) {
+					if (touch) {
+//						event.type = "touchend";
+					} else {
+//						event.type = "mouseout";
+						currentHoveredNode.trigger("mouseout");
+					}					
+				}
+				
+				currentHoveredNode = minDistanceNode;
+				
+				var nodeGrabbed = minDistanceNode.grabbed();
+				
+				// Proxy mouseover
+				if (touch && !nodeGrabbed) {
+//					event.type = "touchmove";
+				} else if (!touch && !nodeGrabbed) {
+//					event.type = "mouseover";
+					minDistanceNode.trigger("mouseover");
+				}
+				
+			} else {
+			
+				// Proxy mousemove/touchmove
+				if (touch) {
+//					event.type = "touchmove";
+					minDistanceNode.trigger("touchmove");
+				} else {
+//					event.type = "mousemove";
+					minDistanceNode.trigger("mousemove");
+				}
+			}
+			
+		} else if (minDistanceEdge != undefined) {
+		
+			if (cy.renderer().canvas.style.cursor != 
 				minDistanceEdge._private.style["cursor"].value) {
-			cy.renderer().canvas.style.cursor = 
-				minDistanceEdge._private.style["cursor"].value;
+
+				cy.renderer().canvas.style.cursor = 
+					minDistanceEdge._private.style["cursor"].value;
+			}
+			
+			if (currentHoveredEdge !== minDistanceEdge) {
+
+				// Proxy mouseout
+				if (currentHoveredEdge !== undefined) {
+					if (touch) {
+//						event.type = "touchend";
+					} else {
+//						event.type = "mouseout";
+						currentHoveredEdge.trigger("mouseout");
+					}					
+				}
+				
+				currentHoveredEdge = minDistanceEdge;
+				
+				// Proxy mouseover
+				if (touch) {
+//					event.type = "touchmove";
+				} else {
+//					event.type = "mouseover";
+					minDistanceEdge.trigger("mouseover");
+				}
+				
+			} else {
+			
+				// Proxy mousemove/touchmove
+				if (touch) {
+//					event.type = "touchmove";
+					minDistanceEdge.trigger("touchmove");
+				} else {
+//					event.type = "mousemove";
+					minDistanceEdge.trigger("mousemove");
+				}
+			}
+			
 		} else if (!minDistanceNode
 			&& !minDistanceEdge
 			&& cy.renderer().canvas.style.cursor != "default") {
 			cy.renderer().canvas.style.cursor = "default";
+			
+			if (currentHoveredNode !== undefined) {
+				if (!touch) {
+//					event.type = "mouseout";
+					currentHoveredNode.trigger("mouseout");
+				}
+				currentHoveredNode = undefined;
+			}
+			
+			if (currentHoveredEdge !== undefined) {
+				if (!touch) {
+//					event.type = "mouseout";
+					currentHoveredEdge.trigger("mouseout");
+				}
+				currentHoveredEdge = undefined;
+			}
 		}
 		
 		if (nodeDragging) {
 		
+			if (!draggedElementsMovedLayer) {
+				for (var i = 0; i < nodesBeingDragged.length; i++) {
+					nodesBeingDragged[i]._private.rscratch.layer2 = true;
+				}
+				
+				for (var i = 0; i < edgesBeingDragged.length; i++) {
+					edgesBeingDragged[i]._private.rscratch.layer2 = true;
+				}
+				
+				renderer.canvasNeedsRedraw[4] = true;
+				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
+				
+				renderer.canvasNeedsRedraw[2] = true;
+				renderer.redrawReason[2].push("nodes being dragged, moved to drag layer");
+				
+				draggedElementsMovedLayer = true;
+			}
+		
 			for (var index = 0; index < nodes.length; index++) {
+			
+				/*
 				if ((draggingSelectedNode && nodes[index].selected())
 					|| (!draggingSelectedNode && nodes[index] == draggedNode)) {
-					nodes[index]._private.position.x = 
-						nodes[index]._private.rscratch.dragStartX
-						+ (selectBox[2] - selectBox[0]);
-					nodes[index]._private.position.y = 
-						nodes[index]._private.rscratch.dragStartY
-						+ (selectBox[3] - selectBox[1]);
+				*/
+				
+				if ((draggingSelectedNode && nodes[index].selected())
+					|| (!draggingSelectedNode && nodes[index] == draggedNode)) {
+					
+					if (nodes[index]._private.locked !== true) {					
+						nodes[index]._private.position.x = 
+							nodes[index]._private.rscratch.dragStartX
+							+ (selectBox[2] - selectBox[0]);
+						nodes[index]._private.position.y = 
+							nodes[index]._private.rscratch.dragStartY
+							+ (selectBox[3] - selectBox[1]);
+							
+						// Proxy event
+						nodes[index].trigger("drag");
+						nodes[index].trigger("position");
+					}
 				}
 			}
 			
@@ -750,10 +924,39 @@
 		
 		for (var i = 0; i < nodesBeingDragged.length; i++) {
 			nodesBeingDragged[i]._private.rscratch.layer2 = false;
+
+			// Proxy free() event
+			nodesBeingDragged[i]._private.grabbed = false;
+			nodesBeingDragged[i].trigger("free");
 		}
 		
 		for (var i = 0; i < edgesBeingDragged.length; i++) {
 			edgesBeingDragged[i]._private.rscratch.layer2 = false;
+		}
+		
+		// Proxy mouseup event
+		var mouseUpElement = undefined;
+		if (minDistanceNode !== undefined) {
+			mouseUpElement = minDistanceNode;
+		} else if (minDistanceEdge !== undefined) {
+			mouseUpElement = minDistanceEdge;
+		}
+		
+		var mouseUpEventName = undefined;
+		if (touchEvent) {
+			mouseUpEventName = "touchend";
+		} else {
+			mouseUpEventName = "mouseup";
+		}
+		
+		if (mouseUpElement != undefined && mouseUpEventName != undefined) {
+			mouseUpElement.trigger(mouseUpEventName);
+
+			if (mouseUpElement === currentMouseDownNode ||
+				mouseUpElement === currentMouseDownEdge) {
+				
+				mouseUpElement.trigger("click");
+			}
 		}
 		
 		// Deselect if not dragging or selecting additional
@@ -789,10 +992,6 @@
 			&& !nodeDragging
 			&& Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
-			
-			console.log("performing box selection, from (" 
-				+ selectBox[0] + "," + selectBox[1] + ") to "
-				+ "(" + selectBox[2] + "," + selectBox[3] + ")");
 			
 			var padding = 2;
 			
@@ -945,9 +1144,9 @@
 						- boundingRadius
 					&& nodePosition.x < boxMaxX 
 						+ boundingRadius
-					&& nodePosition.y > boxMinY 
+					&& nodePosition.y > boxMinY
 						- boundingRadius
-					&& nodePosition.y < boxMaxY 
+					&& nodePosition.y < boxMaxY
 						+ boundingRadius) {
 					
 					select = true;
@@ -1003,10 +1202,8 @@
 		renderer.redrawReason[0].push("Selection box gone");
 		
 		if (nodeBeingDragged) {
-			/*
 			renderer.canvasNeedsRedraw[2] = true;
 			renderer.redrawReason[2].push("Node drag completed");
-			*/
 			
 			renderer.canvasNeedsRedraw[4] = true;
 			renderer.redrawReason[4].push("Node drag completed");
@@ -1292,7 +1489,11 @@
 					
 					nodeHovered = true;
 				}
+				
+				return true;
 			}
+			
+			return false;
 		}
 	
 		var hoverHandler = function(nodes, edges, mouseMoveEvent) {
@@ -2354,6 +2555,27 @@
 		context.restore();
 	}
 
+	CanvasRenderer.prototype.pointInsidePolygon = function(
+		x, y, basePoints, centerX, centerY, width, height, rotation, padding) {
+		
+		var transformedPoints = new Array(basePoints.length)
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = 
+				basePoints[i * 2] * width * Math.cos(rotation) + centerX;
+			transformedPoints[i * 2 + 1] = 
+				basePoints[i * 2 + 1] * height * Math.sin(rotation) + centerY;
+		}
+		
+		var expandedLineSet = this.expandPolygon(
+			transformedPoints,
+			-padding);
+		
+		var points = this.joinLines(expandedLineSet);
+		
+		
+	}
+
 	CanvasRenderer.prototype.polygonIntersectLine = function(
 		x, y, basePoints, centerX, centerY, width, height, padding) {
 		
@@ -2747,7 +2969,7 @@
 				edge._private.rscratch.straightEdgeTooShort = false;	
 			}	
 		} else {
-		
+			
 			context.beginPath();
 			context.moveTo(
 				edge._private.rscratch.startX,
@@ -2759,14 +2981,8 @@
 				edge._private.rscratch.endX, 
 				edge._private.rscratch.endY);
 			context.stroke();
-	
+			
 		}
-	
-		/*
-		if (edge._private.rscratch.straightEdgeTooShort !== undefined) {
-			console.log(edge._private.rscratch.straightEdgeTooShort);
-		}
-		*/
 		
 		if (edge._private.rscratch.noArrowPlacement !== true
 				&& edge._private.rscratch.startX !== undefined) {
@@ -2892,7 +3108,7 @@
 		} else if (textValign == "bottom") {
 			context.textBaseline = "top";
 			textY = node._private.position.y + nodeHeight / 2;
-		} else if (textValign == "middle" || styleValue == "center") {
+		} else if (textValign == "middle" || textValign == "center") {
 			context.textBaseline = "middle";
 			textY = node._private.position.y;
 		} else {

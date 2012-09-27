@@ -156,19 +156,17 @@
 					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
 				
-				if( properties.delay == null ){
-
-					// update the position
+				if( properties.delay == null ){ // then update the position
 					var startPos = animation.startPosition;
 					var endPos = properties.position;
 					var pos = self._private.position;
 					if( endPos ){
 						if( valid( startPos.x, endPos.x ) ){
-							pos.x = ease( startPos.x, endPos.x );
+							pos.x = ease( startPos.x, endPos.x, percent );
 						}
 
 						if( valid( startPos.y, endPos.y ) ){
-							pos.y = ease( startPos.y, endPos.y );
+							pos.y = ease( startPos.y, endPos.y, percent );
 						}
 					}
 

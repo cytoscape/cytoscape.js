@@ -74,6 +74,17 @@
 	// Timeout variable to prevent frequent redraws
 	var redrawTimeout = 0;
 	
+	var currentMouseDownNode = undefined;
+	var currentMouseDownEdge = undefined;
+	var currentMouseDownInCanvas = false;
+	
+	// Used for mouseover/mouseout
+	var currentHoveredNode = undefined
+	var currentHoveredEdge = undefined;
+	var currentMouseInCanvas = false;
+	
+	var wheelZoomEnabled = false;
+	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
 		this.cy = options.cy;
@@ -108,7 +119,12 @@
 			
 			canvas.width = container.clientWidth;
 			canvas.height = container.clientHeight;
+			console.log(canvas)
 			
+			/*
+			canvas.style.width = '100%';
+			canvas.style.height = '100%';			
+			*/
 			canvas.style.position = "absolute";
 			
 			if (i < numCanvases) {
@@ -204,6 +220,14 @@
 			this.redrawReason[4].push("Draw call");
 			
 			this.redraw();
+		} else if (params.type == "position") {
+			this.canvasNeedsRedraw[2] = true;
+			this.redrawReason[2].push("Position call");
+			
+			this.canvasNeedsRedraw[4] = true;
+			this.redrawReason[4].push("Position call");
+			
+			this.redraw();	
 		} else {
 			console.log("event: " + params.type);
 		}
@@ -412,9 +436,6 @@
 		}
 	}
 	
-	var currentMouseDownNode = undefined;
-	var currentMouseDownEdge = undefined;
-	
 	CanvasRenderer.prototype.mouseDownHandler = function(event) {
 		var nodes = cy.nodes();
 		var edges = cy.edges();
@@ -478,6 +499,8 @@
 				cy.renderer().canvas.style.cursor 
 					= cy.style()._private.coreStyle["panning-cursor"].value;
 			}
+			
+			currentMouseDownInCanvas = true;
 		}
 		
 		var start = cy.renderer().projectMouse(event);
@@ -586,18 +609,56 @@
 				}
 				
 				currentMouseDownEdge = minDistanceEdge;
+			} else {
+			
+				// Proxy touchstart/mousedown to core
+				if (touch) {
+					cy.trigger("touchstart");
+				} else {
+					cy.trigger("mousedown");
+				}
+				
+				currentMouseDownInCanvas = true;
 			}
 		}
 		
 		cy.renderer().redraw();
 	}
 	
-	var currentHoveredNode = undefined, currentHoveredEdge = undefined;
+	CanvasRenderer.prototype.mouseOverHandler = function(event) {
+	}
+	
+	CanvasRenderer.prototype.mouseOutHandler = function(event) {
+		wheelZoomEnabled = false;
+		currentMouseInCanvas = false;
+	}
+	
+	CanvasRenderer.prototype.documentMouseMoveHandler = function(event) {
+		
+		var touch = false;
+		var eventWithCoords = event;
+		
+		if (event.touches) {
+			touch = true;
+			eventWithCoords = event.touches[0];
+		}
+		
+//		if (eventWithCoords.target == this.bufferCanvases[0]) {
+//			if (
+//		}
+	}
 	
 	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
-//		if (mouseMoveTimeout) {return;}
 		
-		mouseMoveTimeout = setTimeout(function(){
+		var mouseJustEnteredCanvas = false;
+		if (currentMouseInCanvas === true) {
+			wheelZoomEnabled = true;
+		} else {
+			currentMouseInCanvas = true;
+			mouseJustEnteredCanvas = true;
+		}
+
+		mouseMoveTimeout = setTimeout(function() {
 			mouseMoveTimeout = null;		
 		}, 1000/100);
 		
@@ -703,10 +764,14 @@
 			hoverHandler(nodes, edges, e);
 		}
 		
+		// No mouseclick
+		currentMouseDownNode = undefined;
+		currentMouseDownEdge = undefined;
+		
 		if (minDistanceNode != undefined) {
 		
 			if (cy.renderer().canvas.style.cursor != 
-				minDistanceNode._private.style["cursor"].value) {
+					minDistanceNode._private.style["cursor"].value) {
 
 				cy.renderer().canvas.style.cursor = 
 					minDistanceNode._private.style["cursor"].value;
@@ -751,7 +816,7 @@
 		} else if (minDistanceEdge != undefined) {
 		
 			if (cy.renderer().canvas.style.cursor != 
-				minDistanceEdge._private.style["cursor"].value) {
+					minDistanceEdge._private.style["cursor"].value) {
 
 				cy.renderer().canvas.style.cursor = 
 					minDistanceEdge._private.style["cursor"].value;
@@ -762,20 +827,20 @@
 				// Proxy mouseout
 				if (currentHoveredEdge !== undefined) {
 					if (touch) {
-//						event.type = "touchend";
+
 					} else {
-//						event.type = "mouseout";
 						currentHoveredEdge.trigger("mouseout");
-					}					
+					}
 				}
 				
 				currentHoveredEdge = minDistanceEdge;
 				
+				var edgeGrabbed = minDistanceEdge.grabbed();
+				
 				// Proxy mouseover
-				if (touch) {
-//					event.type = "touchmove";
-				} else {
-//					event.type = "mouseover";
+				if (touch && !edgeGrabbed) {
+
+				} else if (!touch && !edgeGrabbed) {
 					minDistanceEdge.trigger("mouseover");
 				}
 				
@@ -783,34 +848,83 @@
 			
 				// Proxy mousemove/touchmove
 				if (touch) {
-//					event.type = "touchmove";
 					minDistanceEdge.trigger("touchmove");
 				} else {
-//					event.type = "mousemove";
 					minDistanceEdge.trigger("mousemove");
 				}
 			}
 			
-		} else if (!minDistanceNode
-			&& !minDistanceEdge
-			&& cy.renderer().canvas.style.cursor != "default") {
-			cy.renderer().canvas.style.cursor = "default";
+			/*
+			if (currentMouseInCanvas) {
+			
+				// Proxy mousemove/touchmove
+				if (touch) {
+					minDistanceEdge.trigger("touchmove");
+				} else {
+					minDistanceEdge.trigger("mousemove");
+				}
+				
+			} else {
+				
+				// Proxy mouseover/touchstart
+				if (touch) {
+					minDistanceEdge.trigger("touchstart");
+				} else {
+					minDistanceEdge.trigger("mouseover");
+				}
+				
+				currentMouseInCanvas = true;
+			}
+			*/
+			
+		} else {
+		
+			if (!minDistanceNode
+				&& !minDistanceEdge
+				&& cy.renderer().canvas.style.cursor != "default") {
+
+					cy.renderer().canvas.style.cursor = "default";
+			}
+			
+			// Proxy mouseout for elements
+			if (currentHoveredEdge !== undefined) {
+				if (touch) {
+
+				} else {
+					currentHoveredEdge.trigger("mouseout");
+				}
+				
+				currentHoveredEdge = undefined;
+			}
 			
 			if (currentHoveredNode !== undefined) {
-				if (!touch) {
-//					event.type = "mouseout";
+				if (touch) {
+
+				} else {
 					currentHoveredNode.trigger("mouseout");
 				}
+				
 				currentHoveredNode = undefined;
 			}
 			
-			if (currentHoveredEdge !== undefined) {
-				if (!touch) {
-//					event.type = "mouseout";
-					currentHoveredEdge.trigger("mouseout");
+			if (mouseJustEnteredCanvas) {
+				// Proxy mouseover
+				if (touch) {
+	
+				} else {
+					cy.trigger("mouseover");
 				}
-				currentHoveredEdge = undefined;
-			}
+			} else {
+		
+				// Proxy mousemove/touchmove
+				if (currentMouseInCanvas) {
+					if (touch) {
+						cy.trigger("touchmove");
+					} else {
+						cy.trigger("mousemove");
+					}
+				}
+			}	
 		}
 		
 		if (nodeDragging) {
@@ -1233,7 +1347,9 @@
 		
 		event.preventDefault();
 		
-		// console.log(event);
+		if (!wheelZoomEnabled) {
+			return;
+		}
 		
 		var deltaY = event.wheelDeltaY;
 		
@@ -1249,8 +1365,6 @@
 
 		zoomLevel = Math.min(zoomLevel, 100);
 		zoomLevel = Math.max(zoomLevel, 0.01);
-
-		// console.log(current);
 		
 		cy.zoom({level: zoomLevel, 
 				position: {x: event.offsetX, 
@@ -1589,8 +1703,14 @@
 		this.bufferCanvases[0].addEventListener("mouseup", this.mouseUpHandler, false);
 	
 		this.bufferCanvases[0].addEventListener("mousemove", this.mouseMoveHandler, false);
+		this.bufferCanvases[0].addEventListener("mouseout", this.mouseOutHandler, false);
+		
 		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
 		
+//		document.addEventListener("mousemove", this.documentMouseMoveHandler, false);
+		
+//		document.addEventListener("mousewheel", this.mouseWheelHandler, false);
+	
 		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
 		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
 		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
@@ -1654,7 +1774,6 @@
 			} else {
 				node._private.rscratch.override.shape = "octogon";
 			}
-			
 			
 			node._private.rscratch.canvas = document.createElement('canvas');
 		}
@@ -1895,6 +2014,38 @@
 		}
 	}
 	
+	arrowShapes["square"] = {
+		draw: function(context) {
+//			context.translate(-0.15, -0.15);
+			context.lineTo(-0.12, 0.00);
+			context.lineTo(0.12, 0.00);
+			context.lineTo(0.12, -0.24);
+			context.lineTo(-0.12, -0.24);
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["diamond"] = {
+		draw: function(context) {
+//			context.translate(0, 0.16);
+			context.lineTo(-0.14, -0.14);
+			context.lineTo(0, -0.28);
+			context.lineTo(0.14, -0.14);
+			context.lineTo(0, 0.0);
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
 	arrowShapes["tee"] = arrowShapes["inhibitor"];
 	
 	arrowShapeDrawers["arrow"] = function(context) {
@@ -1954,7 +2105,7 @@
 		
 		context.moveTo(0, 0);
 		context.rotate(-angle);
-		context.scale(context.lineWidth * 12, context.lineWidth * 12.1);
+		context.scale(context.lineWidth * 12, context.lineWidth * 12);
 		
 		context.beginPath();
 		
@@ -2754,8 +2905,7 @@
 			this.context = context;
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, this.options.cy.container().clientWidth,
-				this.options.cy.container().clientHeight);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
 			context.translate(this.cy.pan().x, this.cy.pan().y);
 			context.scale(this.cy.zoom(), this.cy.zoom());
@@ -2795,8 +2945,7 @@
 			this.context = context;
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, this.options.cy.container().clientWidth,
-				this.options.cy.container().clientHeight);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
 			context.translate(this.cy.pan().x, this.cy.pan().y);
 			context.scale(this.cy.zoom(), this.cy.zoom());
@@ -2837,8 +2986,7 @@
 			context = this.canvasContexts[0];
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, this.canvases[0].width,
-				this.canvases[0].height);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 		
 			context.translate(this.cy.pan().x, this.cy.pan().y);
 			context.scale(this.cy.zoom(), this.cy.zoom());
@@ -2895,12 +3043,14 @@
 		
 		var startNode, endNode;
 
-		if (edge._private.style["visibility"].value != "visible") {
-			return;
-		}
-		
 		startNode = edge.source()[0];
 		endNode = edge.target()[0];
+		
+		if (edge._private.style["visibility"].value != "visible"
+			|| startNode._private.style["visibility"].value != "visible"
+			|| endNode._private.style["visibility"].value != "visible") {
+			return;
+		}
 		
 		// Edge color & opacity
 		context.strokeStyle = "rgba(" 

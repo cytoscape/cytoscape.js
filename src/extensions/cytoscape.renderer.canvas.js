@@ -77,13 +77,21 @@
 	var currentMouseDownNode = undefined;
 	var currentMouseDownEdge = undefined;
 	var currentMouseDownInCanvas = false;
+	var currentMouseDownUnmoved = false;
 	
 	// Used for mouseover/mouseout
 	var currentHoveredNode = undefined
 	var currentHoveredEdge = undefined;
 	var currentMouseInCanvas = false;
+	var mouseJustEnteredCanvas = false;
 	
 	var wheelZoomEnabled = false;
+	
+	var previousMouseX = undefined;
+	var currentMouseX = undefined;
+	
+	var secondsElapsed = 0;
+	var mouseDownTime = undefined;
 	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
@@ -114,12 +122,16 @@
 		var container = this.options.cy.container();
 		this.container = container;
 		
+		setInterval(function() {
+			secondsElapsed++;
+		}, 450);
+		
 		for (var i = 0; i < numCanvases + numBufferCanvases; i++) {
 			var canvas = document.createElement("canvas");
 			
 			canvas.width = container.clientWidth;
 			canvas.height = container.clientHeight;
-			console.log(canvas)
+			// console.log(canvas)
 			
 			/*
 			canvas.style.width = '100%';
@@ -247,6 +259,9 @@
 		if (mouseEvent.offsetX) {
 			x = mouseEvent.offsetX;
 			y = mouseEvent.offsetY;
+		} else {
+			x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
+			y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
 		}
 			
 		x -= cy.pan().x;
@@ -472,14 +487,51 @@
 			event.touch = 1;
 			
 			// Look for nodes and edges under the touch event			
-			minDistanceNode = minDistanceEdge = undefined;
+			// minDistanceNode = minDistanceEdge = undefined;
 			renderer.mouseMoveHelper.hoverHandler(nodes, edges, event);
 		}
 		
 		var mouseDownEvent = event;
-
+		
+		mouseDownTime = secondsElapsed;
+		
+		clearTimeout( this.panTimeout );
+		if( !minDistanceNode && !touch){
+			this.panTimeout = setTimeout(function() {
+			
+				// Delayed pan
+				if (mouseDownTime !== undefined
+					&& !touch
+					&& event.button === 0) {
+					
+					dragPanStartX = mouseDownEvent.clientX;
+					dragPanStartY = mouseDownEvent.clientY;
+					
+		//			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
+					
+					dragPanMode = true;
+					
+					if (cy.renderer().canvas.style.cursor 
+						!= cy.style()._private.coreStyle["panning-cursor"].value) {
+		
+						cy.renderer().canvas.style.cursor 
+							= cy.style()._private.coreStyle["panning-cursor"].value;
+					}
+					
+					// Cancel selection box
+					selectBox[4] = 0;
+					
+					renderer.canvasNeedsRedraw[0] = true;
+					renderer.redrawReason[0].push("selection boxed removed");
+					
+					mouseDownTime = undefined;
+				}
+			}, 110);
+		}
+				
 		// Process middle button panning
-		if ((mouseDownEvent.button == 1
+		if ((!event.touch
+				&& mouseDownEvent.button == 1
 				&& mouseDownEvent.target == cy.renderer().canvas)
 				||
 			(event.touch
@@ -499,9 +551,10 @@
 				cy.renderer().canvas.style.cursor 
 					= cy.style()._private.coreStyle["panning-cursor"].value;
 			}
-			
-			currentMouseDownInCanvas = true;
 		}
+		
+		currentMouseDownInCanvas = true;
+		currentMouseDownUnmoved = true;
 		
 		var start = cy.renderer().projectMouse(event);
 		
@@ -527,14 +580,15 @@
 		if (mouseDownEvent.button == 0
 				&& mouseDownEvent.target == cy.renderer().canvas
 				&& minDistanceNode == undefined
-				&& minDistanceEdge == undefined) {
+				&& minDistanceEdge == undefined
+				&& !touch) {
 		
 			selectBox[4] = 1;
 		}
 		
 		if (mouseDownEvent.button == 0) {
 		
-			if (minDistanceNode != undefined) {
+			if (minDistanceNode != undefined && minDistanceNode.grabbable()) {
 				
 				nodeDragging = true;
 				nodesBeingDragged = [];
@@ -543,7 +597,7 @@
 					draggingSelectedNode = true;
 					
 					for (var index = 0; index < nodes.length; index++) {
-						if (nodes[index].selected()) {
+						if (nodes[index].selected() && nodes[index].grabbable()) {
 							
 							nodes[index]._private.rscratch.dragStartX = 
 								nodes[index]._private.position.x;
@@ -559,7 +613,7 @@
 						}
 					}
 					
-				} else {
+				} else if( minDistanceNode.grabbable() ) {
 					draggingSelectedNode = false;
 					draggedNode = minDistanceNode;
 					
@@ -626,12 +680,28 @@
 	}
 	
 	CanvasRenderer.prototype.mouseOverHandler = function(event) {
+		mouseJustEnteredCanvas = true;
+		currentMouseInCanvas = true;
 	}
 	
 	CanvasRenderer.prototype.mouseOutHandler = function(event) {
 		wheelZoomEnabled = false;
 		currentMouseInCanvas = false;
+		
+		cy.trigger("mouseout");
+		
+		previousMouseX = undefined;
 	}
+	
+	CanvasRenderer.prototype.touchStartHandler = function(event) {
+	
+	}
+	
+	CanvasRenderer.prototype.touchStartHandler = function(event) {
+	
+	}
+	
+	
 	
 	CanvasRenderer.prototype.documentMouseMoveHandler = function(event) {
 		
@@ -650,13 +720,15 @@
 	
 	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
 		
-		var mouseJustEnteredCanvas = false;
+		/*
 		if (currentMouseInCanvas === true) {
-			wheelZoomEnabled = true;
+		//	wheelZoomEnabled = true;
 		} else {
 			currentMouseInCanvas = true;
-			mouseJustEnteredCanvas = true;
 		}
+		*/
+		
+		currentMouseInCanvas = true;
 
 		mouseMoveTimeout = setTimeout(function() {
 			mouseMoveTimeout = null;		
@@ -749,12 +821,23 @@
 		
 		//cy.renderer().canvas.style.cursor = "default";
 		
+		mouseDownTime = undefined;
+		
 		// Drag pan
 		if (dragPanMode) {
 			dragHandler(e);
 		}
 		
 		var current = cy.renderer().projectMouse(e);
+		
+		currentMouseX = e.screenX;
+		// console.log(previousMouseX, currentMouseX);
+		if (previousMouseX !== undefined && Math.abs(previousMouseX - currentMouseX) > 1) {
+			// console.log(previousMouseX, currentMouseX);
+			wheelZoomEnabled = true;
+		}
+		
+		previousMouseX = currentMouseX;
 		
 		// Update selection box
 		selectBox[2] = current[0];
@@ -767,6 +850,7 @@
 		// No mouseclick
 		currentMouseDownNode = undefined;
 		currentMouseDownEdge = undefined;
+		currentMouseDownUnmoved = false;
 		
 		if (minDistanceNode != undefined) {
 		
@@ -899,7 +983,7 @@
 			
 			if (currentHoveredNode !== undefined) {
 				if (touch) {
-
+					
 				} else {
 					currentHoveredNode.trigger("mouseout");
 				}
@@ -914,10 +998,15 @@
 				} else {
 					cy.trigger("mouseover");
 				}
+				
+				currentMouseInCanvas = true;
+				mouseJustEnteredCanvas = false;
+				
 			} else {
-		
+//				console.log(currentMouseInCanvas);
 				// Proxy mousemove/touchmove
 				if (currentMouseInCanvas) {
+
 					if (touch) {
 						cy.trigger("touchmove");
 					} else {
@@ -957,7 +1046,7 @@
 				if ((draggingSelectedNode && nodes[index].selected())
 					|| (!draggingSelectedNode && nodes[index] == draggedNode)) {
 					
-					if (nodes[index]._private.locked !== true) {					
+					if ( !nodes[index]._private.locked && nodes[index]._private.grabbable ) {					
 						nodes[index]._private.position.x = 
 							nodes[index]._private.rscratch.dragStartX
 							+ (selectBox[2] - selectBox[0]);
@@ -1008,7 +1097,7 @@
 	
 	CanvasRenderer.prototype.mouseUpHandler = function(event) {
 	
-		var touchEvent;
+		var touchEvent = undefined;
 		
 		if (event.changedTouches) {						
 			event.preventDefault();
@@ -1019,6 +1108,7 @@
 			
 			event = event.changedTouches[0];
 			event.button = 0;
+
 		}
 		
 		var mouseDownEvent = event;
@@ -1044,6 +1134,8 @@
 			nodesBeingDragged[i].trigger("free");
 		}
 		
+		nodesBeingDragged = [];
+		
 		for (var i = 0; i < edgesBeingDragged.length; i++) {
 			edgesBeingDragged[i]._private.rscratch.layer2 = false;
 		}
@@ -1056,6 +1148,8 @@
 			mouseUpElement = minDistanceEdge;
 		}
 		
+		mouseDownTime = undefined;
+		
 		var mouseUpEventName = undefined;
 		if (touchEvent) {
 			mouseUpEventName = "touchend";
@@ -1063,13 +1157,19 @@
 			mouseUpEventName = "mouseup";
 		}
 		
-		if (mouseUpElement != undefined && mouseUpEventName != undefined) {
+		if (mouseUpElement != undefined) {
 			mouseUpElement.trigger(mouseUpEventName);
 
 			if (mouseUpElement === currentMouseDownNode ||
 				mouseUpElement === currentMouseDownEdge) {
 				
 				mouseUpElement.trigger("click");
+			}
+		} else {
+			cy.trigger(mouseUpEventName);
+		
+			if (currentMouseDownUnmoved) {
+				cy.trigger("click");
 			}
 		}
 		
@@ -1305,6 +1405,7 @@
 	
 		// Stop drag panning on mouseup
 		dragPanMode = false;
+//		console.log("drag pan stopped");
 		
 		if (cy.renderer().canvas.style.cursor != "default") {
 			cy.renderer().canvas.style.cursor = "default";
@@ -1345,10 +1446,10 @@
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
 		
-		event.preventDefault();
-		
 		if (!wheelZoomEnabled) {
 			return;
+		} else {
+			event.preventDefault();
 		}
 		
 		var deltaY = event.wheelDeltaY;
@@ -1614,6 +1715,13 @@
 			
 			// Project mouse coordinates to world absolute coordinates
 			var projected = cy.renderer().projectMouse(mouseMoveEvent); 
+
+			/*
+			console.log("projected x: " + projected[0]);
+			console.log("projected y: " + projected[1]);
+			cy.nodes()[0]._private.position.x = projected[0];
+			cy.nodes()[0]._private.position.y = projected[1];
+			*/
 			
 			var mouseX = projected[0];
 			var mouseY = projected[1];
@@ -1704,6 +1812,7 @@
 	
 		this.bufferCanvases[0].addEventListener("mousemove", this.mouseMoveHandler, false);
 		this.bufferCanvases[0].addEventListener("mouseout", this.mouseOutHandler, false);
+		this.bufferCanvases[0].addEventListener("mouseover", this.mouseOverHandler, false);
 		
 		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
 		
@@ -1714,6 +1823,12 @@
 		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
 		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
 		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
+		
+		/*
+		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
+		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
+		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
+		*/
 	}
 	
 	CanvasRenderer.prototype.init = function() {}
@@ -2849,9 +2964,34 @@
 		context.restore();
 	}
 	
+	// Sizes canvas to container if different size
+	CanvasRenderer.prototype.matchCanvasSize = function(container) {
+		var width = container.clientWidth;
+		var height = container.clientHeight;
+		
+		var canvas;
+		for (var i = 0; i < this.canvases.length + this.bufferCanvases.length; i++) {
+			
+			if (i < this.canvases.length) {
+				canvas = this.canvases[i];
+			} else {
+				canvas = this.bufferCanvases[i - this.canvases.length];
+			}
+			
+			if (canvas.width !== width || canvas.height !== height) {
+				
+				canvas.width = width;
+				canvas.height = height;
+			
+			}
+		}
+	}
+	
 	var doSingleRedraw = false;
 	
 	CanvasRenderer.prototype.redraw = function(singleRedraw) {
+		
+		renderer.matchCanvasSize(renderer.container);
 		
 		if (redrawTimeout) {
 //			doSingleRedraw = true;
@@ -2867,7 +3007,6 @@
 				// console.log("singleRedraw");
 			}
 		}, 1000 / 80);
-		
 		
 		var context = this.context;
 		var contexts = this.canvasContexts;

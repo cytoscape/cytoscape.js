@@ -267,20 +267,20 @@
 		} else {
 		*/	
 		
-		// Yue's improved offset calculation
 		var offsetLeft = 0;
 		var offsetTop = 0;
 		var n;
 		
 		n = cy.container();
 		while (n != null) {
-			if (n.offsetLeft && n.offsetTop) {
+			if (typeof(n.offsetLeft) == "number") {
 				offsetLeft += n.offsetLeft;
 				offsetTop += n.offsetTop;
 			}
 			
 			n = n.parentNode;
 		}
+		// console.log(offsetLeft, offsetTop);
 		
 		x = mouseEvent.pageX - offsetLeft;
 		y = mouseEvent.pageY - offsetTop;

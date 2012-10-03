@@ -29,9 +29,9 @@ $(function(){
 			demoEdges.push({
 				data: {
 					id: "e" + (i * 2 + 1),
-					source: "n" + i,
-					target: "n" + ((i + 3) >= nodeCount ? i + 3 - nodeCount : i + 3),
-					weight: 20
+					target: "n" + i,
+					source: "n" + ((i + 3) >= nodeCount ? i + 3 - nodeCount : i + 3),
+					weight: 21
 				}
 			});
 		}

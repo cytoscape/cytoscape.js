@@ -548,7 +548,7 @@
 					
 					mouseDownTime = undefined;
 				}
-			}, 110);
+			}, 250);
 		}
 				
 		// Process middle button panning

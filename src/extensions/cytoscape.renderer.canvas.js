@@ -266,9 +266,24 @@
 			y = mouseEvent.offsetY;
 		} else {
 		*/	
-			// Use Max Franz's offset calculation
-			x = mouseEvent.pageX - cy.container().offsetLeft; // - 2
-			y = mouseEvent.pageY - cy.container().offsetTop; // - 2;
+		
+		// Yue's improved offset calculation
+		var offsetLeft = 0;
+		var offsetTop = 0;
+		var n;
+		
+		n = cy.container();
+		while (n != null) {
+			if (n.offsetLeft && n.offsetTop) {
+				offsetLeft += n.offsetLeft;
+				offsetTop += n.offsetTop;
+			}
+			
+			n = n.parentNode;
+		}
+		
+		x = mouseEvent.pageX - offsetLeft;
+		y = mouseEvent.pageY - offsetTop;
 		//}
 			
 		x -= cy.pan().x;
@@ -2264,7 +2279,10 @@
 		
 		context.moveTo(0, 0);
 		context.rotate(-angle);
-		context.scale(context.lineWidth * 12, context.lineWidth * 12);
+		
+		var size = Math.max(context.lineWidth * 11.17, 29);
+		/// size = 100;
+		context.scale(size, size);
 		
 		context.beginPath();
 		

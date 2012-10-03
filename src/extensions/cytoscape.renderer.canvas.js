@@ -255,13 +255,19 @@
 		y += (mouseEvent.pageY - mouseEvent.clientY);
 		*/
 		
+		/*
+		console.log(renderer.container.HTMLElement);
+		console.log(renderer.container);
+		*/
 		var x, y;
-		if (mouseEvent.offsetX) {
+		if (mouseEvent.offsetX !== undefined && mouseEvent.offsetY !== undefined) {
 			x = mouseEvent.offsetX;
 			y = mouseEvent.offsetY;
 		} else {
-			x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
-			y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
+			
+			// Use Max Franz's offset calculation
+			x = mouseEvent.pageX - cy.container().offsetLeft; // - 2
+			y = mouseEvent.pageY - cy.container().offsetTop; // - 2;
 		}
 			
 		x -= cy.pan().x;
@@ -794,6 +800,7 @@
 				
 				prevTouchDistance = curTouchDistance;
 				
+//				console.log(">= 2 touches, exiting");
 				return;	
 			}
 			
@@ -839,9 +846,13 @@
 		
 		previousMouseX = currentMouseX;
 		
+//		console.log("current: " + current[0] + ", " + current[1]);
+		
 		// Update selection box
 		selectBox[2] = current[0];
 		selectBox[3] = current[1];
+		
+//		console.log("sel after: " + selectBox[2] + ", " + selectBox[3]);
 		
 		if (!selectBox[4]) {
 			hoverHandler(nodes, edges, e);
@@ -1109,6 +1120,8 @@
 			event = event.changedTouches[0];
 			event.button = 0;
 
+			selectBox[2] = renderer.projectMouse(event)[0];
+			selectBox[3] = renderer.projectMouse(event)[1];
 		}
 		
 		var mouseDownEvent = event;
@@ -1119,7 +1132,14 @@
 		var nodeBeingDragged = nodeDragging
 				&& (Math.abs(selectBox[2] - selectBox[0]) 
 				+ Math.abs(selectBox[3] - selectBox[1]) > 1);
-
+				
+		/*
+		console.log("dx: " + Math.abs(selectBox[2] - selectBox[0]));
+		console.log("dy: " + Math.abs(selectBox[3] - selectBox[1]));
+		console.log("start: " + selectBox[0] + ", " + selectBox[1]);
+		console.log("end: " + selectBox[2] + ", " + selectBox[3]);
+		*/
+		
 		/*	
 		if (draggedNode != undefined) {
 			draggedNode._private.rscratch.layer2 = false;
@@ -1412,6 +1432,9 @@
 		}
 		
 		selectBox[4] = 0;
+//		selectBox[2] = selectBox[0];
+//		selectBox[3] = selectBox[1];
+		
 		
 		renderer.canvasNeedsRedraw[0] = true;
 		renderer.redrawReason[0].push("Selection box gone");
@@ -1442,6 +1465,18 @@
 					= cy.style()._private.coreStyle["panning-cursor"].value;
 			}
 		}
+	}
+	
+	CanvasRenderer.prototype.windowMouseDownHandler = function(event) {
+		
+	}
+	
+	CanvasRenderer.prototype.windowMouseMoveHandler = function(event) {
+		
+	}
+	
+	CanvasRenderer.prototype.windowMouseUpHandler = function(event) {
+		
 	}
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
@@ -1813,6 +1848,11 @@
 		this.bufferCanvases[0].addEventListener("mousemove", this.mouseMoveHandler, false);
 		this.bufferCanvases[0].addEventListener("mouseout", this.mouseOutHandler, false);
 		this.bufferCanvases[0].addEventListener("mouseover", this.mouseOverHandler, false);
+		
+		
+		window.addEventListener("mousedown", this.windowMouseDownHandler, false);
+		window.addEventListener("mousemove", this.windowMouseMoveHandler, false);
+		window.addEventListener("mouseup", this.windowMouseUpHandler, false);
 		
 		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
 		

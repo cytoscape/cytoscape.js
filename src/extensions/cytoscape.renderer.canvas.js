@@ -2120,9 +2120,9 @@
 	
 	arrowShapes["arrow"] = {
 		draw: function(context) {
-			context.lineTo(-0.15, 0.3);
+			context.lineTo(-0.15, -0.3);
 			context.lineTo(0, 0);
-			context.lineTo(0.15, 0.3);
+			context.lineTo(0.15, -0.3);
 		},
 		spacing: function(edge) {
 			return 0;
@@ -2485,8 +2485,8 @@
 		var endX = edge._private.rscratch.arrowEndX;
 		var endY = edge._private.rscratch.arrowEndY;
 		
-		dispX = edge.target().position().x - endX;
-		dispY = edge.target().position().y - endY;
+		dispX = -(edge.target().position().x - endX);
+		dispY = -(edge.target().position().y - endY);
 		
 		//this.context.strokeStyle = "rgba("
 		this.context.fillStyle = "rgba("

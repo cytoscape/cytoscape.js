@@ -260,15 +260,16 @@
 		console.log(renderer.container);
 		*/
 		var x, y;
+		/*
 		if (mouseEvent.offsetX !== undefined && mouseEvent.offsetY !== undefined) {
 			x = mouseEvent.offsetX;
 			y = mouseEvent.offsetY;
 		} else {
-			
+		*/	
 			// Use Max Franz's offset calculation
 			x = mouseEvent.pageX - cy.container().offsetLeft; // - 2
 			y = mouseEvent.pageY - cy.container().offsetTop; // - 2;
-		}
+		//}
 			
 		x -= cy.pan().x;
 		y -= cy.pan().y;
@@ -697,6 +698,9 @@
 		cy.trigger("mouseout");
 		
 		previousMouseX = undefined;
+		
+		// Possibly move this later
+//		dragPanMode = false;
 	}
 	
 	CanvasRenderer.prototype.touchStartHandler = function(event) {
@@ -1843,9 +1847,9 @@
 		document.addEventListener("keyup", this.keyUpHandler, false);
 	
 		this.bufferCanvases[0].addEventListener("mousedown", this.mouseDownHandler, false);
-		this.bufferCanvases[0].addEventListener("mouseup", this.mouseUpHandler, false);
+		window.addEventListener("mouseup", this.mouseUpHandler, false);
 	
-		this.bufferCanvases[0].addEventListener("mousemove", this.mouseMoveHandler, false);
+		window.addEventListener("mousemove", this.mouseMoveHandler, false);
 		this.bufferCanvases[0].addEventListener("mouseout", this.mouseOutHandler, false);
 		this.bufferCanvases[0].addEventListener("mouseover", this.mouseOverHandler, false);
 		

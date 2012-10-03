@@ -2280,7 +2280,7 @@
 		context.moveTo(0, 0);
 		context.rotate(-angle);
 		
-		var size = Math.max(context.lineWidth * 11.17, 29);
+		var size = Math.max(Math.pow(context.lineWidth * 13.37, 0.9), 29);
 		/// size = 100;
 		context.scale(size, size);
 		

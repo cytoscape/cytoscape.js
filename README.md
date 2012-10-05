@@ -2,16 +2,6 @@
 
 
 
-## Notice
-
-Cytoscape.js has undergone major refactoring, including a change in name from the previous "Cytoscape Web" name.  **The code in the repository is currently unstable and should not be used by developers.**
-
-Rest assured that we will continue development on the project to deliver a high-quality product.  You can still access the old Cytoscape Web 2 prerelease builds in the [Downloads section](https://github.com/cytoscape/cytoscape.js/downloads).  The documentation on the wiki can be used for those prerelease builds.
-
-We are working hard to make Cytoscape.js better and in shape for a full release very soon.  Watch or star the project to keep updated on the project.
-
-
-
 
 ## Documentation
 

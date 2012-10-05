@@ -6,7 +6,7 @@ Cytoscape.js allows you to easily display graphs in your websites.  Because Cyto
 
 Cytoscape.js also has graph analysis in mind:  The library contains a slew of useful functions in graph theory.  You can use Cytoscape.js headlessly on Node.js to do graph analysis in the terminal or on a web server.
 
-The library was developed at the [Donnelly Centre](http://tdccbr.med.utoronto.ca/) at the [University of Toronto](http://www.utoronto.ca/).
+The library was developed at the [Donnelly Centre](http://tdccbr.med.utoronto.ca/) at the [University of Toronto](http://www.utoronto.ca/).  It is the successor of [Cytoscape Web](http://cytoscapeweb.cytoscape.org/).
 
 
 

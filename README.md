@@ -2,16 +2,6 @@
 
 
 
-## Notice
-
-Cytoscape.js has undergone major refactoring, including a change in name from the previous "Cytoscape Web" name.  **The code in the repository is currently unstable and should not be used by developers.**
-
-Rest assured that we will continue development on the project to deliver a high-quality product.  You can still access the old Cytoscape Web 2 prerelease builds in the [Downloads section](https://github.com/cytoscape/cytoscape.js/downloads).  The documentation on the wiki can be used for those prerelease builds.
-
-We are working hard to make Cytoscape.js better and in shape for a full release very soon.  Watch or star the project to keep updated on the project.
-
-
-
 
 ## Documentation
 
@@ -81,4 +71,28 @@ actual release ZIP.
 
 QUnit tests are found in the [tests directory](https://github.com/cytoscape/cytoscape.js/tree/master/tests).  The tests are automatically
 run against different versions of jQuery.
+
+
+
+
+## Funding
+
+Cytoscape.js development is funded by [Genome Canada](http://www.genomecanada.ca), through the
+[Ontario Genomics Institute](http://www.ontariogenomics.ca/) (2007-OGI-TD-05).
+
+Funding for [Cytoscape](http://www.cytoscape.org) is provided by a federal grant from the U.S. 
+[National Institute of General Medical Sciences (NIGMS)](http://www.nigms.nih.gov)
+of the [National Institutes of Health (NIH)](http://www.nih.gov) under award 
+number GM070743-01 and the U.S. [National Science Foundation (NSF)](http://www.nsf.gov).
+
+[ISB](http://www.systemsbiology.org) | 
+[UCSD](http://www.ucsd.edu) | 
+[MSKCC](http://cbio.mskcc.org) | 
+[Pasteur](http://www.pasteur.fr) | 
+[Agilent](http://www.agilent.com/) | 
+[UCSF](http://www.ucsf.edu/) |
+[Unilever](http://www.unilever.com) |
+[Toronto](http://www.utoronto.ca) |
+[NCIBI](http://portal.ncibi.org/gateway/index.html)
+
 

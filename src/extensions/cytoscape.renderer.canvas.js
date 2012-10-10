@@ -2313,9 +2313,10 @@
 		}
 	}
 	
-	/*
+	
 	arrowShapes["tee"] = arrowShapes["inhibitor"];
 	
+	/*
 	arrowShapeDrawers["arrow"] = function(context) {
 		// context.scale(context.lineWidth, context.lineWidth);
 		context.lineTo(-0.15, 0.3);
@@ -2495,6 +2496,11 @@
 				edge._private.rscratch.noArrowPlacement = false;
 			}
 			
+			/*
+			console.log("1: "
+				+ arrowShapes[edge._private.style["source-arrow-shape"].value],
+					edge._private.style["source-arrow-shape"].value);
+			*/
 			var arrowStart = this.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
 				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
@@ -2525,6 +2531,11 @@
 				cp[1] //halfPointY
 			);
 			
+			/*
+			console.log("2: "
+				+ arrowShapes[edge._private.style["source-arrow-shape"].value],
+					edge._private.style["source-arrow-shape"].value);
+			*/
 			var arrowEnd = this.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
 			var edgeEnd = this.shortenIntersection(intersect, cp,

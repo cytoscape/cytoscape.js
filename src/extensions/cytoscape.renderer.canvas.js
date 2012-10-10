@@ -844,6 +844,7 @@
 		var checkBezierEdgeHover = renderer.mouseMoveHelper.checkBezierEdgeHover;
 		var checkStraightEdgeHover = renderer.mouseMoveHelper.checkStraightEdgeHover;
 		var checkNodeHover = renderer.mouseMoveHelper.checkNodeHover;
+		var checkArrowheadHover = renderer.mouseMoveHelper.checkArrowheadHover;
 		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
 		
 		// Offset for Cytoscape container
@@ -1853,12 +1854,19 @@
 			}
 		}
 		
+		var checkArrowheadHover = function(edge, mouseX, mouseY) {
+			
+		};
+		
 		// Make these related functions (they reference each other) available
 		this.mouseMoveHelper.dragHandler = dragHandler;
 		this.mouseMoveHelper.checkBezierEdgeHover = checkBezierEdgeHover;
 		this.mouseMoveHelper.checkStraightEdgeHover = checkStraightEdgeHover;
 		this.mouseMoveHelper.checkNodeHover = checkNodeHover;
+		this.mouseMoveHelper.checkArrowheadHover = checkArrowheadHover;
+		
 		this.mouseMoveHelper.hoverHandler = hoverHandler;
+		
 	}
 	
 	CanvasRenderer.prototype.load = function() {
@@ -2974,6 +2982,21 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["square"].points);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return checkInBoundingBox(
+				x, y, nodeShapes["square"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return pointInsidePolygon(x, y, nodeShapes["square"].points,
+				centerX, centerY, width, height, [0, 1], padding);
 		}
 	}
 	
@@ -2989,6 +3012,21 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["pentagon"].points);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return checkInBoundingBox(
+				x, y, nodeShapes["pentagon"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
+				centerX, centerY, width, height, [0, 1], padding);
 		}
 	}
 	
@@ -3002,6 +3040,21 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["hexagon"].points);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return checkInBoundingBox(
+				x, y, nodeShapes["hexagon"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
+				centerX, centerY, width, height, [0, 1], padding);
 		}
 	}
 	
@@ -3015,6 +3068,21 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["heptagon"].points);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return checkInBoundingBox(
+				x, y, nodeShapes["heptagon"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
+				centerX, centerY, width, height, [0, 1], padding);
 		}
 	}
 	

@@ -347,6 +347,13 @@
 		return adjacentEdges;
 	}
 	
+	CanvasRenderer.prototype.checkPointInPolygon = function(x, y, points, padding) {
+		var expandedLines = renderer.expandLines(points, padding);
+		
+//		var newPoints = renderer.
+		
+	}
+	
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
 		var hashTable = {};
 		
@@ -2133,11 +2140,29 @@
 		
 	}
 	
+	// Contract for arrow shapes:
+	// 0, 0 is arrow tip
+	// (0, 1) is direction towards node
+	// (1, 0) is right
+	
 	arrowShapes["arrow"] = {
+		_points: [
+			-0.15, -0.3,
+			0, 0,
+			0.15, -0.3
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["arrow"]._points;
+			
+			return renderer.pointInsidePolygon(
+				x, y, points, centerX, width, height, direction, padding);
+		},
 		draw: function(context) {
-			context.lineTo(-0.15, -0.3);
-			context.lineTo(0, 0);
-			context.lineTo(0.15, -0.3);
+			var points = arrowShapes["arrow"]._points;
+		
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
 		},
 		spacing: function(edge) {
 			return 0;
@@ -2150,6 +2175,9 @@
 	arrowShapes["triangle"] = arrowShapes["arrow"];
 	
 	arrowShapes["none"] = {
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return false;
+		},
 		draw: function(context) {
 		},
 		spacing: function(edge) {
@@ -2161,6 +2189,34 @@
 	}
 	
 	arrowShapes["circle"] = {
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			// Transform x, y to get non-rotated ellipse
+			
+			y -= height * 0.15;
+			
+			if (width != height) {
+				var angle = Math.asin(direction[1] / 
+					(Math.sqrt(direction[0] * direction[0] 
+						+ direction[1] * direction[1])));
+			
+				var cos = Math.cos(angle);
+				var sin = Math.sin(angle);
+				
+				var rotatedPoint = 
+					[x * cos - y * sin,
+						y * cos + x * sin];
+				
+				var aspectRatio = (height + padding) / (width + padding);
+				y /= aspectRatio;
+				centerY /= aspectRatio;
+				
+				return (Math.pow(centerX - x, 2) 
+					+ Math.pow(centerY - y, 2) <= Math.pow(width + padding, 2));
+			} else {
+				return (Math.pow(centerX - x, 2) 
+					+ Math.pow(centerY - y, 2) <= Math.pow(width + padding, 2));
+			}
+		},
 		draw: function(context) {
 			context.translate(0, -0.15);
 			context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
@@ -2174,11 +2230,24 @@
 	}
 	
 	arrowShapes["inhibitor"] = {
+		_points: [
+			-0.25, 0,
+			-0.25, -0.1,
+			0.25, -0.1,
+			0.25, 0
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["inhibitor"]._points;
+			
+			return renderer.pointInsidePolygon(
+				x, y, points, centerX, width, height, direction, padding);
+		},
 		draw: function(context) {
-			context.lineTo(-0.25, 0);
-			context.lineTo(-0.25, -0.1);
-			context.lineTo(0.25, -0.1);
-			context.lineTo(0.25, 0);
+			var points = arrowShapes["inhibitor"]._points;
+			
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
 		},
 		spacing: function(edge) {
 			return 4;
@@ -2189,12 +2258,24 @@
 	}
 	
 	arrowShapes["square"] = {
+		_points: [
+			-0.12, 0.00,
+			0.12, 0.00,
+			0.12, -0.24,
+			-0.12, -0.24
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["square"]._points;
+			
+			return renderer.pointInsidePolygon(
+				x, y, points, centerX, width, height, direction, padding);
+		},
 		draw: function(context) {
-//			context.translate(-0.15, -0.15);
-			context.lineTo(-0.12, 0.00);
-			context.lineTo(0.12, 0.00);
-			context.lineTo(0.12, -0.24);
-			context.lineTo(-0.12, -0.24);
+			var points = arrowShapes["square"]._points;
+		
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
 		},
 		spacing: function(edge) {
 			return 0;
@@ -2205,6 +2286,18 @@
 	}
 	
 	arrowShapes["diamond"] = {
+		_points: [
+			-0.14, -0.14,
+			0, -0.28,
+			0.14, -0.14,
+			0, 0.0
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["square"]._points;
+			
+			return renderer.pointInsidePolygon(
+				x, y, points, centerX, width, height, direction, padding);
+		},
 		draw: function(context) {
 //			context.translate(0, 0.16);
 			context.lineTo(-0.14, -0.14);
@@ -2220,6 +2313,7 @@
 		}
 	}
 	
+	/*
 	arrowShapes["tee"] = arrowShapes["inhibitor"];
 	
 	arrowShapeDrawers["arrow"] = function(context) {
@@ -2259,6 +2353,7 @@
 	arrowShapeDrawers["tee"] = arrowShapeDrawers["inhibitor"];
 	arrowShapeSpacing["tee"] = arrowShapeSpacing["inhibitor"];
 	arrowShapeGap["tee"] = arrowShapeGap["inhibitor"];
+	*/
 	
 	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
@@ -2884,15 +2979,30 @@
 	}
 
 	CanvasRenderer.prototype.pointInsidePolygon = function(
-		x, y, basePoints, centerX, centerY, width, height, rotation, padding) {
+		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
 		
 		var transformedPoints = new Array(basePoints.length)
 		
+		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
+			+ direction[1] * direction[1])));
+		
+		if (direction[0] < 0) {
+			angle = angle + Math.PI / 2;
+		} else {
+			angle = -angle - Math.PI / 2;
+		}
+		
 		for (var i = 0; i < transformedPoints.length / 2; i++) {
 			transformedPoints[i * 2] = 
-				basePoints[i * 2] * width * Math.cos(rotation) + centerX;
+				width * (basePoints[i * 2] * Math.cos(angle) 
+					- basePoints[i * 2 + 1] * Math.sin(angle));
+			
 			transformedPoints[i * 2 + 1] = 
-				basePoints[i * 2 + 1] * height * Math.sin(rotation) + centerY;
+				height * (basePoints[i * 2 + 1] * Math.cos(angle) 
+					+ basePoints[i * 2] * Math.sin(angle));
+			
+			transformedPoints[i * 2] += centerX;
+			transformedPoints[i * 2 + 1] += centerY;
 		}
 		
 		var expandedLineSet = this.expandPolygon(
@@ -2901,7 +3011,50 @@
 		
 		var points = this.joinLines(expandedLineSet);
 		
+		var x1, y1, x2, y2;
+		var y3;
 		
+		// Intserect with vertical line through (x, y)
+		var up = 0;
+		var down = 0;
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			x1 = points[i * 2];
+			y1 = points[i * 2 + 1];
+			
+			if (i + 1 < points.length / 2) {
+				x2 = points[(i + 1) * 2];
+				y2 = points[(i + 1) * 2 + 1];
+			} else {
+				x2 = points[(i + 1 - points.length / 2) * 2];
+				y2 = points[(i + 1 - points.length / 2) * 2 + 1];
+			}
+
+			if (x1 == x && x2 == x) {
+				
+			} else if ((x1 >= x && x >= x2)
+				|| (x1 <= x && x <= x2)) {
+				
+				y3 = (x - x1) / (x2 - x1) * (y2 - y1) + y1;
+				
+				if (y3 > y) {
+					up++;
+				}
+				
+				if (y3 < y) {
+					down++;
+				}
+			} else {
+				continue;
+			}
+			
+		}
+		
+		if (up % 2 == 0) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 
 	CanvasRenderer.prototype.polygonIntersectLine = function(

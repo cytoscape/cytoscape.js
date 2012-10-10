@@ -43,6 +43,7 @@
 	var arrowShapeDrawers = {};
 	var arrowShapeSpacing = {};
 	var arrowShapeGap = {};
+	var nodeShapes = {};
 	var nodeShapeDrawers = {};
 	var nodeShapeIntersectLine = {};
 	var nodeShapePoints = {};
@@ -2144,7 +2145,13 @@
 	// 0, 0 is arrow tip
 	// (0, 1) is direction towards node
 	// (1, 0) is right
-	
+	//
+	// functional api:
+	// collide: check x, y in shape
+	// draw: draw
+	// spacing: dist(arrowTip, nodeBoundary)
+	// gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
+		
 	arrowShapes["arrow"] = {
 		_points: [
 			-0.15, -0.3,
@@ -2413,7 +2420,7 @@
 			
 			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
 			
-			intersect = nodeShapeIntersectLine[target._private.style["shape"].value](
+			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
 				target,
 				target._private.style["width"].value,
 				target._private.style["height"].value,
@@ -2434,7 +2441,7 @@
 			
 			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
 
-			intersect = nodeShapeIntersectLine[source._private.style["shape"].value](
+			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
 				source,
 				source._private.style["width"].value,
 				source._private.style["height"].value,
@@ -2455,7 +2462,7 @@
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
-			intersect = nodeShapeIntersectLine[target._private.style["shape"].value](
+			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
 				target,
 				target._private.style["width"].value,
 				target._private.style["height"].value,
@@ -2482,7 +2489,7 @@
 			edge._private.rscratch.arrowEndX = arrowEnd[0];
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 		
-			intersect = nodeShapeIntersectLine[source._private.style["shape"].value](
+			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
 				source,
 				source._private.style["width"].value,
 				source._private.style["height"].value,
@@ -2522,8 +2529,8 @@
 			var halfPointX = start[0] * 0.25 + end[0] * 0.25 + cp[0] * 0.5;
 			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
 			
-			intersect = nodeShapeIntersectLine[
-				target._private.style["shape"].value](
+			intersect = nodeShapes[
+				target._private.style["shape"].value].intersectLine(
 				target,
 				target._private.style["width"].value,
 				target._private.style["height"].value,
@@ -2547,8 +2554,8 @@
 			edge._private.rscratch.arrowEndX = arrowEnd[0];
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 			
-			intersect = nodeShapeIntersectLine[
-				source._private.style["shape"].value](
+			intersect = nodeShapes[
+				source._private.style["shape"].value].intersectLine(
 				source,
 				source._private.style["width"].value,
 				source._private.style["height"].value,
@@ -2690,34 +2697,6 @@
 		edge._private.rscratch.cp2y = middlePointY + offsetY;
 	}
 	
-	nodeShapeDrawers["ellipse"] = function(node, width, height) {
-		var context = renderer.context;
-	
-		context.beginPath();
-		context.save();
-		context.translate(node._private.position.x, node._private.position.y);
-		context.scale(width / 2, height / 2);
-		// At origin, radius 1, 0 to 2pi
-		context.arc(0, 0, 1, 0, Math.PI * 2, false);
-		context.closePath();
-		context.restore();
-		context.fill();
-	}
-	
-	// Intersect node shape vs line from (x, y) to node center
-	nodeShapeIntersectLine["ellipse"] = function(
-		node, width, height, x, y) {
-	
-		var intersect = renderer.intersectLineEllipse(
-			x, y,
-			node.position().x,
-			node.position().y,
-			width / 2 + node._private.style["border-width"].value / 2,
-			height / 2 + node._private.style["border-width"].value / 2);
-			
-		return intersect;
-	}
-	
 	var generateUnitNgonPoints = function(sides, rotationRadians) {
 		
 		var increment = 1.0 / sides * 2 * Math.PI;
@@ -2740,15 +2719,11 @@
 	}
 	
 	CanvasRenderer.prototype.findPolygonIntersection = function(
-		node, width, height, x, y, nodeShape, numSides) {
-		
-		if (nodeShapePoints[nodeShape] == undefined) {
-			nodeShapePoints[nodeShape] = generateUnitNgonPoints(numSides, 0);
-		}
+		node, width, height, x, y, points) {
 		
 		var intersections = renderer.polygonIntersectLine(
 			x, y,
-			nodeShapePoints[nodeShape],
+			points,
 			node._private.position.x,
 			node._private.position.y,
 			width / 2, height / 2,
@@ -2835,6 +2810,147 @@
 		}
 		
 		return vertices;
+	}
+	
+	nodeShapeDrawers["ellipse"] = function(node, width, height) {
+		var context = renderer.context;
+	
+		context.beginPath();
+		context.save();
+		context.translate(node._private.position.x, node._private.position.y);
+		context.scale(width / 2, height / 2);
+		// At origin, radius 1, 0 to 2pi
+		context.arc(0, 0, 1, 0, Math.PI * 2, false);
+		context.closePath();
+		context.restore();
+		context.fill();
+	}
+	
+	// Intersect node shape vs line from (x, y) to node center
+	nodeShapeIntersectLine["ellipse"] = function(
+		node, width, height, x, y) {
+	
+		var intersect = renderer.intersectLineEllipse(
+			x, y,
+			node.position().x,
+			node.position().y,
+			width / 2 + node._private.style["border-width"].value / 2,
+			height / 2 + node._private.style["border-width"].value / 2);
+			
+		return intersect;
+	}
+	
+	// Node shape contract:
+	//
+	// draw: draw
+	// intersectLine: report intersection from x, y, to node center
+	// checkPoint: check x, y in node
+	
+	nodeShapes["ellipse"] = {
+		draw: function(node, width, height) {
+			var context = renderer.context;
+		
+			context.beginPath();
+			context.save();
+			context.translate(node._private.position.x, node._private.position.y);
+			context.scale(width / 2, height / 2);
+			// At origin, radius 1, 0 to 2pi
+			context.arc(0, 0, 1, 0, Math.PI * 2, false);
+			context.closePath();
+			context.restore();
+			context.fill();
+		},
+		
+		intersectLine: function(node, width, height, x, y) {
+			var intersect = renderer.intersectLineEllipse(
+			x, y,
+			node.position().x,
+			node.position().y,
+			width / 2 + node._private.style["border-width"].value / 2,
+			height / 2 + node._private.style["border-width"].value / 2);
+			
+			return intersect;
+		}
+	}
+	
+	nodeShapes["triangle"] = {
+		points: generateUnitNgonPoints(3, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["triangle"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["triangle"].points);
+		}
+	}
+	
+	nodeShapes["square"] = {
+		points: generateUnitNgonPoints(4, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["square"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["square"].points);
+		}
+	}
+	
+	nodeShapes["rectangle"] = nodeShapes["square"];
+	
+	nodeShapes["pentagon"] = {
+		points: generateUnitNgonPoints(5, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["pentagon"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["pentagon"].points);
+		}
+	}
+	
+	nodeShapes["hexagon"] = {
+		points: generateUnitNgonPoints(6, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["hexagon"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["hexagon"].points);
+		}
+	}
+	
+	nodeShapes["heptagon"] = {
+		points: generateUnitNgonPoints(7, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["heptagon"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["heptagon"].points);
+		}
+	}
+	
+	nodeShapes["octogon"] = {
+		points: generateUnitNgonPoints(8, 0),
+		
+		draw: function(node, width, height) {
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeShapes["octagon"].points);
+		},
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["octagon"].points);
+		}
 	}
 	
 	nodeShapeDrawers["triangle"] = function(node, width, height) {
@@ -2963,13 +3079,7 @@
 	}
 
 	CanvasRenderer.prototype.drawPolygon = function(
-		x, y, width, height, nodeShape, numSides) {
-
-		if (nodeShapePoints[nodeShape] == undefined) {
-			nodeShapePoints[nodeShape] = generateUnitNgonPoints(numSides, 0);
-		}
-		
-		var points = nodeShapePoints[nodeShape];
+		x, y, width, height, points) {
 
 		var context = cy.renderer().context;
 		context.save();
@@ -3573,7 +3683,7 @@
 		nodeHeight = node._private.style["height"].value;
 		
 		// Draw node
-		nodeShapeDrawers[node._private.style["shape"].value](
+		nodeShapes[node._private.style["shape"].value].draw(
 			node,
 			nodeWidth,
 			nodeHeight); //node._private.data.weight / 5.0

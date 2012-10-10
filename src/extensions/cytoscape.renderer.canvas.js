@@ -2840,10 +2840,55 @@
 		return intersect;
 	}
 	
+	CanvasRenderer.checkInBoundingBox = function(
+		x, y, points, padding, width, height, centerX, centerY) {
+		
+		// Assumes width, height >= 0, points.length > 0
+		
+		var minX = points[0], minY = points[1];
+		var maxX = points[0], maxY = points[1];
+		
+		for (var i = 1; i < points.length / 2; i++) {
+			
+			if (points[i * 2] < minX) {
+				minX = points[i * 2];
+			} else if (points[i * 2] > maxX) {
+				maxX = points[i * 2];
+			}
+			
+			if (points[i * 2 + 1] < minY) {
+				minY = points[i * 2 + 1];
+			} else if (points[i * 2 + 1] > maxY) {
+				maxY = points[i * 2 + 1];
+			}
+		}
+		
+		x -= centerX;
+		y -= centerY;
+		
+		x /= width;
+		y /= width;
+		
+		if (x < minX) {
+			return false;
+		} else if (x > maxX) {
+			return false;
+		}
+		
+		if (y < minY) {
+			return false;
+		} else if (y > maxY) {
+			return false;
+		}
+		
+		return true;
+	}
+	
 	// Node shape contract:
 	//
 	// draw: draw
 	// intersectLine: report intersection from x, y, to node center
+	// checkPointRough: heuristic check x, y in node, no false negatives
 	// checkPoint: check x, y in node
 	
 	nodeShapes["ellipse"] = {
@@ -2870,6 +2915,24 @@
 			height / 2 + node._private.style["border-width"].value / 2);
 			
 			return intersect;
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return true;
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			x -= centerX;
+			y -= centerY;
+			
+			x /= (width + padding);
+			y /= (height + padding);
+			
+			return (Math.pow(x, 2) + Math.pow(y, 2) <= 1); 
 		}
 	}
 	
@@ -2883,6 +2946,21 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["triangle"].points);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return checkInBoundingBox(
+				x, y, nodeShapes["triangle"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return pointInsidePolygon(x, y, nodeShapes["triangle"].points,
+				centerX, centerY, width, height, [0, 1], padding);
 		}
 	}
 	
@@ -3135,7 +3213,7 @@
 		var x1, y1, x2, y2;
 		var y3;
 		
-		// Intserect with vertical line through (x, y)
+		// Intersect with vertical line through (x, y)
 		var up = 0;
 		var down = 0;
 		for (var i = 0; i < points.length / 2; i++) {

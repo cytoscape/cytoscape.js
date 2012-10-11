@@ -8,7 +8,7 @@
 		// Return values:
 		// 0 - curve is not in box
 		// 1 - curve may be in box; needs precise check
-		// 2 - curve is in box
+		// 2 - curve is in box.
 		
 		var boxMinX = Math.min(x1box, x2box) - tolerance;
 		var boxMinY = Math.min(y1box, y2box) - tolerance;

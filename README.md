@@ -77,13 +77,7 @@ run against different versions of jQuery.
 
 ## Funding
 
-Cytoscape.js development is funded by [Genome Canada](http://www.genomecanada.ca), through the
-[Ontario Genomics Institute](http://www.ontariogenomics.ca/) (2007-OGI-TD-05).
-
-Funding for [Cytoscape](http://www.cytoscape.org) is provided by a federal grant from the U.S. 
-[National Institute of General Medical Sciences (NIGMS)](http://www.nigms.nih.gov)
-of the [National Institutes of Health (NIH)](http://www.nih.gov) under award 
-number GM070743-01 and the U.S. [National Science Foundation (NSF)](http://www.nsf.gov).
+Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:
 
 [ISB](http://www.systemsbiology.org) | 
 [UCSD](http://www.ucsd.edu) | 

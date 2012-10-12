@@ -94,6 +94,9 @@
 	var secondsElapsed = 0;
 	var mouseDownTime = undefined;
 	
+	// Convenience var
+	var currentShape = "";
+	
 	function CanvasRenderer(options) {
 		this.options = $.extend(true, {}, defaults, options);
 		this.cy = options.cy;
@@ -266,7 +269,7 @@
 			x = mouseEvent.offsetX;
 			y = mouseEvent.offsetY;
 		} else {
-		*/	
+		*/
 		
 		var offsetLeft = 0;
 		var offsetTop = 0;
@@ -841,10 +844,6 @@
 		
 		// Get references to helper functions
 		var dragHandler = renderer.mouseMoveHelper.dragHandler;
-		var checkBezierEdgeHover = renderer.mouseMoveHelper.checkBezierEdgeHover;
-		var checkStraightEdgeHover = renderer.mouseMoveHelper.checkStraightEdgeHover;
-		var checkNodeHover = renderer.mouseMoveHelper.checkNodeHover;
-		var checkArrowheadHover = renderer.mouseMoveHelper.checkArrowheadHover;
 		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
 		
 		// Offset for Cytoscape container
@@ -1578,7 +1577,7 @@
 			// var squaredDistanceLimit = 19;
 			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
 			var edgeWithinDistance = false;
-		
+			
 			if ($$.math.inBezierVicinity(
 					mouseX, mouseY,
 					edge._private.rscratch.startX,
@@ -1825,6 +1824,17 @@
 						mouseX, mouseY, edges[index]);
 				}
 				
+				if (!edgeWithinDistance) {
+					edgeWithinDistance =
+						checkArrowheadHover(edges[index], mouseX, mouseY);
+					
+					/*
+					if (edgeWithinDistance) {
+						console.log("edge " + index + " passed arrow check"); 
+					}
+					*/
+				}
+				
 				if (edgeWithinDistance) {
 					potentialPickedEdges.push(edges[index]);
 				}
@@ -1856,6 +1866,68 @@
 		
 		var checkArrowheadHover = function(edge, mouseX, mouseY) {
 			
+			// collide: function(x, y, centerX, centerY, width, height, direction, padding) 
+			
+			var roughCheck = undefined;
+			
+			var collide = false;
+			
+			var width = renderer.getArrowWidth(edge._private.style["width"].value);
+			var height = renderer.getArrowHeight(edge._private.style["width"].value);
+			var direction = undefined;
+			
+			direction = [-(edge.target().position().x - edge._private.rscratch.arrowEndX),
+					-(edge.target().position().y - edge._private.rscratch.arrowEndY)];
+			
+			roughCheck = collide || arrowShapes[edge._private.style["target-arrow-shape"].value].roughCollide(
+				mouseX, mouseY,
+				edge._private.rscratch.arrowEndX,
+				edge._private.rscratch.arrowEndY,
+				width, height,
+				direction,
+				0
+			);
+			
+			if (roughCheck) {
+			
+				collide = collide || arrowShapes[edge._private.style["target-arrow-shape"].value].collide(
+					mouseX, mouseY,
+					edge._private.rscratch.arrowEndX,
+					edge._private.rscratch.arrowEndY,
+					width, height,
+					direction,
+					0);
+			}
+			
+			
+			direction = [-(edge.source().position().x - edge._private.rscratch.arrowStartX),
+					-(edge.source().position().y - edge._private.rscratch.arrowStartY)];
+			
+			roughCheck = collide || arrowShapes[edge._private.style["source-arrow-shape"].value].roughCollide(
+				mouseX, mouseY,
+				edge._private.rscratch.arrowStartX,
+				edge._private.rscratch.arrowStartY,
+				width, height,
+				direction,
+				0
+			);
+			
+			if (roughCheck) {
+			
+				collide = collide || arrowShapes[edge._private.style["source-arrow-shape"].value].collide(
+					mouseX, mouseY,
+					edge._private.rscratch.arrowStartX,
+					edge._private.rscratch.arrowStartY,
+					width, height,
+					direction,
+					0);
+			}
+			
+			if (collide) {
+				return true;
+			}
+			
+			return false;
 		};
 		
 		// Make these related functions (they reference each other) available
@@ -2149,6 +2221,23 @@
 		
 	}
 	
+	CanvasRenderer.prototype.findMaxSqDistanceToOrigin = function(points) {
+		var maxSqDistance = 0.000001;
+		var sqDistance;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			sqDistance = points[i * 2] * points[i * 2] 
+				+ points[i * 2 + 1] * points[i * 2 + 1];
+			
+			if (sqDistance > maxSqDistance) {
+				maxSqDistance = sqDistance;
+			}
+		}
+		
+		return maxSqDistance;
+	}
+	
 	// Contract for arrow shapes:
 	// 0, 0 is arrow tip
 	// (0, 1) is direction towards node
@@ -2156,10 +2245,11 @@
 	//
 	// functional api:
 	// collide: check x, y in shape
+	// roughCollide: called before collide, no false negatives
 	// draw: draw
 	// spacing: dist(arrowTip, nodeBoundary)
 	// gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
-		
+	
 	arrowShapes["arrow"] = {
 		_points: [
 			-0.15, -0.3,
@@ -2172,12 +2262,23 @@
 			return renderer.pointInsidePolygon(
 				x, y, points, centerX, width, height, direction, padding);
 		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["arrow"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["arrow"]._farthestPointSqDistance = 
+					renderer.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
+			}
+		
+			return renderer.checkInBoundingCircle(
+				x, y, arrowShapes["arrow"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
 		draw: function(context) {
 			var points = arrowShapes["arrow"]._points;
 		
 			for (var i = 0; i < points.length / 2; i++) {
 				context.lineTo(points[i * 2], points[i * 2 + 1]);
 			}
+			
 		},
 		spacing: function(edge) {
 			return 0;
@@ -2193,6 +2294,9 @@
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			return false;
 		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return false;
+		},
 		draw: function(context) {
 		},
 		spacing: function(edge) {
@@ -2203,11 +2307,15 @@
 		}
 	}
 	
+	currentShape = "arrow";
 	arrowShapes["circle"] = {
+	//	_baseRadius: 0.15,
+		
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			// Transform x, y to get non-rotated ellipse
 			
-			y -= height * 0.15;
+			// console.log(direction);
+			// y -= height * 0.15;
 			
 			if (width != height) {
 				var angle = Math.asin(direction[1] / 
@@ -2226,18 +2334,21 @@
 				centerY /= aspectRatio;
 				
 				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow(width + padding, 2));
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding) * 0.15, 2));
 			} else {
 				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow(width + padding, 2));
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding) * 0.15, 2));
 			}
 		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return true;
+		},
 		draw: function(context) {
-			context.translate(0, -0.15);
+			// context.translate(0, -0.15);
 			context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
 		},
 		spacing: function(edge) {
-			return 0;
+			return renderer.getArrowWidth(edge._private.style["width"].value) * 0.15;
 		},
 		gap: function(edge) {
 			return edge._private.style["width"].value * 2;
@@ -2256,6 +2367,16 @@
 			
 			return renderer.pointInsidePolygon(
 				x, y, points, centerX, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["inhibitor"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["inhibitor"]._farthestPointSqDistance = 
+					renderer.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
+			}
+		
+			return renderer.checkInBoundingCircle(
+				x, y, arrowShapes["inhibitor"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
 		},
 		draw: function(context) {
 			var points = arrowShapes["inhibitor"]._points;
@@ -2285,6 +2406,16 @@
 			return renderer.pointInsidePolygon(
 				x, y, points, centerX, width, height, direction, padding);
 		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["square"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["square"]._farthestPointSqDistance = 
+					renderer.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
+			}
+		
+			return renderer.checkInBoundingCircle(
+				x, y, arrowShapes["square"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
 		draw: function(context) {
 			var points = arrowShapes["square"]._points;
 		
@@ -2308,10 +2439,20 @@
 			0, 0.0
 		],
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			var points = arrowShapes["square"]._points;
+			var points = arrowShapes["diamond"]._points;
 			
 			return renderer.pointInsidePolygon(
 				x, y, points, centerX, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["diamond"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["diamond"]._farthestPointSqDistance = 
+					renderer.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
+			}
+		
+			return renderer.checkInBoundingCircle(
+				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
 		},
 		draw: function(context) {
 //			context.translate(0, 0.16);
@@ -2327,7 +2468,6 @@
 			return edge._private.style["width"].value * 2;
 		}
 	}
-	
 	
 	arrowShapes["tee"] = arrowShapes["inhibitor"];
 	
@@ -2371,6 +2511,14 @@
 	arrowShapeGap["tee"] = arrowShapeGap["inhibitor"];
 	*/
 	
+	CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
+		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+	}
+	
+	CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+	}
+	
 	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
 						
@@ -2391,7 +2539,7 @@
 		context.moveTo(0, 0);
 		context.rotate(-angle);
 		
-		var size = Math.max(Math.pow(context.lineWidth * 13.37, 0.9), 29);
+		var size = renderer.getArrowWidth(context.lineWidth);
 		/// size = 100;
 		context.scale(size, size);
 		
@@ -2624,8 +2772,8 @@
 		var endX = edge._private.rscratch.arrowEndX;
 		var endY = edge._private.rscratch.arrowEndY;
 		
-		dispX = -(edge.target().position().x - endX);
-		dispY = -(edge.target().position().y - endY);
+		dispX = endX - edge.target().position().x;
+		dispY = endY - edge.target().position().y;
 		
 		//this.context.strokeStyle = "rgba("
 		this.context.fillStyle = "rgba("
@@ -2848,7 +2996,16 @@
 		return intersect;
 	}
 	
-	CanvasRenderer.checkInBoundingBox = function(
+	CanvasRenderer.prototype.checkInBoundingCircle = function(
+		x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
+		
+		x = (x - centerX) / (width + padding);
+		y = (y - centerY) / (height + padding);
+		
+		return (x * x + y * y) <= farthestPointSqDistance;
+	}
+	
+	CanvasRenderer.prototype.checkInBoundingBox = function(
 		x, y, points, padding, width, height, centerX, centerY) {
 		
 		// Assumes width, height >= 0, points.length > 0

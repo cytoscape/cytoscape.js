@@ -289,6 +289,9 @@
 		x = mouseEvent.pageX - offsetLeft;
 		y = mouseEvent.pageY - offsetTop;
 		//}
+		
+//		x += -5;
+//		y += -55;
 			
 		x -= cy.pan().x;
 		y -= cy.pan().y;
@@ -1742,32 +1745,33 @@
 		}
 		
 		var checkNodeHover = function(mouseX, mouseY, node) {
-			var dX = mouseX - node.position().x;
-			var dY = mouseY - node.position().y;
 			
-			/*
-			console.log(node._private.rscratch.boundingRadiusSquared);
-			console.log(dX * dX + dY * dY);
-			*/
-			
-			var boundingRadiusSquared = Math.pow(
-				Math.max(
-					node._private.style["width"].value, 
-					node._private.style["height"].value
-						+ node._private.style["border-width"].value) / 2, 2);
-			
-			var distanceSquared = dX * dX + dY * dY;
-			
-			if (boundingRadiusSquared > distanceSquared) {
+			var padding = node._private.style["border-width"].value;
+			var width = node._private.style["width"].value;
+			var height = node._private.style["height"].value;
+			var centerX = node._private.position.x;
+			var centerY = node._private.position.y;
+
+			if (nodeShapes[node._private.style["shape"].value].checkPointRough(
+				mouseX, mouseY, padding, width, height, centerX, centerY)) {
 				
-				if (distanceSquared < minDistanceNodeValue) {
-					minDistanceNode = node;
-					minDistanceNodeValue = distanceSquared;
+				
+//				console.log("rf: " + nodeShapes[node._private.style["shape"].value].checkPointRough(
+//					mouseX, mouseY, padding, width, height, centerX, centerY));
+				
+				if (nodeShapes[node._private.style["shape"].value].checkPoint(
+					mouseX, mouseY, padding, width, height, centerX, centerY)) {
 					
-					nodeHovered = true;
+//					console.log("pr: " + nodeShapes[node._private.style["shape"].value].checkPoint(
+//						mouseX, mouseY, padding, width, height, centerX, centerY));
+					
+//					minDistanceNode = node;
+//					minDistanceNodeValue = distanceSquared;
+
+//					nodeHovered = true;
+					
+					return true;
 				}
-				
-				return true;
 			}
 			
 			return false;
@@ -1797,10 +1801,30 @@
 				minDistanceEdgeValue = 99999;
 			}
 			
-			nodeHovered = false;
+			var potentialPickedNodes = [];
 			
 			for (var index = 0; index < nodes.length; index++) {
-				checkNodeHover(mouseX, mouseY, nodes[index]);
+				if (checkNodeHover(mouseX, mouseY, nodes[index])) {
+					potentialPickedNodes.push(nodes[index]);
+				}
+			}
+			
+			if (potentialPickedNodes.length > 0) {
+				potentialPickedNodes.sort(function(a, b) {
+					// cy.nodes() gives reverse order. Same as below
+					return b._private.data.id.localeCompare(a._private.data.id);
+				});
+				
+				potentialPickedNodes.sort(function(a, b) {
+					return b._private.style["z-index"].value
+						- a._private.style["z-index"].value
+				});
+				
+				minDistanceNode = potentialPickedNodes[0];
+				nodeHovered = true;
+			} else {
+				minDistanceNode = undefined;
+				nodeHovered = false;
 			}
 			
 			var edgeWithinDistance = false;
@@ -1856,12 +1880,6 @@
 			} else {
 				minDistanceEdge = undefined;
 			}
-			
-			if (minDistanceNode != undefined) {
-				minDistanceNode._private.rscratch.hovered = true;
-			} else if (minDistanceEdge != undefined) {
-				minDistanceEdge._private.rscratch.hovered = true;
-			}
 		}
 		
 		var checkArrowheadHover = function(edge, mouseX, mouseY) {
@@ -1888,6 +1906,8 @@
 				0
 			);
 			
+			// console.log("roughCheck for " + edge._private.style["target-arrow-shape"].value + ": " + roughCheck);
+			
 			if (roughCheck) {
 			
 				collide = collide || arrowShapes[edge._private.style["target-arrow-shape"].value].collide(
@@ -1897,8 +1917,9 @@
 					width, height,
 					direction,
 					0);
+					
+				// console.log("collide for " + edge._private.style["target-arrow-shape"].value + ": " + roughCheck);
 			}
-			
 			
 			direction = [-(edge.source().position().x - edge._private.rscratch.arrowStartX),
 					-(edge.source().position().y - edge._private.rscratch.arrowStartY)];
@@ -1912,6 +1933,8 @@
 				0
 			);
 			
+			// console.log("roughCheck for " + edge._private.style["source-arrow-shape"].value + ": " + roughCheck);
+			
 			if (roughCheck) {
 			
 				collide = collide || arrowShapes[edge._private.style["source-arrow-shape"].value].collide(
@@ -1921,9 +1944,12 @@
 					width, height,
 					direction,
 					0);
+				
+				// console.log("collide for " + edge._private.style["source-arrow-shape"].value + ": " + collide);
 			}
 			
-			if (collide) {
+			if (collide == true) {
+//				console.log("returning true");
 				return true;
 			}
 			
@@ -2259,8 +2285,10 @@
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			var points = arrowShapes["arrow"]._points;
 			
+//			console.log("collide(): " + direction);
+			
 			return renderer.pointInsidePolygon(
-				x, y, points, centerX, width, height, direction, padding);
+				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["arrow"]._farthestPointSqDistance) == "undefined") {
@@ -2278,7 +2306,6 @@
 			for (var i = 0; i < points.length / 2; i++) {
 				context.lineTo(points[i * 2], points[i * 2 + 1]);
 			}
-			
 		},
 		spacing: function(edge) {
 			return 0;
@@ -2309,13 +2336,10 @@
 	
 	currentShape = "arrow";
 	arrowShapes["circle"] = {
-	//	_baseRadius: 0.15,
+		_baseRadius: 0.15,
 		
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			// Transform x, y to get non-rotated ellipse
-			
-			// console.log(direction);
-			// y -= height * 0.15;
 			
 			if (width != height) {
 				var angle = Math.asin(direction[1] / 
@@ -2334,21 +2358,23 @@
 				centerY /= aspectRatio;
 				
 				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding) * 0.15, 2));
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
+						* arrowShapes["circle"]._baseRadius, 2));
 			} else {
 				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding) * 0.15, 2));
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
+						* arrowShapes["circle"]._baseRadius, 2));
 			}
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			return true;
 		},
 		draw: function(context) {
-			// context.translate(0, -0.15);
-			context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
+			context.arc(0, 0, arrowShapes["circle"]._baseRadius, 0, Math.PI * 2, false);
 		},
 		spacing: function(edge) {
-			return renderer.getArrowWidth(edge._private.style["width"].value) * 0.15;
+			return renderer.getArrowWidth(edge._private.style["width"].value)
+				* arrowShapes["circle"]._baseRadius;
 		},
 		gap: function(edge) {
 			return edge._private.style["width"].value * 2;
@@ -2366,7 +2392,7 @@
 			var points = arrowShapes["inhibitor"]._points;
 			
 			return renderer.pointInsidePolygon(
-				x, y, points, centerX, width, height, direction, padding);
+				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["inhibitor"]._farthestPointSqDistance) == "undefined") {
@@ -2404,7 +2430,7 @@
 			var points = arrowShapes["square"]._points;
 			
 			return renderer.pointInsidePolygon(
-				x, y, points, centerX, width, height, direction, padding);
+				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["square"]._farthestPointSqDistance) == "undefined") {
@@ -2436,13 +2462,16 @@
 			-0.14, -0.14,
 			0, -0.28,
 			0.14, -0.14,
-			0, 0.0
+			0, 0
 		],
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			var points = arrowShapes["diamond"]._points;
 			
+//			console.log("precise:" + renderer.pointInsidePolygon(
+//				x, y, points, centerX, centerY, width, height, direction, padding));
+			
 			return renderer.pointInsidePolygon(
-				x, y, points, centerX, width, height, direction, padding);
+				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["diamond"]._farthestPointSqDistance) == "undefined") {
@@ -2450,6 +2479,10 @@
 					renderer.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
 			}
 		
+//			console.log("rough:" + renderer.checkInBoundingCircle(
+//				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
+//				0, width, height, centerX, centerY));
+				
 			return renderer.checkInBoundingCircle(
 				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
 				0, width, height, centerX, centerY);
@@ -2521,7 +2554,9 @@
 	
 	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
-						
+//		console.log("classic: ", dispX, dispY);
+//		console.log("angle: " + angle);
+		
 		if (dispX < 0) {
 			//context.strokeStyle = "AA99AA";
 			angle = angle + Math.PI / 2;
@@ -3091,13 +3126,15 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
+//			console.log(arguments);
+			
 			x -= centerX;
 			y -= centerY;
 			
 			x /= (width + padding);
 			y /= (height + padding);
 			
-			return (Math.pow(x, 2) + Math.pow(y, 2) <= 1); 
+			return (Math.pow(x, 2) + Math.pow(y, 2) <= 0.25);
 		}
 	}
 	
@@ -3158,6 +3195,8 @@
 	}
 	
 	nodeShapes["rectangle"] = nodeShapes["square"];
+	
+	nodeShapes["roundrectangle"] = nodeShapes["square"];
 	
 	nodeShapes["pentagon"] = {
 		points: generateUnitNgonPoints(5, 0),
@@ -3404,9 +3443,16 @@
 
 	CanvasRenderer.prototype.pointInsidePolygon = function(
 		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
+//		console.log("entry: " + direction);
+		// console.log("dir: " + direction);
+//		console.log(arguments);
 		
+		//var direction = arguments[6];
 		var transformedPoints = new Array(basePoints.length)
 		
+//		console.log(direction[0], direction[1]);
+//		console.log("presin: " + direction[1] / (Math.sqrt(direction[0] * direction[0] 
+//			+ direction[1] * direction[1])));
 		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
 			+ direction[1] * direction[1])));
 		
@@ -3416,25 +3462,38 @@
 			angle = -angle - Math.PI / 2;
 		}
 		
+//		console.log(basePoints);
+		
+//		console.log(angle);
+		
+		var cos = Math.cos(angle);
+		var sin = Math.sin(angle);
+		
+//		console.log("base: " + basePoints);
 		for (var i = 0; i < transformedPoints.length / 2; i++) {
 			transformedPoints[i * 2] = 
-				width * (basePoints[i * 2] * Math.cos(angle) 
-					- basePoints[i * 2 + 1] * Math.sin(angle));
+				width * (basePoints[i * 2] * cos
+					- basePoints[i * 2 + 1] * sin);
 			
 			transformedPoints[i * 2 + 1] = 
-				height * (basePoints[i * 2 + 1] * Math.cos(angle) 
-					+ basePoints[i * 2] * Math.sin(angle));
+				height * (basePoints[i * 2 + 1] * cos 
+					+ basePoints[i * 2] * sin);
+			
+//			console.log(height, basePoints[i * 2 + 1], cos, basePoints[i * 2], sin);
+			
+//			console.log("pretranslate: " + transformedPoints[i * 2]
+//				+ ", " + transformedPoints[i * 2 + 1]);
 			
 			transformedPoints[i * 2] += centerX;
 			transformedPoints[i * 2 + 1] += centerY;
 		}
-		
-		var expandedLineSet = this.expandPolygon(
+//		console.log("transformed: " + transformedPoints);
+		var expandedLineSet = renderer.expandPolygon(
 			transformedPoints,
 			-padding);
 		
-		var points = this.joinLines(expandedLineSet);
-		
+		var points = renderer.joinLines(expandedLineSet);
+//*		console.log("testpoints: " + points);
 		var x1, y1, x2, y2;
 		var y3;
 		
@@ -3453,6 +3512,8 @@
 				x2 = points[(i + 1 - points.length / 2) * 2];
 				y2 = points[(i + 1 - points.length / 2) * 2 + 1];
 			}
+			
+//*			console.log("line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
 
 			if (x1 == x && x2 == x) {
 				
@@ -3468,11 +3529,17 @@
 				if (y3 < y) {
 					down++;
 				}
+				
+//*				console.log(y3, y);
+				
 			} else {
+//*				console.log("22");
 				continue;
 			}
 			
 		}
+		
+//*		console.log("up: " + up + ", down: " + down);
 		
 		if (up % 2 == 0) {
 			return false;
@@ -3773,7 +3840,8 @@
 			
 			if (selectBox[4] == 1) {
 				var coreStyle = cy.style()._private.coreStyle;
-				var borderWidth = coreStyle["selection-box-border-width"].value;
+				var borderWidth = coreStyle["selection-box-border-width"].value
+					/ this.cy.zoom();
 				
 				context.lineWidth = borderWidth;
 				context.fillStyle = "rgba(" 
@@ -3782,10 +3850,11 @@
 					+ coreStyle["selection-box-color"].value[2] + ","
 					+ coreStyle["selection-box-opacity"].value + ")";
 				
-				context.fillRect(selectBox[0] + borderWidth / 2,
-					selectBox[1] + borderWidth / 2,
-					selectBox[2] - selectBox[0] - borderWidth / 2,
-					selectBox[3] - selectBox[1] - borderWidth / 2);
+				context.fillRect(
+					selectBox[0], //+ borderWidth / 2,
+					selectBox[1], //+ borderWidth / 2,
+					selectBox[2] - selectBox[0],// - borderWidth / 2,
+					selectBox[3] - selectBox[1]);// .- borderWidth / 2);
 				
 				if (borderWidth > 0) {
 					context.strokeStyle = "rgba(" 
@@ -3794,11 +3863,24 @@
 						+ coreStyle["selection-box-border-color"].value[2] + ","
 						+ coreStyle["selection-box-opacity"].value + ")";
 					
-					context.strokeRect(selectBox[0] + borderWidth / 2,
-						selectBox[1] + borderWidth / 2,
-						selectBox[2] - selectBox[0] - borderWidth / 2,
-						selectBox[3] - selectBox[1] - borderWidth / 2);
+					/*
+					var sign = selectBox[2] - selectBox[0] >= 0 ? 1 : -1;
+					
+					context.strokeRect(
+						selectBox[0] + borderWidth / 2 * sign,
+						selectBox[1] + borderWidth / 2 * sign,
+						selectBox[2] - selectBox[0] - borderWidth / 2 * sign,
+						selectBox[3] - selectBox[1] - borderWidth / 2 * sign);
+					*/
+					
+					context.strokeRect(
+						selectBox[0],
+						selectBox[1],
+						selectBox[2] - selectBox[0],
+						selectBox[3] - selectBox[1]);
 				}
+				
+//				console.log(selectBox);
 			}
 			
 			this.canvasNeedsRedraw[0] = false;

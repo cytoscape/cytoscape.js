@@ -1760,7 +1760,7 @@
 //					mouseX, mouseY, padding, width, height, centerX, centerY));
 				
 				if (nodeShapes[node._private.style["shape"].value].checkPoint(
-					mouseX, mouseY, padding, width, height, centerX, centerY)) {
+					mouseX, mouseY, padding, width / 2, height / 2, centerX, centerY)) {
 					
 //					console.log("pr: " + nodeShapes[node._private.style["shape"].value].checkPoint(
 //						mouseX, mouseY, padding, width, height, centerX, centerY));
@@ -2342,12 +2342,13 @@
 			// Transform x, y to get non-rotated ellipse
 			
 			if (width != height) {
+				// This gives negative of the angle
 				var angle = Math.asin(direction[1] / 
 					(Math.sqrt(direction[0] * direction[0] 
 						+ direction[1] * direction[1])));
 			
-				var cos = Math.cos(angle);
-				var sin = Math.sin(angle);
+				var cos = Math.cos(-angle);
+				var sin = Math.sin(-angle);
 				
 				var rotatedPoint = 
 					[x * cos - y * sin,
@@ -2553,6 +2554,7 @@
 	}
 	
 	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
+		// Negative of the angle
 		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
 //		console.log("classic: ", dispX, dispY);
 //		console.log("angle: " + angle);
@@ -3134,7 +3136,7 @@
 			x /= (width + padding);
 			y /= (height + padding);
 			
-			return (Math.pow(x, 2) + Math.pow(y, 2) <= 0.25);
+			return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
 		}
 	}
 	
@@ -3153,7 +3155,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return checkInBoundingBox(
+			return renderer.checkInBoundingBox(
 				x, y, nodeShapes["triangle"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -3161,8 +3163,8 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return pointInsidePolygon(x, y, nodeShapes["triangle"].points,
-				centerX, centerY, width, height, [0, 1], padding);
+			return renderer.pointInsidePolygon(x, y, nodeShapes["triangle"].points,
+				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
 	
@@ -3181,7 +3183,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return checkInBoundingBox(
+			return renderer.checkInBoundingBox(
 				x, y, nodeShapes["square"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -3189,8 +3191,8 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return pointInsidePolygon(x, y, nodeShapes["square"].points,
-				centerX, centerY, width, height, [0, 1], padding);
+			return renderer.pointInsidePolygon(x, y, nodeShapes["square"].points,
+				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
 	
@@ -3213,7 +3215,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return checkInBoundingBox(
+			return renderer.checkInBoundingBox(
 				x, y, nodeShapes["pentagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -3221,8 +3223,8 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
-				centerX, centerY, width, height, [0, 1], padding);
+			return renderer.pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
+				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
 	
@@ -3241,7 +3243,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return checkInBoundingBox(
+			return renderer.checkInBoundingBox(
 				x, y, nodeShapes["hexagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -3249,8 +3251,8 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
-				centerX, centerY, width, height, [0, 1], padding);
+			return renderer.pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
+				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
 	
@@ -3278,7 +3280,7 @@
 			x, y, padding, width, height, centerX, centerY) {
 			
 			return pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
-				centerX, centerY, width, height, [0, 1], padding);
+				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
 	
@@ -3445,7 +3447,7 @@
 		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
 //		console.log("entry: " + direction);
 		// console.log("dir: " + direction);
-//		console.log(arguments);
+//&		console.log(arguments);
 		
 		//var direction = arguments[6];
 		var transformedPoints = new Array(basePoints.length)
@@ -3453,6 +3455,8 @@
 //		console.log(direction[0], direction[1]);
 //		console.log("presin: " + direction[1] / (Math.sqrt(direction[0] * direction[0] 
 //			+ direction[1] * direction[1])));
+
+		// Gives negative angle
 		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
 			+ direction[1] * direction[1])));
 		
@@ -3466,8 +3470,8 @@
 		
 //		console.log(angle);
 		
-		var cos = Math.cos(angle);
-		var sin = Math.sin(angle);
+		var cos = Math.cos(-angle);
+		var sin = Math.sin(-angle);
 		
 //		console.log("base: " + basePoints);
 		for (var i = 0; i < transformedPoints.length / 2; i++) {
@@ -3488,12 +3492,20 @@
 			transformedPoints[i * 2 + 1] += centerY;
 		}
 //		console.log("transformed: " + transformedPoints);
-		var expandedLineSet = renderer.expandPolygon(
-			transformedPoints,
-			-padding);
 		
-		var points = renderer.joinLines(expandedLineSet);
-//*		console.log("testpoints: " + points);
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = renderer.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = renderer.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		
+//		console.log("testpoints: " + points);
 		var x1, y1, x2, y2;
 		var y3;
 		
@@ -3514,6 +3526,8 @@
 			}
 			
 //*			console.log("line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
+
+//&			console.log(x1, x, x2);
 
 			if (x1 == x && x2 == x) {
 				
@@ -3561,11 +3575,17 @@
 			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
 		}
 		
-		var expandedLineSet = this.expandPolygon(
-			transformedPoints,
-			-padding);
+		var points;
 		
-		var points = this.joinLines(expandedLineSet);
+		if (padding > 0) {
+			var expandedLineSet = renderer.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = renderer.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
 		// var points = transformedPoints;
 		
 		var currentX, currentY, nextX, nextY;
@@ -3594,6 +3614,97 @@
 		}
 		
 		return intersections;
+	}
+	
+	// x2 can be <= x1
+	CanvasRenderer.prototype.boxIntersectPolygon = function(
+		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		var transformedPoints = new Array(basePoints.length)
+		
+		// Gives negative of angle
+		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
+			+ direction[1] * direction[1])));
+		
+		if (direction[0] < 0) {
+			angle = angle + Math.PI / 2;
+		} else {
+			angle = -angle - Math.PI / 2;
+		}
+		
+		var cos = Math.cos(-angle);
+		var sin = Math.sin(-angle);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = 
+				width * (basePoints[i * 2] * cos
+					- basePoints[i * 2 + 1] * sin);
+			
+			transformedPoints[i * 2 + 1] = 
+				height * (basePoints[i * 2 + 1] * cos 
+					+ basePoints[i * 2] * sin);
+			
+			transformedPoints[i * 2] += centerX;
+			transformedPoints[i * 2 + 1] += centerY;
+		}
+		
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = renderer.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = renderer.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		
+		// Check if a point is in box
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			if (x1 <= transformedPoints[i * 2]
+					&& transformedPoints[i * 2] <= x2) {
+				
+				if (y1 <= transformedPoints[i * 2 + 1]
+						&& transformedPoints[i * 2 + 1] <= y2) {
+					
+					return true;
+				}
+			}
+		}
+		
+		// Check if box corner in the polygon
+		if (renderer.pointInsidePolygon(
+			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x1, y2, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		}
+		
+		return false;
 	}
 	
 	CanvasRenderer.prototype.finiteLinesIntersect = function(

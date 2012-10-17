@@ -1414,7 +1414,10 @@
 						+ boundingRadius) {
 					
 					select = true;
-					nodes[index]._private.rscratch.selected = true;		
+					nodes[index]._private.rscratch.selected = true;
+//				} else if () {
+//					select = true;
+//					nodes[index]._private.rscratch.selected = true;
 				} else {
 					select = false;
 					nodes[index]._private.rscratch.selected = false;
@@ -3119,6 +3122,13 @@
 			return intersect;
 		},
 		
+		intersectBox: function(
+			x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+			
+			return renderer.boxIntersectEllipse(
+				x1, y1, x2, y2, padding, width, height, centerX, centerY);
+		},
+		
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
@@ -3147,9 +3157,18 @@
 			renderer.drawPolygon(node._private.position.x,
 				node._private.position.y, width, height, nodeShapes["triangle"].points);
 		},
+		
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["triangle"].points);
+		},
+		
+		intersectBox: function(
+			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			
+			var points = nodeShapes["triangle"].points;
+			
+//			return renderer.boxIntersectPolygon(x1, y1, x2, y2, );
 		},
 		
 		checkPointRough: function(
@@ -3701,6 +3720,91 @@
 		} else if (renderer.pointInsidePolygon(
 			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
 			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.boxIntersectEllipse = function(
+		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		// 4 ortho extreme points
+		var east = [centerX - width / 2 - padding, centerY];
+		var west = [centerX + width / 2 + padding, centerY];
+		var north = [centerX, centerY + height / 2 + padding];
+		var south = [centerX, centerY - height / 2 - padding];
+		
+		// out of bounds: return false
+		if (x2 < east[0]) {
+			return false;
+		}
+		
+		if (x1 > west[0]) {
+			return false;
+		}
+		
+		if (y2 < south[1]) {
+			return false;
+		}
+		
+		if (y1 > north[1]) {
+			return false;
+		}
+		
+		// 1 of 4 ortho extreme points in box: return true
+		if (x1 <= east[0] && east[0] <= x2
+				&& y1 <= east[1] && east[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= west[0] && west[0] <= x2
+				&& y1 <= west[1] && west[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= north[0] && north[0] <= x2
+				&& y1 <= north[1] && north[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= south[0] && south[0] <= x2
+				&& y1 <= south[1] && south[1] <= y2) {
+			return true;
+		}
+		
+		// box corner in ellipse: return true		
+		x1 = (x1 - centerX) / (width + padding);
+		x2 = (x2 - centerX) / (width + padding);
+		
+		y1 = (y1 - centerY) / (height + padding);
+		y2 = (y2 - centerY) / (height + padding);
+		
+		if (x1 * x1 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y2 * y2 <= 1) {
+			return true;
+		}
+		
+		if (x1 * x1 + y2 * y2 <= 1) {
 			return true;
 		}
 		

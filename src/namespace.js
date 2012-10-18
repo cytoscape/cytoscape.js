@@ -14,6 +14,11 @@ var cytoscape;
 	//      var nodes = cyto.nodes();
 	$$.init = function( options ){
 		
+		// if no options specified, use default
+		if( options === undefined ){
+			options = {};
+		}
+
 		// create instance
 		if( $$.is.plainObject( options ) ){
 			return new $$.Core( options );

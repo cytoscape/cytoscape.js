@@ -1,0 +1,40 @@
+{
+	"name": "cytoscape.js",
+	"description": "A JavaScript graph library for analysis and visualisation",
+	"version": "2.0beta1",
+	"license": "LGPL",
+	"engines": {
+		"node": ">=0.6"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cytoscape/cytoscape.js.git"
+	},
+	"author": {
+		"name": "Max Franz",
+		"email": "maxkfranz@gmail.com",
+		"url": "http://maxfranz.com"
+	},
+	"contributors": [
+		{
+			"name": "Christian Lopes",
+			"email": "chrtannus@gmail.com"
+		},
+		{
+			"name": "Yue Dong",
+			"email": "oryato@gmail.com"
+		}
+	],
+	"keywords": [
+		"graph",
+		"theory",
+		"visualisation",
+		"visualization",
+		"analysis"
+	],
+	"main": "./build/cytoscape.js",
+	"scripts": {
+		"pretest": "make all",
+		"prepublish": "make all"
+	}
+}

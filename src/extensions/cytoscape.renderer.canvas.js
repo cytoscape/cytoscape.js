@@ -1308,7 +1308,6 @@
 							edges[index]._private.rscratch.cp2cy,
 							edges[index]._private.rscratch.endX,
 							edges[index]._private.rscratch.endY, padding);
-						
 					}
 					
 				} else {
@@ -1402,6 +1401,8 @@
 				nodeSelected = nodes[index]._private.selected;
 
 				nodePosition = nodes[index].position();
+				
+				/*
 				boundingRadius = nodes[index]._private.data.weight / 5.0;
 				
 				if (nodePosition.x > boxMinX
@@ -1415,12 +1416,34 @@
 					
 					select = true;
 					nodes[index]._private.rscratch.selected = true;
-//				} else if () {
-//					select = true;
-//					nodes[index]._private.rscratch.selected = true;
+				*/
+				
+				if (nodePosition.x > boxMinX
+					&& nodePosition.x < boxMaxX 
+					&& nodePosition.y > boxMinY
+					&& nodePosition.y < boxMaxY) {
+					
+					select = true;
+					nodes[index]._private.rscratch.selected = true;
+					
+				} else if (
+				
+					nodeShapes[nodes[index]._private.style["shape"].value].intersectBox(
+						boxMinX, boxMinY, boxMaxX, boxMaxY,
+						nodes[index]._private.style["border-width"].value / 2,
+						nodes[index]._private.style["width"].value,
+						nodes[index]._private.style["height"].value,
+						nodePosition.x,
+						nodePosition.y)) {
+				
+					select = true;
+					nodes[index]._private.rscratch.selected = true;
+					
 				} else {
+					
 					select = false;
 					nodes[index]._private.rscratch.selected = false;
+					
 				}
 				
 				if (select && !nodeSelected) {
@@ -1513,7 +1536,7 @@
 	}
 	
 	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
-		
+	
 		if (!wheelZoomEnabled) {
 			return;
 		} else {
@@ -1530,15 +1553,27 @@
 		
 		var current = cy.renderer().projectMouse(event);
 		
-		var zoomLevel = cy.zoom() * Math.pow(10, event.wheelDeltaY / 500);
-
+		var zoomLevel = 0;
+		if (event.wheelDelta != undefined) {
+			zoomLevel = cy.zoom() * Math.pow(10, event.wheelDeltaY / 500);
+		} else {
+			zoomLevel = cy.zoom() * Math.pow(10, event.detail / -4.2);
+		}
+		
+		var projection = renderer.projectMouse(event);
+		
+		projection[0] *= cy.zoom();
+		projection[1] *= cy.zoom();
+		
+		projection[0] += cy.pan().x;
+		projection[1] += cy.pan().y;
+				
 		zoomLevel = Math.min(zoomLevel, 100);
 		zoomLevel = Math.max(zoomLevel, 0.01);
 		
 		cy.zoom({level: zoomLevel, 
-				position: {x: event.offsetX, 
-							y: event.offsetY}});
-		
+				position: {x: projection[0], 
+							y: projection[1]}});
 		
 		/*
 		cy.zoom({level: zoomLevel, 
@@ -1991,9 +2026,9 @@
 		window.addEventListener("mouseup", this.windowMouseUpHandler, false);
 		
 		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
+		this.bufferCanvases[0].addEventListener("DOMMouseScroll", this.mouseWheelHandler, false);
 		
 //		document.addEventListener("mousemove", this.documentMouseMoveHandler, false);
-		
 //		document.addEventListener("mousewheel", this.mouseWheelHandler, false);
 	
 		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
@@ -3046,6 +3081,34 @@
 	}
 	
 	CanvasRenderer.prototype.checkInBoundingBox = function(
+		x1, y1, x2, x2, points, padding, width, height, centerX, centerY) {
+		
+		var minX = points[0], minY = points[1];
+		var maxX = points[2], maxY = points[3];
+		
+		for (var i = 1; i < points.length / 2; i++) {
+		
+			if (points[i * 2] < minX) {
+				minX = points[i * 2];
+			} else if (points[i * 2] > maxX) {
+				maxX = points[i * 2];
+			}
+			
+			if (points[i * 2 + 1] < minY) {
+				minY = points[i * 2 + 1];
+			} else if (points[i * 2 + 1] > maxY) {
+				maxY = points[i * 2 + 1];
+			}
+		}
+		
+		x -= centerX;
+		y -= centerY;
+		
+		x /= width;
+		y /= height;
+	}
+	
+	CanvasRenderer.prototype.checkInBoundingBox = function(
 		x, y, points, padding, width, height, centerX, centerY) {
 		
 		// Assumes width, height >= 0, points.length > 0
@@ -3072,7 +3135,7 @@
 		y -= centerY;
 		
 		x /= width;
-		y /= width;
+		y /= height;
 		
 		if (x < minX) {
 			return false;
@@ -3168,7 +3231,9 @@
 			
 			var points = nodeShapes["triangle"].points;
 			
-//			return renderer.boxIntersectPolygon(x1, y1, x2, y2, );
+			return renderer.boxIntersectPolygon(
+				x1, y1, x2, y2,
+				points, width, height, centerX, centerY, [0, -1], padding);
 		},
 		
 		checkPointRough: function(
@@ -3197,6 +3262,16 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["square"].points);
+		},
+		
+		intersectBox: function(
+			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			
+			var points = nodeShapes["square"].points;
+			
+			return renderer.boxIntersectPolygon(
+				x1, y1, x2, y2,
+				points, width, height, centerX, centerY, [0, -1], padding);
 		},
 		
 		checkPointRough: function(
@@ -3229,6 +3304,16 @@
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
 				node, width, height, x, y, nodeShapes["pentagon"].points);
+		},
+		
+		intersectBox: function(
+			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			
+			var points = nodeShapes["pentagon"].points;
+			
+			return renderer.boxIntersectPolygon(
+				x1, y1, x2, y2,
+				points, width, height, centerX, centerY, [0, -1], padding);
 		},
 		
 		checkPointRough: function(
@@ -3638,6 +3723,8 @@
 	// x2 can be <= x1
 	CanvasRenderer.prototype.boxIntersectPolygon = function(
 		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
+		
+//		console.log(arguments);
 		
 		if (x2 < x1) {
 			var oldX1 = x1;
@@ -4384,7 +4471,9 @@
 			+ (element._private.style["text-opacity"].value
 			* element._private.style["opacity"].value) + ")";
 		
-		context.fillText(text, textX, textY);
+		if (text != undefined) {
+			context.fillText("" + text, textX, textY);
+		}
 		
 		var lineWidth = element._private.style["text-outline-width"].value;
 		

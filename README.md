@@ -13,9 +13,9 @@ You can find the documentation on the [project website](http://cytoscape.github.
 
 ## Acknowledgements
 
-Arbor was used in one of Cytoscape Web's included layouts.  We made some
+Arbor was used in one of Cytoscape.js's included layouts.  We made some
 modifications to the library, written by Samizdat Drafting Co., so that it
-would work with multiple instances of Cytoscape Web and that it would work
+would work with multiple instances of Cytoscape.js and that it would work
 on lesser browsers, like IE.  Information about this library can be found
 at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
 

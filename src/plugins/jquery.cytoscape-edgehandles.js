@@ -87,13 +87,22 @@
 			init: function(){
 				var opts = $.extend(true, {}, defaults, params); 
 				var $container = $(this);
-				var svg, cy;
+				var cy;
+				var $canvas = $('<canvas></canvas>');
 				var handle;
 				var line, linePoints;
 				var mdownOnHandle = false;
 				var grabbingNode = false;
 				var hx, hy, hr;
 				var hoverTimeout;
+
+				console.log('handles', $canvas)
+
+				$container.append( $canvas );
+				$canvas.attr('height', $container.height());
+				$canvas.attr('width', $container.width());
+
+				var ctx = $canvas[0].getContext("2d"); 
 				
 				// write options to data
 				var data = $container.data("cyedgehandles");
@@ -113,35 +122,18 @@
 				function disabled(){
 					return !enabled();
 				}
-
-				function svgIsInCy( svgDomElement ){
-					var $ele = $(svgDomElement);
-					var inside = false;
-					var $parents = $ele.parents();
-
-					for( var i = 0; i < $parents.length; i++ ){
-						var parent = $parents[i];
-
-						if( parent == $container[0] ){
-							inside = true;
-							break;
-						}
-					}
-					
-					return inside;
-				}
 				
-				function safelyRemoveCySvgChild( svgDomElement ){
-					if( svgDomElement != null && svgIsInCy( svgDomElement ) ){
-						svg.remove( svgDomElement );
-					}
+				function clearDraws(){
+					var w = $container.width();
+					var h = $container.height();
+
+					ctx.clearRect( 0, 0, w, h );
 				}
-				
+
 				function resetToDefaultState(){
 //					console.log("resetToDefaultState");
 
-					safelyRemoveCySvgChild( handle );
-					safelyRemoveCySvgChild( line );
+					clearDraws();
 					
 					setTimeout(function(){
 						cy.nodes()
@@ -259,15 +251,17 @@
 				
 				$container.cytoscape(function(e){
 					cy = this;
-					svg = $container.svg("get");
 					
+					console.log('handles on ready')
+
 					var transformHandler;
 					cy.bind("zoom pan", transformHandler = function(){
-						safelyRemoveCySvgChild( handle );
+						clearDraws();
 					});
 					
 					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
+						 console.log("node mouseover");
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
@@ -281,17 +275,17 @@
 						var h = node.renderedHeight();
 						
 						// remove old handle
-						safelyRemoveCySvgChild( handle );
+						clearDraws();
 						
 						hx = p.x;
 						hy = p.y - h/2;
 						hr = options().handleSize/2;
 						
 						// add new handle
-						handle = svg.circle(hx, hy, hr, {
-							fill: options().handleColor
-						});
-						var $handle = $(handle);
+						console.log('draw circle');
+						ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
+						ctx.fillStyle( options.handleColor );
+						ctx.fill();
 						
 						function mdownHandler(e){
 							if( e.button != 0 ){

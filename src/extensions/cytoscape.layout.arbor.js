@@ -93,7 +93,7 @@
 				clearTimeout(doneTimeout);
 				doneTimeout = setTimeout(doneHandler, doneTime);
 				
-				var movedNodes = cy.collection();
+				var movedNodes = [];
 				
 				sys.eachNode(function(n, point){ 
 					var id = n.name;
@@ -103,20 +103,20 @@
 					if( node == null ){
 						return;
 					}
-					var pos = node.position();
+					var pos = node._private.position;
 					
 					if( !node.locked() && !node.grabbed() ){
 						pos.x = point.x;
 						pos.y = point.y;
 						
-						movedNodes = movedNodes.add(node);
+						movedNodes.push( node );
 					}
 				});
 				
 
 				var timeToDraw = (+new Date - lastDraw) >= 16;
-				if( options.liveUpdate && movedNodes.size() > 0 && timeToDraw ){
-					movedNodes.rtrigger("position");
+				if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
+					new $$.Collection(cy, movedNodes).rtrigger("position");
 					lastDraw = +new Date;
 				}
 

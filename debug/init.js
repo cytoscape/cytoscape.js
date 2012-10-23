@@ -102,6 +102,7 @@ $(function(){
 	}
 	
 	var $container = $("#cytoscape");
+	var $container2 = $("#cytoscape2");
 	
 	$container.cy(options).cy(function(){
 		
@@ -193,6 +194,17 @@ $(function(){
 				cy.add(edges);
 			});
 		});
+
+		$container2.cy({
+			elements: {
+				nodes: [ { data: { id: 'n0' } }, { data: { id: 'n1' } } ],
+				edges: [ { data: { id: 'n0n1', source: 'n0', target: 'n1' } } ]
+			},
+
+			ready: function(){
+				window.cy2 = this;
+			}
+		});
 		
 		$("#remove-elements-button").click(function(){
 			var n = number("nodes");
@@ -211,5 +223,7 @@ $(function(){
 		});
 	});
 	
+
+
 	
 });

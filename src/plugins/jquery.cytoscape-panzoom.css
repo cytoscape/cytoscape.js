@@ -28,10 +28,6 @@
 	background-image: url("../../debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
 }
 
-.ui-cytoscape-panzoom-pan-button .ui-icon {
-	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
-}
-
 .ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-button .ui-icon {
 	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
 }
@@ -56,27 +52,47 @@
 }
 
 .ui-cytoscape-panzoom-pan-up {
-	top: -4px;
+	top: 0;
 	left: 50%;
-	margin-left: -8px;
+	margin-left: -5px;
+	width: 0; 
+	height: 0; 
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-bottom: 5px solid #333;
 }
 
 .ui-cytoscape-panzoom-pan-down {
-	bottom: -4px;
+	bottom: 0;
 	left: 50%;
-	margin-left: -8px;
+	margin-left: -5px;
+	width: 0; 
+	height: 0; 
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-top: 5px solid #333;
 }
 
 .ui-cytoscape-panzoom-pan-left {
 	top: 50%;
-	left: -4px;
-	margin-top: -8px;
+	left: 0;
+	margin-top: -5px;
+	width: 0; 
+	height: 0; 
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent; 
+	border-right: 5px solid #333; 
 }
 
 .ui-cytoscape-panzoom-pan-right {
 	top: 50%;
-	right: -4px;
-	margin-top: -8px;
+	right: 0;
+	margin-top: -5px;
+	width: 0; 
+	height: 0; 
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 5px solid #333;
 }
 
 .ui-cytoscape-panzoom-pan-indicator {
@@ -128,7 +144,7 @@
 	height: 40px;
 	width: 40px;
 	background: #fff;
-	box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
 	border-radius: 40px;
 }
 
@@ -159,6 +175,7 @@
 	left: 0;
 	border: 1px solid #888;
 	margin-left: -1px;
+	box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 }
 
 .ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider {
@@ -166,10 +183,9 @@
 	top: 100px;
 	height: 100px !important;
 	width: 16px !important;
-	box-shadow: none;
 	border-radius: 0 !important;
 	position: absolute;
-	background: transparent;
+	background: #fff;
 }
 
 .ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider .ui-slider-handle {
@@ -203,10 +219,6 @@
 
 .ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-out {
 	top: 209px;
-}
-
-.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-panner {
-	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
 .ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-slider-background {

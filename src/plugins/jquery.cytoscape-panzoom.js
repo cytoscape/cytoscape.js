@@ -77,10 +77,10 @@ Depends on
 					var $pHandle = $('<div class="ui-cytoscape-panzoom-panner-handle"></div>');
 					$panner.append( $pHandle );
 					
-					var $pUp = $('<div class="ui-cytoscape-panzoom-pan-up ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-n"></span></div>');
-					var $pDown = $('<div class="ui-cytoscape-panzoom-pan-down ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-s"></span></div>');
-					var $pLeft = $('<div class="ui-cytoscape-panzoom-pan-left ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-w"></span></div>');
-					var $pRight = $('<div class="ui-cytoscape-panzoom-pan-right ui-cytoscape-panzoom-pan-button"><span class="ui-icon ui-icon-triangle-1-e"></span></div>');
+					var $pUp = $('<div class="ui-cytoscape-panzoom-pan-up ui-cytoscape-panzoom-pan-button"></div>');
+					var $pDown = $('<div class="ui-cytoscape-panzoom-pan-down ui-cytoscape-panzoom-pan-button"></div>');
+					var $pLeft = $('<div class="ui-cytoscape-panzoom-pan-left ui-cytoscape-panzoom-pan-button"></div>');
+					var $pRight = $('<div class="ui-cytoscape-panzoom-pan-right ui-cytoscape-panzoom-pan-button"></div>');
 					$panner.append( $pUp ).append( $pDown ).append( $pLeft ).append( $pRight );
 					
 					var $pIndicator = $('<div class="ui-cytoscape-panzoom-pan-indicator"></div>');

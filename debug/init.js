@@ -57,6 +57,8 @@ $(function(){
 			]
 		},
 		ready: function(){
+			console.log('cy ready');
+
 			window.cy = this;
 			window.$$ = cytoscape;
 		}

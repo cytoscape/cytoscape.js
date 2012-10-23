@@ -99,8 +99,15 @@
 				console.log('handles', $canvas)
 
 				$container.append( $canvas );
-				$canvas.attr('height', $container.height());
-				$canvas.attr('width', $container.width());
+				$canvas
+					.attr('height', $container.height())
+					.attr('width', $container.width())
+					.css({
+						'position': 'absolute',
+						'z-index': '9999'
+					})
+				;
+
 
 				var ctx = $canvas[0].getContext("2d"); 
 				
@@ -248,7 +255,7 @@
 						options().complete( source, targets, added );
 					}
 				}
-				
+
 				$container.cytoscape(function(e){
 					cy = this;
 					
@@ -284,7 +291,7 @@
 						// add new handle
 						console.log('draw circle');
 						ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
-						ctx.fillStyle( options.handleColor );
+						ctx.fillStyle = options.handleColor;
 						ctx.fill();
 						
 						function mdownHandler(e){

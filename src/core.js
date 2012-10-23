@@ -18,7 +18,6 @@
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
-			reg.ready = false; // b/c an old core instance could have been using this reg and this instance is not yet ready
 		} else { // then we have to register
 			reg = $$.registerInstance( cy, container );
 		}
@@ -76,7 +75,7 @@
 		// initial load
 		cy.load(options.elements, function(){ // onready
 			cy.startAnimationLoop();
-			reg.ready = true;
+			cy._private.ready = true;
 
 			// bind all the ready handlers registered before creating this instance
 			for( var i = 0; i < readies.length; i++ ){

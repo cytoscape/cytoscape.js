@@ -111,7 +111,7 @@ $(function(){
 		height = $container.height();
 		width = $container.width();
 		
-		$container.cytoscapePanzoom();
+		//$container.cytoscapePanzoom();
 		
 // 		$container.cytoscapeEdgehandles({
 // 			lineType: "straight",
@@ -197,6 +197,7 @@ $(function(){
 			});
 		});
 
+/*
 		$container2.cy({
 			elements: {
 				nodes: [ { data: { id: 'n0' } }, { data: { id: 'n1' } } ],
@@ -207,7 +208,7 @@ $(function(){
 				window.cy2 = this;
 			}
 		});
-		
+*/		
 		$("#remove-elements-button").click(function(){
 			var n = number("nodes");
 			var e = number("edges");

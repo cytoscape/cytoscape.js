@@ -645,7 +645,7 @@
 							
 							// Proxy grab() event
 							nodes[index]._private.grabbed = true;
-							nodes[index].trigger("grab");
+							nodes[index].trigger(new $$.Event(event, {type: "grab"}));
 						}
 					}
 					
@@ -663,7 +663,7 @@
 
 					// Proxy grab() event
 					draggedNode._private.grabbed = true;
-					draggedNode.trigger("grab");
+					draggedNode.trigger(new $$.Event(event, {type: "grab"}));
 				}
 				
 				edgesBeingDragged = renderer.findEdges(nodesBeingDragged);
@@ -684,18 +684,18 @@
 				
 				// Proxy touchstart/mousedown to core
 				if (touch) {
-					minDistanceNode.trigger("touchstart");
+					minDistanceNode.trigger(new $$.Event(event, {type: "touchstart"}));
 				} else {
-					minDistanceNode.trigger("mousedown");
+					minDistanceNode.trigger(new $$.Event(event, {type: "mousedown"}));
 				}
 				
 				currentMouseDownNode = minDistanceNode;
 			} else if (minDistanceEdge != undefined) {
 				// Proxy touchstart/mousedown to core
 				if (touch) {
-					minDistanceEdge.trigger("touchstart");
+					minDistanceEdge.trigger(new $$.Event(event, {type: "touchstart"}));
 				} else {
-					minDistanceEdge.trigger("mousedown");
+					minDistanceEdge.trigger(new $$.Event(event, {type: "mousedown"}));
 				}
 				
 				currentMouseDownEdge = minDistanceEdge;
@@ -703,9 +703,9 @@
 			
 				// Proxy touchstart/mousedown to core
 				if (touch) {
-					cy.trigger("touchstart");
+					cy.trigger(new $$.Event(event, {type: "touchstart"}));
 				} else {
-					cy.trigger("mousedown");
+					cy.trigger(new $$.Event(event, {type: "mousedown"}));
 				}
 				
 				currentMouseDownInCanvas = true;
@@ -724,7 +724,7 @@
 		wheelZoomEnabled = false;
 		currentMouseInCanvas = false;
 		
-		cy.trigger("mouseout");
+		cy.trigger(new $$.Event(event, {type: "mouseout"}));
 		
 		previousMouseX = undefined;
 		
@@ -910,7 +910,7 @@
 //						event.type = "touchend";
 					} else {
 //						event.type = "mouseout";
-						currentHoveredNode.trigger("mouseout");
+						currentHoveredNode.trigger(new $$.Event(event, {type: "mouseout"}));
 					}					
 				}
 				
@@ -922,8 +922,9 @@
 				if (touch && !nodeGrabbed) {
 //					event.type = "touchmove";
 				} else if (!touch && !nodeGrabbed) {
-//					event.type = "mouseover";
-					minDistanceNode.trigger("mouseover");
+					//event.type2 = "mouseover";
+					minDistanceNode.trigger(new $$.Event(event, {type: "mouseover"}));
+//					minDistanceNode.trigger("mouseover");
 				}
 				
 			} else {
@@ -931,10 +932,10 @@
 				// Proxy mousemove/touchmove
 				if (touch) {
 //					event.type = "touchmove";
-					minDistanceNode.trigger("touchmove");
+					minDistanceNode.trigger(new $$.Event(event, {type: "touchmove"}));
 				} else {
 //					event.type = "mousemove";
-					minDistanceNode.trigger("mousemove");
+					minDistanceNode.trigger(new $$.Event(event, {type: "mousemove"}));
 				}
 			}
 			
@@ -954,7 +955,7 @@
 					if (touch) {
 
 					} else {
-						currentHoveredEdge.trigger("mouseout");
+						currentHoveredEdge.trigger(new $$.Event(event, {type: "mouseout"}));
 					}
 				}
 				
@@ -966,16 +967,16 @@
 				if (touch && !edgeGrabbed) {
 
 				} else if (!touch && !edgeGrabbed) {
-					minDistanceEdge.trigger("mouseover");
+					minDistanceEdge.trigger(new $$.Event(event, {type: "mouseover"}));
 				}
 				
 			} else {
 			
 				// Proxy mousemove/touchmove
 				if (touch) {
-					minDistanceEdge.trigger("touchmove");
+					minDistanceEdge.trigger(new $$.Event(event, {type: "touchmove"}));
 				} else {
-					minDistanceEdge.trigger("mousemove");
+					minDistanceEdge.trigger(new $$.Event(event, {type: "mousemove"}));
 				}
 			}
 			
@@ -1016,7 +1017,7 @@
 				if (touch) {
 
 				} else {
-					currentHoveredEdge.trigger("mouseout");
+					currentHoveredEdge.trigger(new $$.Event(event, {type: "mouseout"}));
 				}
 				
 				currentHoveredEdge = undefined;
@@ -1026,7 +1027,7 @@
 				if (touch) {
 					
 				} else {
-					currentHoveredNode.trigger("mouseout");
+					currentHoveredNode.trigger(new $$.Event(event, {type: "mouseout"}));
 				}
 				
 				currentHoveredNode = undefined;
@@ -1037,7 +1038,7 @@
 				if (touch) {
 	
 				} else {
-					cy.trigger("mouseover");
+					cy.trigger(new $$.Event(event, {type: "mouseover"}));
 				}
 				
 				currentMouseInCanvas = true;
@@ -1049,9 +1050,9 @@
 				if (currentMouseInCanvas) {
 
 					if (touch) {
-						cy.trigger("touchmove");
+						cy.trigger(new $$.Event(event, {type: "touchmove"}));
 					} else {
-						cy.trigger("mousemove");
+						cy.trigger(new $$.Event(event, {type: "mousemove"}));
 					}
 				}
 			}	
@@ -1096,8 +1097,8 @@
 							+ (selectBox[3] - selectBox[1]);
 							
 						// Proxy event
-						nodes[index].trigger("drag");
-						nodes[index].trigger("position");
+						nodes[index].trigger(new $$.Event(event, {type: "drag"}));
+						nodes[index].trigger(new $$.Event(event, {type: "position"}));
 					}
 				}
 			}
@@ -1181,7 +1182,7 @@
 
 			// Proxy free() event
 			nodesBeingDragged[i]._private.grabbed = false;
-			nodesBeingDragged[i].trigger("free");
+			nodesBeingDragged[i].trigger(new $$.Event(event, {type: "free"}));
 		}
 		
 		nodesBeingDragged = [];
@@ -1208,18 +1209,18 @@
 		}
 		
 		if (mouseUpElement != undefined) {
-			mouseUpElement.trigger(mouseUpEventName);
+			mouseUpElement.trigger(new $$.Event(event, {type: mouseUpEventName}));
 
 			if (mouseUpElement === currentMouseDownNode ||
 				mouseUpElement === currentMouseDownEdge) {
 				
-				mouseUpElement.trigger("click");
+				mouseUpElement.trigger(new $$.Event(event, {type: "click"}));
 			}
 		} else {
 			cy.trigger(mouseUpEventName);
 		
 			if (currentMouseDownUnmoved) {
-				cy.trigger("click");
+				cy.trigger(new $$.Event(event, {type: "click"}));
 			}
 		}
 		

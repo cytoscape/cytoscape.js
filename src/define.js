@@ -426,6 +426,10 @@
 
 						if( eventsIsEvent ){ // then just get the object
 							evt = evtObj;
+							
+							evt.cyTarget = evt.cyTarget || triggerer;
+							evt.cy = evt.cy || cy;
+							evt.namespace = evt.namespace || evtObj.namespace;
 
 						} else { // then we have to make one
 							evt = new $$.Event( evtObj, {

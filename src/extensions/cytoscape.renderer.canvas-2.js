@@ -10,7 +10,8 @@
 			curTouch: [null, null, null, null, 0], prevTouch: [null, null, null, null, 0], mouseX: [undefined, undefined],
 			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false], banvases: [null, null], };
 		
-		this.hoverData = {down: null, last: null};
+		this.hoverData = {down: null, last: null, downTime: null};
+		this.timeoutData = {panTimeout: null};
 		
 		this.init();
 		
@@ -46,6 +47,7 @@
 				if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
 				
 				r.hoverData.down = near;
+				r.hoverData.downTime = (new Date()).getTime();
 			}
 			
 			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1]; select[4] = 1;
@@ -57,23 +59,36 @@
 			var near = r.findNearestElement(pos[0], pos[1]); var last = this.hoverData.last; var down = this.hoverData.down;
 			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 			
-			if (near != last) {
+			if ((new Date()).getTime() - r.hoverData.downTime > 2000) {
 				
-				if (last) { last.trigger(new $$.Event(e, {type: "mouseout"})); }
-				if (near) { near.trigger(new $$.Event(e, {type: "mouseover"})); }
+				r.timeoutData.panTimeout = setTimeout(function() {
+					mouseTimeout = null;
+				}, 1000/100);
 				
-				r.hoverData.last = near;
-			}
-			
-			if (down) {
-				for (var i=0;i<nodes.length;i++) {
-					if (nodes[i]._private.selected) { nodes[i]._private.position.x += disp[0]; nodes[i]._private.position.y += disp[1]; }
+				if (mouseTimeout) {
+					cy.pan({x: disp[0], y: disp[1]});
 				}
+				
+			} else {
+				if (near != last) {
+					
+					if (last) { last.trigger(new $$.Event(e, {type: "mouseout"})); }
+					if (near) { near.trigger(new $$.Event(e, {type: "mouseover"})); }
+					
+					r.hoverData.last = near;
+				}
+				
+				if (down) {
+					for (var i=0;i<nodes.length;i++) {
+						
+						if (nodes[i]._private.selected) { nodes[i]._private.position.x += disp[0]; nodes[i]._private.position.y += disp[1]; }
+					}
+				}
+				
+				if (near) { near.trigger(new $$.Event(e, {type: "mousemove"})); }
+				
+				select[2] = pos[0]; select[3] = pos[1];
 			}
-			
-			if (near) { near.trigger(new $$.Event(e, {type: "mousemove"})); }
-			
-			select[2] = pos[0]; select[3] = pos[1];
 			
 		}, false);
 		

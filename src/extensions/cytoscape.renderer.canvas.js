@@ -251,6 +251,7 @@
 	
 	CanvasRenderer.prototype.projectMouse = function(mouseEvent) {
 		
+		
 		/* sept25-2012
 		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
 		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
@@ -278,8 +279,8 @@
 		n = cy.container();
 		while (n != null) {
 			if (typeof(n.offsetLeft) == "number") {
-				offsetLeft += n.offsetLeft;
-				offsetTop += n.offsetTop;
+				offsetLeft += n.offsetLeft - n.scrollLeft;
+				offsetTop += n.offsetTop - n.scrollTop;
 			}
 			
 			n = n.parentNode;

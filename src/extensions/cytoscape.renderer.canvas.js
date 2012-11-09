@@ -279,8 +279,12 @@
 		n = cy.container();
 		while (n != null) {
 			if (typeof(n.offsetLeft) == "number") {
-				offsetLeft += n.offsetLeft - n.scrollLeft;
-				offsetTop += n.offsetTop - n.scrollTop;
+				offsetLeft += n.offsetLeft;
+				offsetTop += n.offsetTop;	
+				if (n != document.body && n != document) {
+					offsetLeft -= n.scrollLeft;
+					offsetTop -= n.scrollTop;
+				}
 			}
 			
 			n = n.parentNode;

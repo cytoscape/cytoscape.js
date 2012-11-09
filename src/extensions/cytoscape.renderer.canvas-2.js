@@ -12,6 +12,7 @@
 		
 		this.hoverData = {down: null, last: null, downTime: null};
 		this.timeoutData = {panTimeout: null};
+		this.dragData = {possibleDragElements: []};
 		
 		this.init();
 		
@@ -41,31 +42,49 @@
 
 		window.addEventListener("mousedown", function(e) {
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]); var down = this.hoverData.down;
+			var near = r.findNearestElement(pos[0], pos[1]); var down = r.hoverData.down; var draggedElements = r.dragData.possibleDragElements;
 			
 			{
+				if (near) {
+					if (near._private.group == "nodes" && near._private.selected == false) 
+						{ near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); draggedElements.push(near); 
+							for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
+							
+					if (near._private.group == "nodes" && near._private.selected == true) 
+						{ var event = new $$.Event(e, {type: "grab"}); for (var i=0;i<draggedElements.length;i++) 
+							{ draggedElements[i]._private.grabbed = true; var subEdges = draggedElements[i]._private.edges; for (var j=0;j<subEdges.length;j++) { subEdges[j]._private.grabbed = true; } draggedElements[i].trigger(event) }; }
+							
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Single node moved to drag layer"); 
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Single node moved to drag layer");
+				}
+				
 				if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
 				
 				r.hoverData.down = near;
 				r.hoverData.downTime = (new Date()).getTime();
 			}
 			
-			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1]; select[4] = 1;
+			if (near == null) { select[4] = 1; }
+			
+			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
+			
+			console.log("md", pos[0], pos[1]);
+			r.redraw();
 			
 		}, false);
 		
 		window.addEventListener("mousemove", function(e) {
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]); var last = this.hoverData.last; var down = this.hoverData.down;
-			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
+			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements;
 			
-			if ((new Date()).getTime() - r.hoverData.downTime > 2000) {
+			if ((new Date()).getTime() - r.hoverData.downTime > 222000) {
 				
 				r.timeoutData.panTimeout = setTimeout(function() {
-					mouseTimeout = null;
+					r.timeoutData.panTimeout = null;
 				}, 1000/100);
 				
-				if (mouseTimeout) {
+				if (r.timeoutData.panTimeout == null) {
 					cy.pan({x: disp[0], y: disp[1]});
 				}
 				
@@ -79,34 +98,72 @@
 				}
 				
 				if (down) {
-					for (var i=0;i<nodes.length;i++) {
-						
-						if (nodes[i]._private.selected) { nodes[i]._private.position.x += disp[0]; nodes[i]._private.position.y += disp[1]; }
+					for (var i=0;i<draggedElements.length;i++) {						
+						if (draggedElements[i]._private.group == "nodes") { draggedElements[i]._private.position.x += disp[0]; draggedElements[i]._private.position.y += disp[1]; }
 					}
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Nodes dragged");
 				}
 				
 				if (near) { near.trigger(new $$.Event(e, {type: "mousemove"})); }
 				
 				select[2] = pos[0]; select[3] = pos[1];
+				
+				r.data.canvases[10+0] = true; r.data.canvases[5+0].push("Mouse moved, redraw selection box");
 			}
+			
+			r.redraw();
 			
 		}, false);
 		
 		window.addEventListener("mouseup", function(e) {
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			
 			{
 				if (near) { near.trigger(new $$.Event(e, {type: "mouseup"})); }
 			}
 			
-			if (near == r.hoverData.down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) { near.select(); }
-			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7) {
-				r.getAllInBox(select[0], select[1], select[2], select[3]).select();
+			if (near == null || near != down || !near.selected()) {
+				var unselectEvent = new $$.Event(e, {type: "unselect"}); for (var i=0;i<draggedElements.length;i++) { if (draggedElements[i]._private.selected) { draggedElements[i]._private.selected = false; draggedElements[i].trigger(unselectEvent); draggedElements[i].updateStyle(); } } 
+				draggedElements = r.dragData.possibleDragElements = [];
 			}
 			
+			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
+				if (near != null && near._private.selected == false) {
+					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"}));
+					draggedElements.push(near);
+				}
+			}
+			
+			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) {
+//				console.log("selecting");
+				
+				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+				var event = new $$.Event(e, {type: "select"});
+				for (var i=0;i<box.length;i++) { box[i]._private.selected = true; box[i].trigger(event); box[i].updateStyle(); draggedElements.push(box[i]); }			
+				
+				if (box.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Selection"); }
+			}
+			
+			if (!select[4]) { 
+				var freeEvent = new $$.Event(e, {type: "free"}); for (var i=0;i<draggedElements.length;i++) { draggedElements[i]._private.grabbed = false; 
+					if (draggedElements[i]._private.group == "nodes") { 
+						var sEdges = draggedElements[i]._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
+					} draggedElements[i].trigger(freeEvent); }
+//				draggedElements = r.dragData.possibleDragElements = [];
+				r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Node/nodes back from drag");
+				r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Node/nodes back from drag");
+			}
 			
 			select[4] = 0; r.hoverData.down = null;
+			
+			r.data.canvases[10+0] = true; r.data.canvases[5+0].push("Mouse up, selection box gone");
+			
+//			console.log("mu", pos[0], pos[1]);
+//			console.log("ss", select);
+			
+			r.redraw();
 			
 		}, false);
 		
@@ -329,19 +386,21 @@
 			return zIndexCompare || nodeEdgeTypeCompare || idCompare;
 		});
 		
-		if (near.length > 0) { return near[0]; }
+		if (near.length > 0) { return near[0]; } else { return null; }
 	}
 	
 	// "Give me everything from this box"
 	CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
-		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = data.cy.collection(); // var box = [];
+		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = [];
 		
+//		console.log(x1, y1, x2, y2, "e") 
 		var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
-
+//		console.log(x1, y1, x2, y2, "ec") 
+		
 		for (var i=0;i<nodes.length;i++) {
 			if (nodeShapes[nodes[i]._private.style["shape"].value].intersectBox(x1, y1, x2, y2,
 				nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
-				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2)
+				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
 			{ box.push(nodes[i]); }
 		}
 		
@@ -370,9 +429,40 @@
 				{ box.push(edges[i]); }
 			}
 			
+			if (edges[i]._private.rscratch.isBezierEdge &&
+				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value) < 3)
+							&&
+						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+				{ box.push(edges[i]); }
+		
 			if (edges[i]._private.rscratch.isStraightEdge &&
-				(heur = this.boxInBezierVicinity(x1, y1, )
-			
+				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
+						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value) < 3)
+							&&
+						(heur == 2 || (heur == 1 && this.checkStraightEdgeCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+				{ box.push(edges[i]); }
+				
+			/*
+			if (edges[i]._private.rscratch.isStraightEdge && (console.log(edges[i], edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+					edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY) == undefined) && 
+				(heur = this.checkStraightEdgeCrossesBox(x1, y1, x2, y2,
+					edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+					edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY,
+					edges[i]._private.style["width"].value)) == true)
+				{ box.push(edges[i]); }
+			*/
 		}
 		
 		return box;
@@ -421,9 +511,7 @@
 		var cy = this.data.cy; var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
 		this.matchCanvasSize(data.container);
 		
-		var elements = cy.elements().toArray();
-		var elementsLayer2 = [];
-		var elementsLayer4 = [];
+		var elements = nodes.add(edges).toArray();
 		
 		if (data.canvases[10+2] || data.canvases[10+4]) {
 		
@@ -449,44 +537,6 @@
 			});
 		}
 		
-		if (data.canvases[10+2]) {
-			var context = data.canvases[2].getContext("2d");
-			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-			
-			context.translate(cy.pan().x, cy.pan().y);
-			context.scale(cy.zoom(), cy.zoom());
-			
-			var element;
-
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNode(context, element);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(context, element);
-					}
-				}
-			}
-			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						this.drawEdgeText(context, element);
-					}
-				}
-			}
-			
-			data.canvases[10+2] = false;
-		}
-		
 		if (data.canvases[10+4]) {
 			var context = data.canvases[4].getContext("2d");
 
@@ -501,7 +551,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.rscratch.layer2) {
+				if (!element._private.grabbed) {
 					if (element._private.group == "nodes") {
 						this.drawNode(context, element);
 						
@@ -514,7 +564,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.rscratch.layer2) {
+				if (!element._private.grabbed) {
 					if (element._private.group == "nodes") {
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
@@ -523,7 +573,45 @@
 				}
 			}
 			
-			data.canvases[10+4] = false;
+			data.canvases[10+4] = false; data.canvases[5+4] = [];
+		}
+		
+		if (data.canvases[10+2]) {
+			var context = data.canvases[2].getContext("2d");
+			
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+			
+			context.translate(cy.pan().x, cy.pan().y);
+			context.scale(cy.zoom(), cy.zoom());
+			
+			var element;
+
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNode(context, element);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(context, element);
+					}
+				}
+			}
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNodeText(context, element);
+					} else if (element._private.group == "edges") {
+						this.drawEdgeText(context, element);
+					}
+				}
+			}
+			
+			data.canvases[10+2] = false; data.canvases[5+2] = [];
 		}
 		
 		if (data.canvases[10+0]) {
@@ -535,10 +623,10 @@
 			context.translate(cy.pan().x, cy.pan().y);
 			context.scale(cy.zoom(), cy.zoom());			
 			
-			if (daat.select[4] == 1) {
+			if (data.select[4] == 1) {
 				var coreStyle = cy.style()._private.coreStyle;
 				var borderWidth = coreStyle["selection-box-border-width"].value
-					/ this.cy.zoom();
+					/ data.cy.zoom();
 				
 				context.lineWidth = borderWidth;
 				context.fillStyle = "rgba(" 
@@ -548,10 +636,10 @@
 					+ coreStyle["selection-box-opacity"].value + ")";
 				
 				context.fillRect(
-					selectBox[0],
-					selectBox[1],
-					selectBox[2] - selectBox[0],
-					selectBox[3] - selectBox[1]);
+					data.select[0],
+					data.select[1],
+					data.select[2] - data.select[0],
+					data.select[3] - data.select[1]);
 				
 				if (borderWidth > 0) {
 					context.strokeStyle = "rgba(" 
@@ -561,14 +649,14 @@
 						+ coreStyle["selection-box-opacity"].value + ")";
 					
 					context.strokeRect(
-						selectBox[0],
-						selectBox[1],
-						selectBox[2] - selectBox[0],
-						selectBox[3] - selectBox[1]);
+						data.select[0],
+						data.select[1],
+						data.select[2] - data.select[0],
+						data.select[3] - data.select[1]);
 				}
 			}
 			
-			data.canvases[10+0] = false;
+			data.canvases[10+0] = false; data.canvases[5+0] = [];
 		}
 
 		{
@@ -1162,7 +1250,7 @@
 	// Find adjacent edges
 	CanvasRenderer.prototype.findEdges = function(nodeSet) {
 		
-		var edges = this.data.cy.edges();
+		var edges = this.getCachedEdges();
 		
 		var hashTable = {};
 		var adjacentEdges = [];
@@ -1940,7 +2028,7 @@
 		},
 		
 		intersectBox: function(
-			x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
 			
 			return CanvasRenderer.prototype.boxIntersectEllipse(
 				x1, y1, x2, y2, padding, width, height, centerX, centerY);
@@ -2465,6 +2553,8 @@
 	
 	CanvasRenderer.prototype.checkStraightEdgeCrossesBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+		
+	 //console.log(arguments);
 		
 		var boxMinX = Math.min(x1box, x2box) - tolerance;
 		var boxMinY = Math.min(y1box, y2box) - tolerance;

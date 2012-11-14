@@ -15,8 +15,10 @@
 		//--
 		
 		//--Wheel-related data
-		this.zoomData = {freeToZoom = false, lastPointerX = null; };
+		this.zoomData = {freeToZoom: false, lastPointerX: null };
 		//--
+		
+		this.redraws = 0;
 		
 		this.init();
 		
@@ -39,6 +41,7 @@
 		this.data.canvases[10+2] = true; this.data.canvases[5+2].push("x");
 		this.data.canvases[10+4] = true; this.data.canvases[5+4].push("x");
 
+		this.redraws++;
 		this.redraw();
 	};
 	
@@ -47,7 +50,8 @@
 	CanvasRenderer.prototype.load = function() {
 		var r = this;
 
-		window.addEventListener("mousedown", function(e) {
+		// Primary key
+		window.addEventListener("mousedown", function(e) {			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			var near = r.findNearestElement(pos[0], pos[1]); var down = r.hoverData.down; var draggedElements = r.dragData.possibleDragElements;
 			
@@ -77,6 +81,10 @@
 			
 			r.redraw();
 			
+		}, false);
+		
+		// Wheel button
+		window.addEventListener("mousedown", function(e) {
 		}, false);
 		
 		window.addEventListener("mousemove", function(e) {
@@ -190,22 +198,25 @@
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			
-			if (r.zoomData.mouseX[0] != r.data.mouseX[1]) {
+			if (r.zoomData.freeToZoom) {
 				event.preventDefault();
 				
-				var diff = event.wheelDeltaY / 2000 || event.detail / -16.8;
+				var diff = event.wheelDeltaY / 1000 || event.detail / -8.4;
+//				console.log("old zoom" + cy.zoom());
 				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: pos[0], y: pos[1]}});
-				
-				r.data.mouseX[0] = r.data.mouseX[1] - 1000;
-			}			
+//				console.log("new zoom" + cy.zoom());
+			}
 		}
 		
 		// Uses old functions
 		// --
 		r.data.container.addEventListener("mousewheel", wheelHandler, false);
 		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
-		r.data.container.addEventListener("mousemove", function(e) { if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX) { r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
-		r.data.container.addEventListener("mouseout", function(e) { r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
+		r.data.container.addEventListener("mousemove", function(e) { 
+			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
+				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
+		r.data.container.addEventListener("mouseout", function(e) { 
+			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
 		// --
 		
 		window.addEventListener("touchstart", function(e) {

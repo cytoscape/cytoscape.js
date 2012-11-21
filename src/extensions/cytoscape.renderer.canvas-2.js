@@ -4,26 +4,50 @@
 
 	function CanvasRenderer(options) {
 		
-		this.data = {select: [0, 0, 0, 0, 0], renderer: this, cy: options.cy, container: options.cy.container(),
-			curTouch: [null, null, null, null, 0], prevTouch: [null, null, null, null, 0],
-			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false], banvases: [null, null], };
+		this.data = {
+			select: [0, 0, 0, 0, 0], 
+			renderer: this,
+			cy: options.cy,
+			container: options.cy.container(),
+			curTouch: [null, null, null, null, 0],
+			prevTouch: [null, null, null, null, 0],
+			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false],
+			banvases: [null, null],
+		};
 		
 		//--Pointer-related data
-		this.hoverData = {down: null, last: null, downTime: null};
+		this.hoverData = {down: null, last: null, downTime: null, triggerMode: null, dragging: false, initialPan: [null, null]};
 		this.timeoutData = {panTimeout: null};
 		this.dragData = {possibleDragElements: []};
+		
+		this.touchData = {start: null, now: [null, null, null, null, null, null], earlier: [null, null, null, null, null, null] };
 		//--
 		
 		//--Wheel-related data
-		this.zoomData = {freeToZoom: false, lastPointerX: null };
+		this.zoomData = {freeToZoom: false, lastPointerX: null};
 		//--
 		
 		this.redraws = 0;
 		
 		this.init();
 		
-		for (var i = 0; i < 5; i++) { this.data.canvases[i] = document.createElement("canvas"); this.data.canvases[i].style.position = "absolute"; this.data.canvases[i].id = "layer" + i; this.data.canvases[i].style.zIndex = String(-i); this.data.canvases[i].style.visibility = "hidden";  this.data.container.appendChild(this.data.canvases[i]); }
-		for (var i = 0; i < 2; i++) { this.data.banvases[i] = document.createElement("canvas"); this.data.banvases[i].style.position = "absolute"; this.data.banvases[i].id = "buffr" + i; this.data.banvases[i].style.zIndex = String(-i); this.data.banvases[i].style.visibility = "visible"; this.data.container.appendChild(this.data.banvases[i]); }
+		for (var i = 0; i < 5; i++) {
+			this.data.canvases[i] = document.createElement("canvas");
+			this.data.canvases[i].style.position = "absolute";
+			this.data.canvases[i].id = "layer" + i;
+			this.data.canvases[i].style.zIndex = String(-i);
+			this.data.canvases[i].style.visibility = "hidden"; 
+			this.data.container.appendChild(this.data.canvases[i]);
+		}
+		
+		for (var i = 0; i < 2; i++) {
+			this.data.banvases[i] = document.createElement("canvas");
+			this.data.banvases[i].style.position = "absolute";
+			this.data.banvases[i].id = "buffr" + i;
+			this.data.banvases[i].style.zIndex = String(-i);
+			this.data.banvases[i].style.visibility = "visible";
+			this.data.container.appendChild(this.data.banvases[i]);
+		}
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
@@ -36,7 +60,14 @@
 		
 		if (params.type == "load") { this.load(); }
 
-		if (params.type == "viewport") { this.data.canvases[10+0] = true; this.data.canvases[5+0].push("viewchange"); this.data.canvases[10+2] = true; this.data.canvases[5+2].push("viewchange"); this.data.canvases[10+4] = true; this.data.canvases[5+4].push("viewchange"); }
+		if (params.type == "viewport") {
+			this.data.canvases[10+0] = true;
+			this.data.canvases[5+0].push("viewchange");
+			this.data.canvases[10+2] = true;
+			this.data.canvases[5+2].push("viewchange");
+			this.data.canvases[10+4] = true;
+			this.data.canvases[5+4].push("viewchange");
+		}
 		
 		this.data.canvases[10+2] = true; this.data.canvases[5+2].push("x");
 		this.data.canvases[10+4] = true; this.data.canvases[5+4].push("x");
@@ -51,31 +82,77 @@
 		var r = this;
 
 		// Primary key
-		window.addEventListener("mousedown", function(e) {			
-			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]); var down = r.hoverData.down; var draggedElements = r.dragData.possibleDragElements;
+		window.addEventListener("mousedown", function(e) {
+			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
+			var select = r.data.select;
 			
-			{
-				if (near) {
-					if (near._private.group == "nodes" && near._private.selected == false) 
-						{ near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); draggedElements.push(near); 
-							for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
+//			console.log(e);
+			
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var down = r.hoverData.down;
+			var draggedElements = r.dragData.possibleDragElements;
+			
+			// Primary button
+			if (e.button == 0) {
+				
+				// Element dragging
+				{
+					if (near) {
+						if (near._private.group == "nodes" && near._private.selected == false) 
+							{ near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
 							
-					if (near._private.group == "nodes" && near._private.selected == true) 
-						{ var event = new $$.Event(e, {type: "grab"}); for (var i=0;i<draggedElements.length;i++) 
-							{ draggedElements[i]._private.grabbed = true; var subEdges = draggedElements[i]._private.edges; for (var j=0;j<subEdges.length;j++) { subEdges[j]._private.grabbed = true; } draggedElements[i].trigger(event) }; }
 							
-					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Single node moved to drag layer"); 
-					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Single node moved to drag layer");
+							for (var i=0;i<draggedElements.length;i++) {
+								var popped = draggedElements.pop();
+								
+								var unselectEvent = new $$.Event(e, {type: "unselect"});
+								var ungrabEvent = new $$.Event(e, {type: "free"});
+								
+								if (popped._private.selected) {
+									popped._private.selected = false; popped.trigger(unselectEvent); popped.updateStyle(false);
+								}
+								
+								if (popped._private.grabbed) {
+									popped._private.grabbed = false; popped.trigger(ungrabEvent); popped.updateStyle(false);
+								}
+							}
+							
+							
+							/* r.dragData.possibleDragElements = draggedElements = []; */ draggedElements.push(near); 
+								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
+								
+						if (near._private.group == "nodes" && near._private.selected == true) {
+							var event = new $$.Event(e, {type: "grab"}); 
+							for (var i=0;i<draggedElements.length;i++) {
+								draggedElements[i]._private.grabbed = true; var subEdges = draggedElements[i]._private.edges;
+								
+								for (var j=0;j<subEdges.length;j++) { subEdges[j]._private.grabbed = true; }
+								
+								draggedElements[i].trigger(event)
+							};
+						}
+								
+						r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Single node moved to drag layer"); 
+						r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Single node moved to drag layer");
+					}
+					
+					if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
+					
+					r.hoverData.down = near;
+					r.hoverData.downTime = (new Date()).getTime();
 				}
-				
-				if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
-				
-				r.hoverData.down = near;
-				r.hoverData.downTime = (new Date()).getTime();
-			}
 			
-			if (near == null) { select[4] = 1; }
+				// Selection box
+				if (near == null) { select[4] = 1; }
+			
+			// Middle/auxilliary button
+			} else if (e.button == 1) {
+				
+				// Drag pan
+				r.hoverData.dragging = true;
+				r.hoverData.initialPan = [cy.pan().x, cy.pan().y];
+				
+			}
 			
 			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
 			
@@ -83,24 +160,36 @@
 			
 		}, false);
 		
-		// Wheel button
-		window.addEventListener("mousedown", function(e) {
-		}, false);
-		
 		window.addEventListener("mousemove", function(e) {
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
 			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements;
 			
-			if ((new Date()).getTime() - r.hoverData.downTime > 222000) {
+			if (r.hoverData.dragging) {
 				
-				r.timeoutData.panTimeout = setTimeout(function() {
-					r.timeoutData.panTimeout = null;
-				}, 1000/100);
+				// console.log(pos[0], select[0], r.hoverData.initialPan[0], pos[1], select[1], r.hoverData.initialPan[1]);
 				
-				if (r.timeoutData.panTimeout == null) {
-					cy.pan({x: disp[0], y: disp[1]});
+				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				
+				// Needs reproject due to pan changing viewport
+				pos = r.projectIntoViewport(e.pageX, e.pageY);
+			
+			// Mousemove event
+			{
+				var event = new $$.Event(e, {type: "mousemove"});
+				
+				if (near != null) {
+					near.trigger(event);
+				} else if (near == null) {
+					cy.trigger(event);
 				}
+			}
+			
+			// Checks primary button down & out of time & mouse not moved much
+			} else if (select[4] == 1 && down == null && (new Date()).getTime() - r.hoverData.downTime > 200 && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)) {
+				
+				r.hoverData.dragging = true;
+				select[4] = 0;
 				
 			} else {
 				if (near != last) {
@@ -112,19 +201,26 @@
 				}
 				
 				if (down) {
+					var drag = new $$.Event(e, {type: "position"});
+				
 					for (var i=0;i<draggedElements.length;i++) {						
-						if (draggedElements[i]._private.group == "nodes") { draggedElements[i]._private.position.x += disp[0]; draggedElements[i]._private.position.y += disp[1]; }
+						if (draggedElements[i]._private.group == "nodes") {
+							draggedElements[i]._private.position.x += disp[0]; draggedElements[i]._private.position.y += disp[1];
+							draggedElements[i].trigger(drag);
+						}
 					}
 					
 					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Nodes dragged");
 				}
 				
-				if (near) { near.trigger(new $$.Event(e, {type: "mousemove"})); }
-				
-				select[2] = pos[0]; select[3] = pos[1];
+				if (near) {
+					near.trigger(new $$.Event(e, {type: "mousemove"}));
+				}
 				
 				r.data.canvases[10+0] = true; r.data.canvases[5+0].push("Mouse moved, redraw selection box");
 			}
+			
+			select[2] = pos[0]; select[3] = pos[1];
 			
 			r.redraw();
 			
@@ -133,10 +229,6 @@
 		window.addEventListener("mouseup", function(e) {
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
-			
-			{
-				if (near) { near.trigger(new $$.Event(e, {type: "mouseup"})); }
-			}
 			
 			if (near == null || near != down || !near.selected()) {
 
@@ -152,6 +244,31 @@
 				draggedElements = r.dragData.possibleDragElements = [];
 			}
 			
+			// Click event
+			{
+				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
+					var klickEvent = new $$.Event(e, {type: "click"});
+					
+					if (near != null) {
+						near.trigger(klickEvent);
+					} else if (near == null) {
+						cy.trigger(klickEvent);
+					}
+				}
+			} 
+			
+			// Mouseup event
+			{
+				var upEvent = new $$.Event(e, {type: "mouseup"});
+				
+				if (near != null) {
+					near.trigger(upEvent);
+				} else if (near == null) {
+					cy.trigger(upEvent);
+				}
+			}
+			
+			
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selected == false) {
 					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
@@ -159,6 +276,15 @@
 					
 					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("sglslct");
 					
+				}
+			// Ungrab single drag
+			} else if (near == down) {
+				if (near != null && near._private.grabbed) {
+					var freeEvent = new $$.Event(e, {type: "free"});
+					
+					near._private.grabbed = false; near.trigger(freeEvent);
+					
+					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 		
 				}
 			}
 			
@@ -173,7 +299,10 @@
 				if (box.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Selection"); }
 			}
 			
-			if (!select[4]) { 
+			// Cancel drag pan
+			r.hoverData.dragging = false;
+			
+			if (!select[4]) {
 				var freeEvent = new $$.Event(e, {type: "free"}); for (var i=0;i<draggedElements.length;i++) { draggedElements[i]._private.grabbed = false; 
 					if (draggedElements[i]._private.group == "nodes") { 
 						var sEdges = draggedElements[i]._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
@@ -198,14 +327,21 @@
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			
+			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
+			              pos[1] * cy.zoom() + cy.pan().y];
+			
+//			console.log("update");
+			
 			if (r.zoomData.freeToZoom) {
 				event.preventDefault();
 				
 				var diff = event.wheelDeltaY / 1000 || event.detail / -8.4;
-//				console.log("old zoom" + cy.zoom());
-				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: pos[0], y: pos[1]}});
+				
+//				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
+				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
 //				console.log("new zoom" + cy.zoom());
 			}
+
 		}
 		
 		// Uses old functions
@@ -220,15 +356,114 @@
 		// --
 		
 		window.addEventListener("touchstart", function(e) {
+			e.preventDefault();
+		
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				
+			} else if (e.touches[0]) {
+				var near = r.findNearestElement(now[0], now[1]);
+				
+				if (near != null) {
+					r.touchData.start = near;
+					
+					if (near._private.group == "nodes") {
+						
+						near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"}));
+						r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node start");
+						r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node start");
+					}
+					
+					near.trigger(new $$.Event(e, {type: "touchstart"}));
+				}
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
 			
 		}, true);
 		
 		window.addEventListener("touchmove", function(e) {
+			e.preventDefault();
+		
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				
+			} else if (e.touches[0]) {
+				var start = r.touchData.start;
+				
+				if (start != null && start._private.group == "nodes") {
+					start._private.position.x += disp[0]; start._private.position.y += disp[1];
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node");
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node");
+					
+					start.trigger(new $$.Event(e, {type: "position"}));
+				}
+				
+				if (start != null) { start.trigger(new $$.Event(e, {type: "touchmove"})); }
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
 			
 		}, true);
 		
 		window.addEventListener("touchend", function(e) {
+			e.preventDefault();
 		
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				
+			} else if (e.touches[0]) {
+				var start = r.touchData.start;
+				
+				if (start != null ) {
+					if (start._private.grabbed == true) {
+						start._private.grabbed = false; start.trigger(new $$.Event(e, {type: "free"}));
+					}
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node end");
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node end");
+				} else {
+					var near = r.findNearestElement(now[0], now[1]);
+				
+					if (near != null) { near.trigger(new $$.Event(e, {type: "touchend"})); }
+				}
+				
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
+			
 		}, true);
 	};
 	

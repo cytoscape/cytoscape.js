@@ -1,377 +1,1340 @@
 (function($$){
 
-	var debug = function(o) {
-		if (false) {
-			console.log(o);
-		}
-	}
+	var time = function() { return Date.now(); } ; var arrowShapes = {}; var nodeShapes = {}; var rendFunc = CanvasRenderer.prototype;
 
-	var defaults = {
-		minZoom: 0.001,
-		maxZoom: 1000,
-		maxPan: -1 >>> 1,
-		minPan: (-(-1>>>1)-1),
-		selectionToPanDelay: 500,
-		dragToSelect: true,
-		dragToPan: true,
-	};
-	
-	var debugStats = {};
-	
-	// The 5th element in the array can be used to indicate whether 
-	// the box should be drawn (0=hide)
-	var selectBox = [0, 0, 0, 0, 0];
-	
-	var dragPanStartX;
-	var dragPanStartY;
-	var dragPanInitialCenter;
-	var dragPanMode = false;
-	
-	var shiftDown = false;
-	
-	var nodeHovered = false;
-	
-	var minDistanceEdge;
-	var minDistanceEdges = [];
-	var minDistanceEdgeValue = 999;
-	
-	var minDistanceNode;
-	var minDistanceNodes = [];
-	var minDistanceNodeValue = 999;
-	
-	var arrowShapes = {};
-	var arrowShapeDrawers = {};
-	var arrowShapeSpacing = {};
-	var arrowShapeGap = {};
-	var nodeShapes = {};
-	var nodeShapeDrawers = {};
-	var nodeShapeIntersectLine = {};
-	var nodeShapePoints = {};
-	
-	var nodeDragging = false;
-	var draggingSelectedNode = false;
-	var draggedNode;
-	
-	var draggedElementsMovedLayer = false;
-	var nodesBeingDragged = [];
-	var edgesBeingDragged = [];
-	
-	var cy;
-	var renderer;
-	
-	var curTouch1Position = new Array(2);
-	var curTouch2Position = new Array(2);
-	var curTouchDistance;
-	
-	var prevTouch1Position = new Array(2);
-	var prevTouch2Position = new Array(2);
-	var prevTouchDistance;
-	
-	var skipNextViewportRedraw = false;
-	
-	// Timeout variable used to prevent mouseMove events from being triggered too often
-	var mouseMoveTimeout = 0;
-	
-	// Timeout variable to prevent frequent redraws
-	var redrawTimeout = 0;
-	
-	var currentMouseDownNode = undefined;
-	var currentMouseDownEdge = undefined;
-	var currentMouseDownInCanvas = false;
-	var currentMouseDownUnmoved = false;
-	
-	// Used for mouseover/mouseout
-	var currentHoveredNode = undefined
-	var currentHoveredEdge = undefined;
-	var currentMouseInCanvas = false;
-	var mouseJustEnteredCanvas = false;
-	
-	var wheelZoomEnabled = false;
-	
-	var previousMouseX = undefined;
-	var currentMouseX = undefined;
-	
-	var secondsElapsed = 0;
-	var mouseDownTime = undefined;
-	
-	// Convenience var
-	var currentShape = "";
-	
 	function CanvasRenderer(options) {
-		this.options = $.extend(true, {}, defaults, options);
-		this.cy = options.cy;
 		
-		cy = options.cy;
+		this.data = {
+			select: [0, 0, 0, 0, 0], 
+			renderer: this,
+			cy: options.cy,
+			container: options.cy.container(),
+			curTouch: [null, null, null, null, 0],
+			prevTouch: [null, null, null, null, 0],
+			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false],
+			banvases: [null, null],
+		};
+		
+		//--Pointer-related data
+		this.hoverData = {down: null, last: null, downTime: null, triggerMode: null, dragging: false, initialPan: [null, null], capture: false};
+		this.timeoutData = {panTimeout: null};
+		this.dragData = {possibleDragElements: []};
+		
+		this.touchData = {start: null, capture: false, now: [null, null, null, null, null, null], earlier: [null, null, null, null, null, null] };
+		//--
+		
+		//--Wheel-related data
+		this.zoomData = {freeToZoom: false, lastPointerX: null};
+		//--
+		
+		this.redraws = 0;
 		
 		this.init();
 		
-		// Information about the number of edges between each pair of nodes
-		// used to find different curvatures for the edges
-		this.nodePairEdgeData = {};		
-		
-		var numCanvases = 5;
-		
-		// Create canvases, place in container
-		
-		this.canvases = new Array(numCanvases);
-		this.canvasContexts = new Array(numCanvases);
-		
-		var numBufferCanvases = 2;
-		this.bufferCanvases = new Array(numBufferCanvases);
-		this.bufferCanvasContexts = new Array(numBufferCanvases);
-		
-		this.canvasNeedsRedraw = new Array(numCanvases);
-		this.redrawReason = new Array(numCanvases);
-		
-		var container = this.options.cy.container();
-		this.container = container;
-		
-		setInterval(function() {
-			secondsElapsed++;
-		}, 450);
-		
-		for (var i = 0; i < numCanvases + numBufferCanvases; i++) {
-			var canvas = document.createElement("canvas");
-			
-			canvas.width = container.clientWidth;
-			canvas.height = container.clientHeight;
-			// console.log(canvas)
-			
-			/*
-			canvas.style.width = '100%';
-			canvas.style.height = '100%';			
-			*/
-			canvas.style.position = "absolute";
-			
-			if (i < numCanvases) {
-				// Create main set of canvas layers for drawing
-				canvas.id = "layer" + i;
-				canvas.style.zIndex = String(-i - numBufferCanvases);
-				canvas.style.visibility = "hidden";
-				
-				this.canvases[i] = canvas;
-				this.canvasContexts[i] = canvas.getContext("2d");
-				
-				this.canvasNeedsRedraw[i] = false;
-				this.redrawReason[i] = new Array();
-				
-			} else {
-				// Create the buffer canvas which is the cached drawn result
-				canvas.id = "buffer" + (i - numCanvases);
-				canvas.style.zIndex = -(i - numCanvases);
-				
-				this.bufferCanvases[i - numCanvases] = canvas;
-				this.bufferCanvasContexts[i - numCanvases] = canvas.getContext("2d");
-			}
-			
-			container.appendChild(canvas);
+		for (var i = 0; i < 5; i++) {
+			this.data.canvases[i] = document.createElement("canvas");
+			this.data.canvases[i].style.position = "absolute";
+			this.data.canvases[i].id = "layer" + i;
+			this.data.canvases[i].style.zIndex = String(-i);
+			this.data.canvases[i].style.visibility = "hidden"; 
+			this.data.container.appendChild(this.data.canvases[i]);
 		}
 		
-		this.bufferCanvases[0].style.visibility = "visible";
-//		this.bufferCanvases[0].style.visibility = "hidden";
-		
-		this.bufferCanvases[1].style.visibility = "hidden";
-//		this.bufferCanvases[1].style.visibility = "visible";
-		
-		this.canvas = this.bufferCanvases[0];
-		this.context = this.bufferCanvasContexts[0];
-		
-		this.center = [container.clientWidth / 2, container.clientHeight / 2];
-		this.scale = [1, 1];
-		this.zoomLevel = 0;
-		
-		renderer = this;
+		for (var i = 0; i < 2; i++) {
+			this.data.banvases[i] = document.createElement("canvas");
+			this.data.banvases[i].style.position = "absolute";
+			this.data.banvases[i].id = "buffr" + i;
+			this.data.banvases[i].style.zIndex = String(-i);
+			this.data.banvases[i].style.visibility = "visible";
+			this.data.container.appendChild(this.data.banvases[i]);
+		}
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
-
-		if (params.type == "load") {
-			this.load();
-			
-			this.canvasNeedsRedraw[2] = true;
-			this.redrawReason[2].push("Load");
-				
-			this.canvasNeedsRedraw[4] = true;
-			this.redrawReason[4].push("Load");
-			
-			this.redraw();
-		
-		} else if (params.type == "viewport") {
-		
-			if (!skipNextViewportRedraw) {
-				this.canvasNeedsRedraw[2] = true;
-				this.redrawReason[2].push("Viewport change");
-				
-				this.canvasNeedsRedraw[4] = true;
-				this.redrawReason[4].push("Viewport change");
-				
-				this.redraw();
-			} else {
-				skipNextViewportRedraw = false;
-			}
-		} else if (params.type == "style") {
-			
-			doSingleRedraw = true;
-
-			this.canvasNeedsRedraw[2] = true;
-			this.redrawReason[2].push("Style change");
-			
-			this.canvasNeedsRedraw[4] = true;
-			this.redrawReason[4].push("Style change");
-			
-			this.redraw();
-			
-		} else if (params.type == "add"
+		if (params.type == "add"
 			|| params.type == "remove") {
 			
-			this.canvasNeedsRedraw[4] = true;
-			this.redrawReason[4].push("Elements added/removed");
-			
-			this.redraw();
-		} else if (params.type == "draw") {
-			this.canvasNeedsRedraw[2] = true;
-			this.redrawReason[2].push("Draw call");
-			
-			this.canvasNeedsRedraw[4] = true;
-			this.redrawReason[4].push("Draw call");
-			
-			this.redraw();
-		} else if (params.type == "position") {
-			this.canvasNeedsRedraw[2] = true;
-			this.redrawReason[2].push("Position call");
-			
-			this.canvasNeedsRedraw[4] = true;
-			this.redrawReason[4].push("Position call");
-			
-			this.redraw();	
-		} else {
-			console.log("event: " + params.type);
+			this.updateNodesCache();
+			this.updateEdgesCache();
 		}
+		
+		if (params.type == "load") { this.load(); }
+
+		if (params.type == "viewport") {
+			this.data.canvases[10+0] = true;
+			this.data.canvases[5+0].push("viewchange");
+			this.data.canvases[10+2] = true;
+			this.data.canvases[5+2].push("viewchange");
+			this.data.canvases[10+4] = true;
+			this.data.canvases[5+4].push("viewchange");
+		}
+		
+		this.data.canvases[10+2] = true; this.data.canvases[5+2].push("x");
+		this.data.canvases[10+4] = true; this.data.canvases[5+4].push("x");
+
+		this.redraws++;
+		this.redraw();
 	};
 	
-	CanvasRenderer.prototype.projectMouse = function(mouseEvent) {
-		
-		
-		/* sept25-2012
-		var x = mouseEvent.clientX - this.canvas.offsetParent.offsetLeft - 2;
-		var y = mouseEvent.clientY - this.canvas.offsetParent.offsetTop - 2;
+	// @O Initialization functions
+	{
+	CanvasRenderer.prototype.load = function() {
+		var r = this;
 
-		x += (mouseEvent.pageX - mouseEvent.clientX);
-		y += (mouseEvent.pageY - mouseEvent.clientY);
-		*/
+		// Primary key
+		r.data.container.addEventListener("mousedown", function(e) {
 		
-		/*
-		console.log(renderer.container.HTMLElement);
-		console.log(renderer.container);
-		*/
-		var x, y;
-		/*
-		if (mouseEvent.offsetX !== undefined && mouseEvent.offsetY !== undefined) {
-			x = mouseEvent.offsetX;
-			y = mouseEvent.offsetY;
-		} else {
-		*/
+			r.hoverData.capture = true;
+			
 		
-		var offsetLeft = 0;
-		var offsetTop = 0;
-		var n;
+			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
+			var select = r.data.select;
+			
+//			console.log(e);
+//			console.log(r);
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var down = r.hoverData.down;
+			var draggedElements = r.dragData.possibleDragElements;
+
+			// Primary button
+			if (e.button == 0) {
+				
+				// Element dragging
+				{
+					if (near && near._private.grabbable) {
+						if (near._private.group == "nodes" && near._private.selected == false) 
+							{ near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
+							
+							var unselectEvent = new $$.Event(e, {type: "unselect"});
+							var ungrabEvent = new $$.Event(e, {type: "free"});
+							
+							for (var i=0;i<draggedElements.length;i++) {
+								var popped = draggedElements[i];
+								
+								var updateStyle = false; if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
+								
+								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
+								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
+								
+								if (updateStyle) { popped.updateStyle(false); };
+							}
+							
+							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near); 
+								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
+								
+						if (near._private.group == "nodes" && near._private.selected == true) {
+							
+							var event = new $$.Event(e, {type: "grab"}); 
+							for (var i=0;i<draggedElements.length;i++) {
+								draggedElements[i]._private.grabbed = true; var subEdges = draggedElements[i]._private.edges;
+								
+								for (var j=0;j<subEdges.length;j++) { subEdges[j]._private.grabbed = true; }
+								
+								draggedElements[i].trigger(event)
+							};
+						}
+								
+						r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Single node moved to drag layer"); 
+						r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Single node moved to drag layer");
+						
+//						console.log(draggedElements);
+					}
+					
+					if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
+					
+					r.hoverData.down = near;
+					r.hoverData.downTime = (new Date()).getTime();
+				}
+			
+				// Selection box
+				if (near == null) { select[4] = 1; }
+			
+			// Middle/auxilliary button
+			} else if (e.button == 1) {
+				
+				// Drag pan
+				r.hoverData.dragging = true;
+				r.hoverData.initialPan = [cy.pan().x, cy.pan().y];
+				
+			}
+			
+			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
+			
+			r.redraw();
+			
+		}, false);
 		
-		n = cy.container();
-		while (n != null) {
-			if (typeof(n.offsetLeft) == "number") {
-				offsetLeft += n.offsetLeft;
-				offsetTop += n.offsetTop;	
-				if (n != document.body && n != document) {
-					offsetLeft -= n.scrollLeft;
-					offsetTop -= n.scrollTop;
+		window.addEventListener("mousemove", function(e) {
+			
+			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
+			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements;
+			
+			
+			var capture = r.hoverData.capture; if (!capture) { return; }
+			
+			
+			if (r.hoverData.dragging) {
+				
+				// console.log(pos[0], select[0], r.hoverData.initialPan[0], pos[1], select[1], r.hoverData.initialPan[1]);
+				
+				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				
+				// Needs reproject due to pan changing viewport
+				pos = r.projectIntoViewport(e.pageX, e.pageY);
+			
+			// Mousemove event
+			{
+				var event = new $$.Event(e, {type: "mousemove"});
+				
+				if (near != null) {
+					near.trigger(event);
+				} else if (near == null) {
+					cy.trigger(event);
 				}
 			}
 			
-			n = n.parentNode;
-		}
-		// console.log(offsetLeft, offsetTop);
-		
-		x = mouseEvent.pageX - offsetLeft;
-		y = mouseEvent.pageY - offsetTop;
-		//}
-		
-//		x += -5;
-//		y += -55;
-			
-		x -= cy.pan().x;
-		y -= cy.pan().y;
-		
-		x /= cy.zoom();
-		y /= cy.zoom();
-		
-		return [x, y];
-		
-		/*
-		mouseDownEvent.clientX,
-		mouseDownEvent.clientY,
-		cy.container().offset().left + 2, // container offsets
-		cy.container().offset().top + 2);
-		*/
-	}
-	
-	CanvasRenderer.prototype.findEdgeMetrics = function(edges) {
-		this.nodePairEdgeData = {};
-		
-		var edge, nodePairId;
-		for (var i = 0; i < edges.length; i++) {
-			edge = edges[i];
-			nodePairId = edge._private.data.source <= edge._private.data.target?
-				edge._private.data.source + edge._private.data.target
-				: edge._private.data.target + edge._private.data.source;
+			// Checks primary button down & out of time & mouse not moved much
+			} else if (select[4] == 1 && down == null && (new Date()).getTime() - r.hoverData.downTime > 200 && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)) {
 				
-			if (this.nodePairEdgeData[nodePairId] == undefined) {
-				this.nodePairEdgeData[nodePairId] = 1;
+				r.hoverData.dragging = true;
+				select[4] = 0;
+				
 			} else {
-				this.nodePairEdgeData[nodePairId]++;
+				if (near != last) {
+					
+					if (last) { last.trigger(new $$.Event(e, {type: "mouseout"})); }
+					if (near) { near.trigger(new $$.Event(e, {type: "mouseover"})); }
+					
+					r.hoverData.last = near;
+				}
+				
+				if (down) {
+					var drag = new $$.Event(e, {type: "position"});
+				
+					for (var i=0;i<draggedElements.length;i++) {
+					
+						// Locked nodes not draggable
+						if (!draggedElements[i]._private.locked 
+							&& draggedElements[i]._private.group == "nodes") {
+							
+							draggedElements[i]._private.position.x += disp[0]; draggedElements[i]._private.position.y += disp[1];
+							draggedElements[i].trigger(drag);
+						}
+					}
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Nodes dragged");
+				}
+				
+				if (near) {
+					near.trigger(new $$.Event(e, {type: "mousemove"}));
+				}
+				
+				r.data.canvases[10+0] = true; r.data.canvases[5+0].push("Mouse moved, redraw selection box");
 			}
 			
-			edge._private.rscratch.nodePairId = nodePairId;
-			edge._private.rscratch.nodePairEdgeNum = this.nodePairEdgeData[nodePairId];
+			select[2] = pos[0]; select[3] = pos[1];
+			
+			r.redraw();
+			
+		}, false);
+		
+		window.addEventListener("mouseup", function(e) {
+			
+			var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
+		
+			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
+
+			if (near == null || near != down || !near.selected()) {
+
+//++clock+unselect
+//				var a = time();
+				
+				var unselectEvent = new $$.Event(e, {type: "unselect"}); for (var i=0;i<draggedElements.length;i++) { if (draggedElements[i]._private.selected) { draggedElements[i]._private.selected = false; draggedElements[i].trigger(unselectEvent); draggedElements[i].updateStyle(false); } } 
+				
+//++clock+unselect
+//				console.log("unselect", time() - a);
+				
+				if (draggedElements.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("De-select"); }
+				draggedElements = r.dragData.possibleDragElements = [];
+			}
+			
+			// Click event
+			{
+				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
+					var klickEvent = new $$.Event(e, {type: "click"});
+					
+					if (near != null) {
+						near.trigger(klickEvent);
+					} else if (near == null) {
+						cy.trigger(klickEvent);
+					}
+				}
+			} 
+			
+			// Mouseup event
+			{
+				var upEvent = new $$.Event(e, {type: "mouseup"});
+				
+				if (near != null) {
+					near.trigger(upEvent);
+				} else if (near == null) {
+					cy.trigger(upEvent);
+				}
+			}
+			
+			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
+				if (near != null && near._private.selectable && near._private.selected == false) {
+					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
+					draggedElements.push(near);
+					
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("sglslct");
+					
+				}
+			// Ungrab single drag
+			} else if (near == down) {
+				if (near != null && near._private.grabbed) {
+					var freeEvent = new $$.Event(e, {type: "free"});
+					
+					near._private.grabbed = false; near.trigger(freeEvent);
+					
+					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 		
+				}
+			}
+			
+			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) {
+//				console.log("selecting");
+				
+				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+				// console.log(box);
+				var event = new $$.Event(e, {type: "select"});
+				for (var i=0;i<box.length;i++) { if (box[i]._private.selectable) {
+					box[i]._private.selected = true; box[i].trigger(event); box[i].updateStyle(false); draggedElements.push(box[i]); } }
+				
+				if (box.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Selection"); }
+			}
+			
+			// Cancel drag pan
+			r.hoverData.dragging = false;
+			
+			if (!select[4]) {
+				var freeEvent = new $$.Event(e, {type: "free"}); for (var i=0;i<draggedElements.length;i++) { draggedElements[i]._private.grabbed = false; 
+					if (draggedElements[i]._private.group == "nodes") { 
+						var sEdges = draggedElements[i]._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
+					} draggedElements[i].trigger(freeEvent); }
+//				draggedElements = r.dragData.possibleDragElements = [];
+				r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Node/nodes back from drag");
+				r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Node/nodes back from drag");
+			}
+			
+			select[4] = 0; r.hoverData.down = null;
+			
+			r.data.canvases[10+0] = true; r.data.canvases[5+0].push("Mouse up, selection box gone");
+			
+//			console.log("mu", pos[0], pos[1]);
+//			console.log("ss", select);
+			
+			r.redraw();
+			
+		}, false);
+		
+		var wheelHandler = function(e) {
+			
+			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
+			
+			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
+			              pos[1] * cy.zoom() + cy.pan().y];
+			
+//			console.log("update");
+			
+			if (r.zoomData.freeToZoom) {
+				event.preventDefault();
+				
+				var diff = event.wheelDeltaY / 1000 || event.detail / -8.4;
+				
+//				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
+				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
+//				console.log("new zoom" + cy.zoom());
+			}
+
 		}
 		
-		// console.log(this.nodePairEdgeData);
+		// Uses old functions
+		// --
+		r.data.container.addEventListener("mousewheel", wheelHandler, false);
+		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
+		r.data.container.addEventListener("mousemove", function(e) { 
+			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
+				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
+		r.data.container.addEventListener("mouseout", function(e) { 
+			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
+		// --
+		
+		
+		r.data.container.addEventListener("touchstart", function(e) {
+			e.preventDefault();
+		
+			r.touchData.capture = true;
+		
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				
+			} else if (e.touches[0]) {
+				var near = r.findNearestElement(now[0], now[1]);
+				
+				if (near != null) {
+					r.touchData.start = near;
+					
+					if (near._private.group == "nodes") {
+						
+						near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"}));
+						r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node start");
+						r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node start");
+						
+						var sEdges = near._private.edges;
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; }
+					}
+					
+					near.trigger(new $$.Event(e, {type: "touchstart"}));
+				} else if (near == null) {
+					cy.trigger(new $$.Event(e, {type: "touchstart"}));
+				}
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
+			
+		}, true);
+		
+		window.addEventListener("touchmove", function(e) {
+		
+			var capture = r.touchData.capture; if (!capture) { return; }; 
+			e.preventDefault();
+		
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
+				
+				cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
+				
+				
+				var earlierDist = Math.sqrt(Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2));
+				var nowDist = Math.sqrt(Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2));
+				
+				var factor = nowDist / earlierDist;
+				
+				if (factor > 1) {
+					factor = (factor - 1) * 1.5 + 1;
+				} else {
+					factor = 1 - (1 - factor) * 1.5;
+				}
+				
+				cy.zoom({level: cy.zoom() * factor,
+					position: {x: (now[0] + now[2]) / 2,
+								y: (now[1] + now[3]) / 2}});
+				
+				// Re-project
+				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+				if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+				if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+				
+			} else if (e.touches[0]) {
+				var start = r.touchData.start;
+				
+				if (start != null && start._private.group == "nodes") {
+					start._private.position.x += disp[0]; start._private.position.y += disp[1];
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node");
+//					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node");
+					
+					start.trigger(new $$.Event(e, {type: "position"}));
+				}
+				
+				// Touchmove event
+				{
+					if (start != null) { start.trigger(new $$.Event(e, {type: "touchmove"})); }
+					
+					if (start == null) { 
+						var near = r.findNearestElement(now[0], now[1]);
+						if (near != null) { near.trigger(new $$.Event(e, {type: "touchmove"})); }
+						if (near == null) {   cy.trigger(new $$.Event(e, {type: "touchmove"})); }
+					}
+				}
+				
+				if (start == null) {
+					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+					
+					// Re-project
+					var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY);
+					now[0] = pos[0]; now[1] = pos[1];
+				}
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
+			
+		}, true);
+		
+		window.addEventListener("touchend", function(e) {
+			
+			var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
+			e.preventDefault();
+			
+			var cy = r.data.cy; 
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var now = r.touchData.now; var earlier = r.touchData.earlier;
+			
+			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
+			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
+			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			
+			if (e.touches[2]) {
+			
+			} else if (e.touches[1]) {
+				
+			} else if (e.touches[0]) {
+			
+			} else if (!e.touches[0]) {
+			
+				var start = r.touchData.start;
+				
+				if (start != null ) {
+					if (start._private.grabbed == true) {
+						start._private.grabbed = false; start.trigger(new $$.Event(e, {type: "free"}));
+					}
+					
+					var sEdges = start._private.edges;
+					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; }
+					
+					r.data.canvases[10+2] = true; r.data.canvases[5+2].push("touchdrag node end");
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("touchdrag node end");
+					
+					start.trigger(new $$.Event(e, {type: "touchend"}));
+					
+					r.touchData.start = null;
+					
+				} else {
+					var near = r.findNearestElement(now[0], now[1]);
+				
+					if (near != null) { near.trigger(new $$.Event(e, {type: "touchend"})); }
+					if (near == null) { cy.trigger(new $$.Event(e, {type: "touchend"})); }
+				}
+				
+			}
+			
+			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			r.redraw();
+			
+		}, true);
+	};
+	
+	CanvasRenderer.prototype.init = function() { };
 	}
 	
-	CanvasRenderer.prototype.findEdges = function(nodeSet) {
+	// @O Caching functions
+	{
+	CanvasRenderer.prototype.getCachedNodes = function() {
+		var data = this.data; var cy = this.data.cy;
 		
-		var edges = cy.edges();
-		
-		var hashTable = {};
-		var adjacentEdges = [];
-		
-		for (var i = 0; i < nodeSet.length; i++) {
-			hashTable[nodeSet[i]._private.data.id] = nodeSet[i];
+		if (data.cache == undefined) {
+			data.cache = {};
 		}
 		
-		for (var i = 0; i < edges.length; i++) {
-			if (hashTable[edges[i]._private.data.source]
-				|| hashTable[edges[i]._private.data.target]) {
+		if (data.cache.cachedNodes == undefined) {
+			data.cache.cachedNodes = cy.nodes();
+		}
+		
+		return data.cache.cachedNodes;
+	}
+	
+	CanvasRenderer.prototype.updateNodesCache = function() {
+		var data = this.data; var cy = this.data.cy;
+		
+		if (data.cache == undefined) {
+			data.cache = {};
+		}
+		
+		data.cache.cachedNodes = cy.nodes();
+	}
+	
+	CanvasRenderer.prototype.getCachedEdges = function() {
+		var data = this.data; var cy = this.data.cy;
+		
+		if (data.cache == undefined) {
+			data.cache = {};
+		}
+		
+		if (data.cache.cachedEdges == undefined) {
+			data.cache.cachedEdges = cy.edges();
+		}
+		
+		return data.cache.cachedEdges;
+	}
+	
+	CanvasRenderer.prototype.updateEdgesCache = function() {
+		var data = this.data; var cy = this.data.cy;
+		
+		if (data.cache == undefined) {
+			data.cache = {};
+		}
+		
+		data.cache.cachedEdges = cy.edges();
+	}
+	}
+	
+	// @O High-level collision application functions
+
+	// Project mouse
+	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
+		
+		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
+		
+		while (n != null) {
+			if (typeof(n.offsetLeft) == "number") { offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
+				if (n != document.body && n != document) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }	
+			} n = n.parentNode;
+		}
+		
+		x = pageX - offsetLeft; y = pageY - offsetTop; x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
+		return [x, y];
+	}
+	
+	// Find nearest element
+	CanvasRenderer.prototype.findNearestElement = function(x, y) {
+		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var near = [];
+		
+		// Check nodes
+		for (var i = 0; i < nodes.length; i++) {
+			if (nodeShapes[nodes[i]._private.style["shape"].value].checkPointRough(x, y,
+					nodes[i]._private.style["border-width"].value,
+					nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+					nodes[i]._private.position.x, nodes[i]._private.position.y)
+				&&
+				nodeShapes[nodes[i]._private.style["shape"].value].checkPoint(x, y,
+					nodes[i]._private.style["border-width"].value,
+					nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
+					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
-				adjacentEdges.push(edges[i]);
+				near.push(nodes[i]);
 			}
 		}
 		
-		return adjacentEdges;
+		// Check edges
+		for (var i = 0; i < edges.length; i++) {
+			if (edges[i]._private.rscratch.isSelfEdge) {
+				if ((this.inBezierVicinity(x, y,
+						edges[i]._private.rscratch.startX,
+						edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2ax,
+						edges[i]._private.rscratch.cp2ay,
+						edges[i]._private.rscratch.selfEdgeMidX,
+						edges[i]._private.rscratch.selfEdgeMidY,
+						Math.pow(edges[i]._private.style["width"].value / 2, 2))
+							&&
+					(Math.pow(edges[i]._private.style["width"].value / 2, 2) > 
+						this.sqDistanceToQuadraticBezier(x, y,
+							edges[i]._private.rscratch.startX,
+							edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2ax,
+							edges[i]._private.rscratch.cp2ay,
+							edges[i]._private.rscratch.selfEdgeMidX,
+							edges[i]._private.rscratch.selfEdgeMidY)))
+					||
+					(this.inBezierVicinity(x, y,
+						edges[i]._private.rscratch.startX,
+						edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2cx,
+						edges[i]._private.rscratch.cp2cy,
+						edges[i]._private.rscratch.selfEdgeMidX,
+						edges[i]._private.rscratch.selfEdgeMidY,
+						Math.pow(edges[i]._private.style["width"].value / 2, 2))
+							&&
+					(Math.pow(edges[i]._private.style["width"].value / 2, 2) > 
+						this.sqDistanceToQuadraticBezier(x, y,
+							edges[i]._private.rscratch.startX,
+							edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2cx,
+							edges[i]._private.rscratch.cp2cy,
+							edges[i]._private.rscratch.selfEdgeMidX,
+							edges[i]._private.rscratch.selfEdgeMidY))))
+					 { near.push(edges[i]); }
+			} else if (edges[i]._private.rscratch.isStraightEdge) {
+				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) >
+					this.sqDistanceToFiniteLine(x, y,
+						edges[i]._private.rscratch.startX,
+						edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.endX,
+						edges[i]._private.rscratch.endY))
+					{ near.push(edges[i]); }
+			} else if (edges[i]._private.rscratch.isBezierEdge) {
+				if (this.inBezierVicinity(x, y,
+					edges[i]._private.rscratch.startX,
+					edges[i]._private.rscratch.startY,
+					edges[i]._private.cp2x, edges[i]._private.cp2y,
+					edges[i]._private.rscratch.endX,
+					edges[i]._private.rscratch.endY,
+					Math.pow(edges[i]._private.style["width"].value / 2, 2))
+						&&
+					(Math.pow(edges[i]._private.style["width"].value / 2, 2) >
+						this.sqDistanceToQuadraticBezier(x, y,
+							edges[i]._private.rscratch.startX,
+							edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2x,
+							edges[i]._private.rscratch.cp2y,
+							edges[i]._private.rscratch.endX,
+							edges[i]._private.rscratch.endY)))
+					{ near.push(edges[i]); }
+			}
+			
+			if (!near.length || near[near.length - 1] != edges[i]) {
+				if ((arrowShapes[edges[i]._private.style["source-arrow-shape"].value].roughCollide(x, y,
+						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
+						this.getArrowWidth(edges[i]._private.style["width"].value),
+						this.getArrowHeight(edges[i]._private.style["width"].value),
+						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
+							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
+						&&
+					arrowShapes[edges[i]._private.style["source-arrow-shape"].value].collide(x, y,
+						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
+						this.getArrowWidth(edges[i]._private.style["width"].value),
+						this.getArrowHeight(edges[i]._private.style["width"].value),
+						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
+							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
+					||
+					(arrowShapes[edges[i]._private.style["target-arrow-shape"].value].roughCollide(x, y,
+						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
+						this.getArrowWidth(edges[i]._private.style["width"].value),
+						this.getArrowHeight(edges[i]._private.style["width"].value),
+						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
+							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
+						&&
+					arrowShapes[edges[i]._private.style["target-arrow-shape"].value].collide(x, y,
+						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
+						this.getArrowWidth(edges[i]._private.style["width"].value),
+						this.getArrowHeight(edges[i]._private.style["width"].value),
+						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
+							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
+					{ near.push(edges[i]); }
+			}
+		} 
+		
+		near.sort(function(a, b) {
+		
+			var zIndexCompare = b._private.style["z-index"].value - a._private.style["z-index"].value;
+			// Reverse id order, same as given by cy.nodes()
+			var idCompare = b._private.data.id.localeCompare(a._private.data.id);
+			var nodeEdgeTypeCompare = (function(a, b){
+				if (a.isEdge() && b.isNode()) {
+					return 1;
+				} else if (a.isNode() && b.isEdge()) {
+					return -1;
+				}
+				
+				return 0;
+			})(a, b);
+			
+			return zIndexCompare || nodeEdgeTypeCompare || idCompare;
+		});
+		
+		if (near.length > 0) { return near[0]; } else { return null; }
 	}
 	
-	CanvasRenderer.prototype.checkPointInPolygon = function(x, y, points, padding) {
-		var expandedLines = renderer.expandLines(points, padding);
+	// "Give me everything from this box"
+	CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
+		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = [];
 		
-//		var newPoints = renderer.
+//		console.log(x1, y1, x2, y2, "e") 
+		var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
+//		console.log(x1, y1, x2, y2, "ec") 
 		
+		for (var i=0;i<nodes.length;i++) {
+			if (nodeShapes[nodes[i]._private.style["shape"].value].intersectBox(x1, y1, x2, y2,
+				nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
+			{ box.push(nodes[i]); }
+		}
+		
+		for (var i=0;i<edges.length;i++) {
+			if (edges[i]._private.rscratch.isSelfEdge) {
+				if ((heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+							&&
+						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+								||
+					(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+							&&
+						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+					)
+				{ box.push(edges[i]); }
+			}
+			
+			if (edges[i]._private.rscratch.isBezierEdge &&
+				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+							&&
+						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+				{ box.push(edges[i]); }
+		
+			if (edges[i]._private.rscratch.isStraightEdge &&
+				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
+						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+							&& /* console.log("test", heur) == undefined && */
+						(heur == 2 || (heur == 1 && this.checkStraightEdgeCrossesBox(x1, y1, x2, y2,
+							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+				{ box.push(edges[i]); }
+			
+		}
+		
+		return box;
 	}
 	
+	// @O Keyboard functions
+	{
+	}
+	
+	// @O Drawing functions
+	{
+	
+	// Resize canvas
+	CanvasRenderer.prototype.matchCanvasSize = function(container) {
+		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
+		
+		var canvas;
+		for (var i = 0; i < 5; i++) {
+			
+			canvas = data.canvases[i];
+			
+			if (canvas.width !== width || canvas.height !== height) {
+				
+				canvas.width = width;
+				canvas.height = height;
+			
+			}
+		}
+		
+		for (var i = 0; i < 2; i++) {
+			
+			canvas = data.banvases[i];
+			
+			if (canvas.width !== width || canvas.height !== height) {
+				
+				canvas.width = width;
+				canvas.height = height;
+				
+			}
+		}
+	}
+	
+	// Redraw frame
+	CanvasRenderer.prototype.redraw = function() {
+		//console.log("redrawing");
+		var cy = this.data.cy; var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
+		this.matchCanvasSize(data.container);
+		
+		var elements = nodes.add(edges).toArray();
+		
+		if (data.canvases[10+2] || data.canvases[10+4]) {
+		
+			this.findEdgeControlPoints(edges);
+			
+			elements.sort(function(a, b) {
+				var result = a._private.style["z-index"].value
+					- b._private.style["z-index"].value;
+				
+				if (result == 0) {
+					if (a._private.group == "nodes"
+						&& b._private.group == "edges") {
+						
+						return 1;
+					} else if (a._private.group == "edges"
+						&& b._private.group == "nodes") {
+						
+						return -1;
+					}
+				}
+				
+				return 0;
+			});
+		}
+		
+		if (data.canvases[10+4]) {
+			var context = data.canvases[4].getContext("2d");
+
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+			
+			context.translate(cy.pan().x, cy.pan().y);
+			context.scale(cy.zoom(), cy.zoom());
+		
+			var element;
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (!element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNode(context, element);
+						
+					} else if (element._private.group == "edges") {
+						this.drawEdge(context, element);
+					}
+				}
+			}
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (!element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNodeText(context, element);
+					} else if (element._private.group == "edges") {
+						this.drawEdgeText(context, element);
+					}
+				}
+			}
+			
+			data.canvases[10+4] = false; data.canvases[5+4] = [];
+		}
+		
+		if (data.canvases[10+2]) {
+			var context = data.canvases[2].getContext("2d");
+			
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+			
+			context.translate(cy.pan().x, cy.pan().y);
+			context.scale(cy.zoom(), cy.zoom());
+			
+			var element;
+
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNode(context, element);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(context, element);
+					}
+				}
+			}
+			
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+				
+				if (element._private.grabbed) {
+					if (element._private.group == "nodes") {
+						this.drawNodeText(context, element);
+					} else if (element._private.group == "edges") {
+						this.drawEdgeText(context, element);
+					}
+				}
+			}
+			
+			data.canvases[10+2] = false; data.canvases[5+2] = [];
+		}
+		
+		if (data.canvases[10+0]) {
+			var context = data.canvases[0].getContext("2d");
+			
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+		
+			context.translate(cy.pan().x, cy.pan().y);
+			context.scale(cy.zoom(), cy.zoom());			
+			
+			if (data.select[4] == 1) {
+				var coreStyle = cy.style()._private.coreStyle;
+				var borderWidth = coreStyle["selection-box-border-width"].value
+					/ data.cy.zoom();
+				
+				context.lineWidth = borderWidth;
+				context.fillStyle = "rgba(" 
+					+ coreStyle["selection-box-color"].value[0] + ","
+					+ coreStyle["selection-box-color"].value[1] + ","
+					+ coreStyle["selection-box-color"].value[2] + ","
+					+ coreStyle["selection-box-opacity"].value + ")";
+				
+				context.fillRect(
+					data.select[0],
+					data.select[1],
+					data.select[2] - data.select[0],
+					data.select[3] - data.select[1]);
+				
+				if (borderWidth > 0) {
+					context.strokeStyle = "rgba(" 
+						+ coreStyle["selection-box-border-color"].value[0] + ","
+						+ coreStyle["selection-box-border-color"].value[1] + ","
+						+ coreStyle["selection-box-border-color"].value[2] + ","
+						+ coreStyle["selection-box-opacity"].value + ")";
+					
+					context.strokeRect(
+						data.select[0],
+						data.select[1],
+						data.select[2] - data.select[0],
+						data.select[3] - data.select[1]);
+				}
+			}
+			
+			data.canvases[10+0] = false; data.canvases[5+0] = [];
+		}
+
+		{
+			var context;
+					
+			// Rasterize the layers
+			context = data.banvases[1].getContext("2d");
+			context.globalCompositeOperation = "copy";
+			context.drawImage(data.canvases[4], 0, 0);
+			context.globalCompositeOperation = "source-over";
+			context.drawImage(data.canvases[2], 0, 0);
+			context.drawImage(data.canvases[0], 0, 0);
+//			context.fillStyle = "rgba(0,0,0,1)";
+//			context.fillRect(50, 50, 400, 400);
+			
+			context = data.banvases[0].getContext("2d");
+			context.globalCompositeOperation = "copy";
+			context.drawImage(data.banvases[1], 0, 0);
+//			context.fillStyle = "rgba(0,0,0,1)";
+//			context.fillRect(50, 50, 400, 400);
+		}
+	};
+	
+	// Draw edge
+	CanvasRenderer.prototype.drawEdge = function(context, edge) {
+	
+		var startNode, endNode;
+
+		startNode = edge.source()[0];
+		endNode = edge.target()[0];
+		
+		if (edge._private.style["visibility"].value != "visible"
+			|| startNode._private.style["visibility"].value != "visible"
+			|| endNode._private.style["visibility"].value != "visible") {
+			return;
+		}
+		
+		// Edge color & opacity
+		context.strokeStyle = "rgba(" 
+			+ edge._private.style["line-color"].value[0] + ","
+			+ edge._private.style["line-color"].value[1] + ","
+			+ edge._private.style["line-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
+		
+		// Edge line width
+		if (edge._private.style["width"].value <= 0) {
+			return;
+		}
+		
+		context.lineWidth = edge._private.style["width"].value;
+		
+		this.findEndpoints(edge);
+		
+		if (edge._private.rscratch.isSelfEdge) {
+		
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY)
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2ax,
+				edge._private.rscratch.cp2ay,
+				edge._private.rscratch.selfEdgeMidX,
+				edge._private.rscratch.selfEdgeMidY);
+			
+			context.moveTo(
+				edge._private.rscratch.selfEdgeMidX,
+				edge._private.rscratch.selfEdgeMidY);
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2cx,
+				edge._private.rscratch.cp2cy,
+				edge._private.rscratch.endX,
+				edge._private.rscratch.endY);
+			
+			context.stroke();
+			
+		} else if (edge._private.rscratch.isStraightEdge) {
+			
+			// Check if the edge is inverted due to close node proximity
+			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
+			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
+			
+			var edgeDirectionX = edge._private.rscratch.endX - edge._private.rscratch.startX;
+			var edgeDirectionY = edge._private.rscratch.endY - edge._private.rscratch.startY;
+			
+			if (nodeDirectionX * edgeDirectionX
+				+ nodeDirectionY * edgeDirectionY < 0) {
+				
+				edge._private.rscratch.straightEdgeTooShort = true;	
+			} else {			
+				context.beginPath();
+				context.moveTo(
+					edge._private.rscratch.startX,
+					edge._private.rscratch.startY);
+	
+				context.lineTo(edge._private.rscratch.endX, 
+					edge._private.rscratch.endY);
+				context.stroke();
+				
+				edge._private.rscratch.straightEdgeTooShort = false;	
+			}	
+		} else {
+			
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY);
+			
+			context.quadraticCurveTo(
+				edge._private.rscratch.cp2x, 
+				edge._private.rscratch.cp2y, 
+				edge._private.rscratch.endX, 
+				edge._private.rscratch.endY);
+			context.stroke();
+			
+		}
+		
+		if (edge._private.rscratch.noArrowPlacement !== true
+				&& edge._private.rscratch.startX !== undefined) {
+			this.drawArrowheads(context, edge);
+		}
+	}
+	
+	// Draw edge text
+	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
+	
+		if (edge._private.style["visibility"].value != "visible") {
+			return;
+		}
+	
+		// Calculate text draw position
+		
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+		
+		var textX, textY;	
+		var edgeCenterX, edgeCenterY;
+		
+		if (edge._private.rscratch.isSelfEdge) {
+			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
+			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
+		} else if (edge._private.rscratch.isStraightEdge) {
+			edgeCenterX = (edge._private.rscratch.startX
+				+ edge._private.rscratch.endX) / 2;
+			edgeCenterY = (edge._private.rscratch.startY
+				+ edge._private.rscratch.endY) / 2;
+		} else if (edge._private.rscratch.isBezierEdge) {
+			edgeCenterX = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startX
+				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2x
+				+ (0.5 * 0.5) * edge._private.rscratch.endX;
+			
+			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
+				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
+				+ (0.5 * 0.5) * edge._private.rscratch.endY;
+		}
+		
+		textX = edgeCenterX;
+		textY = edgeCenterY;
+		
+		this.drawText(context, edge, textX, textY);
+	}
+	
+	// Draw node
+	CanvasRenderer.prototype.drawNode = function(context, node) {
+	
+		var nodeWidth, nodeHeight;
+		
+		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+		
+		// Node color & opacity
+		context.fillStyle = "rgba(" 
+			+ node._private.style["background-color"].value[0] + ","
+			+ node._private.style["background-color"].value[1] + ","
+			+ node._private.style["background-color"].value[2] + ","
+			+ (node._private.style["background-opacity"].value 
+			* node._private.style["opacity"].value) + ")";
+		
+		// Node border color & opacity
+		context.strokeStyle = "rgba(" 
+			+ node._private.style["border-color"].value[0] + ","
+			+ node._private.style["border-color"].value[1] + ","
+			+ node._private.style["border-color"].value[2] + ","
+			+ (node._private.style["border-opacity"].value 
+			* node._private.style["opacity"].value) + ")";
+		
+		nodeWidth = node._private.style["width"].value;
+		nodeHeight = node._private.style["height"].value;
+		
+		// Draw node
+		nodeShapes[node._private.style["shape"].value].draw(
+			context,
+			node,
+			nodeWidth,
+			nodeHeight); //node._private.data.weight / 5.0
+		
+		// Border width, draw border
+		context.lineWidth = node._private.style["border-width"].value;
+		if (node._private.style["border-width"].value > 0) {
+			context.stroke();
+		}
+	}
+	
+	// Draw node text
+	CanvasRenderer.prototype.drawNodeText = function(context, node) {
+		
+		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+	
+		var textX, textY;
+		
+		var nodeWidth = node._private.style["width"].value;
+		var nodeHeight = node._private.style["height"].value;
+	
+		// Find text position
+		var textHalign = node._private.style["text-halign"].strValue;
+		if (textHalign == "left") {
+			// Align right boundary of text with left boundary of node
+			context.textAlign = "right";
+			textX = node._private.position.x - nodeWidth / 2;
+		} else if (textHalign == "right") {
+			// Align left boundary of text with right boundary of node
+			context.textAlign = "left";
+			textX = node._private.position.x + nodeWidth / 2;
+		} else if (textHalign == "center") {
+			context.textAlign = "center";
+			textX = node._private.position.x;
+		} else {
+			// Same as center
+			context.textAlign = "center";
+			textX = node._private.position.x;
+		}
+		
+		var textValign = node._private.style["text-valign"].strValue;
+		if (textValign == "top") {
+			context.textBaseline = "bottom";
+			textY = node._private.position.y - nodeHeight / 2;
+		} else if (textValign == "bottom") {
+			context.textBaseline = "top";
+			textY = node._private.position.y + nodeHeight / 2;
+		} else if (textValign == "middle" || textValign == "center") {
+			context.textBaseline = "middle";
+			textY = node._private.position.y;
+		} else {
+			// same as center
+			context.textBaseline = "middle";
+			textY = node._private.position.y;
+		}
+		
+		this.drawText(context, node, textX, textY);
+	}
+	
+	// Draw text
+	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
+	
+		// Font style
+		var labelStyle = element._private.style["font-style"].strValue;
+		var labelSize = element._private.style["font-size"].strValue;
+		var labelFamily = element._private.style["font-family"].strValue;
+		var labelVariant = element._private.style["font-variant"].strValue;
+		var labelWeight = element._private.style["font-weight"].strValue;
+					
+		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+			+ labelSize + " " + labelFamily;
+					
+		var text = String(element._private.style["content"].value);
+		var textTransform = element._private.style["text-transform"].value;
+		
+		if (textTransform == "none") {
+		} else if (textTransform == "uppercase") {
+			text = text.toUpperCase();
+		} else if (textTransform == "lowercase") {
+			text = text.toLowerCase();
+		}
+		
+		// Calculate text draw position based on text alignment
+		
+		context.fillStyle = "rgba(" 
+			+ element._private.style["color"].value[0] + ","
+			+ element._private.style["color"].value[1] + ","
+			+ element._private.style["color"].value[2] + ","
+			+ (element._private.style["text-opacity"].value
+			* element._private.style["opacity"].value) + ")";
+		
+		context.strokeStyle = "rgba(" 
+			+ element._private.style["text-outline-color"].value[0] + ","
+			+ element._private.style["text-outline-color"].value[1] + ","
+			+ element._private.style["text-outline-color"].value[2] + ","
+			+ (element._private.style["text-opacity"].value
+			* element._private.style["opacity"].value) + ")";
+		
+		if (text != undefined) {
+			context.fillText("" + text, textX, textY);
+		}
+		
+		var lineWidth = element._private.style["text-outline-width"].value;
+		
+		if (lineWidth > 0) {
+			context.lineWidth = lineWidth;
+			context.strokeText(text, textX, textY);
+		}
+	}
+
+	}
+	
+	// @O Edge calculation functions
+	{
+	
+	// Find edge control points
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
-		var hashTable = {};
+		var hashTable = {}; var cy = this.data.cy;
 		
 		var pairId;
 		for (var i = 0; i < edges.length; i++) {
-			
 			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
 				edges[i]._private.data.target + edges[i]._private.data.source :
 				edges[i]._private.data.source + edges[i]._private.data.target;
@@ -380,17 +1343,16 @@
 				hashTable[pairId] = [];
 			}
 			
-			hashTable[pairId].push(edges[i]); // ._private.data.id);
+			hashTable[pairId].push(edges[i]);
 		}
-	
 		var src, tgt;
-	
+		
 		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
 		for (var pairId in hashTable) {
 		
 			src = cy.getElementById(hashTable[pairId][0]._private.data.source);
 			tgt = cy.getElementById(hashTable[pairId][0]._private.data.target);
-			
+
 			var midPointX = (src._private.position.x + tgt._private.position.x) / 2;
 			var midPointY = (src._private.position.y + tgt._private.position.y) / 2;
 			
@@ -457,2184 +1419,7 @@
 		
 		return hashTable;
 	}
-	
-	CanvasRenderer.prototype.findEdgeControlPoints2 = function(edges) {
-		var visitedEdges = {};
-		
-		var parallelEdges;
-		for (var i = 0; i < edges.length; i++) {
-			if (visitedEdges[edges[i]._private.data.id] == undefined) {
-				parallelEdges = edges[i].parallelEdges();
-				
-				for (var j = 0; j < edges.length; j++) {
-					visitedEdges[edges[i]._private.data.id] = true;
-				}
-				
-				$$.styfn.calculateControlPoints(parallelEdges);
-			}
-		}
-	}
-	
-	CanvasRenderer.prototype.checkRecordPinchCoordinates = function(touchEvent) {
-		
-		if (touchEvent.touches.length >= 2) {
-			prevTouch1 = touchEvent.touches[0];
-			prevTouch2 = touchEvent.touches[1];
-			
-			prevTouch1.offsetX = prevTouch1.clientX + renderer.canvas.parentElement.offsetLeft;
-			prevTouch1.offsetY = prevTouch1.clientY + renderer.canvas.parentElement.offsetTop;
-			
-			prevTouch2.offsetX = prevTouch2.clientX + renderer.canvas.parentElement.offsetLeft;
-			prevTouch2.offsetY = prevTouch2.clientY + renderer.canvas.parentElement.offsetTop;
-		} else {
-			prevTouch1 = undefined;
-			prevTouch2 = undefined;
-		}
-	}
-	
-	CanvasRenderer.prototype.mouseDownHandler = function(event) {
-		var nodes = cy.nodes();
-		var edges = cy.edges();
 
-		var touch = false;
-		
-		var originalEvent = event;
-		if (event.changedTouches) {					
-			event.preventDefault();
-			touch = true;
-				
-			// Check for 2-finger, prepare for pinch-to-zoom
-			if (event.touches.length >= 2) {
-				firstTouchFinger = event.touches[0];
-				secondTouchFinger = event.touches[1];
-				
-				var canvasOffset = [
-					renderer.canvas.parentElement.offsetLeft,
-					-renderer.canvas.parentElement.offsetTop];
-				
-				prevTouch1Position[0] = event.touches[0].clientX + canvasOffset[0];
-				prevTouch1Position[1] = event.touches[0].clientY + canvasOffset[1];
-				
-				prevTouch2Position[0] = event.touches[1].clientX + canvasOffset[0];
-				prevTouch2Position[1] = event.touches[1].clientY + canvasOffset[1];
-				
-				prevTouchDistance = Math.sqrt(
-					Math.pow(prevTouch2Position[0] - prevTouch1Position[0], 2)
-					+ Math.pow(prevTouch2Position[1] - prevTouch1Position[1], 2));
-			}
-			
-			event = event.changedTouches[0];
-			event.button = 0;
-			event.touch = 1;
-			
-			// Look for nodes and edges under the touch event			
-			// minDistanceNode = minDistanceEdge = undefined;
-			renderer.mouseMoveHelper.hoverHandler(nodes, edges, event);
-		}
-		
-		var mouseDownEvent = event;
-		
-		mouseDownTime = secondsElapsed;
-		
-		clearTimeout( this.panTimeout );
-		if( !minDistanceNode && !touch){
-			this.panTimeout = setTimeout(function() {
-			
-				// Delayed pan
-				if (mouseDownTime !== undefined
-					&& !touch
-					&& event.button === 0) {
-					
-					dragPanStartX = mouseDownEvent.clientX;
-					dragPanStartY = mouseDownEvent.clientY;
-					
-		//			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
-					
-					dragPanMode = true;
-					
-					if (cy.renderer().canvas.style.cursor 
-						!= cy.style()._private.coreStyle["panning-cursor"].value) {
-		
-						cy.renderer().canvas.style.cursor 
-							= cy.style()._private.coreStyle["panning-cursor"].value;
-					}
-					
-					// Cancel selection box
-					selectBox[4] = 0;
-					
-					renderer.canvasNeedsRedraw[0] = true;
-					renderer.redrawReason[0].push("selection boxed removed");
-					
-					mouseDownTime = undefined;
-				}
-			}, 250);
-		}
-				
-		// Process middle button panning
-		if ((!event.touch
-				&& mouseDownEvent.button == 1
-				&& mouseDownEvent.target == cy.renderer().canvas)
-				||
-			(event.touch
-				&& minDistanceNode == undefined
-				&& minDistanceEdge == undefined)) {
-		
-			dragPanStartX = mouseDownEvent.clientX;
-			dragPanStartY = mouseDownEvent.clientY;
-			
-//			dragPanInitialCenter = [cy.renderer().center[0], cy.renderer().center[1]];
-			
-			dragPanMode = true;
-			
-			if (cy.renderer().canvas.style.cursor 
-				!= cy.style()._private.coreStyle["panning-cursor"].value) {
-
-				cy.renderer().canvas.style.cursor 
-					= cy.style()._private.coreStyle["panning-cursor"].value;
-			}
-		}
-		
-		currentMouseDownInCanvas = true;
-		currentMouseDownUnmoved = true;
-		
-		var start = cy.renderer().projectMouse(event);
-		
-		/*
-		console.log("x: " + start[0]);
-		console.log("y: " + start[1]);
-		console.log(mouseDownEvent);
-		console.log(mouseDownEvent.target);
-		console.log(mouseDownEvent.button);
-		*/
-		
-		selectBox[0] = start[0];
-		selectBox[1] = start[1];
-		
-		/*
-		// The lower right corner shouldn't have a coordinate,
-		// but this prevents the default 0, 0 from being used for touch
-		selectBox[2] = start[0];
-		selectBox[3] = start[1];
-		*/
-		
-		// Left button drag selection
-		if (mouseDownEvent.button == 0
-				&& mouseDownEvent.target == cy.renderer().canvas
-				&& minDistanceNode == undefined
-				&& minDistanceEdge == undefined
-				&& !touch) {
-		
-			selectBox[4] = 1;
-		}
-		
-		if (mouseDownEvent.button == 0) {
-		
-			if (minDistanceNode != undefined && minDistanceNode.grabbable()) {
-				
-				nodeDragging = true;
-				nodesBeingDragged = [];
-				
-				if (minDistanceNode.selected()) {
-					draggingSelectedNode = true;
-					
-					for (var index = 0; index < nodes.length; index++) {
-						if (nodes[index].selected() && nodes[index].grabbable()) {
-							
-							nodes[index]._private.rscratch.dragStartX = 
-								nodes[index]._private.position.x;
-							nodes[index]._private.rscratch.dragStartY =
-								nodes[index]._private.position.y;
-										
-							nodesBeingDragged.push(nodes[index]);
-//**						nodes[index]._private.rscratch.layer2 = true;
-							
-							// Proxy grab() event
-							nodes[index]._private.grabbed = true;
-							nodes[index].trigger(new $$.Event(event, {type: "grab"}));
-						}
-					}
-					
-				} else if( minDistanceNode.grabbable() ) {
-					draggingSelectedNode = false;
-					draggedNode = minDistanceNode;
-					
-					draggedNode._private.rscratch.dragStartX = 
-						draggedNode._private.position.x;
-					draggedNode._private.rscratch.dragStartY = 
-						draggedNode._private.position.y;
-					
-					nodesBeingDragged.push(draggedNode);
-					draggedNode._private.rscratch.layer2 = true;	
-
-					// Proxy grab() event
-					draggedNode._private.grabbed = true;
-					draggedNode.trigger(new $$.Event(event, {type: "grab"}));
-				}
-				
-				edgesBeingDragged = renderer.findEdges(nodesBeingDragged);
-				
-				for (var i = 0; i < edgesBeingDragged.length; i++) {
-//**				edgesBeingDragged[i]._private.rscratch.layer2 = true;
-				}
-				
-/***
-				renderer.canvasNeedsRedraw[4] = true;
-				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
-				
-				renderer.canvasNeedsRedraw[2] = true;
-				renderer.redrawReason[2].push("nodes being dragged, moved to drag layer");
-***/
-
-				draggedElementsMovedLayer = false;
-				
-				// Proxy touchstart/mousedown to core
-				if (touch) {
-					minDistanceNode.trigger(new $$.Event(event, {type: "touchstart"}));
-				} else {
-					minDistanceNode.trigger(new $$.Event(event, {type: "mousedown"}));
-				}
-				
-				currentMouseDownNode = minDistanceNode;
-			} else if (minDistanceEdge != undefined) {
-				// Proxy touchstart/mousedown to core
-				if (touch) {
-					minDistanceEdge.trigger(new $$.Event(event, {type: "touchstart"}));
-				} else {
-					minDistanceEdge.trigger(new $$.Event(event, {type: "mousedown"}));
-				}
-				
-				currentMouseDownEdge = minDistanceEdge;
-			} else {
-			
-				// Proxy touchstart/mousedown to core
-				if (touch) {
-					cy.trigger(new $$.Event(event, {type: "touchstart"}));
-				} else {
-					cy.trigger(new $$.Event(event, {type: "mousedown"}));
-				}
-				
-				currentMouseDownInCanvas = true;
-			}
-		}
-		
-		cy.renderer().redraw();
-	}
-	
-	CanvasRenderer.prototype.mouseOverHandler = function(event) {
-		mouseJustEnteredCanvas = true;
-		currentMouseInCanvas = true;
-	}
-	
-	CanvasRenderer.prototype.mouseOutHandler = function(event) {
-		wheelZoomEnabled = false;
-		currentMouseInCanvas = false;
-		
-		cy.trigger(new $$.Event(event, {type: "mouseout"}));
-		
-		previousMouseX = undefined;
-		
-		// Possibly move this later
-//		dragPanMode = false;
-	}
-	
-	CanvasRenderer.prototype.touchStartHandler = function(event) {
-	
-	}
-	
-	CanvasRenderer.prototype.touchStartHandler = function(event) {
-	
-	}
-	
-	
-	
-	CanvasRenderer.prototype.documentMouseMoveHandler = function(event) {
-		
-		var touch = false;
-		var eventWithCoords = event;
-		
-		if (event.touches) {
-			touch = true;
-			eventWithCoords = event.touches[0];
-		}
-		
-//		if (eventWithCoords.target == this.bufferCanvases[0]) {
-//			if (
-//		}
-	}
-	
-	CanvasRenderer.prototype.mouseMoveHandler = function(e) {
-		
-		/*
-		if (currentMouseInCanvas === true) {
-		//	wheelZoomEnabled = true;
-		} else {
-			currentMouseInCanvas = true;
-		}
-		*/
-		
-		currentMouseInCanvas = true;
-
-		mouseMoveTimeout = setTimeout(function() {
-			mouseMoveTimeout = null;		
-		}, 1000/100);
-		
-		var event = e;
-		var touch = false;
-		
-		if (e.touches) {						
-			e.preventDefault();
-			touch = true;
-			
-			// Pinch to zoom
-			if (e.touches.length >= 2) {
-				var canvasOffset = [
-					renderer.canvas.parentElement.offsetLeft,
-					-renderer.canvas.parentElement.offsetTop];
-				
-				curTouch1Position[0] = event.touches[0].clientX + canvasOffset[0];
-				curTouch1Position[1] = event.touches[0].clientY + canvasOffset[1];
-				
-				curTouch2Position[0] = event.touches[1].clientX + canvasOffset[0];
-				curTouch2Position[1] = event.touches[1].clientY + canvasOffset[1];
-				
-				curTouchDistance = Math.sqrt(
-					Math.pow(prevTouch2Position[0] - prevTouch1Position[0], 2)
-					+ Math.pow(prevTouch2Position[1] - prevTouch1Position[1], 2));
-				
-				var displacement1 = 
-					[curTouch1Position[0] - prevTouch1Position[0],
-					curTouch1Position[1] - prevTouch1Position[1]];
-					
-				var displacement2 = 
-					[curTouch2Position[0] - prevTouch2Position[0],
-					curTouch2Position[1] - prevTouch2Position[1]];
-						
-				var averageDisplacement =
-					[(displacement1[0] + displacement2[0]) / 2,
-					(displacement2[1] + displacement2[1]) / 2];
-				
-				var zoomFactor = curTouchDistance / prevTouchDistance;
-				
-				if (zoomFactor > 1) {
-					zoomFactor = (zoomFactor - 1) * 1.5 + 1;
-				} else {
-					zoomFactor = 1 - (1 - zoomFactor) * 1.5;
-				}
-				
-				skipNextViewportRedraw = true;
-				
-				cy.panBy({x: averageDisplacement[0], 
-							y: averageDisplacement[1]});
-				
-				cy.zoom({level: cy.zoom() * zoomFactor,
-					position: {x: (curTouch1Position[0] + curTouch2Position[0]) / 2,
-								y: (curTouch1Position[1] + curTouch2Position[1]) / 2}});
-				
-				prevTouch1Position[0] = curTouch1Position[0];
-				prevTouch1Position[1] = curTouch1Position[1];
-				
-				prevTouch2Position[0] = curTouch2Position[0];
-				prevTouch2Position[1] = curTouch2Position[1];
-				
-				prevTouchDistance = curTouchDistance;
-				
-//				console.log(">= 2 touches, exiting");
-				return;	
-			}
-			
-			e = e.touches[0];
-			e.button = 0;
-		}
-		
-		var mouseDownEvent = event;
-		
-//		var renderer = cy.renderer();
-		
-		// Get references to helper functions
-		var dragHandler = renderer.mouseMoveHelper.dragHandler;
-		var hoverHandler = renderer.mouseMoveHelper.hoverHandler;
-		
-		// Offset for Cytoscape container
-		// var mouseOffsetX = cy.container().offset().left + 2;
-		// var mouseOffsetY = cy.container().offset().top + 2;
-		
-		var edges = cy.edges();
-		var nodes = cy.nodes();
-		
-		//cy.renderer().canvas.style.cursor = "default";
-		
-		mouseDownTime = undefined;
-		
-		// Drag pan
-		if (dragPanMode) {
-			dragHandler(e);
-		}
-		
-		var current = cy.renderer().projectMouse(e);
-		
-		currentMouseX = e.screenX;
-		// console.log(previousMouseX, currentMouseX);
-		if (previousMouseX !== undefined && Math.abs(previousMouseX - currentMouseX) > 1) {
-			// console.log(previousMouseX, currentMouseX);
-			wheelZoomEnabled = true;
-		}
-		
-		previousMouseX = currentMouseX;
-		
-//		console.log("current: " + current[0] + ", " + current[1]);
-		
-		// Update selection box
-		selectBox[2] = current[0];
-		selectBox[3] = current[1];
-		
-//		console.log("sel after: " + selectBox[2] + ", " + selectBox[3]);
-		
-		if (!selectBox[4]) {
-			hoverHandler(nodes, edges, e);
-		}
-		
-		// No mouseclick
-		currentMouseDownNode = undefined;
-		currentMouseDownEdge = undefined;
-		currentMouseDownUnmoved = false;
-		
-		if (minDistanceNode != undefined) {
-		
-			if (cy.renderer().canvas.style.cursor != 
-					minDistanceNode._private.style["cursor"].value) {
-
-				cy.renderer().canvas.style.cursor = 
-					minDistanceNode._private.style["cursor"].value;
-			}
-			
-			if (currentHoveredNode !== minDistanceNode) {
-
-				// Proxy mouseout
-				if (currentHoveredNode !== undefined) {
-					if (touch) {
-//						event.type = "touchend";
-					} else {
-//						event.type = "mouseout";
-						currentHoveredNode.trigger(new $$.Event(event, {type: "mouseout"}));
-					}					
-				}
-				
-				currentHoveredNode = minDistanceNode;
-				
-				var nodeGrabbed = minDistanceNode.grabbed();
-				
-				// Proxy mouseover
-				if (touch && !nodeGrabbed) {
-//					event.type = "touchmove";
-				} else if (!touch && !nodeGrabbed) {
-					//event.type2 = "mouseover";
-					minDistanceNode.trigger(new $$.Event(event, {type: "mouseover"}));
-//					minDistanceNode.trigger("mouseover");
-				}
-				
-			} else {
-			
-				// Proxy mousemove/touchmove
-				if (touch) {
-//					event.type = "touchmove";
-					minDistanceNode.trigger(new $$.Event(event, {type: "touchmove"}));
-				} else {
-//					event.type = "mousemove";
-					minDistanceNode.trigger(new $$.Event(event, {type: "mousemove"}));
-				}
-			}
-			
-		} else if (minDistanceEdge != undefined) {
-		
-			if (cy.renderer().canvas.style.cursor != 
-					minDistanceEdge._private.style["cursor"].value) {
-
-				cy.renderer().canvas.style.cursor = 
-					minDistanceEdge._private.style["cursor"].value;
-			}
-			
-			if (currentHoveredEdge !== minDistanceEdge) {
-
-				// Proxy mouseout
-				if (currentHoveredEdge !== undefined) {
-					if (touch) {
-
-					} else {
-						currentHoveredEdge.trigger(new $$.Event(event, {type: "mouseout"}));
-					}
-				}
-				
-				currentHoveredEdge = minDistanceEdge;
-				
-				var edgeGrabbed = minDistanceEdge.grabbed();
-				
-				// Proxy mouseover
-				if (touch && !edgeGrabbed) {
-
-				} else if (!touch && !edgeGrabbed) {
-					minDistanceEdge.trigger(new $$.Event(event, {type: "mouseover"}));
-				}
-				
-			} else {
-			
-				// Proxy mousemove/touchmove
-				if (touch) {
-					minDistanceEdge.trigger(new $$.Event(event, {type: "touchmove"}));
-				} else {
-					minDistanceEdge.trigger(new $$.Event(event, {type: "mousemove"}));
-				}
-			}
-			
-			/*
-			if (currentMouseInCanvas) {
-			
-				// Proxy mousemove/touchmove
-				if (touch) {
-					minDistanceEdge.trigger("touchmove");
-				} else {
-					minDistanceEdge.trigger("mousemove");
-				}
-				
-			} else {
-				
-				// Proxy mouseover/touchstart
-				if (touch) {
-					minDistanceEdge.trigger("touchstart");
-				} else {
-					minDistanceEdge.trigger("mouseover");
-				}
-				
-				currentMouseInCanvas = true;
-			}
-			*/
-			
-		} else {
-		
-			if (!minDistanceNode
-				&& !minDistanceEdge
-				&& cy.renderer().canvas.style.cursor != "default") {
-
-					cy.renderer().canvas.style.cursor = "default";
-			}
-			
-			// Proxy mouseout for elements
-			if (currentHoveredEdge !== undefined) {
-				if (touch) {
-
-				} else {
-					currentHoveredEdge.trigger(new $$.Event(event, {type: "mouseout"}));
-				}
-				
-				currentHoveredEdge = undefined;
-			}
-			
-			if (currentHoveredNode !== undefined) {
-				if (touch) {
-					
-				} else {
-					currentHoveredNode.trigger(new $$.Event(event, {type: "mouseout"}));
-				}
-				
-				currentHoveredNode = undefined;
-			}
-			
-			if (mouseJustEnteredCanvas) {
-				// Proxy mouseover
-				if (touch) {
-	
-				} else {
-					cy.trigger(new $$.Event(event, {type: "mouseover"}));
-				}
-				
-				currentMouseInCanvas = true;
-				mouseJustEnteredCanvas = false;
-				
-			} else {
-//				console.log(currentMouseInCanvas);
-				// Proxy mousemove/touchmove
-				if (currentMouseInCanvas) {
-
-					if (touch) {
-						cy.trigger(new $$.Event(event, {type: "touchmove"}));
-					} else {
-						cy.trigger(new $$.Event(event, {type: "mousemove"}));
-					}
-				}
-			}	
-		}
-		
-		if (nodeDragging) {
-		
-			if (!draggedElementsMovedLayer) {
-				for (var i = 0; i < nodesBeingDragged.length; i++) {
-					nodesBeingDragged[i]._private.rscratch.layer2 = true;
-				}
-				
-				for (var i = 0; i < edgesBeingDragged.length; i++) {
-					edgesBeingDragged[i]._private.rscratch.layer2 = true;
-				}
-				
-				renderer.canvasNeedsRedraw[4] = true;
-				renderer.redrawReason[4].push("nodes being dragged, moved to drag layer");
-				
-				renderer.canvasNeedsRedraw[2] = true;
-				renderer.redrawReason[2].push("nodes being dragged, moved to drag layer");
-				
-				draggedElementsMovedLayer = true;
-			}
-		
-			for (var index = 0; index < nodes.length; index++) {
-			
-				/*
-				if ((draggingSelectedNode && nodes[index].selected())
-					|| (!draggingSelectedNode && nodes[index] == draggedNode)) {
-				*/
-				
-				if ((draggingSelectedNode && nodes[index].selected())
-					|| (!draggingSelectedNode && nodes[index] == draggedNode)) {
-					
-					if ( !nodes[index]._private.locked && nodes[index]._private.grabbable ) {					
-						nodes[index]._private.position.x = 
-							nodes[index]._private.rscratch.dragStartX
-							+ (selectBox[2] - selectBox[0]);
-						nodes[index]._private.position.y = 
-							nodes[index]._private.rscratch.dragStartY
-							+ (selectBox[3] - selectBox[1]);
-							
-						// Proxy event
-						nodes[index].trigger(new $$.Event(event, {type: "drag"}));
-						nodes[index].trigger(new $$.Event(event, {type: "position"}));
-					}
-				}
-			}
-			
-			renderer.canvasNeedsRedraw[2] = true;
-			renderer.redrawReason[2].push("nodes being dragged");
-			
-			/*
-			if (draggingSelectedNode) {
-				
-			} else {
-				draggedNode._private.position.x ==
-					draggedNode._private.rscratch.dragStartX
-					+ (selectBox[2] - selectBox[0]);
-				draggedNode._private.position.y ==
-					draggedNode._private.rscratch.dragStartY
-					+ (selectBox[3] - selectBox[1]);
-					
-				console.log("dragging");
-				console.log(draggedNode._private.rscratch.dragStartX 
-					+ (selectBox[2] - selectBox[0]));
-				
-				console.log(draggedNode.position());
-				console.log("pos:" + draggedNode._private.position.x);
-			}
-			*/
-		}
-		
-		if (selectBox[4]) {
-			renderer.canvasNeedsRedraw[0] = true;
-			renderer.redrawReason[0].push("selection boxed moved");
-		}
-		
-		if (dragPanMode || nodeDragging || selectBox[4]) {
-			cy.renderer().redraw();
-		}
-	}
-	
-	CanvasRenderer.prototype.mouseUpHandler = function(event) {
-	
-		var touchEvent = undefined;
-		
-		if (event.changedTouches) {						
-			event.preventDefault();
-			
-//			console.log("touchUp, " + event.changedTouches.length);
-			
-			touchEvent = event;
-			
-			event = event.changedTouches[0];
-			event.button = 0;
-
-			selectBox[2] = renderer.projectMouse(event)[0];
-			selectBox[3] = renderer.projectMouse(event)[1];
-		}
-		
-		var mouseDownEvent = event;
-	
-		var edges = cy.edges();
-		var nodes = cy.nodes();
-	
-		var nodeBeingDragged = nodeDragging
-				&& (Math.abs(selectBox[2] - selectBox[0]) 
-				+ Math.abs(selectBox[3] - selectBox[1]) > 1);
-				
-		/*
-		console.log("dx: " + Math.abs(selectBox[2] - selectBox[0]));
-		console.log("dy: " + Math.abs(selectBox[3] - selectBox[1]));
-		console.log("start: " + selectBox[0] + ", " + selectBox[1]);
-		console.log("end: " + selectBox[2] + ", " + selectBox[3]);
-		*/
-		
-		/*	
-		if (draggedNode != undefined) {
-			draggedNode._private.rscratch.layer2 = false;
-		}
-		*/
-		
-		for (var i = 0; i < nodesBeingDragged.length; i++) {
-			nodesBeingDragged[i]._private.rscratch.layer2 = false;
-
-			// Proxy free() event
-			nodesBeingDragged[i]._private.grabbed = false;
-			nodesBeingDragged[i].trigger(new $$.Event(event, {type: "free"}));
-		}
-		
-		nodesBeingDragged = [];
-		
-		for (var i = 0; i < edgesBeingDragged.length; i++) {
-			edgesBeingDragged[i]._private.rscratch.layer2 = false;
-		}
-		
-		// Proxy mouseup event
-		var mouseUpElement = undefined;
-		if (minDistanceNode !== undefined) {
-			mouseUpElement = minDistanceNode;
-		} else if (minDistanceEdge !== undefined) {
-			mouseUpElement = minDistanceEdge;
-		}
-		
-		mouseDownTime = undefined;
-		
-		var mouseUpEventName = undefined;
-		if (touchEvent) {
-			mouseUpEventName = "touchend";
-		} else {
-			mouseUpEventName = "mouseup";
-		}
-		
-		if (mouseUpElement != undefined) {
-			mouseUpElement.trigger(new $$.Event(event, {type: mouseUpEventName}));
-
-			if (mouseUpElement === currentMouseDownNode ||
-				mouseUpElement === currentMouseDownEdge) {
-				
-				mouseUpElement.trigger(new $$.Event(event, {type: "click"}));
-			}
-		} else {
-			cy.trigger(mouseUpEventName);
-		
-			if (currentMouseDownUnmoved) {
-				cy.trigger(new $$.Event(event, {type: "click"}));
-			}
-		}
-		
-		// Deselect if not dragging or selecting additional
-		if (!shiftDown && 
-			!nodeBeingDragged) {
-			
-			var elementsToUnselect = cy.collection();
-			
-			for (var index = 0; index < nodes.length; index++) {
-				nodes[index]._private.rscratch.selected = false;
-				if (nodes[index]._private.selected) {
-					// nodes[index].unselect();
-					
-					elementsToUnselect = elementsToUnselect.add(nodes[index]);
-				}
-			}
-			
-			for (var index = 0; index < edges.length; index++) {
-				edges[index]._private.rscratch.selected = false;
-				if (edges[index]._private.selected) {
-					// edges[index].unselect();
-					
-					elementsToUnselect = elementsToUnselect.add(edges[index]);
-				}
-			}
-			
-			if (elementsToUnselect.length > 0) {
-				elementsToUnselect.unselect();
-			}
-		}
-		
-		if (selectBox[4] == 1
-			&& !nodeDragging
-			&& Math.abs(selectBox[2] - selectBox[0]) 
-				+ Math.abs(selectBox[3] - selectBox[1]) > 2) {
-			
-			var padding = 2;
-			
-			var edgeSelected;
-			var select;
-			
-			var elementsToSelect = cy.collection();
-			
-			for (var index = 0; index < edges.length; index++) {
-			
-				edgeSelected = edges[index]._private.selected;
-
-				var boxInBezierVicinity;
-				var rscratch = edges[index]._private.rscratch;
-				
-				if (edges[index]._private.rscratch.isStraightEdge) {
-				
-					boxInBezierVicinity = $$.math.boxInBezierVicinity(
-						selectBox[0], selectBox[1],
-						selectBox[2], selectBox[3],
-						edges[index]._private.rscratch.startX,
-						edges[index]._private.rscratch.startY,
-						(edges[index]._private.rscratch.startX + 
-						 edges[index]._private.rscratch.endX) / 2,
-						(edges[index]._private.rscratch.startY + 
-						 edges[index]._private.rscratch.endY) / 2,
-						edges[index]._private.rscratch.endX,
-						edges[index]._private.rscratch.endY, padding);
-						
-				} else if (edges[index]._private.rscratch.isSelfEdge) {
-				
-					boxInBezierVicinity = $$.math.boxInBezierVicinity(
-						selectBox[0], selectBox[1],
-						selectBox[2], selectBox[3],
-						edges[index]._private.rscratch.startX,
-						edges[index]._private.rscratch.startY,
-						edges[index]._private.rscratch.cp2ax,
-						edges[index]._private.rscratch.cp2ay,
-						edges[index]._private.rscratch.selfEdgeMidX,
-						edges[index]._private.rscratch.selfEdgeMidY, padding);
-					
-					if (boxInBezierVicinity == 0) {
-					
-						boxInBezierVicinity = $$.math.boxInBezierVicinity(
-							selectBox[0], selectBox[1],
-							selectBox[2], selectBox[3],
-							edges[index]._private.rscratch.selfEdgeMidX,
-							edges[index]._private.rscratch.selfEdgeMidY,
-							edges[index]._private.rscratch.cp2cx,
-							edges[index]._private.rscratch.cp2cy,
-							edges[index]._private.rscratch.endX,
-							edges[index]._private.rscratch.endY, padding);
-					}
-					
-				} else {
-					
-					boxInBezierVicinity = $$.math.boxInBezierVicinity(
-							selectBox[0], selectBox[1],
-							selectBox[2], selectBox[3],
-							edges[index]._private.rscratch.startX,
-							edges[index]._private.rscratch.startY,
-							edges[index]._private.rscratch.cp2x,
-							edges[index]._private.rscratch.cp2y,
-							edges[index]._private.rscratch.endX,
-							edges[index]._private.rscratch.endY, padding);
-					
-				}
-				
-				if (boxInBezierVicinity == 2) {
-					select = true;
-				} else if (boxInBezierVicinity == 1) {
-					
-					if (edges[index]._private.rscratch.isSelfEdge) {
-					
-						select = $$.math.checkBezierCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.startX,
-								edges[index]._private.rscratch.startY,
-								edges[index]._private.rscratch.cp2ax,
-								edges[index]._private.rscratch.cp2ay,
-								edges[index]._private.rscratch.selfEdgeMidX,
-								edges[index]._private.rscratch.selfEdgeMidY, padding);
-						
-						if (!select) {
-						
-							select = $$.math.checkBezierCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.selfEdgeMidX,
-								edges[index]._private.rscratch.selfEdgeMidY,
-								edges[index]._private.rscratch.cp2cx,
-								edges[index]._private.rscratch.cp2cy,
-								edges[index]._private.rscratch.endX,
-								edges[index]._private.rscratch.endY, padding);
-						}
-										
-					} else if (edges[index]._private.rscratch.isStraightEdge) {
-						
-						select = $$.math.checkStraightEdgeCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.startX,
-								edges[index]._private.rscratch.startY,
-								edges[index]._private.rscratch.endX,
-								edges[index]._private.rscratch.endY, padding);
-	
-					} else {
-						
-						select = $$.math.checkBezierCrossesBox(
-								selectBox[0], selectBox[1],
-								selectBox[2], selectBox[3],
-								edges[index]._private.rscratch.startX,
-								edges[index]._private.rscratch.startY,
-								edges[index]._private.rscratch.cp2x,
-								edges[index]._private.rscratch.cp2y,
-								edges[index]._private.rscratch.endX,
-								edges[index]._private.rscratch.endY, padding);
-						
-					}
-				} else {
-					select = false;
-				}
-				
-				if (select && !edgeSelected) {
-					// edges[index].select();
-					
-					elementsToSelect = elementsToSelect.add(edges[index]);
-				} else if (!select && edgeSelected) {
-					// edges[index].unselect();
-				}
-			}
-			
-			var boxMinX = Math.min(selectBox[0], selectBox[2]);
-			var boxMinY = Math.min(selectBox[1], selectBox[3]);
-			var boxMaxX = Math.max(selectBox[0], selectBox[2]);
-			var boxMaxY = Math.max(selectBox[1], selectBox[3]);
-			
-			var nodeSelected, select;
-			
-			var nodePosition, boundingRadius;
-			for (var index = 0; index < nodes.length; index++) {
-				nodeSelected = nodes[index]._private.selected;
-
-				nodePosition = nodes[index].position();
-				
-				/*
-				boundingRadius = nodes[index]._private.data.weight / 5.0;
-				
-				if (nodePosition.x > boxMinX
-						- boundingRadius
-					&& nodePosition.x < boxMaxX 
-						+ boundingRadius
-					&& nodePosition.y > boxMinY
-						- boundingRadius
-					&& nodePosition.y < boxMaxY
-						+ boundingRadius) {
-					
-					select = true;
-					nodes[index]._private.rscratch.selected = true;
-				*/
-				
-				if (nodePosition.x > boxMinX
-					&& nodePosition.x < boxMaxX 
-					&& nodePosition.y > boxMinY
-					&& nodePosition.y < boxMaxY) {
-					
-					select = true;
-					nodes[index]._private.rscratch.selected = true;
-					
-				} else if (
-				
-					nodeShapes[nodes[index]._private.style["shape"].value].intersectBox(
-						boxMinX, boxMinY, boxMaxX, boxMaxY,
-						nodes[index]._private.style["border-width"].value / 2,
-						nodes[index]._private.style["width"].value,
-						nodes[index]._private.style["height"].value,
-						nodePosition.x,
-						nodePosition.y)) {
-				
-					select = true;
-					nodes[index]._private.rscratch.selected = true;
-					
-				} else {
-					
-					select = false;
-					nodes[index]._private.rscratch.selected = false;
-					
-				}
-				
-				if (select && !nodeSelected) {
-					// nodes[index].select();	
-					
-					elementsToSelect = elementsToSelect.add(nodes[index]);
-				} else if (!select && nodeSelected) {
-					// nodes[index].unselect();				
-				}
-			}
-			
-			if (elementsToSelect.length > 0) {
-				elementsToSelect.select();
-			}
-			
-		} else if (selectBox[4] == 0 && !nodeBeingDragged) {
-
-			// Single node/edge selection
-			if (minDistanceNode != undefined) {
-				minDistanceNode._private.rscratch.hovered = false;
-				minDistanceNode._private.rscratch.selected = true;
-				
-				if (!minDistanceNode._private.selected) {
-					minDistanceNode.select();
-				}
-			} else if (minDistanceEdge != undefined) {
-				minDistanceEdge._private.rscratch.hovered = false;
-				minDistanceEdge._private.rscratch.selected = true;
-				
-				if (!minDistanceEdge._private.selected) {
-					minDistanceEdge.select();
-				}
-			}
-		}
-	
-		// Stop drag panning on mouseup
-		dragPanMode = false;
-//		console.log("drag pan stopped");
-		
-		if (cy.renderer().canvas.style.cursor != "default") {
-			cy.renderer().canvas.style.cursor = "default";
-		}
-		
-		selectBox[4] = 0;
-//		selectBox[2] = selectBox[0];
-//		selectBox[3] = selectBox[1];
-		
-		
-		renderer.canvasNeedsRedraw[0] = true;
-		renderer.redrawReason[0].push("Selection box gone");
-		
-		if (nodeBeingDragged) {
-			renderer.canvasNeedsRedraw[2] = true;
-			renderer.redrawReason[2].push("Node drag completed");
-			
-			renderer.canvasNeedsRedraw[4] = true;
-			renderer.redrawReason[4].push("Node drag completed");
-		}
-		
-		// Stop node dragging on mouseup
-		nodeDragging = false;
-		
-		cy.renderer().redraw();
-		
-		if (touchEvent && touchEvent.touches.length == 1) {
-			dragPanStartX = touchEvent.touches[0].clientX;
-			dragPanStartY = touchEvent.touches[0].clientY;
-			
-			dragPanMode = true;
-			
-			if (cy.renderer().canvas.style.cursor 
-				!= cy.style()._private.coreStyle["panning-cursor"].value) {
-
-				cy.renderer().canvas.style.cursor 
-					= cy.style()._private.coreStyle["panning-cursor"].value;
-			}
-		}
-	}
-	
-	CanvasRenderer.prototype.windowMouseDownHandler = function(event) {
-		
-	}
-	
-	CanvasRenderer.prototype.windowMouseMoveHandler = function(event) {
-		
-	}
-	
-	CanvasRenderer.prototype.windowMouseUpHandler = function(event) {
-		
-	}
-	
-	CanvasRenderer.prototype.mouseWheelHandler = function(event) {
-	
-		if (!wheelZoomEnabled) {
-			return;
-		} else {
-			event.preventDefault();
-		}
-		
-		var deltaY = event.wheelDeltaY;
-		
-		cy.renderer().zoomLevel -= deltaY / 5.0 / 500;
-		
-		//console.log("zoomLevel: " + cy.renderer().zoomLevel);
-		cy.renderer().scale[0] = Math.pow(10, -cy.renderer().zoomLevel);
-		cy.renderer().scale[1] = Math.pow(10, -cy.renderer().zoomLevel);
-		
-		var current = cy.renderer().projectMouse(event);
-		
-		var zoomLevel = 0;
-		if (event.wheelDelta != undefined) {
-			zoomLevel = cy.zoom() * Math.pow(10, event.wheelDeltaY / 500);
-		} else {
-			zoomLevel = cy.zoom() * Math.pow(10, event.detail / -4.2);
-		}
-		
-		var projection = renderer.projectMouse(event);
-		
-		projection[0] *= cy.zoom();
-		projection[1] *= cy.zoom();
-		
-		projection[0] += cy.pan().x;
-		projection[1] += cy.pan().y;
-				
-		zoomLevel = Math.min(zoomLevel, 100);
-		zoomLevel = Math.max(zoomLevel, 0.01);
-		
-		cy.zoom({level: zoomLevel, 
-				position: {x: projection[0], 
-							y: projection[1]}});
-		
-		/*
-		cy.zoom({level: zoomLevel, 
-					renderedPosition: {x: current[0], 
-							y: current[1]}});
-		*/
-		
-//		cy.renderer().redraw();
-	}
-	
-	CanvasRenderer.prototype.keyDownHandler = function(event) {
-		if (event.keyCode == 16 && selectBox[4] != 1) {
-			shiftDown = true;
-		}
-	}
-	
-	CanvasRenderer.prototype.keyUpHandler = function(event) {
-		if (event.keyCode == 16) {
-			selectBox[4] = 0;
-			shiftDown = false;
-		}
-	}
-	
-	CanvasRenderer.prototype.mouseMoveHelper = function() {
-		var dragHandler = function(mouseMoveEvent) {
-			var offsetX = mouseMoveEvent.clientX - dragPanStartX;
-			var offsetY = mouseMoveEvent.clientY - dragPanStartY;
-			
-			cy.panBy({x: offsetX, y: offsetY});
-
-			dragPanStartX = mouseMoveEvent.clientX;
-			dragPanStartY = mouseMoveEvent.clientY;
-
-			/*
-			cy.renderer().center[0] = dragPanInitialCenter[0] - offsetX / cy.renderer().scale[0];
-			cy.renderer().center[1] = dragPanInitialCenter[1] - offsetY / cy.renderer().scale[1];
-			*/
-		};
-		
-		var checkBezierEdgeHover = function(mouseX, mouseY, edge) {
-		
-			// var squaredDistanceLimit = 19;
-			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
-			var edgeWithinDistance = false;
-			
-			if ($$.math.inBezierVicinity(
-					mouseX, mouseY,
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY,
-					edge._private.rscratch.cp2x,
-					edge._private.rscratch.cp2y,
-					edge._private.rscratch.endX,
-					edge._private.rscratch.endY,
-					squaredDistanceLimit)) {
-				
-				//console.log("in vicinity")
-				
-				// edge._private.rscratch.selected = true;
-				
-				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
-					mouseX,
-					mouseY,
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY,
-					edge._private.rscratch.cp2x,
-					edge._private.rscratch.cp2y,
-					edge._private.rscratch.endX,
-					edge._private.rscratch.endY);
-				
-				// debug(distance);
-				if (squaredDistance <= squaredDistanceLimit) {
-					edgeWithinDistance = true;
-					
-					if (squaredDistance < minDistanceEdgeValue) {
-						minDistanceEdge = edge;
-						minDistanceEdgeValue = squaredDistance;
-					}
-				}	
-			}
-			
-			return edgeWithinDistance;
-		}
-		
-		var checkSelfEdgeHover = function(mouseX, mouseY, edge) {
-			
-			// var squaredDistanceLimit = 19;
-			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
-			var edgeWithinDistance = false;
-			var edgeFound = false;
-			
-			if ($$.math.inBezierVicinity(
-					mouseX, mouseY,
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY,
-					edge._private.rscratch.cp2ax,
-					edge._private.rscratch.cp2ay,
-					edge._private.rscratch.selfEdgeMidX,
-					edge._private.rscratch.selfEdgeMidY)) {
-				
-				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
-					mouseX, mouseY,
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY,
-					edge._private.rscratch.cp2ax,
-					edge._private.rscratch.cp2ay,
-					edge._private.rscratch.selfEdgeMidX,
-					edge._private.rscratch.selfEdgeMidY);
-				
-				// debug(distance);
-				if (squaredDistance < squaredDistanceLimit) {
-					
-					edgeWithinDistance = true;
-					
-					if (squaredDistance < minDistanceEdgeValue) {
-						minDistanceEdge = edge;
-						minDistanceEdgeValue = squaredDistance;
-						edgeFound = true;
-					}
-				}
-			}
-			
-			// Perform the check with the second of the 2 quadratic Beziers
-			// making up the self-edge if the first didn't pass
-			if (!edgeFound && $$.math.inBezierVicinity(
-					mouseX, mouseY,
-					edge._private.rscratch.selfEdgeMidX,
-					edge._private.rscratch.selfEdgeMidY,
-					edge._private.rscratch.cp2cx,
-					edge._private.rscratch.cp2cy,
-					edge._private.rscratch.endX,
-					edge._private.rscratch.endY)) {
-				
-				var squaredDistance = $$.math.sqDistanceToQuadraticBezier(
-					mouseX, mouseY,
-					edge._private.rscratch.selfEdgeMidX,
-					edge._private.rscratch.selfEdgeMidY,
-					edge._private.rscratch.cp2cx,
-					edge._private.rscratch.cp2cy,
-					edge._private.rscratch.endX,
-					edge._private.rscratch.endY);
-					
-				// debug(distance);
-				if (squaredDistance < squaredDistanceLimit) {
-					
-					edgeWithinDistance = true;
-					
-					if (squaredDistance < minDistanceEdgeValue) {
-						minDistanceEdge = edge;
-						minDistanceEdgeValue = squaredDistance;
-						edgeFound = true;
-					}
-				}
-			}
-			
-			return edgeWithinDistance;
-		}
-		
-		var checkStraightEdgeHover = function(mouseX, mouseY, edge, x1, y1, x2, y2) {
-			
-			// var squaredDistanceLimit = 19;
-			var squaredDistanceLimit = Math.pow(edge._private.style["width"].value / 2, 2);
-			
-			var nearEndOffsetX = mouseX - x1;
-			var nearEndOffsetY = mouseY - y1;
-			
-			var farEndOffsetX = mouseX - x2;
-			var farEndOffsetY = mouseY - y2;
-			
-			var displacementX = x2 - x1;
-			var displacementY = y2 - y1;
-			
-			var distanceSquared;
-			var edgeWithinDistance = false;
-			
-			if (nearEndOffsetX * displacementX 
-				+ nearEndOffsetY * displacementY <= 0) {
-				
-					distanceSquared = (Math.pow(x1 - mouseX, 2)
-						+ Math.pow(y1 - mouseY, 2));
-			
-			} else if (farEndOffsetX * displacementX 
-				+ farEndOffsetY * displacementY >= 0) {
-				
-					distanceSquared = (Math.pow(x2 - mouseX, 2)
-						+ Math.pow(y2 - mouseY, 2));
-				
-			} else {
-				var rotatedX = displacementY;
-				var rotatedY = -displacementX;
-			
-				// Use projection on rotated vector
-				distanceSquared = Math.pow(nearEndOffsetX * rotatedX 
-					+ nearEndOffsetY * rotatedY, 2)
-					/ (rotatedX * rotatedX + rotatedY * rotatedY);
-			}
-			
-			if (distanceSquared <= squaredDistanceLimit) {
-				edgeWithinDistance = true;
-			
-				if (distanceSquared < minDistanceEdgeValue) {
-					minDistanceEdge = edge;
-					minDistanceEdgeValue = distanceSquared;
-				}
-			}
-			
-			return edgeWithinDistance;
-		}
-		
-		var checkNodeHover = function(mouseX, mouseY, node) {
-			
-			var padding = node._private.style["border-width"].value;
-			var width = node._private.style["width"].value;
-			var height = node._private.style["height"].value;
-			var centerX = node._private.position.x;
-			var centerY = node._private.position.y;
-
-			if (nodeShapes[node._private.style["shape"].value].checkPointRough(
-				mouseX, mouseY, padding, width, height, centerX, centerY)) {
-				
-				
-//				console.log("rf: " + nodeShapes[node._private.style["shape"].value].checkPointRough(
-//					mouseX, mouseY, padding, width, height, centerX, centerY));
-				
-				if (nodeShapes[node._private.style["shape"].value].checkPoint(
-					mouseX, mouseY, padding, width / 2, height / 2, centerX, centerY)) {
-					
-//					console.log("pr: " + nodeShapes[node._private.style["shape"].value].checkPoint(
-//						mouseX, mouseY, padding, width, height, centerX, centerY));
-					
-//					minDistanceNode = node;
-//					minDistanceNodeValue = distanceSquared;
-
-//					nodeHovered = true;
-					
-					return true;
-				}
-			}
-			
-			return false;
-		}
-	
-		var hoverHandler = function(nodes, edges, mouseMoveEvent) {
-			
-			// Project mouse coordinates to world absolute coordinates
-			var projected = cy.renderer().projectMouse(mouseMoveEvent); 
-
-			/*
-			console.log("projected x: " + projected[0]);
-			console.log("projected y: " + projected[1]);
-			cy.nodes()[0]._private.position.x = projected[0];
-			cy.nodes()[0]._private.position.y = projected[1];
-			*/
-			
-			var mouseX = projected[0];
-			var mouseY = projected[1];
-			
-			if (minDistanceNode != undefined) {
-				minDistanceNode = undefined;
-				minDistanceNodeValue = 99999;
-		
-			} else if (minDistanceEdge != undefined) {
-				minDistanceEdge = undefined;
-				minDistanceEdgeValue = 99999;
-			}
-			
-			var potentialPickedNodes = [];
-			
-			for (var index = 0; index < nodes.length; index++) {
-				if (checkNodeHover(mouseX, mouseY, nodes[index])) {
-					potentialPickedNodes.push(nodes[index]);
-				}
-			}
-			
-			if (potentialPickedNodes.length > 0) {
-				potentialPickedNodes.sort(function(a, b) {
-					// cy.nodes() gives reverse order. Same as below
-					return b._private.data.id.localeCompare(a._private.data.id);
-				});
-				
-				potentialPickedNodes.sort(function(a, b) {
-					return b._private.style["z-index"].value
-						- a._private.style["z-index"].value
-				});
-				
-				minDistanceNode = potentialPickedNodes[0];
-				nodeHovered = true;
-			} else {
-				minDistanceNode = undefined;
-				nodeHovered = false;
-			}
-			
-			var edgeWithinDistance = false;
-			var potentialPickedEdges = [];
-			
-			for (var index = 0; index < edges.length; index++) {
-				if (nodeHovered) {
-					break;
-				} else if (edges[index]._private.rscratch.isStraightEdge) {
-					edgeWithinDistance = checkStraightEdgeHover(
-						mouseX, mouseY, edges[index],
-						edges[index]._private.rscratch.startX,
-						edges[index]._private.rscratch.startY,
-						edges[index]._private.rscratch.endX,
-						edges[index]._private.rscratch.endY);
-				} else if (edges[index]._private.rscratch.isSelfEdge) {
-					edgeWithinDistance = checkSelfEdgeHover(
-						mouseX, mouseY, edges[index]);
-				} else {
-					edgeWithinDistance = checkBezierEdgeHover(
-						mouseX, mouseY, edges[index]);
-				}
-				
-				if (!edgeWithinDistance) {
-					edgeWithinDistance =
-						checkArrowheadHover(edges[index], mouseX, mouseY);
-					
-					/*
-					if (edgeWithinDistance) {
-						console.log("edge " + index + " passed arrow check"); 
-					}
-					*/
-				}
-				
-				if (edgeWithinDistance) {
-					potentialPickedEdges.push(edges[index]);
-				}
-				
-				edgeWithinDistance = false;
-			}
-			
-			if (potentialPickedEdges.length > 0) {
-				potentialPickedEdges.sort(function(a, b) {
-					return b._private.data.id.localeCompare(a._private.data.id);
-				});
-				
-				potentialPickedEdges.sort(function(a, b) {
-					return b._private.style["z-index"].value
-						- a._private.style["z-index"].value
-				});
-				
-				minDistanceEdge = potentialPickedEdges[0];
-			} else {
-				minDistanceEdge = undefined;
-			}
-		}
-		
-		var checkArrowheadHover = function(edge, mouseX, mouseY) {
-			
-			// collide: function(x, y, centerX, centerY, width, height, direction, padding) 
-			
-			var roughCheck = undefined;
-			
-			var collide = false;
-			
-			var width = renderer.getArrowWidth(edge._private.style["width"].value);
-			var height = renderer.getArrowHeight(edge._private.style["width"].value);
-			var direction = undefined;
-			
-			direction = [-(edge.target().position().x - edge._private.rscratch.arrowEndX),
-					-(edge.target().position().y - edge._private.rscratch.arrowEndY)];
-			
-			roughCheck = collide || arrowShapes[edge._private.style["target-arrow-shape"].value].roughCollide(
-				mouseX, mouseY,
-				edge._private.rscratch.arrowEndX,
-				edge._private.rscratch.arrowEndY,
-				width, height,
-				direction,
-				0
-			);
-			
-			// console.log("roughCheck for " + edge._private.style["target-arrow-shape"].value + ": " + roughCheck);
-			
-			if (roughCheck) {
-			
-				collide = collide || arrowShapes[edge._private.style["target-arrow-shape"].value].collide(
-					mouseX, mouseY,
-					edge._private.rscratch.arrowEndX,
-					edge._private.rscratch.arrowEndY,
-					width, height,
-					direction,
-					0);
-					
-				// console.log("collide for " + edge._private.style["target-arrow-shape"].value + ": " + roughCheck);
-			}
-			
-			direction = [-(edge.source().position().x - edge._private.rscratch.arrowStartX),
-					-(edge.source().position().y - edge._private.rscratch.arrowStartY)];
-			
-			roughCheck = collide || arrowShapes[edge._private.style["source-arrow-shape"].value].roughCollide(
-				mouseX, mouseY,
-				edge._private.rscratch.arrowStartX,
-				edge._private.rscratch.arrowStartY,
-				width, height,
-				direction,
-				0
-			);
-			
-			// console.log("roughCheck for " + edge._private.style["source-arrow-shape"].value + ": " + roughCheck);
-			
-			if (roughCheck) {
-			
-				collide = collide || arrowShapes[edge._private.style["source-arrow-shape"].value].collide(
-					mouseX, mouseY,
-					edge._private.rscratch.arrowStartX,
-					edge._private.rscratch.arrowStartY,
-					width, height,
-					direction,
-					0);
-				
-				// console.log("collide for " + edge._private.style["source-arrow-shape"].value + ": " + collide);
-			}
-			
-			if (collide == true) {
-//				console.log("returning true");
-				return true;
-			}
-			
-			return false;
-		};
-		
-		// Make these related functions (they reference each other) available
-		this.mouseMoveHelper.dragHandler = dragHandler;
-		this.mouseMoveHelper.checkBezierEdgeHover = checkBezierEdgeHover;
-		this.mouseMoveHelper.checkStraightEdgeHover = checkStraightEdgeHover;
-		this.mouseMoveHelper.checkNodeHover = checkNodeHover;
-		this.mouseMoveHelper.checkArrowheadHover = checkArrowheadHover;
-		
-		this.mouseMoveHelper.hoverHandler = hoverHandler;
-		
-	}
-	
-	CanvasRenderer.prototype.load = function() {
-		var self = this;
-		
-		this.mouseMoveHelper();
-		
-		document.addEventListener("keydown", this.keyDownHandler, false);
-		document.addEventListener("keyup", this.keyUpHandler, false);
-	
-		this.bufferCanvases[0].addEventListener("mousedown", this.mouseDownHandler, false);
-		window.addEventListener("mouseup", this.mouseUpHandler, false);
-	
-		window.addEventListener("mousemove", this.mouseMoveHandler, false);
-		this.bufferCanvases[0].addEventListener("mouseout", this.mouseOutHandler, false);
-		this.bufferCanvases[0].addEventListener("mouseover", this.mouseOverHandler, false);
-		
-		
-		window.addEventListener("mousedown", this.windowMouseDownHandler, false);
-		window.addEventListener("mousemove", this.windowMouseMoveHandler, false);
-		window.addEventListener("mouseup", this.windowMouseUpHandler, false);
-		
-		this.bufferCanvases[0].addEventListener("mousewheel", this.mouseWheelHandler, false);
-		this.bufferCanvases[0].addEventListener("DOMMouseScroll", this.mouseWheelHandler, false);
-		
-//		document.addEventListener("mousemove", this.documentMouseMoveHandler, false);
-//		document.addEventListener("mousewheel", this.mouseWheelHandler, false);
-	
-		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
-		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
-		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
-		
-		/*
-		this.bufferCanvases[0].addEventListener("touchstart", this.mouseDownHandler, true);
-		this.bufferCanvases[0].addEventListener("touchmove", this.mouseMoveHandler, true);
-		this.bufferCanvases[0].addEventListener("touchend", this.mouseUpHandler, true);
-		*/
-	}
-	
-	CanvasRenderer.prototype.init = function() {}
-
-	CanvasRenderer.prototype.complexSqrt = function(real, imaginary, zeroThreshold) {
-		var hyp = Math.sqrt(real * real 
-			+ imaginary * imaginary)
-	
-		var gamma = Math.sqrt(0.5 * (real + hyp));
-			
-		var sigma = Math.sqrt(0.5 * (hyp - real));
-		if (imaginary < -zeroThreshold) {
-			sigma = -sigma;
-		} else if (imaginary < zeroThreshold) {
-			sigma = 0;
-		}
-		
-		return [gamma, sigma];
-	}
-
-	CanvasRenderer.prototype.initStyle = function() {
-		var nodes = this.options.cy.nodes();
-		var edges = this.options.cy.edges();
-		
-		var node;
-		for (var index = 0; index < nodes.length; index++) {
-			node = nodes[index];
-			
-			/*
-			node._private.rscratch.boundingRadiusSquared = 
-				Math.pow(node._private.style.size, 2);
-				*/
-			node._private.rscratch.override = {};
-			
-			// console.log(node._private.rscratch.override);
-			
-			var color = Math.max(Math.random(), 0.6);
-			node._private.rscratch.override.regularColor = "rgba(" 
-				+ String(Math.floor(color * 100 + 125)) + "," 
-				+ String(Math.floor(color * 100 + 125)) + "," 
-				+ String(Math.floor(color * 100 + 125)) + "," + 255 + ")"; 
-			
-			//String(color * 16777215);
-			node._private.rscratch.override.regularBorderColor = "rgba(" 
-				+ String(Math.floor(color * 70 + 160)) + "," 
-				+ String(Math.floor(color * 70 + 160)) + "," 
-				+ String(Math.floor(color * 70 + 160)) + "," + 255 + ")"; 
-			
-			var shape = Math.random();
-			if (shape < 10.35) {
-				node._private.rscratch.override.shape = "ellipse";
-			} else if (shape < 0.49) {
-				node._private.rscratch.override.shape = "hexagon";
-			} else if (shape < 0.76) {
-				node._private.rscratch.override.shape = "square";
-			} else if (shape < 0.91) {
-				node._private.rscratch.override.shape = "pentagon";
-			} else {
-				node._private.rscratch.override.shape = "octogon";
-			}
-			
-			node._private.rscratch.canvas = document.createElement('canvas');
-		}
-		
-		var edge;
-		for (var index = 0; index < edges.length; index++) {
-			edge = edges[index];
-			
-			edge._private.rscratch.cp2x = Math.random() 
-				* this.options.cy.container().width();
-			edge._private.rscratch.cp2y = Math.random() 
-				* this.options.cy.container().height();
-			
-			edge._private.rscratch.override = {};
-			
-			if (Math.random() < 0.45) {
-				edge._private.rscratch.override.endShape = "inhibitor";
-			}
-			
-			edge._private.rscratch.override.regularColor = 
-				edge.source()[0]._private.rscratch.override.regularBorderColor
-				|| defaultNode.regularColor;
-		}
-	}
-	
-	CanvasRenderer.prototype.findBezierIntersection = function(edge, targetRadius) {
-		
-		var x1 = edge.source().position().x;
-		var x3 = edge.target().position().x;
-		var y1 = edge.source().position().y;
-		var y3 = edge.target().position().y;
-		
-		var approxParam;
-		
-		var cp2x = edge._private.rscratch.cp2x;
-		var cp2y = edge._private.rscratch.cp2y;
-		
-		approxParam = 0.5 + (0.5 - 0.5 * targetRadius / Math.sqrt(
-			Math.pow(cp2x - x3, 2) + Math.pow(cp2y - y3, 2)));
-		
-		// console.log("approxParam: " + approxParam);
-		
-		var aX = x1 - 2 * cp2x + x3;
-		var bX = -2 * x1 + 2 * cp2x;
-		var cX = x1;
-
-		var aY = y1 - 2 * cp2y + y3;
-		var bY = -2 * y1 + 2 * cp2y;
-		var cY = y1;
-		
-		var newEndPointX = aX * approxParam * approxParam + bX * approxParam + cX;
-		var newEndPointY = aY * approxParam * approxParam + bY * approxParam + cY;
-		
-		var tan1ax = cp2x - x1;
-		var tan1bx = x1;
-		
-		var tan1ay = cp2y - y1;
-		var tan1by = y1;
-		
-		var tan2ax = newEndPointX - x3;
-		var tan2bx = x3;
-		
-		var tan2ay = newEndPointY - y3;
-		var tan2by = y3;
-		
-		var k;
-		if (Math.abs(tan1ax) > 0.0001) {
-			k = (tan1ay / tan1ax * (tan2bx - tan1bx) + tan1by - tan2by)
-				/ (tan2ay - (tan1ay / tan1ax) * tan2ax);
-		} else {
-			k = (tan1bx - tan2bx) / (tan2ax);
-		}
-		
-		// console.log("k: " + k);
-		
-		var newCp2x = tan2ax * k + tan2bx;
-		var newCp2y = tan2ay * k + tan2by;
-
-		edge._private.rscratch.newCp2x = newCp2x;
-		edge._private.rscratch.newCp2y = newCp2y;
-		
-		edge._private.rscratch.newEndPointX = newEndPointX;
-		edge._private.rscratch.newEndPointY = newEndPointY;
-		
-		/*
-		console.log(newCp2x + ", " + newCp2y);
-		console.log(newEndPointX + ", " + newEndPointY);
-		*/
-	}
-	
-	CanvasRenderer.prototype.findIntersection = function(x1, y1, x2, y2, targetRadius) {
-		var dispX = x2 - x1;
-		var dispY = y2 - y1;
-		
-		var len = Math.sqrt(dispX * dispX + dispY * dispY);
-		
-		var newLength = len - targetRadius;
-
-		if (newLength < 0) {
-			newLength = 0;
-		}
-		
-		return [(newLength / len) * dispX + x1, (newLength / len) * dispY + y1];
-	}
-	
-	CanvasRenderer.prototype.intersectLineEllipse = function(
-		x, y, centerX, centerY, ellipseWradius, ellipseHradius) {
-		
-		var dispX = centerX - x;
-		var dispY = centerY - y;
-		
-		dispX /= ellipseWradius;
-		dispY /= ellipseHradius;
-		
-		var len = Math.sqrt(dispX * dispX + dispY * dispY);
-		
-		var newLength = len - 1;
-		
-		if (newLength < 0) {
-			return [];
-		}
-		
-		var lenProportion = newLength / len;
-		
-		return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
-	}
-	
-	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
-		radius, farX, farY) {
-		
-		var displacementX = farX - centerX;
-		var displacementY = farY - centerY;
-		var distance = Math.sqrt(displacementX * displacementX 
-			+ displacementY * displacementY);
-		
-		var unitDisplacementX = displacementX / distance;
-		var unitDisplacementY = displacementY / distance;
-		
-		return [centerX + unitDisplacementX * radius, 
-			centerY + unitDisplacementY * radius];
-	}
-	
-	// Finds new endpoints for a bezier edge based on desired source and target radii
-	CanvasRenderer.prototype.findNewEndPoints 
-		= function(startX, startY, cp2x, cp2y, endX, endY, radius1, radius2) {
-		
-		var startNearPt = this.findCircleNearPoint(startX, startY, radius1, cp2x, cp2y);
-		var endNearPt = this.findCircleNearPoint(endX, endY, radius2, cp2x, cp2y);
-		
-		return [startNearPt[0], startNearPt[1], endNearPt[0], endNearPt[1]];
-	}
-	
-	// Calculates new endpoints for all bezier edges based on desired source and 
-	// target radii
-	CanvasRenderer.prototype.calculateNewEndPoints = function() {
-		
-		var edges = cy.edges();
-		var source, target;
-		var endpoints;
-		
-		for (var i = 0; i < edges.length; i++) {
-			source = edges[i].source()[0];
-			target = edges[i].target()[0];
-			
-			if (edges[i]._private.rscratch.isStraightEdge) {
-				continue;
-			}
-			
-			endpoints = this.findNewEndPoints(
-				source.position().x,
-				source.position().y,
-				edges[i]._private.rscratch.controlPointX,
-				edges[i]._private.rscratch.controlPointY,
-				target.position().x,
-				target.position().y
-			);
-				
-			edges[i]._private.rscratch.updatedStartX = endpoints[0];
-			edges[i]._private.rscratch.updatedStartY = endpoints[1];
-			edges[i]._private.rscratch.updatedEndX = endpoints[2];
-			edges[i]._private.rscratch.updatedEndY = endpoints[3];
-		}
-		
-	}
-	
-	CanvasRenderer.prototype.findMaxSqDistanceToOrigin = function(points) {
-		var maxSqDistance = 0.000001;
-		var sqDistance;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			
-			sqDistance = points[i * 2] * points[i * 2] 
-				+ points[i * 2 + 1] * points[i * 2 + 1];
-			
-			if (sqDistance > maxSqDistance) {
-				maxSqDistance = sqDistance;
-			}
-		}
-		
-		return maxSqDistance;
-	}
-	
-	// Contract for arrow shapes:
-	// 0, 0 is arrow tip
-	// (0, 1) is direction towards node
-	// (1, 0) is right
-	//
-	// functional api:
-	// collide: check x, y in shape
-	// roughCollide: called before collide, no false negatives
-	// draw: draw
-	// spacing: dist(arrowTip, nodeBoundary)
-	// gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
-	
-	arrowShapes["arrow"] = {
-		_points: [
-			-0.15, -0.3,
-			0, 0,
-			0.15, -0.3
-		],
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			var points = arrowShapes["arrow"]._points;
-			
-//			console.log("collide(): " + direction);
-			
-			return renderer.pointInsidePolygon(
-				x, y, points, centerX, centerY, width, height, direction, padding);
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			if (typeof(arrowShapes["arrow"]._farthestPointSqDistance) == "undefined") {
-				arrowShapes["arrow"]._farthestPointSqDistance = 
-					renderer.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
-			}
-		
-			return renderer.checkInBoundingCircle(
-				x, y, arrowShapes["arrow"]._farthestPointSqDistance,
-				0, width, height, centerX, centerY);
-		},
-		draw: function(context) {
-			var points = arrowShapes["arrow"]._points;
-		
-			for (var i = 0; i < points.length / 2; i++) {
-				context.lineTo(points[i * 2], points[i * 2 + 1]);
-			}
-		},
-		spacing: function(edge) {
-			return 0;
-		},
-		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
-		}
-	}
-	
-	arrowShapes["triangle"] = arrowShapes["arrow"];
-	
-	arrowShapes["none"] = {
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			return false;
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			return false;
-		},
-		draw: function(context) {
-		},
-		spacing: function(edge) {
-			return 0;
-		},
-		gap: function(edge) {
-			return 0;
-		}
-	}
-	
-	currentShape = "arrow";
-	arrowShapes["circle"] = {
-		_baseRadius: 0.15,
-		
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			// Transform x, y to get non-rotated ellipse
-			
-			if (width != height) {
-				// This gives negative of the angle
-				var angle = Math.asin(direction[1] / 
-					(Math.sqrt(direction[0] * direction[0] 
-						+ direction[1] * direction[1])));
-			
-				var cos = Math.cos(-angle);
-				var sin = Math.sin(-angle);
-				
-				var rotatedPoint = 
-					[x * cos - y * sin,
-						y * cos + x * sin];
-				
-				var aspectRatio = (height + padding) / (width + padding);
-				y /= aspectRatio;
-				centerY /= aspectRatio;
-				
-				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
-						* arrowShapes["circle"]._baseRadius, 2));
-			} else {
-				return (Math.pow(centerX - x, 2) 
-					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
-						* arrowShapes["circle"]._baseRadius, 2));
-			}
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			return true;
-		},
-		draw: function(context) {
-			context.arc(0, 0, arrowShapes["circle"]._baseRadius, 0, Math.PI * 2, false);
-		},
-		spacing: function(edge) {
-			return renderer.getArrowWidth(edge._private.style["width"].value)
-				* arrowShapes["circle"]._baseRadius;
-		},
-		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
-		}
-	}
-	
-	arrowShapes["inhibitor"] = {
-		_points: [
-			-0.25, 0,
-			-0.25, -0.1,
-			0.25, -0.1,
-			0.25, 0
-		],
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			var points = arrowShapes["inhibitor"]._points;
-			
-			return renderer.pointInsidePolygon(
-				x, y, points, centerX, centerY, width, height, direction, padding);
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			if (typeof(arrowShapes["inhibitor"]._farthestPointSqDistance) == "undefined") {
-				arrowShapes["inhibitor"]._farthestPointSqDistance = 
-					renderer.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
-			}
-		
-			return renderer.checkInBoundingCircle(
-				x, y, arrowShapes["inhibitor"]._farthestPointSqDistance,
-				0, width, height, centerX, centerY);
-		},
-		draw: function(context) {
-			var points = arrowShapes["inhibitor"]._points;
-			
-			for (var i = 0; i < points.length / 2; i++) {
-				context.lineTo(points[i * 2], points[i * 2 + 1]);
-			}
-		},
-		spacing: function(edge) {
-			return 4;
-		},
-		gap: function(edge) {
-			return 4;
-		}
-	}
-	
-	arrowShapes["square"] = {
-		_points: [
-			-0.12, 0.00,
-			0.12, 0.00,
-			0.12, -0.24,
-			-0.12, -0.24
-		],
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			var points = arrowShapes["square"]._points;
-			
-			return renderer.pointInsidePolygon(
-				x, y, points, centerX, centerY, width, height, direction, padding);
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			if (typeof(arrowShapes["square"]._farthestPointSqDistance) == "undefined") {
-				arrowShapes["square"]._farthestPointSqDistance = 
-					renderer.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
-			}
-		
-			return renderer.checkInBoundingCircle(
-				x, y, arrowShapes["square"]._farthestPointSqDistance,
-				0, width, height, centerX, centerY);
-		},
-		draw: function(context) {
-			var points = arrowShapes["square"]._points;
-		
-			for (var i = 0; i < points.length / 2; i++) {
-				context.lineTo(points[i * 2], points[i * 2 + 1]);
-			}
-		},
-		spacing: function(edge) {
-			return 0;
-		},
-		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
-		}
-	}
-	
-	arrowShapes["diamond"] = {
-		_points: [
-			-0.14, -0.14,
-			0, -0.28,
-			0.14, -0.14,
-			0, 0
-		],
-		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			var points = arrowShapes["diamond"]._points;
-			
-//			console.log("precise:" + renderer.pointInsidePolygon(
-//				x, y, points, centerX, centerY, width, height, direction, padding));
-			
-			return renderer.pointInsidePolygon(
-				x, y, points, centerX, centerY, width, height, direction, padding);
-		},
-		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-			if (typeof(arrowShapes["diamond"]._farthestPointSqDistance) == "undefined") {
-				arrowShapes["diamond"]._farthestPointSqDistance = 
-					renderer.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
-			}
-		
-//			console.log("rough:" + renderer.checkInBoundingCircle(
-//				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
-//				0, width, height, centerX, centerY));
-				
-			return renderer.checkInBoundingCircle(
-				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
-				0, width, height, centerX, centerY);
-		},
-		draw: function(context) {
-//			context.translate(0, 0.16);
-			context.lineTo(-0.14, -0.14);
-			context.lineTo(0, -0.28);
-			context.lineTo(0.14, -0.14);
-			context.lineTo(0, 0.0);
-		},
-		spacing: function(edge) {
-			return 0;
-		},
-		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
-		}
-	}
-	
-	arrowShapes["tee"] = arrowShapes["inhibitor"];
-	
-	/*
-	arrowShapeDrawers["arrow"] = function(context) {
-		// context.scale(context.lineWidth, context.lineWidth);
-		context.lineTo(-0.15, 0.3);
-		context.lineTo(0, 0);
-		context.lineTo(0.15, 0.3);
-	}
-	arrowShapeSpacing["arrow"] = 0;
-	arrowShapeGap["arrow"] = 4.5;
-	
-	arrowShapeDrawers["triangle"] = arrowShapeDrawers["arrow"];
-	arrowShapeSpacing["triangle"] = arrowShapeSpacing["arrow"];
-	arrowShapeGap["triangle"] = arrowShapeGap["arrow"];
-	
-	arrowShapeDrawers["none"] = function(context) {};
-	arrowShapeSpacing["none"] = 0;
-	arrowShapeGap["none"] = 0;
-	
-	arrowShapeDrawers["circle"] = function(context) {
-		context.translate(0, -0.15);
-		context.arc(0, 0, 0.15, 0, Math.PI * 2, false);
-	};
-	arrowShapeSpacing["circle"] = 0;
-	arrowShapeGap["circle"] = 0.3;
-	
-	arrowShapeDrawers["inhibitor"] = function(context) {
-		// context.scale(context.lineWidth, context.lineWidth);
-		context.lineTo(-0.25, 0);
-		context.lineTo(-0.25, -0.1);
-		context.lineTo(0.25, -0.1);
-		context.lineTo(0.25, 0);
-	};
-	arrowShapeSpacing["inhibitor"] = 4;
-	arrowShapeGap["inhibitor"] = 4;
-	
-	arrowShapeDrawers["tee"] = arrowShapeDrawers["inhibitor"];
-	arrowShapeSpacing["tee"] = arrowShapeSpacing["inhibitor"];
-	arrowShapeGap["tee"] = arrowShapeGap["inhibitor"];
-	*/
-	
-	CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
-		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-	}
-	
-	CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
-		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-	}
-	
-	CanvasRenderer.prototype.drawArrowShape = function(shape, x, y, dispX, dispY) {
-		// Negative of the angle
-		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
-//		console.log("classic: ", dispX, dispY);
-//		console.log("angle: " + angle);
-		
-		if (dispX < 0) {
-			//context.strokeStyle = "AA99AA";
-			angle = angle + Math.PI / 2;
-		} else {
-			//context.strokeStyle = "AAAA99";
-			angle = - (Math.PI / 2 + angle);
-		}
-		
-		var context = this.context;
-		
-		context.save();
-		
-		context.translate(x, y);
-		
-		context.moveTo(0, 0);
-		context.rotate(-angle);
-		
-		var size = renderer.getArrowWidth(context.lineWidth);
-		/// size = 100;
-		context.scale(size, size);
-		
-		context.beginPath();
-		
-		arrowShapes[shape].draw(context);
-		
-		context.closePath();
-		
-//		context.stroke();
-		context.fill();
-		context.restore();
-	}
-	
 	CanvasRenderer.prototype.findEndpoints = function(edge) {
 		var intersect;
 
@@ -2698,6 +1483,7 @@
 			edge._private.rscratch.arrowStartY = arrowStart[1];
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
+		
 			
 			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
 				target,
@@ -2815,20 +1601,648 @@
 			return;
 		}
 	}
+
+	}
+
+	// @O Graph traversal functions
+	{
 	
-	CanvasRenderer.prototype.drawArrowhead = function(edge) {
+	// Find adjacent edges
+	CanvasRenderer.prototype.findEdges = function(nodeSet) {
 		
-		var endShape = edge._private.rscratch.override.endShape;
-		endShape = endShape ? endShape : defaultEdge.endShape;
+		var edges = this.getCachedEdges();
 		
-		var dispX = edge.target().position().x - edge._private.rscratch.newEndPointX;
-		var dispY = edge.target().position().y - edge._private.rscratch.newEndPointY;
+		var hashTable = {};
+		var adjacentEdges = [];
 		
-		this.drawArrowShape(edge, edge._private.rscratch.newEndPointX, 
-			edge._private.rscratch.newEndPointY, dispX, dispY);
+		for (var i = 0; i < nodeSet.length; i++) {
+			hashTable[nodeSet[i]._private.data.id] = nodeSet[i];
+		}
+		
+		for (var i = 0; i < edges.length; i++) {
+			if (hashTable[edges[i]._private.data.source]
+				|| hashTable[edges[i]._private.data.target]) {
+				
+				adjacentEdges.push(edges[i]);
+			}
+		}
+		
+		return adjacentEdges;
 	}
 	
-	CanvasRenderer.prototype.drawArrowheads = function(edge) {
+	}
+	
+	// @O Intersection functions
+	{
+	CanvasRenderer.prototype.intersectLineEllipse = function(
+		x, y, centerX, centerY, ellipseWradius, ellipseHradius) {
+		
+		var dispX = centerX - x;
+		var dispY = centerY - y;
+		
+		dispX /= ellipseWradius;
+		dispY /= ellipseHradius;
+		
+		var len = Math.sqrt(dispX * dispX + dispY * dispY);
+		
+		var newLength = len - 1;
+		
+		if (newLength < 0) {
+			return [];
+		}
+		
+		var lenProportion = newLength / len;
+		
+		return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
+	}
+	
+	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
+		radius, farX, farY) {
+		
+		var displacementX = farX - centerX;
+		var displacementY = farY - centerY;
+		var distance = Math.sqrt(displacementX * displacementX 
+			+ displacementY * displacementY);
+		
+		var unitDisplacementX = displacementX / distance;
+		var unitDisplacementY = displacementY / distance;
+		
+		return [centerX + unitDisplacementX * radius, 
+			centerY + unitDisplacementY * radius];
+	}
+	
+	CanvasRenderer.prototype.findMaxSqDistanceToOrigin = function(points) {
+		var maxSqDistance = 0.000001;
+		var sqDistance;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			sqDistance = points[i * 2] * points[i * 2] 
+				+ points[i * 2 + 1] * points[i * 2 + 1];
+			
+			if (sqDistance > maxSqDistance) {
+				maxSqDistance = sqDistance;
+			}
+		}
+		
+		return maxSqDistance;
+	}
+	
+	CanvasRenderer.prototype.finiteLinesIntersect = function(
+		x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
+		
+		var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
+		var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
+		var u_b = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+
+		if (u_b != 0) {
+			var ua = ua_t / u_b;
+			var ub = ub_t / u_b;
+			
+			if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {	
+				return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+				
+			} else {
+				if (!infiniteLines) {
+					return [];
+				} else {
+					return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+				}
+			}
+		} else {
+			if (ua_t == 0 || ub_t == 0) {
+
+				// Parallel, coincident lines. Check if overlap
+
+				// Check endpoint of second line
+				if ([x1, x2, x4].sort()[1] == x4) {
+					return [x4, y4];
+				}
+				
+				// Check start point of second line
+				if ([x1, x2, x3].sort()[1] == x3) {
+					return [x3, y3];
+				}
+				
+				// Endpoint of first line
+				if ([x3, x4, x2].sort()[1] == x2) {
+					return [x2, y2];
+				}
+				
+				return [];
+			} else {
+			
+				// Parallel, non-coincident
+				return [];
+			}
+		}
+	}
+	
+	CanvasRenderer.prototype.boxIntersectEllipse = function(
+		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		// 4 ortho extreme points
+		var east = [centerX - width / 2 - padding, centerY];
+		var west = [centerX + width / 2 + padding, centerY];
+		var north = [centerX, centerY + height / 2 + padding];
+		var south = [centerX, centerY - height / 2 - padding];
+		
+		// out of bounds: return false
+		if (x2 < east[0]) {
+			return false;
+		}
+		
+		if (x1 > west[0]) {
+			return false;
+		}
+		
+		if (y2 < south[1]) {
+			return false;
+		}
+		
+		if (y1 > north[1]) {
+			return false;
+		}
+		
+		// 1 of 4 ortho extreme points in box: return true
+		if (x1 <= east[0] && east[0] <= x2
+				&& y1 <= east[1] && east[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= west[0] && west[0] <= x2
+				&& y1 <= west[1] && west[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= north[0] && north[0] <= x2
+				&& y1 <= north[1] && north[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= south[0] && south[0] <= x2
+				&& y1 <= south[1] && south[1] <= y2) {
+			return true;
+		}
+		
+		// box corner in ellipse: return true		
+		x1 = (x1 - centerX) / (width + padding);
+		x2 = (x2 - centerX) / (width + padding);
+		
+		y1 = (y1 - centerY) / (height + padding);
+		y2 = (y2 - centerY) / (height + padding);
+		
+		if (x1 * x1 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y2 * y2 <= 1) {
+			return true;
+		}
+		
+		if (x1 * x1 + y2 * y2 <= 1) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.boxIntersectPolygon = function(
+		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
+		
+//		console.log(arguments);
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		var transformedPoints = new Array(basePoints.length)
+		
+		// Gives negative of angle
+		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
+			+ direction[1] * direction[1])));
+		
+		if (direction[0] < 0) {
+			angle = angle + Math.PI / 2;
+		} else {
+			angle = -angle - Math.PI / 2;
+		}
+		
+		var cos = Math.cos(-angle);
+		var sin = Math.sin(-angle);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = 
+				width * (basePoints[i * 2] * cos
+					- basePoints[i * 2 + 1] * sin);
+			
+			transformedPoints[i * 2 + 1] = 
+				height * (basePoints[i * 2 + 1] * cos 
+					+ basePoints[i * 2] * sin);
+			
+			transformedPoints[i * 2] += centerX;
+			transformedPoints[i * 2 + 1] += centerY;
+		}
+		
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = renderer.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = renderer.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		
+		// Check if a point is in box
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			if (x1 <= transformedPoints[i * 2]
+					&& transformedPoints[i * 2] <= x2) {
+				
+				if (y1 <= transformedPoints[i * 2 + 1]
+						&& transformedPoints[i * 2 + 1] <= y2) {
+					
+					return true;
+				}
+			}
+		}
+		
+		// Check if box corner in the polygon
+		if (renderer.pointInsidePolygon(
+			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x1, y2, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if (renderer.pointInsidePolygon(
+			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.polygonIntersectLine = function(
+		x, y, basePoints, centerX, centerY, width, height, padding) {
+		
+		var intersections = [];
+		var intersection;
+		
+		var transformedPoints = new Array(basePoints.length);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = basePoints[i * 2] * width + centerX;
+			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
+		}
+		
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = renderer.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = renderer.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		// var points = transformedPoints;
+		
+		var currentX, currentY, nextX, nextY;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+		
+			currentX = points[i * 2];
+			currentY = points[i * 2 + 1];
+
+			if (i < points.length / 2 - 1) {
+				nextX = points[(i + 1) * 2];
+				nextY = points[(i + 1) * 2 + 1];
+			} else {
+				nextX = points[0]; 
+				nextY = points[1];
+			}
+			
+			intersection = this.finiteLinesIntersect(
+				x, y, centerX, centerY,
+				currentX, currentY,
+				nextX, nextY);
+			
+			if (intersection.length != 0) {
+				intersections.push(intersection[0], intersection[1]);
+			}
+		}
+		
+		return intersections;
+	}
+	
+	CanvasRenderer.prototype.shortenIntersection = function(
+		intersection, offset, amount) {
+		
+		var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
+		
+		var length = Math.sqrt(disp[0] * disp[0] + disp[1] * disp[1]);
+		
+		var lenRatio = (length - amount) / length;
+		
+		if (lenRatio < 0) {
+			return [];
+		} else {
+			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+		}
+	}
+	}
+	
+	// @O Arrow shapes
+	{
+	// Contract for arrow shapes:
+	{
+	// 0, 0 is arrow tip
+	// (0, 1) is direction towards node
+	// (1, 0) is right
+	//
+	// functional api:
+	// collide: check x, y in shape
+	// roughCollide: called before collide, no false negatives
+	// draw: draw
+	// spacing: dist(arrowTip, nodeBoundary)
+	// gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
+	}
+	
+	// Declarations
+	{
+	arrowShapes["arrow"] = {
+		_points: [
+			-0.15, -0.3,
+			0, 0,
+			0.15, -0.3
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["arrow"]._points;
+			
+//			console.log("collide(): " + direction);
+			
+			return rendFunc.pointInsidePolygon(
+				x, y, points, centerX, centerY, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["arrow"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["arrow"]._farthestPointSqDistance = 
+					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
+			}
+		
+			return rendFunc.checkInBoundingCircle(
+				x, y, arrowShapes["arrow"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
+		draw: function(context) {
+			var points = arrowShapes["arrow"]._points;
+		
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["triangle"] = arrowShapes["arrow"];
+	
+	arrowShapes["none"] = {
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return false;
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return false;
+		},
+		draw: function(context) {
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return 0;
+		}
+	}
+	
+	arrowShapes["circle"] = {
+		_baseRadius: 0.15,
+		
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			// Transform x, y to get non-rotated ellipse
+			
+			if (width != height) {
+				// This gives negative of the angle
+				var angle = Math.asin(direction[1] / 
+					(Math.sqrt(direction[0] * direction[0] 
+						+ direction[1] * direction[1])));
+			
+				var cos = Math.cos(-angle);
+				var sin = Math.sin(-angle);
+				
+				var rotatedPoint = 
+					[x * cos - y * sin,
+						y * cos + x * sin];
+				
+				var aspectRatio = (height + padding) / (width + padding);
+				y /= aspectRatio;
+				centerY /= aspectRatio;
+				
+				return (Math.pow(centerX - x, 2) 
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
+						* arrowShapes["circle"]._baseRadius, 2));
+			} else {
+				return (Math.pow(centerX - x, 2) 
+					+ Math.pow(centerY - y, 2) <= Math.pow((width + padding)
+						* arrowShapes["circle"]._baseRadius, 2));
+			}
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			return true;
+		},
+		draw: function(context) {
+			context.arc(0, 0, arrowShapes["circle"]._baseRadius, 0, Math.PI * 2, false);
+		},
+		spacing: function(edge) {
+			return rendFunc.getArrowWidth(edge._private.style["width"].value)
+				* arrowShapes["circle"]._baseRadius;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["inhibitor"] = {
+		_points: [
+			-0.25, 0,
+			-0.25, -0.1,
+			0.25, -0.1,
+			0.25, 0
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["inhibitor"]._points;
+			
+			return rendFunc.pointInsidePolygon(
+				x, y, points, centerX, centerY, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["inhibitor"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["inhibitor"]._farthestPointSqDistance = 
+					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
+			}
+		
+			return rendFunc.checkInBoundingCircle(
+				x, y, arrowShapes["inhibitor"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
+		draw: function(context) {
+			var points = arrowShapes["inhibitor"]._points;
+			
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
+		},
+		spacing: function(edge) {
+			return 4;
+		},
+		gap: function(edge) {
+			return 4;
+		}
+	}
+	
+	arrowShapes["square"] = {
+		_points: [
+			-0.12, 0.00,
+			0.12, 0.00,
+			0.12, -0.24,
+			-0.12, -0.24
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["square"]._points;
+			
+			return rendFunc.pointInsidePolygon(
+				x, y, points, centerX, centerY, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["square"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["square"]._farthestPointSqDistance = 
+					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
+			}
+		
+			return rendFunc.checkInBoundingCircle(
+				x, y, arrowShapes["square"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
+		draw: function(context) {
+			var points = arrowShapes["square"]._points;
+		
+			for (var i = 0; i < points.length / 2; i++) {
+				context.lineTo(points[i * 2], points[i * 2 + 1]);
+			}
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["diamond"] = {
+		_points: [
+			-0.14, -0.14,
+			0, -0.28,
+			0.14, -0.14,
+			0, 0
+		],
+		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			var points = arrowShapes["diamond"]._points;
+					
+			return rendFunc.pointInsidePolygon(
+				x, y, points, centerX, centerY, width, height, direction, padding);
+		},
+		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
+			if (typeof(arrowShapes["diamond"]._farthestPointSqDistance) == "undefined") {
+				arrowShapes["diamond"]._farthestPointSqDistance = 
+					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
+			}
+				
+			return rendFunc.checkInBoundingCircle(
+				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
+				0, width, height, centerX, centerY);
+		},
+		draw: function(context) {
+//			context.translate(0, 0.16);
+			context.lineTo(-0.14, -0.14);
+			context.lineTo(0, -0.28);
+			context.lineTo(0.14, -0.14);
+			context.lineTo(0, 0.0);
+		},
+		spacing: function(edge) {
+			return 0;
+		},
+		gap: function(edge) {
+			return edge._private.style["width"].value * 2;
+		}
+	}
+	
+	arrowShapes["tee"] = arrowShapes["inhibitor"];
+	}
+	
+	// @O Arrow shape sizing (w + l)
+	{
+	
+	CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
+		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+	}
+	
+	CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+		return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+	}
+	
+	}
+	
+	// @O Arrow shape drawing
+	
+	// Draw arrowheads on edge
+	CanvasRenderer.prototype.drawArrowheads = function(context, edge) {
 		// Displacement gives direction for arrowhead orientation
 		var dispX, dispY;
 
@@ -2839,15 +2253,15 @@
 		dispY = startY - edge.source().position().y;
 		
 		//this.context.strokeStyle = "rgba("
-		this.context.fillStyle = "rgba("
+		context.fillStyle = "rgba("
 			+ edge._private.style["source-arrow-color"].value[0] + ","
 			+ edge._private.style["source-arrow-color"].value[1] + ","
 			+ edge._private.style["source-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
 		
-		this.context.lineWidth = edge._private.style["width"].value;
+		context.lineWidth = edge._private.style["width"].value;
 		
-		this.drawArrowShape(edge._private.style["source-arrow-shape"].value, 
+		this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
 			startX, startY, dispX, dispY);
 		
 		var endX = edge._private.rscratch.arrowEndX;
@@ -2857,83 +2271,59 @@
 		dispY = endY - edge.target().position().y;
 		
 		//this.context.strokeStyle = "rgba("
-		this.context.fillStyle = "rgba("
+		context.fillStyle = "rgba("
 			+ edge._private.style["target-arrow-color"].value[0] + ","
 			+ edge._private.style["target-arrow-color"].value[1] + ","
 			+ edge._private.style["target-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
 		
-		this.context.lineWidth = edge._private.style["width"].value;
+		context.lineWidth = edge._private.style["width"].value;
 		
-		this.drawArrowShape(edge._private.style["target-arrow-shape"].value,
+		this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
 			endX, endY, dispX, dispY);
 	}
 	
-	CanvasRenderer.prototype.drawStraightArrowhead = function(edge) {
+	// Draw arrowshape
+	CanvasRenderer.prototype.drawArrowShape = function(context, shape, x, y, dispX, dispY) {
+	
+		// Negative of the angle
+		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
+	
+		if (dispX < 0) {
+			//context.strokeStyle = "AA99AA";
+			angle = angle + Math.PI / 2;
+		} else {
+			//context.strokeStyle = "AAAA99";
+			angle = - (Math.PI / 2 + angle);
+		}
 		
-		var dispX = edge.target().position().x 
-			- edge._private.rscratch.newStraightEndX;
-		var dispY = edge.target().position().y 
-			- edge._private.rscratch.newStraightEndY;
+		context.save();
 		
-		this.drawArrowShape(
-			edge, edge._private.rscratch.newStraightEndX,
-			edge._private.rscratch.newStraightEndY,
-			dispX, dispY);
+		context.translate(x, y);
+		
+		context.moveTo(0, 0);
+		context.rotate(-angle);
+		
+		var size = this.getArrowWidth(context.lineWidth);
+		/// size = 100;
+		context.scale(size, size);
+		
+		context.beginPath();
+		
+		arrowShapes[shape].draw(context);
+		
+		context.closePath();
+		
+//		context.stroke();
+		context.fill();
+		context.restore();
+	}
 	}
 	
+	// @O Node shapes
+	{
 	
-	CanvasRenderer.prototype.calculateEdgeMetrics = function(edge) {
-		if (edge._private.data.source == edge._private.data.target) {
-			edge._private.rscratch.selfEdge = true;
-			return;
-		}
-		
-		// Calculate the 2nd control point
-		var startNode = edge._private.data.source < edge._private.data.target ?
-			edge.source()[0] : edge.target()[0];
-		var endNode = edge._private.data.target < edge._private.data.source ? 
-			edge.source()[0] : edge.target()[0];
-		
-		var middlePointX = 0.5 * (startNode._private.position.x + endNode._private.position.x);
-		var middlePointY = 0.5 * (startNode._private.position.y + endNode._private.position.y);
-		
-		if (this.nodePairEdgeData[edge._private.rscratch.nodePairId] == 1) {
-			edge._private.rscratch.straightEdge = true;
-			edge._private.rscratch.cp2x = middlePointX;
-			edge._private.rscratch.cp2y = middlePointY;
-			
-			return;
-		}
-	
-		/*
-		console.log(startNode._private);
-		console.log(endNode._private);
-		*/
-		
-		var numerator = edge._private.rscratch.nodePairEdgeNum - 1;
-		var denominator = this.nodePairEdgeData[edge._private.rscratch.nodePairId] - 1;
-		var offsetFactor = (numerator / denominator - 0.5);
-		
-		if (Math.abs(offsetFactor) < 0.0001) {
-			edge._private.rscratch.straightEdge = true;
-			edge._private.rscratch.cp2x = middlePointX;
-			edge._private.rscratch.cp2y = middlePointY;
-			//console.log(edge._private.rscratch.cp2x + ", " + edge._private.rscratch.cp2y);
-			return;
-		}
-		
-			
-		var displacementX = endNode._private.position.x - startNode._private.position.x;
-		var displacementY = endNode._private.position.y - startNode._private.position.y;
-		
-		var offsetX = displacementY * offsetFactor;
-		var offsetY = -displacementX * offsetFactor;
-		
-		edge._private.rscratch.cp2x = middlePointX + offsetX;
-		edge._private.rscratch.cp2y = middlePointY + offsetY;
-	}
-	
+	// Generate polygon points
 	var generateUnitNgonPoints = function(sides, rotationRadians) {
 		
 		var increment = 1.0 / sides * 2 * Math.PI;
@@ -2955,220 +2345,22 @@
 		return points;
 	}
 	
-	CanvasRenderer.prototype.findPolygonIntersection = function(
-		node, width, height, x, y, points) {
-		
-		var intersections = renderer.polygonIntersectLine(
-			x, y,
-			points,
-			node._private.position.x,
-			node._private.position.y,
-			width / 2, height / 2,
-			node._private.style["border-width"].value / 2);
-		
-		// If there's multiple, only give the nearest
-		return renderer.findNearestIntersection(intersections, x, y);
-	}
-
+	// Node shape declarations
 	
-	CanvasRenderer.prototype.expandPolygon = function(points, pad) {
-		
-		var expandedLineSet = new Array(points.length * 2);
-		
-		var currentPointX, currentPointY, nextPointX, nextPointY;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			currentPointX = points[i * 2];
-			currentPointY = points[i * 2 + 1];
-			
-			if (i < points.length / 2 - 1) {
-				nextPointX = points[(i + 1) * 2];
-				nextPointY = points[(i + 1) * 2 + 1];
-			} else {
-				nextPointX = points[0];
-				nextPointY = points[1];
-			}
-			
-			// Current line: [currentPointX, currentPointY] to [nextPointX, nextPointY]
-			
-			// Assume CCW polygon winding
-			
-			var offsetX = (nextPointY - currentPointY);
-			var offsetY = -(nextPointX - currentPointX);
-			
-			// Normalize
-			var offsetLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-			var normalizedOffsetX = offsetX / offsetLength;
-			var normalizedOffsetY = offsetY / offsetLength;
-			
-			expandedLineSet[i * 4] = currentPointX + normalizedOffsetX * pad;
-			expandedLineSet[i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
-			expandedLineSet[i * 4 + 2] = nextPointX + normalizedOffsetX * pad;
-			expandedLineSet[i * 4 + 3] = nextPointY + normalizedOffsetY * pad;
-		}
-		
-		return expandedLineSet;
-	}
-	
-	CanvasRenderer.prototype.joinLines = function(lineSet) {
-		
-		var vertices = new Array(lineSet.length / 2);
-		
-		var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
-		var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
-		
-		for (var i = 0; i < lineSet.length / 4; i++) {
-			currentLineStartX = lineSet[i * 4];
-			currentLineStartY = lineSet[i * 4 + 1];
-			currentLineEndX = lineSet[i * 4 + 2];
-			currentLineEndY = lineSet[i * 4 + 3];
-			
-			if (i < lineSet.length / 4 - 1) {
-				nextLineStartX = lineSet[(i + 1) * 4];
-				nextLineStartY = lineSet[(i + 1) * 4 + 1];
-				nextLineEndX = lineSet[(i + 1) * 4 + 2];
-				nextLineEndY = lineSet[(i + 1) * 4 + 3];
-			} else {
-				nextLineStartX = lineSet[0];
-				nextLineStartY = lineSet[1];
-				nextLineEndX = lineSet[2];
-				nextLineEndY = lineSet[3];
-			}
-			
-			var intersection = this.finiteLinesIntersect(
-				currentLineStartX, currentLineStartY,
-				currentLineEndX, currentLineEndY,
-				nextLineStartX, nextLineStartY,
-				nextLineEndX, nextLineEndY,
-				true);
-			
-			vertices[i * 2] = intersection[0];
-			vertices[i * 2 + 1] = intersection[1];
-		}
-		
-		return vertices;
-	}
-	
-	nodeShapeDrawers["ellipse"] = function(node, width, height) {
-		var context = renderer.context;
-	
-		context.beginPath();
-		context.save();
-		context.translate(node._private.position.x, node._private.position.y);
-		context.scale(width / 2, height / 2);
-		// At origin, radius 1, 0 to 2pi
-		context.arc(0, 0, 1, 0, Math.PI * 2, false);
-		context.closePath();
-		context.restore();
-		context.fill();
-	}
-	
-	// Intersect node shape vs line from (x, y) to node center
-	nodeShapeIntersectLine["ellipse"] = function(
-		node, width, height, x, y) {
-	
-		var intersect = renderer.intersectLineEllipse(
-			x, y,
-			node.position().x,
-			node.position().y,
-			width / 2 + node._private.style["border-width"].value / 2,
-			height / 2 + node._private.style["border-width"].value / 2);
-			
-		return intersect;
-	}
-	
-	CanvasRenderer.prototype.checkInBoundingCircle = function(
-		x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
-		
-		x = (x - centerX) / (width + padding);
-		y = (y - centerY) / (height + padding);
-		
-		return (x * x + y * y) <= farthestPointSqDistance;
-	}
-	
-	CanvasRenderer.prototype.checkInBoundingBox = function(
-		x1, y1, x2, x2, points, padding, width, height, centerX, centerY) {
-		
-		var minX = points[0], minY = points[1];
-		var maxX = points[2], maxY = points[3];
-		
-		for (var i = 1; i < points.length / 2; i++) {
-		
-			if (points[i * 2] < minX) {
-				minX = points[i * 2];
-			} else if (points[i * 2] > maxX) {
-				maxX = points[i * 2];
-			}
-			
-			if (points[i * 2 + 1] < minY) {
-				minY = points[i * 2 + 1];
-			} else if (points[i * 2 + 1] > maxY) {
-				maxY = points[i * 2 + 1];
-			}
-		}
-		
-		x -= centerX;
-		y -= centerY;
-		
-		x /= width;
-		y /= height;
-	}
-	
-	CanvasRenderer.prototype.checkInBoundingBox = function(
-		x, y, points, padding, width, height, centerX, centerY) {
-		
-		// Assumes width, height >= 0, points.length > 0
-		
-		var minX = points[0], minY = points[1];
-		var maxX = points[0], maxY = points[1];
-		
-		for (var i = 1; i < points.length / 2; i++) {
-			
-			if (points[i * 2] < minX) {
-				minX = points[i * 2];
-			} else if (points[i * 2] > maxX) {
-				maxX = points[i * 2];
-			}
-			
-			if (points[i * 2 + 1] < minY) {
-				minY = points[i * 2 + 1];
-			} else if (points[i * 2 + 1] > maxY) {
-				maxY = points[i * 2 + 1];
-			}
-		}
-		
-		x -= centerX;
-		y -= centerY;
-		
-		x /= width;
-		y /= height;
-		
-		if (x < minX) {
-			return false;
-		} else if (x > maxX) {
-			return false;
-		}
-		
-		if (y < minY) {
-			return false;
-		} else if (y > maxY) {
-			return false;
-		}
-		
-		return true;
-	}
-	
+	// Contract for node shapes:
+	{
 	// Node shape contract:
 	//
 	// draw: draw
 	// intersectLine: report intersection from x, y, to node center
 	// checkPointRough: heuristic check x, y in node, no false negatives
 	// checkPoint: check x, y in node
+	}
 	
+	// Declarations
+	{
 	nodeShapes["ellipse"] = {
-		draw: function(node, width, height) {
-			var context = renderer.context;
-		
+		draw: function(context, node, width, height) {
 			context.beginPath();
 			context.save();
 			context.translate(node._private.position.x, node._private.position.y);
@@ -3178,10 +2370,14 @@
 			context.closePath();
 			context.restore();
 			context.fill();
+			
+//			console.log("drawing ellipse");
+//			console.log(arguments);
+			
 		},
 		
 		intersectLine: function(node, width, height, x, y) {
-			var intersect = renderer.intersectLineEllipse(
+			var intersect = rendFunc.intersectLineEllipse(
 			x, y,
 			node.position().x,
 			node.position().y,
@@ -3192,9 +2388,9 @@
 		},
 		
 		intersectBox: function(
-			x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
 			
-			return renderer.boxIntersectEllipse(
+			return CanvasRenderer.prototype.boxIntersectEllipse(
 				x1, y1, x2, y2, padding, width, height, centerX, centerY);
 		},
 		
@@ -3406,165 +2602,95 @@
 				node, width, height, x, y, nodeShapes["octagon"].points);
 		}
 	}
-	
-	nodeShapeDrawers["triangle"] = function(node, width, height) {
-		cy.renderer().drawPolygon(node._private.position.x,
-			node._private.position.y, width, height, "triangle", 3);
+	}
+
 	}
 	
-	nodeShapeIntersectLine["triangle"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "triangle", 3);
-	}
-	
-	nodeShapeDrawers["square"] = function(node, width, height) {
-		cy.renderer().drawPolygon(node._private.position.x,
-			node._private.position.y, width, height, "square", 4);
-	}
-	
-	nodeShapeIntersectLine["square"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "square", 4);
-	}
-	
-	nodeShapeDrawers["rectangle"] = nodeShapeDrawers["square"];
-	nodeShapeIntersectLine["rectangle"] = nodeShapeIntersectLine["square"];
-	
-	nodeShapeDrawers["pentagon"] = function(node, width, height) {
-		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, width, height, "pentagon", 5);
-	}
-	
-	nodeShapeIntersectLine["pentagon"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "pentagon", 5);
-	}
-	
-	nodeShapeDrawers["hexagon"] = function(node, width, height) {
-		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, width, height, "hexagon", 6);
-	}
-	
-	nodeShapeIntersectLine["hexagon"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "hexagon", 6);
-	}
-	
-	nodeShapeDrawers["heptagon"] = function(node, width, height) {
-		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, width, height, "heptagon", 7);
-	}
-	
-	nodeShapeIntersectLine["heptagon"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "heptagon", 7);
-	}
-	
-	nodeShapeDrawers["octagon"] = function(node, width, height) {
-		cy.renderer().drawNgon(node._private.position.x,
-			node._private.position.y, width, height, "octagon", 8);
-	}
-	
-	nodeShapeIntersectLine["octagon"] = function(node, width, height, x, y) {
-		return renderer.findPolygonIntersection(node, width, height, x, y, "octagon", 8);
-	}
-	
-	// nodeShapeUnitPoints["triangle"] = generateNgonPoints(
-	
-	// Generates points for an n-sided polygon, using a circle of radius 1.
-	/*
-	CanvasRenderer.prototype.generateUnitNgonPoints = function(sides, rotationRadians) {
+	// @O Polygon calculations
+	{
+	CanvasRenderer.prototype.expandPolygon = function(points, pad) {
 		
-		var increment = 1.0 / sides * 2 * Math.PI;
-		var startAngle = sides % 2 == 0 ? Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
+		var expandedLineSet = new Array(points.length * 2);
 		
-		startAngle += rotationRadians;
+		var currentPointX, currentPointY, nextPointX, nextPointY;
 		
-		var points = new Array(sides * 2);
-		
-		var currentAngle;
-		for (var i = 0; i < sides; i++) {
-			currentAngle = i * increment + startAngle;
+		for (var i = 0; i < points.length / 2; i++) {
+			currentPointX = points[i * 2];
+			currentPointY = points[i * 2 + 1];
 			
-			points[2 * i] = Math.cos(currentAngle);
-			points[2 * i + 1] = Math.sin(currentAngle);
-		}
-		
-		return points;
-	}
-	*/
-	
-	CanvasRenderer.prototype.findNearestIntersection = function(intersections, x, y) {
-		
-		var distSquared;
-		var minDistSquared;
-		
-		var minDistanceX;
-		var minDistanceY;
-		
-		if (intersections.length == 0) {
-			return [];
-		}
-		
-		for (var i = 0; i < intersections.length / 2; i++) {
-			distSquared = Math.pow(x - intersections[i * 2], 2)
-				+ Math.pow(y - intersections[i * 2 + 1], 2);
-			
-			if (minDistSquared == undefined || minDistSquared > distSquared) {
-				minDistSquared = distSquared;
-				
-				minDistanceX = intersections[i * 2];
-				minDistanceY = intersections[i * 2 + 1];
+			if (i < points.length / 2 - 1) {
+				nextPointX = points[(i + 1) * 2];
+				nextPointY = points[(i + 1) * 2 + 1];
+			} else {
+				nextPointX = points[0];
+				nextPointY = points[1];
 			}
+			
+			// Current line: [currentPointX, currentPointY] to [nextPointX, nextPointY]
+			
+			// Assume CCW polygon winding
+			
+			var offsetX = (nextPointY - currentPointY);
+			var offsetY = -(nextPointX - currentPointX);
+			
+			// Normalize
+			var offsetLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+			var normalizedOffsetX = offsetX / offsetLength;
+			var normalizedOffsetY = offsetY / offsetLength;
+			
+			expandedLineSet[i * 4] = currentPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
+			expandedLineSet[i * 4 + 2] = nextPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 3] = nextPointY + normalizedOffsetY * pad;
 		}
 		
-		return [minDistanceX, minDistanceY];
+		return expandedLineSet;
 	}
 	
-	CanvasRenderer.prototype.shortenIntersection = function(
-		intersection, offset, amount) {
+	CanvasRenderer.prototype.joinLines = function(lineSet) {
 		
-		var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
+		var vertices = new Array(lineSet.length / 2);
 		
-		var length = Math.sqrt(disp[0] * disp[0] + disp[1] * disp[1]);
+		var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
+		var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
 		
-		var lenRatio = (length - amount) / length;
-		
-		if (lenRatio < 0) {
-			return [];
-		} else {
-			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+		for (var i = 0; i < lineSet.length / 4; i++) {
+			currentLineStartX = lineSet[i * 4];
+			currentLineStartY = lineSet[i * 4 + 1];
+			currentLineEndX = lineSet[i * 4 + 2];
+			currentLineEndY = lineSet[i * 4 + 3];
+			
+			if (i < lineSet.length / 4 - 1) {
+				nextLineStartX = lineSet[(i + 1) * 4];
+				nextLineStartY = lineSet[(i + 1) * 4 + 1];
+				nextLineEndX = lineSet[(i + 1) * 4 + 2];
+				nextLineEndY = lineSet[(i + 1) * 4 + 3];
+			} else {
+				nextLineStartX = lineSet[0];
+				nextLineStartY = lineSet[1];
+				nextLineEndX = lineSet[2];
+				nextLineEndY = lineSet[3];
+			}
+			
+			var intersection = this.finiteLinesIntersect(
+				currentLineStartX, currentLineStartY,
+				currentLineEndX, currentLineEndY,
+				nextLineStartX, nextLineStartY,
+				nextLineEndX, nextLineEndY,
+				true);
+			
+			vertices[i * 2] = intersection[0];
+			vertices[i * 2 + 1] = intersection[1];
 		}
+		
+		return vertices;
 	}
-
-	CanvasRenderer.prototype.drawPolygon = function(
-		x, y, width, height, points) {
-
-		var context = cy.renderer().context;
-		context.save();
-		context.translate(x, y);
-		context.beginPath();
-		
-		context.scale(width / 2, height / 2);
-		context.moveTo(points[0], points[1]);
-		
-		for (var i = 1; i < points.length / 2; i++) {
-			context.lineTo(points[i * 2], points[i * 2 + 1]);
-		}
-		
-		context.closePath();
-		context.fill();
-		
-		context.restore();
-	}
-
+	
 	CanvasRenderer.prototype.pointInsidePolygon = function(
 		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
-//		console.log("entry: " + direction);
-		// console.log("dir: " + direction);
-//&		console.log(arguments);
-		
+
 		//var direction = arguments[6];
 		var transformedPoints = new Array(basePoints.length)
-		
-//		console.log(direction[0], direction[1]);
-//		console.log("presin: " + direction[1] / (Math.sqrt(direction[0] * direction[0] 
-//			+ direction[1] * direction[1])));
 
 		// Gives negative angle
 		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
@@ -3575,11 +2701,7 @@
 		} else {
 			angle = -angle - Math.PI / 2;
 		}
-		
-//		console.log(basePoints);
-		
-//		console.log(angle);
-		
+				
 		var cos = Math.cos(-angle);
 		var sin = Math.sin(-angle);
 		
@@ -3592,16 +2714,10 @@
 			transformedPoints[i * 2 + 1] = 
 				height * (basePoints[i * 2 + 1] * cos 
 					+ basePoints[i * 2] * sin);
-			
-//			console.log(height, basePoints[i * 2 + 1], cos, basePoints[i * 2], sin);
-			
-//			console.log("pretranslate: " + transformedPoints[i * 2]
-//				+ ", " + transformedPoints[i * 2 + 1]);
-			
+
 			transformedPoints[i * 2] += centerX;
 			transformedPoints[i * 2 + 1] += centerY;
 		}
-//		console.log("transformed: " + transformedPoints);
 		
 		var points;
 		
@@ -3615,7 +2731,6 @@
 			points = transformedPoints;
 		}
 		
-//		console.log("testpoints: " + points);
 		var x1, y1, x2, y2;
 		var y3;
 		
@@ -3671,305 +2786,22 @@
 			return true;
 		}
 	}
-
-	CanvasRenderer.prototype.polygonIntersectLine = function(
-		x, y, basePoints, centerX, centerY, width, height, padding) {
-		
-		var intersections = [];
-		var intersection;
-		
-		var transformedPoints = new Array(basePoints.length);
-		
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			transformedPoints[i * 2] = basePoints[i * 2] * width + centerX;
-			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
-		}
-		
-		var points;
-		
-		if (padding > 0) {
-			var expandedLineSet = renderer.expandPolygon(
-				transformedPoints,
-				-padding);
-			
-			points = renderer.joinLines(expandedLineSet);
-		} else {
-			points = transformedPoints;
-		}
-		// var points = transformedPoints;
-		
-		var currentX, currentY, nextX, nextY;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-		
-			currentX = points[i * 2];
-			currentY = points[i * 2 + 1];
-
-			if (i < points.length / 2 - 1) {
-				nextX = points[(i + 1) * 2];
-				nextY = points[(i + 1) * 2 + 1];
-			} else {
-				nextX = points[0]; 
-				nextY = points[1];
-			}
-			
-			intersection = this.finiteLinesIntersect(
-				x, y, centerX, centerY,
-				currentX, currentY,
-				nextX, nextY);
-			
-			if (intersection.length != 0) {
-				intersections.push(intersection[0], intersection[1]);
-			}
-		}
-		
-		return intersections;
 	}
 	
-	// x2 can be <= x1
-	CanvasRenderer.prototype.boxIntersectPolygon = function(
-		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
-		
-//		console.log(arguments);
-		
-		if (x2 < x1) {
-			var oldX1 = x1;
-			x1 = x2;
-			x2 = oldX1;
-		}
-		
-		if (y2 < y1) {
-			var oldY1 = y1;
-			y1 = y2;
-			y2 = oldY1;
-		}
-		
-		var transformedPoints = new Array(basePoints.length)
-		
-		// Gives negative of angle
-		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
-			+ direction[1] * direction[1])));
-		
-		if (direction[0] < 0) {
-			angle = angle + Math.PI / 2;
-		} else {
-			angle = -angle - Math.PI / 2;
-		}
-		
-		var cos = Math.cos(-angle);
-		var sin = Math.sin(-angle);
-		
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			transformedPoints[i * 2] = 
-				width * (basePoints[i * 2] * cos
-					- basePoints[i * 2 + 1] * sin);
-			
-			transformedPoints[i * 2 + 1] = 
-				height * (basePoints[i * 2 + 1] * cos 
-					+ basePoints[i * 2] * sin);
-			
-			transformedPoints[i * 2] += centerX;
-			transformedPoints[i * 2 + 1] += centerY;
-		}
-		
-		var points;
-		
-		if (padding > 0) {
-			var expandedLineSet = renderer.expandPolygon(
-				transformedPoints,
-				-padding);
-			
-			points = renderer.joinLines(expandedLineSet);
-		} else {
-			points = transformedPoints;
-		}
-		
-		// Check if a point is in box
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			if (x1 <= transformedPoints[i * 2]
-					&& transformedPoints[i * 2] <= x2) {
-				
-				if (y1 <= transformedPoints[i * 2 + 1]
-						&& transformedPoints[i * 2 + 1] <= y2) {
-					
-					return true;
-				}
-			}
-		}
-		
-		// Check if box corner in the polygon
-		if (renderer.pointInsidePolygon(
-			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		} else if (renderer.pointInsidePolygon(
-			x1, y2, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		} else if (renderer.pointInsidePolygon(
-			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		} else if (renderer.pointInsidePolygon(
-			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	CanvasRenderer.prototype.boxIntersectEllipse = function(
-		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
-		
-		if (x2 < x1) {
-			var oldX1 = x1;
-			x1 = x2;
-			x2 = oldX1;
-		}
-		
-		if (y2 < y1) {
-			var oldY1 = y1;
-			y1 = y2;
-			y2 = oldY1;
-		}
-		
-		// 4 ortho extreme points
-		var east = [centerX - width / 2 - padding, centerY];
-		var west = [centerX + width / 2 + padding, centerY];
-		var north = [centerX, centerY + height / 2 + padding];
-		var south = [centerX, centerY - height / 2 - padding];
-		
-		// out of bounds: return false
-		if (x2 < east[0]) {
-			return false;
-		}
-		
-		if (x1 > west[0]) {
-			return false;
-		}
-		
-		if (y2 < south[1]) {
-			return false;
-		}
-		
-		if (y1 > north[1]) {
-			return false;
-		}
-		
-		// 1 of 4 ortho extreme points in box: return true
-		if (x1 <= east[0] && east[0] <= x2
-				&& y1 <= east[1] && east[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= west[0] && west[0] <= x2
-				&& y1 <= west[1] && west[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= north[0] && north[0] <= x2
-				&& y1 <= north[1] && north[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= south[0] && south[0] <= x2
-				&& y1 <= south[1] && south[1] <= y2) {
-			return true;
-		}
-		
-		// box corner in ellipse: return true		
-		x1 = (x1 - centerX) / (width + padding);
-		x2 = (x2 - centerX) / (width + padding);
-		
-		y1 = (y1 - centerY) / (height + padding);
-		y2 = (y2 - centerY) / (height + padding);
-		
-		if (x1 * x1 + y1 * y1 <= 1) {
-			return true;
-		}
-		
-		if (x2 * x2 + y1 * y1 <= 1) {
-			return true;
-		}
-		
-		if (x2 * x2 + y2 * y2 <= 1) {
-			return true;
-		}
-		
-		if (x1 * x1 + y2 * y2 <= 1) {
-			return true;
-		}
-		
-		return false;
-	}
-	
-	CanvasRenderer.prototype.finiteLinesIntersect = function(
-		x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
-		
-		var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
-		var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
-		var u_b = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+	// @O Polygon drawing
+	CanvasRenderer.prototype.drawPolygon = function(
+		x, y, width, height, points) {
 
-		if (u_b != 0) {
-			var ua = ua_t / u_b;
-			var ub = ub_t / u_b;
-			
-			if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {	
-				return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
-				
-			} else {
-				if (!infiniteLines) {
-					return [];
-				} else {
-					return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
-				}
-			}
-		} else {
-			if (ua_t == 0 || ub_t == 0) {
-
-				// Parallel, coincident lines. Check if overlap
-
-				// Check endpoint of second line
-				if ([x1, x2, x4].sort()[1] == x4) {
-					return [x4, y4];
-				}
-				
-				// Check start point of second line
-				if ([x1, x2, x3].sort()[1] == x3) {
-					return [x3, y3];
-				}
-				
-				// Endpoint of first line
-				if ([x3, x4, x2].sort()[1] == x2) {
-					return [x2, y2];
-				}
-				
-				return [];
-			} else {
-			
-				// Parallel, non-coincident
-				return [];
-			}
-		}
-	};
-	
-	CanvasRenderer.prototype.drawNgon = function(x, y, sides, width, height) {
 		var context = cy.renderer().context;
 		context.save();
 		context.translate(x, y);
 		context.beginPath();
 		
-		var increment = 1 / sides * 2 * Math.PI;
-		var startAngle = sides % 2 == 0? Math.PI / 2 + increment / 2 : Math.PI / 2;
-		
 		context.scale(width / 2, height / 2);
+		context.moveTo(points[0], points[1]);
 		
-		context.moveTo(Math.cos(startAngle), -Math.sin(startAngle));
-		for (var angle = startAngle;
-			angle < startAngle + 2 * Math.PI; angle += increment) {
-		
-			context.lineTo(Math.cos(angle), -Math.sin(angle));
+		for (var i = 1; i < points.length / 2; i++) {
+			context.lineTo(points[i * 2], points[i * 2 + 1]);
 		}
 		
 		context.closePath();
@@ -3978,553 +2810,508 @@
 		context.restore();
 	}
 	
-	// Sizes canvas to container if different size
-	CanvasRenderer.prototype.matchCanvasSize = function(container) {
-		var width = container.clientWidth;
-		var height = container.clientHeight;
+	// @O Approximate collision functions
+	CanvasRenderer.prototype.checkInBoundingCircle = function(
+		x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
 		
-		var canvas;
-		for (var i = 0; i < this.canvases.length + this.bufferCanvases.length; i++) {
+		x = (x - centerX) / (width + padding);
+		y = (y - centerY) / (height + padding);
+		
+		return (x * x + y * y) <= farthestPointSqDistance;
+	}
+	
+	CanvasRenderer.prototype.checkInBoundingBox = function(
+		x, y, points, padding, width, height, centerX, centerY) {
+		
+		// Assumes width, height >= 0, points.length > 0
+		
+		var minX = points[0], minY = points[1];
+		var maxX = points[0], maxY = points[1];
+		
+		for (var i = 1; i < points.length / 2; i++) {
 			
-			if (i < this.canvases.length) {
-				canvas = this.canvases[i];
+			if (points[i * 2] < minX) {
+				minX = points[i * 2];
+			} else if (points[i * 2] > maxX) {
+				maxX = points[i * 2];
+			}
+			
+			if (points[i * 2 + 1] < minY) {
+				minY = points[i * 2 + 1];
+			} else if (points[i * 2 + 1] > maxY) {
+				maxY = points[i * 2 + 1];
+			}
+		}
+		
+		x -= centerX;
+		y -= centerY;
+		
+		x /= width;
+		y /= height;
+		
+		if (x < minX) {
+			return false;
+		} else if (x > maxX) {
+			return false;
+		}
+		
+		if (y < minY) {
+			return false;
+		} else if (y > maxY) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	// @O Straight/bezier edge approximate collision, precise collision, and distance calculation functions
+	{
+	CanvasRenderer.prototype.boxInBezierVicinity = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
+		
+		// Return values:
+		// 0 - curve is not in box
+		// 1 - curve may be in box; needs precise check
+		// 2 - curve is in box
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
+			return 2;
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
+			return 2;
+		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { 
+			return 1;
+		}
+		
+		var curveMinX = Math.min(x1, x2, x3);
+		var curveMinY = Math.min(y1, y2, y3);
+		var curveMaxX = Math.max(x1, x2, x3);
+		var curveMaxY = Math.max(y1, y2, y3);
+		
+		/*
+		console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX 
+			+ ", " + curveMaxY);
+		if (curveMinX == undefined) {
+			console.log("undefined curveMinX: " + x1 + ", " + x2 + ", " + x3);
+		}
+		*/
+		
+		if (curveMinX > boxMaxX
+			|| curveMaxX < boxMinX
+			|| curveMinY > boxMaxY
+			|| curveMaxY < boxMinY) {
+			
+			return 0;	
+		}
+		
+		return 1;
+	}
+	
+	CanvasRenderer.prototype.checkStraightEdgeCrossesBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+		
+	 //console.log(arguments);
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		// Check left + right bounds
+		var aX = x2 - x1;
+		var bX = x1;
+		var yValue;
+		
+		// Top and bottom
+		var aY = y2 - y1;
+		var bY = y1;
+		var xValue;
+		
+		if (Math.abs(aX) < 0.0001) {
+			return (x1 >= boxMinX && x1 <= boxMaxX
+				&& Math.min(y1, y2) <= boxMinY
+				&& Math.max(y1, y2) >= boxMaxY);	
+		}
+		
+		var tLeft = (boxMinX - bX) / aX;
+		if (tLeft > 0 && tLeft <= 1) {
+			yValue = aY * tLeft + bY;
+			if (yValue >= boxMinY && yValue <= boxMaxY) {
+				return true;
+			} 
+		}
+		
+		var tRight = (boxMaxX - bX) / aX;
+		if (tRight > 0 && tRight <= 1) {
+			yValue = aY * tRight + bY;
+			if (yValue >= boxMinY && yValue <= boxMaxY) {
+				return true;
+			} 
+		}
+		
+		var tTop = (boxMinY - bY) / aY;
+		if (tTop > 0 && tTop <= 1) {
+			xValue = aX * tTop + bX;
+			if (xValue >= boxMinX && xValue <= boxMaxX) {
+				return true;
+			} 
+		}
+		
+		var tBottom = (boxMaxY - bY) / aY;
+		if (tBottom > 0 && tBottom <= 1) {
+			xValue = aX * tBottom + bX;
+			if (xValue >= boxMinX && xValue <= boxMaxX) {
+				return true;
+			} 
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.checkBezierCrossesBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
+		
+		var boxMinX = Math.min(x1box, x2box) - tolerance;
+		var boxMinY = Math.min(y1box, y2box) - tolerance;
+		var boxMaxX = Math.max(x1box, x2box) + tolerance;
+		var boxMaxY = Math.max(y1box, y2box) + tolerance;
+		
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
+			return true;
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
+			return true;
+		}
+		
+		var aX = x1 - 2 * x2 + x3;
+		var bX = -2 * x1 + 2 * x2;
+		var cX = x1;
+
+		var xIntervals = [];
+		
+		if (Math.abs(aX) < 0.0001) {
+			var leftParam = (boxMinX - x1) / bX;
+			var rightParam = (boxMaxX - x1) / bX;
+			
+			xIntervals.push(leftParam, rightParam);
+		} else {
+			// Find when x coordinate of the curve crosses the left side of the box
+			var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
+			var tX1, tX2;
+			if (discriminantX1 > 0) {
+				var sqrt = Math.sqrt(discriminantX1);
+				tX1 = (-bX + sqrt) / (2 * aX);
+				tX2 = (-bX - sqrt) / (2 * aX);
+				
+				xIntervals.push(tX1, tX2);
+			}
+			
+			var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
+			var tX3, tX4;
+			if (discriminantX2 > 0) {
+				var sqrt = Math.sqrt(discriminantX2);
+				tX3 = (-bX + sqrt) / (2 * aX);
+				tX4 = (-bX - sqrt) / (2 * aX);
+				
+				xIntervals.push(tX3, tX4);
+			}
+		}
+		
+		xIntervals.sort(function(a, b) { return a - b; });
+		
+		var aY = y1 - 2 * y2 + y3;
+		var bY = -2 * y1 + 2 * y2;
+		var cY = y1;
+		
+		var yIntervals = [];
+		
+		if (Math.abs(aY) < 0.0001) {
+			var topParam = (boxMinY - y1) / bY;
+			var bottomParam = (boxMaxY - y1) / bY;
+			
+			yIntervals.push(topParam, bottomParam);
+		} else {
+			var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
+			
+			var tY1, tY2;
+			if (discriminantY1 > 0) {
+				var sqrt = Math.sqrt(discriminantY1);
+				tY1 = (-bY + sqrt) / (2 * aY);
+				tY2 = (-bY - sqrt) / (2 * aY);
+				
+				yIntervals.push(tY1, tY2);
+			}
+	
+			var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
+			
+			var tY3, tY4;
+			if (discriminantY2 > 0) {
+				var sqrt = Math.sqrt(discriminantY2);
+				tY3 = (-bY + sqrt) / (2 * aY);
+				tY4 = (-bY - sqrt) / (2 * aY);
+				
+				yIntervals.push(tY3, tY4);
+			}
+		}
+				
+		yIntervals.sort(function(a, b) { return a - b; });
+
+		for (var index = 0; index < xIntervals.length; index += 2) {
+			for (var yIndex = 1; yIndex < yIntervals.length; yIndex += 2) {
+				
+				// Check if there exists values for the Bezier curve
+				// parameter between 0 and 1 where both the curve's
+				// x and y coordinates are within the bounds specified by the box
+				if (xIntervals[index] < yIntervals[yIndex]
+					&& yIntervals[yIndex] >= 0.0
+					&& xIntervals[index] <= 1.0
+					&& xIntervals[index + 1] > yIntervals[yIndex - 1]
+					&& yIntervals[yIndex - 1] <= 1.0
+					&& xIntervals[index + 1] >= 0.0) {
+					
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	CanvasRenderer.prototype.inBezierVicinity = function(
+		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
+		
+		// Middle point occurs when t = 0.5, this is when the Bezier
+		// is closest to (x2, y2)
+		var middlePointX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
+		var middlePointY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
+		
+		var displacementX, displacementY, offsetX, offsetY;
+		var dotProduct, dotSquared, hypSquared;
+		var outside = function(x, y, startX, startY, endX, endY,
+				toleranceSquared, counterClockwise) {
+
+			dotProduct = (endY - startY) * (x - startX) + (startX - endX) * (y - startY);
+			dotSquared = dotProduct * dotProduct;
+			sideSquared = (endY - startY) * (endY - startY) 
+				+ (startX - endX) * (startX - endX);
+
+			if (counterClockwise) {
+				if (dotProduct > 0) {
+					return false;
+				}
 			} else {
-				canvas = this.bufferCanvases[i - this.canvases.length];
+				if (dotProduct < 0) {
+					return false;
+				}
 			}
 			
-			if (canvas.width !== width || canvas.height !== height) {
-				
-				canvas.width = width;
-				canvas.height = height;
-			
-			}
+			return (dotSquared / sideSquared > toleranceSquared);
+		};
+		
+		// Used to check if the test polygon winding is clockwise or counterclockwise
+		var testPointX = (middlePointX + x2) / 2.0;
+		var testPointY = (middlePointY + y2) / 2.0;
+		
+		var counterClockwise = true;
+		
+		// The test point is always inside
+		if (outside(testPointX, testPointY, x1, y1, x2, y2, 0, counterClockwise)) {
+			counterClockwise = !counterClockwise;
 		}
+		
+		/*
+		return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
+			&& !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
+			&& !outside(x, y, x3, y3, middlePointX, middlePointY, toleranceSquared,
+				counterClockwise)
+			&& !outside(x, y, middlePointX, middlePointY, x1, y1, toleranceSquared,
+				counterClockwise)
+		);
+		*/
+		
+		return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
+			&& !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
+			&& !outside(x, y, x3, y3, x1, y1, toleranceSquared,
+				counterClockwise)
+		);
 	}
 	
-	var doSingleRedraw = false;
-	
-	CanvasRenderer.prototype.redraw = function(singleRedraw) {
+	CanvasRenderer.prototype.solveCubic = function(a, b, c, d, result) {
 		
-		renderer.matchCanvasSize(renderer.container);
-		
-		if (redrawTimeout) {
-//			doSingleRedraw = true;
-			// return;
-		}
-		
-		redrawTimeout = setTimeout(function() {
-			redrawTimeout = null;
-			if (doSingleRedraw && !singleRedraw) {
-				renderer.redraw(true);
-				doSingleRedraw = false;
-				
-				// console.log("singleRedraw");
-			}
-		}, 1000 / 80);
-		
-		var context = this.context;
-		var contexts = this.canvasContexts;
-		
-		var elements = this.options.cy.elements().toArray();
-		var elementsLayer2 = [];
-		var elementsLayer4 = [];
-		
-		if (this.canvasNeedsRedraw[2] || this.canvasNeedsRedraw[4]) {
-		
-			this.findEdgeControlPoints(this.options.cy.edges());
-			
-			elements.sort(function(a, b) {
-				var result = a._private.style["z-index"].value
-					- b._private.style["z-index"].value;
-				
-				if (result == 0) {
-					if (a._private.group == "nodes"
-						&& b._private.group == "edges") {
-						
-						return 1;
-					} else if (a._private.group == "edges"
-						&& b._private.group == "nodes") {
-						
-						return -1;
-					}
-				}
-				
-				return 0;
-			});
-		}
-		
-		if (this.canvasNeedsRedraw[2]) {
-			context = this.canvasContexts[2];
-			this.context = context;
-			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-			
-			context.translate(this.cy.pan().x, this.cy.pan().y);
-			context.scale(this.cy.zoom(), this.cy.zoom());
-			
-			var element;
+		// Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
+		// r is the real component, i is the imaginary component
 
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNode(element);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(element);
-					}
-				}
-			}
-			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNodeText(element);
-					} else if (element._private.group == "edges") {
-						this.drawEdgeText(element);
-					}
-				}
-			}
-			
-			this.canvasNeedsRedraw[2] = false;
-			this.redrawReason[2] = [];
-		}
-		
-		if (this.canvasNeedsRedraw[4]) {
-			context = this.canvasContexts[4];
-			this.context = context;
-			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-			
-			context.translate(this.cy.pan().x, this.cy.pan().y);
-			context.scale(this.cy.zoom(), this.cy.zoom());
-		
-//			console.log(4, this.redrawReason[4]);
-		
-			var element;
-			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (!element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNode(element);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(element);
-					}
-				}
-			}
-			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-				
-				if (!element._private.rscratch.layer2) {
-					if (element._private.group == "nodes") {
-						this.drawNodeText(element);
-					} else if (element._private.group == "edges") {
-						this.drawEdgeText(element);
-					}
-				}
-			}
-			
-			this.canvasNeedsRedraw[4] = false;
-			this.redrawReason[4] = [];
-		}
-		
-		if (this.canvasNeedsRedraw[0]) {
-			context = this.canvasContexts[0];
-			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-		
-			context.translate(this.cy.pan().x, this.cy.pan().y);
-			context.scale(this.cy.zoom(), this.cy.zoom());
-			
-			// console.log(0, this.redrawReason[0], selectBox[4]);
-			
-			if (selectBox[4] == 1) {
-				var coreStyle = cy.style()._private.coreStyle;
-				var borderWidth = coreStyle["selection-box-border-width"].value
-					/ this.cy.zoom();
-				
-				context.lineWidth = borderWidth;
-				context.fillStyle = "rgba(" 
-					+ coreStyle["selection-box-color"].value[0] + ","
-					+ coreStyle["selection-box-color"].value[1] + ","
-					+ coreStyle["selection-box-color"].value[2] + ","
-					+ coreStyle["selection-box-opacity"].value + ")";
-				
-				context.fillRect(
-					selectBox[0], //+ borderWidth / 2,
-					selectBox[1], //+ borderWidth / 2,
-					selectBox[2] - selectBox[0],// - borderWidth / 2,
-					selectBox[3] - selectBox[1]);// .- borderWidth / 2);
-				
-				if (borderWidth > 0) {
-					context.strokeStyle = "rgba(" 
-						+ coreStyle["selection-box-border-color"].value[0] + ","
-						+ coreStyle["selection-box-border-color"].value[1] + ","
-						+ coreStyle["selection-box-border-color"].value[2] + ","
-						+ coreStyle["selection-box-opacity"].value + ")";
-					
-					/*
-					var sign = selectBox[2] - selectBox[0] >= 0 ? 1 : -1;
-					
-					context.strokeRect(
-						selectBox[0] + borderWidth / 2 * sign,
-						selectBox[1] + borderWidth / 2 * sign,
-						selectBox[2] - selectBox[0] - borderWidth / 2 * sign,
-						selectBox[3] - selectBox[1] - borderWidth / 2 * sign);
-					*/
-					
-					context.strokeRect(
-						selectBox[0],
-						selectBox[1],
-						selectBox[2] - selectBox[0],
-						selectBox[3] - selectBox[1]);
-				}
-				
-//				console.log(selectBox);
-			}
-			
-			this.canvasNeedsRedraw[0] = false;
-			this.redrawReason[0] = [];
-		}
-		
-		// Rasterize the layers
-		this.bufferCanvasContexts[1].globalCompositeOperation = "copy";
-		this.bufferCanvasContexts[1].drawImage(this.canvases[4], 0, 0);
-		this.bufferCanvasContexts[1].globalCompositeOperation = "source-over";
-		this.bufferCanvasContexts[1].drawImage(this.canvases[2], 0, 0);
-		this.bufferCanvasContexts[1].drawImage(this.canvases[0], 0, 0);
+		// An implementation of the Cardano method from the year 1545
+		// http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
 
-		this.bufferCanvasContexts[0].globalCompositeOperation = "copy";
-		this.bufferCanvasContexts[0].drawImage(this.bufferCanvases[1], 0, 0);
-	};
-	
-	CanvasRenderer.prototype.drawEdge = function(edge) {
-		var context = renderer.context;
+		b /= a;
+		c /= a;
+		d /= a;
 		
-		var startNode, endNode;
+		var discriminant, q, r, dum1, s, t, term1, r13;
 
-		startNode = edge.source()[0];
-		endNode = edge.target()[0];
+		q = (3.0 * c - (b * b)) / 9.0;
+		r = -(27.0 * d) + b * (9.0 * c - 2.0 * (b * b));
+		r /= 54.0;
 		
-		if (edge._private.style["visibility"].value != "visible"
-			|| startNode._private.style["visibility"].value != "visible"
-			|| endNode._private.style["visibility"].value != "visible") {
+		discriminant = q * q * q + r * r;
+		result[1] = 0;
+		term1 = (b / 3.0);
+		
+		if (discriminant > 0) {
+			s = r + Math.sqrt(discriminant);
+			s = ((s < 0) ? -Math.pow(-s, (1.0 / 3.0)) : Math.pow(s, (1.0 / 3.0)));
+			t = r - Math.sqrt(discriminant);
+			t = ((t < 0) ? -Math.pow(-t, (1.0 / 3.0)) : Math.pow(t, (1.0 / 3.0)));
+			result[0] = -term1 + s + t;
+			term1 += (s + t) / 2.0;
+			result[4] = result[2] = -term1;
+			term1 = Math.sqrt(3.0) * (-t + s) / 2;
+			result[3] = term1;
+			result[5] = -term1;
 			return;
 		}
 		
-		// Edge color & opacity
-		context.strokeStyle = "rgba(" 
-			+ edge._private.style["line-color"].value[0] + ","
-			+ edge._private.style["line-color"].value[1] + ","
-			+ edge._private.style["line-color"].value[2] + ","
-			+ edge._private.style.opacity.value + ")";
+		result[5] = result[3] = 0;
 		
-		// Edge line width
-		if (edge._private.style["width"].value <= 0) {
+		if (discriminant == 0) {
+			r13 = ((r < 0) ? -Math.pow(-r, (1.0 / 3.0)) : Math.pow(r, (1.0 / 3.0)));
+			result[0] = -term1 + 2.0 * r13;
+			result[4] = result[2] = -(r13 + term1);
 			return;
 		}
 		
-		context.lineWidth = edge._private.style["width"].value;
+		q = -q;
+		dum1 = q * q * q;
+		dum1 = Math.acos(r / Math.sqrt(dum1));
+		r13 = 2.0 * Math.sqrt(q);
+		result[0] = -term1 + r13 * Math.cos(dum1 / 3.0);
+		result[2] = -term1 + r13 * Math.cos((dum1 + 2.0 * Math.PI) / 3.0);
+		result[4] = -term1 + r13 * Math.cos((dum1 + 4.0 * Math.PI) / 3.0);
 		
-		this.findEndpoints(edge);
+		return;
+	}
+
+	CanvasRenderer.prototype.sqDistanceToQuadraticBezier = function(
+		x, y, x1, y1, x2, y2, x3, y3) {
 		
-		if (edge._private.rscratch.isSelfEdge) {
+		// Find minimum distance by using the minimum of the distance 
+		// function between the given point and the curve
 		
-			context.beginPath();
-			context.moveTo(
-				edge._private.rscratch.startX,
-				edge._private.rscratch.startY)
+		// This gives the coefficients of the resulting cubic equation
+		// whose roots tell us where a possible minimum is
+		// (Coefficients are divided by 4)
+		
+		var a = 1.0 * x1*x1 - 4*x1*x2 + 2*x1*x3 + 4*x2*x2 - 4*x2*x3 + x3*x3
+			+ y1*y1 - 4*y1*y2 + 2*y1*y3 + 4*y2*y2 - 4*y2*y3 + y3*y3;
+		
+		var b = 1.0 * 9*x1*x2 - 3*x1*x1 - 3*x1*x3 - 6*x2*x2 + 3*x2*x3
+			+ 9*y1*y2 - 3*y1*y1 - 3*y1*y3 - 6*y2*y2 + 3*y2*y3;
+		
+		var c = 1.0 * 3*x1*x1 - 6*x1*x2 + x1*x3 - x1*x + 2*x2*x2 + 2*x2*x - x3*x
+			+ 3*y1*y1 - 6*y1*y2 + y1*y3 - y1*y + 2*y2*y2 + 2*y2*y - y3*y;
 			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2ax,
-				edge._private.rscratch.cp2ay,
-				edge._private.rscratch.selfEdgeMidX,
-				edge._private.rscratch.selfEdgeMidY);
-			
-			context.moveTo(
-				edge._private.rscratch.selfEdgeMidX,
-				edge._private.rscratch.selfEdgeMidY);
-			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2cx,
-				edge._private.rscratch.cp2cy,
-				edge._private.rscratch.endX,
-				edge._private.rscratch.endY);
-			
-			context.stroke();
-			
-		} else if (edge._private.rscratch.isStraightEdge) {
-			
-			// Check if the edge is inverted due to close node proximity
-			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
-			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
-			
-			var edgeDirectionX = edge._private.rscratch.endX - edge._private.rscratch.startX;
-			var edgeDirectionY = edge._private.rscratch.endY - edge._private.rscratch.startY;
-			
-			if (nodeDirectionX * edgeDirectionX
-				+ nodeDirectionY * edgeDirectionY < 0) {
+		var d = 1.0 * x1*x2 - x1*x1 + x1*x - x2*x
+			+ y1*y2 - y1*y1 + y1*y - y2*y;
+		
+		debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
+		
+		var roots = [];
+		
+		// Use the cubic solving algorithm
+		this.solveCubic(a, b, c, d, roots);
+		
+		var zeroThreshold = 0.0000001;
+		
+		var params = [];
+		
+		for (var index = 0; index < 6; index += 2) {
+			if (Math.abs(roots[index + 1]) < zeroThreshold
+					&& roots[index] >= 0
+					&& roots[index] <= 1.0) {
+				params.push(roots[index]);
+			}
+		}
+		
+		params.push(1.0);
+		params.push(0.0);
+		
+		var minDistanceSquared = -1;
+		var closestParam;
+		
+		var curX, curY, distSquared;
+		for (var i = 0; i < params.length; i++) {
+			curX = Math.pow(1.0 - params[i], 2.0) * x1
+				+ 2.0 * (1 - params[i]) * params[i] * x2
+				+ params[i] * params[i] * x3;
 				
-				edge._private.rscratch.straightEdgeTooShort = true;	
-			} else {			
-				context.beginPath();
-				context.moveTo(
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY);
-	
-				context.lineTo(edge._private.rscratch.endX, 
-					edge._private.rscratch.endY);
-				context.stroke();
+			curY = Math.pow(1 - params[i], 2.0) * y1
+				+ 2 * (1.0 - params[i]) * params[i] * y2
+				+ params[i] * params[i] * y3;
 				
-				edge._private.rscratch.straightEdgeTooShort = false;	
-			}	
-		} else {
-			
-			context.beginPath();
-			context.moveTo(
-				edge._private.rscratch.startX,
-				edge._private.rscratch.startY);
-			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2x, 
-				edge._private.rscratch.cp2y, 
-				edge._private.rscratch.endX, 
-				edge._private.rscratch.endY);
-			context.stroke();
-			
+			distSquared = Math.pow(curX - x, 2) + Math.pow(curY - y, 2);
+			debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
+			if (minDistanceSquared >= 0) {
+				if (distSquared < minDistanceSquared) {
+					minDistanceSquared = distSquared;
+					closestParam = params[i];
+				}
+			} else {
+				minDistanceSquared = distSquared;
+				closestParam = params[i];
+			}
 		}
 		
-		if (edge._private.rscratch.noArrowPlacement !== true
-				&& edge._private.rscratch.startX !== undefined) {
-			this.drawArrowheads(edge);
-		}
+		/*
+		debugStats.clickX = x;
+		debugStats.clickY = y;
+		
+		debugStats.closestX = Math.pow(1.0 - closestParam, 2.0) * x1
+				+ 2.0 * (1.0 - closestParam) * closestParam * x2
+				+ closestParam * closestParam * x3;
+				
+		debugStats.closestY = Math.pow(1.0 - closestParam, 2.0) * y1
+				+ 2.0 * (1.0 - closestParam) * closestParam * y2
+				+ closestParam * closestParam * y3;
+		*/
+		
+		debug("given: " 
+			+ "( " + x + ", " + y + "), " 
+			+ "( " + x1 + ", " + y1 + "), " 
+			+ "( " + x2 + ", " + y2 + "), "
+			+ "( " + x3 + ", " + y3 + ")");
+		
+		
+		debug("roots: " + roots);
+		debug("params: " + params);
+		debug("closest param: " + closestParam);
+		return minDistanceSquared;
 	}
 	
-	CanvasRenderer.prototype.drawEdgeText = function(edge) {
-		var context = renderer.context;
-	
-		if (edge._private.style["visibility"].value != "visible") {
-			return;
-		}
-	
-		// Calculate text draw position
+	CanvasRenderer.prototype.sqDistanceToFiniteLine = function(x, y, x1, y1, x2, y2) {
+		var offset = [x - x1, y - y1];
+		var line = [x2 - x1, y2 - y1];
 		
-		context.textAlign = "center";
-		context.textBaseline = "middle";
+		var lineSq = line[0] * line[0] + line[1] * line[1];
+		var hypSq = offset[0] * offset[0] + offset[1] * offset[1];
+		var adjSq = Math.pow(offset[0] * line[0] + offset[1] * line[1], 2) / lineSq;
 		
-		var textX, textY;	
-		var edgeCenterX, edgeCenterY;
-		
-		if (edge._private.rscratch.isSelfEdge) {
-			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
-			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
-		} else if (edge._private.rscratch.isStraightEdge) {
-			edgeCenterX = (edge._private.rscratch.startX
-				+ edge._private.rscratch.endX) / 2;
-			edgeCenterY = (edge._private.rscratch.startY
-				+ edge._private.rscratch.endY) / 2;
-		} else if (edge._private.rscratch.isBezierEdge) {
-			edgeCenterX = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startX
-				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2x
-				+ (0.5 * 0.5) * edge._private.rscratch.endX;
-			
-			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
-				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
-				+ (0.5 * 0.5) * edge._private.rscratch.endY;
+		if (adjSq < 0) {
+			return hypSq;
 		}
 		
-		textX = edgeCenterX;
-		textY = edgeCenterY;
+		if (adjSq > lineSq) {
+			return (x - x2) * (x - x2) + (y - y2) * (y - y2);
+		}
 		
-		this.drawText(edge, textX, textY);
+		return (hypSq - adjSq);
+	}
 	}
 	
-	CanvasRenderer.prototype.drawNode = function(node) {
-		var context = renderer.context;
-		
-		var nodeWidth, nodeHeight;
-		
-		if (node._private.style["visibility"].value != "visible") {
-			return;
-		}
-		
-		// Node color & opacity
-		context.fillStyle = "rgba(" 
-			+ node._private.style["background-color"].value[0] + ","
-			+ node._private.style["background-color"].value[1] + ","
-			+ node._private.style["background-color"].value[2] + ","
-			+ (node._private.style["background-opacity"].value 
-			* node._private.style["opacity"].value) + ")";
-		
-		// Node border color & opacity
-		context.strokeStyle = "rgba(" 
-			+ node._private.style["border-color"].value[0] + ","
-			+ node._private.style["border-color"].value[1] + ","
-			+ node._private.style["border-color"].value[2] + ","
-			+ (node._private.style["border-opacity"].value 
-			* node._private.style["opacity"].value) + ")";
-		
-		nodeWidth = node._private.style["width"].value;
-		nodeHeight = node._private.style["height"].value;
-		
-		// Draw node
-		nodeShapes[node._private.style["shape"].value].draw(
-			node,
-			nodeWidth,
-			nodeHeight); //node._private.data.weight / 5.0
-		
-		// Border width, draw border
-		context.lineWidth = node._private.style["border-width"].value;
-		if (node._private.style["border-width"].value > 0) {
-			context.stroke();
-		}
-	}
-	
-	CanvasRenderer.prototype.drawNodeText = function(node) {
-		var context = renderer.context;
-		
-		if (node._private.style["visibility"].value != "visible") {
-			return;
-		}
-	
-		var textX, textY;
-		
-		var nodeWidth = node._private.style["width"].value;
-		var nodeHeight = node._private.style["height"].value;
-	
-		// Find text position
-		var textHalign = node._private.style["text-halign"].strValue;
-		if (textHalign == "left") {
-			// Align right boundary of text with left boundary of node
-			context.textAlign = "right";
-			textX = node._private.position.x - nodeWidth / 2;
-		} else if (textHalign == "right") {
-			// Align left boundary of text with right boundary of node
-			context.textAlign = "left";
-			textX = node._private.position.x + nodeWidth / 2;
-		} else if (textHalign == "center") {
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		} else {
-			// Same as center
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		}
-		
-		var textValign = node._private.style["text-valign"].strValue;
-		if (textValign == "top") {
-			context.textBaseline = "bottom";
-			textY = node._private.position.y - nodeHeight / 2;
-		} else if (textValign == "bottom") {
-			context.textBaseline = "top";
-			textY = node._private.position.y + nodeHeight / 2;
-		} else if (textValign == "middle" || textValign == "center") {
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
-		} else {
-			// same as center
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
-		}
-		
-		this.drawText(node, textX, textY);
-	}
-	
-	CanvasRenderer.prototype.drawText = function(element, textX, textY) {
-		var context = renderer.context;
-		
-		// Font style
-		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].strValue;
-		var labelFamily = element._private.style["font-family"].strValue;
-		var labelVariant = element._private.style["font-variant"].strValue;
-		var labelWeight = element._private.style["font-weight"].strValue;
-					
-		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
-			+ labelSize + " " + labelFamily;
-					
-		var text = String(element._private.style["content"].value);
-		var textTransform = element._private.style["text-transform"].value;
-		
-		if (textTransform == "none") {
-		} else if (textTransform == "uppercase") {
-			text = text.toUpperCase();
-		} else if (textTransform == "lowercase") {
-			text = text.toLowerCase();
-		}
-		
-		// Calculate text draw position based on text alignment
-		
-		context.fillStyle = "rgba(" 
-			+ element._private.style["color"].value[0] + ","
-			+ element._private.style["color"].value[1] + ","
-			+ element._private.style["color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value) + ")";
-		
-		context.strokeStyle = "rgba(" 
-			+ element._private.style["text-outline-color"].value[0] + ","
-			+ element._private.style["text-outline-color"].value[1] + ","
-			+ element._private.style["text-outline-color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value) + ")";
-		
-		if (text != undefined) {
-			context.fillText("" + text, textX, textY);
-		}
-		
-		var lineWidth = element._private.style["text-outline-width"].value;
-		
-		if (lineWidth > 0) {
-			context.lineWidth = lineWidth;
-			context.strokeText(text, textX, textY);
-		}
-	}
-	
-	CanvasRenderer.prototype.zoom = function(params){
-		// debug(params);
-		if (params != undefined && params.level != undefined) {
-		
-			this.scale[0] = params.level;
-			this.scale[1] = params.level;
-		}
-		
-		console.log("zoom call");
-		console.log(params);
-	};
-	
-	CanvasRenderer.prototype.fit = function(params){
-		console.log("fit call");
-		console.log(params);
-	};
-	
-	CanvasRenderer.prototype.pan = function(params){
-		console.log("pan call");
-		console.log(params);
-		
-		if (this.context != undefined) {
-			
-		}
-	};
-	
-	CanvasRenderer.prototype.panBy = function(params){
-		this.center[0] -= params.x;
-		this.center[1] -= params.y;
-		
-		this.redraw();
-		
-		console.log("panBy call");
-		console.log(params);
-	};
-	
+	var debug = function(){};
 	$$("renderer", "canvas", CanvasRenderer);
-
+	
 })( cytoscape );

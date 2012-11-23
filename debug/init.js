@@ -13,13 +13,17 @@ $(function(){
 			.selector("node")
 				.css({
 					"content": "data(id)",
-					"shape": "data(shape)"
+					"shape": "data(shape)",
+					"border-width": 3,
+					"background-color": "#DDD",
+					"border-color": "#555",
 				})
 			.selector("edge")
 				.css({
-					"width": "mapData(weight, 0, 100, 1, 5)",
+					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "triangle",
-					"source-arrow-shape": "circle"
+					"source-arrow-shape": "circle",
+					"line-color": "#444",
 				})
 			.selector(":selected")
 				.css({

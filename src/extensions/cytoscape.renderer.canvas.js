@@ -86,7 +86,6 @@
 		
 			r.hoverData.capture = true;
 			
-		
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var select = r.data.select;
 			
@@ -349,9 +348,9 @@
 //			console.log("update");
 			
 			if (r.zoomData.freeToZoom) {
-				event.preventDefault();
+				e.preventDefault();
 				
-				var diff = event.wheelDeltaY / 1000 || event.detail / -8.4;
+				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
 //				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
 				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
@@ -609,13 +608,24 @@
 		
 		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
 		
+		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
+		var stopCheckingScroll = false;
+		
 		while (n != null) {
-			if (typeof(n.offsetLeft) == "number") { offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
-				if (n != document.body && n != document) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }	
+			if (typeof(n.offsetLeft) == "number") {
+				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
+				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
+				
+				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
+				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
+				
 			} n = n.parentNode;
 		}
 		
-		x = pageX - offsetLeft; y = pageY - offsetTop; x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
+		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
+		x = pageX - offsetLeft; y = pageY - offsetTop;
+		
+		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
 	}
 	
@@ -1313,6 +1323,10 @@
 			* element._private.style["opacity"].value) + ")";
 		
 		if (text != undefined) {
+			// Thanks sysord@github for the isNaN checks!
+			if (isNaN(textX)) { textX = 0; }
+			if (isNaN(textY)) { textY = 0; }
+
 			context.fillText("" + text, textX, textY);
 		}
 		

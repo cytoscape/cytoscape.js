@@ -9,9 +9,10 @@
 			renderer: this,
 			cy: options.cy,
 			container: options.cy.container(),
-			curTouch: [null, null, null, null, 0],
-			prevTouch: [null, null, null, null, 0],
-			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false],
+//			curTouch: [null, null, null, null, 0],
+//			prevTouch: [null, null, null, null, 0],
+			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false],			
+			
 			banvases: [null, null],
 		};
 		
@@ -89,8 +90,6 @@
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var select = r.data.select;
 			
-//			console.log(e);
-//			console.log(r);
 			var near = r.findNearestElement(pos[0], pos[1]);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
@@ -118,7 +117,7 @@
 								if (updateStyle) { popped.updateStyle(false); };
 							}
 							
-							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near); 
+							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near);
 								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
 								
 						if (near._private.group == "nodes" && near._private.selected == true) {
@@ -169,9 +168,17 @@
 			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
 			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements;
 			
-			
-			var capture = r.hoverData.capture; if (!capture) { return; }
-			
+			var capture = r.hoverData.capture; if (!capture) { 
+				
+				var containerPageCoords = r.findContainerPageCoords();
+				
+				if (e.pageX > containerPageCoords[0] && e.pageX < containerPageCoords[0] + r.data.container.clientWidth
+					&& e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
+					
+				} else {
+					return;
+				}
+			}
 			
 			if (r.hoverData.dragging) {
 				
@@ -244,7 +251,7 @@
 		
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
-
+			
 			if (near == null || near != down || !near.selected()) {
 
 //++clock+unselect
@@ -627,6 +634,27 @@
 		
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
+	}
+	
+	CanvasRenderer.prototype.findContainerPageCoords = function() {
+		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
+		
+		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
+		var stopCheckingScroll = false;
+		
+		while (n != null) {
+			if (typeof(n.offsetLeft) == "number") {
+				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
+				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
+				
+				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
+				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
+				
+			} n = n.parentNode;
+		}
+		
+		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.
+		return [offsetLeft, offsetTop];
 	}
 	
 	// Find nearest element

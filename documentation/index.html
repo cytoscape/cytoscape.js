@@ -148,27 +148,34 @@
 						<span class="icon-caret-down expanded-icon"></span>
 						<span class="icon-caret-right collapsed-icon"></span>
 					</span>
-					<a href="#event-types"><span class="icon-bookmark"></span> Event types</a>
+					<a href="#events"><span class="icon-bookmark"></span> Events</a>
 				</div>
 
 				
 					<div class="section lvl2">
 						
-						<a href="#event-types/user-input-device-events"><span class="icon-bookmark"></span> User input device events</a>
+						<a href="#events/event-object"><span class="icon-bookmark"></span> Event object</a>
 					</div>
 
 					
 				
 					<div class="section lvl2">
 						
-						<a href="#event-types/collection-events"><span class="icon-bookmark"></span> Collection events</a>
+						<a href="#events/user-input-device-events"><span class="icon-bookmark"></span> User input device events</a>
 					</div>
 
 					
 				
 					<div class="section lvl2">
 						
-						<a href="#event-types/graph-events"><span class="icon-bookmark"></span> Graph events</a>
+						<a href="#events/collection-events"><span class="icon-bookmark"></span> Collection events</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#events/graph-events"><span class="icon-bookmark"></span> Graph events</a>
 					</div>
 
 					
@@ -949,10 +956,14 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 				
 				
 			
-				<h1 id="event-types">Event types <a href="#event-types"><span class="icon-bookmark"></span></a></h1>
+				<h1 id="events">Events <a href="#events"><span class="icon-bookmark"></span></a></h1>
 
 				
-					<h2 id="event-types/user-input-device-events">User input device events <a href="#event-types/user-input-device-events"><span class="icon-bookmark"></span></a></h2>
+					<h2 id="events/event-object">Event object <a href="#events/event-object"><span class="icon-bookmark"></span></a></h2>
+<p>Events passed to handler callbacks are <a href="http://api.jquery.com/category/events/event-object/">jQuery-event-like objects</a>.  They have an additional field named <code>cyTarget</code>, which indicates the element or core that first caused the event.
+
+</p>
+<h2 id="events/user-input-device-events">User input device events <a href="#events/user-input-device-events"><span class="icon-bookmark"></span></a></h2>
 <p>These are normal browser events that you can bind to via Cytoscape.js.  You can bind these events to the core and to collections.
 
 </p>
@@ -967,7 +978,7 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>touchmove</code> : when one or more fingers are moved on the screen</li>
 <li><code>touchend</code> : when one or more fingers are removed from the screen</li>
 </ul>
-<h2 id="event-types/collection-events">Collection events <a href="#event-types/collection-events"><span class="icon-bookmark"></span></a></h2>
+<h2 id="events/collection-events">Collection events <a href="#events/collection-events"><span class="icon-bookmark"></span></a></h2>
 <p>These events are custom to Cytoscape.js.  You can bind to these events for collections.
 
 </p>
@@ -985,7 +996,7 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>add</code> : when an element is added to the graph</li>
 <li><code>remove</code> : when an element is removed from the graph</li>
 </ul>
-<h2 id="event-types/graph-events">Graph events <a href="#event-types/graph-events"><span class="icon-bookmark"></span></a></h2>
+<h2 id="events/graph-events">Graph events <a href="#events/graph-events"><span class="icon-bookmark"></span></a></h2>
 <p>These events are custom to Cytoscape.js, and they occur on the core.
 
 </p>
@@ -1002,6 +1013,9 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -2313,8 +2327,10 @@ cy.zoom({
 <p>Bind to all click events that the core receives:
 
 </p>
-<pre><code class="lang-js">cy.on(&#39;click&#39;, function(){
-  var evtTarget = this;
+<pre><code class="lang-js">cy.on(&#39;click&#39;, function(event){
+  // cyTarget holds a reference to the originator
+  // of the event (core or element)
+  var evtTarget = event.cyTarget;
 
   if( evtTarget === cy ){
       console.log(&#39;click on background&#39;);

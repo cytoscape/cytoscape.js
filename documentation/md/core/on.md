@@ -13,8 +13,10 @@ cy.on('click', 'nodes', { foo: 'bar' }, function(evt){
 Bind to all click events that the core receives:
 
 ```js
-cy.on('click', function(){
-  var evtTarget = this;
+cy.on('click', function(event){
+  // cyTarget holds a reference to the originator
+  // of the event (core or element)
+  var evtTarget = event.cyTarget;
 
   if( evtTarget === cy ){
   	console.log('click on background');

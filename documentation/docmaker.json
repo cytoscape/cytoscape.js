@@ -15,7 +15,7 @@
 
     { "name": "Style", "md": "style" },
 
-    { "name": "Event types", "md": "events" },
+    { "name": "Events", "md": "events" },
 
     {
       "name": "Core",

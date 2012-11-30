@@ -1,3 +1,7 @@
+## Event object
+
+Events passed to handler callbacks are [jQuery-event-like objects](http://api.jquery.com/category/events/event-object/).  They have an additional field named `cyTarget`, which indicates the element or core that first caused the event.
+
 ## User input device events
 
 These are normal browser events that you can bind to via Cytoscape.js.  You can bind these events to the core and to collections.

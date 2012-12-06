@@ -9,9 +9,9 @@
 			renderer: this,
 			cy: options.cy,
 			container: options.cy.container(),
-//			curTouch: [null, null, null, null, 0],
-//			prevTouch: [null, null, null, null, 0],
-			canvases: [null, null, null, null, null, [], [], [], [], [], false, false, false, false, false],			
+			canvases: [null, null, null, null, null, 
+				[], [], [], [], [],
+				false, false, false, false, false],			
 			
 			banvases: [null, null],
 		};
@@ -44,7 +44,7 @@
 		for (var i = 0; i < 2; i++) {
 			this.data.banvases[i] = document.createElement("canvas");
 			this.data.banvases[i].style.position = "absolute";
-			this.data.banvases[i].id = "buffr" + i;
+			this.data.banvases[i].id = "buffer" + i;
 			this.data.banvases[i].style.zIndex = String(-i);
 			this.data.banvases[i].style.visibility = "visible";
 			this.data.container.appendChild(this.data.banvases[i]);
@@ -1076,7 +1076,48 @@
 //			context.fillStyle = "rgba(0,0,0,1)";
 //			context.fillRect(50, 50, 400, 400);
 		}
+		
+		/*
+		{
+			var image = new Image();
+			image.src = "http://st73.storage.gree.jp/album/23/42/27952342/4004d74b_640.jpg";
+			
+			var context = data.banvases[0].getContext("2d");
+			context.drawImage(image, 0, 0);
+		}
+		*/
 	};
+	
+	var imageCache = {};
+	
+	/*
+	{
+		var url, image;
+		
+		if (imageCache[url] == undefined) {	imageCache[url] = image; }
+	}
+	*/
+	
+	CanvasRenderer.prototype.getCachedImage = function(url) {
+		
+		var image = imageCache[url];
+		
+		if (image == undefined) { imageCache[url] = new Image(); imageCache[url].src = url; image = imageCache[url]; }
+		
+		return image;
+	}
+	
+	CanvasRenderer.prototype.drawImage = function(context, x, y, widthScale, heightScale, rotationCW, image) {
+		
+		image.widthScale = 0.5;
+		image.heightScale = 0.5;
+		
+		image.rotate = rotationCW;
+		
+		var finalWidth; var finalHeight;
+		
+		canvas.drawImage(image, x, y);
+	}
 	
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge) {
@@ -1247,12 +1288,25 @@
 		nodeWidth = node._private.style["width"].value;
 		nodeHeight = node._private.style["height"].value;
 		
-		// Draw node
-		nodeShapes[node._private.style["shape"].value].draw(
-			context,
-			node,
-			nodeWidth,
-			nodeHeight); //node._private.data.weight / 5.0
+		{
+			var image = this.getCachedImage("url");
+			
+			if (node._private.style["background-image"] != undefined) {			
+				
+			}
+		
+			{
+				// Draw node
+				nodeShapes[node._private.style["shape"].value].draw(
+					context,
+					node,
+					nodeWidth,
+					nodeHeight); //node._private.data.weight / 5.0
+			}
+			/*
+			context.drawImage(image, 
+			*/
+		}
 		
 		// Border width, draw border
 		context.lineWidth = node._private.style["border-width"].value;
@@ -2371,7 +2425,7 @@
 		var increment = 1.0 / sides * 2 * Math.PI;
 		var startAngle = sides % 2 == 0 ? 
 			Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-		
+		console.log(nodeShapes["square"]);
 		startAngle += rotationRadians;
 		
 		var points = new Array(sides * 2);
@@ -2420,11 +2474,11 @@
 		
 		intersectLine: function(node, width, height, x, y) {
 			var intersect = rendFunc.intersectLineEllipse(
-			x, y,
-			node.position().x,
-			node.position().y,
-			width / 2 + node._private.style["border-width"].value / 2,
-			height / 2 + node._private.style["border-width"].value / 2);
+				x, y,
+				node.position().x,
+				node.position().y,
+				width / 2 + node._private.style["border-width"].value / 2,
+				height / 2 + node._private.style["border-width"].value / 2);
 			
 			return intersect;
 		},
@@ -2536,7 +2590,39 @@
 	
 	nodeShapes["rectangle"] = nodeShapes["square"];
 	
+	nodeShapes["octogon"] = {};
+	
 	nodeShapes["roundrectangle"] = nodeShapes["square"];
+	
+	nodeShapes["roundrectangle2"] = {
+		roundness: 4.99,
+		
+		draw: function(node, width, height) {
+			if (width <= roundness * 2) {
+				return;
+			}
+		
+			renderer.drawPolygon(node._private.position.x,
+				node._private.position.y, width, height, nodeSapes["roundrectangle2"].points);
+		},
+
+		intersectLine: function(node, width, height, x, y) {
+			return renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["square"].points);
+		},
+		
+		// TODO: Treat rectangle as sharp-cornered for now. This is a not-large approximation.
+		intersectBox: function(x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			var points = nodeShapes["square"].points;
+			
+			/*
+			return renderer.boxIntersectPolygon(
+				x1, y1, x2, y2,
+				points, 
+			*/
+		}
+		
+	}
 	
 	nodeShapes["pentagon"] = {
 		points: generateUnitNgonPoints(5, 0),

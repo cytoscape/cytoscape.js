@@ -15,8 +15,7 @@ $(function(){
 				.css({
 					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "triangle",
-					"source-arrow-shape": "circle",
-					"line-color": "#444",
+					"source-arrow-shape": "circle"
 				})
 			.selector(":selected")
 				.css({
@@ -208,8 +207,8 @@ $(function(){
 
 		$container2.cy({
 			elements: {
-				nodes: [ { data: { id: 'n0' } }, { data: { id: 'n1' } } ],
-				edges: [ { data: { id: 'n0n1', source: 'n0', target: 'n1' } } ]
+				nodes: [ { data: { id: '0' } }, { data: { id: '1' } } ],
+				edges: [ { data: { id: '2', source: '0', target: '1' } } ]
 			},
 			style: defaultSty,
 			

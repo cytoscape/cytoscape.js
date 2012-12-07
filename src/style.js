@@ -153,7 +153,8 @@
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
 			data: { mapping: true, regex: "^data\\s*\\(\\s*(\\w+)\\s*\\)$" },
-			mapData: { mapping: true, regex: "^mapData\\((\\w+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(\\w+)\\s*\\,\\s*(\\w+)\\)$" }
+			mapData: { mapping: true, regex: "^mapData\\((\\w+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(\\w+)\\s*\\,\\s*(\\w+)\\)$" },
+			url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
 		};
 
 		// define visual style properties
@@ -187,6 +188,7 @@
 			{ name: "border-opacity", type: t.zeroOneNumber },
 			{ name: "border-width", type: t.size },
 			{ name: "border-style", type: t.lineStyle },
+			{ name: "background-image", type: t.url },
 			{ name: "height", type: t.size },
 			{ name: "width", type: t.size },
 			{ name: "shape", type: t.nodeShape },
@@ -260,6 +262,7 @@
 				.css({
 					"background-color": "#888",
 					"background-opacity": 1,
+					"background-image": "none",
 					"border-color": "#000",
 					"border-opacity": 1,
 					"border-width": 0,

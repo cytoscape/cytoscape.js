@@ -1221,6 +1221,43 @@
 		}
 	}
 	
+	/*
+	var _genpoints = function(pt, spacing, even) {
+		
+		var approxLen = Math.sqrt(Math.pow(pt[4] - pt[0], 2) + Math.pow(pt[5] - pt[1], 2));
+		
+		approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3]));
+		
+		var pts = Math.ceil(approxLen / spacing); var inc = approxLen / spacing;
+		
+		for (var i = 0; i < pts; i++) {
+			
+			var cur = i * inc;
+			
+			pz[i * 2] = pt[0] * (cur * cur) + 2 * (pt[2]) * (1 - cur) * cur + (pt[4]) * (1 - cur) * (1 - cur);;
+			pz[i * 2 + 1] = pt[1] * (cur * cur) + 2 * (pt[3]) * (1 - cur) * cur + (pt[5] * (1 - cur) * (1 - cur));
+			
+			
+		}
+		
+		return pz;	
+	}
+	
+	var _genevenoddpts = function(pt, evenspac, oddspac) {
+		
+		pt1 = _genpts(pt, evenspac);
+		pt2 = _genpts(pt, oddspac);
+		
+		
+	}
+	
+	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2) {
+		
+		
+		_genpoints
+	}
+	*/
+	
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
 	
@@ -2516,12 +2553,14 @@
 		
 		draw: function(node, width, height) {
 			renderer.drawPolygon(node._private.position.x,
-				node._private.position.y, width, height, nodeShapes["triangle"].points);
+				node._private.position.y,
+				width, height, nodeShapes["triangle"].points);
 		},
 		
 		intersectLine: function(node, width, height, x, y) {
 			return renderer.findPolygonIntersection(
-				node, width, height, x, y, nodeShapes["triangle"].points);
+				node, width, height,
+				x, y, nodeShapes["triangle"].points);
 		},
 		
 		intersectBox: function(
@@ -2538,15 +2577,17 @@
 			x, y, padding, width, height, centerX, centerY) {
 		
 			return renderer.checkInBoundingBox(
-				x, y, nodeShapes["triangle"].points, 
+				x, y, nodeShapes["triangle"].points, // Triangle?
 					padding, width, height, centerX, centerY);
 		},
 		
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["triangle"].points,
-				centerX, centerY, width, height, [0, -1], padding);
+			return renderer.pointInsidePolygon(
+				x, y, nodeShapes["triangle"].points,
+				centerX, centerY, width, height,
+				[0, -1], padding);
 		}
 	}
 	
@@ -2558,22 +2599,26 @@
 				node._private.position.y, width, height, nodeShapes["square"].points);
 		},
 		intersectLine: function(node, width, height, x, y) {
-			return renderer.findPolygonIntersection(
-				node, width, height, x, y, nodeShapes["square"].points);
+			return (renderer.findPolygonIntersection(
+				node, width, height, x, y, nodeShapes["square"].points));
 		},
 		
 		intersectBox: function(
-			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			x1, y1, x2, y2,
+			width, height, centerX, 
+			centerY, padding) {
 			
 			var points = nodeShapes["square"].points;
 			
 			return renderer.boxIntersectPolygon(
 				x1, y1, x2, y2,
-				points, width, height, centerX, centerY, [0, -1], padding);
+				points, width, height, centerX, 
+				centerY, [0, -1], padding);
 		},
 		
 		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
+			x, y, padding, width, height,
+			centerX, centerY) {
 		
 			return renderer.checkInBoundingBox(
 				x, y, nodeShapes["square"].points, 

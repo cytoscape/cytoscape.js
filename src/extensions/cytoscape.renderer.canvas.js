@@ -1151,6 +1151,7 @@
 		
 		if (edge._private.rscratch.isSelfEdge) {
 		
+			/*
 			context.beginPath();
 			context.moveTo(
 				edge._private.rscratch.startX,
@@ -1173,6 +1174,16 @@
 				edge._private.rscratch.endY);
 			
 			context.stroke();
+			*/
+			
+			var details = edge._private.rscratch;
+			this.drawBezierEdge(context, details.startX, details.startY, details.cp2ax,
+				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
+				edge._private.style["line-style"].value);
+			
+			this.drawBezierEdge(context, details.selfEdgeMidX, details.selfEdgeMidY,
+				details.cp2cx, details.cp2cy, details.endX, details.endY,
+				edge._private.style["line-style"].value);
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
@@ -1187,7 +1198,7 @@
 				+ nodeDirectionY * edgeDirectionY < 0) {
 				
 				edge._private.rscratch.straightEdgeTooShort = true;	
-			} else {			
+			} else {
 				context.beginPath();
 				context.moveTo(
 					edge._private.rscratch.startX,
@@ -1201,6 +1212,7 @@
 			}	
 		} else {
 			
+			/*
 			context.beginPath();
 			context.moveTo(
 				edge._private.rscratch.startX,
@@ -1212,6 +1224,12 @@
 				edge._private.rscratch.endX, 
 				edge._private.rscratch.endY);
 			context.stroke();
+			*/
+			
+			var details = edge._private.rscratch;
+			this.drawBezierEdge(context, details.startX, details.startY,
+				details.cp2x, details.cp2y, details.endX, details.endY,
+				edge._private.style["line-style"].value);
 			
 		}
 		
@@ -1221,26 +1239,22 @@
 		}
 	}
 	
-	/*
 	var _genpoints = function(pt, spacing, even) {
 		
 		var approxLen = Math.sqrt(Math.pow(pt[4] - pt[0], 2) + Math.pow(pt[5] - pt[1], 2));
-		
-		approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3]));
-		
+		approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3], 2));
+
 		var pts = Math.ceil(approxLen / spacing); var inc = approxLen / spacing;
 		
+		var pz = new Array(pts);
+		
 		for (var i = 0; i < pts; i++) {
-			
-			var cur = i * inc;
-			
-			pz[i * 2] = pt[0] * (cur * cur) + 2 * (pt[2]) * (1 - cur) * cur + (pt[4]) * (1 - cur) * (1 - cur);;
-			pz[i * 2 + 1] = pt[1] * (cur * cur) + 2 * (pt[3]) * (1 - cur) * cur + (pt[5] * (1 - cur) * (1 - cur));
-			
-			
+			var cur = i / pts;
+			pz[i * 2] = pt[0] * (1 - cur) * (1 - cur) + 2 * (pt[2]) * (1 - cur) * cur + pt[4] * (cur) * (cur);
+			pz[i * 2 + 1] = pt[1] * (1 - cur) * (1 - cur) + 2 * (pt[3]) * (1 - cur) * cur + pt[5] * (cur) * (cur);
 		}
 		
-		return pz;	
+		return pz;
 	}
 	
 	var _genevenoddpts = function(pt, evenspac, oddspac) {
@@ -1248,15 +1262,61 @@
 		pt1 = _genpts(pt, evenspac);
 		pt2 = _genpts(pt, oddspac);
 		
-		
 	}
 	
-	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2) {
+	CanvasRenderer.prototype.createBuffer = function(size) {
+		var buffer = document.createElement("canvas");
+		buffer.width = size;
+		buffer.height = size;
 		
-		
-		_genpoints
+		return [buffer, buffer.getContext("2d")];
 	}
-	*/
+	
+	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2, type) {
+		
+		var renderToCanvas = function (width, height, renderFunction) {
+			var buffer = document.createElement('canvas');
+			buffer.width = width;
+			buffer.height = height;
+	
+			renderFunction(buffer.getContext('2d'));
+			return buffer;
+		};
+		
+		if (type == "dotted2") {
+			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
+			
+			// var buffer = document.createElement("canvas");
+			
+			
+			/*
+			context.beginPath();
+			for (var i=0;i<pt.length/2;i++) {
+				context.arc(pt[i * 2], pt[i * 2 + 1], 1, 0, Math.PI * 2);
+				//context.closePath();
+				context.fill();
+			}
+			*/
+			
+		} else if (type == "dashed") {
+			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
+			
+			context.beginPath();
+			for (var i=0;i<pt.length/4;i++) {
+				context.moveTo(pt[i * 4], pt[i * 4 + 1]);
+				context.lineTo(pt[i * 4 + 2], pt[i * 4 + 3]);
+			}
+			//context.closePath();
+			context.stroke();
+		} else {
+			context.beginPath();
+			context.moveTo(x1, y1);
+			context.quadraticCurveTo(cp1x, cp1y, x2, y2);
+//			context.closePath();
+			context.stroke();
+		}
+		
+	}
 	
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
@@ -1326,13 +1386,13 @@
 		nodeHeight = node._private.style["height"].value;
 		
 		{
-			var image = this.getCachedImage("url");
+			//var image = this.getCachedImage("url");
 			
-			if (node._private.style["background-image"] != undefined) {			
+			if (node._private.style["background-image"].value[1]) {
 				
-			}
-		
-			{
+				//context.clip
+				
+			} else {
 				// Draw node
 				nodeShapes[node._private.style["shape"].value].draw(
 					context,
@@ -2462,7 +2522,7 @@
 		var increment = 1.0 / sides * 2 * Math.PI;
 		var startAngle = sides % 2 == 0 ? 
 			Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-		console.log(nodeShapes["square"]);
+//		console.log(nodeShapes["square"]);
 		startAngle += rotationRadians;
 		
 		var points = new Array(sides * 2);

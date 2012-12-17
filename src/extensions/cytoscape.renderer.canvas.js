@@ -1179,11 +1179,13 @@
 			var details = edge._private.rscratch;
 			this.drawBezierEdge(context, details.startX, details.startY, details.cp2ax,
 				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
-				edge._private.style["line-style"].value);
+				edge._private.style["line-style"].value,
+				edge._private.style["width"].value);
 			
 			this.drawBezierEdge(context, details.selfEdgeMidX, details.selfEdgeMidY,
 				details.cp2cx, details.cp2cy, details.endX, details.endY,
-				edge._private.style["line-style"].value);
+				edge._private.style["line-style"].value,
+				edge._private.style["width"].value);
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
@@ -1229,7 +1231,8 @@
 			var details = edge._private.rscratch;
 			this.drawBezierEdge(context, details.startX, details.startY,
 				details.cp2x, details.cp2y, details.endX, details.endY,
-				edge._private.style["line-style"].value);
+				edge._private.style["line-style"].value,
+				edge._private.style["width"].value);
 			
 		}
 		
@@ -1272,8 +1275,9 @@
 		return [buffer, buffer.getContext("2d")];
 	}
 	
-	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2, type) {
+	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2, type, width) {
 		
+		/*
 		var renderToCanvas = function (width, height, renderFunction) {
 			var buffer = document.createElement('canvas');
 			buffer.width = width;
@@ -1282,21 +1286,34 @@
 			renderFunction(buffer.getContext('2d'));
 			return buffer;
 		};
+		*/
+		
 		
 		if (type == "dotted2") {
 			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
 			
-			// var buffer = document.createElement("canvas");
+			var buffer = this.createBuffer(width);
+			var context2 = buffer[1];
 			
+			context2.setTransform(1, 0, 0, 1, 0, 0);
+			context2.clearRect(0, 0, buffer[0].width, buffer[0].height);
 			
-			/*
-			context.beginPath();
+			// Draw on buffer
+			context2.beginPath();
+			context2.arc(width/2, width/2, width/2, 0, Math.PI * 2);
+			//context2.fill();
+			
+			// Now use buffer
+			//context.beginPath();
+			var halfWidth = width/2;
 			for (var i=0;i<pt.length/2;i++) {
-				context.arc(pt[i * 2], pt[i * 2 + 1], 1, 0, Math.PI * 2);
+				context.drawImage(buffer[0], pt[i*2] - halfWidth, pt[i*2+1] - halfWidth)
+				
+				//context.arc(pt[i * 2], pt[i * 2 + 1], 1, 0, Math.PI * 2);
 				//context.closePath();
-				context.fill();
+				//context.fill();
 			}
-			*/
+			
 			
 		} else if (type == "dashed") {
 			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);

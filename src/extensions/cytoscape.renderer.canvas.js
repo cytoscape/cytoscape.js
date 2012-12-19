@@ -906,7 +906,8 @@
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
 		//console.log("redrawing");
-		var cy = this.data.cy; var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
+		var cy = this.data.cy; var data = this.data; 
+		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
 		this.matchCanvasSize(data.container);
 		
 		var elements = nodes.add(edges).toArray();
@@ -1076,16 +1077,6 @@
 //			context.fillStyle = "rgba(0,0,0,1)";
 //			context.fillRect(50, 50, 400, 400);
 		}
-		
-		/*
-		{
-			var image = new Image();
-			image.src = "http://st73.storage.gree.jp/album/23/42/27952342/4004d74b_640.jpg";
-			
-			var context = data.banvases[0].getContext("2d");
-			context.drawImage(image, 0, 0);
-		}
-		*/
 	};
 	
 	var imageCache = {};
@@ -1248,8 +1239,13 @@
 		approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3], 2));
 
 		var pts = Math.ceil(approxLen / spacing); var inc = approxLen / spacing;
+		var pz;
 		
-		var pz = new Array(pts);
+		if (pts > 0) {
+			pz = new Array(pts);
+		} else {
+			return null;
+		}
 		
 		for (var i = 0; i < pts; i++) {
 			var cur = i / pts;
@@ -1277,42 +1273,46 @@
 	
 	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2, type, width) {
 		
-		/*
-		var renderToCanvas = function (width, height, renderFunction) {
-			var buffer = document.createElement('canvas');
-			buffer.width = width;
-			buffer.height = height;
-	
-			renderFunction(buffer.getContext('2d'));
-			return buffer;
-		};
-		*/
-		
-		
-		if (type == "dotted2") {
-			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
+		if (type == "dotted") {
+			var zoom = this.data.cy.zoom();
+			width *= 1.6;
+			width = Math.max(width, 3.4);
+			width *= zoom;
 			
-			var buffer = this.createBuffer(width);
+			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 16, true);
+			if (!pt) { return; }
+			
+			var buffer = this.createBuffer(width * 2);
 			var context2 = buffer[1];
+	//		document.body.appendChild(buffer[0]);
 			
 			context2.setTransform(1, 0, 0, 1, 0, 0);
+	//		context2.scale(this.data.cy.zoom() / 2, this.data.cy.zoom() / 2);
 			context2.clearRect(0, 0, buffer[0].width, buffer[0].height);
 			
 			// Draw on buffer
+			
+			context2.fillStyle = context.strokeStyle;
 			context2.beginPath();
-			context2.arc(width/2, width/2, width/2, 0, Math.PI * 2);
-			//context2.fill();
+			context2.arc(width, width, width * 0.5, 0, Math.PI * 2, false);
+			context2.fill();
 			
 			// Now use buffer
-			//context.beginPath();
+			context.beginPath();
+			context.save();
+//			context.setTransform(1, 0, 0, 1, 0, 0);
+/*
+			context.translate(this.data.cy.pan().x - this.data.cy.pan().x / zoom,
+				this.data.cy.pan().y - this.data.cy.pan().y / zoom);
+*/
+//			context.scale(1/zoom, 1/zoom);
 			var halfWidth = width/2;
 			for (var i=0;i<pt.length/2;i++) {
-				context.drawImage(buffer[0], pt[i*2] - halfWidth, pt[i*2+1] - halfWidth)
-				
-				//context.arc(pt[i * 2], pt[i * 2 + 1], 1, 0, Math.PI * 2);
-				//context.closePath();
-				//context.fill();
+	//			context.scale(1/this.data.cy.zoom(), 1/this.data.cy.zoom());
+				context.drawImage(buffer[0], pt[i*2] - halfWidth, pt[i*2+1] - halfWidth,
+					width * 2 / zoom, width * 2 / zoom)
 			}
+			context.restore();
 			
 			
 		} else if (type == "dashed") {
@@ -1407,7 +1407,10 @@
 			
 			if (node._private.style["background-image"].value[1]) {
 				
+				var img = this.getCachedImage(node._private.style["background-image"].value[1]);
+				
 				//context.clip
+//				CanvasRenderer.prototype.drawInscribedImage(
 				
 			} else {
 				// Draw node
@@ -1427,6 +1430,10 @@
 		if (node._private.style["border-width"].value > 0) {
 			context.stroke();
 		}
+	}
+	
+	CanvasRenderer.prototype.drawInscribedImage = function(img, node) {
+		return null;	
 	}
 	
 	// Draw node text

@@ -265,54 +265,9 @@
 		
 		// get the bounding box of the elements (in raw model position)
 		boundingBox: function( selector ){
-			var eles;
+			var eles = this.$( selector );
 
-			if( !selector || ( $$.is.elementOrCollection(selector) && selector.length === 0 ) ){
-				eles = this.$();
-			} else if( $$.is.string(selector) ){
-				eles = this.$( selector );
-			} else if( $$.is.elementOrCollection(selector) ){
-				eles = selector;
-			}
-
-			var x1 = Infinity;
-			var x2 = -Infinity;
-			var y1 = Infinity;
-			var y2 = -Infinity;
-
-			// find bounds of elements
-			for( var i = 0; i < eles.length; i++ ){
-				var ele = eles[i];
-
-				if( ele.isNode() ){
-					var pos = ele._private.position;
-					var x = pos.x;
-					var y = pos.y;
-					var w = ele.outerWidth();
-					var halfW = w/2;
-					var h = ele.outerHeight();
-					var halfH = h/2;
-
-					var ex1 = x - halfW;
-					var ex2 = x + halfW;
-					var ey1 = y - halfH;
-					var ey2 = y + halfH;
-
-					x1 = ex1 < x1 ? ex1 : x1;
-					x2 = ex2 > x2 ? ex2 : x2;
-					y1 = ey1 < y1 ? ey1 : y1;
-					y2 = ey2 > y2 ? ey2 : y2;
-				}
-			}
-
-			return {
-				x1: x1,
-				x2: x2,
-				y1: y1,
-				y2: y2,
-				w: x2 - x1,
-				h: y2 - y1
-			};
+			return eles.boundingBox();
 		},
 
 		center: function(elements){

@@ -398,9 +398,9 @@
 			var eles = this;
 
 			if( !selector || ( $$.is.elementOrCollection(selector) && selector.length === 0 ) ){
-				eles = this.$();
+				eles = this;
 			} else if( $$.is.string(selector) ){
-				eles = this.$( selector );
+				eles = this.filter( selector );
 			} else if( $$.is.elementOrCollection(selector) ){
 				eles = selector;
 			}

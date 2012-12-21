@@ -1,6 +1,8 @@
 (function($$){
 
-	var time = function() { return Date.now(); } ; var arrowShapes = {}; var nodeShapes = {}; var rendFunc = CanvasRenderer.prototype;
+	var time = function() { return Date.now(); } ; 
+	var arrowShapes = {}; var nodeShapes = {}; 
+	var rendFunc = CanvasRenderer.prototype;
 
 	function CanvasRenderer(options) {
 		
@@ -10,18 +12,25 @@
 			cy: options.cy,
 			container: options.cy.container(),
 			canvases: [null, null, null, null, null, 
-				[], [], [], [], [],
-				false, false, false, false, false],			
+			    [], [], [], [], [],
+			    false, false, false, false, false],
 			
-			banvases: [null, null],
+			banvases: [null, null]
 		};
 		
 		//--Pointer-related data
-		this.hoverData = {down: null, last: null, downTime: null, triggerMode: null, dragging: false, initialPan: [null, null], capture: false};
+		this.hoverData = {down: null, last: null, 
+				downTime: null, triggerMode: null, 
+				dragging: false, 
+				initialPan: [null, null], capture: false};
+		
 		this.timeoutData = {panTimeout: null};
+		
 		this.dragData = {possibleDragElements: []};
 		
-		this.touchData = {start: null, capture: false, now: [null, null, null, null, null, null], earlier: [null, null, null, null, null, null] };
+		this.touchData = {start: null, capture: false, 
+				now: [null, null, null, null, null, null], 
+				earlier: [null, null, null, null, null, null] };
 		//--
 		
 		//--Wheel-related data
@@ -100,8 +109,8 @@
 				// Element dragging
 				{
 					if (near && near._private.grabbable) {
-						if (near._private.group == "nodes" && near._private.selected == false) 
-							{ near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
+						if (near._private.group == "nodes" && near._private.selected == false) {
+							near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
 							
 							var unselectEvent = new $$.Event(e, {type: "unselect"});
 							var ungrabEvent = new $$.Event(e, {type: "free"});
@@ -109,7 +118,8 @@
 							for (var i=0;i<draggedElements.length;i++) {
 								var popped = draggedElements[i];
 								
-								var updateStyle = false; if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
+								var updateStyle = false; 
+								if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
 								
 								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
 								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
@@ -118,18 +128,24 @@
 							}
 							
 							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near);
-								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; }; }
+								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; };
+						}
 								
 						if (near._private.group == "nodes" && near._private.selected == true) {
 							
 							var event = new $$.Event(e, {type: "grab"}); 
 							for (var i=0;i<draggedElements.length;i++) {
-								draggedElements[i]._private.grabbed = true; var subEdges = draggedElements[i]._private.edges;
-								
-								for (var j=0;j<subEdges.length;j++) { subEdges[j]._private.grabbed = true; }
-								
-								draggedElements[i].trigger(event)
-							};
+								if (draggedElements[i]._private.group == "nodes") {
+									draggedElements[i]._private.grabbed = true;
+									var subEdges = draggedElements[i]._private.edges;
+									
+									for (var j=0;j<subEdges.length;j++) {
+										subEdges[j]._private.grabbed = true;
+									}
+									
+									draggedElements[i].trigger(event)
+								}
+							}
 						}
 								
 						r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Single node moved to drag layer"); 
@@ -165,8 +181,11 @@
 		window.addEventListener("mousemove", function(e) {
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+			
 			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
-			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements;
+			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+		
+			var draggedElements = r.dragData.possibleDragElements;
 			
 			var capture = r.hoverData.capture; if (!capture) { 
 				
@@ -201,7 +220,9 @@
 			}
 			
 			// Checks primary button down & out of time & mouse not moved much
-			} else if (select[4] == 1 && down == null && (new Date()).getTime() - r.hoverData.downTime > 200 && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)) {
+			} else if (select[4] == 1 && down == null 
+					&& (new Date()).getTime() - r.hoverData.downTime > 200 
+					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)) {
 				
 				r.hoverData.dragging = true;
 				select[4] = 0;
@@ -224,7 +245,8 @@
 						if (!draggedElements[i]._private.locked 
 							&& draggedElements[i]._private.group == "nodes") {
 							
-							draggedElements[i]._private.position.x += disp[0]; draggedElements[i]._private.position.y += disp[1];
+							draggedElements[i]._private.position.x += disp[0];
+							draggedElements[i]._private.position.y += disp[1];
 							draggedElements[i].trigger(drag);
 						}
 					}
@@ -250,19 +272,31 @@
 			var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
 		
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]); var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
+			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			
 			if (near == null || near != down || !near.selected()) {
 
 //++clock+unselect
 //				var a = time();
 				
-				var unselectEvent = new $$.Event(e, {type: "unselect"}); for (var i=0;i<draggedElements.length;i++) { if (draggedElements[i]._private.selected) { draggedElements[i]._private.selected = false; draggedElements[i].trigger(unselectEvent); draggedElements[i].updateStyle(false); } } 
+				var unselectEvent = new $$.Event(e, {type: "unselect"}); 
+				for (var i=0;i<draggedElements.length;i++) {
+					if (draggedElements[i]._private.selected) {
+						draggedElements[i]._private.selected = false;
+						draggedElements[i].trigger(unselectEvent);
+						draggedElements[i].updateStyle(false);
+					}
+				}
 				
 //++clock+unselect
 //				console.log("unselect", time() - a);
 				
-				if (draggedElements.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("De-select"); }
+				if (draggedElements.length > 0) {
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("De-select");
+				}
+				
 				draggedElements = r.dragData.possibleDragElements = [];
 			}
 			
@@ -290,6 +324,7 @@
 				}
 			}
 			
+			// Single selection
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selectable && near._private.selected == false) {
 					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
@@ -315,20 +350,34 @@
 				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
 				// console.log(box);
 				var event = new $$.Event(e, {type: "select"});
-				for (var i=0;i<box.length;i++) { if (box[i]._private.selectable) {
-					box[i]._private.selected = true; box[i].trigger(event); box[i].updateStyle(false); draggedElements.push(box[i]); } }
+				for (var i=0;i<box.length;i++) { 
+					if (box[i]._private.selectable) {
+						box[i]._private.selected = true; box[i].trigger(event); box[i].updateStyle(false); draggedElements.push(box[i]); 
+					}
+				}
 				
-				if (box.length > 0) { r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Selection"); }
+				if (box.length > 0) { 
+					r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Selection");
+				}
 			}
 			
 			// Cancel drag pan
 			r.hoverData.dragging = false;
 			
 			if (!select[4]) {
-				var freeEvent = new $$.Event(e, {type: "free"}); for (var i=0;i<draggedElements.length;i++) { draggedElements[i]._private.grabbed = false; 
+				var freeEvent = new $$.Event(e, {type: "free"}); 
+				
+				for (var i=0;i<draggedElements.length;i++) {
+					
+					draggedElements[i]._private.grabbed = false; 
 					if (draggedElements[i]._private.group == "nodes") { 
-						var sEdges = draggedElements[i]._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
-					} draggedElements[i].trigger(freeEvent); }
+						var sEdges = draggedElements[i]._private.edges;
+						
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
+					}
+					
+					draggedElements[i].trigger(freeEvent);
+				}
 //				draggedElements = r.dragData.possibleDragElements = [];
 				r.data.canvases[10+2] = true; r.data.canvases[5+2].push("Node/nodes back from drag");
 				r.data.canvases[10+4] = true; r.data.canvases[5+4].push("Node/nodes back from drag");
@@ -699,22 +748,22 @@
 							edges[i]._private.rscratch.selfEdgeMidY)))
 					||
 					(this.inBezierVicinity(x, y,
-						edges[i]._private.rscratch.startX,
-						edges[i]._private.rscratch.startY,
-						edges[i]._private.rscratch.cp2cx,
-						edges[i]._private.rscratch.cp2cy,
 						edges[i]._private.rscratch.selfEdgeMidX,
 						edges[i]._private.rscratch.selfEdgeMidY,
+						edges[i]._private.rscratch.cp2cx,
+						edges[i]._private.rscratch.cp2cy,
+						edges[i]._private.rscratch.endX,
+						edges[i]._private.rscratch.endY,
 						Math.pow(edges[i]._private.style["width"].value / 2, 2))
 							&&
 					(Math.pow(edges[i]._private.style["width"].value / 2, 2) > 
 						this.sqDistanceToQuadraticBezier(x, y,
-							edges[i]._private.rscratch.startX,
-							edges[i]._private.rscratch.startY,
+							edges[i]._private.rscratch.selfEdgeMidX,
+							edges[i]._private.rscratch.selfEdgeMidY,
 							edges[i]._private.rscratch.cp2cx,
 							edges[i]._private.rscratch.cp2cy,
-							edges[i]._private.rscratch.selfEdgeMidX,
-							edges[i]._private.rscratch.selfEdgeMidY))))
+							edges[i]._private.rscratch.endX,
+							edges[i]._private.rscratch.endY))))
 					 { near.push(edges[i]); }
 			} else if (edges[i]._private.rscratch.isStraightEdge) {
 				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) >
@@ -728,7 +777,8 @@
 				if (this.inBezierVicinity(x, y,
 					edges[i]._private.rscratch.startX,
 					edges[i]._private.rscratch.startY,
-					edges[i]._private.cp2x, edges[i]._private.cp2y,
+					edges[i]._private.rscratch.cp2x,
+					edges[i]._private.rscratch.cp2y,
 					edges[i]._private.rscratch.endX,
 					edges[i]._private.rscratch.endY,
 					Math.pow(edges[i]._private.style["width"].value / 2, 2))
@@ -1233,7 +1283,7 @@
 		}
 	}
 	
-	var _genpoints = function(pt, spacing, even) {
+	var _genPoints = function(pt, spacing, even) {
 		
 		var approxLen = Math.sqrt(Math.pow(pt[4] - pt[0], 2) + Math.pow(pt[5] - pt[1], 2));
 		approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3], 2));
@@ -1242,7 +1292,7 @@
 		var pz;
 		
 		if (pts > 0) {
-			pz = new Array(pts);
+			pz = new Array(pts * 2);
 		} else {
 			return null;
 		}
@@ -1256,11 +1306,33 @@
 		return pz;
 	}
 	
-	var _genevenoddpts = function(pt, evenspac, oddspac) {
+	var _genStraightLinePoints = function(pt, spacing, even) {
+		
+		var approxLen = Math.sqrt(Math.pow(pt[2] - pt[0], 2) + Math.pow(pt[3] - pt[1], 2));
+		
+		var pts = Math.ceil(approxLen / spacing);
+		var pz;
+		
+		if (pts > 0) {
+			pz = new Array(pts * 2);
+		} else {
+			return null;
+		}
+		
+		var lineOffset = [pt[2] - pt[0], pt[3] - pt[1]];
+		for (var i = 0; i < pts; i++) {
+			var cur = i / pts;
+			pz[i * 2] = lineOffset[0] * cur + pt[0];
+			pz[i * 2 + 1] = lineOffset[1] * cur + pt[1];
+		}
+		
+		return pz;
+	}
+	
+	var _genEvenOddpts = function(pt, evenspac, oddspac) {
 		
 		pt1 = _genpts(pt, evenspac);
 		pt2 = _genpts(pt, oddspac);
-		
 	}
 	
 	CanvasRenderer.prototype.createBuffer = function(size) {
@@ -1279,18 +1351,15 @@
 			width = Math.max(width, 3.4);
 			width *= zoom;
 			
-			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 16, true);
+			var pt = _genPoints([x1, y1, cp1x, cp1y, x2, y2], 16, true);
 			if (!pt) { return; }
 			
 			var buffer = this.createBuffer(width * 2);
 			var context2 = buffer[1];
-	//		document.body.appendChild(buffer[0]);
 			
+			// Draw on buffer			
 			context2.setTransform(1, 0, 0, 1, 0, 0);
-	//		context2.scale(this.data.cy.zoom() / 2, this.data.cy.zoom() / 2);
 			context2.clearRect(0, 0, buffer[0].width, buffer[0].height);
-			
-			// Draw on buffer
 			
 			context2.fillStyle = context.strokeStyle;
 			context2.beginPath();
@@ -1300,15 +1369,8 @@
 			// Now use buffer
 			context.beginPath();
 			context.save();
-//			context.setTransform(1, 0, 0, 1, 0, 0);
-/*
-			context.translate(this.data.cy.pan().x - this.data.cy.pan().x / zoom,
-				this.data.cy.pan().y - this.data.cy.pan().y / zoom);
-*/
-//			context.scale(1/zoom, 1/zoom);
 			var halfWidth = width/2;
 			for (var i=0;i<pt.length/2;i++) {
-	//			context.scale(1/this.data.cy.zoom(), 1/this.data.cy.zoom());
 				context.drawImage(buffer[0], pt[i*2] - halfWidth, pt[i*2+1] - halfWidth,
 					width * 2 / zoom, width * 2 / zoom)
 			}
@@ -1316,7 +1378,7 @@
 			
 			
 		} else if (type == "dashed") {
-			var pt = _genpoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
+			var pt = _genPoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
 			
 			context.beginPath();
 			for (var i=0;i<pt.length/4;i++) {
@@ -1495,10 +1557,10 @@
 		var labelFamily = element._private.style["font-family"].strValue;
 		var labelVariant = element._private.style["font-variant"].strValue;
 		var labelWeight = element._private.style["font-weight"].strValue;
-					
+		
 		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
 			+ labelSize + " " + labelFamily;
-					
+		
 		var text = String(element._private.style["content"].value);
 		var textTransform = element._private.style["text-transform"].value;
 		
@@ -2593,6 +2655,8 @@
 			
 		},
 		
+//		drawPath: function(
+		
 		intersectLine: function(node, width, height, x, y) {
 			var intersect = rendFunc.intersectLineEllipse(
 				x, y,
@@ -3046,7 +3110,7 @@
 	}
 	
 	// @O Polygon drawing
-	CanvasRenderer.prototype.drawPolygon = function(
+	CanvasRenderer.prototype.drawPolygonPath = function(
 		x, y, width, height, points) {
 
 		var context = cy.renderer().context;
@@ -3062,9 +3126,17 @@
 		}
 		
 		context.closePath();
-		context.fill();
-		
 		context.restore();
+	}
+	
+	CanvasRenderer.prototype.drawPolygon = function(
+		x, y, width, height, points) {
+
+		// Draw path
+		this.drawPolygonPath(x, y, width, height, points);
+		
+		// Fill path
+		context.fill();
 	}
 	
 	// @O Approximate collision functions
@@ -3554,9 +3626,11 @@
 		
 		var lineSq = line[0] * line[0] + line[1] * line[1];
 		var hypSq = offset[0] * offset[0] + offset[1] * offset[1];
-		var adjSq = Math.pow(offset[0] * line[0] + offset[1] * line[1], 2) / lineSq;
 		
-		if (adjSq < 0) {
+		var dotProduct = offset[0] * line[0] + offset[1] * line[1];
+		var adjSq = dotProduct * dotProduct / lineSq;
+		
+		if (dotProduct < 0) {
 			return hypSq;
 		}
 		

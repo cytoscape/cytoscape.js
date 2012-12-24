@@ -1218,13 +1218,13 @@
 			*/
 			
 			var details = edge._private.rscratch;
-			this.drawBezierEdge(context, details.startX, details.startY, details.cp2ax,
-				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
+			this.drawStyledEdge(context, [details.startX, details.startY, details.cp2ax,
+				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
 			
-			this.drawBezierEdge(context, details.selfEdgeMidX, details.selfEdgeMidY,
-				details.cp2cx, details.cp2cy, details.endX, details.endY,
+			this.drawStyledEdge(context, [details.selfEdgeMidX, details.selfEdgeMidY,
+				details.cp2cx, details.cp2cy, details.endX, details.endY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
 			
@@ -1242,6 +1242,8 @@
 				
 				edge._private.rscratch.straightEdgeTooShort = true;	
 			} else {
+				/*
+				// Older code for solid-only edge styles
 				context.beginPath();
 				context.moveTo(
 					edge._private.rscratch.startX,
@@ -1250,6 +1252,13 @@
 				context.lineTo(edge._private.rscratch.endX, 
 					edge._private.rscratch.endY);
 				context.stroke();
+				*/
+				
+				var details = edge._private.rscratch;
+				this.drawStyledEdge(context, [details.startX, details.startY,
+				                              details.endX, details.endY],
+				                              edge._private.style["line-style"].value,
+				                              edge._private.style["width"].value);
 				
 				edge._private.rscratch.straightEdgeTooShort = false;	
 			}	
@@ -1270,8 +1279,8 @@
 			*/
 			
 			var details = edge._private.rscratch;
-			this.drawBezierEdge(context, details.startX, details.startY,
-				details.cp2x, details.cp2y, details.endX, details.endY,
+			this.drawStyledEdge(context, [details.startX, details.startY,
+				details.cp2x, details.cp2y, details.endX, details.endY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
 			
@@ -1335,64 +1344,173 @@
 		pt2 = _genpts(pt, oddspac);
 	}
 	
-	CanvasRenderer.prototype.createBuffer = function(size) {
+	CanvasRenderer.prototype.createBuffer = function(w, h) {
 		var buffer = document.createElement("canvas");
-		buffer.width = size;
-		buffer.height = size;
+		buffer.width = w;
+		buffer.height = h;
 		
 		return [buffer, buffer.getContext("2d")];
 	}
 	
-	CanvasRenderer.prototype.drawBezierEdge = function(context, x1, y1, cp1x, cp1y, x2, y2, type, width) {
+	/*
+	CanvasRenderer.prototype.
+	
+	CanvasRenderer.prototype.drawStraightEdge = function(context, x1, y1, x2, y2, type, width) {
 		
-		if (type == "dotted") {
-			var zoom = this.data.cy.zoom();
-			width *= 1.6;
-			width = Math.max(width, 3.4);
-			width *= zoom;
+		if (type == "solid") {
+			context.beginPath();
+			context.moveTo(
+				edge._private.rscratch.startX,
+				edge._private.rscratch.startY);
+	
 			
-			var pt = _genPoints([x1, y1, cp1x, cp1y, x2, y2], 16, true);
+			context.stroke();
+		} else if (type == "dotted") {
+			var pt = _genStraightLinePoints([x1, y1, x2, y2], 10, false);
+			
+			
+		} else if (type == "dashed") {
+			var pt = _genStraightLinePoints([x1, y1, x2, y2], 10, false);
+		}
+		
+	}
+	*/
+	
+	CanvasRenderer.prototype.drawStyledEdge = function(
+			context, pts, type, width) {
+		
+		// 3 points given -> assume Bezier
+		// 2 -> assume straight
+		
+		var zoom = this.data.cy.zoom();
+		
+		// Adjusted edge width for dotted
+//		width = Math.max(width * 1.6, 3.4) * zoom;
+
+		//		console.log("w", width);
+		
+		if (type == "solid") {
+			
+			context.beginPath();
+			context.moveTo(pts[0], pts[1]);
+			if (pts.length == 3 * 2) {
+				context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
+			} else {
+				context.lineTo(pts[2], pts[3]);
+			}
+//			context.closePath();
+			context.stroke();
+			
+		} else if (type == "dotted") {
+			
+			var pt;
+			if (pts.length == 3 * 2) {
+				pt = _genPoints(pts, 16, true);
+			} else {
+				pt = _genStraightLinePoints(pts, 16, true);
+			}
+			
 			if (!pt) { return; }
 			
-			var buffer = this.createBuffer(width * 2);
-			var context2 = buffer[1];
+			var dotRadius = Math.max(width * 1.6, 3.4) * zoom;
+			var bufW = dotRadius * 2, bufH = dotRadius * 2;
+			var buffer = this.createBuffer(bufW, bufH);
 			
-			// Draw on buffer			
+			var context2 = buffer[1];
+//			console.log(buffer);
+//			console.log(bufW, bufH);
+			
+			// Draw on buffer
 			context2.setTransform(1, 0, 0, 1, 0, 0);
-			context2.clearRect(0, 0, buffer[0].width, buffer[0].height);
+			context2.clearRect(0, 0, bufW, bufH);
 			
 			context2.fillStyle = context.strokeStyle;
 			context2.beginPath();
-			context2.arc(width, width, width * 0.5, 0, Math.PI * 2, false);
+			context2.arc(dotRadius, dotRadius, dotRadius * 0.5, 0, Math.PI * 2, false);
 			context2.fill();
 			
 			// Now use buffer
 			context.beginPath();
 			context.save();
-			var halfWidth = width/2;
-			for (var i=0;i<pt.length/2;i++) {
-				context.drawImage(buffer[0], pt[i*2] - halfWidth, pt[i*2+1] - halfWidth,
-					width * 2 / zoom, width * 2 / zoom)
+			
+			for (var i=0; i<pt.length/2; i++) {
+				
+//				context.beginPath();
+//				context.arc(pt[i*2], pt[i*2+1], width * 0.5, 0, Math.PI * 2, false);
+//				context.fill();
+				
+				context.drawImage(
+						buffer[0],
+						pt[i*2] - bufW/2 / zoom,
+						pt[i*2+1] - bufH/2 / zoom,
+						bufW / zoom,
+						bufH / zoom);
 			}
+			
 			context.restore();
 			
-			
 		} else if (type == "dashed") {
-			var pt = _genPoints([x1, y1, cp1x, cp1y, x2, y2], 5, true);
-			
-			context.beginPath();
-			for (var i=0;i<pt.length/4;i++) {
-				context.moveTo(pt[i * 4], pt[i * 4 + 1]);
-				context.lineTo(pt[i * 4 + 2], pt[i * 4 + 3]);
+			var pt;
+			if (pts.length == 3 * 2) {
+				pt = _genPoints(pts, 5, true);
+			} else {
+				pt = _genStraightLinePoints(pts, 5, true);
 			}
-			//context.closePath();
-			context.stroke();
+			if (!pt) { return; }
+			
+			var bufW = width * 2, bufH = width * 8;
+			var buffer = this.createBuffer(bufW, bufH);
+			var context2 = buffer[1];
+
+			// Draw on buffer
+			context2.setTransform(1, 0, 0, 1, 0, 0);
+			context2.clearRect(0, 0, bufW, bufH);
+			
+			if (context.strokeStyle) {
+				context2.strokeStyle = context.strokeStyle;
+			}
+			
+			context2.beginPath();
+			context2.moveTo(bufW / 2, -bufH / 2 * 0.8);
+			context2.lineTo(bufW / 2,  bufH / 2 * 0.8);
+			context2.stroke();
+			
+			context.save();
+			
+			var rotateVector, angle;
+			for (var i=0; i<pt.length/2; i++) {
+				
+				context.translate(pt[0], pt[1]);
+				
+				var p = i / (Math.max(pt.length/2 - 1, 1));
+				
+				// Use derivative of quadratic Bezier function to find tangents
+				rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
+				                	+ 2 * p * (pts[4] - pts[2]),
+				                	
+				                    2 * (1-p) * (pts[3] - pts[1]) 
+				                    + 2 * p * (pts[5] - pts[3])];
+
+				angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * 1)
+						/ Math.sqrt(rotateVector[0] * rotateVector[0] 
+							+ rotateVector[1] * rotateVector[1]));
+
+				if (rotateVector[0] < 0) {
+					angle = 2 * Math.PI - angle;
+				}
+				
+//				context.rotate(angle);
+				
+				context.translate(-bufW/2, -bufH/2);
+				context.drawImage(buffer[0], 0, 0, bufW / zoom, bufH / zoom);
+				context.translate(bufW/2, bufH/2);
+
+	//			context.rotate(-angle);
+				context.translate(-pt[0], -pt[1]);
+			}
+			context.restore();
 		} else {
-			context.beginPath();
-			context.moveTo(x1, y1);
-			context.quadraticCurveTo(cp1x, cp1y, x2, y2);
-//			context.closePath();
-			context.stroke();
+			this.drawStyledEdge(context, pts, "solid", width);
 		}
 		
 	}

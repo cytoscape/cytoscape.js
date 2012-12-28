@@ -1191,32 +1191,7 @@
 		this.findEndpoints(edge);
 		
 		if (edge._private.rscratch.isSelfEdge) {
-		
-			/*
-			context.beginPath();
-			context.moveTo(
-				edge._private.rscratch.startX,
-				edge._private.rscratch.startY)
-			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2ax,
-				edge._private.rscratch.cp2ay,
-				edge._private.rscratch.selfEdgeMidX,
-				edge._private.rscratch.selfEdgeMidY);
-			
-			context.moveTo(
-				edge._private.rscratch.selfEdgeMidX,
-				edge._private.rscratch.selfEdgeMidY);
-			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2cx,
-				edge._private.rscratch.cp2cy,
-				edge._private.rscratch.endX,
-				edge._private.rscratch.endY);
-			
-			context.stroke();
-			*/
-			
+					
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(context, [details.startX, details.startY, details.cp2ax,
 				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY],
@@ -1230,7 +1205,6 @@
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
-			// Check if the edge is inverted due to close node proximity
 			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
 			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
 			
@@ -1242,17 +1216,6 @@
 				
 				edge._private.rscratch.straightEdgeTooShort = true;	
 			} else {
-				/*
-				// Older code for solid-only edge styles
-				context.beginPath();
-				context.moveTo(
-					edge._private.rscratch.startX,
-					edge._private.rscratch.startY);
-	
-				context.lineTo(edge._private.rscratch.endX, 
-					edge._private.rscratch.endY);
-				context.stroke();
-				*/
 				
 				var details = edge._private.rscratch;
 				this.drawStyledEdge(context, [details.startX, details.startY,
@@ -1263,20 +1226,6 @@
 				edge._private.rscratch.straightEdgeTooShort = false;	
 			}	
 		} else {
-			
-			/*
-			context.beginPath();
-			context.moveTo(
-				edge._private.rscratch.startX,
-				edge._private.rscratch.startY);
-			
-			context.quadraticCurveTo(
-				edge._private.rscratch.cp2x, 
-				edge._private.rscratch.cp2y, 
-				edge._private.rscratch.endX, 
-				edge._private.rscratch.endY);
-			context.stroke();
-			*/
 			
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(context, [details.startX, details.startY,

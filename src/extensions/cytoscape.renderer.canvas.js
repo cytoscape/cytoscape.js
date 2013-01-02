@@ -1426,36 +1426,48 @@
 			
 			context.save();
 			
-			var rotateVector, angle;
 			for (var i=0; i<pt.length/2; i++) {
+				
+				context.translate(pt[i*2] - bufW/2 / zoom, pt[i*2+1] - bufH/2 / zoom);
+				
+				context.drawImage(
+						buffer[0],
+						0,
+						0,
+						bufW / zoom,
+						bufH / zoom);
+				
+				context.translate(bufW/2 / zoom - pt[i*2], bufH/2 / zoom - pt[i*2+1]);
+				
+				/*
 				
 				context.translate(pt[0], pt[1]);
 				
 				var p = i / (Math.max(pt.length/2 - 1, 1));
 				
 				// Use derivative of quadratic Bezier function to find tangents
-				rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
+				var rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
 				                	+ 2 * p * (pts[4] - pts[2]),
 				                	
 				                    2 * (1-p) * (pts[3] - pts[1]) 
 				                    + 2 * p * (pts[5] - pts[3])];
 
-				angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * 1)
+				var angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * 1)
 						/ Math.sqrt(rotateVector[0] * rotateVector[0] 
 							+ rotateVector[1] * rotateVector[1]));
 
 				if (rotateVector[0] < 0) {
-					angle = 2 * Math.PI - angle;
+					angle = -2 * Math.PI + angle;
 				}
 				
-//				context.rotate(angle);
-				
 				context.translate(-bufW/2, -bufH/2);
-				context.drawImage(buffer[0], 0, 0, bufW / zoom, bufH / zoom);
+				context.drawImage(buffer[0], 1, 1, bufW / zoom, bufH / zoom);
 				context.translate(bufW/2, bufH/2);
 
-	//			context.rotate(-angle);
 				context.translate(-pt[0], -pt[1]);
+				
+				*/
+				
 			}
 			context.restore();
 		} else {
@@ -1482,16 +1494,17 @@
 		if (edge._private.rscratch.isSelfEdge) {
 			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
 			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
-		} else if (edge._private.rscratch.isStraightEdge) {
+		} else if (edge._private.rscratch.isStraightEdge
+				&& !edge._private.rscratch.isBezierEdge) {
 			edgeCenterX = (edge._private.rscratch.startX
 				+ edge._private.rscratch.endX) / 2;
 			edgeCenterY = (edge._private.rscratch.startY
 				+ edge._private.rscratch.endY) / 2;
-		} else if (edge._private.rscratch.isBezierEdge) {
-			edgeCenterX = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startX
-				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2x
+		} else if (edge._private.rscratch.isBezierEdge
+				&& !edge._private.rscratch.isStraightEdge) {
+			edgeCenterX = 0.25 * edge._private.rscratch.startX
+				+ 2 * 0.5 * 0.5 * edge._private.rscratch.cp2x
 				+ (0.5 * 0.5) * edge._private.rscratch.endX;
-			
 			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
 				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
 				+ (0.5 * 0.5) * edge._private.rscratch.endY;

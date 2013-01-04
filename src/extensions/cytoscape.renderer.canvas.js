@@ -1141,11 +1141,26 @@
 	
 	CanvasRenderer.prototype.getCachedImage = function(url) {
 		
-		var image = imageCache[url];
+		if (imageCache[url] && imageCache[url].image) {
+			return imageCache[url].image;
+		}
 		
-		if (image == undefined) { imageCache[url] = new Image(); imageCache[url].src = url; image = imageCache[url]; }
+		var imageContainer = imageCache[url];
 		
-		return image;
+		if (imageContainer == undefined) { 
+			imageCache[url] = new Object();
+			imageCache[url].image = new Image();
+			imageCache[url].image.src = url;
+			
+			imageCache[url].usecount = 5;
+		//	imageCache[url] =  imageCache[url].src = url; image = imageCache[url];
+		}
+		
+		return imageContainer.image;
+	}
+	
+	CanvasRenderer.prototype.cleanImageCaches = function() {
+		
 	}
 	
 	CanvasRenderer.prototype.drawImage = function(context, x, y, widthScale, heightScale, rotationCW, image) {
@@ -1596,8 +1611,30 @@
 		}
 	}
 	
-	CanvasRenderer.prototype.drawInscribedImage = function(img, node) {
-		return null;	
+	CanvasRenderer.prototype.drawInscribedImage = function(targetContext, img, node) {
+		
+		var zoom = this.data.cy._private.zoom;
+		
+		var nodeX = node._private.position.x;
+		var nodeY = node._private.position.y;
+		
+		var nodeWidth = node._private.style["width"].value;
+		var nodeHeight = node._private.style["height"].value;
+		
+		nodeShapes[node._private.style["shape"].value].drawPath(
+				targetContext,
+				nodeX, nodeY, 
+				nodeWidth, nodeHeight);
+		
+		context.clip();
+		
+		var imgDim = [img.width, img.height];
+		context.drawImage(img, nodeX - imgDim[0] / 2, nodeY - imgDim[1] / 2,
+				imgDim[0] * zoom, imgDim[1] * zoom);
+		
+		context.stroke();
+		
+		context.resetClip();
 	}
 	
 	// Draw node text
@@ -2742,14 +2779,7 @@
 	{
 	nodeShapes["ellipse"] = {
 		draw: function(context, node, width, height) {
-			context.beginPath();
-			context.save();
-			context.translate(node._private.position.x, node._private.position.y);
-			context.scale(width / 2, height / 2);
-			// At origin, radius 1, 0 to 2pi
-			context.arc(0, 0, 1, 0, Math.PI * 2, false);
-			context.closePath();
-			context.restore();
+			nodeShapes["ellipse"].drawPath(context, node._private.position.x, node._private.position.y, width, height);
 			context.fill();
 			
 //			console.log("drawing ellipse");
@@ -2757,7 +2787,20 @@
 			
 		},
 		
-//		drawPath: function(
+		drawPath: function(context, x, y, width, height) {
+			context.beginPath();
+			context.save();
+			context.translate(x, y);
+			context.scale(width / 2, height / 2);
+			// At origin, radius 1, 0 to 2pi
+			context.arc(0, 0, 1, 0, Math.PI * 2, false);
+			context.closePath();
+			context.restore();
+			
+//			console.log("drawing ellipse");
+//			console.log(arguments);
+			
+		},
 		
 		intersectLine: function(node, width, height, x, y) {
 			var intersect = rendFunc.intersectLineEllipse(

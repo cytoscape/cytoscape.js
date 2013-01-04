@@ -1401,13 +1401,13 @@
 		} else if (type == "dashed") {
 			var pt;
 			if (pts.length == 3 * 2) {
-				pt = _genPoints(pts, 5, true);
+				pt = _genPoints(pts, 13, true);
 			} else {
-				pt = _genStraightLinePoints(pts, 5, true);
+				pt = _genStraightLinePoints(pts, 13, true);
 			}
 			if (!pt) { return; }
 			
-			var bufW = width * 2, bufH = width * 8;
+			var bufW = width * 2 * zoom, bufH = width * 2.5 * zoom;
 			var buffer = this.createBuffer(bufW, bufH);
 			var context2 = buffer[1];
 
@@ -1419,16 +1419,64 @@
 				context2.strokeStyle = context.strokeStyle;
 			}
 			
+	//		context2.fillStyle = context.strokeStyle;
+			
 			context2.beginPath();
-			context2.moveTo(bufW / 2, -bufH / 2 * 0.8);
-			context2.lineTo(bufW / 2,  bufH / 2 * 0.8);
+			context2.moveTo(bufW / 2, bufH * 0.2);
+			context2.lineTo(bufW / 2,  bufH * 0.8);
+			
+	//		context2.arc(bufH, dotRadius, dotRadius * 0.5, 0, Math.PI * 2, false);
+			
+	//		context2.fill();
 			context2.stroke();
 			
 			context.save();
 			
+			// document.body.appendChild(buffer[0]);
+			
+			var quadraticBezierVaryingTangent = false;
+			var rotateVector, angle;
+			
+			// Straight line; constant tangent angle
+			if (pts.length == 2 * 2) {
+				rotateVector = [pts[2] - pts[0], pts[3] - pt[1]];
+				
+				angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1)
+						/ Math.sqrt(rotateVector[0] * rotateVector[0] 
+						+ rotateVector[1] * rotateVector[1]));
+	
+				if (rotateVector[0] < 0) {
+					angle = -angle + 2 * Math.PI;
+				}
+			} else if (pts.length == 3 * 2) {
+				quadraticBezierVaryingTangent = true;
+			}
+			
 			for (var i=0; i<pt.length/2; i++) {
 				
-				context.translate(pt[i*2] - bufW/2 / zoom, pt[i*2+1] - bufH/2 / zoom);
+				var p = i / (Math.max(pt.length/2 - 1, 1));
+			
+				// Quadratic bezier; varying tangent
+				// So, use derivative of quadratic Bezier function to find tangents
+				if (quadraticBezierVaryingTangent) {
+					rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
+					                	+ 2 * p * (pts[4] - pts[2]),
+					                    2 * (1-p) * (pts[3] - pts[1]) 
+					                    + 2 * p * (pts[5] - pts[3])];
+	
+					angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1)
+							/ Math.sqrt(rotateVector[0] * rotateVector[0] 
+								+ rotateVector[1] * rotateVector[1]));
+	
+					if (rotateVector[0] < 0) {
+						angle = -angle + 2 * Math.PI;
+					}
+				}
+				
+				context.translate(pt[i*2], pt[i*2+1]);
+				
+				context.rotate(angle);
+				context.translate(-bufW/2 / zoom, -bufH/2 / zoom);
 				
 				context.drawImage(
 						buffer[0],
@@ -1437,36 +1485,10 @@
 						bufW / zoom,
 						bufH / zoom);
 				
-				context.translate(bufW/2 / zoom - pt[i*2], bufH/2 / zoom - pt[i*2+1]);
+				context.translate(bufW/2 / zoom, bufH/2 / zoom);
+				context.rotate(-angle);
 				
-				/*
-				
-				context.translate(pt[0], pt[1]);
-				
-				var p = i / (Math.max(pt.length/2 - 1, 1));
-				
-				// Use derivative of quadratic Bezier function to find tangents
-				var rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
-				                	+ 2 * p * (pts[4] - pts[2]),
-				                	
-				                    2 * (1-p) * (pts[3] - pts[1]) 
-				                    + 2 * p * (pts[5] - pts[3])];
-
-				var angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * 1)
-						/ Math.sqrt(rotateVector[0] * rotateVector[0] 
-							+ rotateVector[1] * rotateVector[1]));
-
-				if (rotateVector[0] < 0) {
-					angle = -2 * Math.PI + angle;
-				}
-				
-				context.translate(-bufW/2, -bufH/2);
-				context.drawImage(buffer[0], 1, 1, bufW / zoom, bufH / zoom);
-				context.translate(bufW/2, bufH/2);
-
-				context.translate(-pt[0], -pt[1]);
-				
-				*/
+				context.translate(-pt[i*2], -pt[i*2+1]);
 				
 			}
 			context.restore();

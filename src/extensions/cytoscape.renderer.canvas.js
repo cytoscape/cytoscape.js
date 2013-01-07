@@ -1804,12 +1804,30 @@
 						
 					edge._private.rscratch.isSelfEdge = true;
 					
+					
+					// Old -- before fix for large nodes hiding the edge
+					// ===
+//					edge._private.rscratch.cp2ax = src._private.position.x;
+//					edge._private.rscratch.cp2ay = src._private.position.y
+//						- 1.3 * stepSize * (i / 3 + 1);
+//					
+//					edge._private.rscratch.cp2cx = src._private.position.x
+//						- 1.3 * stepSize * (i / 3 + 1);
+//					edge._private.rscratch.cp2cy = src._private.position.y;
+					
+//					edge._private.rscratch.selfEdgeMidX =
+//						(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
+//				
+//					edge._private.rscratch.selfEdgeMidY =
+//						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
+					
+					// New -- fix for large nodes
 					edge._private.rscratch.cp2ax = src._private.position.x;
 					edge._private.rscratch.cp2ay = src._private.position.y
-						- 1.3 * stepSize * (i / 3 + 1);
+						- (1 + Math.pow(src._private.style["height"].value, 1.12) / 100) * stepSize * (i / 3 + 1);
 					
 					edge._private.rscratch.cp2cx = src._private.position.x
-						- 1.3 * stepSize * (i / 3 + 1);
+						- (1 + Math.pow(src._private.style["width"].value, 1.12) / 100) * stepSize * (i / 3 + 1);
 					edge._private.rscratch.cp2cy = src._private.position.y;
 					
 					edge._private.rscratch.selfEdgeMidX =

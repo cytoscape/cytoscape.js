@@ -1111,21 +1111,26 @@
 		{
 			var context;
 					
-			// Rasterize the layers
-			context = data.banvases[1].getContext("2d");
-			context.globalCompositeOperation = "copy";
-			context.drawImage(data.canvases[4], 0, 0);
-			context.globalCompositeOperation = "source-over";
-			context.drawImage(data.canvases[2], 0, 0);
-			context.drawImage(data.canvases[0], 0, 0);
-//			context.fillStyle = "rgba(0,0,0,1)";
-//			context.fillRect(50, 50, 400, 400);
-			
-			context = data.banvases[0].getContext("2d");
-			context.globalCompositeOperation = "copy";
-			context.drawImage(data.banvases[1], 0, 0);
-//			context.fillStyle = "rgba(0,0,0,1)";
-//			context.fillRect(50, 50, 400, 400);
+			// Rasterize the layers, but only if container has nonzero size
+			if (this.data.container.clientHeight > 0
+					&& this.data.container.clientWidth > 0) {
+				
+				context = data.banvases[1].getContext("2d");
+				context.globalCompositeOperation = "copy";
+				context.drawImage(data.canvases[4], 0, 0);
+				context.globalCompositeOperation = "source-over";
+				context.drawImage(data.canvases[2], 0, 0);
+				context.drawImage(data.canvases[0], 0, 0);
+	//			context.fillStyle = "rgba(0,0,0,1)";
+	//			context.fillRect(50, 50, 400, 400);
+				
+				context = data.banvases[0].getContext("2d");
+				context.globalCompositeOperation = "copy";
+				context.drawImage(data.banvases[1], 0, 0);
+	//			context.fillStyle = "rgba(0,0,0,1)";
+	//			context.fillRect(50, 50, 400, 400);
+
+			}
 		}
 	};
 	
@@ -1835,8 +1840,8 @@
 				
 					edge._private.rscratch.selfEdgeMidY =
 						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
-						
-				// Straight edge	
+					
+				// Straight edge
 				} else if (hashTable[pairId].length % 2 == 1
 					&& i == Math.floor(hashTable[pairId].length / 2)) {
 					

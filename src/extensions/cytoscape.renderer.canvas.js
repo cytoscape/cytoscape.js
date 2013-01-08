@@ -28,7 +28,8 @@
 		
 		this.dragData = {possibleDragElements: []};
 		
-		this.touchData = {start: null, capture: false, 
+		this.touchData = {start: null, capture: false,
+				startPosition: [null, null, null, null, null, null],
 				now: [null, null, null, null, null, null], 
 				earlier: [null, null, null, null, null, null] };
 		//--
@@ -303,15 +304,15 @@
 			// Click event
 			{
 				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
-					var klickEvent = new $$.Event(e, {type: "click"});
+					var clickEvent = new $$.Event(e, {type: "click"});
 					
 					if (near != null) {
-						near.trigger(klickEvent);
+						near.trigger(clickEvent);
 					} else if (near == null) {
-						cy.trigger(klickEvent);
+						cy.trigger(clickEvent);
 					}
 				}
-			} 
+			}
 			
 			// Mouseup event
 			{
@@ -466,7 +467,10 @@
 				}
 			}
 			
-			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+			for (var i=0;i<now.length;i++) {
+				earlier[i] = now[i];
+				r.touchData.startPosition[i] = now[i];
+			};
 			r.redraw();
 			
 		}, true);
@@ -569,6 +573,23 @@
 				
 			} else if (e.touches[0]) {
 			
+				var touchDidNotMove = true;
+				
+				for (var i=0;i<now.length;i++) {
+					if (Math.abs(now[i] - r.touchData.startPosition[i]) > 2) {
+						touchDidNotMove = false;
+					}
+				}
+				
+				if (touchDidNotMove) {
+					
+					if (start) {
+						start.trigger(new $$.Event(e, {type: "tap"}));
+					} else {
+						cy.trigger(new $$.Event(e, {type: "tap"}));
+					}
+				}
+				
 			} else if (!e.touches[0]) {
 			
 				var start = r.touchData.start;
@@ -1644,9 +1665,9 @@
 		context.drawImage(img, nodeX - imgDim[0] / 2, nodeY - imgDim[1] / 2,
 				imgDim[0] * zoom, imgDim[1] * zoom);
 		
+		context.resetClip();
 		context.stroke();
 		
-		context.resetClip();
 	}
 	
 	// Draw node text
@@ -3266,7 +3287,88 @@
 			return renderer.pointInsidePolygon(x, y, nodeShapes["octagon"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
+	};
+	
+	var star5Points = new Array(10*2);
+	{
+		var outerPoints = generateUnitNgonPoints(5, 0);
+		var innerPoints = generateUnitNgonPoints(5, Math.PI);
+		
+//		console.log(outerPoints);
+//		console.log(innerPoints);
+		
+		// Outer radius is 1; inner radius of star is smaller
+		var innerRadius = 0.5 * (3 - Math.sqrt(5));
+		
+		for (var i=0;i<innerPoints.length/2;i++) {
+			innerPoints[i*2] *= innerRadius;
+			innerPoints[i*2+1] *= innerRadius;
+		}
+		
+		for (var i=0;i<20/4;i++) {
+			star5Points[i*4] = outerPoints[i*2];
+			star5Points[i*4+1] = outerPoints[i*2+1];
+			
+			star5Points[i*4+2] = innerPoints[i*2];
+			star5Points[i*4+3] = innerPoints[i*2+1];
+		}
+		
+//		console.log(star5Points);
 	}
+	
+	nodeShapes["star5"] = {
+		points: star5Points,
+		
+		draw: function(context, centerX, centerY, width, height) {
+			renderer.drawPolygon(context,
+				centerX, centerY,
+				width, height,
+				nodeShapes["star5"].points);
+		},
+		
+		drawPath: function(context, centerX, centerY, width, height) {
+			renderer.drawPolygonPath(context,
+				centerX, centerY,
+				width, height,
+				nodeShapes["star5"].points);
+		},
+		
+		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
+			return renderer.polygonIntersectLine(
+				x, y,
+				nodeShapes["star5"].points,
+				nodeX,
+				nodeY,
+				width / 2, height / 2,
+				padding);
+		},
+		
+		intersectBox: function(
+				x1, y1, x2, y2, width, height, centerX, centerY, padding) {
+			
+			var points = nodeShapes["star5"].points;
+			
+			return renderer.boxIntersectPolygon(
+					x1, y1, x2, y2,
+					points, width, height, centerX, centerY, [0, -1], padding);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height, centerX, centerY) {
+		
+			return renderer.checkInBoundingBox(
+				x, y, nodeShapes["star5"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			return renderer.pointInsidePolygon(x, y, nodeShapes["star5"].points,
+				centerX, centerY, width, height, [0, -1], padding);
+		}
+	};
+	
 	}
 
 	}

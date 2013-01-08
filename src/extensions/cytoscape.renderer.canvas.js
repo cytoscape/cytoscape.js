@@ -1198,17 +1198,14 @@
 	
 	var imageCache = {};
 	
-	/*
-	{
-		var url, image;
-		
-		if (imageCache[url] == undefined) {	imageCache[url] = image; }
-	}
-	*/
+	// Discard after 5 min. of disuse
+	var IMAGE_KEEP_TIME = 30 * 300; // 300frames@30fps, or. 5min
 	
 	CanvasRenderer.prototype.getCachedImage = function(url) {
 		
 		if (imageCache[url] && imageCache[url].image) {
+
+			imageCache[url].keepTime = IMAGE_KEEP_TIME; 
 			return imageCache[url].image;
 		}
 		
@@ -1219,15 +1216,21 @@
 			imageCache[url].image = new Image();
 			imageCache[url].image.src = url;
 			
-			imageCache[url].usecount = 5;
-		//	imageCache[url] =  imageCache[url].src = url; image = imageCache[url];
+			imageCache[url].keepTime = IMAGE_KEEP_TIME;
 		}
 		
 		return imageContainer.image;
 	}
 	
-	CanvasRenderer.prototype.cleanImageCaches = function() {
+	CanvasRenderer.prototype.updateImageCaches = function() {
 		
+		for (var url in imageCache) {
+			if (imageCache[url].keepTime <= 0) {
+				imageCache[url] = undefined;
+			} else {
+				imageCache[url] -= 1;
+			}
+		}
 	}
 	
 	CanvasRenderer.prototype.drawImage = function(context, x, y, widthScale, heightScale, rotationCW, image) {

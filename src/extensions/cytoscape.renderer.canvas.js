@@ -1205,10 +1205,10 @@
 	var IMAGE_KEEP_TIME = 30 * 300; // 300frames@30fps, or. 5min
 	
 	CanvasRenderer.prototype.getCachedImage = function(url) {
-		
+
 		if (imageCache[url] && imageCache[url].image) {
 
-			// Reset image discardation timer
+			// Reset image discard timer
 			imageCache[url].keepTime = IMAGE_KEEP_TIME; 
 			return imageCache[url].image;
 		}
@@ -1220,8 +1220,10 @@
 			imageCache[url].image = new Image();
 			imageCache[url].image.src = url;
 			
-			// Initialize image discardation timer
+			// Initialize image discard timer
 			imageCache[url].keepTime = IMAGE_KEEP_TIME;
+			
+			imageContainer = imageCache[url];
 		}
 		
 		return imageContainer.image;
@@ -1670,12 +1672,14 @@
 		{
 			//var image = this.getCachedImage("url");
 			
-			if (node._private.style["background-image"].value[1]) {
+			if (node._private.style["background-image"].value[2] ||
+					node._private.style["background-image"].value[1]) {
 				
-				var image = this.getCachedImage(node._private.style["background-image"].value[1]);
+				var image = this.getCachedImage(node._private.style["background-image"].value[2]
+					|| node._private.style["background-image"].value[1]);
 				
 				//context.clip
-				CanvasRenderer.prototype.drawInscribedImage(context, image, node);
+				this.drawInscribedImage(context, image, node);
 				
 			} else {
 				
@@ -1699,8 +1703,9 @@
 		}
 	}
 	
-	CanvasRenderer.prototype.drawInscribedImage = function(targetContext, img, node) {
+	CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
 		
+		console.log(this.data);
 		var zoom = this.data.cy._private.zoom;
 		
 		var nodeX = node._private.position.x;
@@ -1710,15 +1715,18 @@
 		var nodeHeight = node._private.style["height"].value;
 		
 		nodeShapes[node._private.style["shape"].value].drawPath(
-				targetContext,
+				context,
 				nodeX, nodeY, 
 				nodeWidth, nodeHeight);
 		
 		context.clip();
 		
 		var imgDim = [img.width, img.height];
-		context.drawImage(img, nodeX - imgDim[0] / 2, nodeY - imgDim[1] / 2,
-				imgDim[0] * zoom, imgDim[1] * zoom);
+		context.drawImage(img, 
+				nodeX - imgDim[0] / 2 * zoom,
+				nodeY - imgDim[1] / 2 * zoom,
+				imgDim[0] * zoom,
+				imgDim[1] * zoom);
 		
 		context.resetClip();
 		context.stroke();

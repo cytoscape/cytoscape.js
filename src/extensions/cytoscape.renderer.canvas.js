@@ -42,7 +42,8 @@
 				// These 3 fields related to tap, taphold events
 				startPosition: [null, null, null, null, null, null],
 				singleTouchStartTime: null,
-				singleTouchMoved: false,
+				singleTouchMoved: true,
+				
 				
 				now: [null, null, null, null, null, null], 
 				earlier: [null, null, null, null, null, null] };
@@ -484,29 +485,33 @@
 				}
 				
 				
-			}
-			
-			// Tap, taphold
-			// -----
-			
-			for (var i=0;i<now.length;i++) {
-				earlier[i] = now[i];
-				r.touchData.startPosition[i] = now[i];
-			};
-			
-			r.touchData.singleTouchMoved = false;
-			
-			setTimeout(function() {
-				if (r.touchData.singleTouchMoved == false) {
-					if (r.touchData.start) {
-						r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
-					} else {
-						r.data.cy.trigger(new $$.Event(e, {type: "taphold"}));
+				// Tap, taphold
+				// -----
+				
+				for (var i=0;i<now.length;i++) {
+					earlier[i] = now[i];
+					r.touchData.startPosition[i] = now[i];
+				};
+				
+				r.touchData.singleTouchMoved = false;
+				r.touchData.singleTouchStartTime = time();
+				
+				var tapHoldTimeout = setTimeout(function() {
+					if (r.touchData.singleTouchMoved == false
+							// This time double constraint prevents multiple quick taps
+							// followed by a taphold triggering multiple taphold events
+							&& time() - r.touchData.singleTouchStartTime < 1040
+							&& time() - r.touchData.singleTouchStartTime > 960) {
+						if (r.touchData.start) {
+							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
+						} else {
+							r.data.cy.trigger(new $$.Event(e, {type: "taphold"}));
+						}
+
+//						console.log("taphold");
 					}
-					
-					alert("taphold");
-				}
-			}, 500);
+				}, 1000);
+			}
 			
 			r.redraw();
 			
@@ -577,6 +582,16 @@
 					}
 				}
 				
+				// Check to cancel taphold
+				for (var i=0;i<now.length;i++) {
+					if (now[i] 
+						&& r.touchData.startPosition[i]
+						&& Math.abs(now[i] - r.touchData.startPosition[i]) > 4) {
+						
+						r.touchData.singleTouchMoved = true;
+					}
+				}
+				
 				if (start == null) {
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
 					
@@ -637,26 +652,19 @@
 					if (near == null) { cy.trigger(new $$.Event(e, {type: "touchend"})); }
 				}
 				
-				// Check tap (analogous to mouse click) event
-				var touchDidNotMove = true;
-				
-				for (var i=0;i<now.length;i++) {
-					if (now[i] 
-						&& r.touchData.startPosition[i]
-						&& Math.abs(now[i] - r.touchData.startPosition[i]) > 2) {
-						
-						touchDidNotMove = false;
-					}
-				}
-				
-				if (touchDidNotMove) {
+				// Tap event, roughly same as mouse click event for touch
+				if (r.touchData.singleTouchMoved == false) {
 					
 					if (start) {
 						start.trigger(new $$.Event(e, {type: "tap"}));
 					} else {
 						cy.trigger(new $$.Event(e, {type: "tap"}));
 					}
+					
+//					console.log("tap");
 				}
+				
+				r.touchData.singleTouchMoved = true;
 			}
 			
 			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
@@ -1183,15 +1191,10 @@
 				context.globalCompositeOperation = "source-over";
 				context.drawImage(data.canvases[2], 0, 0);
 				context.drawImage(data.canvases[0], 0, 0);
-	//			context.fillStyle = "rgba(0,0,0,1)";
-	//			context.fillRect(50, 50, 400, 400);
 				
 				context = data.bufferCanvases[0].getContext("2d");
 				context.globalCompositeOperation = "copy";
 				context.drawImage(data.bufferCanvases[1], 0, 0);
-	//			context.fillStyle = "rgba(0,0,0,1)";
-	//			context.fillRect(50, 50, 400, 400);
-
 			}
 		}
 	};
@@ -1205,6 +1208,7 @@
 		
 		if (imageCache[url] && imageCache[url].image) {
 
+			// Reset image discardation timer
 			imageCache[url].keepTime = IMAGE_KEEP_TIME; 
 			return imageCache[url].image;
 		}
@@ -1216,6 +1220,7 @@
 			imageCache[url].image = new Image();
 			imageCache[url].image.src = url;
 			
+			// Initialize image discardation timer
 			imageCache[url].keepTime = IMAGE_KEEP_TIME;
 		}
 		
@@ -1226,6 +1231,12 @@
 		
 		for (var url in imageCache) {
 			if (imageCache[url].keepTime <= 0) {
+				
+				if (imageCache[url].image != undefined) {
+					imageCache[url].image.src = undefined;
+					imageCache[url].image = undefined;
+				}
+				
 				imageCache[url] = undefined;
 			} else {
 				imageCache[url] -= 1;

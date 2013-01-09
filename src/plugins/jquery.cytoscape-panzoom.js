@@ -25,7 +25,6 @@ Depends on
 		panMinPercentSpeed: 0.25, // the slowest speed we can pan by (as a percent of panSpeed)
 		panInactiveArea: 8, // radius of inactive area in pan drag box
 		panIndicatorMinOpacity: 0.65, // min opacity of pan indicator (the draggable nib); scales from this to 1.0
-		staticPosition: true, // should the panzoom control be static (like Google Maps) or in a draggable control (like VLC)
 		autodisableForMobile: true // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
 	};
 	
@@ -57,19 +56,25 @@ Depends on
 						$panzoom.addClass("ui-cytoscape-panzoom-static");
 					}
 					
-					var $zoomIn = $('<div class="ui-cytoscape-panzoom-zoom-in ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-plusthick"></span></div>');
+					// add base html elements
+					/////////////////////////
+
+					var $zoomIn = $('<div class="ui-cytoscape-panzoom-zoom-in ui-cytoscape-panzoom-zoom-button"></div>');
 					$panzoom.append( $zoomIn );
 					
-					var $zoomOut = $('<div class="ui-cytoscape-panzoom-zoom-out ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-minusthick"></span></div>');
+					var $zoomOut = $('<div class="ui-cytoscape-panzoom-zoom-out ui-cytoscape-panzoom-zoom-button"></div>');
 					$panzoom.append( $zoomOut );
 					
-					var $reset = $('<div class="ui-cytoscape-panzoom-reset ui-cytoscape-panzoom-zoom-button"><span class="ui-icon ui-icon-arrowthick-2-ne-sw"></span></div>');
+					var $reset = $('<div class="ui-cytoscape-panzoom-reset ui-cytoscape-panzoom-zoom-button"></div>');
 					$panzoom.append( $reset );
 					
 					var $slider = $('<div class="ui-cytoscape-panzoom-slider"></div>');
 					$panzoom.append( $slider );
 					
 					$slider.append('<div class="ui-cytoscape-panzoom-slider-background"></div>');
+
+					var $sliderHandle = $('<div class="ui-cytoscape-panzoom-slider-handle"></div>');
+					$slider.append( $sliderHandle );
 					
 					var $panner = $('<div class="ui-cytoscape-panzoom-panner"></div>');
 					$panzoom.append( $panner );
@@ -86,6 +91,9 @@ Depends on
 					var $pIndicator = $('<div class="ui-cytoscape-panzoom-pan-indicator"></div>');
 					$panner.append( $pIndicator );
 					
+					// functions for calculating panning
+					////////////////////////////////////
+
 					function handle2pan(e){
 						var v = {
 							x: e.originalEvent.pageX - $panner.offset().left - $panner.width()/2,
@@ -145,8 +153,11 @@ Depends on
 					}
 					
 					var zx, zy;
+					zx = $container.width()/2;
+					zy = $container.height()/2;
 					function zoomTo(level){
 						var cy = $container.cytoscape("get"); // Thanks dmackenzie1@github!
+
 						cy.zoom({
 							level: level,
 							renderedPosition: {
@@ -192,9 +203,49 @@ Depends on
 						donePanning();
 					});
 					
+
+
+					// set up slider behaviour
+					//////////////////////////
+
 					var sliderMax = 100;
 					var sliderMin = Math.floor( Math.log(options.minZoom)/Math.log(options.maxZoom) * sliderMax );
-					
+					var sliderVal;
+
+					var sliderMdownHandler, sliderMmoveHandler;
+					$sliderHandle.bind('mousedown', sliderMdownHandler = function( mdEvt ){
+						var handleOffset = mdEvt.offsetY;
+
+						$(window).bind('mousemove', sliderMmoveHandler = function( mmEvt ){
+							var min = 0;
+							var max = $slider.height() - $sliderHandle.height();
+							var top = mmEvt.pageY - $slider.offset().top - handleOffset;
+
+							// constrain to slider bounds
+							if( top < min ){ top = min }
+							if( top > max ){ top = max }
+
+							var percent = (top - min) / ( max - min );
+
+							// move the handle
+							$sliderHandle.css('top', top);
+
+							// change the zoom level
+							var zoomLevel = Math.pow( 10, percent/100 );
+							zoomTo( zoomLevel );
+
+							return false;
+						});
+
+						// unbind when 
+						$(window).bind('mouseup', function(){
+							$(window).unbind('mousemove', sliderMmoveHandler);
+						});
+
+						return false;
+					});
+
+/*
 					function getSliderVal(){
 						var $handle = $slider.find(".ui-slider-handle");
 						var $parent = $handle.parent();
@@ -223,22 +274,9 @@ Depends on
 						zoomTo(zoom);
 					}
 					
-					$slider.slider({
-						min: sliderMin,
-						max: sliderMax,
-						step: 1,
-						val: zoom2slider( $container.cytoscape("get").zoom() ),
-						orientation: options.staticPosition ? "vertical" : "horizontal",
-						slide: function(e){
-							if( e.originalEvent.type == "keydown" ){
-								return false; // don't allow keyboard to modify slider
-							}
-						}
-					});
-					
 					function sliderHandler(){
 						setZoomViaSlider();
-					};
+					}
 					
 					function startSliding(){
 						sliderMdown = true;
@@ -308,13 +346,13 @@ Depends on
 					function zoom2slider(zoom){
 						return Math.log(zoom) * 100 / Math.log(10);
 					}
-					
-					if( !options.staticPosition ){
-						$panzoom.draggable({
-							containment: "parent"
-						});
-					}
+*/					
 				
+
+
+					// set up zoom in/out buttons
+					/////////////////////////////
+
 					var zoomInterval;
 					function bindButton($button, factor){
 						$button.bind("mousedown", function(e){

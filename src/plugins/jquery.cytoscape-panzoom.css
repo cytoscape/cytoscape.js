@@ -1,15 +1,6 @@
 .ui-cytoscape-panzoom {
-	border-radius: 25px;
-	border: 2px solid #fff;
-	box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.25);
 	position: absolute;
-	bottom: 1em;
-	right: 1em;
-	margin: 0;
-	height: 50px;
-	width: 180px;
 	font-size: 12px;
-	background: rgba(0, 0, 0, 0.85);
 	color: #fff;
 	font-family: arial, helvetica, sans-serif;
 	line-height: 1;
@@ -20,16 +11,10 @@
 	padding: 3px;
 	text-align: center;
 	position: absolute;
-	top: 4px;
-	border-radius: 8px;
-}
-
-.ui-cytoscape-panzoom-zoom-button .ui-icon {
-	background-image: url("../../debug/images/ui-icons_ffffff_256x240.png"); /* point to your copy of the img */
-}
-
-.ui-cytoscape-panzoom-static .ui-cytoscape-panzoom-zoom-button .ui-icon {
-	background-image: url("../../debug/images/ui-icons_000000_256x240.png"); /* point to your copy of the img */
+	border-radius: 4px;
+	width: 11px;
+	height: 11px;
+	left: 16px;
 }
 
 .ui-cytoscape-panzoom-pan-button {
@@ -40,15 +25,18 @@
 }
 
 .ui-cytoscape-panzoom-reset {
-	right: 50px;
+	top: 60px;
+	background: red;
 }
 
 .ui-cytoscape-panzoom-zoom-in {
-	right: 8px;
+	top: 80px;
+	background: green;
 }
 
 .ui-cytoscape-panzoom-zoom-out {
-	right: 95px;
+	top: 197px;
+	background: lightgreen;
 }
 
 .ui-cytoscape-panzoom-pan-up {
@@ -113,15 +101,29 @@
 }
 
 .ui-cytoscape-panzoom-slider {
-	background: #fff !impotant;
-	border-radius: 8px !important;
-	border: 0 !important;
-	height: 4px !important;
 	position: absolute;
-	bottom: 12px;
-	right: 12px;
-	width: 100px;
-	box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.5);
+	top: 97px;
+	left: 17px;
+	height: 100px;
+	width: 15px;
+	background: #ccc;
+}
+
+.ui-cytoscape-panzoom-slider-background {
+	position: absolute;
+	top: 0;
+	width: 5px;
+	height: 100px;
+	left: 5px;
+	background: #333;
+}
+
+.ui-cytoscape-panzoom-slider-handle {
+	position: absolute;
+	width: 15px;
+	height: 8px;
+	background: red;
+	border-radius: 4px;
 }
 
 .ui-cytoscape-panzoom-slider .ui-slider-handle {

@@ -1204,7 +1204,7 @@
 	// Discard after 5 min. of disuse
 	var IMAGE_KEEP_TIME = 30 * 300; // 300frames@30fps, or. 5min
 	
-	CanvasRenderer.prototype.getCachedImage = function(url) {
+	CanvasRenderer.prototype.getCachedImage = function(url, onLoadRedraw) {
 
 		if (imageCache[url] && imageCache[url].image) {
 
@@ -1218,6 +1218,8 @@
 		if (imageContainer == undefined) { 
 			imageCache[url] = new Object();
 			imageCache[url].image = new Image();
+			imageCache[url].image.onload = onLoadRedraw;
+			
 			imageCache[url].image.src = url;
 			
 			// Initialize image discard timer
@@ -1599,7 +1601,7 @@
 			this.drawStyledEdge(context, pts, "solid", width);
 		}
 		
-	}
+	};
 	
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
@@ -1639,7 +1641,7 @@
 		textY = edgeCenterY;
 		
 		this.drawText(context, edge, textX, textY);
-	}
+	};
 	
 	// Draw node
 	CanvasRenderer.prototype.drawNode = function(context, node) {
@@ -1675,11 +1677,36 @@
 			if (node._private.style["background-image"].value[2] ||
 					node._private.style["background-image"].value[1]) {
 				
-				var image = this.getCachedImage(node._private.style["background-image"].value[2]
-					|| node._private.style["background-image"].value[1]);
+				var r = this;
+				var image = this.getCachedImage(
+						node._private.style["background-image"].value[2]
+						|| node._private.style["background-image"].value[1],
+						
+						function() {
+//							console.log(e);
+							r.data.canvasNeedsRedraw[NODE] = true;
+							r.data.canvasRedrawReason[NODE].push("image finished load");
+							r.data.canvasNeedsRedraw[DRAG] = true;
+							r.data.canvasRedrawReason[DRAG].push("image finished load");
+							
+							r.redraw();
+						}
+				);
 				
-				//context.clip
-				this.drawInscribedImage(context, image, node);
+				if (image.complete == false) {
+					nodeShapes[node._private.style["shape"].value].drawPath(
+						context,
+						node._private.position.x,
+						node._private.position.y,
+						node._private.style["width"].value,
+						node._private.style["height"].value);
+					
+					context.stroke();
+					
+				} else {
+					//context.clip
+					this.drawInscribedImage(context, image, node);
+				}
 				
 			} else {
 				
@@ -1691,9 +1718,7 @@
 					nodeWidth,
 					nodeHeight); //node._private.data.weight / 5.0
 			}
-			/*
-			context.drawImage(image, 
-			*/
+			
 		}
 		
 		// Border width, draw border
@@ -1701,11 +1726,11 @@
 		if (node._private.style["border-width"].value > 0) {
 			context.stroke();
 		}
-	}
+	};
 	
 	CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
 		
-		console.log(this.data);
+//		console.log(this.data);
 		var zoom = this.data.cy._private.zoom;
 		
 		var nodeX = node._private.position.x;
@@ -1714,6 +1739,8 @@
 		var nodeWidth = node._private.style["width"].value;
 		var nodeHeight = node._private.style["height"].value;
 		
+		context.save();
+		
 		nodeShapes[node._private.style["shape"].value].drawPath(
 				context,
 				nodeX, nodeY, 
@@ -1721,17 +1748,19 @@
 		
 		context.clip();
 		
+//		context.setTransform(1, 0, 0, 1, 0, 0);
+		
 		var imgDim = [img.width, img.height];
 		context.drawImage(img, 
-				nodeX - imgDim[0] / 2 * zoom,
-				nodeY - imgDim[1] / 2 * zoom,
-				imgDim[0] * zoom,
-				imgDim[1] * zoom);
+				nodeX - imgDim[0] / 2,
+				nodeY - imgDim[1] / 2,
+				imgDim[0],
+				imgDim[1]);
 		
-		context.resetClip();
+		context.restore();
 		context.stroke();
 		
-	}
+	};
 	
 	// Draw node text
 	CanvasRenderer.prototype.drawNodeText = function(context, node) {
@@ -1781,7 +1810,7 @@
 		}
 		
 		this.drawText(context, node, textX, textY);
-	}
+	};
 	
 	// Draw text
 	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
@@ -1836,7 +1865,7 @@
 			context.lineWidth = lineWidth;
 			context.strokeText(text, textX, textY);
 		}
-	}
+	};
 
 	}
 	

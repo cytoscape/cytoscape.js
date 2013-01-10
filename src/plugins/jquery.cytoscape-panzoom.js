@@ -215,6 +215,37 @@ Depends on
 					var sliderVal;
 					var sliding = false;
 
+					function setSliderFromMouse(evt, handleOffset){
+						if( handleOffset === undefined ){
+							handleOffset = 0;
+						}
+
+						var min = 0;
+						var max = $slider.height() - $sliderHandle.height();
+						var top = evt.pageY - $slider.offset().top - handleOffset;
+
+						// constrain to slider bounds
+						if( top < min ){ top = min }
+						if( top > max ){ top = max }
+
+						var percent = 1 - (top - min) / ( max - min );
+
+						// move the handle
+						$sliderHandle.css('top', top);
+
+						// change the zoom level
+						var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
+
+						// bound the zoom value in case of floating pt rounding error
+						if( zoomLevel < options.minZoom ){
+							zoomLevel = options.minZoom;
+						} else if( zoomLevel > options.maxZoom ){
+							zoomLevel = options.maxZoom;
+						}
+
+						zoomTo( zoomLevel );
+					}
+
 					var sliderMdownHandler, sliderMmoveHandler;
 					$sliderHandle.bind('mousedown', sliderMdownHandler = function( mdEvt ){
 						var handleOffset = mdEvt.offsetY;
@@ -231,30 +262,7 @@ Depends on
 								return false;
 							}
 
-							var min = 0;
-							var max = $slider.height() - $sliderHandle.height();
-							var top = mmEvt.pageY - $slider.offset().top - handleOffset;
-
-							// constrain to slider bounds
-							if( top < min ){ top = min }
-							if( top > max ){ top = max }
-
-							var percent = 1 - (top - min) / ( max - min );
-
-							// move the handle
-							$sliderHandle.css('top', top);
-
-							// change the zoom level
-							var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
-
-							// bound the zoom value in case of floating pt rounding error
-							if( zoomLevel < options.minZoom ){
-								zoomLevel = options.minZoom;
-							} else if( zoomLevel > options.maxZoom ){
-								zoomLevel = options.maxZoom;
-							}
- 
-							zoomTo( zoomLevel );
+							setSliderFromMouse(mmEvt, handleOffset);
 
 							return false;
 						});
@@ -268,6 +276,12 @@ Depends on
 						return false;
 					});				
 				
+					$slider.bind('mousedown', function(e){
+						if( e.target !== $sliderHandle[0] ){
+							setSliderFromMouse(e);
+						}
+					});
+
 					function positionSliderFromZoom(){
 						var cy = $container.cytoscape("get");
 						var zoom = cy.zoom();

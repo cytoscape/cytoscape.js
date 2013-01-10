@@ -427,9 +427,13 @@
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
-//				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
+				console.log("old zoom: " + cy.zoom() + " mouse diff: " + diff);
+				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
+//				if (cy.zoom() )
+				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
+//				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
 //				console.log("new zoom" + cy.zoom());
+				console.log("new zoom: " + cy.zoom());
 			}
 
 		}
@@ -1235,15 +1239,23 @@
 	CanvasRenderer.prototype.swapCachedImage = function(url) {
 		if (imageCache[url]) {
 			
-			if (image.complete) {
-				image = imageCache[url].image;
+			if (imageCache[url].image
+					&& imageCache[url].image.complete) {
+				
+				var image = imageCache[url].image;
 				
 				var buffer = document.createElement("canvas");
-				buffer.width = image.clientWidth;
-				buffer.height = image.clientHeight;
+				buffer.width = image.width;
+				buffer.height = image.height;
 				
+				buffer.getContext("2d").drawImage(image,
+						0, 0
+					);
 				
+				imageCache[url].image = buffer;
+				imageCache[url].swappedWithCanvas = true;
 				
+				return buffer;
 			} else {
 				return null;
 			} 
@@ -1695,26 +1707,33 @@
 		{
 			//var image = this.getCachedImage("url");
 			
-			if (node._private.style["background-image"].value[2] ||
-					node._private.style["background-image"].value[1]) {
+			var url = node._private.style["background-image"].value[2] ||
+				node._private.style["background-image"].value[1];
+			
+			if (url != undefined) {
 				
 				var r = this;
-				var image = this.getCachedImage(
-						node._private.style["background-image"].value[2]
-						|| node._private.style["background-image"].value[1],
+				var image = this.getCachedImage(url,
 						
 						function() {
+							
 //							console.log(e);
 							r.data.canvasNeedsRedraw[NODE] = true;
 							r.data.canvasRedrawReason[NODE].push("image finished load");
 							r.data.canvasNeedsRedraw[DRAG] = true;
 							r.data.canvasRedrawReason[DRAG].push("image finished load");
 							
+							// Replace Image object with Canvas to solve zooming too far
+							// into image graphical errors (Jan 10 2013)
+							r.swapCachedImage(url);
+							
 							r.redraw();
 						}
 				);
 				
 				if (image.complete == false) {
+					
+					
 					nodeShapes[node._private.style["shape"].value].drawPath(
 						context,
 						node._private.position.x,
@@ -1723,6 +1742,8 @@
 						node._private.style["height"].value);
 					
 					context.stroke();
+					context.fillStyle = "#555555";
+					context.fill();
 					
 				} else {
 					//context.clip

@@ -1231,6 +1231,27 @@
 		return imageContainer.image;
 	}
 	
+	// Attempt to replace the image object with a canvas buffer to solve zooming problem
+	CanvasRenderer.prototype.swapCachedImage = function(url) {
+		if (imageCache[url]) {
+			
+			if (image.complete) {
+				image = imageCache[url].image;
+				
+				var buffer = document.createElement("canvas");
+				buffer.width = image.clientWidth;
+				buffer.height = image.clientHeight;
+				
+				
+				
+			} else {
+				return null;
+			} 
+		} else {
+			return null;
+		}
+	}
+	
 	CanvasRenderer.prototype.updateImageCaches = function() {
 		
 		for (var url in imageCache) {

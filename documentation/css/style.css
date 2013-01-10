@@ -81,6 +81,22 @@ body {
 	margin: 1em 0;
 }
 
+#demo-code-area.hidden #hide-demo {
+	display: none;
+}
+
+#show-demo {
+	display: none;
+}
+
+#demo-code-area.hidden #show-demo {
+	display: block;
+}
+
+#demo-code-area.hidden #demo-code {
+	display: none;
+}
+ 
 .title {
 	font-weight: 200;
 	font-size: 4em;

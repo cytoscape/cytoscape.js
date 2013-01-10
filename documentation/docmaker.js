@@ -7,11 +7,19 @@ var Handlebars = require('./js/handlebars').Handlebars;
 var encoding = 'utf8';
 var config;
 var configFile = './docmaker.json';
+var demoFile = './js/demo.js';
 
 try {
   config = require(configFile);
 } catch(e){
   throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://jsonlint.com/';
+}
+
+// load the demo file
+try {
+  config.demojs = fs.readFileSync(demoFile, 'utf8');
+} catch(e){
+  throw '`' + demoFile + '` could not be read';
 }
 
 // var html = converter.makeHtml("**I am bold!**");

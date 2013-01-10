@@ -9,6 +9,7 @@
 
 		<script src="js/jquery.js"></script>
 		<script src="js/cytoscape.min.js"></script>
+		<script src="js/script.js"></script>
 		<script src="js/demo.js"></script>
 
 	</head>
@@ -59,6 +60,15 @@
 			</div>
 
 			<div id="demo"></div>
+
+			<div id="demo-code-area" class="hidden">
+				<p><a id="show-demo" href="#">Show the code for this example</a> </p>
+				<p><a id="hide-demo" href="#">Hide the code for this example</a> </p>
+
+				<div id="demo-code">
+					<pre><code>{{{demojs}}}</code></pre>
+				</div>
+			</div>
 
 			<div id="documentation">
 			{{#each sections}}

@@ -69,6 +69,20 @@ options = {
 };
 ```
 
+NB: You must reference the version of `arbor.js` included with Cytoscape.js in the `<head>` of your HTML document:
+
+```html
+<head>
+	...
+
+	<script src="arbor.js"></script>
+
+	...
+</head>
+```
+
+Arbor does some automatic path finding because it uses web workers, and so it must be included this way.  Therefore, you can not combine `arbor.js` with your other JavaScript files &mdash; as you probably would as a part of the minification of the scripts in your webapp.
+
 *The `null` layout puts all nodes at (0, 0):*
 ```js
 // The null layout has no options.

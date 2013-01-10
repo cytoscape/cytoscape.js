@@ -9,6 +9,7 @@
 
 		<script src="js/jquery.js"></script>
 		<script src="js/cytoscape.min.js"></script>
+		<script src="js/script.js"></script>
 		<script src="js/demo.js"></script>
 
 	</head>
@@ -596,7 +597,7 @@
 
 		<div id="content">
 
-			<div class="title">Cytoscape.js <span class="version">2.0.0-beta1</span></div>
+			<div class="title">Cytoscape.js <span class="version">2.0.0-beta2</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -608,6 +609,119 @@
 			</div>
 
 			<div id="demo"></div>
+
+			<div id="demo-code-area" class="hidden">
+				<p><a id="show-demo" href="#">Show the code for this example</a> </p>
+				<p><a id="hide-demo" href="#">Hide the code for this example</a> </p>
+
+				<div id="demo-code">
+					<pre><code>$(function(){
+
+	var nodeCount = 10;
+	var edgeCount = 12;
+	
+	var demoNodes = [];
+	var demoEdges = [];
+	
+	for (var i = 0; i < nodeCount; i++) {
+		demoNodes.push({
+			data: {
+				id: "n" + i,
+				weight: Math.round( Math.random() * 100 )
+			}
+		});
+	}
+	
+	for (var i = 0; i < nodeCount; i++) {
+		demoEdges.push({
+			data: {
+				id: "e" + (i * 2),
+				source: "n" + ((i + 1) >= nodeCount ? i + 1 - nodeCount : i + 1),
+				target: "n" + i,
+				weight: 30
+			}
+		});
+		
+		if (i % 2 == 0) {
+			demoEdges.push({
+				data: {
+					id: "e" + (i * 2 + 1),
+					target: "n" + i,
+					source: "n" + ((i + 3) >= nodeCount ? i + 3 - nodeCount : i + 3),
+					weight: 21
+				}
+			});
+		}
+	}
+	
+  $('#demo').cytoscape({
+    elements: { // TODO specify some elements like http://cytoscapeweb.cytoscape.org/demos/simple
+      nodes: demoNodes,
+      edges: demoEdges
+    },
+
+	// TODO specify a nice style like http://cytoscapeweb.cytoscape.org/demos/simple
+    style: cytoscape.stylesheet()
+      .selector("node")
+		.css({
+			"content": "data(id)",
+			"text-halign": "center",
+//			"text-outline-width": 0.2,
+//			"text-outline-color": "#00A"
+			"border-width": 2,
+			"background-color": "#AAA",
+			"cursor": "pointer",
+		})
+	.selector("edge")
+		.css({
+			//"content": "data(id)",
+			"line-color": "#777",
+			"visibiliy": "invisible",
+			"source-arrow-shape": "circle",
+			"source-arrow-color": "#000",
+			"target-arrow-shape": "triangle",
+			"target-arrow-color": "#000",
+			"cursor": "pointer",
+			"width": "mapData(weight, 0, 100, 1, 3)",
+		})
+	.selector(":selected")
+		.css({
+			"background-color": "#777",
+			"line-color": "#000",
+			"source-arrow-color": "#000",
+			"target-arrow-color": "#000"
+		})
+    ,
+
+    ready: function(){
+      window.cy = this; // for debugging
+      
+      	var nodeCount = cy.nodes().length;
+      	for (var i = 0; i < nodeCount; i++) {
+      		
+      		var center = [cy.container().clientWidth / 2, cy.container().clientHeight / 2];
+      		
+      		var angle = i / nodeCount * Math.PI * 2;
+//      	console.log(angle);
+      		var radius = 
+      			Math.min(cy.container().clientWidth, cy.container().clientHeight) / 2 * 0.6;
+//      	console.log(radius);
+      		
+      		var nodePos = [Math.cos(angle) * radius + center[0], Math.sin(angle) * radius + center[1]]
+//  		console.log(nodePos);
+      		cy.nodes()[i].position({x: nodePos[0], y : nodePos[1]});
+    	}
+    }
+    
+    
+		
+  });
+  
+  
+  
+});</code></pre>
+				</div>
+			</div>
 
 			<div id="documentation">
 			
@@ -910,6 +1024,7 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>text-halign</code> : The vertical alignment of a label; may have value <code>left</code>, <code>center</code>, or <code>right</code>.</li>
 <li><code>background-color</code> : The colour of the node&#39;s body.</li>
 <li><code>background-opacity</code> : The opacity level of the node&#39;s body.</li>
+<li><code>background-image</code> : The URL that points to the image that should be used as the node&#39;s background.</li>
 <li><code>border-color</code> : The colour of the node&#39;s border.</li>
 <li><code>border-width</code> : The size of the node&#39;s border.</li>
 <li><code>height</code> : The height of the node&#39;s body.</li>
@@ -1300,6 +1415,9 @@ $(function(){ // on jquery ready
 								
 									<h3>Details</h3>
 <p>If plain element objects are used, then <a href="#core/initialisation">the same format used at initialisation</a> must be followed.  It is important to note that the <code>group</code> attribute must be specified for plain objects, as this function can not infer whether the elements added are nodes or edges.
+
+</p>
+<p>It is important to note that the positions of newly added nodes must be defined when calling <code>cy.add()</code>.  Nodes can not be placed in the graph without a valid position &mdash; otherwise they could not be displayed.
 
 </p>
 <h3>Examples</h3>
@@ -2674,6 +2792,19 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
         return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
     }
 };</code></pre>
+<p>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:
+
+</p>
+<pre><code class="lang-html">&lt;head&gt;
+    ...
+
+    &lt;script src=&quot;arbor.js&quot;&gt;&lt;/script&gt;
+
+    ...
+&lt;/head&gt;</code></pre>
+<p>Arbor does some automatic path finding because it uses web workers, and so it must be included this way.  Therefore, you can not combine <code>arbor.js</code> with your other JavaScript files &mdash; as you probably would as a part of the minification of the scripts in your webapp.
+
+</p>
 <p><em>The <code>null</code> layout puts all nodes at (0, 0):</em>
 </p>
 <pre><code class="lang-js">// The null layout has no options.</code></pre>
@@ -3612,7 +3743,7 @@ cy.$(&#39;#n2&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.select"><span class="fn-name">eles.select()</span>  <a href="#collection/selection/eles.select"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.select">Make the elements selected.</div>
+							<div class="descr" id="collection/selection/eles.select">Make the elements selected (NB other elements outside the collection are not affected).</div>
 
 							
 
@@ -3623,7 +3754,7 @@ cy.$(&#39;#n2&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.unselect"><span class="fn-name">eles.unselect()</span>  <a href="#collection/selection/eles.unselect"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.unselect">Make the elements not selected.</div>
+							<div class="descr" id="collection/selection/eles.unselect">Make the elements not selected (NB other elements outside the collection are not affected).</div>
 
 							
 

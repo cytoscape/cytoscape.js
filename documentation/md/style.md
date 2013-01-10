@@ -38,6 +38,7 @@ These properties apply only to nodes:
  * `text-halign` : The vertical alignment of a label; may have value `left`, `center`, or `right`.
  * `background-color` : The colour of the node's body.
  * `background-opacity` : The opacity level of the node's body.
+ * `background-image` : The URL that points to the image that should be used as the node's background.
  * `border-color` : The colour of the node's border.
  * `border-width` : The size of the node's border.
  * `height` : The height of the node's body.

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0-beta1",
+  "version": "2.0.0-beta2",
   "jqueryVersion": "1.4",
 
   "templates": {
@@ -717,12 +717,12 @@
 
             {
               "name": "eles.select",
-              "descr": "Make the elements selected."
+              "descr": "Make the elements selected (NB other elements outside the collection are not affected)."
             },
 
             {
               "name": "eles.unselect",
-              "descr": "Make the elements not selected."
+              "descr": "Make the elements not selected (NB other elements outside the collection are not affected)."
             },
 
             {

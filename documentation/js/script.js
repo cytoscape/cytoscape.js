@@ -2,6 +2,7 @@ $(function(){
 	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 	var events = isTouch ? 'touchstart' : 'mousedown';
 
+/*
 	$('#navigation').on(events, '.expander', function(){
 		var $expander = $(this);
 		var $section = $expander.parent();
@@ -15,5 +16,16 @@ $(function(){
 		} else {
 			$children.add( $expander ).addClass('collapsed');
 		}
+	});
+*/
+
+	$('#show-demo').on('mousedown touchstart', function(){
+		$('#demo-code-area').removeClass('hidden');
+		return;
+	});
+
+	$('#hide-demo').on('mousedown touchstart', function(){
+		$('#demo-code-area').addClass('hidden');
+		return;
 	});
 });

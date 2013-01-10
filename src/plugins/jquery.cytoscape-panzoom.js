@@ -208,15 +208,29 @@ Depends on
 					// set up slider behaviour
 					//////////////////////////
 
-					var sliderMax = 100;
-					var sliderMin = Math.floor( Math.log(options.minZoom)/Math.log(options.maxZoom) * sliderMax );
+					$slider.bind('mousedown', function(){
+						return false; // so we don't pan close to the slider handle
+					});
+
 					var sliderVal;
+					var sliding = false;
 
 					var sliderMdownHandler, sliderMmoveHandler;
 					$sliderHandle.bind('mousedown', sliderMdownHandler = function( mdEvt ){
 						var handleOffset = mdEvt.offsetY;
+						sliding = true;
 
+						var lastMove = 0;
 						$(window).bind('mousemove', sliderMmoveHandler = function( mmEvt ){
+							var now = +new Date;
+
+							// throttle the zooms every 10 ms so we don't call zoom too often and cause lag
+							if( now > lastMove + 10 ){
+								lastMove = now;
+							} else {
+								return false;
+							}
+
 							var min = 0;
 							var max = $slider.height() - $sliderHandle.height();
 							var top = mmEvt.pageY - $slider.offset().top - handleOffset;
@@ -225,13 +239,21 @@ Depends on
 							if( top < min ){ top = min }
 							if( top > max ){ top = max }
 
-							var percent = (top - min) / ( max - min );
+							var percent = 1 - (top - min) / ( max - min );
 
 							// move the handle
 							$sliderHandle.css('top', top);
 
 							// change the zoom level
-							var zoomLevel = Math.pow( 10, percent/100 );
+							var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
+
+							// bound the zoom value in case of floating pt rounding error
+							if( zoomLevel < options.minZoom ){
+								zoomLevel = options.minZoom;
+							} else if( zoomLevel > options.maxZoom ){
+								zoomLevel = options.maxZoom;
+							}
+ 
 							zoomTo( zoomLevel );
 
 							return false;
@@ -240,115 +262,36 @@ Depends on
 						// unbind when 
 						$(window).bind('mouseup', function(){
 							$(window).unbind('mousemove', sliderMmoveHandler);
+							sliding = false;
 						});
 
 						return false;
-					});
-
-/*
-					function getSliderVal(){
-						var $handle = $slider.find(".ui-slider-handle");
-						var $parent = $handle.parent();
-						var pos = $handle.position();
-						
-						var width = $parent.width();
-						var height = $parent.height();
-						var left = pos.left;
-						var bottom = height - pos.top;
-						
-						var range = sliderMax - sliderMin;
-						var min = sliderMin;
-						var percent = options.staticPosition ? (bottom / height) : (left / width);
-						
-						return Math.round( percent * range + min );
-					}
-					
-					function setZoomViaSlider(){
-						var cy = $container.cytoscape("get");
-						var val = getSliderVal();
-						
-						var zoom = slider2zoom(val);
-						
-						clearTimeout(sliderTimeout);
-						sliderTimeout = null;
-						zoomTo(zoom);
-					}
-					
-					function sliderHandler(){
-						setZoomViaSlider();
-					}
-					
-					function startSliding(){
-						sliderMdown = true;
-						
-						zx = $container.width()/2;
-						zy = $container.height()/2;
-
-						sliderHandler();
-						
-						$(window).unbind("mousemove", sliderHandler);
-						$(window).bind("mousemove", sliderHandler);
-					}
-					
-					function doneSliding(){
-						$(window).unbind("mousemove", sliderHandler);
-						
-						sliderMdown = false;
-					}
-					
-					var sliderMdown = false;
-					$slider.find(".ui-slider-handle").bind("mousedown", function(){
-						startSliding();
-					}).bind("mouseup", function(){
-						doneSliding();
-					});
-					
-					$slider.bind("mousedown", function(e){
-						if( e.target != $slider.find(".ui-slider-handle")[0] ){ // update so long as not handle
-							startSliding();
-						}
-					});
-					
-					$(window).bind("mouseup blur", function(){
-						doneSliding();
-					});
-					
-					var sliderTimeout;
-					$container.cytoscape("get").bind("zoom", function(){ 
-						if( sliderTimeout != null || sliderMdown ){
-							return;
-						}
-						
-						sliderTimeout = setTimeout(function(){
-							var lvl = cy.zoom();
-							var slider = zoom2slider(lvl);
-							var percent = (slider - sliderMin) / (sliderMax - sliderMin);
-							
-							if( percent > 1 ){
-								percent = 1;
-							}
-							
-							if( percent < 0 ){
-								percent = 0;
-							}
-							
-							var property = options.staticPosition ? "bottom" : "left";
-							
-							$slider.find(".ui-slider-handle").css(property, (100 * percent) + "%");
-							sliderTimeout = null;
-						}, 10);
-					});
-					
-					function slider2zoom(slider){
-						return Math.pow( 10, slider/100 );
-					}
-					
-					function zoom2slider(zoom){
-						return Math.log(zoom) * 100 / Math.log(10);
-					}
-*/					
+					});				
 				
+					function positionSliderFromZoom(){
+						var cy = $container.cytoscape("get");
+						var zoom = cy.zoom();
+						var percent = 1 - Math.log( zoom + 1 - options.minZoom ) / Math.log( options.maxZoom + 1 - options.minZoom );
+						var min = 0;
+						var max = $slider.height() - $sliderHandle.height();
+						var top = percent * ( max - min );
 
+						// constrain to slider bounds
+						if( top < min ){ top = min }
+						if( top > max ){ top = max }
+
+						// move the handle
+						$sliderHandle.css('top', top);
+					}
+
+					positionSliderFromZoom();
+
+					var cy = $container.cytoscape("get");
+					cy.on('zoom', function(){
+						if( !sliding ){
+							positionSliderFromZoom();
+						}
+					});
 
 					// set up zoom in/out buttons
 					/////////////////////////////

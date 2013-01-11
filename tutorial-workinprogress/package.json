@@ -1,0 +1,9 @@
+{
+  "name": "docmaker",
+  "version": "1.0.0",
+  "main": "./docmaker.js",
+  "dependencies": {
+    "marked": "0.2.5"
+  },
+  "private": true
+}

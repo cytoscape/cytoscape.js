@@ -1,5 +1,5 @@
 ;(function($$){
-
+	
 	// default layout options
 	var defaults = {
 		ready: function(){},
@@ -11,12 +11,12 @@
 	function NullLayout( options ){
 		this.options = $$.util.extend(true, {}, defaults, options); 
 	}
-
+	
 	// runs the layout
 	NullLayout.prototype.run = function(){
 		var options = this.options;
 		var cy = options.cy; // cy is automatically populated for us in the constructor
-
+		
 		// puts all nodes at (0, 0)
 		cy.nodes().positions(function(){
 			return {
@@ -24,11 +24,11 @@
 				y: 0
 			};
 		});
-
+		
 		// trigger layoutready when each node has had its position set at least once
 		cy.one("layoutready", options.ready);
 		cy.trigger("layoutready");
-
+		
 		// trigger layoutstop when the layout stops (e.g. finishes)
 		cy.one("layoutstop", options.stop);
 		cy.trigger("layoutstop");
@@ -41,8 +41,8 @@
 		cy.one("layoutstop", options.stop);
 		cy.trigger("layoutstop");
 	};
-
+	
 	// register the layout
 	$$("layout", "null", NullLayout);
-
+	
 })(cytoscape);

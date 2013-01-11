@@ -2,10 +2,10 @@ $(function(){
 
 	var nodeCount = 10;
 	var edgeCount = 12;
-	
+
 	var demoNodes = [];
 	var demoEdges = [];
-	
+
 	for (var i = 0; i < nodeCount; i++) {
 		demoNodes.push({
 			data: {
@@ -14,7 +14,7 @@ $(function(){
 			}
 		});
 	}
-	
+
 	for (var i = 0; i < nodeCount; i++) {
 		demoEdges.push({
 			data: {
@@ -24,7 +24,7 @@ $(function(){
 				weight: 30
 			}
 		});
-		
+
 		if (i % 2 == 0) {
 			demoEdges.push({
 				data: {
@@ -36,7 +36,7 @@ $(function(){
 			});
 		}
 	}
-	
+
   $('#demo').cytoscape({
     elements: { // TODO specify some elements like http://cytoscapeweb.cytoscape.org/demos/simple
       nodes: demoNodes,
@@ -46,34 +46,46 @@ $(function(){
 	// TODO specify a nice style like http://cytoscapeweb.cytoscape.org/demos/simple
     style: cytoscape.stylesheet()
       .selector("node")
-		.css({
-			"content": "data(id)",
-			"text-halign": "center",
-//			"text-outline-width": 0.2,
-//			"text-outline-color": "#00A"
-			"border-width": 2,
-			"background-color": "#AAA",
-			"cursor": "pointer",
-		})
-	.selector("edge")
-		.css({
-			//"content": "data(id)",
-			"line-color": "#777",
-			"visibiliy": "invisible",
-			"source-arrow-shape": "circle",
-			"source-arrow-color": "#000",
-			"target-arrow-shape": "triangle",
-			"target-arrow-color": "#000",
-			"cursor": "pointer",
-			"width": "mapData(weight, 0, 100, 1, 3)",
-		})
-	.selector(":selected")
-		.css({
-			"background-color": "#777",
-			"line-color": "#000",
-			"source-arrow-color": "#000",
-			"target-arrow-color": "#000"
-		})
+			.css({
+				"content": "data(id)",
+				"shape": "data(shape)",
+				"border-width": 3,
+				"background-color": "#DDD",
+				"border-color": "#555"
+			})
+		.selector("edge")
+			.css({
+				"width": "mapData(weight, 0, 100, 1, 4)",
+				"target-arrow-shape": "triangle",
+				"source-arrow-shape": "circle",
+				"line-color": "#444"
+			})
+		.selector(":selected")
+			.css({
+				"background-color": "#000",
+				"line-color": "#000",
+				"source-arrow-color": "#000",
+				"target-arrow-color": "#000"
+			})
+		.selector(".ui-cytoscape-edgehandles-source")
+			.css({
+				"border-color": "#5CC2ED",
+				"border-width": 3
+			})
+		.selector(".ui-cytoscape-edgehandles-target, node.ui-cytoscape-edgehandles-preview")
+			.css({
+				"background-color": "#5CC2ED"
+			})
+		.selector("edge.ui-cytoscape-edgehandles-preview")
+			.css({
+				"line-color": "#5CC2ED"
+			})
+		.selector("node.ui-cytoscape-edgehandles-preview, node.intermediate")
+			.css({
+				"shape": "rectangle",
+				"width": 15,
+				"height": 15
+			})
     ,
 
     ready: function(){
@@ -96,10 +108,6 @@ $(function(){
     	}
     }
     
-    
-		
   });
-  
-  
   
 });

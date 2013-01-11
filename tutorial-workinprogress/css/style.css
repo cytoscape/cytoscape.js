@@ -178,10 +178,10 @@ ul {
 
 code,
 pre {
-	font-family: Andale Mono, monospace;
+	font-family: Consolas, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	font-size: 0.85em;
+	font-size: 0.76em;
 	background: #fafafa;
 }
 

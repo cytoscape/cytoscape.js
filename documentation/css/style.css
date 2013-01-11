@@ -67,7 +67,7 @@ body {
 #content {
 	padding: 0 0.25em;
 	position: absolute;
-	left: 15em;
+	left: 16em;
 	right: 0;
 	top: 0;
 	height: 100%;
@@ -176,12 +176,23 @@ ul {
 	list-style-type: disc;
 }
 
+/*
 code,
 pre {
 	font-family: Andale Mono, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	font-size: 0.85em;
+	background: #fafafa;
+}
+*/
+
+code,
+pre {
+	font-family: Consolas, monospace;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+	font-size: 0.76em;
 	background: #fafafa;
 }
 

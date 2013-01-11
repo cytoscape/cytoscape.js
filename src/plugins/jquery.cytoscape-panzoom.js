@@ -152,18 +152,56 @@ Depends on
 						});
 					}
 					
-					var zx, zy;
-					zx = $container.width()/2;
-					zy = $container.height()/2;
-					function zoomTo(level){
-						var cy = $container.cytoscape("get"); // Thanks dmackenzie1@github!
+					function calculateZoomCenterPoint(){
+						var cy = $container.cytoscape("get");
+						var pan = cy.pan();
+						var zoom = cy.zoom();
 
-						cy.zoom({
-							level: level,
-							renderedPosition: {
-								x: zx,
-								y: zy
-							}
+						zx = ($container.width()/2 - pan.x) / zoom;
+						zy = ($container.height()/2 - pan.y) / zoom;
+
+						console.log( zx, zy );
+					}
+
+					var zooming = false;
+					function startZooming(){
+						zooming = true;
+
+						calculateZoomCenterPoint();
+					}
+
+
+					function endZooming(){
+						zooming = false;
+					}
+
+					var zx, zy;
+					function zoomTo(level){
+						var cy = $container.cytoscape("get");
+
+						if( !zooming ){ // for non-continuous zooming (e.g. click slider at pt)
+							calculateZoomCenterPoint();
+						}
+
+						// zoom to the new level
+						cy.zoom( level );
+
+						var pan = cy.pan();
+
+						// find where the center point (zx, zy) is actually rendered
+						var renderedZxy = {
+							x: zx * level + pan.x,
+							y: zy * level + pan.y
+						};
+
+						var renderedCenter = {
+							x: $container.width()/2,
+							y: $container.height()/2
+						};
+
+						cy.panBy({
+							x: renderedCenter.x - renderedZxy.x,
+							y: renderedCenter.y - renderedZxy.y
 						});
 					}
 
@@ -215,10 +253,43 @@ Depends on
 					var sliderVal;
 					var sliding = false;
 
+					function setSliderFromMouse(evt, handleOffset){
+						if( handleOffset === undefined ){
+							handleOffset = 0;
+						}
+
+						var min = 0;
+						var max = $slider.height() - $sliderHandle.height();
+						var top = evt.pageY - $slider.offset().top - handleOffset;
+
+						// constrain to slider bounds
+						if( top < min ){ top = min }
+						if( top > max ){ top = max }
+
+						var percent = 1 - (top - min) / ( max - min );
+
+						// move the handle
+						$sliderHandle.css('top', top);
+
+						// change the zoom level
+						var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
+
+						// bound the zoom value in case of floating pt rounding error
+						if( zoomLevel < options.minZoom ){
+							zoomLevel = options.minZoom;
+						} else if( zoomLevel > options.maxZoom ){
+							zoomLevel = options.maxZoom;
+						}
+
+						zoomTo( zoomLevel );
+					}
+
 					var sliderMdownHandler, sliderMmoveHandler;
 					$sliderHandle.bind('mousedown', sliderMdownHandler = function( mdEvt ){
 						var handleOffset = mdEvt.offsetY;
 						sliding = true;
+
+						startZooming();
 
 						var lastMove = 0;
 						$(window).bind('mousemove', sliderMmoveHandler = function( mmEvt ){
@@ -231,30 +302,7 @@ Depends on
 								return false;
 							}
 
-							var min = 0;
-							var max = $slider.height() - $sliderHandle.height();
-							var top = mmEvt.pageY - $slider.offset().top - handleOffset;
-
-							// constrain to slider bounds
-							if( top < min ){ top = min }
-							if( top > max ){ top = max }
-
-							var percent = 1 - (top - min) / ( max - min );
-
-							// move the handle
-							$sliderHandle.css('top', top);
-
-							// change the zoom level
-							var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
-
-							// bound the zoom value in case of floating pt rounding error
-							if( zoomLevel < options.minZoom ){
-								zoomLevel = options.minZoom;
-							} else if( zoomLevel > options.maxZoom ){
-								zoomLevel = options.maxZoom;
-							}
- 
-							zoomTo( zoomLevel );
+							setSliderFromMouse(mmEvt, handleOffset);
 
 							return false;
 						});
@@ -263,11 +311,19 @@ Depends on
 						$(window).bind('mouseup', function(){
 							$(window).unbind('mousemove', sliderMmoveHandler);
 							sliding = false;
+
+							endZooming();
 						});
 
 						return false;
 					});				
 				
+					$slider.bind('mousedown', function(e){
+						if( e.target !== $sliderHandle[0] ){
+							setSliderFromMouse(e);
+						}
+					});
+
 					function positionSliderFromZoom(){
 						var cy = $container.cytoscape("get");
 						var zoom = cy.zoom();
@@ -305,12 +361,10 @@ Depends on
 							if( e.button != 0 ){
 								return;
 							}
-							
-							zx = $container.width()/2;
-							zy = $container.height()/2;
 
 							var cy = $container.cytoscape("get");
 							
+							startZooming();
 							zoomInterval = setInterval(function(){
 								var zoom = cy.zoom();
 								var lvl = cy.zoom() * factor;
@@ -337,6 +391,7 @@ Depends on
 						
 						$(window).bind("mouseup blur", function(){
 							clearInterval(zoomInterval);
+							endZooming();
 						});
 					}
 					

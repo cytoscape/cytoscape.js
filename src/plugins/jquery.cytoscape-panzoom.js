@@ -25,7 +25,11 @@ Depends on
 		panMinPercentSpeed: 0.25, // the slowest speed we can pan by (as a percent of panSpeed)
 		panInactiveArea: 8, // radius of inactive area in pan drag box
 		panIndicatorMinOpacity: 0.65, // min opacity of pan indicator (the draggable nib); scales from this to 1.0
-		autodisableForMobile: true // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
+		autodisableForMobile: true, // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
+		sliderHandleIcon: 'icon-minus',
+		zoomInIcon: 'icon-plus',
+		zoomOutIcon: 'icon-minus',
+		resetIcon: 'icon-resize-full'
 	};
 	
 	$.fn.cytoscapePanzoom = function(params){
@@ -59,13 +63,13 @@ Depends on
 					// add base html elements
 					/////////////////////////
 
-					var $zoomIn = $('<div class="ui-cytoscape-panzoom-zoom-in ui-cytoscape-panzoom-zoom-button"></div>');
+					var $zoomIn = $('<div class="ui-cytoscape-panzoom-zoom-in ui-cytoscape-panzoom-zoom-button"><span class="icon '+ options.zoomInIcon +'"></span></div>');
 					$panzoom.append( $zoomIn );
 					
-					var $zoomOut = $('<div class="ui-cytoscape-panzoom-zoom-out ui-cytoscape-panzoom-zoom-button"></div>');
+					var $zoomOut = $('<div class="ui-cytoscape-panzoom-zoom-out ui-cytoscape-panzoom-zoom-button"><span class="icon ' + options.zoomOutIcon + '"></span></div>');
 					$panzoom.append( $zoomOut );
 					
-					var $reset = $('<div class="ui-cytoscape-panzoom-reset ui-cytoscape-panzoom-zoom-button"></div>');
+					var $reset = $('<div class="ui-cytoscape-panzoom-reset ui-cytoscape-panzoom-zoom-button"><span class="icon ' + options.resetIcon + '"></span></div>');
 					$panzoom.append( $reset );
 					
 					var $slider = $('<div class="ui-cytoscape-panzoom-slider"></div>');
@@ -73,7 +77,7 @@ Depends on
 					
 					$slider.append('<div class="ui-cytoscape-panzoom-slider-background"></div>');
 
-					var $sliderHandle = $('<div class="ui-cytoscape-panzoom-slider-handle"></div>');
+					var $sliderHandle = $('<div class="ui-cytoscape-panzoom-slider-handle"><span class="icon ' + options.sliderHandleIcon + '"></span></div>');
 					$slider.append( $sliderHandle );
 					
 					var $panner = $('<div class="ui-cytoscape-panzoom-panner"></div>');
@@ -159,8 +163,6 @@ Depends on
 
 						zx = ($container.width()/2 - pan.x) / zoom;
 						zy = ($container.height()/2 - pan.y) / zoom;
-
-						console.log( zx, zy );
 					}
 
 					var zooming = false;
@@ -252,14 +254,16 @@ Depends on
 
 					var sliderVal;
 					var sliding = false;
+					var sliderPadding = 2;
 
 					function setSliderFromMouse(evt, handleOffset){
 						if( handleOffset === undefined ){
 							handleOffset = 0;
 						}
 
-						var min = 0;
-						var max = $slider.height() - $sliderHandle.height();
+						var padding = sliderPadding;
+						var min = 0 + padding;
+						var max = $slider.height() - $sliderHandle.height() - 2*padding;
 						var top = evt.pageY - $slider.offset().top - handleOffset;
 
 						// constrain to slider bounds
@@ -286,7 +290,7 @@ Depends on
 
 					var sliderMdownHandler, sliderMmoveHandler;
 					$sliderHandle.bind('mousedown', sliderMdownHandler = function( mdEvt ){
-						var handleOffset = mdEvt.offsetY;
+						var handleOffset = mdEvt.target === $sliderHandle[0] ? mdEvt.offsetY : 0;
 						sliding = true;
 
 						startZooming();
@@ -321,6 +325,8 @@ Depends on
 					$slider.bind('mousedown', function(e){
 						if( e.target !== $sliderHandle[0] ){
 							setSliderFromMouse(e);
+
+							sliderMdownHandler(e);
 						}
 					});
 
@@ -328,8 +334,8 @@ Depends on
 						var cy = $container.cytoscape("get");
 						var zoom = cy.zoom();
 						var percent = 1 - Math.log( zoom + 1 - options.minZoom ) / Math.log( options.maxZoom + 1 - options.minZoom );
-						var min = 0;
-						var max = $slider.height() - $sliderHandle.height();
+						var min = sliderPadding;
+						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
 						var top = percent * ( max - min );
 
 						// constrain to slider bounds

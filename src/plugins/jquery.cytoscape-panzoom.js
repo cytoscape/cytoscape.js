@@ -80,12 +80,15 @@ Depends on
 					var $sliderHandle = $('<div class="ui-cytoscape-panzoom-slider-handle"><span class="icon ' + options.sliderHandleIcon + '"></span></div>');
 					$slider.append( $sliderHandle );
 					
+					var $noZoomTick = $('<div class="ui-cytoscape-panzoom-no-zoom-tick"></div>');
+					$slider.append( $noZoomTick );
+
 					var $panner = $('<div class="ui-cytoscape-panzoom-panner"></div>');
 					$panzoom.append( $panner );
 					
 					var $pHandle = $('<div class="ui-cytoscape-panzoom-panner-handle"></div>');
 					$panner.append( $pHandle );
-					
+
 					var $pUp = $('<div class="ui-cytoscape-panzoom-pan-up ui-cytoscape-panzoom-pan-button"></div>');
 					var $pDown = $('<div class="ui-cytoscape-panzoom-pan-down ui-cytoscape-panzoom-pan-button"></div>');
 					var $pLeft = $('<div class="ui-cytoscape-panzoom-pan-left ui-cytoscape-panzoom-pan-button"></div>');
@@ -354,6 +357,20 @@ Depends on
 							positionSliderFromZoom();
 						}
 					});
+
+					(function(){
+						var zoom = 1;
+						var percent = 1 - Math.log( zoom + 1 - options.minZoom ) / Math.log( options.maxZoom + 1 - options.minZoom );
+						var min = sliderPadding;
+						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
+						var top = percent * ( max - min );
+
+						// constrain to slider bounds
+						if( top < min ){ top = min }
+						if( top > max ){ top = max }
+
+						$noZoomTick.css('top', top);
+					})();
 
 					// set up zoom in/out buttons
 					/////////////////////////////

@@ -134,6 +134,20 @@
 	border-radius: 2px;
 	margin-left: -2px;
 	box-shadow: 0 1px 4px rgba(0, 0, 0,  0.5);
+	z-index: 999;
+}
+
+.ui-cytoscape-panzoom-no-zoom-tick {
+	position: absolute;
+	background: #666;
+	border: 1px solid #fff;
+	border-radius: 2px;
+	margin-left: -1px;
+	width: 8px;
+	height: 2px;
+	left: 3px;
+	z-index: 1;
+	margin-top: 3px;
 }
 
 .ui-cytoscape-panzoom-slider-handle .icon {
@@ -164,5 +178,6 @@
 	position: absolute;
 	z-index: 999;
 }
+
 
 

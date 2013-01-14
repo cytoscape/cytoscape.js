@@ -19,13 +19,7 @@
 			canvasNeedsRedraw: new Array(CANVAS_LAYERS),
 			
 			bufferCanvases: new Array(BUFFER_COUNT)
-			/*
-			canvases: [null, null, null, null, null, 
-			    [], [], [], [], [],
-			    false, false, false, false, false],
-			
-			bufferCanvases: [null, null]
-			*/
+
 		};
 		
 		//--Pointer-related data
@@ -741,16 +735,25 @@
 		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
 		var stopCheckingScroll = false;
 		
+//		console.log("calcs");
+		
 		while (n != null) {
 			if (typeof(n.offsetLeft) == "number") {
 				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
 				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
 				
+//				console.log("node", n, n.offsetLeft, n.offsetTop);
+//				console.log("scrolloffsets", n.scrollLeft, n.scrollTop, stopCheckingScroll);				
+				
+				
+				
 				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
 				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
 				
-			} n = n.parentNode;
+			} n = n.offsetParent;
 		}
+		
+//		console.log("calce");
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
 		x = pageX - offsetLeft; y = pageY - offsetTop;
@@ -1733,7 +1736,6 @@
 				
 				if (image.complete == false) {
 					
-					
 					nodeShapes[node._private.style["shape"].value].drawPath(
 						context,
 						node._private.position.x,
@@ -1909,6 +1911,10 @@
 		}
 	};
 
+	CanvasRenderer.prototype.drawBackground = function(context, color1, color2, 
+			startPosition, endPosition) {
+	
+		
 	}
 	
 	// @O Edge calculation functions
@@ -4218,7 +4224,9 @@
 			return (x - x2) * (x - x2) + (y - y2) * (y - y2);
 		}
 		
-		return (hypSq - adjSq);
+		return (hypSq - adjSq)
+	}
+	
 	}
 	}
 	

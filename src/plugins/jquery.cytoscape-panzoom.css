@@ -135,6 +135,11 @@
 	margin-left: -2px;
 	box-shadow: 0 1px 4px rgba(0, 0, 0,  0.5);
 	z-index: 999;
+	line-height: 8px;
+}
+
+.ui-cytoscape-panzoom-slider-handle .icon {
+	margin: 0 4px;
 }
 
 .ui-cytoscape-panzoom-no-zoom-tick {
@@ -148,11 +153,6 @@
 	left: 3px;
 	z-index: 1;
 	margin-top: 3px;
-}
-
-.ui-cytoscape-panzoom-slider-handle .icon {
-	margin-left: 0.35em;
-	margin-top: -0.35em;
 }
 
 .ui-cytoscape-panzoom-panner {

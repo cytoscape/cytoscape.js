@@ -6,6 +6,7 @@
 	line-height: 1;
 	color: #666;
 	font-size: 11px;
+	z-index: 99999;
 }
 
 .ui-cytoscape-panzoom-zoom-button {

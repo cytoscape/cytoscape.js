@@ -2,7 +2,7 @@
 	
 	var defaults = {
 		handleSize: 10,
-		handleColor: "red",
+		handleColor: "#ff0000",
 		handleLineWidth: 1,
 		hoverDelay: 150,
 		enabled: true,
@@ -104,7 +104,7 @@
 					.attr('width', $container.width())
 					.css({
 						'position': 'absolute',
-						'z-index': '9999'
+						'z-index': '999'
 					})
 				;
 
@@ -179,7 +179,7 @@
 					var classes = preview ? "ui-cytoscape-edgehandles-preview" : "";
 					var added = cy.collection();
 					
-					if( source.size() == 0 || targets.size() == 0 ){
+					if( source.size() === 0 || targets.size() === 0 ){
 						return; // nothing to do :(
 					}
 					
@@ -279,7 +279,7 @@
 						var node = this;
 						var source = this;
 						var p = node.renderedPosition();
-						var h = node.renderedHeight();
+						var h = node.renderedOuterHeight();
 						
 						// remove old handle
 						clearDraws();
@@ -290,8 +290,11 @@
 						
 						// add new handle
 						console.log('draw circle');
+						ctx.fillStyle = options().handleColor;
+						ctx.beginPath();
 						ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
-						ctx.fillStyle = options.handleColor;
+						ctx.fillStyle = options().handleColor;
+						ctx.closePath();
 						ctx.fill();
 						
 						function mdownHandler(e){
@@ -305,7 +308,6 @@
 							
 							e.preventDefault();
 							node.unbind("mouseout", removeHandler);
-							$handle.unbind("mouseout", removeHandler);
 							
 							node.addClass("ui-cytoscape-edgehandles-source");
 							
@@ -389,8 +391,7 @@
 						}
 						
 						node.bind("mouseout", removeHandler);
-						$handle.bind("mouseout", removeHandler);
-						$handle.bind("mousedown", mdownHandler);
+
 						
 					}).on("mouseover", "node", hoverHandler = function(){
 						var node = this;

@@ -96,8 +96,6 @@
 				var hx, hy, hr;
 				var hoverTimeout;
 
-				console.log('handles', $canvas)
-
 				$container.append( $canvas );
 				$canvas
 					.attr('height', $container.height())
@@ -289,7 +287,6 @@
 						hr = options().handleSize/2;
 						
 						// add new handle
-						console.log('draw circle');
 						ctx.fillStyle = options().handleColor;
 						ctx.beginPath();
 						ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
@@ -297,17 +294,20 @@
 						ctx.closePath();
 						ctx.fill();
 						
+						cy.on('mousedown', function(){
+							console.log('mousedown');
+						});
+
 						function mdownHandler(e){
-							if( e.button != 0 ){
+							if( e.button !== 0 ){
 								return; // sorry, no right clicks allowed 
 							}
 							
-//							console.log("-- mdownHandler %o --", e);
+							console.log("-- mdownHandler %o --", e);
 							
 							mdownOnHandle = true;
 							
 							e.preventDefault();
-							node.unbind("mouseout", removeHandler);
 							
 							node.addClass("ui-cytoscape-edgehandles-source");
 							
@@ -328,10 +328,12 @@
 								options().stop( node );
 							}
 							
-							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
+							//$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
 							cy.zoomingEnabled(false).panningEnabled(false);
 							
 							options().start( node );
+
+							return false;
 						}
 						
 						function moveHandler(e){
@@ -372,25 +374,9 @@
 							
 							
 						}
-						
-						function removeHandler(e){		
-							//console.log("remove event", e);
-							// return;
 
-							var newTargetIsHandle = e.relatedTarget == handle;
-							var newTargetIsNode = e.relatedTarget == node.rscratch("svg"); // TODO plugin shouldn't use ele.rscratch
-							
-							if( newTargetIsHandle || newTargetIsNode || mdownOnHandle ){
-								return; // don't consider mouseout
-							}
-							
-//							console.log("removeHandler %o", e);
-							
-							node.unbind("mouseout", removeHandler);
-							resetToDefaultState();
-						}
-						
-						node.bind("mouseout", removeHandler);
+
+						//cy.on('mousedown', mdownHandler);
 
 						
 					}).on("mouseover", "node", hoverHandler = function(){
@@ -437,7 +423,8 @@
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 					});
-					
+				
+
 					data.unbind = function(){
 						cy
 							.off("mouseover", "node", startHandler)

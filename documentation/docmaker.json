@@ -9,6 +9,8 @@
   "sections": [
     { "name": "Introduction", "md": "intro" },
 
+    { "name": "Roadmap", "md": "roadmap" },
+
     { "name": "Notation", "md": "notation" },
 
     { "name": "Selectors", "md": "selectors" },

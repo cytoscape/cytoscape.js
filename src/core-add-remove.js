@@ -114,7 +114,6 @@
 			}
 
 			// TODO remove timeout when chrome reports dimensions onload properly
-			// only affects when loading the html from localhost, i think...
 			if( window && window.chrome ){
 				setTimeout(function(){
 					callback();

@@ -136,6 +136,7 @@
 			zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
 			nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
 			size: { number: true, min: 0 },
+			bgSize: { number: true, min: 0, allowPercent: true },
 			color: { color: true },
 			lineStyle: { enums: ["solid", "dotted", "dashed"] },
 			curveStyle: { enums: ["bundled", "bezier"] },
@@ -151,7 +152,9 @@
 			visibility: { enums: ["hidden", "visible"] },
 			valign: { enums: ["top", "center", "bottom"] },
 			halign: { enums: ["left", "center", "right"] },
-			positionx: { regex: "^left|center|right$", number: true },
+			positionx: { enums: ["left", "center", "right"], number: true, allowPercent: true },
+			positiony: { enums: ["top", "center", "bottom"], number: true, allowPercent: true },
+			bgRepeat: { enums: ["repeat", "repeat-x", "repeat-y", "no-repeat"] },
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
 			data: { mapping: true, regex: "^data\\s*\\(\\s*(\\w+)\\s*\\)$" },
@@ -187,11 +190,11 @@
 			{ name: "background-color", type: t.color },
 			{ name: "background-opacity", type: t.zeroOneNumber },
 			{ name: "background-image", type: t.url },
-			{ name: "background-position-x", type: t.positionx }, ///////////////////////// TODO update
-			{ name: "background-position-y", type: t.url },
-			{ name: "background-repeat", type: t.url },
-			{ name: "background-size-x", type: t.url },
-			{ name: "background-size-y", type: t.url },
+			{ name: "background-position-x", type: t.positionx },
+			{ name: "background-position-y", type: t.positiony },
+			{ name: "background-repeat", type: t.bgRepeat },
+			{ name: "background-size-x", type: t.bgSize },
+			{ name: "background-size-y", type: t.bgSize },
 			{ name: "border-color", type: t.color },
 			{ name: "border-opacity", type: t.zeroOneNumber },
 			{ name: "border-width", type: t.size },
@@ -270,7 +273,6 @@
 					"background-color": "#888",
 					"background-opacity": 1,
 					"background-image": "none",
-					"background-position-x": "center",
 					"border-color": "#000",
 					"border-opacity": 1,
 					"border-width": 0,
@@ -334,6 +336,7 @@
 		
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
 		var property = $$.style.properties[ name ];
+		var passedValue = value;
 		
 		if( !property ){ return null; } // return null on property of unknown name
 		if( value === undefined || value === null ){ return null; } // can't assign null
@@ -426,17 +429,41 @@
 			var units;
 			if( !type.unitless ){
 				if( valueIsString ){
-					var match = value.match( "^(" + $$.util.regex.number + ")(px|em)?" + "$" );
-					if( !match ){ return null; } // no match => not a number
+					var match = value.match( "^(" + $$.util.regex.number + ")(px|em" + (type.allowPercent ? "|\\%" : "") + ")?" + "$" );
+					
+					if( !type.enums ){
+						if( !match ){ return null; } // no match => not a number
 
-					value = match[1];
-					units = match[2] || "px";
+						value = match[1];
+						units = match[2] || "px";
+					}
 				} else {
 					units = "px"; // implicitly px if unspecified
 				}
 			}
 
 			value = parseFloat( value );
+
+			// check if this number type also accepts special keywords in place of numbers
+			// (i.e. `left`, `auto`, etc)
+			if( isNaN(value) && type.enums !== undefined ){
+				value = passedValue;
+
+				for( var i = 0; i < type.enums.length; i++ ){
+					var en = type.enums[i];
+
+					if( en === value ){
+						return {
+							name: name,
+							value: value,
+							strValue: value,
+							bypass: propIsBypass
+						};
+					}
+				}
+
+				return null; // failed on enum after failing on number
+			}
 
 			// check if value must be an integer
 			if( type.integer && !$$.is.integer(value) ){
@@ -456,7 +483,7 @@
 				strValue: "" + value + (units ? units : ""),
 				units: units,
 				bypass: propIsBypass,
-				pxValue: type.unitless ?
+				pxValue: type.unitless || units === "%" ?
 					undefined
 					:
 					( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )

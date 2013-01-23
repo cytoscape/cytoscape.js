@@ -1,5 +1,11 @@
 (function($$) {
 
+	console.log = function(m){
+
+		$('#console').append('<div>'+ m +'</div>');
+
+	};
+
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
 	var rendFunc = CanvasRenderer.prototype;
@@ -463,7 +469,7 @@
 				
 			} else if (e.touches[0]) {
 				var near = r.findNearestElement(now[0], now[1]);
-				
+
 				if (near != null) {
 					r.touchData.start = near;
 					
@@ -474,7 +480,7 @@
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
 						var sEdges = near._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; }
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; } // TODO edges shouldn't be grabbable (see #)
 					}
 					
 					near.trigger(new $$.Event(e, {type: "touchstart"}));
@@ -653,6 +659,17 @@
 				// Tap event, roughly same as mouse click event for touch
 				if (r.touchData.singleTouchMoved == false) {
 					
+					// select the node on tap
+					if (start != null && start._private.selectable && start._private.selected == false) {
+						
+						// unselect whatever's already selected
+						cy.elements(':selected').unselect();
+
+						// now select the node
+						start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+					}
+
 					if (start) {
 						start.trigger(new $$.Event(e, {type: "tap"}));
 					} else {

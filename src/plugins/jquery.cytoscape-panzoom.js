@@ -306,6 +306,7 @@ Depends on
 						sliding = true;
 
 						startZooming();
+						$sliderHandle.addClass("active");
 
 						var lastMove = 0;
 						$(window).bind('mousemove', sliderMmoveHandler = function( mmEvt ){
@@ -328,6 +329,7 @@ Depends on
 							$(window).unbind('mousemove', sliderMmoveHandler);
 							sliding = false;
 
+							$sliderHandle.removeClass("active");
 							endZooming();
 						});
 

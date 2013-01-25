@@ -26,6 +26,12 @@
 	box-shadow: 0 1px 4px rgba(0, 0, 0,  0.5);
 }
 
+.ui-cytoscape-panzoom-zoom-button:active,
+.ui-cytoscape-panzoom-slider-handle:active,
+.ui-cytoscape-panzoom-slider-handle.active {
+	background: #ddd;
+}
+
 .ui-cytoscape-panzoom-pan-button {
 	position: absolute;
 	z-index: 1;

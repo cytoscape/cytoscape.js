@@ -354,7 +354,7 @@ Depends on
 						var x = Math.log(zmin) / Math.log(zmax);
 						var p = Math.log(z) / Math.log(zmax);
 						var percent = 1 - (p - x) / (1 - x); // the 1- bit at the front b/c up is in the -ve y direction
-						
+
 						var min = sliderPadding;
 						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
 						var top = percent * ( max - min );
@@ -387,6 +387,11 @@ Depends on
 						var p = Math.log(z) / Math.log(zmax);
 						var percent = 1 - (p - x) / (1 - x); // the 1- bit at the front b/c up is in the -ve y direction
 						
+						if( percent > 1 || percent < 0 ){
+							$noZoomTick.hide();
+							return;
+						}
+
 						var min = sliderPadding;
 						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
 						var top = percent * ( max - min );

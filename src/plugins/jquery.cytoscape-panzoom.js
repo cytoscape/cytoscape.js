@@ -278,17 +278,24 @@ Depends on
 						// move the handle
 						$sliderHandle.css('top', top);
 
+						var zmin = options.minZoom;
+						var zmax = options.maxZoom;
+
+						// assume (zoom = zmax ^ p) where p ranges on (x, 1) with x negative
+						var x = Math.log(zmin) / Math.log(zmax);
+						var p = (1 - x)*percent + x;
+
 						// change the zoom level
-						var zoomLevel = Math.pow( options.maxZoom + 1 - options.minZoom, percent ) - (1 - options.minZoom);
+						var z = Math.pow( zmax, p );
 
 						// bound the zoom value in case of floating pt rounding error
-						if( zoomLevel < options.minZoom ){
-							zoomLevel = options.minZoom;
-						} else if( zoomLevel > options.maxZoom ){
-							zoomLevel = options.maxZoom;
+						if( z < zmin ){
+							z = zmin;
+						} else if( z > zmax ){
+							z = zmax;
 						}
 
-						zoomTo( zoomLevel );
+						zoomTo( z );
 					}
 
 					var sliderMdownHandler, sliderMmoveHandler;
@@ -335,8 +342,15 @@ Depends on
 
 					function positionSliderFromZoom(){
 						var cy = $container.cytoscape("get");
-						var zoom = cy.zoom();
-						var percent = 1 - Math.log( zoom + 1 - options.minZoom ) / Math.log( options.maxZoom + 1 - options.minZoom );
+						var z = cy.zoom();
+						var zmin = options.minZoom;
+						var zmax = options.maxZoom;
+						
+						// assume (zoom = zmax ^ p) where p ranges on (x, 1) with x negative
+						var x = Math.log(zmin) / Math.log(zmax);
+						var p = Math.log(z) / Math.log(zmax);
+						var percent = 1 - (p - x) / (1 - x); // the 1- bit at the front b/c up is in the -ve y direction
+						
 						var min = sliderPadding;
 						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
 						var top = percent * ( max - min );
@@ -358,9 +372,17 @@ Depends on
 						}
 					});
 
+					// set the position of the zoom=1 tick
 					(function(){
-						var zoom = 1;
-						var percent = 1 - Math.log( zoom + 1 - options.minZoom ) / Math.log( options.maxZoom + 1 - options.minZoom );
+						var z = 1;
+						var zmin = options.minZoom;
+						var zmax = options.maxZoom;
+						
+						// assume (zoom = zmax ^ p) where p ranges on (x, 1) with x negative
+						var x = Math.log(zmin) / Math.log(zmax);
+						var p = Math.log(z) / Math.log(zmax);
+						var percent = (p - x) / (1 - x);
+						
 						var min = sliderPadding;
 						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;
 						var top = percent * ( max - min );

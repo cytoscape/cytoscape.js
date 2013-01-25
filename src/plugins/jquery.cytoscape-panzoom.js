@@ -385,7 +385,7 @@ Depends on
 						// assume (zoom = zmax ^ p) where p ranges on (x, 1) with x negative
 						var x = Math.log(zmin) / Math.log(zmax);
 						var p = Math.log(z) / Math.log(zmax);
-						var percent = (p - x) / (1 - x);
+						var percent = 1 - (p - x) / (1 - x); // the 1- bit at the front b/c up is in the -ve y direction
 						
 						var min = sliderPadding;
 						var max = $slider.height() - $sliderHandle.height() - 2*sliderPadding;

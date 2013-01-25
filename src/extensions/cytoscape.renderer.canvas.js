@@ -1,11 +1,5 @@
 (function($$) {
 
-	console.log = function(m){
-
-		$('#console').append('<div>'+ m +'</div>');
-
-	};
-
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
 	var rendFunc = CanvasRenderer.prototype;

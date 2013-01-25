@@ -24,7 +24,7 @@ Depends on
 		panDragAreaSize: 75, // the length of the pan drag box in which the vector for panning is calculated (bigger = finer control of pan speed and direction)
 		panMinPercentSpeed: 0.25, // the slowest speed we can pan by (as a percent of panSpeed)
 		panInactiveArea: 8, // radius of inactive area in pan drag box
-		panIndicatorMinOpacity: 0.65, // min opacity of pan indicator (the draggable nib); scales from this to 1.0
+		panIndicatorMinOpacity: 0.5, // min opacity of pan indicator (the draggable nib); scales from this to 1.0
 		autodisableForMobile: true, // disable the panzoom completely for mobile (since we don't really need it with gestures like pinch to zoom)
 		sliderHandleIcon: 'icon-minus',
 		zoomInIcon: 'icon-plus',
@@ -151,11 +151,13 @@ Depends on
 						var w = $panner.width();
 						var h = $panner.height();
 						var percent = d/options.panDistance;
-						
+						var opacity = Math.max( options.panIndicatorMinOpacity, percent );
+						var color = 255 - Math.round( opacity * 255 );
+
 						$pIndicator.show().css({
 							left: w/2 * vnorm.x + w/2,
 							top: h/2 * vnorm.y + h/2,
-							opacity: Math.max( options.panIndicatorMinOpacity, percent )
+							background: "rgb(" + color + ", " + color + ", " + color + ")"
 						});
 					}
 					

@@ -1,21 +1,8 @@
-
-/*
-
-Cytoscape Web panzoom UI plugin
-
-Depends on
-- jQuery UI core
-	- draggable
-	- slider
-	- Theme Roller UI icons (if you want)
-
-*/
-
 ;(function($){
 	
 	var defaults = {
 		zoomFactor: 0.05, // zoom factor per zoom tick
-		zoomDelay: 16, // how many ms between zoom ticks
+		zoomDelay: 20, // how many ms between zoom ticks
 		minZoom: 0.1, // min zoom level
 		maxZoom: 10, // max zoom level
 		fitPadding: 50, // padding when fitting
@@ -406,8 +393,9 @@ Depends on
 					// set up zoom in/out buttons
 					/////////////////////////////
 
-					var zoomInterval;
 					function bindButton($button, factor){
+						var zoomInterval;
+
 						$button.bind("mousedown", function(e){
 							e.preventDefault();
 							e.stopPropagation();
@@ -441,9 +429,11 @@ Depends on
 							}, options.zoomDelay);
 							
 							return false;
-						})
+						});
 						
 						$(window).bind("mouseup blur", function(){
+							console.log('clear')
+
 							clearInterval(zoomInterval);
 							endZooming();
 						});

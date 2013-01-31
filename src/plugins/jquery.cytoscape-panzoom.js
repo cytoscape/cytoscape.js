@@ -2,7 +2,7 @@
 	
 	var defaults = {
 		zoomFactor: 0.05, // zoom factor per zoom tick
-		zoomDelay: 20, // how many ms between zoom ticks
+		zoomDelay: 45, // how many ms between zoom ticks
 		minZoom: 0.1, // min zoom level
 		maxZoom: 10, // max zoom level
 		fitPadding: 50, // padding when fitting
@@ -432,8 +432,6 @@
 						});
 						
 						$(window).bind("mouseup blur", function(){
-							console.log('clear')
-
 							clearInterval(zoomInterval);
 							endZooming();
 						});

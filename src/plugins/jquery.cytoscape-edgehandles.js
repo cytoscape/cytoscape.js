@@ -288,15 +288,17 @@
 						
 						// add new handle
 						ctx.fillStyle = options().handleColor;
-						ctx.beginPath();
-						ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
-						ctx.fillStyle = options().handleColor;
-						ctx.closePath();
-						ctx.fill();
+						ctx.strokeStyle = options().handleColor;
+
+						function drawHandle(){
+							ctx.beginPath();
+							ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
+							ctx.closePath();
+							ctx.fill();
+						}
+
+						drawHandle();
 						
-						cy.on('mousedown', function(){
-							console.log('mousedown');
-						});
 
 						function mdownHandler(e){
 							if( e.button !== 0 ){
@@ -328,7 +330,7 @@
 								options().stop( node );
 							}
 							
-							//$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
+							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
 							cy.zoomingEnabled(false).panningEnabled(false);
 							
 							options().start( node );
@@ -342,20 +344,26 @@
 							var x = e.pageX - $container.offset().left;
 							var y = e.pageY - $container.offset().top;
 							
-							safelyRemoveCySvgChild( line );
-							
 							var style = {
 								stroke: options().handleColor,
 								strokeWidth: options().handleLineWidth,
 								fill: "none",
 								"pointer-events": "none"
 							};
-							
+
 							// draw line based on type
 							switch( options().lineType ){
 							case "straight":
 								
-								line = svg.line(hx, hy, x, y, style);
+								clearDraws();
+
+								drawHandle();
+
+								ctx.beginPath();
+								ctx.moveTo(hx, hy);
+								ctx.lineTo(x, y);
+								ctx.closePath();
+								ctx.stroke();
 								
 								break;
 							case "draw":
@@ -375,8 +383,8 @@
 							
 						}
 
-
-						//cy.on('mousedown', mdownHandler);
+						// TODO make accurate on handle
+						$(window).on('mousedown', mdownHandler);
 
 						
 					}).on("mouseover", "node", hoverHandler = function(){

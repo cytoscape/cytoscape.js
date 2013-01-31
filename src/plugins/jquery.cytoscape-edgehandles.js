@@ -292,7 +292,7 @@
 
 						function drawHandle(){
 							ctx.beginPath();
-							ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
+							ctx.arc(hx, hy, hr * cy.zoom(), 0 , 2*Math.PI);
 							ctx.closePath();
 							ctx.fill();
 						}

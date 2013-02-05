@@ -264,16 +264,20 @@
 						clearDraws();
 					});
 					
+					var lastMdownHandler;
+
 					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
-						 console.log("node mouseover");
+						
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
 						} 
 						
-						// console.log("node mouseover");
+						console.log("mouseover startHandler %s %o", this.id(), this);
 						
+						$(window).unbind('mousedown', lastMdownHandler);
+
 						var node = this;
 						var source = this;
 						var p = node.renderedPosition();
@@ -282,9 +286,9 @@
 						// remove old handle
 						clearDraws();
 						
+						hr = options().handleSize/2 * cy.zoom();
 						hx = p.x;
-						hy = p.y - h/2;
-						hr = options().handleSize/2;
+						hy = p.y - h/2 - hr;
 						
 						// add new handle
 						ctx.fillStyle = options().handleColor;
@@ -292,7 +296,7 @@
 
 						function drawHandle(){
 							ctx.beginPath();
-							ctx.arc(hx, hy, hr * cy.zoom(), 0 , 2*Math.PI);
+							ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
 							ctx.closePath();
 							ctx.fill();
 						}
@@ -301,11 +305,18 @@
 						
 
 						function mdownHandler(e){
+							var x = e.pageX - $container.offset().left;
+							var y = e.pageY - $container.offset().top;
+
 							if( e.button !== 0 ){
 								return; // sorry, no right clicks allowed 
 							}
 							
-							console.log("-- mdownHandler %o --", e);
+							if( Math.abs(x - hx) > hr || Math.abs(y - hy) > hr ){
+								return; // only consider this a proper mousedown if on the handle
+							}
+
+							console.log("mdownHandler %s %o", node.id(), node);
 							
 							mdownOnHandle = true;
 							
@@ -314,7 +325,7 @@
 							node.addClass("ui-cytoscape-edgehandles-source");
 							
 							function doneMoving(dmEvent){
-//								console.log("doneMoving %o", dmEvent);
+								console.log("doneMoving %s %o", node.id(), node);
 								
 								if( !mdownOnHandle ){
 									return;
@@ -339,17 +350,10 @@
 						}
 						
 						function moveHandler(e){
-							// console.log("move");
+							console.log("mousemove moveHandler %s %o", node.id(), node);
 							
 							var x = e.pageX - $container.offset().left;
 							var y = e.pageY - $container.offset().top;
-							
-							var style = {
-								stroke: options().handleColor,
-								strokeWidth: options().handleLineWidth,
-								fill: "none",
-								"pointer-events": "none"
-							};
 
 							// draw line based on type
 							switch( options().lineType ){
@@ -358,6 +362,8 @@
 								clearDraws();
 
 								drawHandle();
+
+								ctx.lineWidth = options().handleLineWidth;
 
 								ctx.beginPath();
 								ctx.moveTo(hx, hy);
@@ -380,22 +386,26 @@
 								break;
 							}
 							
-							
+							return false;
 						}
 
-						// TODO make accurate on handle
-						$(window).on('mousedown', mdownHandler);
+						$(window).one('mousedown', mdownHandler);
+						lastMdownHandler = mdownHandler;
 
 						
 					}).on("mouseover", "node", hoverHandler = function(){
 						var node = this;
 						var target = this;
 
+console.log('mouseover hoverHandler')
+
 						if( disabled() || this.hasClass("ui-cytoscape-edgehandles-preview") ){
 							return; // ignore preview nodes
 						}
 						
 						if( mdownOnHandle ){ // only handle mdown case
+
+							console.log( 'mouseover hoverHandler %s $o', node.id(), node );
 
 							clearTimeout( hoverTimeout );
 							hoverTimeout = setTimeout(function(){
@@ -417,6 +427,8 @@
 									}
 								}
 							}, options().hoverDelay);
+
+							return false;
 						}
 					}).on("mouseout", "node", leaveHandler = function(){
 						this.removeClass("ui-cytoscape-edgehandles-hover");

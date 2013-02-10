@@ -121,6 +121,7 @@
 				
 				// Element dragging
 				{
+					// If something is under the cursor and it is grabbable, prepare to grab it
 					if (near && near._private.grabbable) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
 							near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
@@ -133,7 +134,7 @@
 								
 								var updateStyle = false; 
 								if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
-								
+							
 								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
 								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
 								
@@ -160,14 +161,20 @@
 								}
 							}
 						}
-								
+						
+						near.trigger(new $$.Event(e, {type: "mousedown"}));
+						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
 //						console.log(draggedElements);
+					} else if (near == null) {
+						var backgroundMouseDownEvent = new $$.Event(e, {type: "mousedown"});
+						
+						cy.trigger(backgroundMouseDownEvent);
 					}
 					
-					if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
+					
 					
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
@@ -185,7 +192,9 @@
 				
 			}
 			
-			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
+			// Initialize selection box coordinates
+			select[0] = select[2] = pos[0];
+			select[1] = select[3] = pos[1];
 			
 			r.redraw();
 			
@@ -195,12 +204,19 @@
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
-			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
-			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var last = r.hoverData.last;
+			var down = r.hoverData.down;
+			
+			var disp = [pos[0] - select[2], pos[1] - select[3]];
+			var nodes = r.getCachedNodes();
+			var edges = r.getCachedEdges();
 		
 			var draggedElements = r.dragData.possibleDragElements;
 			
-			var capture = r.hoverData.capture; if (!capture) { 
+			var capture = r.hoverData.capture;
+			
+			if (!capture) { 
 				
 				var containerPageCoords = r.findContainerPageCoords();
 				
@@ -212,26 +228,25 @@
 				}
 			}
 			
-			if (r.hoverData.dragging) {
-				
-				// console.log(pos[0], select[0], r.hoverData.initialPan[0], pos[1], select[1], r.hoverData.initialPan[1]);
-				
-				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
-				
-				// Needs reproject due to pan changing viewport
-				pos = r.projectIntoViewport(e.pageX, e.pageY);
-			
 			// Mousemove event
 			{
 				var event = new $$.Event(e, {type: "mousemove"});
 				
 				if (near != null) {
 					near.trigger(event);
+					
 				} else if (near == null) {
 					cy.trigger(event);
 				}
 			}
 			
+			// Check if we are drag panning the entire graph
+			if (r.hoverData.dragging) {
+				
+				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				
+				// Needs reproject due to pan changing viewport
+				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
 					&& (new Date()).getTime() - r.hoverData.downTime > 200 
@@ -267,11 +282,8 @@
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
 				}
 				
-				if (near) {
-					near.trigger(new $$.Event(e, {type: "mousemove"}));
-				}
-				
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true; r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
 			}
 			
 			select[2] = pos[0]; select[3] = pos[1];
@@ -414,34 +426,40 @@
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-//			console.log("update");
-			
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
-				console.log("old zoom: " + cy.zoom() + " mouse diff: " + diff);
-				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				if (cy.zoom() )
 				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
-//				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				console.log("new zoom" + cy.zoom());
-				console.log("new zoom: " + cy.zoom());
 			}
 
 		}
 		
-		// Uses old functions
+		// Functions to help with whether mouse wheel should trigger zooming
 		// --
 		r.data.container.addEventListener("mousewheel", wheelHandler, false);
 		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
+		
 		r.data.container.addEventListener("mousemove", function(e) { 
 			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
-				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
+				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; 
+		}, false);
+		
 		r.data.container.addEventListener("mouseout", function(e) { 
-			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
+			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null 
+		}, false);
 		// --
+		
+		// Functions to help with handling mouseout/mouseover on the Cytoscape container
+					// Handle mouseout on Cytoscape container
+		r.data.container.addEventListener("mouseout", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseout"}));
+		}, false);
+		
+		r.data.container.addEventListener("mouseover", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseover"}));
+		}, false);
 		
 		
 		r.data.container.addEventListener("touchstart", function(e) {

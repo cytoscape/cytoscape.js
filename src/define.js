@@ -106,6 +106,55 @@
 			}; // function
 		}, // data
 
+		batchData: function( params ){
+			var defaults = {
+				field: "data",
+				event: "data",
+				triggerFnName: "trigger",
+				immutableKeys: {}, // key => true if immutable
+				updateMappers: false
+			};
+			var p = params = $$.util.extend({}, defaults, params);
+
+			return function( map ){
+				var self = this;
+				var selfIsArrayLike = self.length !== undefined;
+				var eles = selfIsArrayLike ? self : self._private.elements;
+
+				if( eles.length === 0 ){ return self; }
+				var cy = selfIsArrayLike ? eles[0]._private.cy : self; // NB must have at least 1 ele to get cy
+				
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
+					var id = ele._private.data.id;
+					var mapData = map[id];
+
+					if( mapData !== undefined && mapData !== null ){
+						var obj = mapData;
+						var k, v;
+
+						// set the (k, v) pairs from the map
+						for( k in obj ){
+							v = obj[ k ];
+
+							var valid = !p.immutableKeys[k];
+							if( valid ){
+								ele._private[ p.field ][ k ] = v;
+							}
+						}
+					} // if
+				} // for
+
+				// update mappers if asked
+				var coln = new $$.Collection(cy, eles);
+				if( p.updateMappers ){ coln.updateMappers(); }
+
+				coln[ p.triggerFnName ]( p.event );
+
+				return self; // chaining
+			};
+		},
+
 		// remove data field
 		removeData: function( params ){
 			var defaults = { 

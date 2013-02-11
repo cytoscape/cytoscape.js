@@ -88,6 +88,8 @@
 			this.data.canvasRedrawReason[SELECT_BOX].push("viewchange");
 		}
 		
+		console.log("notify", params.type);
+		
 		this.data.canvasNeedsRedraw[DRAG] = true; this.data.canvasRedrawReason[DRAG].push("notify");
 		this.data.canvasNeedsRedraw[NODE] = true; this.data.canvasRedrawReason[NODE].push("notify");
 
@@ -225,6 +227,8 @@
 					&& e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
 					
 				} else {
+					console.log("outofbounds");
+				  
 					return;
 				}
 			}
@@ -819,7 +823,7 @@
 				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
 				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
 				
-			} n = n.parentNode;
+			} n = n.offsetParent;
 		}
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.

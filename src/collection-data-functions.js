@@ -69,6 +69,19 @@
 			updateMappers: true
 		}),
 
+		batchData: $$.define.batchData({
+			field: "data",
+			event: "data",
+			triggerFnName: "trigger",
+			immutableKeys: {
+				"id": true,
+				"source": true,
+				"target": true,
+				"parent": true
+			},
+			updateMappers: true
+		}),
+
 		scratch: $$.define.data({
 			field: "scratch",
 			allowBinding: false,

@@ -81,15 +81,11 @@
 			this.updateEdgesCache();
 		}
 		
-		if (params.type == "load") { this.load(); }
+		if (params.type == "load") {this.load(); }
 
 		if (params.type == "viewport") {
 			this.data.canvasNeedsRedraw[SELECT_BOX] = true;
 			this.data.canvasRedrawReason[SELECT_BOX].push("viewchange");
-			this.data.canvasNeedsRedraw[DRAG] = true;
-			this.data.canvasRedrawReason[DRAG].push("viewchange");
-			this.data.canvasNeedsRedraw[NODE] = true;
-			this.data.canvasRedrawReason[NODE].push("viewchange");
 		}
 		
 		this.data.canvasNeedsRedraw[DRAG] = true; this.data.canvasRedrawReason[DRAG].push("notify");
@@ -124,7 +120,11 @@
 					// If something is under the cursor and it is grabbable, prepare to grab it
 					if (near && near._private.grabbable) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
-							near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
+						  
+							near._private.grabbed = true; 
+							near._private.rscratch.inDragLayer = true;
+							
+							near.trigger(new $$.Event(e, {type: "grab"})); 
 							
 							var unselectEvent = new $$.Event(e, {type: "unselect"});
 							var ungrabEvent = new $$.Event(e, {type: "free"});
@@ -140,9 +140,12 @@
 								
 								if (updateStyle) { popped.updateStyle(false); };
 							}
+							r.dragData.possibleDragElements = draggedElements = [];
+							r.dragData.possibleDragElements.push(near);
 							
-							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near);
-								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; };
+							for (var i=0;i<near._private.edges.length;i++) {
+								near._private.edges[i]._private.rscratch.inDragLayer = true;
+							};
 						}
 								
 						if (near._private.group == "nodes" && near._private.selected == true) {
@@ -150,11 +153,12 @@
 							var event = new $$.Event(e, {type: "grab"}); 
 							for (var i=0;i<draggedElements.length;i++) {
 								if (draggedElements[i]._private.group == "nodes") {
+									draggedElements[i]._private.rscratch.inDragLayer = true;
 									draggedElements[i]._private.grabbed = true;
 									var subEdges = draggedElements[i]._private.edges;
 									
 									for (var j=0;j<subEdges.length;j++) {
-										subEdges[j]._private.grabbed = true;
+										subEdges[j]._private.rscratch.inDragLayer = true;
 									}
 									
 									draggedElements[i].trigger(event)
@@ -167,14 +171,11 @@
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
-//						console.log(draggedElements);
 					} else if (near == null) {
 						var backgroundMouseDownEvent = new $$.Event(e, {type: "mousedown"});
 						
 						cy.trigger(backgroundMouseDownEvent);
 					}
-					
-					
 					
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
@@ -301,7 +302,8 @@
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			
-			if (near == null || near != down || !near.selected()) {
+			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+			if (near == null || near != down) {
 
 //++clock+unselect
 //				var a = time();
@@ -322,7 +324,7 @@
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("De-select");
 				}
 				
-				draggedElements = r.dragData.possibleDragElements = [];
+				r.dragData.possibleDragElements = draggedElements = [];
 			}
 			
 			// Click event
@@ -365,7 +367,7 @@
 					
 					near._private.grabbed = false; near.trigger(freeEvent);
 					
-					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 		
+					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; } 		
 				}
 			}
 			
@@ -394,11 +396,14 @@
 				
 				for (var i=0;i<draggedElements.length;i++) {
 					
-					draggedElements[i]._private.grabbed = false; 
 					if (draggedElements[i]._private.group == "nodes") { 
+						draggedElements[i]._private.rscratch.inDragLayer = false;
+					  
 						var sEdges = draggedElements[i]._private.edges;
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 						
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
+					} else if (draggedElements[i]._private.group == "edges") {
+						draggedElements[i]._private.rscratch.inDragLayer = false;
 					}
 					
 					draggedElements[i].trigger(freeEvent);
@@ -487,12 +492,20 @@
 					
 					if (near._private.group == "nodes") {
 						
-						near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"}));
-						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node start");
+						near._private.grabbed = true;
+						near._private.rscratch.inDragLayer = true; 
+						near.trigger(new $$.Event(e, {type: "grab"}));
+						
+						r.data.canvasNeedsRedraw[DRAG] = true;
+						r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
+						
+						r.data.canvasNeedsRedraw[NODE] = true;
+						r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
 						var sEdges = near._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; } // TODO edges shouldn't be grabbable (see #)
+						for (var j=0;j<sEdges.length;j++) { 
+						  sEdges[j]._private.rscratch.inDragLayer = true;
+						}
 					}
 					
 					near.trigger(new $$.Event(e, {type: "touchstart"}));
@@ -648,11 +661,12 @@
 				
 				if (start != null ) {
 					if (start._private.grabbed == true) {
-						start._private.grabbed = false; start.trigger(new $$.Event(e, {type: "free"}));
+						start._private.grabbed = false;
+						start.trigger(new $$.Event(e, {type: "free"}));
 					}
 					
 					var sEdges = start._private.edges;
-					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; }
+					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node end");
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node end");
@@ -1061,7 +1075,7 @@
 	
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
-		//console.log("redrawing");
+		
 		var cy = this.data.cy; var data = this.data; 
 		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
 		this.matchCanvasSize(data.container);
@@ -1093,6 +1107,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[NODE]) {
+//			console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
+		  
 			var context = data.canvases[4].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -1106,7 +1122,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.grabbed) {
+				if (!element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNode(context, element);
 						
@@ -1119,7 +1135,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.grabbed) {
+				if (!element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
@@ -1132,6 +1148,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[DRAG]) {
+//			console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
+		  
 			var context = data.canvases[2].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -1145,7 +1163,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (element._private.grabbed) {
+				if (element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNode(context, element);
 					} else if (element._private.group == "edges") {
@@ -1157,7 +1175,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (element._private.grabbed) {
+				if (element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
@@ -1170,6 +1188,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[SELECT_BOX]) {
+//			console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
+		  
 			var context = data.canvases[0].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);

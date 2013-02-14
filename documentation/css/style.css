@@ -91,14 +91,20 @@ body {
 
 #demo, #demo-source {
 	height: 20em;
-	width: 30em;
 	border: 1px solid #ddd;
 	margin: 1em 0;
 	overflow: hidden !important;
-	position: relative;
 	border-radius: 0.25em;
-	float: left;
 	margin: 0.25em;
+}
+
+#demo {
+	float: left;
+	width: 30em;
+}
+
+#demo-source {
+	margin-top: 1.2em;
 }
 
 #demo-code {

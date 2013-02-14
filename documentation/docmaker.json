@@ -1393,6 +1393,11 @@
     },
 
     {
+      "name": "Architecture",
+      "md": "architecture"
+    },
+
+    {
       "name": "Extensions",
       "md": "extensions"
     }

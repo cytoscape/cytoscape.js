@@ -13,7 +13,6 @@ body {
 	z-index: 1;
 	overflow-y: auto;
 	padding: 0 0.5em;
-	border-right: 2px solid #eee;
 }
 
 #navigation .toc {

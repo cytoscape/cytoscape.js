@@ -734,7 +734,9 @@
 				return false; // can only map to colours and numbers
 			}
 
-			if( !flatProp ){ return false; } // don't apply if invalid
+			if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
+				flatProp = this.parse( prop.name, origProp.strValue, prop.bypass);
+			} 
 
 			flatProp.mapping = prop; // keep a reference to the mapping
 			prop = flatProp; // the flattened (mapped) property is the one we want
@@ -745,7 +747,9 @@
 			fieldVal = ele._private.data[ prop.field ];
 
 			flatProp = this.parse( prop.name, fieldVal, prop.bypass );
-			if( !flatProp ){ return false; } // don't apply property if the field isn't a valid prop val
+			if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
+				flatProp = this.parse( prop.name, origProp.strValue, prop.bypass);
+			} 
 
 			flatProp.mapping = prop; // keep a reference to the mapping
 			prop = flatProp; // the flattened (mapped) property is the one we want
@@ -923,7 +927,7 @@
 	// returns true iff application was successful for at least 1 specified property
 	$$.styfn.applyBypass = function( eles, name, value ){
 		var props = [];
-
+		
 		// put all the properties (can specify one or many) in an array after parsing them
 		if( name === "*" || name === "**" ){ // apply to all property names
 

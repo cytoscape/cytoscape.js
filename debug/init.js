@@ -117,29 +117,30 @@ $(function(){
 		
 		$container.cytoscapePanzoom();
 		
-		$container.cytoscapeEdgehandles({
-			lineType: "straight",
-			preview: true,
-			handleSize: 12,
-			handleColor: "#5CC2ED",
-			edgeType: function(){
-				return $("#add-edge-type-select").val();
-			},
-			nodeParams: function(){
-				return {
-					classes: "intermediate"
-				};
-			},
-			start: function( sourceNode ){
-				console.log("start(%o)", sourceNode);
-			},
-			complete: function( sourceNode, targetNodes, added ){
-				console.log("complete(%o, %o, %o)", sourceNode, targetNodes, added);
-			},
-			stop: function( sourceNode ){
-				console.log("stop(%o)", sourceNode);
-			}
-		});
+		// disable for now
+		// $container.cytoscapeEdgehandles({
+		// 	lineType: "straight",
+		// 	preview: true,
+		// 	handleSize: 12,
+		// 	handleColor: "#5CC2ED",
+		// 	edgeType: function(){
+		// 		return $("#add-edge-type-select").val();
+		// 	},
+		// 	nodeParams: function(){
+		// 		return {
+		// 			classes: "intermediate"
+		// 		};
+		// 	},
+		// 	start: function( sourceNode ){
+		// 		console.log("start(%o)", sourceNode);
+		// 	},
+		// 	complete: function( sourceNode, targetNodes, added ){
+		// 		console.log("complete(%o, %o, %o)", sourceNode, targetNodes, added);
+		// 	},
+		// 	stop: function( sourceNode ){
+		// 		console.log("stop(%o)", sourceNode);
+		// 	}
+		// });
 		
 		function number(group){
 			var input = $("#" + group + "-number");

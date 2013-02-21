@@ -135,7 +135,7 @@
 		$$.style.types = {
 			zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
 			nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-			size: { number: true, min: 0 },
+			size: { number: true, min: 0, enums: ["auto"] },
 			bgSize: { number: true, min: 0, allowPercent: true },
 			color: { color: true },
 			lineStyle: { enums: ["solid", "dotted", "dashed"] },

@@ -38,11 +38,12 @@
 				singleTouchStartTime: null,
 				singleTouchMoved: true,
 				
+				
 				now: [null, null, null, null, null, null], 
 				earlier: [null, null, null, null, null, null] };
 		//--
 		
-		//--Wheel-related data
+		//--Wheel-related data 
 		this.zoomData = {freeToZoom: false, lastPointerX: null};
 		//--
 		
@@ -80,15 +81,11 @@
 			this.updateEdgesCache();
 		}
 		
-		if (params.type == "load") { this.load(); }
+		if (params.type == "load") {this.load(); }
 
 		if (params.type == "viewport") {
 			this.data.canvasNeedsRedraw[SELECT_BOX] = true;
 			this.data.canvasRedrawReason[SELECT_BOX].push("viewchange");
-			this.data.canvasNeedsRedraw[DRAG] = true;
-			this.data.canvasRedrawReason[DRAG].push("viewchange");
-			this.data.canvasNeedsRedraw[NODE] = true;
-			this.data.canvasRedrawReason[NODE].push("viewchange");
 		}
 		
 		this.data.canvasNeedsRedraw[DRAG] = true; this.data.canvasRedrawReason[DRAG].push("notify");
@@ -120,9 +117,14 @@
 				
 				// Element dragging
 				{
+					// If something is under the cursor and it is grabbable, prepare to grab it
 					if (near && near._private.grabbable) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
-							near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
+						  
+							near._private.grabbed = true; 
+							near._private.rscratch.inDragLayer = true;
+							
+							near.trigger(new $$.Event(e, {type: "grab"})); 
 							
 							var unselectEvent = new $$.Event(e, {type: "unselect"});
 							var ungrabEvent = new $$.Event(e, {type: "free"});
@@ -132,15 +134,18 @@
 								
 								var updateStyle = false; 
 								if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
-								
+							
 								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
 								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
 								
 								if (updateStyle) { popped.updateStyle(false); };
 							}
+							r.dragData.possibleDragElements = draggedElements = [];
+							r.dragData.possibleDragElements.push(near);
 							
-							r.dragData.possibleDragElements = draggedElements = []; draggedElements.push(near);
-								for (var i=0;i<near._private.edges.length;i++) { near._private.edges[i]._private.grabbed = true; };
+							for (var i=0;i<near._private.edges.length;i++) {
+								near._private.edges[i]._private.rscratch.inDragLayer = true;
+							};
 						}
 								
 						if (near._private.group == "nodes" && near._private.selected == true) {
@@ -148,25 +153,29 @@
 							var event = new $$.Event(e, {type: "grab"}); 
 							for (var i=0;i<draggedElements.length;i++) {
 								if (draggedElements[i]._private.group == "nodes") {
+									draggedElements[i]._private.rscratch.inDragLayer = true;
 									draggedElements[i]._private.grabbed = true;
 									var subEdges = draggedElements[i]._private.edges;
 									
 									for (var j=0;j<subEdges.length;j++) {
-										subEdges[j]._private.grabbed = true;
+										subEdges[j]._private.rscratch.inDragLayer = true;
 									}
 									
 									draggedElements[i].trigger(event)
 								}
 							}
 						}
-								
+						
+						near.trigger(new $$.Event(e, {type: "mousedown"}));
+						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
-//						console.log(draggedElements);
+					} else if (near == null) {
+						var backgroundMouseDownEvent = new $$.Event(e, {type: "mousedown"});
+						
+						cy.trigger(backgroundMouseDownEvent);
 					}
-					
-					if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
 					
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
@@ -184,7 +193,9 @@
 				
 			}
 			
-			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
+			// Initialize selection box coordinates
+			select[0] = select[2] = pos[0];
+			select[1] = select[3] = pos[1];
 			
 			r.redraw();
 			
@@ -194,12 +205,19 @@
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
-			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
-			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var last = r.hoverData.last;
+			var down = r.hoverData.down;
+			
+			var disp = [pos[0] - select[2], pos[1] - select[3]];
+			var nodes = r.getCachedNodes();
+			var edges = r.getCachedEdges();
 		
 			var draggedElements = r.dragData.possibleDragElements;
 			
-			var capture = r.hoverData.capture; if (!capture) { 
+			var capture = r.hoverData.capture;
+			
+			if (!capture) { 
 				
 				var containerPageCoords = r.findContainerPageCoords();
 				
@@ -211,26 +229,25 @@
 				}
 			}
 			
-			if (r.hoverData.dragging) {
-				
-				// console.log(pos[0], select[0], r.hoverData.initialPan[0], pos[1], select[1], r.hoverData.initialPan[1]);
-				
-				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
-				
-				// Needs reproject due to pan changing viewport
-				pos = r.projectIntoViewport(e.pageX, e.pageY);
-			
 			// Mousemove event
 			{
 				var event = new $$.Event(e, {type: "mousemove"});
 				
 				if (near != null) {
 					near.trigger(event);
+					
 				} else if (near == null) {
 					cy.trigger(event);
 				}
 			}
 			
+			// Check if we are drag panning the entire graph
+			if (r.hoverData.dragging) {
+				
+				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				
+				// Needs reproject due to pan changing viewport
+				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
 					&& (new Date()).getTime() - r.hoverData.downTime > 200 
@@ -266,11 +283,8 @@
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
 				}
 				
-				if (near) {
-					near.trigger(new $$.Event(e, {type: "mousemove"}));
-				}
-				
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true; r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
 			}
 			
 			select[2] = pos[0]; select[3] = pos[1];
@@ -288,7 +302,8 @@
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			
-			if (near == null || near != down || !near.selected()) {
+			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+			if (near == null || near != down) {
 
 //++clock+unselect
 //				var a = time();
@@ -309,7 +324,7 @@
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("De-select");
 				}
 				
-				draggedElements = r.dragData.possibleDragElements = [];
+				r.dragData.possibleDragElements = draggedElements = [];
 			}
 			
 			// Click event
@@ -352,7 +367,7 @@
 					
 					near._private.grabbed = false; near.trigger(freeEvent);
 					
-					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 		
+					var sEdges = near._private.edges; for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; } 		
 				}
 			}
 			
@@ -381,11 +396,14 @@
 				
 				for (var i=0;i<draggedElements.length;i++) {
 					
-					draggedElements[i]._private.grabbed = false; 
 					if (draggedElements[i]._private.group == "nodes") { 
+						draggedElements[i]._private.rscratch.inDragLayer = false;
+					  
 						var sEdges = draggedElements[i]._private.edges;
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 						
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; } 
+					} else if (draggedElements[i]._private.group == "edges") {
+						draggedElements[i]._private.rscratch.inDragLayer = false;
 					}
 					
 					draggedElements[i].trigger(freeEvent);
@@ -413,42 +431,41 @@
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-//			console.log("update");
-			
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
-				console.log("old zoom: " + cy.zoom() + " mouse diff: " + diff);
-				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				if (cy.zoom() )
 				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
-//				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				console.log("new zoom" + cy.zoom());
-				console.log("new zoom: " + cy.zoom());
 			}
 
 		}
 		
-		// Uses old functions
+		// Functions to help with whether mouse wheel should trigger zooming
 		// --
 		r.data.container.addEventListener("mousewheel", wheelHandler, false);
 		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
+		
 		r.data.container.addEventListener("mousemove", function(e) { 
 			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
-				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
+				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; 
+		}, false);
+		
 		r.data.container.addEventListener("mouseout", function(e) { 
-			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
+			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null 
+		}, false);
 		// --
 		
-		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
-		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
-		var center1; // center point on start pinch to zoom
-
-		function distance(x1, y1, x2, y2){
-			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
-		}
+		// Functions to help with handling mouseout/mouseover on the Cytoscape container
+					// Handle mouseout on Cytoscape container
+		r.data.container.addEventListener("mouseout", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseout"}));
+		}, false);
+		
+		r.data.container.addEventListener("mouseover", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseover"}));
+		}, false);
+		
 		
 		r.data.container.addEventListener("touchstart", function(e) {
 			e.preventDefault();
@@ -463,46 +480,32 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
-			
-			// record starting points for pinch-to-zoom
-			if( e.touches[1] ){
-				f1x1 = now[0];
-				f1y1 = now[1];
-				
-				f2x1 = now[2];
-				f2y1 = now[3];
-
-				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
-				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
-
-				console.log('touchstart ptz');
-				console.log(f1x1);
-				console.log(f1y1);
-				console.log(f2x1);
-				console.log(f2y1);
-				console.log(distance1);
-				console.log(center1);
-			}
-			
-			
 			if (e.touches[2]) {
 			
 			} else if (e.touches[1]) {
 				
 			} else if (e.touches[0]) {
 				var near = r.findNearestElement(now[0], now[1]);
-				
+
 				if (near != null) {
 					r.touchData.start = near;
 					
 					if (near._private.group == "nodes") {
 						
-						near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"}));
-						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node start");
+						near._private.grabbed = true;
+						near._private.rscratch.inDragLayer = true; 
+						near.trigger(new $$.Event(e, {type: "grab"}));
+						
+						r.data.canvasNeedsRedraw[DRAG] = true;
+						r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
+						
+						r.data.canvasNeedsRedraw[NODE] = true;
+						r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
 						var sEdges = near._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; }
+						for (var j=0;j<sEdges.length;j++) { 
+						  sEdges[j]._private.rscratch.inDragLayer = true;
+						}
 					}
 					
 					near.trigger(new $$.Event(e, {type: "touchstart"}));
@@ -543,31 +546,6 @@
 			
 		}, true);
 		
-		var wheelHandler = function(e) {
-			
-			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
-			
-			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
-			              pos[1] * cy.zoom() + cy.pan().y];
-			
-//			console.log("update");
-			
-			if (r.zoomData.freeToZoom) {
-				e.preventDefault();
-				
-				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
-				
-				console.log("old zoom: " + cy.zoom() + " mouse diff: " + diff);
-				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				if (cy.zoom() )
-				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
-//				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				console.log("new zoom" + cy.zoom());
-				console.log("new zoom: " + cy.zoom());
-			}
-
-		}
-		
 		window.addEventListener("touchmove", function(e) {
 		
 			var capture = r.touchData.capture; if (!capture) { return; }; 
@@ -580,95 +558,30 @@
 			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
-			var disp = []; 
+			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			for (var j=0;j<now.length;j++) {
-				// console.log("now index " + j + ": " + now[j] + ", earlier index " + j + ": " + earlier[j]);
-				disp[j] = now[j] - earlier[j];
-			}
+			if (e.touches[2]) {
 			
-			if (e.touches[1]) { // two fingers => pinch to zoom
-
-				console.log('touchmove ptz');
-
-				//var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
+			} else if (e.touches[1]) {
+				var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
 				
-				//cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
-
-				// (x2, y2) for fingers 1 and 2
-				var f1x2 = now[0], f1y2 = now[1];
-				var f2x2 = now[2], f2y2 = now[3];
-
-				var distance2 = Math.sqrt(Math.pow(f1x2 - f2x2, 2) + Math.pow(f1y2 - f2y2, 2));
-				var factor = distance2 / distance1;
-
-				// delta finger1
-				var df1x = f1x2 - f1x1;
-				var df1y = f1y2 - f1y1;
-
-				// delta finger 2
-				var df2x = f2x2 - f2x1;
-				var df2y = f2y2 - f2y1;
-
-				// translation is the normalised vector of the two fingers movement
-				// i.e. so pinching cancels out and moving together pans
-				var tx = (df1x + df2x)/2;
-				var ty = (df1y + df2y)/2;
-
-				// adjust factor by the speed multiplier
-				var speed = 1.5;
-				if( factor > 1 ){
-					factor = (factor - 1) * speed + 1;
+				cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
+				
+				
+				var earlierDist = Math.sqrt(Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2));
+				var nowDist = Math.sqrt(Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2));
+				
+				var factor = nowDist / earlierDist;
+				
+				if (factor > 1) {
+					factor = (factor - 1) * 1.5 + 1;
 				} else {
-					factor = 1 - (1 - factor) * speed;
+					factor = 1 - (1 - factor) * 1.5;
 				}
-
-				var ctrx = center1[0];
-				var ctry = center1[1];
-
-				// now calculate the zoom
-				var zoom1 = cy.zoom();
-				var zoom2 = zoom1 * factor;
-				var pan1 = cy.pan();
-				var pan2 = {
-					x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
-					y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
-				};
-
-				console.log(pan2);
-				console.log(zoom2);
-
-				cy._private.zoom = zoom2;
-				cy._private.pan = pan2;
-				cy
-					.trigger('pan zoom')
-					.notify('viewport')
-				;
-
-
-				// so that zooming is gradual
-				//distance1 = distance2;
 				
-
-
-				// OLD STUFF
-				// var earlierDist = Math.sqrt(  Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2)  );
-				// var nowDist = Math.sqrt(  Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2)  );
-				
-
-				// var factor = nowDist / earlierDist;
-				
-				// if (factor > 1) {
-				// 	factor = (factor - 1) * 1.5 + 1;
-				// } else {
-				// 	factor = 1 - (1 - factor) * 1.5;
-				// }
-				
-				// cy.zoom({level: cy.zoom() * factor,
-				// 	position: {x: (now[0] + now[2]) / 2,
-				// 				y: (now[1] + now[3]) / 2}});
-
-				// END OLD STUFF
+				cy.zoom({level: cy.zoom() * factor,
+					position: {x: (now[0] + now[2]) / 2,
+								y: (now[1] + now[3]) / 2}});
 				
 				// Re-project
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -748,11 +661,12 @@
 				
 				if (start != null ) {
 					if (start._private.grabbed == true) {
-						start._private.grabbed = false; start.trigger(new $$.Event(e, {type: "free"}));
+						start._private.grabbed = false;
+						start.trigger(new $$.Event(e, {type: "free"}));
 					}
 					
 					var sEdges = start._private.edges;
-					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = false; }
+					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node end");
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node end");
@@ -771,6 +685,17 @@
 				// Tap event, roughly same as mouse click event for touch
 				if (r.touchData.singleTouchMoved == false) {
 					
+					// select the node on tap
+					if (start != null && start._private.selectable && start._private.selected == false) {
+						
+						// unselect whatever's already selected
+						cy.elements(':selected').unselect();
+
+						// now select the node
+						start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+					}
+
 					if (start) {
 						start.trigger(new $$.Event(e, {type: "tap"}));
 					} else {
@@ -844,40 +769,7 @@
 	}
 	
 	// @O High-level collision application functions
-	
-	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
-		
-		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
-		
-		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
-		var stopCheckingScroll = false;
-		
-//		console.log("calcs");
-		
-		while (n != null) {
-			if (typeof(n.offsetLeft) == "number") {
-				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
-				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
-				
-//				console.log("node", n, n.offsetLeft, n.offsetTop);
-//				console.log("scrolloffsets", n.scrollLeft, n.scrollTop, stopCheckingScroll);				
-				
-				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
-				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
-				
-			} n = n.offsetParent;
-		}
-		
-//		console.log("calce");
-		
-		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-		x = pageX - offsetLeft; y = pageY - offsetTop;
-		
-		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
-		return [x, y];
-	}
-	
-	
+
 	// Project mouse
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
@@ -927,7 +819,7 @@
 				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
 				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
 				
-			} n = n.parentNode;
+			} n = n.offsetParent;
 		}
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.
@@ -1183,7 +1075,7 @@
 	
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
-		//console.log("redrawing");
+		
 		var cy = this.data.cy; var data = this.data; 
 		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
 		this.matchCanvasSize(data.container);
@@ -1215,6 +1107,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[NODE]) {
+//			console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
+		  
 			var context = data.canvases[4].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -1228,7 +1122,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.grabbed) {
+				if (!element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNode(context, element);
 						
@@ -1241,7 +1135,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (!element._private.grabbed) {
+				if (!element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
@@ -1254,6 +1148,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[DRAG]) {
+//			console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
+		  
 			var context = data.canvases[2].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -1267,7 +1163,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (element._private.grabbed) {
+				if (element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNode(context, element);
 					} else if (element._private.group == "edges") {
@@ -1279,7 +1175,7 @@
 			for (var index = 0; index < elements.length; index++) {
 				element = elements[index];
 				
-				if (element._private.grabbed) {
+				if (element._private.rscratch.inDragLayer) {
 					if (element._private.group == "nodes") {
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
@@ -1292,6 +1188,8 @@
 		}
 		
 		if (data.canvasNeedsRedraw[SELECT_BOX]) {
+//			console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
+		  
 			var context = data.canvases[0].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);

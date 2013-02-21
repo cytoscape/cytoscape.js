@@ -294,7 +294,8 @@
 			var ele = this[0];
 
 			if( ele ){
-				return this._private.style.width.pxValue;
+				var w = this._private.style.width;
+				return w.strValue === "auto" ? ele._private.autoWidth : w.pxValue;
 			}
 		},
 
@@ -303,7 +304,7 @@
 
 			if( ele ){
 				var style = this._private.style;
-				var width = style.width.pxValue;
+				var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
 				var border = style["border-width"] ? style["border-width"].pxValue : 0;
 
 				return width + border;
@@ -333,7 +334,8 @@
 			var ele = this[0];
 
 			if( ele && ele.isNode() ){
-				return this._private.style.height.pxValue;
+				var h = this._private.style.height;
+				return h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
 			}
 		},
 
@@ -342,7 +344,7 @@
 
 			if( ele ){
 				var style = this._private.style;
-				var height = style.height.pxValue;
+				var height = h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
 				var border = style["border-width"] ? style["border-width"].pxValue : 0;
 
 				return height + border;

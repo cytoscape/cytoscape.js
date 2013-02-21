@@ -142,7 +142,7 @@
 							}
 							r.dragData.possibleDragElements = draggedElements = [];
 							r.dragData.possibleDragElements.push(near);
-							
+						
 							for (var i=0;i<near._private.edges.length;i++) {
 								near._private.edges[i]._private.rscratch.inDragLayer = true;
 							};
@@ -466,6 +466,13 @@
 			cy.trigger(new $$.Event(e, {type: "mouseover"}));
 		}, false);
 		
+		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
+		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
+		var center1; // center point on start pinch to zoom
+
+		function distance(x1, y1, x2, y2){
+			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
+		}
 		
 		r.data.container.addEventListener("touchstart", function(e) {
 			e.preventDefault();
@@ -479,6 +486,28 @@
 			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+			
+			
+			// record starting points for pinch-to-zoom
+			if( e.touches[1] ){
+				f1x1 = now[0];
+				f1y1 = now[1];
+				
+				f2x1 = now[2];
+				f2y1 = now[3];
+
+				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
+				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
+
+				console.log('touchstart ptz');
+				console.log(f1x1);
+				console.log(f1y1);
+				console.log(f2x1);
+				console.log(f2y1);
+				console.log(distance1);
+				console.log(center1);
+			}
+			
 			
 			if (e.touches[2]) {
 			
@@ -560,28 +589,88 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if (e.touches[2]) {
-			
-			} else if (e.touches[1]) {
-				var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
+			if (e.touches[1]) { // two fingers => pinch to zoom
+
+				console.log('touchmove ptz');
+
+				//var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
 				
-				cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
-				
-				
-				var earlierDist = Math.sqrt(Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2));
-				var nowDist = Math.sqrt(Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2));
-				
-				var factor = nowDist / earlierDist;
-				
-				if (factor > 1) {
-					factor = (factor - 1) * 1.5 + 1;
+				//cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
+
+				// (x2, y2) for fingers 1 and 2
+				var f1x2 = now[0], f1y2 = now[1];
+				var f2x2 = now[2], f2y2 = now[3];
+
+				var distance2 = Math.sqrt(Math.pow(f1x2 - f2x2, 2) + Math.pow(f1y2 - f2y2, 2));
+				var factor = distance2 / distance1;
+
+				// delta finger1
+				var df1x = f1x2 - f1x1;
+				var df1y = f1y2 - f1y1;
+
+				// delta finger 2
+				var df2x = f2x2 - f2x1;
+				var df2y = f2y2 - f2y1;
+
+				// translation is the normalised vector of the two fingers movement
+				// i.e. so pinching cancels out and moving together pans
+				var tx = (df1x + df2x)/2;
+				var ty = (df1y + df2y)/2;
+
+				// adjust factor by the speed multiplier
+				var speed = 1.5;
+				if( factor > 1 ){
+					factor = (factor - 1) * speed + 1;
 				} else {
-					factor = 1 - (1 - factor) * 1.5;
+					factor = 1 - (1 - factor) * speed;
 				}
+
+				var ctrx = center1[0];
+				var ctry = center1[1];
+
+				// now calculate the zoom
+				var zoom1 = cy.zoom();
+				var zoom2 = zoom1 * factor;
+				var pan1 = cy.pan();
+				var pan2 = {
+					x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
+					y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
+				};
+
+				console.log(pan2);
+				console.log(zoom2);
+
+				cy._private.zoom = zoom2;
+				cy._private.pan = pan2;
+				cy
+					.trigger('pan zoom')
+					.notify('viewport')
+				;
+
+
+				// so that zooming is gradual
+				// distance1 = distance2;
 				
-				cy.zoom({level: cy.zoom() * factor,
-					position: {x: (now[0] + now[2]) / 2,
-								y: (now[1] + now[3]) / 2}});
+
+
+				// OLD STUFF
+				// var earlierDist = Math.sqrt(  Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2)  );
+				// var nowDist = Math.sqrt(  Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2)  );
+				
+
+				// var factor = nowDist / earlierDist;
+				
+				// if (factor > 1) {
+				// 	factor = (factor - 1) * 1.5 + 1;
+				// } else {
+				// 	factor = 1 - (1 - factor) * 1.5;
+				// }
+				
+				// cy.zoom({level: cy.zoom() * factor,
+				// 	position: {x: (now[0] + now[2]) / 2,
+				// 				y: (now[1] + now[3]) / 2}});
+
+				// END OLD STUFF
 				
 				// Re-project
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -682,19 +771,19 @@
 					if (near == null) { cy.trigger(new $$.Event(e, {type: "touchend"})); }
 				}
 				
+				// select the node on tap
+				if (start != null && start._private.selectable && start._private.selected == false) {
+					
+					// unselect whatever's already selected
+					cy.elements(':selected').unselect();
+
+					// now select the node
+					start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
+					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+				}
+				
 				// Tap event, roughly same as mouse click event for touch
 				if (r.touchData.singleTouchMoved == false) {
-					
-					// select the node on tap
-					if (start != null && start._private.selectable && start._private.selected == false) {
-						
-						// unselect whatever's already selected
-						cy.elements(':selected').unselect();
-
-						// now select the node
-						start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
-					}
 
 					if (start) {
 						start.trigger(new $$.Event(e, {type: "tap"}));

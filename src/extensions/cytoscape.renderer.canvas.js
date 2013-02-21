@@ -355,7 +355,6 @@
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selectable && near._private.selected == false) {
 					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
-					draggedElements.push(near);
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 					
@@ -520,6 +519,17 @@
 					r.touchData.start = near;
 					
 					if (near._private.group == "nodes") {
+						
+						// Unselect other selected nodes
+						var unselectEvent = new $$.Event(e, {type: "unselect"});
+						
+						for (var i=0;i<nodes.length;i++) {
+							if (nodes[i]._private.selected && nodes[i]._private.data.id != near._private.data.id) {
+								nodes[i]._private.selected = false;
+								nodes[i].trigger(unselectEvent);
+								nodes[i].updateStyle(false);
+							}
+						}
 						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
@@ -771,14 +781,20 @@
 					if (near == null) { cy.trigger(new $$.Event(e, {type: "touchend"})); }
 				}
 				
-				// select the node on tap
-				if (start != null && start._private.selectable && start._private.selected == false) {
+				// Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+				if (start != null 
+						&& start._private.selectable 
+						&& start._private.selected == false
+						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 					
 					// unselect whatever's already selected
-					cy.elements(':selected').unselect();
+					// cy.elements(':selected').unselect();
 
 					// now select the node
-					start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
+					start._private.selected = true;
+					start.trigger(new $$.Event(e, {type: "select"}));
+					start.updateStyle(false);
+					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 				}
 				

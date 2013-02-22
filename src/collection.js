@@ -80,7 +80,8 @@
 			single: true, // indicates this is an element
 			data: params.data || {}, // data object
 			position: params.position || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
-			autoWidth, autoHeight, // width and height of nodes calculated by the renderer when set to special "auto" value
+			autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special "auto" value
+			autoHeight: undefined, 
 			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
 			style: {}, // properties as set by the style

@@ -276,7 +276,7 @@
 						
 						console.log("mouseover startHandler %s %o", this.id(), this);
 						
-						$(window).unbind('mousedown', lastMdownHandler);
+						$canvas.unbind('mousedown', lastMdownHandler);
 
 						var node = this;
 						var source = this;
@@ -288,7 +288,7 @@
 						
 						hr = options().handleSize/2 * cy.zoom();
 						hx = p.x;
-						hy = p.y - h/2 - hr;
+						hy = p.y - h/2 - hr/2;
 						
 						// add new handle
 						ctx.fillStyle = options().handleColor;
@@ -321,6 +321,7 @@
 							mdownOnHandle = true;
 							
 							e.preventDefault();
+							e.stopPropagation();
 							
 							node.addClass("ui-cytoscape-edgehandles-source");
 							
@@ -389,7 +390,7 @@
 							return false;
 						}
 
-						$(window).one('mousedown', mdownHandler);
+						$canvas.one('mousedown', mdownHandler);
 						lastMdownHandler = mdownHandler;
 
 						

@@ -35,7 +35,9 @@ $(function(){
 				})
 			.selector("edge.ui-cytoscape-edgehandles-preview")
 				.css({
-					"line-color": "#5CC2ED"
+					"line-color": "#5CC2ED",
+					"source-arrow-color": "#5CC2ED",
+					"target-arrow-color": "#5CC2ED"
 				})
 			.selector("node.ui-cytoscape-edgehandles-preview, node.intermediate")
 				.css({
@@ -117,30 +119,29 @@ $(function(){
 		
 		$container.cytoscapePanzoom();
 		
-		// disable for now
-		// $container.cytoscapeEdgehandles({
-		// 	lineType: "straight",
-		// 	preview: true,
-		// 	handleSize: 12,
-		// 	handleColor: "#5CC2ED",
-		// 	edgeType: function(){
-		// 		return $("#add-edge-type-select").val();
-		// 	},
-		// 	nodeParams: function(){
-		// 		return {
-		// 			classes: "intermediate"
-		// 		};
-		// 	},
-		// 	start: function( sourceNode ){
-		// 		console.log("start(%o)", sourceNode);
-		// 	},
-		// 	complete: function( sourceNode, targetNodes, added ){
-		// 		console.log("complete(%o, %o, %o)", sourceNode, targetNodes, added);
-		// 	},
-		// 	stop: function( sourceNode ){
-		// 		console.log("stop(%o)", sourceNode);
-		// 	}
-		// });
+		$container.cytoscapeEdgehandles({
+			lineType: "straight",
+			preview: true,
+			handleSize: 12,
+			handleColor: "#5CC2ED",
+			edgeType: function(){
+				return $("#add-edge-type-select").val();
+			},
+			nodeParams: function(){
+				return {
+					classes: "intermediate"
+				};
+			},
+			start: function( sourceNode ){
+				console.log("start(%o)", sourceNode);
+			},
+			complete: function( sourceNode, targetNodes, added ){
+				console.log("complete(%o, %o, %o)", sourceNode, targetNodes, added);
+			},
+			stop: function( sourceNode ){
+				console.log("stop(%o)", sourceNode);
+			}
+		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

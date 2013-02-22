@@ -344,7 +344,7 @@
 
 			if( ele ){
 				var style = this._private.style;
-				var height = h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
+				var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
 				var border = style["border-width"] ? style["border-width"].pxValue : 0;
 
 				return height + border;

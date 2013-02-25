@@ -9,7 +9,12 @@ $(function(){
 					"shape": "data(shape)",
 					"border-width": 3,
 					"background-color": "#DDD",
-					"border-color": "#555",
+					"border-color": "#555"
+				})
+			.selector("$node > node") // compound node support
+				.css({
+					"width": "auto",
+					"height": "auto"
 				})
 			.selector("edge")
 				.css({

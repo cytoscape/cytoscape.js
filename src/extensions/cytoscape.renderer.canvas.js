@@ -939,12 +939,14 @@
 		for (var i = 0; i < nodes.length; i++) {
 			if (nodeShapes[nodes[i]._private.style["shape"].value].checkPointRough(x, y,
 					nodes[i]._private.style["border-width"].value,
-					nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+					this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
 				nodeShapes[nodes[i]._private.style["shape"].value].checkPoint(x, y,
 					nodes[i]._private.style["border-width"].value,
-					nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
+					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
+					this.getNodeWidth(nodes[i]) / 2, this.getNodeHeight(nodes[i]) / 2,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
 				near.push(nodes[i]);
@@ -1082,7 +1084,8 @@
 		
 		for (var i=0;i<nodes.length;i++) {
 			if (nodeShapes[nodes[i]._private.style["shape"].value].intersectBox(x1, y1, x2, y2,
-				nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+				//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+				this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
 				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
 			{ box.push(nodes[i]); }
 		}
@@ -1140,7 +1143,169 @@
 		
 		return box;
 	}
-	
+
+	CanvasRenderer.prototype.updateAllCompounds = function(elements)
+	{
+		// traverse in reverse order, since rendering is top-down,
+		// but we need to calculate bounds bottom-up
+		for(var i = elements.length - 1; i >= 0; i--)
+		{
+			if (elements[i].isNode() &&
+			    elements[i].children().length > 0)
+			{
+				var node = elements[i];
+				var bounds = this.calcCompoundBounds(node);
+
+				//console.log("%s : %o", node._private.data.id, bounds);
+				node._private.position.x = bounds.x;
+				node._private.position.y = bounds.y;
+				node._private.autoWidth = bounds.width;
+				node._private.autoHeight = bounds.height;
+			}
+		}
+
+	};
+
+	// Calculates the bounds of a given compound node
+	CanvasRenderer.prototype.calcCompoundBounds = function(node)
+	{
+		var children = node._private.children;
+
+		// find the leftmost, rightmost, topmost, and bottommost child node positions
+		var leftBorder = this.borderValue(children, "left");
+		var rightBorder = this.borderValue(children, "right");
+		var topBorder = this.borderValue(children, "top");
+		var bottomBorder = this.borderValue(children, "bottom");
+
+		var x = (leftBorder + rightBorder) / 2;
+		var y = (topBorder + bottomBorder) / 2;
+		var width = rightBorder - leftBorder;
+		var height = bottomBorder - topBorder;
+
+		return {x: x,
+			y: y,
+			width: width,
+			height: height};
+	};
+
+	CanvasRenderer.prototype.borderValue = function(nodes, type)
+	{
+		// TODO also take labels (node text) into account
+
+		var values;
+		var minValue = 1/0, maxValue = -1/0;
+		var r = this;
+
+		// helper function to determine node position and dimensions
+		var getPosAndDim = function(node) {
+			var values = {};
+
+			values.x = node._private.position.x;
+			values.y = node._private.position.y;
+			values.width = r.getNodeWidth(node);
+			values.height = r.getNodeHeight(node);
+
+			return values;
+		};
+
+
+		// find out border values by iterating given nodes
+
+		if (type == "left")
+		{
+			for (i = 0; i < nodes.length; i++)
+			{
+				values = getPosAndDim(nodes[i]);
+
+				var leftBorder = values.x - values.width / 2;
+
+				if (leftBorder < minValue)
+				{
+					minValue = leftBorder;
+				}
+			}
+		}
+		else if (type == "right")
+		{
+			for (i = 0; i < nodes.length; i++)
+			{
+				values = getPosAndDim(nodes[i]);
+
+				var rightBorder = values.x + values.width / 2;
+
+				if (rightBorder > maxValue)
+				{
+					maxValue = rightBorder;
+				}
+			}
+		}
+		else if (type == "top")
+		{
+			for (i = 0; i < nodes.length; i++)
+			{
+				values = getPosAndDim(nodes[i]);
+
+				var topBorder = values.y - values.height / 2;
+
+				if (topBorder < minValue)
+				{
+					minValue = topBorder;
+				}
+			}
+		}
+		else if (type == "bottom")
+		{
+			for (i = 0; i < nodes.length; i++)
+			{
+				values = getPosAndDim(nodes[i]);
+
+				var bottomBorder = values.y + values.height / 2;
+
+				if (bottomBorder > maxValue)
+				{
+					maxValue = bottomBorder;
+				}
+			}
+		}
+
+		// return the border value according to the type
+
+		if ((type == "left") || (type == "top"))
+		{
+			return minValue;
+		}
+		else
+		{
+			return maxValue;
+		}
+	};
+
+	CanvasRenderer.prototype.getNodeWidth = function(node)
+	{
+		if (node._private.style["width"].value == "auto" ||
+		    node._private.style["height"].value == "auto")
+		{
+			return node._private.autoWidth;
+		}
+		else
+		{
+			return node._private.style["width"].value;
+		}
+	};
+
+	CanvasRenderer.prototype.getNodeHeight = function(node)
+	{
+		if (node._private.style["width"].value == "auto" ||
+		    node._private.style["height"].value == "auto")
+		{
+			return node._private.autoHeight;
+		}
+		else
+		{
+			return node._private.style["width"].value;
+		}
+	};
+
 	// @O Keyboard functions
 	{
 	}
@@ -1186,29 +1351,107 @@
 		this.matchCanvasSize(data.container);
 		
 		var elements = nodes.add(edges).toArray();
-		
+
+
+
+		// helper function for the sort operation
+		var elementDepth = function(ele) {
+			if (ele._private.group == "nodes")
+			{
+				return ele.parents().size();
+			}
+			else if (ele._private.group == "edges")
+			{
+				return Math.max(ele.source()[0].parents().size(),
+				                ele.target()[0].parents().size());
+			}
+			else
+			{
+				return 0;
+			}
+		};
+
 		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE]) {
 		
 			this.findEdgeControlPoints(edges);
-			
+
+			// check if there is a compound node
+			var compoundGraph = false;
+
+			for (var i = 0; i < elements.length; i++)
+			{
+				if ((elements[i]._private.group == "nodes") &&
+				    (elements[i]._private.style["width"].value == "auto" ||
+				     elements[i]._private.style["height"].value == "auto"))
+				{
+					compoundGraph = true;
+					break;
+				}
+			}
+
 			elements.sort(function(a, b) {
 				var result = a._private.style["z-index"].value
 					- b._private.style["z-index"].value;
-				
+
+				var depthA = 0;
+				var depthB = 0;
+
+				// no need to calculate element depth if there is no compound node
+				if (compoundGraph)
+				{
+					depthA = elementDepth(a);
+					depthB = elementDepth(b);
+				}
+
 				if (result == 0) {
 					if (a._private.group == "nodes"
-						&& b._private.group == "edges") {
-						
+						&& b._private.group == "nodes")
+					{
+						// the one with more parents is in a deeper level,
+						// thus it should be drawn later
+						if (depthA > depthB)
+						{
+							return 1;
+						}
+						else if (depthB > depthA)
+						{
+							return -1;
+						}
+					}
+					else if (a._private.group == "nodes"
+						&& b._private.group == "edges")
+					{
+						// node a should be drawn later than edge b
+						// if b is an edge from/to one of a's child nodes
+						if (depthB > depthA)
+						{
+							return -1;
+						}
+
 						return 1;
-					} else if (a._private.group == "edges"
-						&& b._private.group == "nodes") {
-						
+					}
+					else if (a._private.group == "edges"
+						&& b._private.group == "nodes")
+					{
+						// node b should be drawn later than edge a
+						// if a is an edge from/to one of b's child nodes
+						if (depthA > depthB)
+						{
+							return 1;
+						}
+
 						return -1;
 					}
 				}
-				
+
 				return 0;
 			});
+
+			// no need to update graph if there is no compound node
+			if (compoundGraph)
+			{
+				this.updateAllCompounds(elements);
+			}
 		}
 		
 		if (data.canvasNeedsRedraw[NODE]) {
@@ -1452,7 +1695,7 @@
 	
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge) {
-	
+
 		var startNode, endNode;
 
 		startNode = edge.source()[0];
@@ -1835,7 +2078,7 @@
 	
 	// Draw node
 	CanvasRenderer.prototype.drawNode = function(context, node) {
-	
+
 		var nodeWidth, nodeHeight;
 		
 		if (node._private.style["visibility"].value != "visible") {
@@ -1858,8 +2101,10 @@
 			+ (node._private.style["border-opacity"].value 
 			* node._private.style["opacity"].value) + ")";
 		
-		nodeWidth = node._private.style["width"].value;
-		nodeHeight = node._private.style["height"].value;
+		//nodeWidth = node._private.style["width"].value;
+		//nodeHeight = node._private.style["height"].value;
+		nodeWidth = this.getNodeWidth(node);
+		nodeHeight = this.getNodeHeight(node);
 		
 		{
 			//var image = this.getCachedImage("url");
@@ -1889,13 +2134,14 @@
 				);
 				
 				if (image.complete == false) {
-					
+
 					nodeShapes[node._private.style["shape"].value].drawPath(
 						context,
 						node._private.position.x,
 						node._private.position.y,
-						node._private.style["width"].value,
-						node._private.style["height"].value);
+					    nodeWidth, nodeHeight);
+						//node._private.style["width"].value,
+						//node._private.style["height"].value);
 					
 					context.stroke();
 					context.fillStyle = "#555555";
@@ -1907,7 +2153,7 @@
 				}
 				
 			} else {
-				
+
 				// Draw node
 				nodeShapes[node._private.style["shape"].value].draw(
 					context,
@@ -1933,9 +2179,11 @@
 		
 		var nodeX = node._private.position.x;
 		var nodeY = node._private.position.y;
-		
-		var nodeWidth = node._private.style["width"].value;
-		var nodeHeight = node._private.style["height"].value;
+
+		//var nodeWidth = node._private.style["width"].value;
+		//var nodeHeight = node._private.style["height"].value;
+		var nodeWidth = this.getNodeWidth(node);
+		var nodeHeight = this.getNodeHeight(node);
 		
 		context.save();
 		
@@ -1968,9 +2216,11 @@
 		}
 	
 		var textX, textY;
-		
-		var nodeWidth = node._private.style["width"].value;
-		var nodeHeight = node._private.style["height"].value;
+
+		//var nodeWidth = node._private.style["width"].value;
+		//var nodeHeight = node._private.style["height"].value;
+		var nodeWidth = this.getNodeWidth(node);
+		var nodeHeight = this.getNodeHeight(node);
 	
 		// Find text position
 		var textHalign = node._private.style["text-halign"].strValue;
@@ -2145,10 +2395,10 @@
 					// New -- fix for large nodes
 					edge._private.rscratch.cp2ax = src._private.position.x;
 					edge._private.rscratch.cp2ay = src._private.position.y
-						- (1 + Math.pow(src._private.style["height"].value, 1.12) / 100) * stepSize * (i / 3 + 1);
+						- (1 + Math.pow(this.getNodeHeight(src), 1.12) / 100) * stepSize * (i / 3 + 1);
 					
 					edge._private.rscratch.cp2cx = src._private.position.x
-						- (1 + Math.pow(src._private.style["width"].value, 1.12) / 100) * stepSize * (i / 3 + 1);
+						- (1 + Math.pow(this.getNodeWidth(src), 1.12) / 100) * stepSize * (i / 3 + 1);
 					edge._private.rscratch.cp2cy = src._private.position.y;
 					
 					edge._private.rscratch.selfEdgeMidX =
@@ -2189,12 +2439,18 @@
 		var source = edge.source()[0];
 		var target = edge.target()[0];
 		
-		var sourceRadius = Math.max(edge.source()[0]._private.style["width"].value,
-			edge.source()[0]._private.style["height"].value);
+//		var sourceRadius = Math.max(edge.source()[0]._private.style["width"].value,
+//			edge.source()[0]._private.style["height"].value);
+
+		var sourceRadius = Math.max(this.getNodeWidth(source),
+			this.getNodeHeight(source));
 		
-		var targetRadius = Math.max(edge.target()[0]._private.style["width"].value,
-			edge.target()[0]._private.style["height"].value);
-		
+//		var targetRadius = Math.max(edge.target()[0]._private.style["width"].value,
+//			edge.target()[0]._private.style["height"].value);
+
+		var targetRadius = Math.max(this.getNodeWidth(target),
+			this.getNodeHeight(target));
+
 		sourceRadius = 0;
 		targetRadius /= 2;
 		
@@ -2208,8 +2464,10 @@
 			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				target._private.style["width"].value,
-				target._private.style["height"].value,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
 				target._private.style["border-width"].value / 2
@@ -2231,8 +2489,10 @@
 			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				source._private.style["width"].value,
-				source._private.style["height"].value,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
 				source._private.style["border-width"].value / 2
@@ -2254,8 +2514,10 @@
 			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				target._private.style["width"].value,
-				target._private.style["height"].value,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
 				source.position().x,
 				source.position().y,
 				target._private.style["border-width"].value / 2);
@@ -2283,8 +2545,10 @@
 			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				source._private.style["width"].value,
-				source._private.style["height"].value,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
 				target.position().x,
 				target.position().y,
 				source._private.style["border-width"].value / 2);
@@ -2326,8 +2590,10 @@
 				target._private.style["shape"].value].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				target._private.style["width"].value,
-				target._private.style["height"].value,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
 				target._private.style["border-width"].value / 2
@@ -2353,8 +2619,10 @@
 				source._private.style["shape"].value].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				source._private.style["width"].value,
-				source._private.style["height"].value,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
 				source._private.style["border-width"].value / 2

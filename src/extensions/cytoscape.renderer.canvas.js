@@ -498,13 +498,13 @@
 				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
 				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
 
-				console.log('touchstart ptz');
-				console.log(f1x1);
-				console.log(f1y1);
-				console.log(f2x1);
-				console.log(f2y1);
-				console.log(distance1);
-				console.log(center1);
+				// console.log('touchstart ptz');
+				// console.log(f1x1);
+				// console.log(f1y1);
+				// console.log(f2x1);
+				// console.log(f2y1);
+				// console.log(distance1);
+				// console.log(center1);
 			}
 			
 			
@@ -601,7 +601,7 @@
 			
 			if (e.touches[1]) { // two fingers => pinch to zoom
 
-				console.log('touchmove ptz');
+				// console.log('touchmove ptz');
 
 				//var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
 				
@@ -647,8 +647,8 @@
 					y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
 				};
 
-				console.log(pan2);
-				console.log(zoom2);
+				// console.log(pan2);
+				// console.log(zoom2);
 
 				cy._private.zoom = zoom2;
 				cy._private.pan = pan2;

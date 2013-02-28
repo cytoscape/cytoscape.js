@@ -41,5 +41,8 @@ var cytoscape;
 	if( typeof exports !== 'undefined' ){ // expose as a commonjs module
 		exports = module.exports = cytoscape;
 	}
+
+	// make sure we always register in the window just in case (e.g. w/ derbyjs)
+	window.cytoscape = cytoscape;
 	
 })();

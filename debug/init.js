@@ -9,7 +9,7 @@ $(function(){
 					"shape": "data(shape)",
 					"border-width": 3,
 					"background-color": "#DDD",
-					"border-color": "#555",
+					"border-color": "#555"
 				})
 			.selector("edge")
 				.css({

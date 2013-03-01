@@ -2026,6 +2026,11 @@
 		
 		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
 			+ labelSize + " " + labelFamily;
+
+		// console.log(labelStyle + " " + labelVariant + " " + labelWeight + " " 
+		// 	+ labelSize + " " + labelFamily);
+
+		// console.log(context.font);
 		
 		var text = String(element._private.style["content"].value);
 		var textTransform = element._private.style["text-transform"].value;

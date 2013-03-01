@@ -103,13 +103,12 @@
 	height: 8px;
 	border-radius: 8px;
 	background: #000;
-	border: 2px solid #fff;
 	border-radius: 8px;
-	box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 	margin-left: -5px;
 	margin-top: -5px;
 	display: none;
 	z-index: 999;
+	opacity: 0.6;
 }
 
 .ui-cytoscape-panzoom-slider {

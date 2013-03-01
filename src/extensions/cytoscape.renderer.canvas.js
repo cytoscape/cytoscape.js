@@ -166,15 +166,19 @@
 							}
 						}
 						
-						near.trigger(new $$.Event(e, {type: "mousedown"}));
+						near
+							.trigger(new $$.Event(e, {type: "mousedown"}))
+							.trigger(new $$.Event(e, {type: "tapstart"}))
+						;
 						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
 					} else if (near == null) {
-						var backgroundMouseDownEvent = new $$.Event(e, {type: "mousedown"});
-						
-						cy.trigger(backgroundMouseDownEvent);
+						cy
+							.trigger(new $$.Event(e, {type: "mousedown"}))
+							.trigger(new $$.Event(e, {type: "tapstart"}))
+						;
 					}
 					
 					r.hoverData.down = near;
@@ -330,24 +334,32 @@
 			// Click event
 			{
 				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
-					var clickEvent = new $$.Event(e, {type: "click"});
-					
 					if (near != null) {
-						near.trigger(clickEvent);
+						near
+							.trigger( new $$.Event(e, {type: "click"}) )
+							.trigger( new $$.Event(e, {type: "tap"}) )
+						;
 					} else if (near == null) {
-						cy.trigger(clickEvent);
+						cy
+							.trigger( new $$.Event(e, {type: "click"}) )
+							.trigger( new $$.Event(e, {type: "tap"}) )
+						;
 					}
 				}
 			}
 			
 			// Mouseup event
 			{
-				var upEvent = new $$.Event(e, {type: "mouseup"});
-				
 				if (near != null) {
-					near.trigger(upEvent);
+					near
+						.trigger(new $$.Event(e, {type: "mouseup"}))
+						.trigger(new $$.Event(e, {type: "tapend"}))
+					;
 				} else if (near == null) {
-					cy.trigger(upEvent);
+					cy
+						.trigger(new $$.Event(e, {type: "mouseup"}))
+						.trigger(new $$.Event(e, {type: "tapend"}))
+					;
 				}
 			}
 			
@@ -547,9 +559,15 @@
 						}
 					}
 					
-					near.trigger(new $$.Event(e, {type: "touchstart"}));
+					near
+						.trigger(new $$.Event(e, {type: "touchstart"}))
+						.trigger(new $$.Event(e, {type: "tapstart"}))
+					;
 				} else if (near == null) {
-					cy.trigger(new $$.Event(e, {type: "touchstart"}));
+					cy.
+						trigger(new $$.Event(e, {type: "touchstart"}))
+						trigger(new $$.Event(e, {type: "tapstart"}))
+					;
 				}
 				
 				
@@ -603,10 +621,6 @@
 
 				// console.log('touchmove ptz');
 
-				//var avgDsp = [(disp[0] + disp[2]) / 2, (disp[1] + disp[3]) / 2]
-				
-				//cy.panBy({x: avgDsp[0] * cy.zoom(), y: avgDsp[1] * cy.zoom()});
-
 				// (x2, y2) for fingers 1 and 2
 				var f1x2 = now[0], f1y2 = now[1];
 				var f2x2 = now[2], f2y2 = now[3];
@@ -656,31 +670,7 @@
 					.trigger('pan zoom')
 					.notify('viewport')
 				;
-
-
-				// so that zooming is gradual
-				// distance1 = distance2;
 				
-
-
-				// OLD STUFF
-				// var earlierDist = Math.sqrt(  Math.pow(earlier[2] - earlier[0], 2) + Math.pow(earlier[3] - earlier[1], 2)  );
-				// var nowDist = Math.sqrt(  Math.pow(now[2] - now[0], 2) + Math.pow(now[3] - now[1], 2)  );
-				
-
-				// var factor = nowDist / earlierDist;
-				
-				// if (factor > 1) {
-				// 	factor = (factor - 1) * 1.5 + 1;
-				// } else {
-				// 	factor = 1 - (1 - factor) * 1.5;
-				// }
-				
-				// cy.zoom({level: cy.zoom() * factor,
-				// 	position: {x: (now[0] + now[2]) / 2,
-				// 				y: (now[1] + now[3]) / 2}});
-
-				// END OLD STUFF
 				
 				// Re-project
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -770,15 +760,29 @@
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node end");
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node end");
 					
-					start.trigger(new $$.Event(e, {type: "touchend"}));
+					start
+						.trigger(new $$.Event(e, {type: "touchend"}))
+						.trigger(new $$.Event(e, {type: "tapend"}))
+					;
 					
 					r.touchData.start = null;
 					
 				} else {
 					var near = r.findNearestElement(now[0], now[1]);
 				
-					if (near != null) { near.trigger(new $$.Event(e, {type: "touchend"})); }
-					if (near == null) { cy.trigger(new $$.Event(e, {type: "touchend"})); }
+					if (near != null) { 
+						near
+							.trigger(new $$.Event(e, {type: "touchend"}))
+							.trigger(new $$.Event(e, {type: "tapend"}))
+						;
+					}
+
+					if (near == null) { 
+						cy
+							.trigger(new $$.Event(e, {type: "touchend"}))
+							.trigger(new $$.Event(e, {type: "tapend"}))
+						;
+					}
 				}
 				
 				// Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
@@ -2272,6 +2276,11 @@
 		
 		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
 			+ labelSize + " " + labelFamily;
+
+		// console.log(labelStyle + " " + labelVariant + " " + labelWeight + " " 
+		// 	+ labelSize + " " + labelFamily);
+
+		// console.log(context.font);
 		
 		var text = String(element._private.style["content"].value);
 		var textTransform = element._private.style["text-transform"].value;

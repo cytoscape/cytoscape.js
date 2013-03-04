@@ -2054,18 +2054,17 @@
 			* element._private.style["opacity"].value) + ")";
 		
 		if (text != undefined) {
+			var lineWidth = element._private.style["text-outline-width"].value;
+			if (lineWidth > 0) {
+				context.lineWidth = lineWidth;
+				context.strokeText(text, textX, textY);
+			}
+			
 			// Thanks sysord@github for the isNaN checks!
 			if (isNaN(textX)) { textX = 0; }
 			if (isNaN(textY)) { textY = 0; }
 
 			context.fillText("" + text, textX, textY);
-		}
-		
-		var lineWidth = element._private.style["text-outline-width"].value;
-		
-		if (lineWidth > 0) {
-			context.lineWidth = lineWidth;
-			context.strokeText(text, textX, textY);
 		}
 	};
 

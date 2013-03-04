@@ -2019,18 +2019,13 @@
 	
 		// Font style
 		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].strValue;
+		var labelSize = element._private.style["font-size"].value + "px";
 		var labelFamily = element._private.style["font-family"].strValue;
 		var labelVariant = element._private.style["font-variant"].strValue;
 		var labelWeight = element._private.style["font-weight"].strValue;
 		
-		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+		context.font = labelStyle + " " + labelWeight + " "
 			+ labelSize + " " + labelFamily;
-
-		// console.log(labelStyle + " " + labelVariant + " " + labelWeight + " " 
-		// 	+ labelSize + " " + labelFamily);
-
-		// console.log(context.font);
 		
 		var text = String(element._private.style["content"].value);
 		var textTransform = element._private.style["text-transform"].value;

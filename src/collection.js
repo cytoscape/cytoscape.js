@@ -85,6 +85,7 @@
 			listeners: [], // array of bound listeners
 			group: params.group, // string; "nodes" or "edges"
 			style: {}, // properties as set by the style
+			rstyle: {}, // properties for style sent from the renderer to the core
 			removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
 			selected: params.selected ? true : false, // whether it's selected
 			selectable: params.selectable === undefined ? true : ( params.selectable ? true : false ), // whether it's selectable

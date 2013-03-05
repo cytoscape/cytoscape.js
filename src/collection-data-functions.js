@@ -428,27 +428,156 @@
 			// find bounds of elements
 			for( var i = 0; i < eles.length; i++ ){
 				var ele = eles[i];
+				var ex1, ex2, ey1, ey2, x, y;				
 
 				if( ele.isNode() ){
 					var pos = ele._private.position;
-					var x = pos.x;
-					var y = pos.y;
+					x = pos.x;
+					y = pos.y;
 					var w = ele.outerWidth();
 					var halfW = w/2;
 					var h = ele.outerHeight();
 					var halfH = h/2;
 
-					var ex1 = x - halfW;
-					var ex2 = x + halfW;
-					var ey1 = y - halfH;
-					var ey2 = y + halfH;
+					// handle node dimensions
+					/////////////////////////
+
+					ex1 = x - halfW;
+					ex2 = x + halfW;
+					ey1 = y - halfH;
+					ey2 = y + halfH;
 
 					x1 = ex1 < x1 ? ex1 : x1;
 					x2 = ex2 > x2 ? ex2 : x2;
 					y1 = ey1 < y1 ? ey1 : y1;
 					y2 = ey2 > y2 ? ey2 : y2;
+
+				} else { // is edge
+					var n1pos = ele.source()[0]._private.position;
+					var n2pos = ele.target()[0]._private.position;
+
+					// handle edge dimensions (rough box estimate)
+					//////////////////////////////////////////////
+
+					var rstyle = ele._private.rstyle;
+					x = rstyle.labelX;
+					y = rstyle.labelY;
+
+					ex1 = n1pos.x;
+					ex2 = n2pos.x;
+					ey1 = n1pos.y;
+					ey2 = n2pos.y;
+
+					if( ex1 > ex2 ){
+						var temp = ex1;
+						ex1 = ex2;
+						ex2 = temp;
+					}
+
+					if( ey1 > ey2 ){
+						var temp = ey1;
+						ey1 = ey2;
+						ey2 = temp;
+					}
+
+					x1 = ex1 < x1 ? ex1 : x1;
+					x2 = ex2 > x2 ? ex2 : x2;
+					y1 = ey1 < y1 ? ey1 : y1;
+					y2 = ey2 > y2 ? ey2 : y2;
+
+					// handle points along edge (sanity check)
+					//////////////////////////////////////////
+
+					var bpts = rstyle.bezierPts || [];
+					var w = ele._private.style['width'].value;
+					for( var j = 0; j < bpts.length; j++ ){
+						var bpt = bpts[j];
+
+						x1 = bpt.x - w < x1 ? bpt.x - w : x1;
+						x2 = bpt.x + w > x2 ? bpt.x + w : x2;
+						y1 = bpt.y - w < y1 ? bpt.y - w : y1;
+						y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+					}
+
 				}
-			}
+
+				// handle label dimensions
+				//////////////////////////
+
+				var style = ele._private.style;
+				var label = style['content'].value;
+				var fontSize = style['font-size'];
+				var halign = style['text-halign'];
+				var valign = style['text-valign'];
+				var labelWidth = ele._private.rstyle.labelWidth;
+
+				if( label && fontSize && labelWidth != undefined && halign && valign ){
+					var lh = fontSize.value;
+					var lw = labelWidth;
+					var lx1, lx2, ly1, ly2;
+
+					switch( halign.value ){
+						case "left":
+							lx1 = ex1 - lw;
+							lx2 = ex1;
+							break;
+
+						case "center":
+							lx1 = x - lw/2;
+							lx2 = x + lw/2;
+							break;
+
+						case "right":
+							lx1 = ex2;
+							lx2 = ex2 + lw;
+							break;
+					}
+
+					if( ele.isEdge() ){ // force center case
+						lx1 = x - lw/2;
+						lx2 = x + lw/2;
+					}
+
+					switch( valign.value ){
+						case "top":
+							ly1 = ey1 - lh;
+							ly2 = ey1;
+							break;
+
+						case "center":
+							ly1 = y - lh/2;
+							ly2 = y + lh/2;
+							break;
+
+						case "bottom":
+							ly1 = ey2;
+							ly2 = ey2 + lh;
+							break;
+					}
+
+					if( ele.isEdge() ){ // force center case
+						ly1 = y - lh/2;
+						ly2 = y + lh/2;
+					}
+
+					x1 = lx1 < x1 ? lx1 : x1;
+					x2 = lx2 > x2 ? lx2 : x2;
+					y1 = ly1 < y1 ? ly1 : y1;
+					y2 = ly2 > y2 ? ly2 : y2;
+				}
+			} // for
+
+			// testing on debug page
+			// $('#bb').remove();
+			// $('#cytoscape').append('<div id="bb"></div>');
+			// $('#bb').css({
+			// 	'position': 'absolute',
+			// 	'left': x1,
+			// 	'top': y1,
+			// 	'width': x2 - x1,
+			// 	'height': y2 - y1,
+			// 	'background': 'rgba(255, 0, 0, 0.5)'
+			// })
 
 			return {
 				x1: x1,

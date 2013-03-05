@@ -64,6 +64,17 @@
             },
 
             {
+              "name": "cy.batchData",
+              "descr": "Update several data fields for several elements all at once (in batch).",
+              "formats": [
+                { "args": [
+                  { "name": "map", "descr": "Element IDs mapped to data to set." }
+                ] }
+              ],
+              "md": "core/batchData"
+            },
+
+            {
               "name": "cy.collection",
               "descr": "Return a new, empty collection.",
               "md": "core/collection"

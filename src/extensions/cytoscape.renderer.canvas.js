@@ -169,6 +169,7 @@
 						near
 							.trigger(new $$.Event(e, {type: "mousedown"}))
 							.trigger(new $$.Event(e, {type: "tapstart"}))
+							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
@@ -178,6 +179,7 @@
 						cy
 							.trigger(new $$.Event(e, {type: "mousedown"}))
 							.trigger(new $$.Event(e, {type: "tapstart"}))
+							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 					}
 					
@@ -338,11 +340,13 @@
 						near
 							.trigger( new $$.Event(e, {type: "click"}) )
 							.trigger( new $$.Event(e, {type: "tap"}) )
+							.trigger( new $$.Event(e, {type: "vclick"}) )
 						;
 					} else if (near == null) {
 						cy
 							.trigger( new $$.Event(e, {type: "click"}) )
 							.trigger( new $$.Event(e, {type: "tap"}) )
+							.trigger( new $$.Event(e, {type: "vclick"}) )
 						;
 					}
 				}
@@ -354,11 +358,13 @@
 					near
 						.trigger(new $$.Event(e, {type: "mouseup"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 				} else if (near == null) {
 					cy
 						.trigger(new $$.Event(e, {type: "mouseup"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 				}
 			}
@@ -562,11 +568,13 @@
 					near
 						.trigger(new $$.Event(e, {type: "touchstart"}))
 						.trigger(new $$.Event(e, {type: "tapstart"}))
+						.trigger(new $$.Event(e, {type: "vmousdown"}))
 					;
 				} else if (near == null) {
 					cy.
 						trigger(new $$.Event(e, {type: "touchstart"}))
 						trigger(new $$.Event(e, {type: "tapstart"}))
+						trigger(new $$.Event(e, {type: "vmousedown"}))
 					;
 				}
 				
@@ -763,6 +771,7 @@
 					start
 						.trigger(new $$.Event(e, {type: "touchend"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 					
 					r.touchData.start = null;
@@ -774,6 +783,7 @@
 						near
 							.trigger(new $$.Event(e, {type: "touchend"}))
 							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					}
 
@@ -781,6 +791,7 @@
 						cy
 							.trigger(new $$.Event(e, {type: "touchend"}))
 							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					}
 				}
@@ -806,9 +817,15 @@
 				if (r.touchData.singleTouchMoved == false) {
 
 					if (start) {
-						start.trigger(new $$.Event(e, {type: "tap"}));
+						start
+							.trigger(new $$.Event(e, {type: "tap"}))
+							.trigger(new $$.Event(e, {type: "vclick"}))
+						;
 					} else {
-						cy.trigger(new $$.Event(e, {type: "tap"}));
+						cy
+							.trigger(new $$.Event(e, {type: "tap"}))
+							.trigger(new $$.Event(e, {type: "vclick"}))
+						;
 					}
 					
 //					console.log("tap");
@@ -1730,12 +1747,12 @@
 		if (edge._private.rscratch.isSelfEdge) {
 					
 			var details = edge._private.rscratch;
-			this.drawStyledEdge(context, [details.startX, details.startY, details.cp2ax,
+			this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
 				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
 			
-			this.drawStyledEdge(context, [details.selfEdgeMidX, details.selfEdgeMidY,
+			this.drawStyledEdge(edge, context, [details.selfEdgeMidX, details.selfEdgeMidY,
 				details.cp2cx, details.cp2cy, details.endX, details.endY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
@@ -1755,7 +1772,7 @@
 			} else {
 				
 				var details = edge._private.rscratch;
-				this.drawStyledEdge(context, [details.startX, details.startY,
+				this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				                              details.endX, details.endY],
 				                              edge._private.style["line-style"].value,
 				                              edge._private.style["width"].value);
@@ -1765,7 +1782,7 @@
 		} else {
 			
 			var details = edge._private.rscratch;
-			this.drawStyledEdge(context, [details.startX, details.startY,
+			this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				details.cp2x, details.cp2y, details.endX, details.endY],
 				edge._private.style["line-style"].value,
 				edge._private.style["width"].value);
@@ -1863,7 +1880,7 @@
 	*/
 	
 	CanvasRenderer.prototype.drawStyledEdge = function(
-			context, pts, type, width) {
+			edge, context, pts, type, width) {
 		
 		// 3 points given -> assume Bezier
 		// 2 -> assume straight
@@ -1875,6 +1892,58 @@
 
 		//		console.log("w", width);
 		
+		// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
+		function qbezierAt(p0, p1, p2, t){
+			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+		}
+
+		if( edge._private.rstyle.bezierPts === undefined ){
+			edge._private.rstyle.bezierPts = [];
+		}
+
+		var nBpts = edge._private.rstyle.bezierPts.length;
+		if( edge.isLoop() ){
+			if( nBpts >= 12 ){
+				edge._private.rstyle.bezierPts = [];
+			} else {
+				// append to current array
+			}
+		} else {
+			edge._private.rstyle.bezierPts = [];
+		}
+
+		var bpts = edge._private.rstyle.bezierPts;
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
+		});
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
+		});
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
+		});
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
+		});
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
+		});
+
+		bpts.push({
+			x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
+			y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
+		});
+
 		if (type == "solid") {
 			
 			context.beginPath();
@@ -2035,7 +2104,7 @@
 			}
 			context.restore();
 		} else {
-			this.drawStyledEdge(context, pts, "solid", width);
+			this.drawStyledEdge(edge, context, pts, "solid", width);
 		}
 		
 	};
@@ -2076,6 +2145,11 @@
 		
 		textX = edgeCenterX;
 		textY = edgeCenterY;
+
+		// add center point to style so bounding box calculations can use it
+		var rstyle = edge._private.rstyle;
+		rstyle.labelX = textX;
+		rstyle.labelY = textY;
 		
 		this.drawText(context, edge, textX, textY);
 	};
@@ -2269,18 +2343,13 @@
 	
 		// Font style
 		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].strValue;
+		var labelSize = element._private.style["font-size"].value + "px";
 		var labelFamily = element._private.style["font-family"].strValue;
 		var labelVariant = element._private.style["font-variant"].strValue;
 		var labelWeight = element._private.style["font-weight"].strValue;
 		
-		context.font = labelStyle + " " + labelVariant + " " + labelWeight + " " 
+		context.font = labelStyle + " " + labelWeight + " "
 			+ labelSize + " " + labelFamily;
-
-		// console.log(labelStyle + " " + labelVariant + " " + labelWeight + " " 
-		// 	+ labelSize + " " + labelFamily);
-
-		// console.log(context.font);
 		
 		var text = String(element._private.style["content"].value);
 		var textTransform = element._private.style["text-transform"].value;
@@ -2309,18 +2378,20 @@
 			* element._private.style["opacity"].value) + ")";
 		
 		if (text != undefined) {
+			var lineWidth = element._private.style["text-outline-width"].value;
+			if (lineWidth > 0) {
+				context.lineWidth = lineWidth;
+				context.strokeText(text, textX, textY);
+			}
+
 			// Thanks sysord@github for the isNaN checks!
 			if (isNaN(textX)) { textX = 0; }
 			if (isNaN(textY)) { textY = 0; }
 
 			context.fillText("" + text, textX, textY);
-		}
-		
-		var lineWidth = element._private.style["text-outline-width"].value;
-		
-		if (lineWidth > 0) {
-			context.lineWidth = lineWidth;
-			context.strokeText(text, textX, textY);
+
+			// record the text's width for use in bounding box calc
+			element._private.rstyle.labelWidth = context.measureText( text ).width;
 		}
 	};
 

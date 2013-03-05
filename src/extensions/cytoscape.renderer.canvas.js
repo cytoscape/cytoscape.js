@@ -169,6 +169,7 @@
 						near
 							.trigger(new $$.Event(e, {type: "mousedown"}))
 							.trigger(new $$.Event(e, {type: "tapstart"}))
+							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
@@ -178,6 +179,7 @@
 						cy
 							.trigger(new $$.Event(e, {type: "mousedown"}))
 							.trigger(new $$.Event(e, {type: "tapstart"}))
+							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 					}
 					
@@ -338,11 +340,13 @@
 						near
 							.trigger( new $$.Event(e, {type: "click"}) )
 							.trigger( new $$.Event(e, {type: "tap"}) )
+							.trigger( new $$.Event(e, {type: "vclick"}) )
 						;
 					} else if (near == null) {
 						cy
 							.trigger( new $$.Event(e, {type: "click"}) )
 							.trigger( new $$.Event(e, {type: "tap"}) )
+							.trigger( new $$.Event(e, {type: "vclick"}) )
 						;
 					}
 				}
@@ -354,11 +358,13 @@
 					near
 						.trigger(new $$.Event(e, {type: "mouseup"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 				} else if (near == null) {
 					cy
 						.trigger(new $$.Event(e, {type: "mouseup"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 				}
 			}
@@ -562,11 +568,13 @@
 					near
 						.trigger(new $$.Event(e, {type: "touchstart"}))
 						.trigger(new $$.Event(e, {type: "tapstart"}))
+						.trigger(new $$.Event(e, {type: "vmousdown"}))
 					;
 				} else if (near == null) {
 					cy.
 						trigger(new $$.Event(e, {type: "touchstart"}))
 						trigger(new $$.Event(e, {type: "tapstart"}))
+						trigger(new $$.Event(e, {type: "vmousedown"}))
 					;
 				}
 				
@@ -763,6 +771,7 @@
 					start
 						.trigger(new $$.Event(e, {type: "touchend"}))
 						.trigger(new $$.Event(e, {type: "tapend"}))
+						.trigger(new $$.Event(e, {type: "vmouseup"}))
 					;
 					
 					r.touchData.start = null;
@@ -774,6 +783,7 @@
 						near
 							.trigger(new $$.Event(e, {type: "touchend"}))
 							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					}
 
@@ -781,6 +791,7 @@
 						cy
 							.trigger(new $$.Event(e, {type: "touchend"}))
 							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					}
 				}
@@ -806,9 +817,15 @@
 				if (r.touchData.singleTouchMoved == false) {
 
 					if (start) {
-						start.trigger(new $$.Event(e, {type: "tap"}));
+						start
+							.trigger(new $$.Event(e, {type: "tap"}))
+							.trigger(new $$.Event(e, {type: "vclick"}))
+						;
 					} else {
-						cy.trigger(new $$.Event(e, {type: "tap"}));
+						cy
+							.trigger(new $$.Event(e, {type: "tap"}))
+							.trigger(new $$.Event(e, {type: "vclick"}))
+						;
 					}
 					
 //					console.log("tap");

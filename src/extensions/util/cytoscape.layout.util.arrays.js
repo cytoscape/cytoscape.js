@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	/**
 	 * Utility methods for working with arrays.
@@ -230,4 +230,4 @@
     	return -1*(i+1);
 	}
 
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

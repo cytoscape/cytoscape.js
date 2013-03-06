@@ -22,7 +22,9 @@
 			}
 			
 			// trigger update style on those eles that had class changes
-			new $$.Collection(this._private.cy, changed).updateStyle();
+			if( changed.length > 0 ){
+				new $$.Collection(this._private.cy, changed).updateStyle();
+			}
 
 			self.trigger("class");
 			return self;
@@ -63,7 +65,9 @@
 			} // for i eles
 			
 			// trigger update style on those eles that had class changes
-			new $$.Collection(this._private.cy, changed).updateStyle();
+			if( changed.length > 0 ){
+				new $$.Collection(this._private.cy, changed).updateStyle();
+			}
 
 			self.trigger("class");
 			return self;
@@ -91,7 +95,9 @@
 			}
 			
 			// trigger update style on those eles that had class changes
-			new $$.Collection(self._private.cy, changed).updateStyle();
+			if( changed.length > 0 ){
+				new $$.Collection(self._private.cy, changed).updateStyle();
+			}
 
 			self.trigger("class");
 			return self;

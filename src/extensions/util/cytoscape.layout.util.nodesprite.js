@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	/**
 	 * Represents a node with the connection data between this node and
@@ -202,4 +202,4 @@
 		return false;
 	}
 
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

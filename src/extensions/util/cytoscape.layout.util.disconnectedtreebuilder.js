@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	/**
 	 * Calculates a spanning tree for a graph structure.
@@ -259,4 +259,4 @@
         }, _links);
     }   
 			
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

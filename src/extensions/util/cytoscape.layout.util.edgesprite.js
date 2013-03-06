@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	/**
 	 * Represents an edge sprite that contains the information about both
@@ -28,4 +28,4 @@
 		else return null;	
 	}	
 
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

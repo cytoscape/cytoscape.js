@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 	
 	/**
 	 * Layout that places items in a circular layout. If the tree option is
@@ -315,10 +315,10 @@
 	}
 
 	// register the layout
-	$.cytoscapeweb(
+	cytoscape(
 		"layout", // we're registering a layout
 		"circle", // the layout name
 		CircleLayout // the layout prototype
 	);
 		
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

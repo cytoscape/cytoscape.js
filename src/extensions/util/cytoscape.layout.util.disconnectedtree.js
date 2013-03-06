@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($$){
 
 	/**
 	 * Data structure for managing a collection of visual data objects in a
@@ -251,4 +251,4 @@
     }
 
 	 
-})(jQuery, jQuery.cytoscapeweb);
+})(cytoscape);

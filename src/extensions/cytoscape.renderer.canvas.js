@@ -208,7 +208,8 @@
 		}, false);
 		
 		window.addEventListener("mousemove", function(e) {
-			
+			var preventDefault = false;
+
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
 			var near = r.findNearestElement(pos[0], pos[1]);
@@ -291,12 +292,22 @@
 				
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+
+				// prevent the dragging from triggering text selection on the page
+				preventDefault = true;
 			}
 			
 			select[2] = pos[0]; select[3] = pos[1];
 			
 			r.redraw();
 			
+			if( preventDefault ){ 
+				if(e.stopPropagation) e.stopPropagation();
+    			if(e.preventDefault) e.preventDefault();
+   				e.cancelBubble=true;
+    			e.returnValue=false;
+    			return false;
+    		}
 		}, false);
 		
 		window.addEventListener("mouseup", function(e) {

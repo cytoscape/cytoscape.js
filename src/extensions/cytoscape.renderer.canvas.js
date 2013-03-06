@@ -3197,8 +3197,10 @@
 		}
 		
 		// The above generates points for a polygon inscribed in a radius 1 circle.
-		// Stretch so that the maximum height and width are both 2 so the resulting
-		// scaled shape has maximum dimensions equal to the given width and height
+		// Stretch so that the maximum of the height and width becomes 2 so the resulting
+		// scaled shape appears to be inscribed inside a rectangle with the given
+		// width and height. The maximum of the width and height is used to preserve
+		// the shape's aspect ratio.
 		
 		// Stretch width
 		var maxAbsX = 0

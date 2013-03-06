@@ -3196,6 +3196,36 @@
 			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
 		}
 		
+		// The above generates points for a polygon inscribed in a radius 1 circle.
+		// Stretch so that the maximum height and width are both 2 so the resulting
+		// scaled shape has maximum dimensions equal to the given width and height
+		
+		// Stretch width
+		var maxAbsX = 0
+		var maxAbsY = 0;
+		for (var i = 0; i < points.length / 2; i++) {
+			if (Math.abs(points[2 * i] > maxAbsX)) {
+				maxAbsX = Math.abs(points[2 * i]);
+			}
+			
+			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
+				maxAbsY = Math.abs(points[2 * i + 1]);
+			}
+		}
+		
+		var minScaleLimit = 0.0005;
+		
+		// Use the larger dimension to do the scale, in order to preserve the shape's
+		// aspect ratio
+		var maxDimension = Math.max(maxAbsX, maxAbsY);
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			if (maxDimension > minScaleLimit) {
+				points[2 * i] *= (1 / maxDimension);
+				points[2 * i + 1] *= (1 / maxDimension);
+			}
+		}
+		
 		return points;
 	}
 	

@@ -208,7 +208,8 @@
 		}, false);
 		
 		window.addEventListener("mousemove", function(e) {
-			
+			var preventDefault = false;
+
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
 			var near = r.findNearestElement(pos[0], pos[1]);
@@ -291,12 +292,22 @@
 				
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+
+				// prevent the dragging from triggering text selection on the page
+				preventDefault = true;
 			}
 			
 			select[2] = pos[0]; select[3] = pos[1];
 			
 			r.redraw();
 			
+			if( preventDefault ){ 
+				if(e.stopPropagation) e.stopPropagation();
+    			if(e.preventDefault) e.preventDefault();
+   				e.cancelBubble=true;
+    			e.returnValue=false;
+    			return false;
+    		}
 		}, false);
 		
 		window.addEventListener("mouseup", function(e) {
@@ -3462,6 +3473,38 @@
 			
 			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
 			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
+		}
+		
+		// The above generates points for a polygon inscribed in a radius 1 circle.
+		// Stretch so that the maximum of the height and width becomes 2 so the resulting
+		// scaled shape appears to be inscribed inside a rectangle with the given
+		// width and height. The maximum of the width and height is used to preserve
+		// the shape's aspect ratio.
+		
+		// Stretch width
+		var maxAbsX = 0
+		var maxAbsY = 0;
+		for (var i = 0; i < points.length / 2; i++) {
+			if (Math.abs(points[2 * i] > maxAbsX)) {
+				maxAbsX = Math.abs(points[2 * i]);
+			}
+			
+			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
+				maxAbsY = Math.abs(points[2 * i + 1]);
+			}
+		}
+		
+		var minScaleLimit = 0.0005;
+		
+		// Use the larger dimension to do the scale, in order to preserve the shape's
+		// aspect ratio
+		var maxDimension = Math.max(maxAbsX, maxAbsY);
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			if (maxDimension > minScaleLimit) {
+				points[2 * i] *= (1 / maxDimension);
+				points[2 * i + 1] *= (1 / maxDimension);
+			}
 		}
 		
 		return points;

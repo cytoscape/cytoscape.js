@@ -969,13 +969,13 @@
 		
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
-			if (nodeShapes[nodes[i]._private.style["shape"].value].checkPointRough(x, y,
+			if (nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
 					nodes[i]._private.style["border-width"].value,
 					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 					this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
-				nodeShapes[nodes[i]._private.style["shape"].value].checkPoint(x, y,
+				nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
 					nodes[i]._private.style["border-width"].value,
 					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
 					this.getNodeWidth(nodes[i]) / 2, this.getNodeHeight(nodes[i]) / 2,
@@ -1115,7 +1115,7 @@
 //		console.log(x1, y1, x2, y2, "ec") 
 		
 		for (var i=0;i<nodes.length;i++) {
-			if (nodeShapes[nodes[i]._private.style["shape"].value].intersectBox(x1, y1, x2, y2,
+			if (nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
 				//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 				this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
 				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
@@ -1176,6 +1176,13 @@
 		return box;
 	}
 
+	/**
+	 * Updates bounds of all compounds in the given element list.
+	 * Assuming the nodes are sorted top down, i.e. a parent node
+	 * always has a lower index than its all children.
+	 *
+	 * @param elements  set of elements containing both nodes and edges
+	 */
 	CanvasRenderer.prototype.updateAllCompounds = function(elements)
 	{
 		// traverse in reverse order, since rendering is top-down,
@@ -1198,10 +1205,17 @@
 
 	};
 
-	// Calculates the bounds of a given compound node
+	/**
+	 * Calculates rectangular bounds of a given compound node.
+	 *
+	 * @param node  a node with children (compound node)
+	 * @return {{x: number, y: number, width: number, height: number}}
+	 */
 	CanvasRenderer.prototype.calcCompoundBounds = function(node)
 	{
-		var children = node._private.children;
+		// TODO assuming rectangular compounds, we may add support for other shapes in the future
+		//var children = node._private.children;
+		var children = node.children();
 
 		// find the leftmost, rightmost, topmost, and bottommost child node positions
 		var leftBorder = this.borderValue(children, "left");
@@ -1214,31 +1228,123 @@
 		var width = rightBorder - leftBorder;
 		var height = bottomBorder - topBorder;
 
+		// it is not possible to use the function boundingBox() without
+		// actually rendering the graph
+//		var bBox = children.boundingBox();
+//
+//		var x = (bBox.x1 + bBox.x2) / 2;
+//		var y = (bBox.y1 + bBox.y2) / 2;
+//		var width = bBox.width;
+//		var height = bBox.height;
+
 		return {x: x,
 			y: y,
 			width: width,
 			height: height};
 	};
 
+	/**
+	 * Calculates the leftmost, rightmost, topmost or bottommost point for the given
+	 * set of nodes. If the type parameter is "left" (or "right"), then the min (or
+	 * the max) x-coordinate value will be returned. If the type is "top" (or "bottom")
+	 * then the min (or the max) y-coordinate value will be returned.
+	 *
+	 * This function is designed to help determining the bounds (bounding box) of
+	 * compound nodes.
+	 *
+	 * @param nodes         set of nodes
+	 * @param type          "left", "right", "top", "bottom"
+	 * @return {number}     border value for the specified type
+	 */
 	CanvasRenderer.prototype.borderValue = function(nodes, type)
 	{
-		// TODO also take labels (node text) into account
-
-		var values;
+		// TODO also take labels (node text) and compound padding into account
+		var nodeVals, labelVals;
 		var minValue = 1/0, maxValue = -1/0;
 		var r = this;
 
 		// helper function to determine node position and dimensions
-		var getPosAndDim = function(node) {
+		var calcNodePosAndDim = function(node) {
 			var values = {};
 
 			values.x = node._private.position.x;
 			values.y = node._private.position.y;
-			values.width = r.getNodeWidth(node);
-			values.height = r.getNodeHeight(node);
+			//values.width = r.getNodeWidth(node);
+			//values.height = r.getNodeHeight(node);
+			values.width = node.outerWidth();
+			values.height = node.outerHeight();
 
 			return values;
 		};
+
+		// helper function to determine label width
+		var getLabelWidth = function(node)
+		{
+			var text = String(node._private.style["content"].value);
+			var textTransform = node._private.style["text-transform"].value;
+
+			if (textTransform == "none") {
+			} else if (textTransform == "uppercase") {
+				text = text.toUpperCase();
+			} else if (textTransform == "lowercase") {
+				text = text.toLowerCase();
+			}
+
+			// TODO width doesn't measure correctly without actually rendering
+			var context = r.data.canvases[4].getContext("2d");
+			return context.measureText(text).width;
+		};
+
+		// helper function to determine label position and dimensions
+		var calcLabelPosAndDim = function(node) {
+
+			var values = {};
+			var nodeWidth = r.getNodeWidth(node);
+			var nodeHeight = r.getNodeHeight(node);
+
+
+			values.height = node._private.style["font-size"].value;
+
+			// TODO ignoring label width for now, it may be a good idea to do so,
+			// since longer label texts may increase the node size unnecessarily
+			//values.width = getLabelWidth(node);
+			values.width = values.height;
+
+			var textHalign = node._private.style["text-halign"].strValue;
+
+			if (textHalign == "left") {
+				values.x = node._private.position.x - nodeWidth / 2;
+				values.left = values.x - values.width;
+				values.right = values.x;
+			} else if (textHalign == "right") {
+				values.x = node._private.position.x + nodeWidth / 2;
+				values.left = values.x;
+				values.right = values.x + values.width;
+			} else { //if (textHalign == "center")
+				values.x = node._private.position.x;
+				values.left = values.x - values.width / 2;
+				values.right = values.x + values.width / 2;
+			}
+
+			var textValign = node._private.style["text-valign"].strValue;
+
+			if (textValign == "top") {
+				values.y = node._private.position.y - nodeHeight / 2;
+				values.top = values.y - values.height;
+				values.bottom = values.y;
+			} else if (textValign == "bottom") {
+				values.y = node._private.position.y + nodeHeight / 2;
+				values.top = values.y;
+				values.bottom = values.y + values.height;
+			} else { // if (textValign == "middle" || textValign == "center")
+				values.y = node._private.position.y;
+				values.top = values.y - values.height / 2;
+				values.bottom = values.y + values.height / 2;
+			}
+
+			return values;
+		};
+
 
 
 		// find out border values by iterating given nodes
@@ -1247,9 +1353,11 @@
 		{
 			for (i = 0; i < nodes.length; i++)
 			{
-				values = getPosAndDim(nodes[i]);
+				nodeVals = calcNodePosAndDim(nodes[i]);
+				labelVals = calcLabelPosAndDim(nodes[i]);
 
-				var leftBorder = values.x - values.width / 2;
+				var leftBorder = Math.min(nodeVals.x - nodeVals.width / 2,
+					labelVals.left);
 
 				if (leftBorder < minValue)
 				{
@@ -1261,9 +1369,11 @@
 		{
 			for (i = 0; i < nodes.length; i++)
 			{
-				values = getPosAndDim(nodes[i]);
+				nodeVals = calcNodePosAndDim(nodes[i]);
+				labelVals = calcLabelPosAndDim(nodes[i]);
 
-				var rightBorder = values.x + values.width / 2;
+				var rightBorder = Math.max(nodeVals.x + nodeVals.width / 2,
+					labelVals.right);
 
 				if (rightBorder > maxValue)
 				{
@@ -1275,9 +1385,11 @@
 		{
 			for (i = 0; i < nodes.length; i++)
 			{
-				values = getPosAndDim(nodes[i]);
+				nodeVals = calcNodePosAndDim(nodes[i]);
+				labelVals = calcLabelPosAndDim(nodes[i]);
 
-				var topBorder = values.y - values.height / 2;
+				var topBorder = Math.min(nodeVals.y - nodeVals.height / 2,
+					labelVals.top);
 
 				if (topBorder < minValue)
 				{
@@ -1289,9 +1401,11 @@
 		{
 			for (i = 0; i < nodes.length; i++)
 			{
-				values = getPosAndDim(nodes[i]);
+				nodeVals = calcNodePosAndDim(nodes[i]);
+				labelVals = calcLabelPosAndDim(nodes[i]);
 
-				var bottomBorder = values.y + values.height / 2;
+				var bottomBorder = Math.max(nodeVals.y + nodeVals.height / 2,
+					labelVals.bottom);
 
 				if (bottomBorder > maxValue)
 				{
@@ -1312,6 +1426,13 @@
 		}
 	};
 
+	/**
+	 * Returns the width of the given node. If the width is set to auto,
+	 * returns the value of the autoWidth field.
+	 *
+	 * @param node          a node
+	 * @return {number}     width of the node
+	 */
 	CanvasRenderer.prototype.getNodeWidth = function(node)
 	{
 		if (node._private.style["width"].value == "auto" ||
@@ -1325,6 +1446,13 @@
 		}
 	};
 
+	/**
+	 * Returns the height of the given node. If the height is set to auto,
+	 * returns the value of the autoHeight field.
+	 *
+	 * @param node          a node
+	 * @return {number}     width of the node
+	 */
 	CanvasRenderer.prototype.getNodeHeight = function(node)
 	{
 		if (node._private.style["width"].value == "auto" ||
@@ -1335,6 +1463,28 @@
 		else
 		{
 			return node._private.style["width"].value;
+		}
+	};
+
+	/**
+	 * Returns the shape of the given node. If the height or width of the given node
+	 * is set to auto, the node is considered to be a compound.
+	 *
+	 * @param node          a node
+	 * @return {String}     shape of the node
+	 */
+	CanvasRenderer.prototype.getNodeShape = function(node)
+	{
+		if (node._private.style["width"].value == "auto" ||
+		    node._private.style["height"].value == "auto")
+		{
+			// TODO only allow rectangle for a compound node for now,
+			// we may add support for other shapes in the future
+			return "rectangle";
+		}
+		else
+		{
+			return node._private.style["shape"].value;
 		}
 	};
 
@@ -2224,7 +2374,7 @@
 				
 				if (image.complete == false) {
 
-					nodeShapes[node._private.style["shape"].value].drawPath(
+					nodeShapes[r.getNodeShape(node)].drawPath(
 						context,
 						node._private.position.x,
 						node._private.position.y,
@@ -2244,7 +2394,7 @@
 			} else {
 
 				// Draw node
-				nodeShapes[node._private.style["shape"].value].draw(
+				nodeShapes[this.getNodeShape(node)].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,
@@ -2276,7 +2426,7 @@
 		
 		context.save();
 		
-		nodeShapes[node._private.style["shape"].value].drawPath(
+		nodeShapes[r.getNodeShape(node)].drawPath(
 				context,
 				nodeX, nodeY, 
 				nodeWidth, nodeHeight);
@@ -2552,7 +2702,7 @@
 			
 			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
 			
-			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
+			intersect = nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
 				//target._private.style["width"].value,
@@ -2577,7 +2727,7 @@
 			
 			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
 
-			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
+			intersect = nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
 				//source._private.style["width"].value,
@@ -2602,7 +2752,7 @@
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 		
-			intersect = nodeShapes[target._private.style["shape"].value].intersectLine(
+			intersect = nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
 				//target._private.style["width"].value,
@@ -2633,7 +2783,7 @@
 			edge._private.rscratch.arrowEndX = arrowEnd[0];
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 		
-			intersect = nodeShapes[source._private.style["shape"].value].intersectLine(
+			intersect = nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
 				//source._private.style["width"].value,
@@ -2678,7 +2828,7 @@
 			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
 			
 			intersect = nodeShapes[
-				target._private.style["shape"].value].intersectLine(
+				this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
 				//target._private.style["width"].value,
@@ -2707,7 +2857,7 @@
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 			
 			intersect = nodeShapes[
-				source._private.style["shape"].value].intersectLine(
+				this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
 				//source._private.style["width"].value,

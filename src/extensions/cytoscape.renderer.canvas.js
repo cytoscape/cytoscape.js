@@ -1215,7 +1215,20 @@
 	{
 		// TODO assuming rectangular compounds, we may add support for other shapes in the future
 		//var children = node._private.children;
-		var children = node.children();
+		// consider only visible & not removed children
+		var children = node.children(":visible").not(":removed");
+
+		// TODO instead of last calculated width & height use a default node size value?
+		var bounds = {x: node._private.position.x,
+			y: node._private.position.y,
+			width: node._private.autoWidth,
+			height: node._private.autoHeight};
+
+		if (children.size() == 0)
+		{
+			// no visible children, just return last calculated values
+			return bounds;
+		}
 
 		// find the leftmost, rightmost, topmost, and bottommost child node positions
 		var leftBorder = this.borderValue(children, "left");
@@ -1237,10 +1250,12 @@
 //		var width = bBox.width;
 //		var height = bBox.height;
 
-		return {x: x,
+		bounds = {x: x,
 			y: y,
 			width: width,
 			height: height};
+
+		return bounds;
 	};
 
 	/**
@@ -1349,13 +1364,13 @@
 
 		// find out border values by iterating given nodes
 
-		if (type == "left")
+		for (i = 0; i < nodes.length; i++)
 		{
-			for (i = 0; i < nodes.length; i++)
-			{
-				nodeVals = calcNodePosAndDim(nodes[i]);
-				labelVals = calcLabelPosAndDim(nodes[i]);
+			nodeVals = calcNodePosAndDim(nodes[i]);
+			labelVals = calcLabelPosAndDim(nodes[i]);
 
+			if (type == "left")
+			{
 				var leftBorder = Math.min(nodeVals.x - nodeVals.width / 2,
 					labelVals.left);
 
@@ -1364,14 +1379,8 @@
 					minValue = leftBorder;
 				}
 			}
-		}
-		else if (type == "right")
-		{
-			for (i = 0; i < nodes.length; i++)
+			else if (type == "right")
 			{
-				nodeVals = calcNodePosAndDim(nodes[i]);
-				labelVals = calcLabelPosAndDim(nodes[i]);
-
 				var rightBorder = Math.max(nodeVals.x + nodeVals.width / 2,
 					labelVals.right);
 
@@ -1380,14 +1389,8 @@
 					maxValue = rightBorder;
 				}
 			}
-		}
-		else if (type == "top")
-		{
-			for (i = 0; i < nodes.length; i++)
+			else if (type == "top")
 			{
-				nodeVals = calcNodePosAndDim(nodes[i]);
-				labelVals = calcLabelPosAndDim(nodes[i]);
-
 				var topBorder = Math.min(nodeVals.y - nodeVals.height / 2,
 					labelVals.top);
 
@@ -1396,14 +1399,8 @@
 					minValue = topBorder;
 				}
 			}
-		}
-		else if (type == "bottom")
-		{
-			for (i = 0; i < nodes.length; i++)
+			else if (type == "bottom")
 			{
-				nodeVals = calcNodePosAndDim(nodes[i]);
-				labelVals = calcLabelPosAndDim(nodes[i]);
-
 				var bottomBorder = Math.max(nodeVals.y + nodeVals.height / 2,
 					labelVals.bottom);
 

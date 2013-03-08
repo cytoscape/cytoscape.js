@@ -95,6 +95,12 @@
 		this.redraw();
 	};
 	
+	CanvasRenderer.prototype.png = function(){
+		var canvas = this.data.bufferCanvases[0];
+
+		return canvas.toDataURL("image/png");
+	};
+
 	// @O Initialization functions
 	{
 	CanvasRenderer.prototype.load = function() {

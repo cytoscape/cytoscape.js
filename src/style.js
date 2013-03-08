@@ -283,6 +283,10 @@
 					"border-style": "solid",
 					"height": 30,
 					"width": 30,
+					"padding-top": 0,
+					"padding-bottom": 0,
+					"padding-left": 0,
+					"padding-right": 0,
 					"shape": "ellipse"
 				})
 			.selector("edge") // just edge properties

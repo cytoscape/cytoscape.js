@@ -19,7 +19,11 @@ $(function(){
 					"textValign": "bottom",
 					"font-weight": "bold",
 					"font-style": "italic",
-					"background-color": "#B7E1ED"
+					"background-color": "#B7E1ED",
+					"padding-left": 10,
+					"padding-right": 20,
+					"padding-top": 5,
+					"padding-bottom": 30
 				})
 			.selector("edge")
 				.css({

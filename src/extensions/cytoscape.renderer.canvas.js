@@ -1239,6 +1239,8 @@
 		// consider only visible & not removed children
 		var children = node.children(":visible").not(":removed");
 
+		var padding = this.getNodePadding(node);
+
 		// TODO instead of last calculated width & height use a default node size value?
 		var bounds = {x: node._private.position.x,
 			y: node._private.position.y,
@@ -1257,12 +1259,13 @@
 		var topBorder = this.borderValue(children, "top");
 		var bottomBorder = this.borderValue(children, "bottom");
 
-		var x = (leftBorder + rightBorder) / 2;
-		var y = (topBorder + bottomBorder) / 2;
-		var width = rightBorder - leftBorder;
-		var height = bottomBorder - topBorder;
+		// take padding values into account in addition to border values
+		var x = (leftBorder - padding.left + rightBorder + padding.right) / 2;
+		var y = (topBorder - padding.top + bottomBorder + padding.bottom) / 2;
+		var width = (rightBorder - leftBorder) + padding.left + padding.right;
+		var height = (bottomBorder - topBorder) + padding.top + padding.bottom;
 
-		// it is not possible to use the function boundingBox() without
+		// it is not possible to use the function boundingBox() before
 		// actually rendering the graph
 //		var bBox = children.boundingBox();
 //
@@ -1294,7 +1297,6 @@
 	 */
 	CanvasRenderer.prototype.borderValue = function(nodes, type)
 	{
-		// TODO also take labels (node text) and compound padding into account
 		var nodeVals, labelVals;
 		var minValue = 1/0, maxValue = -1/0;
 		var r = this;
@@ -1504,6 +1506,39 @@
 		{
 			return node._private.style["shape"].value;
 		}
+	};
+
+	CanvasRenderer.prototype.getNodePadding = function(node)
+	{
+		var left = node._private.style["padding-left"].value;
+		var right = node._private.style["padding-right"].value;
+		var top = node._private.style["padding-top"].value;
+		var bottom = node._private.style["padding-bottom"].value;
+
+		if (isNaN(left))
+		{
+			left = 0;
+		}
+
+		if (isNaN(right))
+		{
+			right = 0;
+		}
+
+		if (isNaN(top))
+		{
+			top = 0;
+		}
+
+		if (isNaN(bottom))
+		{
+			bottom = 0;
+		}
+
+		return {left : left,
+			right : right,
+			top : top,
+			bottom : bottom};
 	};
 
 	// @O Keyboard functions

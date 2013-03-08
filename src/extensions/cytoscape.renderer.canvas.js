@@ -331,14 +331,7 @@
 //++clock+unselect
 //				var a = time();
 				
-				var unselectEvent = new $$.Event(e, {type: "unselect"}); 
-				for (var i=0;i<draggedElements.length;i++) {
-					if (draggedElements[i]._private.selected) {
-						draggedElements[i]._private.selected = false;
-						draggedElements[i].trigger(unselectEvent);
-						draggedElements[i].updateStyle(false);
-					}
-				}
+				cy.$(':selected').unselect();
 				
 //++clock+unselect
 //				console.log("unselect", time() - a);
@@ -389,7 +382,9 @@
 			// Single selection
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selectable && near._private.selected == false) {
-					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
+					
+					cy.$(':selected').unselect();
+					near.select();
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 					
@@ -547,12 +542,12 @@
 
 				// console.log(center1);
 
-				console.log('touchstart ptz');
-				console.log(offsetLeft, offsetTop);
-				console.log(f1x1, f1y1);
-				console.log(f2x1, f2y1);
-				console.log(distance1);
-				console.log(center1);
+				// console.log('touchstart ptz');
+				// console.log(offsetLeft, offsetTop);
+				// console.log(f1x1, f1y1);
+				// console.log(f2x1, f2y1);
+				// console.log(distance1);
+				// console.log(center1);
 			}
 			
 			
@@ -659,20 +654,20 @@
 			
 			if (e.touches[1]) { // two fingers => pinch to zoom
 
-				console.log('touchmove ptz');
+				// console.log('touchmove ptz');
 
 				// (x2, y2) for fingers 1 and 2
 				var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
 				var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
 
-				console.log( f1x2, f1y2 )
-				console.log( f2x2, f2y2 )
+				// console.log( f1x2, f1y2 )
+				// console.log( f2x2, f2y2 )
 
 				var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
 				var factor = distance2 / distance1;
 
-				console.log(distance2)
-				console.log(factor)
+				// console.log(distance2)
+				// console.log(factor)
 
 				if( factor != 1 ){
 

@@ -54,7 +54,7 @@
 		for (var i = 0; i < CANVAS_LAYERS; i++) {
 			this.data.canvases[i] = document.createElement("canvas");
 			this.data.canvases[i].style.position = "absolute";
-			this.data.canvases[i].id = "layer" + i;
+			this.data.canvases[i].setAttribute("data-id", "layer" + i);
 			this.data.canvases[i].style.zIndex = String(-i);
 			this.data.canvases[i].style.visibility = "hidden"; 
 			this.data.container.appendChild(this.data.canvases[i]);
@@ -66,7 +66,7 @@
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
 			this.data.bufferCanvases[i].style.position = "absolute";
-			this.data.bufferCanvases[i].id = "buffer" + i;
+			this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
 			this.data.bufferCanvases[i].style.zIndex = String(-i);
 			this.data.bufferCanvases[i].style.visibility = "visible";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);

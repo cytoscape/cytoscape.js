@@ -497,6 +497,7 @@
 		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
 		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
 		var center1; // center point on start pinch to zoom
+		var offsetLeft, offsetTop;
 
 		function distance(x1, y1, x2, y2){
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
@@ -518,14 +519,20 @@
 			
 			// record starting points for pinch-to-zoom
 			if( e.touches[1] ){
-				f1x1 = now[0];
-				f1y1 = now[1];
+				var offsets = r.findContainerPageCoords();
+				offsetTop = offsets[1];
+				offsetLeft = offsets[0];
+
+				f1x1 = e.touches[0].pageX - offsetLeft;
+				f1y1 = e.touches[0].pageY - offsetTop;
 				
-				f2x1 = now[2];
-				f2y1 = now[3];
+				f2x1 = e.touches[1].pageX - offsetLeft;
+				f2y1 = e.touches[1].pageY - offsetTop;
 
 				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
 				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
+
+				// console.log(center1);
 
 				// console.log('touchstart ptz');
 				// console.log(f1x1);
@@ -622,6 +629,8 @@
 			
 		}, true);
 		
+// console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
+
 		window.addEventListener("touchmove", function(e) {
 		
 			var capture = r.touchData.capture; if (!capture) { return; }; 
@@ -641,11 +650,15 @@
 				// console.log('touchmove ptz');
 
 				// (x2, y2) for fingers 1 and 2
-				var f1x2 = now[0], f1y2 = now[1];
-				var f2x2 = now[2], f2y2 = now[3];
+				var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
+				var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
 
-				var distance2 = Math.sqrt(Math.pow(f1x2 - f2x2, 2) + Math.pow(f1y2 - f2y2, 2));
+				var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
 				var factor = distance2 / distance1;
+
+				// console.log(factor)
+				// console.log(distance2 + ' / ' + distance1);
+				// console.log('--');
 
 				// delta finger1
 				var df1x = f1x2 - f1x1;
@@ -682,6 +695,8 @@
 
 				// console.log(pan2);
 				// console.log(zoom2);
+
+				distance1 = distance2;
 
 				cy._private.zoom = zoom2;
 				cy._private.pan = pan2;

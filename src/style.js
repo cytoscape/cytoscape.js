@@ -201,6 +201,10 @@
 			{ name: "border-style", type: t.lineStyle },
 			{ name: "height", type: t.size },
 			{ name: "width", type: t.size },
+			{ name: "padding-left", type: t.size },
+			{ name: "padding-right", type: t.size },
+			{ name: "padding-top", type: t.size },
+			{ name: "padding-bottom", type: t.size },
 			{ name: "shape", type: t.nodeShape },
 
 			// these are just for edges

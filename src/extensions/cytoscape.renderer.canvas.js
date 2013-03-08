@@ -577,6 +577,24 @@
 						for (var j=0;j<sEdges.length;j++) { 
 						  sEdges[j]._private.rscratch.inDragLayer = true;
 						}
+
+						var draggedEles = r.dragData.touchDragEles = [];
+
+						if( near.selected() ){
+							var selectedNodes = cy.$('node:selected');
+
+							for( var k = 0; k < selectedNodes.length; k++ ){
+								var selectedNode = selectedNodes[k];
+								draggedEles.push( selectedNode );
+
+								var sEdges = selectedNode._private.edges;
+								for (var j=0; j<sEdges.length; j++) { 
+								  sEdges[j]._private.rscratch.inDragLayer = true;
+								}
+							}
+						} else {
+							draggedEles.push( near );
+						}
 					}
 					
 					near
@@ -725,12 +743,22 @@
 				var start = r.touchData.start;
 				
 				if (start != null && start._private.group == "nodes") {
-					start._private.position.x += disp[0]; start._private.position.y += disp[1];
+					var draggedEles = r.dragData.touchDragEles;
+
+					for( var k = 0; k < draggedEles.length; k++ ){
+						var draggedEle = draggedEles[k];
+
+						draggedEle._private.position.x += disp[0];
+						draggedEle._private.position.y += disp[1];
+						
+						draggedEle.trigger(new $$.Event(e, {type: "position"}));
+						draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+					}
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node");
 //					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node");
 					
-					start.trigger(new $$.Event(e, {type: "position"}));
+					
 				}
 				
 				// Touchmove event

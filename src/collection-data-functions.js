@@ -140,9 +140,11 @@
 
 					var pos = fn.apply(ele, [i, ele]);
 
-					var elePos = ele._private.position;
-					elePos.x = pos.x;
-					elePos.y = pos.y;
+					if( pos ){
+						var elePos = ele._private.position;
+						elePos.x = pos.x;
+						elePos.y = pos.y;
+					}
 				}
 				
 				this.rtrigger("position");

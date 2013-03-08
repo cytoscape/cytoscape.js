@@ -563,17 +563,6 @@
 					
 					if (near._private.group == "nodes") {
 						
-						// Unselect other selected nodes
-						var unselectEvent = new $$.Event(e, {type: "unselect"});
-						
-						for (var i=0;i<nodes.length;i++) {
-							if (nodes[i]._private.selected && nodes[i]._private.data.id != near._private.data.id) {
-								nodes[i]._private.selected = false;
-								nodes[i].trigger(unselectEvent);
-								nodes[i].updateStyle(false);
-							}
-						}
-						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
 						near.trigger(new $$.Event(e, {type: "grab"}));
@@ -846,16 +835,14 @@
 				// Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
 				if (start != null 
 						&& start._private.selectable 
-						&& start._private.selected == false
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
-					
-					// unselect whatever's already selected
-					// cy.elements(':selected').unselect();
 
-					// now select the node
-					start._private.selected = true;
-					start.trigger(new $$.Event(e, {type: "select"}));
-					start.updateStyle(false);
+					if( start.selected() ){
+						start.unselect();
+					} else {
+						start.select();
+					}
+					
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 				}

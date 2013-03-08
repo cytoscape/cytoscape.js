@@ -502,7 +502,7 @@
 		
 		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
 		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
-		var center1; // center point on start pinch to zoom
+		var center1, modelCenter1; // center point on start pinch to zoom
 		var offsetLeft, offsetTop;
 
 		function distance(x1, y1, x2, y2){
@@ -535,18 +535,24 @@
 				f2x1 = e.touches[1].pageX - offsetLeft;
 				f2y1 = e.touches[1].pageY - offsetTop;
 
+				var pan = cy.pan();
+				var zoom = cy.zoom();
+
 				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
 				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
+				modelCenter1 = [ 
+					(center1[0] - pan.x) / zoom,
+					(center1[1] - pan.y) / zoom
+				];
 
 				// console.log(center1);
 
-				// console.log('touchstart ptz');
-				// console.log(f1x1);
-				// console.log(f1y1);
-				// console.log(f2x1);
-				// console.log(f2y1);
-				// console.log(distance1);
-				// console.log(center1);
+				console.log('touchstart ptz');
+				console.log(offsetLeft, offsetTop);
+				console.log(f1x1, f1y1);
+				console.log(f2x1, f2y1);
+				console.log(distance1);
+				console.log(center1);
 			}
 			
 			
@@ -595,10 +601,10 @@
 						.trigger(new $$.Event(e, {type: "vmousdown"}))
 					;
 				} else if (near == null) {
-					cy.
-						trigger(new $$.Event(e, {type: "touchstart"}))
-						trigger(new $$.Event(e, {type: "tapstart"}))
-						trigger(new $$.Event(e, {type: "vmousedown"}))
+					cy
+						.trigger(new $$.Event(e, {type: "touchstart"}))
+						.trigger(new $$.Event(e, {type: "tapstart"}))
+						.trigger(new $$.Event(e, {type: "vmousedown"}))
 					;
 				}
 				
@@ -653,64 +659,78 @@
 			
 			if (e.touches[1]) { // two fingers => pinch to zoom
 
-				// console.log('touchmove ptz');
+				console.log('touchmove ptz');
 
 				// (x2, y2) for fingers 1 and 2
 				var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
 				var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
 
+				console.log( f1x2, f1y2 )
+				console.log( f2x2, f2y2 )
+
 				var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
 				var factor = distance2 / distance1;
 
-				// console.log(factor)
-				// console.log(distance2 + ' / ' + distance1);
-				// console.log('--');
+				console.log(distance2)
+				console.log(factor)
 
-				// delta finger1
-				var df1x = f1x2 - f1x1;
-				var df1y = f1y2 - f1y1;
+				if( factor != 1 ){
 
-				// delta finger 2
-				var df2x = f2x2 - f2x1;
-				var df2y = f2y2 - f2y1;
+					// console.log(factor)
+					// console.log(distance2 + ' / ' + distance1);
+					// console.log('--');
 
-				// translation is the normalised vector of the two fingers movement
-				// i.e. so pinching cancels out and moving together pans
-				var tx = (df1x + df2x)/2;
-				var ty = (df1y + df2y)/2;
+					// delta finger1
+					var df1x = f1x2 - f1x1;
+					var df1y = f1y2 - f1y1;
 
-				// adjust factor by the speed multiplier
-				var speed = 1.5;
-				if( factor > 1 ){
-					factor = (factor - 1) * speed + 1;
-				} else {
-					factor = 1 - (1 - factor) * speed;
+					// delta finger 2
+					var df2x = f2x2 - f2x1;
+					var df2y = f2y2 - f2y1;
+
+					// translation is the normalised vector of the two fingers movement
+					// i.e. so pinching cancels out and moving together pans
+					var tx = (df1x + df2x)/2;
+					var ty = (df1y + df2y)/2;
+
+					// adjust factor by the speed multiplier
+					// var speed = 1.5;
+					// if( factor > 1 ){
+					// 	factor = (factor - 1) * speed + 1;
+					// } else {
+					// 	factor = 1 - (1 - factor) * speed;
+					// }
+
+					// now calculate the zoom
+					var zoom1 = cy.zoom();
+					var zoom2 = zoom1 * factor;
+					var pan1 = cy.pan();
+
+					// the model center point converted to the current rendered pos
+					var ctrx = modelCenter1[0] * zoom1 + pan1.x;
+					var ctry = modelCenter1[1] * zoom1 + pan1.y;
+
+					var pan2 = {
+						x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
+						y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
+					};
+
+					// console.log(pan2);
+					// console.log(zoom2);
+
+					cy._private.zoom = zoom2;
+					cy._private.pan = pan2;
+					cy
+						.trigger('pan zoom')
+						.notify('viewport')
+					;
+
+					distance1 = distance2;	
+					f1x1 = f1x2;
+					f1y1 = f1y2;
+					f2x1 = f2x2;
+					f2y1 = f2y2;
 				}
-
-				var ctrx = center1[0];
-				var ctry = center1[1];
-
-				// now calculate the zoom
-				var zoom1 = cy.zoom();
-				var zoom2 = zoom1 * factor;
-				var pan1 = cy.pan();
-				var pan2 = {
-					x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
-					y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
-				};
-
-				// console.log(pan2);
-				// console.log(zoom2);
-
-				distance1 = distance2;
-
-				cy._private.zoom = zoom2;
-				cy._private.pan = pan2;
-				cy
-					.trigger('pan zoom')
-					.notify('viewport')
-				;
-				
 				
 				// Re-project
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }

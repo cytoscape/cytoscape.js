@@ -1688,19 +1688,19 @@
 					{
 						// node a should be drawn later than edge b
 						// if b is an edge from/to one of a's child nodes
-						if (depthB > depthA)
+						if (depthA > depthB)
 						{
-							return -1;
+							return 1;
 						}
 
-						return 1;
+						return -1;
 					}
 					else if (a._private.group == "edges"
 						&& b._private.group == "nodes")
 					{
 						// node b should be drawn later than edge a
 						// if a is an edge from/to one of b's child nodes
-						if (depthA > depthB)
+						if (depthA >= depthB)
 						{
 							return 1;
 						}

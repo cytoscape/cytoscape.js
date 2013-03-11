@@ -1518,7 +1518,7 @@
 		}
 		else
 		{
-			return node._private.style["width"].value;
+			return node._private.style["height"].value;
 		}
 	};
 

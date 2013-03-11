@@ -1674,47 +1674,39 @@
 					depthB = elementDepth(b);
 				}
 
-				if (result == 0) {
-					if (a._private.group == "nodes"
-						&& b._private.group == "nodes")
+				if (result == 0)
+				{
+					// if both elements has same depth,
+					// then edges should be drawn first
+					if (depthA - depthB == 0)
 					{
-						// the one with more parents is in a deeper level,
-						// thus it should be drawn later
-						if (depthA > depthB)
+						// "a" is a node, it should be drawn later
+						if (a._private.group == "nodes"
+							&& b._private.group == "edges")
 						{
 							return 1;
 						}
-						else if (depthB > depthA)
+						// "a" is an edge, it should be drawn firts
+						else if (a._private.group == "edges"
+							&& b._private.group == "nodes")
 						{
 							return -1;
 						}
-					}
-					else if (a._private.group == "nodes"
-						&& b._private.group == "edges")
-					{
-						// node a should be drawn later than edge b
-						// if b is an edge from/to one of a's child nodes
-						if (depthA > depthB)
+						// both nodes or both edges
+						else
 						{
-							return 1;
+							return 0;
 						}
-
-						return -1;
 					}
-					else if (a._private.group == "edges"
-						&& b._private.group == "nodes")
+					// elements on different level
+					else
 					{
-						// node b should be drawn later than edge a
-						// if a is an edge from/to one of b's child nodes
-						if (depthA >= depthB)
-						{
-							return 1;
-						}
-
-						return -1;
+						// deeper element should be drawn later
+						return depthA - depthB;
 					}
 				}
 
+				// return zero if z-index values are not the same
 				return 0;
 			});
 

@@ -256,15 +256,19 @@
 			
 			// Check if we are drag panning the entire graph
 			if (r.hoverData.dragging) {
-				
-				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				preventDefault = true;
+
+				if( cy.panningEnabled() ){
+					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				}
 				
 				// Needs reproject due to pan changing viewport
 				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
 					&& (new Date()).getTime() - r.hoverData.downTime > 200 
-					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)) {
+					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
+					&& cy.panningEnabled() ) {
 				
 				r.hoverData.dragging = true;
 				select[4] = 0;
@@ -465,7 +469,9 @@
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
-				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
+				if( cy.panningEnabled() && cy.zoomingEnabled() ){
+					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
+				}
 			}
 
 		}
@@ -659,7 +665,7 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if (e.touches[1]) { // two fingers => pinch to zoom
+			if ( e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 
 				// console.log('touchmove ptz');
 
@@ -782,7 +788,7 @@
 					}
 				}
 				
-				if (start == null) {
+				if ( start == null && cy.panningEnabled() ) {
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
 					
 					// Re-project

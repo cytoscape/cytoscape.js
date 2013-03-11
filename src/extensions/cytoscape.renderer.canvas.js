@@ -665,7 +665,7 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if (e.touches[1]) { // two fingers => pinch to zoom
+			if ( e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 
 				// console.log('touchmove ptz');
 
@@ -788,7 +788,7 @@
 					}
 				}
 				
-				if (start == null) {
+				if ( start == null && cy.panningEnabled() ) {
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
 					
 					// Re-project

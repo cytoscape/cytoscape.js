@@ -331,14 +331,7 @@
 //++clock+unselect
 //				var a = time();
 				
-				var unselectEvent = new $$.Event(e, {type: "unselect"}); 
-				for (var i=0;i<draggedElements.length;i++) {
-					if (draggedElements[i]._private.selected) {
-						draggedElements[i]._private.selected = false;
-						draggedElements[i].trigger(unselectEvent);
-						draggedElements[i].updateStyle(false);
-					}
-				}
+				cy.$(':selected').unselect();
 				
 //++clock+unselect
 //				console.log("unselect", time() - a);
@@ -389,7 +382,9 @@
 			// Single selection
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selectable && near._private.selected == false) {
-					near._private.selected = true; near.trigger(new $$.Event(e, {type: "select"})); near.updateStyle(false);
+					
+					cy.$(':selected').unselect();
+					near.select();
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 					
@@ -502,7 +497,7 @@
 		
 		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
 		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
-		var center1; // center point on start pinch to zoom
+		var center1, modelCenter1; // center point on start pinch to zoom
 		var offsetLeft, offsetTop;
 
 		function distance(x1, y1, x2, y2){
@@ -535,16 +530,22 @@
 				f2x1 = e.touches[1].pageX - offsetLeft;
 				f2y1 = e.touches[1].pageY - offsetTop;
 
+				var pan = cy.pan();
+				var zoom = cy.zoom();
+
 				distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
 				center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
+				modelCenter1 = [ 
+					(center1[0] - pan.x) / zoom,
+					(center1[1] - pan.y) / zoom
+				];
 
 				// console.log(center1);
 
 				// console.log('touchstart ptz');
-				// console.log(f1x1);
-				// console.log(f1y1);
-				// console.log(f2x1);
-				// console.log(f2y1);
+				// console.log(offsetLeft, offsetTop);
+				// console.log(f1x1, f1y1);
+				// console.log(f2x1, f2y1);
 				// console.log(distance1);
 				// console.log(center1);
 			}
@@ -562,17 +563,6 @@
 					
 					if (near._private.group == "nodes") {
 						
-						// Unselect other selected nodes
-						var unselectEvent = new $$.Event(e, {type: "unselect"});
-						
-						for (var i=0;i<nodes.length;i++) {
-							if (nodes[i]._private.selected && nodes[i]._private.data.id != near._private.data.id) {
-								nodes[i]._private.selected = false;
-								nodes[i].trigger(unselectEvent);
-								nodes[i].updateStyle(false);
-							}
-						}
-						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
 						near.trigger(new $$.Event(e, {type: "grab"}));
@@ -587,6 +577,24 @@
 						for (var j=0;j<sEdges.length;j++) { 
 						  sEdges[j]._private.rscratch.inDragLayer = true;
 						}
+
+						var draggedEles = r.dragData.touchDragEles = [];
+
+						if( near.selected() ){
+							var selectedNodes = cy.$('node:selected');
+
+							for( var k = 0; k < selectedNodes.length; k++ ){
+								var selectedNode = selectedNodes[k];
+								draggedEles.push( selectedNode );
+
+								var sEdges = selectedNode._private.edges;
+								for (var j=0; j<sEdges.length; j++) { 
+								  sEdges[j]._private.rscratch.inDragLayer = true;
+								}
+							}
+						} else {
+							draggedEles.push( near );
+						}
 					}
 					
 					near
@@ -595,10 +603,10 @@
 						.trigger(new $$.Event(e, {type: "vmousdown"}))
 					;
 				} else if (near == null) {
-					cy.
-						trigger(new $$.Event(e, {type: "touchstart"}))
-						trigger(new $$.Event(e, {type: "tapstart"}))
-						trigger(new $$.Event(e, {type: "vmousedown"}))
+					cy
+						.trigger(new $$.Event(e, {type: "touchstart"}))
+						.trigger(new $$.Event(e, {type: "tapstart"}))
+						.trigger(new $$.Event(e, {type: "vmousedown"}))
 					;
 				}
 				
@@ -659,58 +667,72 @@
 				var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
 				var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
 
+				// console.log( f1x2, f1y2 )
+				// console.log( f2x2, f2y2 )
+
 				var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
 				var factor = distance2 / distance1;
 
+				// console.log(distance2)
 				// console.log(factor)
-				// console.log(distance2 + ' / ' + distance1);
-				// console.log('--');
 
-				// delta finger1
-				var df1x = f1x2 - f1x1;
-				var df1y = f1y2 - f1y1;
+				if( factor != 1 ){
 
-				// delta finger 2
-				var df2x = f2x2 - f2x1;
-				var df2y = f2y2 - f2y1;
+					// console.log(factor)
+					// console.log(distance2 + ' / ' + distance1);
+					// console.log('--');
 
-				// translation is the normalised vector of the two fingers movement
-				// i.e. so pinching cancels out and moving together pans
-				var tx = (df1x + df2x)/2;
-				var ty = (df1y + df2y)/2;
+					// delta finger1
+					var df1x = f1x2 - f1x1;
+					var df1y = f1y2 - f1y1;
 
-				// adjust factor by the speed multiplier
-				var speed = 1.5;
-				if( factor > 1 ){
-					factor = (factor - 1) * speed + 1;
-				} else {
-					factor = 1 - (1 - factor) * speed;
+					// delta finger 2
+					var df2x = f2x2 - f2x1;
+					var df2y = f2y2 - f2y1;
+
+					// translation is the normalised vector of the two fingers movement
+					// i.e. so pinching cancels out and moving together pans
+					var tx = (df1x + df2x)/2;
+					var ty = (df1y + df2y)/2;
+
+					// adjust factor by the speed multiplier
+					// var speed = 1.5;
+					// if( factor > 1 ){
+					// 	factor = (factor - 1) * speed + 1;
+					// } else {
+					// 	factor = 1 - (1 - factor) * speed;
+					// }
+
+					// now calculate the zoom
+					var zoom1 = cy.zoom();
+					var zoom2 = zoom1 * factor;
+					var pan1 = cy.pan();
+
+					// the model center point converted to the current rendered pos
+					var ctrx = modelCenter1[0] * zoom1 + pan1.x;
+					var ctry = modelCenter1[1] * zoom1 + pan1.y;
+
+					var pan2 = {
+						x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
+						y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
+					};
+
+					// console.log(pan2);
+					// console.log(zoom2);
+
+					cy._private.zoom = zoom2;
+					cy._private.pan = pan2;
+					cy
+						.trigger('pan zoom')
+						.notify('viewport')
+					;
+
+					distance1 = distance2;	
+					f1x1 = f1x2;
+					f1y1 = f1y2;
+					f2x1 = f2x2;
+					f2y1 = f2y2;
 				}
-
-				var ctrx = center1[0];
-				var ctry = center1[1];
-
-				// now calculate the zoom
-				var zoom1 = cy.zoom();
-				var zoom2 = zoom1 * factor;
-				var pan1 = cy.pan();
-				var pan2 = {
-					x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
-					y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
-				};
-
-				// console.log(pan2);
-				// console.log(zoom2);
-
-				distance1 = distance2;
-
-				cy._private.zoom = zoom2;
-				cy._private.pan = pan2;
-				cy
-					.trigger('pan zoom')
-					.notify('viewport')
-				;
-				
 				
 				// Re-project
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -721,12 +743,22 @@
 				var start = r.touchData.start;
 				
 				if (start != null && start._private.group == "nodes") {
-					start._private.position.x += disp[0]; start._private.position.y += disp[1];
+					var draggedEles = r.dragData.touchDragEles;
+
+					for( var k = 0; k < draggedEles.length; k++ ){
+						var draggedEle = draggedEles[k];
+
+						draggedEle._private.position.x += disp[0];
+						draggedEle._private.position.y += disp[1];
+						
+						draggedEle.trigger(new $$.Event(e, {type: "position"}));
+						draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+					}
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node");
 //					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node");
 					
-					start.trigger(new $$.Event(e, {type: "position"}));
+					
 				}
 				
 				// Touchmove event
@@ -831,16 +863,14 @@
 				// Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
 				if (start != null 
 						&& start._private.selectable 
-						&& start._private.selected == false
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
-					
-					// unselect whatever's already selected
-					// cy.elements(':selected').unselect();
 
-					// now select the node
-					start._private.selected = true;
-					start.trigger(new $$.Event(e, {type: "select"}));
-					start.updateStyle(false);
+					if( start.selected() ){
+						start.unselect();
+					} else {
+						start.select();
+					}
+					
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 				}

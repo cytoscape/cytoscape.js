@@ -108,7 +108,7 @@
 
 		// Primary key
 		r.data.container.addEventListener("mousedown", function(e) {
-		
+
 			r.hoverData.capture = true;
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
@@ -124,7 +124,7 @@
 				// Element dragging
 				{
 					// If something is under the cursor and it is grabbable, prepare to grab it
-					if (near && near._private.grabbable) {
+					if (near && near._private.grabbable && !near._private.locked) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
 						  
 							near._private.grabbed = true; 
@@ -132,30 +132,21 @@
 							
 							near.trigger(new $$.Event(e, {type: "grab"})); 
 							
-							var unselectEvent = new $$.Event(e, {type: "unselect"});
-							var ungrabEvent = new $$.Event(e, {type: "free"});
-							
-							for (var i=0;i<draggedElements.length;i++) {
-								var popped = draggedElements[i];
-								
-								var updateStyle = false; 
-								if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
-							
-								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
-								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
-								
-								if (updateStyle) { popped.updateStyle(false); };
-							}
-							r.dragData.possibleDragElements = draggedElements = [];
-							r.dragData.possibleDragElements.push(near);
+							draggedElements = r.dragData.possibleDragElements = [ near ];
 						
 							for (var i=0;i<near._private.edges.length;i++) {
 								near._private.edges[i]._private.rscratch.inDragLayer = true;
 							};
 						}
 								
-						if (near._private.group == "nodes" && near._private.selected == true) {
-							
+						if (near._private.group == "nodes" && near._private.selected == true && near._private.grabbable && !near._private.locked) {
+							draggedElements = r.dragData.possibleDragElements = [  ];
+
+							var selectedNodes = cy.$('node:selected');
+							for( var i = 0; i < selectedNodes.length; i++ ){
+								r.dragData.possibleDragElements.push( selectedNodes[i] );
+							}
+
 							var event = new $$.Event(e, {type: "grab"}); 
 							for (var i=0;i<draggedElements.length;i++) {
 								if (draggedElements[i]._private.group == "nodes") {
@@ -229,6 +220,8 @@
 			var draggedElements = r.dragData.possibleDragElements;
 			
 			var capture = r.hoverData.capture;
+
+			var shiftDown = e.shiftKey;
 			
 			if (!capture) { 
 				
@@ -282,13 +275,13 @@
 					r.hoverData.last = near;
 				}
 				
-				if (down) {
+				if ( down && down._private.grabbable && !down._private.locked ) {
 					var drag = new $$.Event(e, {type: "position"});
 				
-					for (var i=0;i<draggedElements.length;i++) {
+					for (var i=0; i<draggedElements.length; i++) {
 					
 						// Locked nodes not draggable
-						if (!draggedElements[i]._private.locked 
+						if (!draggedElements[i]._private.locked && draggedElements[i]._private.grabbable 
 							&& draggedElements[i]._private.group == "nodes") {
 							
 							draggedElements[i]._private.position.x += disp[0];
@@ -328,13 +321,16 @@
 			var near = r.findNearestElement(pos[0], pos[1]);
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
+			var shiftDown = e.shiftKey;
 			
 			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-			if (near == null || near != down) {
+			if ( (near == null || near != down)
+				&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
+				&& !r.hoverData.dragging // not panning
+			) {
 
 //++clock+unselect
 //				var a = time();
-				
 				cy.$(':selected').unselect();
 				
 //++clock+unselect
@@ -385,10 +381,18 @@
 			
 			// Single selection
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
-				if (near != null && near._private.selectable && near._private.selected == false) {
+				if (near != null && near._private.selectable) {
 					
-					cy.$(':selected').unselect();
-					near.select();
+					if( !shiftDown ){
+						cy.$(':selected').unselect();
+					}
+
+					if( near.selected() ){
+						near.unselect();
+					} else {
+						near.select();
+					}
+					
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 					
@@ -407,6 +411,10 @@
 			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) {
 //				console.log("selecting");
 				
+				if( !shiftDown ){
+					cy.$(':selected').unselect();
+				}
+
 				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
 				// console.log(box);
 				var event = new $$.Event(e, {type: "select"});
@@ -567,7 +575,7 @@
 				if (near != null) {
 					r.touchData.start = near;
 					
-					if (near._private.group == "nodes") {
+					if (near._private.group == "nodes" && near._private.grabbable && !near._private.locked) {
 						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
@@ -748,17 +756,19 @@
 			} else if (e.touches[0]) {
 				var start = r.touchData.start;
 				
-				if (start != null && start._private.group == "nodes") {
+				if ( start != null && start._private.group == "nodes" && start._private.grabbable && !start._private.locked ) {
 					var draggedEles = r.dragData.touchDragEles;
 
 					for( var k = 0; k < draggedEles.length; k++ ){
 						var draggedEle = draggedEles[k];
 
-						draggedEle._private.position.x += disp[0];
-						draggedEle._private.position.y += disp[1];
-						
-						draggedEle.trigger(new $$.Event(e, {type: "position"}));
-						draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+						if( draggedEle._private.grabbable && !draggedEle._private.locked ){
+							draggedEle._private.position.x += disp[0];
+							draggedEle._private.position.y += disp[1];
+							
+							draggedEle.trigger(new $$.Event(e, {type: "position"}));
+							draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+						}
 					}
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node");

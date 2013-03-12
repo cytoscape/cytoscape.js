@@ -161,7 +161,12 @@
 								near._private.edges[i]._private.rscratch.inDragLayer = true;
 							};
 
-							addDescendants(near, draggedElements, true);
+							// add descendant nodes only if the compound size is set to auto
+							if (near._private.style["width"].value == "auto" ||
+							    near._private.style["height"].value == "auto")
+							{
+								addDescendants(near, draggedElements, true);
+							}
 						}
 								
 						if (near._private.group == "nodes" && near._private.selected == true && near._private.grabbable && !near._private.locked) {
@@ -171,9 +176,13 @@
 							for( var i = 0; i < selectedNodes.length; i++ ){
 								r.dragData.possibleDragElements.push( selectedNodes[i] );
 
-								addDescendants(selectedNodes[i],
-								               r.dragData.possibleDragElements,
-								               false);
+								if (selectedNodes[i]._private.style["width"].value == "auto" ||
+								    selectedNodes[i]._private.style["height"].value == "auto")
+								{
+									addDescendants(selectedNodes[i],
+										r.dragData.possibleDragElements,
+										false);
+								}
 							}
 
 							var event = new $$.Event(e, {type: "grab"}); 
@@ -1293,6 +1302,8 @@
 		for(var i = elements.length - 1; i >= 0; i--)
 		{
 			if (elements[i].isNode() &&
+			    (elements[i]._private.style["width"].value == "auto" ||
+			     elements[i]._private.style["height"].value == "auto") &&
 			    elements[i].children().length > 0)
 			{
 				var node = elements[i];

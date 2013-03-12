@@ -1054,7 +1054,8 @@
 		for (var i = 0; i < edges.length; i++) {
 			var edge = edges[i];
 			var rs = edge._private.rscratch;
-			var edgeThreshold = 256;
+			var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+			var edgeThreshold = isTouch ? 256 : 32;
 
 			if (rs.isSelfEdge) {
 				if ((this.inBezierVicinity(x, y,

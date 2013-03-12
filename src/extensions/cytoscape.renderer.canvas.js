@@ -567,7 +567,7 @@
 				if (near != null) {
 					r.touchData.start = near;
 					
-					if (near._private.group == "nodes") {
+					if (near._private.group == "nodes" && near._private.grabbable && !near._private.locked) {
 						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
@@ -748,17 +748,19 @@
 			} else if (e.touches[0]) {
 				var start = r.touchData.start;
 				
-				if (start != null && start._private.group == "nodes") {
+				if ( start != null && start._private.group == "nodes" && start._private.grabbable && !start._private.locked ) {
 					var draggedEles = r.dragData.touchDragEles;
 
 					for( var k = 0; k < draggedEles.length; k++ ){
 						var draggedEle = draggedEles[k];
 
-						draggedEle._private.position.x += disp[0];
-						draggedEle._private.position.y += disp[1];
-						
-						draggedEle.trigger(new $$.Event(e, {type: "position"}));
-						draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+						if( draggedEle._private.grabbable && !draggedEle._private.locked ){
+							draggedEle._private.position.x += disp[0];
+							draggedEle._private.position.y += disp[1];
+							
+							draggedEle.trigger(new $$.Event(e, {type: "position"}));
+							draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+						}
 					}
 					
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node");

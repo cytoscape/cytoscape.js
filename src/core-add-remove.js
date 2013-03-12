@@ -114,7 +114,8 @@
 			}
 
 			// TODO remove timeout when chrome reports dimensions onload properly
-			if( window && window.chrome ){
+			// TODO investigate dimensions reporting issue (also affects safari/ios)
+			if( true || window && window.chrome ){
 				setTimeout(function(){
 					callback();
 				}, 30);

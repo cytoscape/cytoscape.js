@@ -207,18 +207,6 @@ $(function(){
 //		$container2.cy(options);
 
 
-		$container2.cy({
-			elements: {
-				nodes: [ { data: { id: '0' } }, { data: { id: '1' } } ],
-				edges: [ { data: { id: '2', source: '0', target: '1' } } ]
-			},
-			style: defaultSty,
-			
-			ready: function(){
-				window.cy2 = this;
-			}
-		});
-
 		
 		$("#remove-elements-button").click(function(){
 			var n = number("nodes");
@@ -237,7 +225,17 @@ $(function(){
 		});
 	});
 	
-
+	$container2.cy({
+		elements: {
+			nodes: [ { data: { id: '0' } }, { data: { id: '1' } } ],
+			edges: [ { data: { id: '2', source: '0', target: '1' } } ]
+		},
+		style: defaultSty,
+		
+		ready: function(){
+			window.cy2 = this;
+		}
+	});
 
 	
 });

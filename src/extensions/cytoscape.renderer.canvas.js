@@ -1052,69 +1052,75 @@
 		
 		// Check edges
 		for (var i = 0; i < edges.length; i++) {
-			if (edges[i]._private.rscratch.isSelfEdge) {
+			var edge = edges[i];
+			var rs = edge._private.rscratch;
+			var edgeThreshold = 256;
+
+			if (rs.isSelfEdge) {
 				if ((this.inBezierVicinity(x, y,
-						edges[i]._private.rscratch.startX,
-						edges[i]._private.rscratch.startY,
-						edges[i]._private.rscratch.cp2ax,
-						edges[i]._private.rscratch.cp2ay,
-						edges[i]._private.rscratch.selfEdgeMidX,
-						edges[i]._private.rscratch.selfEdgeMidY,
-						Math.pow(edges[i]._private.style["width"].value / 2, 2))
+						rs.startX,
+						rs.startY,
+						rs.cp2ax,
+						rs.cp2ay,
+						rs.selfEdgeMidX,
+						rs.selfEdgeMidY,
+						Math.pow(edge._private.style["width"].value/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value / 2, 2) > 
+					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
 						this.sqDistanceToQuadraticBezier(x, y,
-							edges[i]._private.rscratch.startX,
-							edges[i]._private.rscratch.startY,
-							edges[i]._private.rscratch.cp2ax,
-							edges[i]._private.rscratch.cp2ay,
-							edges[i]._private.rscratch.selfEdgeMidX,
-							edges[i]._private.rscratch.selfEdgeMidY)))
+							rs.startX,
+							rs.startY,
+							rs.cp2ax,
+							rs.cp2ay,
+							rs.selfEdgeMidX,
+							rs.selfEdgeMidY)))
 					||
 					(this.inBezierVicinity(x, y,
-						edges[i]._private.rscratch.selfEdgeMidX,
-						edges[i]._private.rscratch.selfEdgeMidY,
-						edges[i]._private.rscratch.cp2cx,
-						edges[i]._private.rscratch.cp2cy,
-						edges[i]._private.rscratch.endX,
-						edges[i]._private.rscratch.endY,
-						Math.pow(edges[i]._private.style["width"].value / 2, 2))
+						rs.selfEdgeMidX,
+						rs.selfEdgeMidY,
+						rs.cp2cx,
+						rs.cp2cy,
+						rs.endX,
+						rs.endY,
+						Math.pow(edges[i]._private.style["width"].value/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value / 2, 2) > 
+					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
 						this.sqDistanceToQuadraticBezier(x, y,
-							edges[i]._private.rscratch.selfEdgeMidX,
-							edges[i]._private.rscratch.selfEdgeMidY,
-							edges[i]._private.rscratch.cp2cx,
-							edges[i]._private.rscratch.cp2cy,
-							edges[i]._private.rscratch.endX,
-							edges[i]._private.rscratch.endY))))
+							rs.selfEdgeMidX,
+							rs.selfEdgeMidY,
+							rs.cp2cx,
+							rs.cp2cy,
+							rs.endX,
+							rs.endY))))
 					 { near.push(edges[i]); }
-			} else if (edges[i]._private.rscratch.isStraightEdge) {
-				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) >
+			
+			} else if (rs.isStraightEdge) {
+				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
 					this.sqDistanceToFiniteLine(x, y,
-						edges[i]._private.rscratch.startX,
-						edges[i]._private.rscratch.startY,
-						edges[i]._private.rscratch.endX,
-						edges[i]._private.rscratch.endY))
+						rs.startX,
+						rs.startY,
+						rs.endX,
+						rs.endY))
 					{ near.push(edges[i]); }
-			} else if (edges[i]._private.rscratch.isBezierEdge) {
+			
+			} else if (rs.isBezierEdge) {
 				if (this.inBezierVicinity(x, y,
-					edges[i]._private.rscratch.startX,
-					edges[i]._private.rscratch.startY,
-					edges[i]._private.rscratch.cp2x,
-					edges[i]._private.rscratch.cp2y,
-					edges[i]._private.rscratch.endX,
-					edges[i]._private.rscratch.endY,
+					rs.startX,
+					rs.startY,
+					rs.cp2x,
+					rs.cp2y,
+					rs.endX,
+					rs.endY,
 					Math.pow(edges[i]._private.style["width"].value / 2, 2))
 						&&
-					(Math.pow(edges[i]._private.style["width"].value / 2, 2) >
+					(Math.pow(edges[i]._private.style["width"].value / 2 , 2) + edgeThreshold >
 						this.sqDistanceToQuadraticBezier(x, y,
-							edges[i]._private.rscratch.startX,
-							edges[i]._private.rscratch.startY,
-							edges[i]._private.rscratch.cp2x,
-							edges[i]._private.rscratch.cp2y,
-							edges[i]._private.rscratch.endX,
-							edges[i]._private.rscratch.endY)))
+							rs.startX,
+							rs.startY,
+							rs.cp2x,
+							rs.cp2y,
+							rs.endX,
+							rs.endY)))
 					{ near.push(edges[i]); }
 			}
 			

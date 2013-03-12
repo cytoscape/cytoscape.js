@@ -118,6 +118,29 @@
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
 
+			// helper function to determine which child nodes and inner edges
+			// of a compound node to be dragged as well as the grabbed and selected nodes
+			var addDescendants = function(node, draggedElements, addSelected){
+				var innerNodes = node.descendants();
+
+				for (var i=0; i < innerNodes.size(); i++)
+				{
+					// if addSelected is true, then add node in any case,
+					// if not, then add only non-selected nodes
+					if (addSelected || !innerNodes[i]._private.selected)
+					{
+						innerNodes[i]._private.rscratch.inDragLayer = true;
+						//innerNodes[i].trigger(new $$.Event(e, {type: "grab"}));
+						draggedElements.push(innerNodes[i]);
+
+						for (var j=0; j < innerNodes[i]._private.edges.length; j++)
+						{
+							innerNodes[i]._private.edges[j]._private.rscratch.inDragLayer = true;
+						}
+					}
+				}
+			};
+
 			// Primary button
 			if (e.button == 0) {
 				
@@ -129,14 +152,16 @@
 						  
 							near._private.grabbed = true; 
 							near._private.rscratch.inDragLayer = true;
-							
+
 							near.trigger(new $$.Event(e, {type: "grab"})); 
 							
 							draggedElements = r.dragData.possibleDragElements = [ near ];
-						
+
 							for (var i=0;i<near._private.edges.length;i++) {
 								near._private.edges[i]._private.rscratch.inDragLayer = true;
 							};
+
+							addDescendants(near, draggedElements, true);
 						}
 								
 						if (near._private.group == "nodes" && near._private.selected == true && near._private.grabbable && !near._private.locked) {
@@ -145,6 +170,10 @@
 							var selectedNodes = cy.$('node:selected');
 							for( var i = 0; i < selectedNodes.length; i++ ){
 								r.dragData.possibleDragElements.push( selectedNodes[i] );
+
+								addDescendants(selectedNodes[i],
+								               r.dragData.possibleDragElements,
+								               false);
 							}
 
 							var event = new $$.Event(e, {type: "grab"}); 
@@ -279,7 +308,7 @@
 					var drag = new $$.Event(e, {type: "position"});
 				
 					for (var i=0; i<draggedElements.length; i++) {
-					
+
 						// Locked nodes not draggable
 						if (!draggedElements[i]._private.locked && draggedElements[i]._private.grabbable 
 							&& draggedElements[i]._private.group == "nodes") {

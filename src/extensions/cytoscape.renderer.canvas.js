@@ -124,7 +124,7 @@
 				// Element dragging
 				{
 					// If something is under the cursor and it is grabbable, prepare to grab it
-					if (near && near._private.grabbable) {
+					if (near && near._private.grabbable && !near._private.locked) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
 						  
 							near._private.grabbed = true; 
@@ -154,7 +154,7 @@
 							};
 						}
 								
-						if (near._private.group == "nodes" && near._private.selected == true) {
+						if (near._private.group == "nodes" && near._private.selected == true && near._private.grabbable && !near._private.locked) {
 							
 							var event = new $$.Event(e, {type: "grab"}); 
 							for (var i=0;i<draggedElements.length;i++) {
@@ -282,10 +282,10 @@
 					r.hoverData.last = near;
 				}
 				
-				if (down) {
+				if ( down && down._private.grabbable && !down._private.locked ) {
 					var drag = new $$.Event(e, {type: "position"});
 				
-					for (var i=0;i<draggedElements.length;i++) {
+					for (var i=0; i<draggedElements.length; i++) {
 					
 						// Locked nodes not draggable
 						if (!draggedElements[i]._private.locked 

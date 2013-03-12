@@ -3,5 +3,5 @@ body { font: 14pt arial; }
 #commands { position: absolute; right: 0; top: 4.5em; margin: 0.5em; font-size: 0.75em; line-height: 1; }
 #commands h2 { margin-top: 1em; font-size: 1.25em; }
 label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left: 0.5em; background: #fff; }
-#nodes-number, #edges-number { width: 5em; }
+#nodes-number, #edges-number, #parent-node { width: 5em; }
 .ui-tooltip { font-size: 0.75em; max-width: 400px; }

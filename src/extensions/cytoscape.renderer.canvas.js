@@ -207,8 +207,8 @@
 							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 						
-						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
+						//r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
+						//r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
 					} else if (near == null) {
 						cy
@@ -261,7 +261,7 @@
 
 			var shiftDown = e.shiftKey;
 			
-			if (!capture) { 
+			if (!capture) {
 				
 				var containerPageCoords = r.findContainerPageCoords();
 				
@@ -328,7 +328,13 @@
 						}
 					}
 					
-					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
+					if (select[2] == select[0] && select[3] == select[1]) {
+						r.data.canvasNeedsRedraw[NODE] = true;
+						r.data.canvasRedrawReason[NODE].push("Node(s) and edge(s) moved to drag layer");
+					}
+					
+					r.data.canvasNeedsRedraw[DRAG] = true;
+					r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
 				}
 				
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;

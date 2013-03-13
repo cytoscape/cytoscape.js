@@ -625,11 +625,11 @@
 						near._private.rscratch.inDragLayer = true; 
 						near.trigger(new $$.Event(e, {type: "grab"}));
 						
-						r.data.canvasNeedsRedraw[DRAG] = true;
-						r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
+						// r.data.canvasNeedsRedraw[DRAG] = true;
+						// r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
 						
-						r.data.canvasNeedsRedraw[NODE] = true;
-						r.data.canvasRedrawReason[NODE].push("touchdrag node start");
+						// r.data.canvasNeedsRedraw[NODE] = true;
+						// r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
 						var sEdges = near._private.edges;
 						for (var j=0;j<sEdges.length;j++) { 
@@ -815,9 +815,15 @@
 						}
 					}
 					
-					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node");
-//					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node");
-					
+					r.data.canvasNeedsRedraw[DRAG] = true;
+					r.data.canvasRedrawReason[DRAG].push("touchdrag node");
+
+					if (r.touchData.startPosition[0] == earlier[0]
+						&& r.touchData.startPosition[1] == earlier[1]) {
+						
+						r.data.canvasNeedsRedraw[NODE] = true;
+						r.data.canvasRedrawReason[NODE].push("node drag started");
+					}
 					
 				}
 				

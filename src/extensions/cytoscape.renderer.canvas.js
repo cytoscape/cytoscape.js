@@ -884,6 +884,7 @@
 					if (start._private.grabbed == true) {
 						start._private.grabbed = false;
 						start.trigger(new $$.Event(e, {type: "free"}));
+						start._private.rscratch.inDragLayer = false;
 					}
 					
 					var sEdges = start._private.edges;

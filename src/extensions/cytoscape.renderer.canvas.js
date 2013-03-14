@@ -2341,6 +2341,9 @@
 			
 			var dotRadius = Math.max(width * 1.6, 3.4) * zoom;
 			var bufW = dotRadius * 2, bufH = dotRadius * 2;
+			bufW = Math.max(bufW, 1);
+			bufH = Math.max(bufH, 1);
+			
 			var buffer = this.createBuffer(bufW, bufH);
 			
 			var context2 = buffer[1];
@@ -2353,7 +2356,7 @@
 			
 			context2.fillStyle = context.strokeStyle;
 			context2.beginPath();
-			context2.arc(dotRadius, dotRadius, dotRadius * 0.5, 0, Math.PI * 2, false);
+			context2.arc(bufW/2, bufH/2, dotRadius * 0.5, 0, Math.PI * 2, false);
 			context2.fill();
 			
 			// Now use buffer
@@ -2390,6 +2393,8 @@
 			
 			//var bufW = width * 2 * zoom, bufH = width * 2.5 * zoom;
 			var bufW = width * 2 * zoom, bufH = width * 1.7 * zoom;
+			bufW = Math.max(bufW, 1);
+			bufH = Math.max(bufH, 1);
 			
 			var buffer = this.createBuffer(bufW, bufH);
 			var context2 = buffer[1];

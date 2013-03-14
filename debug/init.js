@@ -10,12 +10,8 @@ $(function(){
 					"background-color": "#DDD",
 					"border-color": "#555"
 				})
-			.selector("$node > node") // compound node style
-				.css({
-					"width": "auto",
-					"height": "auto",
-					"shape": "rectangle",
-					"textValign": "bottom",
+			.selector("$node > node") // compound (parent) nodes
+				.css({"textValign": "bottom",
 					"font-weight": "bold",
 					"font-style": "italic",
 					"background-color": "#B7E1ED",

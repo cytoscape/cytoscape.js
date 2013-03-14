@@ -293,6 +293,12 @@
 					"padding-right": 0,
 					"shape": "ellipse"
 				})
+			.selector("$node > node") // compound (parent) node properties
+				.css({
+					"width": "auto",
+					"height": "auto",
+					"shape": "rectangle"
+				})
 			.selector("edge") // just edge properties
 				.css({
 					"source-arrow-shape": "none",

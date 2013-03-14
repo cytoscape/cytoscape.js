@@ -130,6 +130,10 @@
 
 	(function(){
 		var number = $$.util.regex.number;
+		var rgba = $$.util.regex.rgbaNoBackRefs;
+		var hsla = $$.util.regex.hslaNoBackRefs;
+		var hex3 = $$.util.regex.hex3;
+		var hex6 = $$.util.regex.hex6;
 
 		// each visual style property has a type and needs to be validated according to it
 		$$.style.types = {
@@ -158,7 +162,7 @@
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
 			data: { mapping: true, regex: "^data\\s*\\(\\s*(\\w+)\\s*\\)$" },
-			mapData: { mapping: true, regex: "^mapData\\((\\w+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(\\w+)\\s*\\,\\s*(\\w+)\\)$" },
+			mapData: { mapping: true, regex: "^mapData\\((\\w+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" },
 			url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
 		};
 

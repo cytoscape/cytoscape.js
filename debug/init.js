@@ -6,7 +6,6 @@ $(function(){
 			.selector("node")
 				.css({
 					"content": "data(id)",
-					"shape": "data(shape)",
 					"border-width": 3,
 					"background-color": "#DDD",
 					"border-color": "#555"

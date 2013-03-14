@@ -313,7 +313,7 @@
 			var number = $$.util.regex.number;
 			var h, s, l, a, r, g, b;
 
-			var m = new RegExp("^hsl[a]?\\(("+ number +")\\s*,\\s*("+ number +"[%])\\s*,\\s*("+ number +"[%])(?:\\s*,\\s*("+ number +"))?\\)$").exec(hsl);
+			var m = new RegExp("^" + $$.util.regex.hsla + "$").exec(hsl);
 			if( m ){
 
 				// get hue
@@ -351,14 +351,14 @@
 						if(t < 1/6) return p + (q - p) * 6 * t;
 						if(t < 1/2) return q;
 						if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-						return Math.round(255 * p);
+						return p;
 					}
 
 					var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
 					var p = 2 * l - q;
-					r = hue2rgb(p, q, h + 1/3);
-					g = hue2rgb(p, q, h);
-					b = hue2rgb(p, q, h - 1/3);
+					r = Math.round( 255 * hue2rgb(p, q, h + 1/3) );
+					g = Math.round( 255 * hue2rgb(p, q, h) );
+					b = Math.round( 255 * hue2rgb(p, q, h - 1/3) );
 				}
 
 				ret = [r, g, b, a];
@@ -372,7 +372,7 @@
 			var ret;
 			var number = $$.util.regex.number;
 
-			var m = new RegExp("^rgb[a]?\\(("+ number +"[%]?)\\s*,\\s*("+ number +"[%]?)\\s*,\\s*("+ number +"[%]?)(?:\\s*,\\s*("+ number +"))?\\)$").exec(rgb);
+			var m = new RegExp("^" + $$.util.regex.rgba + "$").exec(rgb);
 			if( m ){
 				ret = [];
 
@@ -438,10 +438,6 @@
 			}
 
 			return '#' + ch2hex(r) + ch2hex(g) + ch2hex(b);
-		},
-
-		regex: {
-			number: "(?:\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+)"
 		},
 
 		colors: {
@@ -599,5 +595,18 @@
 		}
 			
 	};
+
+	$$.util.regex = {};
 	
+	$$.util.regex.number = "(?:\\d*\\.\\d+|\\d+|\\d*\\.\\d+[eE]\\d+)";
+	
+	$$.util.regex.rgba = "rgb[a]?\\(("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*("+ $$.util.regex.number +"))?\\)";
+	$$.util.regex.rgbaNoBackRefs = "rgb[a]?\\((?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*(?:"+ $$.util.regex.number +"))?\\)";
+	
+	$$.util.regex.hsla = "hsl[a]?\\(("+ $$.util.regex.number +")\\s*,\\s*("+ $$.util.regex.number +"[%])\\s*,\\s*("+ $$.util.regex.number +"[%])(?:\\s*,\\s*("+ $$.util.regex.number +"))?\\)";
+	$$.util.regex.hslaNoBackRefs = "hsl[a]?\\((?:"+ $$.util.regex.number +")\\s*,\\s*(?:"+ $$.util.regex.number +"[%])\\s*,\\s*(?:"+ $$.util.regex.number +"[%])(?:\\s*,\\s*(?:"+ $$.util.regex.number +"))?\\)";
+	
+	$$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
+	$$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
+
 })( cytoscape );

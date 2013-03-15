@@ -92,6 +92,7 @@
 			locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
 			grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
 			grabbable: params.grabbable === undefined ? true : ( params.grabbable ? true : false ), // whether the element can be grabbed
+			active: false, // whether the element is active from user interaction
 			classes: {}, // map ( className => true )
 			animation: { // object for currently-running animations
 				current: [],

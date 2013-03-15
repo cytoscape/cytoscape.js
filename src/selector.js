@@ -130,7 +130,7 @@
 				
 				state: {
 					query: true,
-					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child)",
+					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
 					populate: function( state ){
 						this.colonSelectors.push( state );
 					}
@@ -484,6 +484,15 @@
 					break;
 				case ":child":
 					allColonSelectorsMatch = element.parent().nonempty();
+					break;
+				case ":active":
+					allColonSelectorsMatch = element.active();
+					break;
+				case ":inactive":
+					allColonSelectorsMatch = !element.active();
+					break;
+				case ":touch":
+					allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
 					break;
 				}
 				

@@ -92,5 +92,19 @@
 			return ele._private.grabbed;
 		}
 	};
+
+	$$.elesfn.active = function(){
+		var ele = this[0];
+		if( ele ){
+			return ele._private.active;
+		}
+	};
+
+	$$.elesfn.inactive = function(){
+		var ele = this[0];
+		if( ele ){
+			return !ele._private.active;
+		}
+	};
 	
 })( cytoscape );

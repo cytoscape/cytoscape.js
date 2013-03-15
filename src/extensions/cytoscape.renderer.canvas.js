@@ -135,7 +135,7 @@
 				{
 					innerNodes[i]._private.rscratch.inDragLayer = true;
 					//innerNodes[i].trigger(new $$.Event(e, {type: "grab"}));
-					innerNodes[i].trigger(event);
+					//innerNodes[i].trigger(event);
 					r.dragData.possibleDragElements.push(innerNodes[i]);
 
 					for (var j=0; j < innerNodes[i]._private.edges.length; j++)
@@ -146,6 +146,8 @@
 			}
 		};
 
+		// adds the given nodes, and its edges to the drag layer,
+		// also trigger the given (grab) event on the node
 		var addNodeToDrag = function(node, event) {
 			node._private.grabbed = true;
 			node._private.rscratch.inDragLayer = true;
@@ -160,6 +162,8 @@
 			node.trigger(event);
 		};
 
+		// helper function to determine which ancestor nodes and edges should go
+		// to the drag layer (or should be removed from drag layer).
 		var updateAncestorsInDragLayer = function(node, inDragLayer) {
 			// find top-level parent
 			var parent = node;
@@ -221,6 +225,7 @@
 								addDescendantsToDrag(near, true, grabEvent);
 							}
 
+							// also add nodes and edges related to the topmost ancestor
 							updateAncestorsInDragLayer(near, true);
 						}
 								
@@ -238,9 +243,12 @@
 									addDescendantsToDrag(selectedNodes[i], false, grabEvent);
 								}
 
+								// also add nodes and edges related to the topmost ancestor
 								updateAncestorsInDragLayer(selectedNodes[i], true);
 							}
 
+							// commented out, these are handled now within the helper functions
+							// (addNodeToDrag, addDescendantsToDrag, updateAncestorsInDragLayer)
 //							var event = new $$.Event(e, {type: "grab"});
 //							for (var i=0;i<draggedElements.length;i++) {
 //								if (draggedElements[i]._private.group == "nodes") {
@@ -507,6 +515,8 @@
 					
 					var sEdges = near._private.edges;
 					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+
+					// for compound nodes, also remove related nodes and edges from the drag layer
 					updateAncestorsInDragLayer(near, false);
 				}
 			}
@@ -545,6 +555,8 @@
 					  
 						var sEdges = draggedElements[i]._private.edges;
 						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+
+						// for compound nodes, also remove related nodes and edges from the drag layer
 						updateAncestorsInDragLayer(draggedElements[i], false);
 						
 					} else if (draggedElements[i]._private.group == "edges") {
@@ -1816,7 +1828,7 @@
 						{
 							return 1;
 						}
-						// "a" is an edge, it should be drawn firts
+						// "a" is an edge, it should be drawn first
 						else if (a._private.group == "edges"
 							&& b._private.group == "nodes")
 						{

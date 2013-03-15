@@ -353,7 +353,7 @@
 				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
-					&& (new Date()).getTime() - r.hoverData.downTime > 200 
+					&& (new Date()).getTime() - r.hoverData.downTime > 400 
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
 					&& cy.panningEnabled() ) {
 				

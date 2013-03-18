@@ -189,6 +189,9 @@
 			{ name: "visibility", type: t.visibility },
 			{ name: "opacity", type: t.zeroOneNumber },
 			{ name: "z-index", type: t.nonNegativeInt },
+			{ name: "overlay-padding", type: t.size },
+			{ name: "overlay-color", type: t.color },
+			{ name: "overlay-opacity", type: t.zeroOneNumber },
 
 			// these are just for nodes
 			{ name: "background-color", type: t.color },
@@ -274,7 +277,10 @@
 					"visibility": "visible",
 					"opacity": 1,
 					"z-index": 0,
-					"content": ""
+					"content": "",
+					"overlay-opacity": 0,
+					"overlay-color": "#000",
+					"overlay-padding": 10
 				})
 			.selector("node") // just node properties
 				.css({

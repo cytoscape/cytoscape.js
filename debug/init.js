@@ -35,7 +35,9 @@ $(function(){
 				})
 			.selector(":active")
 				.css({
-					"background-color": "red"
+					"overlay-color": "black",
+					"overlay-padding": 10,
+					"overlay-opacity": 0.25
 				})
 			.selector(".ui-cytoscape-edgehandles-source")
 				.css({

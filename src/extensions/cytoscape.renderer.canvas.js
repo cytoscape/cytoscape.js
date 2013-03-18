@@ -192,6 +192,18 @@
 			}
 		};
 
+		CanvasRenderer.prototype.nodeIsDraggable = function(node) {
+			if (node._private.style["opacity"].value != 0
+				&& node._private.style["visibility"].value == "visible"
+				&& !node._private.locked
+				&& node._private.grabbable) {
+	
+				return true;
+			}
+			
+			return false;
+		}
+
 		// Primary key
 		r.data.container.addEventListener("mousedown", function(e) {
 
@@ -213,8 +225,8 @@
 
 				// Element dragging
 				{
-					// If something is under the cursor and it is grabbable, prepare to grab it
-					if (near && near._private.grabbable && !near._private.locked) {
+					// If something is under the cursor and it is draggable, prepare to grab it
+					if (near != null && r.nodeIsDraggable(near)) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
 
 							draggedElements = r.dragData.possibleDragElements = [ ];
@@ -231,22 +243,26 @@
 							updateAncestorsInDragLayer(near, true);
 						}
 								
-						if (near._private.group == "nodes" && near._private.selected == true && near._private.grabbable && !near._private.locked) {
+						if (near._private.group == "nodes" && near._private.selected == true) {
 							draggedElements = r.dragData.possibleDragElements = [  ];
 
 							var selectedNodes = cy.$('node:selected');
 							for( var i = 0; i < selectedNodes.length; i++ ){
 								//r.dragData.possibleDragElements.push( selectedNodes[i] );
-								addNodeToDrag(selectedNodes[i], grabEvent);
+								
+								// Only add this selected node to drag if it is draggable, eg. has nonzero opacity
+								if (r.nodeIsDraggable(selectedNodes[i])) {								
+									addNodeToDrag(selectedNodes[i], grabEvent);
 
-								if (selectedNodes[i]._private.style["width"].value == "auto" ||
-								    selectedNodes[i]._private.style["height"].value == "auto")
-								{
-									addDescendantsToDrag(selectedNodes[i], false, grabEvent);
+									if (selectedNodes[i]._private.style["width"].value == "auto" ||
+										selectedNodes[i]._private.style["height"].value == "auto")
+									{
+										addDescendantsToDrag(selectedNodes[i], false, grabEvent);
+									}
+
+									// also add nodes and edges related to the topmost ancestor
+									updateAncestorsInDragLayer(selectedNodes[i], true);
 								}
-
-								// also add nodes and edges related to the topmost ancestor
-								updateAncestorsInDragLayer(selectedNodes[i], true);
 							}
 
 						}
@@ -368,9 +384,9 @@
 				
 					for (var i=0; i<draggedElements.length; i++) {
 
-						// Locked nodes not draggable
-						if (!draggedElements[i]._private.locked && draggedElements[i]._private.grabbable 
-							&& draggedElements[i]._private.group == "nodes") {
+						// Locked nodes not draggable, as well as non-visible nodes
+						if (draggedElements[i]._private.group == "nodes"
+							&& r.nodeIsDraggable(draggedElements[i])) {
 							
 							draggedElements[i]._private.position.x += disp[0];
 							draggedElements[i]._private.position.y += disp[1];
@@ -681,7 +697,7 @@
 
 					r.touchData.start = near;
 					
-					if (near._private.group == "nodes" && near._private.grabbable && !near._private.locked) {
+					if (near._private.group == "nodes" && r.nodeIsDraggable(near)) {
 						
 						near._private.grabbed = true;
 						near._private.rscratch.inDragLayer = true; 
@@ -705,11 +721,13 @@
 
 							for( var k = 0; k < selectedNodes.length; k++ ){
 								var selectedNode = selectedNodes[k];
-								draggedEles.push( selectedNode );
+								if (r.nodeIsDraggable(selectedNode)) {
+									draggedEles.push( selectedNode );
 
-								var sEdges = selectedNode._private.edges;
-								for (var j=0; j<sEdges.length; j++) { 
-								  sEdges[j]._private.rscratch.inDragLayer = true;
+									var sEdges = selectedNode._private.edges;
+									for (var j=0; j<sEdges.length; j++) { 
+									  sEdges[j]._private.rscratch.inDragLayer = true;
+									}
 								}
 							}
 						} else {
@@ -862,13 +880,13 @@
 			} else if (e.touches[0]) {
 				var start = r.touchData.start;
 				
-				if ( start != null && start._private.group == "nodes" && start._private.grabbable && !start._private.locked ) {
+				if ( start != null && start._private.group == "nodes" && r.nodeIsDraggable(start)) {
 					var draggedEles = r.dragData.touchDragEles;
 
 					for( var k = 0; k < draggedEles.length; k++ ){
 						var draggedEle = draggedEles[k];
 
-						if( draggedEle._private.grabbable && !draggedEle._private.locked ){
+						if( r.nodeIsDraggable(draggedEle) ){
 							draggedEle._private.position.x += disp[0];
 							draggedEle._private.position.y += disp[1];
 							

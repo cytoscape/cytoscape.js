@@ -2091,7 +2091,7 @@
 	}
 	
 	// Draw edge
-	CanvasRenderer.prototype.drawEdge = function(context, edge) {
+	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
 		var startNode, endNode;
 
@@ -2104,19 +2104,31 @@
 			return;
 		}
 		
+		var overlayPadding = edge._private.style["overlay-padding"].value;
+		var overlayOpacity = edge._private.style["overlay-opacity"].value;
+		var overlayColor = edge._private.style["overlay-color"].value;
+
 		// Edge color & opacity
-		context.strokeStyle = "rgba(" 
-			+ edge._private.style["line-color"].value[0] + ","
-			+ edge._private.style["line-color"].value[1] + ","
-			+ edge._private.style["line-color"].value[2] + ","
-			+ edge._private.style.opacity.value + ")";
-		
+		if( drawOverlayInstead ){
+			context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
+			context.lineCap = "round";
+
+		} else {
+			context.strokeStyle = "rgba(" 
+				+ edge._private.style["line-color"].value[0] + ","
+				+ edge._private.style["line-color"].value[1] + ","
+				+ edge._private.style["line-color"].value[2] + ","
+				+ edge._private.style.opacity.value + ")";
+		}
+
 		// Edge line width
 		if (edge._private.style["width"].value <= 0) {
 			return;
 		}
 		
-		context.lineWidth = edge._private.style["width"].value;
+		var edgeWidth = edge._private.style["width"].value + (drawOverlayInstead ? 2 * overlayPadding : 0);
+		var lineStyle = drawOverlayInstead ? "solid" : edge._private.style["line-style"].value;
+		context.lineWidth = edgeWidth;
 		
 		this.findEndpoints(edge);
 		
@@ -2125,13 +2137,13 @@
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
 				details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY],
-				edge._private.style["line-style"].value,
-				edge._private.style["width"].value);
+				lineStyle,
+				edgeWidth);
 			
 			this.drawStyledEdge(edge, context, [details.selfEdgeMidX, details.selfEdgeMidY,
 				details.cp2cx, details.cp2cy, details.endX, details.endY],
-				edge._private.style["line-style"].value,
-				edge._private.style["width"].value);
+				lineStyle,
+				edgeWidth);
 			
 		} else if (edge._private.rscratch.isStraightEdge) {
 			
@@ -2150,8 +2162,8 @@
 				var details = edge._private.rscratch;
 				this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				                              details.endX, details.endY],
-				                              edge._private.style["line-style"].value,
-				                              edge._private.style["width"].value);
+				                              lineStyle,
+				                              edgeWidth);
 				
 				edge._private.rscratch.straightEdgeTooShort = false;	
 			}	
@@ -2160,14 +2172,18 @@
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				details.cp2x, details.cp2y, details.endX, details.endY],
-				edge._private.style["line-style"].value,
-				edge._private.style["width"].value);
+				lineStyle,
+				edgeWidth);
 			
 		}
 		
 		if (edge._private.rscratch.noArrowPlacement !== true
 				&& edge._private.rscratch.startX !== undefined) {
-			this.drawArrowheads(context, edge);
+			this.drawArrowheads(context, edge, drawOverlayInstead);
+		}
+
+		if( !drawOverlayInstead && overlayOpacity > 0 ){
+			this.drawEdge(context, edge, true);
 		}
 	}
 	
@@ -2629,6 +2645,23 @@
 		if (node._private.style["border-width"].value > 0) {
 			context.stroke();
 		}
+		
+		// Draw the node overlay
+		var overlayPadding = node._private.style["overlay-padding"].value;
+		var overlayOpacity = node._private.style["overlay-opacity"].value;
+		var overlayColor = node._private.style["overlay-color"].value;
+		if( overlayOpacity > 0 ){
+			context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
+
+			nodeShapes[this.getNodeShape(node)].draw(
+				context,
+				node._private.position.x,
+				node._private.position.y,
+				nodeWidth + overlayPadding * 2,
+				nodeHeight + overlayPadding * 2
+			);
+		}
+
 	};
 	
 	CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
@@ -3745,7 +3778,9 @@
 	// @O Arrow shape drawing
 	
 	// Draw arrowheads on edge
-	CanvasRenderer.prototype.drawArrowheads = function(context, edge) {
+	CanvasRenderer.prototype.drawArrowheads = function(context, edge, drawOverlayInstead) {
+		if( drawOverlayInstead ){ return; } // don't do anything for overlays 
+
 		// Displacement gives direction for arrowhead orientation
 		var dispX, dispY;
 

@@ -209,6 +209,8 @@
 			// Primary button
 			if (e.button == 0) {
 				
+				if( near ){ near.activate(); }
+
 				// Element dragging
 				{
 					// If something is under the cursor and it is grabbable, prepare to grab it
@@ -247,22 +249,6 @@
 								updateAncestorsInDragLayer(selectedNodes[i], true);
 							}
 
-							// commented out, these are handled now within the helper functions
-							// (addNodeToDrag, addDescendantsToDrag, updateAncestorsInDragLayer)
-//							var event = new $$.Event(e, {type: "grab"});
-//							for (var i=0;i<draggedElements.length;i++) {
-//								if (draggedElements[i]._private.group == "nodes") {
-//									draggedElements[i]._private.rscratch.inDragLayer = true;
-//									draggedElements[i]._private.grabbed = true;
-//									var subEdges = draggedElements[i]._private.edges;
-//
-//									for (var j=0;j<subEdges.length;j++) {
-//										subEdges[j]._private.rscratch.inDragLayer = true;
-//									}
-//
-//									draggedElements[i].trigger(event)
-//								}
-//							}
 						}
 						
 						near
@@ -431,6 +417,8 @@
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			var shiftDown = e.shiftKey;
 			
+			if( down ){ down.unactivate(); }
+
 			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
 			if ( (near == null || near != down)
 				&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
@@ -689,6 +677,8 @@
 				var near = r.findNearestElement(now[0], now[1]);
 
 				if (near != null) {
+					near.activate();
+
 					r.touchData.start = near;
 					
 					if (near._private.group == "nodes" && near._private.grabbable && !near._private.locked) {
@@ -959,6 +949,8 @@
 				var start = r.touchData.start;
 				
 				if (start != null ) {
+					start.unactivate();
+
 					if (start._private.grabbed == true) {
 						start._private.grabbed = false;
 						start.trigger(new $$.Event(e, {type: "free"}));

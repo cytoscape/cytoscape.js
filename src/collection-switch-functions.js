@@ -93,12 +93,11 @@
 		}
 	};
 
-	$$.elesfn.active = function(){
-		var ele = this[0];
-		if( ele ){
-			return ele._private.active;
-		}
-	};
+	defineSwitchSet({
+		field: "active",
+		on: "activate",
+		off: "unactivate"
+	});
 
 	$$.elesfn.inactive = function(){
 		var ele = this[0];

@@ -33,6 +33,10 @@ $(function(){
 					"source-arrow-color": "#000",
 					"target-arrow-color": "#000"
 				})
+			.selector(":active")
+				.css({
+					"background-color": "red"
+				})
 			.selector(".ui-cytoscape-edgehandles-source")
 				.css({
 					"border-color": "#5CC2ED",

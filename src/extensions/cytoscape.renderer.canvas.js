@@ -379,7 +379,7 @@
 					r.hoverData.last = near;
 				}
 				
-				if ( down && down._private.grabbable && !down._private.locked ) {
+				if ( down && down.isNode() && down._private.grabbable && !down._private.locked ) {
 					var drag = new $$.Event(e, {type: "position"});
 				
 					for (var i=0; i<draggedElements.length; i++) {

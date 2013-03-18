@@ -2131,6 +2131,10 @@
 			context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 			context.lineCap = "round";
 
+			if( edge._private.rscratch.isSelfEdge ){
+				context.lineCap = "butt";
+			}
+
 		} else {
 			context.strokeStyle = "rgba(" 
 				+ edge._private.style["line-color"].value[0] + ","

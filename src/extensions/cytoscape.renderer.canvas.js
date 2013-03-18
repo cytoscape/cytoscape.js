@@ -622,11 +622,11 @@
 		// Functions to help with handling mouseout/mouseover on the Cytoscape container
 					// Handle mouseout on Cytoscape container
 		r.data.container.addEventListener("mouseout", function(e) { 
-			cy.trigger(new $$.Event(e, {type: "mouseout"}));
+			r.data.cy.trigger(new $$.Event(e, {type: "mouseout"}));
 		}, false);
 		
 		r.data.container.addEventListener("mouseover", function(e) { 
-			cy.trigger(new $$.Event(e, {type: "mouseover"}));
+			r.data.cy.trigger(new $$.Event(e, {type: "mouseover"}));
 		}, false);
 		
 		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom

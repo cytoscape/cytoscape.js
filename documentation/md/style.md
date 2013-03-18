@@ -42,7 +42,7 @@ These properties apply only to nodes:
  * `border-color` : The colour of the node's border.
  * `border-width` : The size of the node's border.
  * `height` : The height of the node's body.
- * `shape` : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, or `triangle`.
+ * `shape` : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`.
 
 ### Edge properties
 
@@ -53,6 +53,7 @@ These properties apply only to edges:
  * `target-arrow-shape` : The shape of the edge's arrow on the target side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
  * `target-arrow-color` : The colour of the edge's arrow on the target side.
  * `line-color` : The colour of the edge's line.
+ * `line-style` : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
 ### Core properties
 

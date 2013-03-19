@@ -75,7 +75,9 @@
 
 	CanvasRenderer.prototype.notify = function(params) {
 		if (params.type == "add"
-			|| params.type == "remove") {
+			|| params.type == "remove"
+			|| params.type == "load"
+		) {
 			
 			this.updateNodesCache();
 			this.updateEdgesCache();

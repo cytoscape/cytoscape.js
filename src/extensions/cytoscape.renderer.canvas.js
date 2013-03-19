@@ -380,6 +380,8 @@
 				}
 				
 				if ( down && down.isNode() && down._private.grabbable && !down._private.locked ) {
+					r.dragData.didDrag = true; // indicate that we actually did drag the node
+
 					var drag = new $$.Event(e, {type: "drag"});
 					var posn = new $$.Event(e, {type: "position"});
 				
@@ -440,6 +442,7 @@
 
 			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
 			if ( (down == null) // not mousedown on node
+				&& !r.dragData.didDrag // didn't move the node around
 				&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
 				&& !r.hoverData.dragging // not panning
 			) {
@@ -595,6 +598,8 @@
 //			console.log("mu", pos[0], pos[1]);
 //			console.log("ss", select);
 			
+			r.dragData.didDrag = false;
+
 			r.redraw();
 			
 		}, false);
@@ -903,6 +908,8 @@
 						var draggedEle = draggedEles[k];
 
 						if( r.nodeIsDraggable(draggedEle) ){
+							r.dragData.didDrag = true;
+
 							draggedEle._private.position.x += disp[0];
 							draggedEle._private.position.y += disp[1];
 							
@@ -1043,6 +1050,7 @@
 				
 				// Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
 				if (start != null 
+						&& !r.dragData.didDrag // didn't drag nodes around
 						&& start._private.selectable 
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 
@@ -1078,6 +1086,9 @@
 			}
 			
 			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+
+			r.dragData.didDrag = false; // reset for next mousedown
+
 			r.redraw();
 			
 		}, true);

@@ -426,7 +426,8 @@
 		}, false);
 		
 		window.addEventListener("mouseup", function(e) {
-			
+			// console.log('--\nmouseup', e)
+
 			var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
 		
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
@@ -438,10 +439,12 @@
 			if( down ){ down.unactivate(); }
 
 			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-			if ( (near == null || near != down)
+			if ( (down == null) // not mousedown on node
 				&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
 				&& !r.hoverData.dragging // not panning
 			) {
+
+				// console.log('unselect all from bg');
 
 //++clock+unselect
 //				var a = time();
@@ -459,6 +462,8 @@
 			
 			// Click event
 			{
+				// console.log('trigger click et al');
+
 				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
 					if (near != null) {
 						near
@@ -478,6 +483,8 @@
 			
 			// Mouseup event
 			{
+				// console.log('trigger mouseup et al');
+
 				if (near != null) {
 					near
 						.trigger(new $$.Event(e, {type: "mouseup"}))
@@ -497,6 +504,8 @@
 			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
 				if (near != null && near._private.selectable) {
 					
+					// console.log('single selection')
+
 					if( !shiftDown ){
 						cy.$(':selected').unselect();
 					}
@@ -515,6 +524,8 @@
 			// Ungrab single drag
 			} else if (near == down) {
 				if (near != null && near._private.grabbed) {
+					// console.log('ungrab single drag')
+
 					var freeEvent = new $$.Event(e, {type: "free"});
 					
 					near._private.grabbed = false; near.trigger(freeEvent);
@@ -528,7 +539,7 @@
 			}
 			
 			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) {
-//				console.log("selecting");
+				// console.log("box selection");
 				
 				if( !shiftDown ){
 					cy.$(':selected').unselect();
@@ -552,6 +563,7 @@
 			r.hoverData.dragging = false;
 			
 			if (!select[4]) {
+				// console.log('free at end', draggedElements)
 				var freeEvent = new $$.Event(e, {type: "free"}); 
 				
 				for (var i=0;i<draggedElements.length;i++) {

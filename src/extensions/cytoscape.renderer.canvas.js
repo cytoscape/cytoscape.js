@@ -380,7 +380,8 @@
 				}
 				
 				if ( down && down.isNode() && down._private.grabbable && !down._private.locked ) {
-					var drag = new $$.Event(e, {type: "position"});
+					var drag = new $$.Event(e, {type: "drag"});
+					var posn = new $$.Event(e, {type: "position"});
 				
 					for (var i=0; i<draggedElements.length; i++) {
 
@@ -391,6 +392,7 @@
 							draggedElements[i]._private.position.x += disp[0];
 							draggedElements[i]._private.position.y += disp[1];
 							draggedElements[i].trigger(drag);
+							draggedElements[i].trigger(posn);
 						}
 					}
 					

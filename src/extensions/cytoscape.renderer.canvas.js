@@ -720,7 +720,7 @@
 							var selectedNodes = cy.$('node:selected');
 
 							for( var k = 0; k < selectedNodes.length; k++ ){
-								
+
 								var selectedNode = selectedNodes[k];
 								if (r.nodeIsDraggable(selectedNode)) {
 									draggedEles.push( selectedNode );
@@ -980,6 +980,22 @@
 					var sEdges = start._private.edges;
 					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 					
+					if( start.selected() ){
+						var selectedNodes = cy.$('node:selected');
+
+						for( var k = 0; k < selectedNodes.length; k++ ){
+
+							var selectedNode = selectedNodes[k];
+							selectedNode._private.rscratch.inDragLayer = false; 
+
+							var sEdges = selectedNode._private.edges;
+							for (var j=0; j<sEdges.length; j++) { 
+							  sEdges[j]._private.rscratch.inDragLayer = false;
+							}
+							
+						}
+					}
+
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node end");
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node end");
 					

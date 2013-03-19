@@ -720,9 +720,11 @@
 							var selectedNodes = cy.$('node:selected');
 
 							for( var k = 0; k < selectedNodes.length; k++ ){
+								
 								var selectedNode = selectedNodes[k];
 								if (r.nodeIsDraggable(selectedNode)) {
 									draggedEles.push( selectedNode );
+									selectedNode._private.rscratch.inDragLayer = true; 
 
 									var sEdges = selectedNode._private.edges;
 									for (var j=0; j<sEdges.length; j++) { 

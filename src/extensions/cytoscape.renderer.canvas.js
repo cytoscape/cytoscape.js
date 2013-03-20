@@ -381,7 +381,7 @@
 					r.hoverData.last = near;
 				}
 				
-				if ( down && down.isNode() && down._private.grabbable && !down._private.locked ) {
+				if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
 					r.dragData.didDrag = true; // indicate that we actually did drag the node
 
 					var drag = new $$.Event(e, {type: "drag"});

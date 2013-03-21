@@ -230,8 +230,7 @@
 						if (near._private.group == "nodes" && near._private.selected == false) {
 
 							draggedElements = r.dragData.possibleDragElements = [ ];
-							addNodeToDrag(near,
-								r.dragData.possibleDragElements);
+							addNodeToDrag(near, draggedElements);
 							near.trigger(grabEvent);
 
 							// add descendant nodes only if the compound size is set to auto
@@ -240,7 +239,7 @@
 							{
 								addDescendantsToDrag(near,
 									true,
-									r.dragData.possibleDragElements);
+									draggedElements);
 							}
 
 							// also add nodes and edges related to the topmost ancestor
@@ -257,8 +256,7 @@
 								// Only add this selected node to drag if it is draggable, eg. has nonzero opacity
 								if (r.nodeIsDraggable(selectedNodes[i]))
 								{
-									addNodeToDrag(selectedNodes[i],
-										r.dragData.possibleDragElements);
+									addNodeToDrag(selectedNodes[i], draggedElements);
 									near.trigger(grabEvent);
 
 									if (selectedNodes[i]._private.style["width"].value == "auto" ||
@@ -266,7 +264,7 @@
 									{
 										addDescendantsToDrag(selectedNodes[i],
 											false,
-											r.dragData.possibleDragElements);
+											draggedElements);
 									}
 
 									// also add nodes and edges related to the topmost ancestor
@@ -724,11 +722,11 @@
 
 					r.touchData.start = near;
 					
-					if (near._private.group == "nodes" && r.nodeIsDraggable(near)) {
-						
-						near._private.grabbed = true;
-						near._private.rscratch.inDragLayer = true; 
-						near.trigger(new $$.Event(e, {type: "grab"}));
+					if (near._private.group == "nodes" && r.nodeIsDraggable(near))
+					{
+//						near._private.grabbed = true;
+//						near._private.rscratch.inDragLayer = true;
+//						near.trigger(new $$.Event(e, {type: "grab"}));
 						
 						// r.data.canvasNeedsRedraw[DRAG] = true;
 						// r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
@@ -736,14 +734,19 @@
 						// r.data.canvasNeedsRedraw[NODE] = true;
 						// r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
-						var sEdges = near._private.edges;
-						for (var j=0;j<sEdges.length;j++) { 
-						  sEdges[j]._private.rscratch.inDragLayer = true;
-						}
+//						var sEdges = near._private.edges;
+//						for (var j=0;j<sEdges.length;j++) {
+//						  sEdges[j]._private.rscratch.inDragLayer = true;
+//						}
 
 						var draggedEles = r.dragData.touchDragEles = [];
+						addNodeToDrag(near, draggedEles);
+						near.trigger(new $$.Event(e, {type: "grab"}));
 
 						if( near.selected() ){
+							// reset drag elements, since near will be added again
+							draggedEles = r.dragData.touchDragEles = [];
+
 							var selectedNodes = cy.$('node:selected');
 
 							for( var k = 0; k < selectedNodes.length; k++ ){
@@ -751,16 +754,39 @@
 								var selectedNode = selectedNodes[k];
 								if (r.nodeIsDraggable(selectedNode)) {
 									draggedEles.push( selectedNode );
-									selectedNode._private.rscratch.inDragLayer = true; 
+									selectedNode._private.rscratch.inDragLayer = true;
 
 									var sEdges = selectedNode._private.edges;
-									for (var j=0; j<sEdges.length; j++) { 
+									for (var j=0; j<sEdges.length; j++) {
 									  sEdges[j]._private.rscratch.inDragLayer = true;
 									}
+
+									if (selectedNode._private.style["width"].value == "auto" ||
+									    selectedNode._private.style["height"].value == "auto")
+									{
+										addDescendantsToDrag(selectedNode,
+											false,
+											draggedEles);
+									}
+
+									// also add nodes and edges related to the topmost ancestor
+									updateAncestorsInDragLayer(selectedNode, true);
 								}
 							}
 						} else {
-							draggedEles.push( near );
+							//draggedEles.push( near );
+
+							// add descendant nodes only if the compound size is set to auto
+							if (near._private.style["width"].value == "auto" ||
+							    near._private.style["height"].value == "auto")
+							{
+								addDescendantsToDrag(near,
+									true,
+									draggedEles);
+							}
+
+							// also add nodes and edges related to the topmost ancestor
+							updateAncestorsInDragLayer(near, true);
 						}
 					}
 					
@@ -1008,6 +1034,7 @@
 					
 					var sEdges = start._private.edges;
 					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+					updateAncestorsInDragLayer(start, false);
 					
 					if( start.selected() ){
 						var selectedNodes = cy.$('node:selected');
@@ -1015,13 +1042,14 @@
 						for( var k = 0; k < selectedNodes.length; k++ ){
 
 							var selectedNode = selectedNodes[k];
-							selectedNode._private.rscratch.inDragLayer = false; 
+							selectedNode._private.rscratch.inDragLayer = false;
 
 							var sEdges = selectedNode._private.edges;
-							for (var j=0; j<sEdges.length; j++) { 
+							for (var j=0; j<sEdges.length; j++) {
 							  sEdges[j]._private.rscratch.inDragLayer = false;
 							}
-							
+
+							updateAncestorsInDragLayer(selectedNode, false);
 						}
 					}
 
@@ -1067,7 +1095,7 @@
 					} else {
 						start.select();
 					}
-					
+
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
 				}
@@ -1495,7 +1523,9 @@
 		if (node._private.style["visibility"].value != "visible")
 		{
 			// do not calculate bounds for invisible compounds,
-			// just return last calculated one
+			// return last calculated position, and zero width & height
+			bounds.width = 0;
+			bounds.height = 0;
 			return bounds;
 		}
 

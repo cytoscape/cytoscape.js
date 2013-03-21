@@ -174,7 +174,7 @@
 			}
 
 			// no parent node: no node to add to the drag layer
-			if (parent == node)
+			if (parent == node && inDragLayer)
 			{
 				return;
 			}

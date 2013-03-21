@@ -157,6 +157,8 @@
 				
 				function makePreview( source, target ){
 					makeEdges( true );
+
+					target.trigger('cyedgehandles.addpreview');
 				}
 				
 				function removePreview( source, target ){
@@ -166,6 +168,8 @@
 						.neighborhood("node.ui-cytoscape-edgehandles-preview")
 						.closedNeighborhood(".ui-cytoscape-edgehandles-preview")
 						.remove();
+
+					target.trigger('cyedgehandles.removepreview');
 					
 				}
 				
@@ -303,6 +307,8 @@
 						}
 
 						drawHandle();
+
+						node.trigger('cyedgehandles.showhandle');
 						
 
 						function mdownHandler(e){
@@ -325,6 +331,7 @@
 							e.stopPropagation();
 							
 							node.addClass("ui-cytoscape-edgehandles-source");
+							node.trigger('cyedgehandles.start');
 							
 							function doneMoving(dmEvent){
 								// console.log("doneMoving %s %o", node.id(), node);
@@ -341,6 +348,7 @@
 								resetToDefaultState();
 								
 								options().stop( node );
+								node.trigger('cyedgehandles.stop');
 							}
 							
 							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);

@@ -356,15 +356,15 @@
 							var x = e.pageX - $container.offset().left;
 							var y = e.pageY - $container.offset().top;
 
+							clearDraws();
+
+							drawHandle();
+
+							ctx.lineWidth = options().handleLineWidth;
+
 							// draw line based on type
 							switch( options().lineType ){
 							case "straight":
-								
-								clearDraws();
-
-								drawHandle();
-
-								ctx.lineWidth = options().handleLineWidth;
 
 								ctx.beginPath();
 								ctx.moveTo(hx, hy);
@@ -377,13 +377,22 @@
 							default:
 								
 								if( linePoints == null ){
-									linePoints = [ [hx, hy], [x, y] ];
+									linePoints = [ [x, y] ];
 								} else {
 									linePoints.push([ x, y ]);
 								}
-								
-								line = svg.polyline(linePoints, style);
-								
+
+								ctx.beginPath();
+								ctx.moveTo(hx, hy);
+
+								for( var i = 0; i < linePoints.length; i++ ){
+									var pt = linePoints[i];
+
+									ctx.lineTo(pt[0], pt[1]);
+								}
+
+								ctx.stroke();
+
 								break;
 							}
 							
@@ -461,6 +470,16 @@
 				});
 				
 				$container.data("cyedgehandles", data);
+			},
+
+			start: function( id ){
+				$container = $(this);
+
+				$container.cytoscape(function(e){
+					var cy = this;
+
+					cy.$("#" + id).trigger('cyedgehandles.forcestart');
+				});
 			}
 		};
 		

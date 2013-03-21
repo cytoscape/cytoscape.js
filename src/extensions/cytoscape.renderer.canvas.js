@@ -110,7 +110,7 @@
 
 		// helper function to determine which child nodes and inner edges
 		// of a compound node to be dragged as well as the grabbed and selected nodes
-		var addDescendantsToDrag = function(node, addSelected, event) {
+		var addDescendantsToDrag = function(node, addSelected, dragElements) {
 			if (!addSelected)
 			{
 				var parents = node.parents();
@@ -138,7 +138,7 @@
 					innerNodes[i]._private.rscratch.inDragLayer = true;
 					//innerNodes[i].trigger(new $$.Event(e, {type: "grab"}));
 					//innerNodes[i].trigger(event);
-					r.dragData.possibleDragElements.push(innerNodes[i]);
+					dragElements.push(innerNodes[i]);
 
 					for (var j=0; j < innerNodes[i]._private.edges.length; j++)
 					{
@@ -148,20 +148,18 @@
 			}
 		};
 
-		// adds the given nodes, and its edges to the drag layer,
-		// also trigger the given (grab) event on the node
-		var addNodeToDrag = function(node, event) {
+		// adds the given nodes, and its edges to the drag layer
+		var addNodeToDrag = function(node, dragElements) {
 			node._private.grabbed = true;
 			node._private.rscratch.inDragLayer = true;
 
-			r.dragData.possibleDragElements.push(node);
+			dragElements.push(node);
 
 			for (var i=0;i<node._private.edges.length;i++) {
 				node._private.edges[i]._private.rscratch.inDragLayer = true;
 			}
 
 			//node.trigger(new $$.Event(e, {type: "grab"}));
-			node.trigger(event);
 		};
 
 		// helper function to determine which ancestor nodes and edges should go
@@ -232,13 +230,17 @@
 						if (near._private.group == "nodes" && near._private.selected == false) {
 
 							draggedElements = r.dragData.possibleDragElements = [ ];
-							addNodeToDrag(near, grabEvent);
+							addNodeToDrag(near,
+								r.dragData.possibleDragElements);
+							near.trigger(grabEvent);
 
 							// add descendant nodes only if the compound size is set to auto
 							if (near._private.style["width"].value == "auto" ||
 							    near._private.style["height"].value == "auto")
 							{
-								addDescendantsToDrag(near, true, grabEvent);
+								addDescendantsToDrag(near,
+									true,
+									r.dragData.possibleDragElements);
 							}
 
 							// also add nodes and edges related to the topmost ancestor
@@ -253,20 +255,24 @@
 								//r.dragData.possibleDragElements.push( selectedNodes[i] );
 								
 								// Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-								if (r.nodeIsDraggable(selectedNodes[i])) {								
-									addNodeToDrag(selectedNodes[i], grabEvent);
+								if (r.nodeIsDraggable(selectedNodes[i]))
+								{
+									addNodeToDrag(selectedNodes[i],
+										r.dragData.possibleDragElements);
+									near.trigger(grabEvent);
 
 									if (selectedNodes[i]._private.style["width"].value == "auto" ||
 										selectedNodes[i]._private.style["height"].value == "auto")
 									{
-										addDescendantsToDrag(selectedNodes[i], false, grabEvent);
+										addDescendantsToDrag(selectedNodes[i],
+											false,
+											r.dragData.possibleDragElements);
 									}
 
 									// also add nodes and edges related to the topmost ancestor
 									updateAncestorsInDragLayer(selectedNodes[i], true);
 								}
 							}
-
 						}
 						
 						near

@@ -94,6 +94,7 @@
 				var line, linePoints;
 				var mdownOnHandle = false;
 				var grabbingNode = false;
+				var inForceStart = false;
 				var hx, hy, hr;
 				var hoverTimeout;
 
@@ -141,13 +142,13 @@
 
 					clearDraws();
 					
-					setTimeout(function(){
+					//setTimeout(function(){
 						cy.nodes()
 							.removeClass("ui-cytoscape-edgehandles-hover")
 							.removeClass("ui-cytoscape-edgehandles-source")
 							.removeClass("ui-cytoscape-edgehandles-target")
 						;
-					}, 1);
+					//}, 1);
 					
 
 					linePoints = null;
@@ -173,12 +174,12 @@
 					
 				}
 				
-				function makeEdges( preview ){
+				function makeEdges( preview, src, tgt ){
 					
 					// console.log("make edges");
 					
-					var source = cy.nodes(".ui-cytoscape-edgehandles-source");
-					var targets = cy.nodes(".ui-cytoscape-edgehandles-target");
+					var source = src ? src : cy.nodes(".ui-cytoscape-edgehandles-source");
+					var targets = tgt ? tgt : cy.nodes(".ui-cytoscape-edgehandles-target");
 					var classes = preview ? "ui-cytoscape-edgehandles-preview" : "";
 					var added = cy.collection();
 					
@@ -187,14 +188,16 @@
 					}
 					
 					// just remove preview class if we already have the edges
-					if( !preview && options().preview ){
-						added = cy.elements(".ui-cytoscape-edgehandles-preview").removeClass("ui-cytoscape-edgehandles-preview");
-						
-						options().complete( source, targets, added );
-						return;
-					} else {
-						// remove old previews
-						cy.elements(".ui-cytoscape-edgehandles-preview").remove();
+					if( !src && !tgt ){
+						if( !preview && options().preview ){
+							added = cy.elements(".ui-cytoscape-edgehandles-preview").removeClass("ui-cytoscape-edgehandles-preview");
+							
+							options().complete( source, targets, added );
+							return;
+						} else {
+							// remove old previews
+							cy.elements(".ui-cytoscape-edgehandles-preview").remove();
+						}
 					}
 					
 					for( var i = 0; i < targets.length; i++ ){
@@ -271,10 +274,10 @@
 					
 					var lastMdownHandler;
 
-					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler;
+					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler, forceStartHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
 						
-						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") ){
+						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") || inForceStart ){
 							return; // don't override existing handle that's being dragged
 							// also don't trigger when grabbing a node
 						} 
@@ -323,6 +326,10 @@
 								return; // only consider this a proper mousedown if on the handle
 							}
 
+							if( inForceStart ){
+								return; // we don't want this going off if we have the forced start to consider
+							}
+
 							// console.log("mdownHandler %s %o", node.id(), node);
 							
 							mdownOnHandle = true;
@@ -336,7 +343,7 @@
 							function doneMoving(dmEvent){
 								// console.log("doneMoving %s %o", node.id(), node);
 								
-								if( !mdownOnHandle ){
+								if( !mdownOnHandle || inForceStart ){
 									return;
 								}
 								
@@ -449,18 +456,52 @@
 
 							return false;
 						}
+
 					}).on("mouseout", "node", leaveHandler = function(){
 						this.removeClass("ui-cytoscape-edgehandles-hover");
 
 						if( mdownOnHandle ){
 							clearTimeout(hoverTimeout);
 						}
+
 					}).on("mousedown", "node", mdownNodeHandler = function(){
 						resetToDefaultState();
+
 					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;
+
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
+
+					}).on("cyedgehandles.forcestart", "node", forceStartHandler = function(){
+						inForceStart = true;
+						resetToDefaultState(); // clear just in case
+
+						var node = this;
+						var source = node;
+
+						node.trigger('cyedgehandles.start');
+						node.addClass('ui-cytoscape-edgehandles-source');
+
+						// case: down and drag as normal
+						// TODO
+
+						// case: tap a target node
+						cy.one("tap", "node", function(){
+							var target = this;
+
+							var isLoop = source.id() === target.id();
+							var loopAllowed = options().loopAllowed( target );
+							
+							if( !isLoop || (isLoop && loopAllowed) ){							
+								makeEdges(false, source, target);
+								
+								options().stop( node );
+								node.trigger('cyedgehandles.stop');	
+
+								inForceStart = false; // now we're done so reset the flag
+							}
+						});
 					});
 				
 
@@ -472,6 +513,7 @@
 							.off("mousedown", "node", mdownNodeHandler)
 							.off("grab", "node", grabNodeHandler)
 							.off("free", "node", freeNodeHandler)
+							.off("cyedgehandles.forcestart", "node", forceStartHandler)
 						;
 						
 						cy.unbind("zoom pan", transformHandler);

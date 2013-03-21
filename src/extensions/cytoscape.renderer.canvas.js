@@ -1461,6 +1461,9 @@
 
 	/**
 	 * Calculates rectangular bounds of a given compound node.
+	 * If the node is hidden, or none of its children is visible,
+	 * then instead of calculating the bounds, returns the last
+	 * calculated value.
 	 *
 	 * @param node  a node with children (compound node)
 	 * @return {{x: number, y: number, width: number, height: number}}
@@ -1468,23 +1471,47 @@
 	CanvasRenderer.prototype.calcCompoundBounds = function(node)
 	{
 		// TODO assuming rectangular compounds, we may add support for other shapes in the future
-		//var children = node._private.children;
-		// consider only visible & not removed children
-		var children = node.children(":visible").not(":removed");
 
-		var padding = this.getNodePadding(node);
+		// this selection doesn't work if parent is invisible
+		//var children = node.children(":visible").not(":removed");
 
-		// TODO instead of last calculated width & height use a default node size value?
+		// consider only not removed children
+		var children = node.children().not(":removed");
+
+		// TODO instead of last calculated width & height define a default compound node size?
+		// last calculated bounds
 		var bounds = {x: node._private.position.x,
 			y: node._private.position.y,
 			width: node._private.autoWidth,
 			height: node._private.autoHeight};
 
-		if (children.size() == 0)
+		// check node visibility
+		if (node._private.style["visibility"].value != "visible")
+		{
+			// do not calculate bounds for invisible compounds,
+			// just return last calculated one
+			return bounds;
+		}
+
+		var visibleChildren = [];
+
+		// find out visible children
+		for (var i=0; i < children.size(); i++)
+		{
+			if (children[i]._private.style["visibility"].value == "visible")
+			{
+				visibleChildren.push(children[i]);
+			}
+		}
+
+		if (visibleChildren.length == 0)
 		{
 			// no visible children, just return last calculated values
 			return bounds;
 		}
+
+		// process only visible children
+		children = visibleChildren;
 
 		// find the leftmost, rightmost, topmost, and bottommost child node positions
 		var leftBorder = this.borderValue(children, "left");
@@ -1493,6 +1520,7 @@
 		var bottomBorder = this.borderValue(children, "bottom");
 
 		// take padding values into account in addition to border values
+		var padding = this.getNodePadding(node);
 		var x = (leftBorder - padding.left + rightBorder + padding.right) / 2;
 		var y = (topBorder - padding.top + bottomBorder + padding.bottom) / 2;
 		var width = (rightBorder - leftBorder) + padding.left + padding.right;

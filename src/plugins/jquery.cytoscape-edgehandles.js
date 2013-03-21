@@ -1,6 +1,7 @@
 ;(function($){
 	
 	var defaults = {
+		preview: true,
 		handleSize: 10,
 		handleColor: "#ff0000",
 		handleLineWidth: 1,

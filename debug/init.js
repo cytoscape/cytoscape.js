@@ -225,15 +225,15 @@ $(function(){
 		// compound graph in the second instance
 		$container2.cy({
 				elements: {
-				   nodes: [ { data: { id: 'n1' } },
+				   nodes: [{ data: { id: 'n8', parent: 'n4' } },
+					   { data: { id: 'n9', parent: 'n4' } },
+					   { data: { id: 'n4', parent: 'n1' } },
+					   { data: { id: 'n5', parent: 'n1', shape: 'triangle' } },
+					   { data: { id: 'n1' } },
 				       { data: { id: 'n2' } },
-				       { data: { id: 'n3', shape: 'rectangle' } },
-				       { data: { id: 'n4', parent: 'n1' } },
-				       { data: { id: 'n5', parent: 'n1', shape: 'triangle' } },
 				       { data: { id: 'node6', parent: 'n2' } },
 				       { data: { id: 'n7', parent: 'n2', shape: 'square' } },
-				       { data: { id: 'n8', parent: 'n4' } },
-				       { data: { id: 'n9', parent: 'n4' } } ],
+					   { data: { id: 'n3', shape: 'rectangle' } }],
 				   edges: [ { data: { id: 'e1', source: 'n1', target: 'n3' } },
 				       { data: { id: 'e2', source: 'n3', target: 'n7' } },
 				       { data: { id: 'e3', source: 'node6', target: 'n7' } },

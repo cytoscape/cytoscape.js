@@ -185,7 +185,9 @@
 			{
 				nodes[i]._private.rscratch.inDragLayer = inDragLayer;
 
-				// TODO this can be optimized by processing edges separately for a list of nodes
+				// TODO when calling this function for a set of nodes, we visit same edges over and over again,
+				// instead of adding edges for each node, it may be better to iterate all edges at once
+				// or another solution is to find out the common ancestors and process only those nodes for edges
 				for (var j=0; j<nodes[i]._private.edges.length; j++) {
 					nodes[i]._private.edges[j]._private.rscratch.inDragLayer = inDragLayer;
 				}

@@ -1794,17 +1794,14 @@
 	 */
 	CanvasRenderer.prototype.getNodeShape = function(node)
 	{
-		if (node._private.style["width"].value == "auto" ||
-		    node._private.style["height"].value == "auto")
-		{
-			// TODO only allow rectangle for a compound node for now,
-			// we may add support for other shapes in the future
-			return "rectangle";
-		}
-		else
-		{
-			return node._private.style["shape"].value;
-		}
+		// TODO only allow rectangle for a compound node?
+//		if (node._private.style["width"].value == "auto" ||
+//		    node._private.style["height"].value == "auto")
+//		{
+//			return "rectangle";
+//		}
+
+		return node._private.style["shape"].value;
 	};
 
 	CanvasRenderer.prototype.getNodePadding = function(node)

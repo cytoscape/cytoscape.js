@@ -356,7 +356,7 @@
 						
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") || inForceStart ){
 							return; // don't override existing handle that's being dragged
-							// also don't trigger when grabbing a node
+							// also don't trigger when grabbing a node etc
 						} 
 						
 						//console.log("mouseover startHandler %s %o", this.id(), this);
@@ -450,7 +450,7 @@
 						lastMdownHandler = mdownHandler;
 
 						
-					}).on("mouseover", "node", hoverHandler = function(){
+					}).on("mouseover touchmove", "node", hoverHandler = function(){
 						var node = this;
 						var target = this;
 
@@ -525,9 +525,11 @@
 
 						drawHandle(hx, hy, hr);
 
+						node.trigger('cyedgehandles.showhandle');
+
 						// case: down and drag as normal
 						var downHandler;
-						$canvas.bind("mousedown touchstart", downHandler = function(e){
+						$canvas.one("mousedown touchstart", downHandler = function(e){
 							var x = e.pageX - $container.offset().left;
 							var y = e.pageY - $container.offset().top;
 							var d = hr/2;
@@ -536,6 +538,7 @@
 
 							if( onNode ){
 								disableGestures();
+								mdownOnHandle = true; // enable the regular logic for handling going over target nodes
 								
 								var moveHandler;
 								$canvas.bind("mousemove touchmove", moveHandler = function(me){
@@ -553,11 +556,14 @@
 									// TODO add edges
 
 									inForceStart = false; // now we're done so reset the flag
+									mdownOnHandle = false; // we're also no longer down on the node
+
+									makeEdges();
 
 									options().stop( node );
 									node.trigger('cyedgehandles.stop');
 
-									cy.unbind("tap", "node", tapHandler);
+									cy.off("tap", "node", tapHandler);
 									resetToDefaultState();
 								});
 

@@ -450,7 +450,7 @@
 						lastMdownHandler = mdownHandler;
 
 						
-					}).on("mouseover touchmove", "node", hoverHandler = function(){
+					}).on("mouseover touchover", "node", hoverHandler = function(){
 						var node = this;
 						var target = this;
 
@@ -530,11 +530,14 @@
 						// case: down and drag as normal
 						var downHandler;
 						$canvas.one("mousedown touchstart", downHandler = function(e){
-							var x = e.pageX - $container.offset().left;
-							var y = e.pageY - $container.offset().top;
+							console.log(e)
+							var x = (e.pageX !== undefined ? e.pageX : e.originalEvent.touches[0].pageX) - $container.offset().left;
+							var y = (e.pageY !== undefined ? e.pageY : e.originalEvent.touches[0].pageY) - $container.offset().top;
 							var d = hr/2;
 							var onNode = p.x - w/2 - d <= x && x <= p.x + w/2 + d
 								&& p.y - h/2 - d <= y && y <= p.y + h/2 + d;
+
+							console.log(onNode)
 
 							if( onNode ){
 								disableGestures();
@@ -542,8 +545,8 @@
 								
 								var moveHandler;
 								$canvas.bind("mousemove touchmove", moveHandler = function(me){
-									var x = me.pageX - $container.offset().left;
-									var y = me.pageY - $container.offset().top;
+									var x = (me.pageX !== undefined ? me.pageX : me.originalEvent.touches[0].pageX) - $container.offset().left;
+									var y = (me.pageY !== undefined ? me.pageY : me.originalEvent.touches[0].pageY) - $container.offset().top;
 
 									clearDraws();
 									drawHandle(hx, hy, hr);
@@ -567,6 +570,8 @@
 									resetToDefaultState();
 								});
 
+								e.stopPropagation();
+								e.preventDefault();
 								return false;
 							}
 						});

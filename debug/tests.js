@@ -43,6 +43,18 @@ $(function(){
 		});
 		
 		test({
+			name: "edgehandlesstart",
+			displayName: "Edgehandles force start",
+			description: "Force starts the edgehandles plugin on n0",
+			setup: function(){
+				$('#cytoscape').cytoscapeEdgehandles('start', 'n0');
+			},
+			teardown: function(){
+				
+			}
+		});
+
+		test({
 			name: "bypassOnClick",
 			displayName: "Bypass on click",
 			description: "Set nodes to red and edges to blue on click",

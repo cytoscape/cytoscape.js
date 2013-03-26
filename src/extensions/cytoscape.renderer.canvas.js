@@ -844,8 +844,8 @@
 
 		window.addEventListener("touchmove", function(e) {
 		
-			var capture = r.touchData.capture; if (!capture) { return; }; 
-			e.preventDefault();
+			var capture = r.touchData.capture; //if (!capture) { return; }; 
+			capture && e.preventDefault();
 		
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
@@ -856,7 +856,7 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if ( e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
+			if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 
 				// console.log('touchmove ptz');
 
@@ -938,6 +938,7 @@
 				
 			} else if (e.touches[0]) {
 				var start = r.touchData.start;
+				var last = r.touchData.last;
 				
 				if ( start != null && start._private.group == "nodes" && r.nodeIsDraggable(start)) {
 					var draggedEles = r.dragData.touchDragEles;
@@ -977,6 +978,13 @@
 						if (near != null) { near.trigger(new $$.Event(e, {type: "touchmove"})); }
 						if (near == null) {   cy.trigger(new $$.Event(e, {type: "touchmove"})); }
 					}
+
+					if (near != last) {
+						if (last) { last.trigger(new $$.Event(e, {type: "touchout"})); }
+						if (near) { near.trigger(new $$.Event(e, {type: "touchover"})); }
+					}
+
+					r.touchData.last = near;
 				}
 				
 				// Check to cancel taphold
@@ -989,7 +997,7 @@
 					}
 				}
 				
-				if ( start == null && cy.panningEnabled() ) {
+				if ( capture && start == null && cy.panningEnabled() ) {
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
 					
 					// Re-project

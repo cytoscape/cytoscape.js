@@ -137,6 +137,14 @@
 					ctx.clearRect( 0, 0, w, h );
 				}
 
+				var lastPanningEnabled, lastZoomingEnabled;
+				function disableZoomAndPan(){
+					lastPanningEnabled = cy.panningEnabled();
+					lastZoomingEnabled = cy.zoomingEnabled();
+
+					cy.zoomingEnabled(false).panningEnabled(false);
+				}
+
 				function resetToDefaultState(){
 //					console.log("resetToDefaultState");
 
@@ -153,7 +161,7 @@
 
 					linePoints = null;
 					
-					cy.zoomingEnabled(true).panningEnabled(true);
+					cy.zoomingEnabled(lastZoomingEnabled).panningEnabled(lastPanningEnabled);
 				}
 				
 				function makePreview( source, target ){
@@ -177,7 +185,7 @@
 				function drawHandle(hx, hy, hr){
 					ctx.fillStyle = options().handleColor;
 					ctx.strokeStyle = options().handleColor;
-					
+
 					ctx.beginPath();
 					ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
 					ctx.closePath();
@@ -317,6 +325,9 @@
 				$container.cytoscape(function(e){
 					cy = this;
 					
+					lastPanningEnabled = cy.panningEnabled();
+					lastZoomingEnabled = cy.zoomingEnabled();
+
 					// console.log('handles on ready')
 
 					var transformHandler;
@@ -401,7 +412,7 @@
 							}
 							
 							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
-							cy.zoomingEnabled(false).panningEnabled(false);
+							disableZoomAndPan();
 							
 							options().start( node );
 
@@ -494,9 +505,7 @@
 
 						var downHandler;
 						$canvas.bind("mousedown touchstart", downHandler = function(e){
-							console.log('')
-
-							return false;
+							console.log('down')							
 						});
 
 						// case: tap a target node

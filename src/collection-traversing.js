@@ -448,6 +448,22 @@
 			return this.parent().children().not( this ).filter( selector );
 		},
 
+		isParent: function(){
+			var ele = this[0];
+
+			if( ele ){
+				return ele._private.children.length !== 0;
+			}
+		},
+
+		isChild: function(){
+			var ele = this[0];
+
+			if( ele ){
+				return ele._private.data.parent !== undefined && ele.parent().length !== 0;
+			}
+		},
+
 		descendants: function( selector ){
 			var elements = [];
 

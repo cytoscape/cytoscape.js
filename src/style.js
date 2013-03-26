@@ -700,6 +700,11 @@
 		var origProp = style[ prop.name ];
 		var origPropIsBypass = origProp && origProp.bypass;
 
+		// can't apply auto to width or height unless it's a parent node
+		if( (parsedProp.name === "height" || parsedProp.name === "width") && parsedProp.value === "auto" && ele.isNode() && !ele.isParent() ){
+			return false;
+		}
+
 		// check if we need to delete the current bypass
 		if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
 			var currentProp = style[ prop.name ];

@@ -137,12 +137,17 @@
 					ctx.clearRect( 0, 0, w, h );
 				}
 
-				var lastPanningEnabled, lastZoomingEnabled;
-				function disableZoomAndPan(){
+				var lastPanningEnabled, lastZoomingEnabled, lastBoxSelectionEnabled;
+				function disableGestures(){
 					lastPanningEnabled = cy.panningEnabled();
 					lastZoomingEnabled = cy.zoomingEnabled();
+					lastBoxSelectionEnabled = cy.boxSelectionEnabled();
 
-					cy.zoomingEnabled(false).panningEnabled(false);
+					cy
+						.zoomingEnabled(false)
+						.panningEnabled(false)
+						.boxSelectionEnabled(false)
+					;
 				}
 
 				function resetToDefaultState(){
@@ -161,7 +166,11 @@
 
 					linePoints = null;
 					
-					cy.zoomingEnabled(lastZoomingEnabled).panningEnabled(lastPanningEnabled);
+					cy
+						.zoomingEnabled(lastZoomingEnabled)
+						.panningEnabled(lastPanningEnabled)
+						.boxSelectionEnabled(lastBoxSelectionEnabled)
+					;
 				}
 				
 				function makePreview( source, target ){
@@ -327,6 +336,7 @@
 					
 					lastPanningEnabled = cy.panningEnabled();
 					lastZoomingEnabled = cy.zoomingEnabled();
+					lastBoxSelectionEnabled = cy.boxSelectionEnabled();
 
 					// console.log('handles on ready')
 
@@ -412,7 +422,7 @@
 							}
 							
 							$(window).one("mouseup blur", doneMoving).bind("mousemove", moveHandler);
-							disableZoomAndPan();
+							disableGestures();
 							
 							options().start( node );
 

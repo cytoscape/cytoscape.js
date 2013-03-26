@@ -150,6 +150,14 @@
 					;
 				}
 
+				function resetGestures(){
+					cy
+						.zoomingEnabled(lastZoomingEnabled)
+						.panningEnabled(lastPanningEnabled)
+						.boxSelectionEnabled(lastBoxSelectionEnabled)
+					;
+				}
+
 				function resetToDefaultState(){
 //					console.log("resetToDefaultState");
 
@@ -166,11 +174,7 @@
 
 					linePoints = null;
 					
-					cy
-						.zoomingEnabled(lastZoomingEnabled)
-						.panningEnabled(lastPanningEnabled)
-						.boxSelectionEnabled(lastBoxSelectionEnabled)
-					;
+					resetGestures();
 				}
 				
 				function makePreview( source, target ){
@@ -347,7 +351,7 @@
 					
 					var lastMdownHandler;
 
-					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, mdownNodeHandler, forceStartHandler;
+					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, dragNodeHandler, forceStartHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
 						
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") || inForceStart ){
@@ -491,18 +495,19 @@
 							clearTimeout(hoverTimeout);
 						}
 
-					}).on("mousedown", "node", mdownNodeHandler = function(){
-						resetToDefaultState();
+					}).on("drag", "node", dragNodeHandler = function(){
+						
 
 					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;
+						clearDraws();
 
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
 
 					}).on("cyedgehandles.forcestart", "node", forceStartHandler = function(){
 						inForceStart = true;
-						resetToDefaultState(); // clear just in case
+						clearDraws(); // clear just in case
 
 						var node = this;
 						var source = node;
@@ -510,12 +515,54 @@
 						node.trigger('cyedgehandles.start');
 						node.addClass('ui-cytoscape-edgehandles-source');
 
-						// case: down and drag as normal
-						// TODO
+						var p = node.renderedPosition();
+						var h = node.renderedOuterHeight();
+						var w = node.renderedOuterWidth();
+												
+						var hr = options().handleSize/2 * cy.zoom();
+						var hx = p.x;
+						var hy = p.y - h/2 - hr/2;
 
+						drawHandle(hx, hy, hr);
+
+						// case: down and drag as normal
 						var downHandler;
 						$canvas.bind("mousedown touchstart", downHandler = function(e){
-							console.log('down')							
+							var x = e.pageX - $container.offset().left;
+							var y = e.pageY - $container.offset().top;
+							var d = hr/2;
+							var onNode = p.x - w/2 - d <= x && x <= p.x + w/2 + d
+								&& p.y - h/2 - d <= y && y <= p.y + h/2 + d;
+
+							if( onNode ){
+								disableGestures();
+								
+								var moveHandler;
+								$canvas.bind("mousemove touchmove", moveHandler = function(me){
+									var x = me.pageX - $container.offset().left;
+									var y = me.pageY - $container.offset().top;
+
+									clearDraws();
+									drawHandle(hx, hy, hr);
+									drawLine(hx, hy, x, y);
+								});
+
+								$(window).one("mouseup touchend blur", function(){
+									$canvas.unbind("mousemove touchmove", moveHandler);
+
+									// TODO add edges
+
+									inForceStart = false; // now we're done so reset the flag
+
+									options().stop( node );
+									node.trigger('cyedgehandles.stop');
+
+									cy.unbind("tap", "node", tapHandler);
+									resetToDefaultState();
+								});
+
+								return false;
+							}
 						});
 
 						// case: tap a target node
@@ -539,6 +586,7 @@
 							node.trigger('cyedgehandles.stop');
 
 							$canvas.unbind("mousedown touchstart", downHandler);
+							resetToDefaultState();
 						});
 					});
 				
@@ -548,7 +596,7 @@
 							.off("mouseover", "node", startHandler)
 							.off("mouseover", "node", hoverHandler)
 							.off("mouseout", "node", leaveHandler)
-							.off("mousedown", "node", mdownNodeHandler)
+							.off("drag", "node", dragNodeHandler)
 							.off("grab", "node", grabNodeHandler)
 							.off("free", "node", freeNodeHandler)
 							.off("cyedgehandles.forcestart", "node", forceStartHandler)

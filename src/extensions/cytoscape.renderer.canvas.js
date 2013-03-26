@@ -838,7 +838,7 @@
 			
 			r.redraw();
 			
-		}, true);
+		}, false);
 		
 // console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
@@ -1001,7 +1001,7 @@
 			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
 			r.redraw();
 			
-		}, true);
+		}, false);
 		
 		window.addEventListener("touchend", function(e) {
 			
@@ -1131,7 +1131,7 @@
 
 			r.redraw();
 			
-		}, true);
+		}, false);
 	};
 	
 	CanvasRenderer.prototype.init = function() { };

@@ -2542,9 +2542,9 @@
 		} else if (type == "dashed") {
 			var pt;
 			if (pts.length == 3 * 2) {
-				pt = _genPoints(pts, 13, true);
+				pt = _genPoints(pts, 14, true);
 			} else {
-				pt = _genStraightLinePoints(pts, 13, true);
+				pt = _genStraightLinePoints(pts, 14, true);
 			}
 			if (!pt) { return; }
 			
@@ -2552,7 +2552,8 @@
 //			dashSize = Math.min(dashSize)
 			
 			//var bufW = width * 2 * zoom, bufH = width * 2.5 * zoom;
-			var bufW = width * 2 * zoom, bufH = width * 1.7 * zoom;
+			var bufW = width * 2 * zoom
+			var bufH = 7.8 * zoom;
 			bufW = Math.max(bufW, 1);
 			bufH = Math.max(bufH, 1);
 			
@@ -2566,6 +2567,8 @@
 			if (context.strokeStyle) {
 				context2.strokeStyle = context.strokeStyle;
 			}
+			
+			context2.lineWidth = width * cy.zoom();
 			
 	//		context2.fillStyle = context.strokeStyle;
 			

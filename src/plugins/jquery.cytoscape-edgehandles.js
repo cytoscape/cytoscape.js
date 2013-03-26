@@ -174,6 +174,56 @@
 					
 				}
 				
+				function drawHandle(hx, hy, hr){
+					ctx.fillStyle = options().handleColor;
+					ctx.strokeStyle = options().handleColor;
+					
+					ctx.beginPath();
+					ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
+					ctx.closePath();
+					ctx.fill();
+				}
+
+				function drawLine(hx, hy, x, y){
+					ctx.fillStyle = options().handleColor;
+					ctx.strokeStyle = options().handleColor;
+					ctx.lineWidth = options().handleLineWidth;
+
+					// draw line based on type
+					switch( options().lineType ){
+					case "straight":
+
+						ctx.beginPath();
+						ctx.moveTo(hx, hy);
+						ctx.lineTo(x, y);
+						ctx.closePath();
+						ctx.stroke();
+						
+						break;
+					case "draw":
+					default:
+						
+						if( linePoints == null ){
+							linePoints = [ [x, y] ];
+						} else {
+							linePoints.push([ x, y ]);
+						}
+
+						ctx.beginPath();
+						ctx.moveTo(hx, hy);
+
+						for( var i = 0; i < linePoints.length; i++ ){
+							var pt = linePoints[i];
+
+							ctx.lineTo(pt[0], pt[1]);
+						}
+
+						ctx.stroke();
+
+						break;
+					}
+				}
+
 				function makeEdges( preview, src, tgt ){
 					
 					// console.log("make edges");
@@ -301,17 +351,7 @@
 						hy = p.y - h/2 - hr/2;
 						
 						// add new handle
-						ctx.fillStyle = options().handleColor;
-						ctx.strokeStyle = options().handleColor;
-
-						function drawHandle(){
-							ctx.beginPath();
-							ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
-							ctx.closePath();
-							ctx.fill();
-						}
-
-						drawHandle();
+						drawHandle(hx, hy, hr);
 
 						node.trigger('cyedgehandles.showhandle');
 						
@@ -375,44 +415,8 @@
 							var y = e.pageY - $container.offset().top;
 
 							clearDraws();
-
-							drawHandle();
-
-							ctx.lineWidth = options().handleLineWidth;
-
-							// draw line based on type
-							switch( options().lineType ){
-							case "straight":
-
-								ctx.beginPath();
-								ctx.moveTo(hx, hy);
-								ctx.lineTo(x, y);
-								ctx.closePath();
-								ctx.stroke();
-								
-								break;
-							case "draw":
-							default:
-								
-								if( linePoints == null ){
-									linePoints = [ [x, y] ];
-								} else {
-									linePoints.push([ x, y ]);
-								}
-
-								ctx.beginPath();
-								ctx.moveTo(hx, hy);
-
-								for( var i = 0; i < linePoints.length; i++ ){
-									var pt = linePoints[i];
-
-									ctx.lineTo(pt[0], pt[1]);
-								}
-
-								ctx.stroke();
-
-								break;
-							}
+							drawHandle(hx, hy, hr);
+							drawLine(hx, hy, x, y);
 							
 							return false;
 						}
@@ -488,8 +492,16 @@
 						// case: down and drag as normal
 						// TODO
 
+						var downHandler;
+						$canvas.bind("mousedown touchstart", downHandler = function(e){
+							console.log('')
+
+							return false;
+						});
+
 						// case: tap a target node
-						cy.one("tap", "node", function(){
+						var tapHandler;
+						cy.one("tap", "node", tapHandler = function(){
 							var target = this;
 
 							var isLoop = source.id() === target.id();
@@ -505,7 +517,9 @@
 							inForceStart = false; // now we're done so reset the flag
 
 							options().stop( node );
-							node.trigger('cyedgehandles.stop');	
+							node.trigger('cyedgehandles.stop');
+
+							$canvas.unbind("mousedown touchstart", downHandler);
 						});
 					});
 				

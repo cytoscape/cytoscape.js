@@ -276,7 +276,24 @@
                   ]
                 }
               ]
-            }
+            },
+
+            {
+              "name": "cy.boxSelectionEnabled",
+              "descr": "Get or set whether box selection is enabled.",
+              "formats": [
+                {
+                  "descr": "Get whether box selection is enabled."
+                },
+
+                {
+                  "descr": "Set whether box selection is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables box selection; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
           ]
 
         },

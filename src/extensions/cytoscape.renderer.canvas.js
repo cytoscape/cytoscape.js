@@ -297,7 +297,7 @@
 				}
 			
 				// Selection box
-				if (near == null) { select[4] = 1; }
+				if ( near == null ) { select[4] = 1; }
 			
 			// Middle/auxilliary button
 			} else if (e.button == 1) {
@@ -371,7 +371,7 @@
 				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
-					&& (new Date()).getTime() - r.hoverData.downTime > 400 
+					&& ( !cy.boxSelectionEnabled() || (new Date()).getTime() - r.hoverData.downTime > 400 )
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
 					&& cy.panningEnabled() ) {
 				
@@ -415,8 +415,10 @@
 					r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
 				}
 				
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+				if( cy.boxSelectionEnabled() ){
+					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+					r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+				}
 
 				// prevent the dragging from triggering text selection on the page
 				preventDefault = true;
@@ -549,7 +551,7 @@
 				}
 			}
 			
-			if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) {
+			if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
 				// console.log("box selection");
 				
 				if( !shiftDown ){

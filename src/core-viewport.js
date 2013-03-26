@@ -21,6 +21,16 @@
 			
 			return this; // chaining
 		},
+
+		boxSelectionEnabled: function( bool ){
+			if( bool !== undefined ){
+				this._private.boxSelectionEnabled = bool ? true : false;
+			} else {
+				return this._private.boxSelectionEnabled;
+			}
+			
+			return this; // chaining
+		},
 		
 		pan: function(){
 			var args = arguments;

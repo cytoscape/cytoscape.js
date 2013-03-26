@@ -48,8 +48,9 @@
 			notificationsEnabled: true, // whether notifications are sent to the renderer
 			minZoom: 1e-50,
 			maxZoom: 1e50,
-			zoomEnabled: true,
-			panEnabled: true,
+			zoomEnabled: options.zoomEnabled === undefined ? true : options.zoomEnabled,
+			panEnabled: options.panEnabled === undefined ? true : options.panEnabled,
+			boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
 			zoom: $$.is.number(options.zoom) ? options.zoom : 1,
 			pan: {
 				x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,

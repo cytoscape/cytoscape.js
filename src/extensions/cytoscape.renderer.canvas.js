@@ -401,8 +401,8 @@
 							
 							draggedElements[i]._private.position.x += disp[0];
 							draggedElements[i]._private.position.y += disp[1];
-							draggedElements[i].trigger(drag);
-							draggedElements[i].trigger(posn);
+							draggedElements[i].trigger( new $$.Event(e, {type: "drag"}) );
+							draggedElements[i].trigger( new $$.Event(e, {type: "position"}) );
 						}
 					}
 					

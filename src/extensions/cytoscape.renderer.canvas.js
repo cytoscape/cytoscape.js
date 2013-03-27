@@ -563,7 +563,7 @@
 				var event = new $$.Event(e, {type: "select"});
 				for (var i=0;i<box.length;i++) { 
 					if (box[i]._private.selectable) {
-						box[i]._private.selected = true; box[i].trigger(event); box[i].updateStyle(false); draggedElements.push(box[i]); 
+						box[i].select(); box[i].updateStyle(false); draggedElements.push(box[i]); 
 					}
 				}
 				

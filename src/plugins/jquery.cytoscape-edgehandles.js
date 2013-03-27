@@ -344,6 +344,8 @@
 
 					// console.log('handles on ready')
 
+					var lastActiveId;
+
 					var transformHandler;
 					cy.bind("zoom pan", transformHandler = function(){
 						clearDraws();
@@ -351,7 +353,7 @@
 					
 					var lastMdownHandler;
 
-					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, dragNodeHandler, forceStartHandler;
+					var startHandler, hoverHandler, leaveHandler, grabNodeHandler, freeNodeHandler, dragNodeHandler, forceStartHandler, removeHandler;
 					cy.on("mouseover", "node", startHandler = function(e){
 						
 						if( disabled() || mdownOnHandle || grabbingNode || this.hasClass("ui-cytoscape-edgehandles-preview") || inForceStart ){
@@ -368,6 +370,8 @@
 						var p = node.renderedPosition();
 						var h = node.renderedOuterHeight();
 						
+						lastActiveId = node.id();
+
 						// remove old handle
 						clearDraws();
 						
@@ -512,6 +516,8 @@
 						var node = this;
 						var source = node;
 
+						lastActiveId = node.id();
+
 						node.trigger('cyedgehandles.start');
 						node.addClass('ui-cytoscape-edgehandles-source');
 
@@ -530,14 +536,12 @@
 						// case: down and drag as normal
 						var downHandler;
 						$canvas.one("mousedown touchstart", downHandler = function(e){
-							console.log(e)
+							
 							var x = (e.pageX !== undefined ? e.pageX : e.originalEvent.touches[0].pageX) - $container.offset().left;
 							var y = (e.pageY !== undefined ? e.pageY : e.originalEvent.touches[0].pageY) - $container.offset().top;
 							var d = hr/2;
 							var onNode = p.x - w/2 - d <= x && x <= p.x + w/2 + d
 								&& p.y - h/2 - d <= y && y <= p.y + h/2 + d;
-
-							console.log(onNode)
 
 							if( onNode ){
 								disableGestures();
@@ -556,8 +560,6 @@
 								$(window).one("mouseup touchend blur", function(){
 									$canvas.unbind("mousemove touchmove", moveHandler);
 
-									// TODO add edges
-
 									inForceStart = false; // now we're done so reset the flag
 									mdownOnHandle = false; // we're also no longer down on the node
 
@@ -567,6 +569,7 @@
 									node.trigger('cyedgehandles.stop');
 
 									cy.off("tap", "node", tapHandler);
+									node.off("remove", removeBeforeHandler);
 									resetToDefaultState();
 								});
 
@@ -574,6 +577,12 @@
 								e.preventDefault();
 								return false;
 							}
+						});
+
+						var removeBeforeHandler;
+						node.one("remove", function(){
+							$canvas.unbind("mousedown touchstart", downHandler);
+							cy.off("tap", "node", tapHandler);
 						});
 
 						// case: tap a target node
@@ -597,8 +606,17 @@
 							node.trigger('cyedgehandles.stop');
 
 							$canvas.unbind("mousedown touchstart", downHandler);
+							node.off("remove", removeBeforeHandler);
 							resetToDefaultState();
 						});
+					
+
+					}).on("remove", "node", removeHandler = function(){
+						var id = this.id();
+
+						if( id === lastActiveId ){
+							resetToDefaultState();
+						}
 					});
 				
 
@@ -611,6 +629,7 @@
 							.off("grab", "node", grabNodeHandler)
 							.off("free", "node", freeNodeHandler)
 							.off("cyedgehandles.forcestart", "node", forceStartHandler)
+							.off("remove", "node", removeHandler)
 						;
 						
 						cy.unbind("zoom pan", transformHandler);

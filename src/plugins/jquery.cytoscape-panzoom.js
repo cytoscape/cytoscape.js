@@ -446,7 +446,12 @@
 						}
 						
 						var cy = $container.cytoscape("get");
-						cy.fit();
+
+						if( cy.elements().size() === 0 ){
+							cy.reset();
+						} else {
+							cy.fit();
+						}
 
 						var length = Math.max( $container.width(), $container.height() );
 						var zoom = cy.zoom() * (length - options.fitPadding*2)/length;

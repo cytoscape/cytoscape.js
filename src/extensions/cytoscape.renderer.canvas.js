@@ -2022,6 +2022,13 @@
 					} else if (element._private.group == "edges") {
 						this.drawEdgeText(context, element);
 					}
+
+					// draw the overlay
+					if (element._private.group == "nodes") {
+						this.drawNode(context, element, true);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(context, element, true);
+					}
 				}
 			}
 			
@@ -2061,6 +2068,13 @@
 						this.drawNodeText(context, element);
 					} else if (element._private.group == "edges") {
 						this.drawEdgeText(context, element);
+					}
+
+					// draw the overlay
+					if (element._private.group == "nodes") {
+						this.drawNode(context, element, true);
+					} else if (element._private.group == "edges") {
+						this.drawEdge(context, element, true);
 					}
 				}
 			}
@@ -2322,9 +2336,6 @@
 			this.drawArrowheads(context, edge, drawOverlayInstead);
 		}
 
-		if( !drawOverlayInstead && overlayOpacity > 0 ){
-			this.drawEdge(context, edge, true);
-		}
 	}
 	
 	var _genPoints = function(pt, spacing, even) {
@@ -2695,7 +2706,7 @@
 	};
 	
 	// Draw node
-	CanvasRenderer.prototype.drawNode = function(context, node) {
+	CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
 
 		var nodeWidth, nodeHeight;
 		
@@ -2703,106 +2714,111 @@
 			return;
 		}
 		
-		// Node color & opacity
-		context.fillStyle = "rgba(" 
-			+ node._private.style["background-color"].value[0] + ","
-			+ node._private.style["background-color"].value[1] + ","
-			+ node._private.style["background-color"].value[2] + ","
-			+ (node._private.style["background-opacity"].value 
-			* node._private.style["opacity"].value) + ")";
-		
-		// Node border color & opacity
-		context.strokeStyle = "rgba(" 
-			+ node._private.style["border-color"].value[0] + ","
-			+ node._private.style["border-color"].value[1] + ","
-			+ node._private.style["border-color"].value[2] + ","
-			+ (node._private.style["border-opacity"].value 
-			* node._private.style["opacity"].value) + ")";
-		
-		//nodeWidth = node._private.style["width"].value;
-		//nodeHeight = node._private.style["height"].value;
 		nodeWidth = this.getNodeWidth(node);
 		nodeHeight = this.getNodeHeight(node);
-		
-		{
-			//var image = this.getCachedImage("url");
-			
-			var url = node._private.style["background-image"].value[2] ||
-				node._private.style["background-image"].value[1];
-			
-			if (url != undefined) {
-				
-				var r = this;
-				var image = this.getCachedImage(url,
-						
-						function() {
-							
-//							console.log(e);
-							r.data.canvasNeedsRedraw[NODE] = true;
-							r.data.canvasRedrawReason[NODE].push("image finished load");
-							r.data.canvasNeedsRedraw[DRAG] = true;
-							r.data.canvasRedrawReason[DRAG].push("image finished load");
-							
-							// Replace Image object with Canvas to solve zooming too far
-							// into image graphical errors (Jan 10 2013)
-							r.swapCachedImage(url);
-							
-							r.redraw();
-						}
-				);
-				
-				if (image.complete == false) {
 
-					nodeShapes[r.getNodeShape(node)].drawPath(
+		if( drawOverlayInstead === undefined || !drawOverlayInstead ){
+
+			// Node color & opacity
+			context.fillStyle = "rgba(" 
+				+ node._private.style["background-color"].value[0] + ","
+				+ node._private.style["background-color"].value[1] + ","
+				+ node._private.style["background-color"].value[2] + ","
+				+ (node._private.style["background-opacity"].value 
+				* node._private.style["opacity"].value) + ")";
+			
+			// Node border color & opacity
+			context.strokeStyle = "rgba(" 
+				+ node._private.style["border-color"].value[0] + ","
+				+ node._private.style["border-color"].value[1] + ","
+				+ node._private.style["border-color"].value[2] + ","
+				+ (node._private.style["border-opacity"].value 
+				* node._private.style["opacity"].value) + ")";
+			
+			
+			{
+				//var image = this.getCachedImage("url");
+				
+				var url = node._private.style["background-image"].value[2] ||
+					node._private.style["background-image"].value[1];
+				
+				if (url != undefined) {
+					
+					var r = this;
+					var image = this.getCachedImage(url,
+							
+							function() {
+								
+	//							console.log(e);
+								r.data.canvasNeedsRedraw[NODE] = true;
+								r.data.canvasRedrawReason[NODE].push("image finished load");
+								r.data.canvasNeedsRedraw[DRAG] = true;
+								r.data.canvasRedrawReason[DRAG].push("image finished load");
+								
+								// Replace Image object with Canvas to solve zooming too far
+								// into image graphical errors (Jan 10 2013)
+								r.swapCachedImage(url);
+								
+								r.redraw();
+							}
+					);
+					
+					if (image.complete == false) {
+
+						nodeShapes[r.getNodeShape(node)].drawPath(
+							context,
+							node._private.position.x,
+							node._private.position.y,
+						    nodeWidth, nodeHeight);
+							//node._private.style["width"].value,
+							//node._private.style["height"].value);
+						
+						context.stroke();
+						context.fillStyle = "#555555";
+						context.fill();
+						
+					} else {
+						//context.clip
+						this.drawInscribedImage(context, image, node);
+					}
+					
+				} else {
+
+					// Draw node
+					nodeShapes[this.getNodeShape(node)].draw(
 						context,
 						node._private.position.x,
 						node._private.position.y,
-					    nodeWidth, nodeHeight);
-						//node._private.style["width"].value,
-						//node._private.style["height"].value);
-					
-					context.stroke();
-					context.fillStyle = "#555555";
-					context.fill();
-					
-				} else {
-					//context.clip
-					this.drawInscribedImage(context, image, node);
+						nodeWidth,
+						nodeHeight); //node._private.data.weight / 5.0
 				}
 				
-			} else {
+			}
+			
+			// Border width, draw border
+			context.lineWidth = node._private.style["border-width"].value;
+			if (node._private.style["border-width"].value > 0) {
+				context.stroke();
+			}
+			
 
-				// Draw node
+		// draw the overlay
+		} else {
+
+			var overlayPadding = node._private.style["overlay-padding"].value;
+			var overlayOpacity = node._private.style["overlay-opacity"].value;
+			var overlayColor = node._private.style["overlay-color"].value;
+			if( overlayOpacity > 0 ){
+				context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
+
 				nodeShapes[this.getNodeShape(node)].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,
-					nodeWidth,
-					nodeHeight); //node._private.data.weight / 5.0
+					nodeWidth + overlayPadding * 2,
+					nodeHeight + overlayPadding * 2
+				);
 			}
-			
-		}
-		
-		// Border width, draw border
-		context.lineWidth = node._private.style["border-width"].value;
-		if (node._private.style["border-width"].value > 0) {
-			context.stroke();
-		}
-		
-		// Draw the node overlay
-		var overlayPadding = node._private.style["overlay-padding"].value;
-		var overlayOpacity = node._private.style["overlay-opacity"].value;
-		var overlayColor = node._private.style["overlay-color"].value;
-		if( overlayOpacity > 0 ){
-			context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
-
-			nodeShapes[this.getNodeShape(node)].draw(
-				context,
-				node._private.position.x,
-				node._private.position.y,
-				nodeWidth + overlayPadding * 2,
-				nodeHeight + overlayPadding * 2
-			);
 		}
 
 	};

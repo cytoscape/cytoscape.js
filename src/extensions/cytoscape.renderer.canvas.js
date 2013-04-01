@@ -214,7 +214,7 @@
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var select = r.data.select;
 			
-			var near = r.findNearestElement(pos[0], pos[1]);
+			var near = r.findNearestElement(pos[0], pos[1], true);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
 
@@ -321,7 +321,7 @@
 
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
-			var near = r.findNearestElement(pos[0], pos[1]);
+			var near = r.findNearestElement(pos[0], pos[1], true);
 			var last = r.hoverData.last;
 			var down = r.hoverData.down;
 			
@@ -443,7 +443,7 @@
 			var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
 		
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
-			var near = r.findNearestElement(pos[0], pos[1]);
+			var near = r.findNearestElement(pos[0], pos[1], true);
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			var shiftDown = e.shiftKey;
@@ -719,7 +719,7 @@
 			} else if (e.touches[1]) {
 				
 			} else if (e.touches[0]) {
-				var near = r.findNearestElement(now[0], now[1]);
+				var near = r.findNearestElement(now[0], now[1], true);
 
 				if (near != null) {
 					near.activate();
@@ -974,7 +974,7 @@
 					if (start != null) { start.trigger(new $$.Event(e, {type: "touchmove"})); }
 					
 					if (start == null) { 
-						var near = r.findNearestElement(now[0], now[1]);
+						var near = r.findNearestElement(now[0], now[1], true);
 						if (near != null) { near.trigger(new $$.Event(e, {type: "touchmove"})); }
 						if (near == null) {   cy.trigger(new $$.Event(e, {type: "touchmove"})); }
 					}
@@ -1077,7 +1077,7 @@
 					r.touchData.start = null;
 					
 				} else {
-					var near = r.findNearestElement(now[0], now[1]);
+					var near = r.findNearestElement(now[0], now[1], true);
 				
 					if (near != null) { 
 						near
@@ -1255,7 +1255,7 @@
 	}
 	
 	// Find nearest element
-	CanvasRenderer.prototype.findNearestElement = function(x, y) {
+	CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly) {
 		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var near = [];
 		
 		// Check nodes
@@ -1272,9 +1272,19 @@
 					this.getNodeWidth(nodes[i]) / 2, this.getNodeHeight(nodes[i]) / 2,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
-				near.push(nodes[i]);
+				if (visibleElementsOnly) {
+					if (nodes[i]._private.style["opacity"].value != 0
+						&& nodes[i]._private.style["visibility"].value == "visible") {
+						
+						near.push(nodes[i]);	
+					}
+				} else {
+					near.push(nodes[i]);
+				}
 			}
 		}
+		
+		var addCurrentEdge;
 		
 		// Check edges
 		var zoom = this.data.cy.zoom();
@@ -1284,6 +1294,8 @@
 			var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 			var edgeThreshold = isTouch ? 256 : 32;
 			edgeThreshold = edgeThreshold / zoom;
+
+			addCurrentEdge = false;
 
 			if (rs.isSelfEdge) {
 				if ((this.inBezierVicinity(x, y,
@@ -1321,7 +1333,7 @@
 							rs.cp2cy,
 							rs.endX,
 							rs.endY))))
-					 { near.push(edges[i]); }
+					 { addCurrentEdge = true; }
 			
 			} else if (rs.isStraightEdge) {
 				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
@@ -1330,7 +1342,7 @@
 						rs.startY,
 						rs.endX,
 						rs.endY))
-					{ near.push(edges[i]); }
+					{ addCurrentEdge = true; }
 			
 			} else if (rs.isBezierEdge) {
 				if (this.inBezierVicinity(x, y,
@@ -1350,7 +1362,7 @@
 							rs.cp2y,
 							rs.endX,
 							rs.endY)))
-					{ near.push(edges[i]); }
+					{ addCurrentEdge = true; }
 			}
 			
 			if (!near.length || near[near.length - 1] != edges[i]) {
@@ -1381,7 +1393,29 @@
 						this.getArrowHeight(edges[i]._private.style["width"].value),
 						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
-					{ near.push(edges[i]); }
+					{ addCurrentEdge = true; }
+			}
+			
+			if (addCurrentEdge) {
+				if (visibleElementsOnly) {
+					// For edges, make sure the edge is visible/has nonzero opacity,
+					// then also make sure both source and target nodes are visible/have
+					// nonzero opacity
+					var source = data.cy.getElementById(edges[i]._private.data.source)
+					var target = data.cy.getElementById(edges[i]._private.data.target)
+					
+					if (edges[i]._private.style["opacity"].value != 0
+						&& edges[i]._private.style["visibility"].value == "visible"
+						&& source._private.style["opacity"].value != 0
+						&& source._private.style["visibility"].value == "visible"
+						&& target._private.style["opacity"].value != 0
+						&& target._private.style["visibility"].value == "visible") {
+						
+						near.push(edges[i]);	
+					}
+				} else {
+					near.push(edges[i]);
+				}
 			}
 		} 
 		

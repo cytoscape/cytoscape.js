@@ -2953,7 +2953,7 @@
 		if (text != undefined) {
 			var lineWidth = element._private.style["text-outline-width"].value;
 			if (lineWidth > 0) {
-				context.lineWidth = lineWidth;
+				context.lineWidth = lineWidth * 2;
 				context.strokeText(text, textX, textY);
 			}
 

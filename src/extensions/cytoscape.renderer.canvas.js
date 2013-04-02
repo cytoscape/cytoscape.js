@@ -662,11 +662,13 @@
 		var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
 		var center1, modelCenter1; // center point on start pinch to zoom
 		var offsetLeft, offsetTop;
+		var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
+		var twoFingersStartInside;
 
 		function distance(x1, y1, x2, y2){
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
 		}
-		
+
 		r.data.container.addEventListener("touchstart", function(e) {
 			e.preventDefault();
 		
@@ -692,6 +694,13 @@
 				
 				f2x1 = e.touches[1].pageX - offsetLeft;
 				f2y1 = e.touches[1].pageY - offsetTop;
+
+				twoFingersStartInside = 
+					   0 <= f1x1 && f1x1 <= containerWidth
+					&& 0 <= f2x1 && f2x1 <= containerWidth
+					&& 0 <= f1y1 && f1y1 <= containerHeight
+					&& 0 <= f2y1 && f2y1 <= containerHeight
+				;
 
 				var pan = cy.pan();
 				var zoom = cy.zoom();
@@ -873,7 +882,7 @@
 				// console.log(distance2)
 				// console.log(factor)
 
-				if( factor != 1 ){
+				if( factor != 1 && twoFingersStartInside){
 
 					// console.log(factor)
 					// console.log(distance2 + ' / ' + distance1);

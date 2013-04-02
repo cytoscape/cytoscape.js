@@ -350,6 +350,8 @@
 					cy.bind("zoom pan", transformHandler = function(){
 						clearDraws();
 					});
+
+					var lastMovedNode;
 					
 					var lastMdownHandler;
 
@@ -500,7 +502,10 @@
 						}
 
 					}).on("drag position", "node", dragNodeHandler = function(){
-						resetToDefaultState();
+						if( lastMovedNode !== this ){
+							resetToDefaultState();
+							lastMovedNode = this;
+						}
 
 					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;

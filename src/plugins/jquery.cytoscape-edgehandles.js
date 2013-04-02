@@ -624,7 +624,7 @@
 						var id = this.id();
 
 						if( id === lastActiveId ){
-							setTimeout({
+							setTimeout(function(){
 								resetToDefaultState();
 							}, 5);
 						}

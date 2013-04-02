@@ -503,13 +503,17 @@
 
 					}).on("drag position", "node", dragNodeHandler = function(){
 						if( lastMovedNode !== this ){
-							resetToDefaultState();
+							setTimeout(function(){ resetToDefaultState(); }, 5);
 							lastMovedNode = this;
 						}
 
 					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;
-						clearDraws();
+
+						setTimeout(function(){
+							clearDraws();
+						}, 5);
+						
 
 					}).on("free", "node", freeNodeHandler = function(){
 						grabbingNode = false;
@@ -620,7 +624,9 @@
 						var id = this.id();
 
 						if( id === lastActiveId ){
-							resetToDefaultState();
+							setTimeout({
+								resetToDefaultState();
+							}, 5);
 						}
 					});
 				

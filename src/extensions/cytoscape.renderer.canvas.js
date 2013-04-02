@@ -935,7 +935,7 @@
 				if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
 				if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 				if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
-				
+
 			} else if (e.touches[0]) {
 				var start = r.touchData.start;
 				var last = r.touchData.last;
@@ -1019,11 +1019,16 @@
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 			var now = r.touchData.now; var earlier = r.touchData.earlier;
-			
+			var start = r.touchData.start;
+
 			if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
+			if( start != null ){
+				start.unactivate();
+			}
+
 			if (e.touches[2]) {
 			
 			} else if (e.touches[1]) {
@@ -1032,11 +1037,8 @@
 			
 			// Last touch released
 			} else if (!e.touches[0]) {
-			
-				var start = r.touchData.start;
 				
 				if (start != null ) {
-					start.unactivate();
 
 					if (start._private.grabbed == true) {
 						start._private.grabbed = false;

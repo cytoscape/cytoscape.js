@@ -483,5 +483,7 @@
 		
 		return $(this);
 	};
+
+	$.fn.cyPanzoom = $.fn.cytoscapePanzoom;
 	
 })(jQuery);

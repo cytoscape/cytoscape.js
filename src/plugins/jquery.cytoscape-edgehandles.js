@@ -671,5 +671,7 @@
 		
 		return $(this);
 	};
+
+	$.fn.cyEdgehandles = $.fn.cytoscapeEdgehandles;
 	
 })( jQuery );

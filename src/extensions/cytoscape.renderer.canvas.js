@@ -558,14 +558,18 @@
 					cy.$(':selected').unselect();
 				}
 
+				var newlySelected = [];
 				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
 				// console.log(box);
 				var event = new $$.Event(e, {type: "select"});
 				for (var i=0;i<box.length;i++) { 
 					if (box[i]._private.selectable) {
-						box[i].select(); box[i].updateStyle(false); draggedElements.push(box[i]); 
+						draggedElements.push( box[i] ); 
+						newlySelected.push( box[i] );
 					}
 				}
+
+				(new $$.Collection( cy, newlySelected )).select();
 				
 				if (box.length > 0) { 
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");

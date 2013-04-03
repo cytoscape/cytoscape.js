@@ -251,6 +251,7 @@
 						if (near._private.group == "nodes" && near._private.selected == true) {
 							draggedElements = r.dragData.possibleDragElements = [  ];
 
+							var triggeredGrab = false;
 							var selectedNodes = cy.$('node:selected');
 							for( var i = 0; i < selectedNodes.length; i++ ){
 								//r.dragData.possibleDragElements.push( selectedNodes[i] );
@@ -259,7 +260,12 @@
 								if (r.nodeIsDraggable(selectedNodes[i]))
 								{
 									addNodeToDrag(selectedNodes[i], draggedElements);
-									near.trigger(grabEvent);
+									
+									// only trigger for grabbed node once
+									if( !triggeredGrab ){
+										near.trigger(grabEvent);
+										triggeredGrab = true;
+									}
 
 									if (selectedNodes[i]._private.style["width"].value == "auto" ||
 										selectedNodes[i]._private.style["height"].value == "auto")
@@ -601,8 +607,10 @@
 						draggedElements[i]._private.rscratch.inDragLayer = false;
 					}
 					
-					draggedElements[i].trigger(freeEvent);
 				}
+
+				down.trigger(freeEvent);
+
 //				draggedElements = r.dragData.possibleDragElements = [];
 				r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Node/nodes back from drag");
 				r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Node/nodes back from drag");
@@ -967,11 +975,14 @@
 
 							draggedEle._private.position.x += disp[0];
 							draggedEle._private.position.y += disp[1];
-							
-							draggedEle.trigger(new $$.Event(e, {type: "position"}));
-							draggedEle.trigger(new $$.Event(e, {type: "drag"}));
+			
 						}
 					}
+
+					( new $$.Collection(cy, draggedEles) )
+						.trigger( new $$.Event(e, {type: "drag"}) )
+						.trigger( new $$.Event(e, {type: "position"}) )
+					;
 					
 					r.data.canvasNeedsRedraw[DRAG] = true;
 					r.data.canvasRedrawReason[DRAG].push("touchdrag node");

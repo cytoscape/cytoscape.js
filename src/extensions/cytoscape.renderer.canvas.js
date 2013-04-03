@@ -1326,7 +1326,7 @@
 
 			addCurrentEdge = false;
 
-			if (rs.isSelfEdge) {
+			if (rs.edgeType == "self") {
 				if ((this.inBezierVicinity(x, y,
 						rs.startX,
 						rs.startY,
@@ -1364,7 +1364,7 @@
 							rs.endY))))
 					 { addCurrentEdge = true; }
 			
-			} else if (rs.isStraightEdge) {
+			} else if (rs.edgeType == "straight") {
 				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
 					this.sqDistanceToFiniteLine(x, y,
 						rs.startX,
@@ -1373,7 +1373,7 @@
 						rs.endY))
 					{ addCurrentEdge = true; }
 			
-			} else if (rs.isBezierEdge) {
+			} else if (rs.edgeType == "bezier") {
 				if (this.inBezierVicinity(x, y,
 					rs.startX,
 					rs.startY,
@@ -1473,9 +1473,7 @@
 	CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
 		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = [];
 		
-//		console.log(x1, y1, x2, y2, "e") 
 		var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
-//		console.log(x1, y1, x2, y2, "ec") 
 		
 		for (var i=0;i<nodes.length;i++) {
 			if (nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
@@ -1486,7 +1484,7 @@
 		}
 		
 		for (var i=0;i<edges.length;i++) {
-			if (edges[i]._private.rscratch.isSelfEdge) {
+			if (edges[i]._private.rscratch.edgeType == "self") {
 				if ((heur = this.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
@@ -1510,7 +1508,7 @@
 				{ box.push(edges[i]); }
 			}
 			
-			if (edges[i]._private.rscratch.isBezierEdge &&
+			if (edges[i]._private.rscratch.edgeType == "bezier" &&
 				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
@@ -1522,7 +1520,7 @@
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
 				{ box.push(edges[i]); }
 		
-			if (edges[i]._private.rscratch.isStraightEdge &&
+			if (edges[i]._private.rscratch.edgeType == "straight" &&
 				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
@@ -2328,7 +2326,7 @@
 			context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 			context.lineCap = "round";
 
-			if( edge._private.rscratch.isSelfEdge ){
+			if( edge._private.rscratch.edgeType == "self"){
 				context.lineCap = "butt";
 			}
 
@@ -2351,7 +2349,7 @@
 		
 		this.findEndpoints(edge);
 		
-		if (edge._private.rscratch.isSelfEdge) {
+		if (edge._private.rscratch.edgeType == "self") {
 					
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
@@ -2364,7 +2362,7 @@
 				lineStyle,
 				edgeWidth);
 			
-		} else if (edge._private.rscratch.isStraightEdge) {
+		} else if (edge._private.rscratch.edgeType == "straight") {
 			
 			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
 			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
@@ -2740,17 +2738,15 @@
 		var textX, textY;	
 		var edgeCenterX, edgeCenterY;
 		
-		if (edge._private.rscratch.isSelfEdge) {
+		if (edge._private.rscratch.edgeType == "self") {
 			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
 			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
-		} else if (edge._private.rscratch.isStraightEdge
-				&& !edge._private.rscratch.isBezierEdge) {
+		} else if (edge._private.rscratch.edgeType == "straight") {
 			edgeCenterX = (edge._private.rscratch.startX
 				+ edge._private.rscratch.endX) / 2;
 			edgeCenterY = (edge._private.rscratch.startY
 				+ edge._private.rscratch.endY) / 2;
-		} else if (edge._private.rscratch.isBezierEdge
-				&& !edge._private.rscratch.isStraightEdge) {
+		} else if (edge._private.rscratch.edgeType == "bezier") {
 			edgeCenterX = 0.25 * edge._private.rscratch.startX
 				+ 2 * 0.5 * 0.5 * edge._private.rscratch.cp2x
 				+ (0.5 * 0.5) * edge._private.rscratch.endX;
@@ -3091,8 +3087,7 @@
 				if (src._private.data.id == tgt._private.data.id) {
 					var stepSize = edge._private.style["control-point-step-size"].pxValue;
 						
-					edge._private.rscratch.isSelfEdge = true;
-					
+					edge._private.rscratch.edgeType = "self";
 					
 					// Old -- before fix for large nodes hiding the edge
 					// ===
@@ -3129,14 +3124,14 @@
 				} else if (hashTable[pairId].length % 2 == 1
 					&& i == Math.floor(hashTable[pairId].length / 2)) {
 					
-					edge._private.rscratch.isStraightEdge = true;
+					edge._private.rscratch.edgeType = "straight";
 					
 				// Bezier edge
 				} else {
 					var stepSize = edge._private.style["control-point-step-size"].value;
 					var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
 					
-					edge._private.rscratch.isBezierEdge = true;
+					edge._private.rscratch.edgeType = "bezier";
 					
 					edge._private.rscratch.cp2x = midPointX
 						+ displacementX * distanceFromMidpoint;
@@ -3175,7 +3170,7 @@
 		var start = [edge.source().position().x, edge.source().position().y];
 		var end = [edge.target().position().x, edge.target().position().y];
 		
-		if (edge._private.rscratch.isSelfEdge) {
+		if (edge._private.rscratch.edgeType == "self") {
 			
 			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
 			
@@ -3227,7 +3222,7 @@
 			edge._private.rscratch.arrowStartX = arrowStart[0];
 			edge._private.rscratch.arrowStartY = arrowStart[1];
 			
-		} else if (edge._private.rscratch.isStraightEdge) {
+		} else if (edge._private.rscratch.edgeType == "straight") {
 		
 			intersect = nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
@@ -3296,7 +3291,7 @@
 			edge._private.rscratch.arrowStartX = arrowStart[0];
 			edge._private.rscratch.arrowStartY = arrowStart[1];
 						
-		} else if (edge._private.rscratch.isBezierEdge) {
+		} else if (edge._private.rscratch.edgeType == "bezier") {
 			
 			var cp = [edge._private.rscratch.cp2x, edge._private.rscratch.cp2y];
 			

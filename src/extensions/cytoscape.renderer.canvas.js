@@ -390,9 +390,7 @@
 				if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
 					r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-					var drag = new $$.Event(e, {type: "drag"});
-					var posn = new $$.Event(e, {type: "position"});
-				
+					var toTrigger = [];
 					for (var i=0; i<draggedElements.length; i++) {
 
 						// Locked nodes not draggable, as well as non-visible nodes
@@ -401,11 +399,16 @@
 							
 							draggedElements[i]._private.position.x += disp[0];
 							draggedElements[i]._private.position.y += disp[1];
-							draggedElements[i].trigger( new $$.Event(e, {type: "drag"}) );
-							draggedElements[i].trigger( new $$.Event(e, {type: "position"}) );
+
+							toTrigger.push( draggedElements[i] );
 						}
 					}
 					
+					(new $$.Collection(cy, toTrigger))
+						.trigger( new $$.Event(e, {type: "drag"}) )
+						.trigger( new $$.Event(e, {type: "position"}) )
+					;
+
 					if (select[2] == select[0] && select[3] == select[1]) {
 						r.data.canvasNeedsRedraw[NODE] = true;
 						r.data.canvasRedrawReason[NODE].push("Node(s) and edge(s) moved to drag layer");

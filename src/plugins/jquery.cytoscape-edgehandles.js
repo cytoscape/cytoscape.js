@@ -495,7 +495,9 @@
 						}
 
 					}).on("mouseout", "node", leaveHandler = function(){
-						this.removeClass("ui-cytoscape-edgehandles-hover");
+						if( this.hasClass("ui-cytoscape-edgehandles-hover") ){
+							this.removeClass("ui-cytoscape-edgehandles-hover");
+						}
 
 						if( mdownOnHandle ){
 							clearTimeout(hoverTimeout);

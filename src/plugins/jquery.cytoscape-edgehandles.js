@@ -97,6 +97,7 @@
 				var inForceStart = false;
 				var hx, hy, hr;
 				var hoverTimeout;
+				var drawsClear = true;
 
 				$container.append( $canvas );
 				$canvas
@@ -130,11 +131,15 @@
 					return !enabled();
 				}
 				
-				function clearDraws(){
+				function clearDraws(){ 
+
+					if( drawsClear ){ return; } // break early to be efficient
+
 					var w = $container.width();
 					var h = $container.height();
 
 					ctx.clearRect( 0, 0, w, h );
+					drawsClear = true;
 				}
 
 				var lastPanningEnabled, lastZoomingEnabled, lastBoxSelectionEnabled;
@@ -203,6 +208,8 @@
 					ctx.arc(hx, hy, hr, 0 , 2*Math.PI);
 					ctx.closePath();
 					ctx.fill();
+
+					drawsClear = false;
 				}
 
 				function drawLine(hx, hy, x, y){
@@ -243,6 +250,8 @@
 
 						break;
 					}
+
+					drawsClear = false;
 				}
 
 				function makeEdges( preview, src, tgt ){
@@ -350,8 +359,6 @@
 					cy.bind("zoom pan", transformHandler = function(){
 						clearDraws();
 					});
-
-					var lastMovedNode;
 					
 					var lastMdownHandler;
 
@@ -504,10 +511,7 @@
 						}
 
 					}).on("drag position", "node", dragNodeHandler = function(){
-						if( lastMovedNode !== this ){
-							setTimeout(function(){ resetToDefaultState(); }, 5);
-							lastMovedNode = this;
-						}
+						setTimeout(clearDraws, 50);
 
 					}).on("grab", "node", grabHandler = function(){
 						grabbingNode = true;

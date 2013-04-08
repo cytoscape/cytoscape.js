@@ -100,14 +100,22 @@
 				var drawsClear = true;
 
 				$container.append( $canvas );
-				$canvas
-					.attr('height', $container.height())
-					.attr('width', $container.width())
-					.css({
-						'position': 'absolute',
-						'z-index': '999'
-					})
-				;
+
+				function sizeCanvas(){
+					$canvas
+						.attr('height', $container.height())
+						.attr('width', $container.width())
+						.css({
+							'position': 'absolute',
+							'z-index': '999'
+						})
+					;
+				}
+				sizeCanvas();
+
+				$(window).bind('resize', function(){
+					sizeCanvas();
+				});
 
 
 				var ctx = $canvas[0].getContext("2d"); 

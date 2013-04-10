@@ -1230,28 +1230,14 @@
 	// Project mouse
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
-		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
+		n = this.data.container;
 		
 		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
 		var stopCheckingScroll = false;
 		
-//		console.log("calcs");
-		
-		while (n != null) {
-			if (typeof(n.offsetLeft) == "number") {
-				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
-				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
-				
-//				console.log("node", n, n.offsetLeft, n.offsetTop);
-//				console.log("scrolloffsets", n.scrollLeft, n.scrollTop, stopCheckingScroll);				
-				
-				
-				
-				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
-				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
-				
-			} n = n.offsetParent;
-		}
+		var offsets = this.findContainerPageCoords();
+		var offsetLeft = offsets[0];
+		var offsetTop = offsets[1];
 		
 //		console.log("calce");
 		
@@ -1269,14 +1255,22 @@
 		var stopCheckingScroll = false;
 		
 		while (n != null) {
-			if (typeof(n.offsetLeft) == "number") {
+			var style = window.getComputedStyle(n); 
+			if( style.getPropertyValue('position').toLowerCase() === 'fixed' ){
+				offsetLeft = n.offsetLeft + window.scrollX;
+				offsetTop = n.offsetTop + window.scrollY;
+				n = null; // don't want to check any more parents after position:fixed
+			
+
+			} else if (typeof(n.offsetLeft) == "number") {
 				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
 				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
 				
 				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
 				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
-				
-			} n = n.offsetParent;
+			}
+
+			if( n ){ n = n.offsetParent };
 		}
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.

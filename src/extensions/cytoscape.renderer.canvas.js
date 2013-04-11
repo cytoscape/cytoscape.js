@@ -55,13 +55,16 @@
 			this.data.canvases[i] = document.createElement("canvas");
 			this.data.canvases[i].style.position = "absolute";
 			this.data.canvases[i].setAttribute("data-id", "layer" + i);
-			this.data.canvases[i].style.zIndex = String(-i);
-			this.data.canvases[i].style.visibility = "hidden"; 
+			this.data.canvases[i].style.zIndex = String(CANVAS_LAYERS - i);
 			this.data.container.appendChild(this.data.canvases[i]);
 			
 			this.data.canvasRedrawReason[i] = new Array();
 			this.data.canvasNeedsRedraw[i] = false;
 		}
+
+		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
+		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
+		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
 		
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -1944,13 +1947,26 @@
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
 		
+		var looperMax = 100;
+		console.log('-- redraw --')
+
+		console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
+		
 		var cy = this.data.cy; var data = this.data; 
 		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
 		this.matchCanvasSize(data.container);
 		
-		var elements = nodes.add(edges).toArray();
+		var elements = [];
+		for( var i = 0; i < nodes.length; i++ ){
+			elements.push( nodes[i] );
+		}
+		for( var i = 0; i < edges.length; i++ ){
+			elements.push( edges[i] );
+		}
 
+		} console.timeEnd('init')
 
+		
 
 		// helper function for the sort operation
 		var elementDepth = function(ele) {
@@ -1970,21 +1986,39 @@
 		};
 
 		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE]) {
-		
+
+			//NB : VERY EXPENSIVE
+			console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
+
 			this.findEdgeControlPoints(edges);
+
+			} console.timeEnd('edgectlpts')
+
+			
+			for( var looper = 0; looper <= looperMax; looper++ ){ console.time('compoundck')
 
 			// check if there is a compound node
 			var compoundGraph = false;
-
 			for (var i = 0; i < elements.length; i++)
 			{
-				if ((elements[i]._private.group == "nodes") &&
+				if ((elements[i]._private.group == "nodes") && elements[i].isParent() &&
 				    (elements[i]._private.style["width"].value == "auto" ||
 				     elements[i]._private.style["height"].value == "auto"))
 				{
 					compoundGraph = true;
 					break;
 				}
+			}
+
+			} console.timeEnd('compoundck')
+
+			console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
+			var elements = [];
+			for( var i = 0; i < nodes.length; i++ ){
+				elements.push( nodes[i] );
+			}
+			for( var i = 0; i < edges.length; i++ ){
+				elements.push( edges[i] );
 			}
 
 			elements.sort(function(a, b) {
@@ -2036,18 +2070,22 @@
 				// return zero if z-index values are not the same
 				return 0;
 			});
+			} console.timeEnd('sort')
 
+			console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// no need to update graph if there is no compound node
 			if (compoundGraph)
 			{
 				this.updateAllCompounds(elements);
 			}
+			} console.timeEnd('updatecompounds')
 		}
 		
+		console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
 		if (data.canvasNeedsRedraw[NODE]) {
 //			console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
 		  
-			var context = data.canvases[4].getContext("2d");
+			var context = data.canvases[NODE].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -2095,7 +2133,7 @@
 		if (data.canvasNeedsRedraw[DRAG]) {
 //			console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
 		  
-			var context = data.canvases[2].getContext("2d");
+			var context = data.canvases[DRAG].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -2142,7 +2180,7 @@
 		if (data.canvasNeedsRedraw[SELECT_BOX]) {
 //			console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
 		  
-			var context = data.canvases[0].getContext("2d");
+			var context = data.canvases[SELECT_BOX].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -2152,8 +2190,7 @@
 			
 			if (data.select[4] == 1) {
 				var coreStyle = cy.style()._private.coreStyle;
-				var borderWidth = coreStyle["selection-box-border-width"].value
-					/ data.cy.zoom();
+				var borderWidth = coreStyle["selection-box-border-width"].value / data.cy.zoom();
 				
 				context.lineWidth = borderWidth;
 				context.fillStyle = "rgba(" 
@@ -2186,24 +2223,28 @@
 			data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
 		}
 
+		} console.timeEnd('drawing')
+
 		{
 			var context;
 			
+			// console.time('raster'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// Rasterize the layers, but only if container has nonzero size
-			if (this.data.container.clientHeight > 0
-					&& this.data.container.clientWidth > 0) {
+			// if (this.data.container.clientHeight > 0
+			// 		&& this.data.container.clientWidth > 0) {
 				
-				context = data.bufferCanvases[1].getContext("2d");
-				context.globalCompositeOperation = "copy";
-				context.drawImage(data.canvases[4], 0, 0);
-				context.globalCompositeOperation = "source-over";
-				context.drawImage(data.canvases[2], 0, 0);
-				context.drawImage(data.canvases[0], 0, 0);
+			// 	context = data.bufferCanvases[1].getContext("2d");
+			// 	context.globalCompositeOperation = "copy";
+			// 	context.drawImage(data.canvases[4], 0, 0);
+			// 	context.globalCompositeOperation = "source-over";
+			// 	context.drawImage(data.canvases[2], 0, 0);
+			// 	context.drawImage(data.canvases[0], 0, 0);
 				
-				context = data.bufferCanvases[0].getContext("2d");
-				context.globalCompositeOperation = "copy";
-				context.drawImage(data.bufferCanvases[1], 0, 0);
-			}
+			// 	context = data.bufferCanvases[0].getContext("2d");
+			// 	context.globalCompositeOperation = "copy";
+			// 	context.drawImage(data.bufferCanvases[1], 0, 0);
+			// }
+			// } console.timeEnd('raster')
 		}
 	};
 	
@@ -3042,8 +3083,8 @@
 		var pairId;
 		for (var i = 0; i < edges.length; i++) {
 			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
-				edges[i]._private.data.target + edges[i]._private.data.source :
-				edges[i]._private.data.source + edges[i]._private.data.target;
+				edges[i]._private.data.target + '-' + edges[i]._private.data.source :
+				edges[i]._private.data.source + '-' + edges[i]._private.data.target ;
 
 			if (hashTable[pairId] == undefined) {
 				hashTable[pairId] = [];

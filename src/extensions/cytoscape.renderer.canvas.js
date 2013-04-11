@@ -1281,18 +1281,23 @@
 	CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly) {
 		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var near = [];
 		
+		var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+		var zoom = this.data.cy.zoom();
+		var edgeThreshold = (isTouch ? 256 : 32) / zoom;
+		var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
+		
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
 			if (nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
 					nodes[i]._private.style["border-width"].value,
 					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
-					this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
+					this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
 				nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
 					nodes[i]._private.style["border-width"].value,
 					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
-					this.getNodeWidth(nodes[i]) / 2, this.getNodeHeight(nodes[i]) / 2,
+					(this.getNodeWidth(nodes[i]) + nodeThreshold) / 2, (this.getNodeHeight(nodes[i]) + nodeThreshold) / 2,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
 				if (visibleElementsOnly) {
@@ -1307,16 +1312,11 @@
 			}
 		}
 		
-		var addCurrentEdge;
-		
 		// Check edges
-		var zoom = this.data.cy.zoom();
+		var addCurrentEdge;
 		for (var i = 0; i < edges.length; i++) {
 			var edge = edges[i];
 			var rs = edge._private.rscratch;
-			var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
-			var edgeThreshold = isTouch ? 256 : 32;
-			edgeThreshold = edgeThreshold / zoom;
 
 			addCurrentEdge = false;
 

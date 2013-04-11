@@ -226,7 +226,9 @@
 			// Primary button
 			if (e.button == 0) {
 				
-				if( near ){ near.activate(); }
+				if( near ){
+					near.activate();
+				}
 
 				// Element dragging
 				{
@@ -290,8 +292,8 @@
 							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 						
-						//r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
-						//r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
+						// r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
+						// r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
 					} else if (near == null) {
 						cy
@@ -321,7 +323,7 @@
 			select[0] = select[2] = pos[0];
 			select[1] = select[3] = pos[1];
 			
-			r.redraw();
+			//r.redraw();
 			
 		}, false);
 		
@@ -460,7 +462,9 @@
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			var shiftDown = e.shiftKey;
 			
-			if( down ){ down.unactivate(); }
+			if( down ){
+				down.unactivate();
+			}
 
 			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
 			if ( (down == null) // not mousedown on node
@@ -749,7 +753,12 @@
 				var near = r.findNearestElement(now[0], now[1], true);
 
 				if (near != null) {
-					near.activate();
+					//near.activate();
+					near._private.active = true;
+					near.updateStyle(false);
+					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("activate node");
+					r.redraw();
+					near.trigger(new $$.Event(e, {type: "activate"}));
 
 					r.touchData.start = near;
 					
@@ -863,7 +872,7 @@
 				}, 1000);
 			}
 			
-			r.redraw();
+			//r.redraw();
 			
 		}, false);
 		
@@ -1055,8 +1064,12 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
+			var updateStartStyle = false;
+
 			if( start != null ){
-				start.unactivate();
+				start._private.active = false;
+				updateStartStyle = true;
+				start.trigger( new $$.Event(e, {type: "unactivate"}) );
 			}
 
 			if (e.touches[2]) {
@@ -1135,10 +1148,14 @@
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 
 					if( start.selected() ){
-						start.unselect();
+						start._private.selected = false;
+						start.trigger( new $$.Event(e, {type: "unselect"}) );
 					} else {
-						start.select();
+						start._private.selected = true;
+						start.trigger( new $$.Event(e, {type: "select"}) );
 					}
+
+					updateStartStyle = true;
 
 					
 					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
@@ -1168,6 +1185,10 @@
 			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
 
 			r.dragData.didDrag = false; // reset for next mousedown
+
+			if( updateStartStyle && start ){
+				start.updateStyle(false);
+			}
 
 			r.redraw();
 			
@@ -1948,7 +1969,7 @@
 	CanvasRenderer.prototype.redraw = function() {
 		
 		var looperMax = 100;
-		// console.log('-- redraw --')
+		//console.log('-- redraw --')
 
 		// console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
 		
@@ -2081,31 +2102,24 @@
 		var elesNotInDragLayer;
 		var element;
 
-		function calcElesInLayers(){
-			elesInDragLayer = [];
-			elesNotInDragLayer = [];
-
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
-
-				if ( element._private.rscratch.inDragLayer ) {
-					elesInDragLayer.push( element );
-				} else {
-					elesNotInDragLayer.push( element );
-				}
-			}
-		}
-
-		function drawEles(context, eles){
-			
-		}
 
 		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
 		if (data.canvasNeedsRedraw[NODE]) {
 			// console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
 		  
 		  	if( !elesInDragLayer || !elesNotInDragLayer ){
-				calcElesInLayers();
+				elesInDragLayer = [];
+				elesNotInDragLayer = [];
+
+				for (var index = 0; index < elements.length; index++) {
+					element = elements[index];
+
+					if ( element._private.rscratch.inDragLayer ) {
+						elesInDragLayer.push( element );
+					} else {
+						elesNotInDragLayer.push( element );
+					}
+				}
 			}	
 
 			var context = data.canvases[NODE].getContext("2d");
@@ -2151,7 +2165,18 @@
 			// console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
 		  
 			if( !elesInDragLayer || !elesNotInDragLayer ){
-				calcElesInLayers();
+				elesInDragLayer = [];
+				elesNotInDragLayer = [];
+
+				for (var index = 0; index < elements.length; index++) {
+					element = elements[index];
+
+					if ( element._private.rscratch.inDragLayer ) {
+						elesInDragLayer.push( element );
+					} else {
+						elesNotInDragLayer.push( element );
+					}
+				}
 			}
 
 			var context = data.canvases[DRAG].getContext("2d");

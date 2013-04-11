@@ -609,7 +609,7 @@
 					
 				}
 
-				down.trigger(freeEvent);
+				if( down){ down.trigger(freeEvent); }
 
 //				draggedElements = r.dragData.possibleDragElements = [];
 				r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Node/nodes back from drag");
@@ -2991,6 +2991,9 @@
 		
 		// Calculate text draw position based on text alignment
 		
+		// so text outlines aren't jagged
+		context.lineJoin = 'round';
+
 		context.fillStyle = "rgba(" 
 			+ element._private.style["color"].value[0] + ","
 			+ element._private.style["color"].value[1] + ","
@@ -3006,9 +3009,9 @@
 			* element._private.style["opacity"].value) + ")";
 		
 		if (text != undefined) {
-			var lineWidth = element._private.style["text-outline-width"].value;
+			var lineWidth = 2  * element._private.style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
 			if (lineWidth > 0) {
-				context.lineWidth = lineWidth * 2;
+				context.lineWidth = lineWidth;
 				context.strokeText(text, textX, textY);
 			}
 

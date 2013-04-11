@@ -1948,9 +1948,9 @@
 	CanvasRenderer.prototype.redraw = function() {
 		
 		var looperMax = 100;
-		console.log('-- redraw --')
+		// console.log('-- redraw --')
 
-		console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
+		// console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
 		
 		var cy = this.data.cy; var data = this.data; 
 		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
@@ -1964,7 +1964,7 @@
 			elements.push( edges[i] );
 		}
 
-		} console.timeEnd('init')
+		// } console.timeEnd('init')
 
 		
 
@@ -1986,33 +1986,29 @@
 		};
 
 		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE]) {
-
 			//NB : VERY EXPENSIVE
-			console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
+			// console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
 			this.findEdgeControlPoints(edges);
 
-			} console.timeEnd('edgectlpts')
+			// } console.timeEnd('edgectlpts')
 
 			
-			for( var looper = 0; looper <= looperMax; looper++ ){ console.time('compoundck')
-
+			// console.time('compoundck'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// check if there is a compound node
 			var compoundGraph = false;
 			for (var i = 0; i < elements.length; i++)
 			{
-				if ((elements[i]._private.group == "nodes") && elements[i].isParent() &&
-				    (elements[i]._private.style["width"].value == "auto" ||
-				     elements[i]._private.style["height"].value == "auto"))
+				if( elements[i].isNode() && elements[i].isParent() )
 				{
 					compoundGraph = true;
 					break;
 				}
 			}
 
-			} console.timeEnd('compoundck')
+			// } console.timeEnd('compoundck')
 
-			console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
+			// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
 			var elements = [];
 			for( var i = 0; i < nodes.length; i++ ){
 				elements.push( nodes[i] );
@@ -2070,21 +2066,48 @@
 				// return zero if z-index values are not the same
 				return 0;
 			});
-			} console.timeEnd('sort')
+			// } console.timeEnd('sort')
 
-			console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
+			// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// no need to update graph if there is no compound node
 			if (compoundGraph)
 			{
 				this.updateAllCompounds(elements);
 			}
-			} console.timeEnd('updatecompounds')
+			// } console.timeEnd('updatecompounds')
 		}
 		
-		console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
+		var elesInDragLayer;
+		var elesNotInDragLayer;
+		var element;
+
+		function calcElesInLayers(){
+			elesInDragLayer = [];
+			elesNotInDragLayer = [];
+
+			for (var index = 0; index < elements.length; index++) {
+				element = elements[index];
+
+				if ( element._private.rscratch.inDragLayer ) {
+					elesInDragLayer.push( element );
+				} else {
+					elesNotInDragLayer.push( element );
+				}
+			}
+		}
+
+		function drawEles(context, eles){
+			
+		}
+
+		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
 		if (data.canvasNeedsRedraw[NODE]) {
-//			console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
+			// console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
 		  
+		  	if( !elesInDragLayer || !elesNotInDragLayer ){
+				calcElesInLayers();
+			}	
+
 			var context = data.canvases[NODE].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -2092,38 +2115,32 @@
 			
 			context.translate(cy.pan().x, cy.pan().y);
 			context.scale(cy.zoom(), cy.zoom());
-		
-			var element;
 			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
+			for (var index = 0; index < elesNotInDragLayer.length; index++) {
+				element = elesNotInDragLayer[index];
 				
-				if (!element._private.rscratch.inDragLayer) {
-					if (element._private.group == "nodes") {
-						this.drawNode(context, element);
-						
-					} else if (element._private.group == "edges") {
-						this.drawEdge(context, element);
-					}
+				if (element._private.group == "nodes") {
+					this.drawNode(context, element);
+					
+				} else if (element._private.group == "edges") {
+					this.drawEdge(context, element);
 				}
 			}
 			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
+			for (var index = 0; index < elesNotInDragLayer.length; index++) {
+				element = elesNotInDragLayer[index];
 				
-				if (!element._private.rscratch.inDragLayer) {
-					if (element._private.group == "nodes") {
-						this.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						this.drawEdgeText(context, element);
-					}
+				if (element._private.group == "nodes") {
+					this.drawNodeText(context, element);
+				} else if (element._private.group == "edges") {
+					this.drawEdgeText(context, element);
+				}
 
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						this.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(context, element, true);
-					}
+				// draw the overlay
+				if (element._private.group == "nodes") {
+					this.drawNode(context, element, true);
+				} else if (element._private.group == "edges") {
+					this.drawEdge(context, element, true);
 				}
 			}
 			
@@ -2131,8 +2148,12 @@
 		}
 		
 		if (data.canvasNeedsRedraw[DRAG]) {
-//			console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
+			// console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
 		  
+			if( !elesInDragLayer || !elesNotInDragLayer ){
+				calcElesInLayers();
+			}
+
 			var context = data.canvases[DRAG].getContext("2d");
 			
 			context.setTransform(1, 0, 0, 1, 0, 0);
@@ -2143,34 +2164,30 @@
 			
 			var element;
 
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
+			for (var index = 0; index < elesInDragLayer.length; index++) {
+				element = elesInDragLayer[index];
 				
-				if (element._private.rscratch.inDragLayer) {
-					if (element._private.group == "nodes") {
-						this.drawNode(context, element);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(context, element);
-					}
+				if (element._private.group == "nodes") {
+					this.drawNode(context, element);
+				} else if (element._private.group == "edges") {
+					this.drawEdge(context, element);
 				}
 			}
 			
-			for (var index = 0; index < elements.length; index++) {
-				element = elements[index];
+			for (var index = 0; index < elesInDragLayer.length; index++) {
+				element = elesInDragLayer[index];
 				
-				if (element._private.rscratch.inDragLayer) {
-					if (element._private.group == "nodes") {
-						this.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						this.drawEdgeText(context, element);
-					}
+				if (element._private.group == "nodes") {
+					this.drawNodeText(context, element);
+				} else if (element._private.group == "edges") {
+					this.drawEdgeText(context, element);
+				}
 
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						this.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						this.drawEdge(context, element, true);
-					}
+				// draw the overlay
+				if (element._private.group == "nodes") {
+					this.drawNode(context, element, true);
+				} else if (element._private.group == "edges") {
+					this.drawEdge(context, element, true);
 				}
 			}
 			
@@ -2178,7 +2195,7 @@
 		}
 		
 		if (data.canvasNeedsRedraw[SELECT_BOX]) {
-//			console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
+			// console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
 		  
 			var context = data.canvases[SELECT_BOX].getContext("2d");
 			
@@ -2223,7 +2240,7 @@
 			data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
 		}
 
-		} console.timeEnd('drawing')
+		// } console.timeEnd('drawing')
 
 		{
 			var context;
@@ -3079,6 +3096,7 @@
 	// Find edge control points
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
 		var hashTable = {}; var cy = this.data.cy;
+		var pairIds = [];
 		
 		var pairId;
 		for (var i = 0; i < edges.length; i++) {
@@ -3090,15 +3108,17 @@
 				hashTable[pairId] = [];
 			}
 			
-			hashTable[pairId].push(edges[i]);
+			hashTable[pairId].push( edges[i] );
+			pairIds.push( pairId );
 		}
 		var src, tgt;
 		
 		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
-		for (var pairId in hashTable) {
+		for (var p = 0; p < pairIds.length; p++) {
+			pairId = pairIds[p];
 		
-			src = cy.getElementById(hashTable[pairId][0]._private.data.source);
-			tgt = cy.getElementById(hashTable[pairId][0]._private.data.target);
+			src = cy.getElementById( hashTable[pairId][0]._private.data.source );
+			tgt = cy.getElementById( hashTable[pairId][0]._private.data.target );
 
 			var midPointX = (src._private.position.x + tgt._private.position.x) / 2;
 			var midPointY = (src._private.position.y + tgt._private.position.y) / 2;
@@ -3120,28 +3140,44 @@
 			
 			for (var i = 0; i < hashTable[pairId].length; i++) {
 				edge = hashTable[pairId][i];
+
+				// var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
+				// var srcX2 = src._private.position.x;
+				// var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
+				// var srcY2 = src._private.position.y;
+				// var srcW1 = edge._private.rscratch.lastSrcCtlPtW;
+				// var srcW2 = src.outerWidth();
+				// var srcH1 = edge._private.rscratch.lastSrcCtlPtH;
+				// var srcH2 = src.outerHeight();
+
+				// var tgtX1 = edge._private.rscratch.lastTgtCtlPtX;
+				// var tgtX2 = tgt._private.position.x;
+				// var tgtY1 = edge._private.rscratch.lastTgtCtlPtY;
+				// var tgtY2 = tgt._private.position.y;
+				// var tgtW1 = edge._private.rscratch.lastTgtCtlPtW;
+				// var tgtW2 = tgt.outerWidth();
+				// var tgtH1 = edge._private.rscratch.lastTgtCtlPtH;
+				// var tgtH2 = tgt.outerHeight();
+
+				// if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
+				// &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 ){
+				// 	continue; // then the control points haven't changed and we can skip calculating them
+				// } else {
+				// 	src._private.rscratch.lastSrcCtlPtX = srcX2;
+				// 	src._private.rscratch.lastSrcCtlPtY = srcY2;
+				// 	src._private.rscratch.lastSrcCtlPtW = srcW2;
+				// 	src._private.rscratch.lastSrcCtlPtH = srcH2;
+				// 	tgt._private.rscratch.lastTgtCtlPtX = tgtX2;
+				// 	tgt._private.rscratch.lastTgtCtlPtY = tgtY2;
+				// 	tgt._private.rscratch.lastTgtCtlPtW = tgtW2;
+				// 	tgt._private.rscratch.lastTgtCtlPtH = tgtH2;
+				// }
 							
 				// Self-edge
 				if (src._private.data.id == tgt._private.data.id) {
 					var stepSize = edge._private.style["control-point-step-size"].pxValue;
 						
 					edge._private.rscratch.edgeType = "self";
-					
-					// Old -- before fix for large nodes hiding the edge
-					// ===
-//					edge._private.rscratch.cp2ax = src._private.position.x;
-//					edge._private.rscratch.cp2ay = src._private.position.y
-//						- 1.3 * stepSize * (i / 3 + 1);
-//					
-//					edge._private.rscratch.cp2cx = src._private.position.x
-//						- 1.3 * stepSize * (i / 3 + 1);
-//					edge._private.rscratch.cp2cy = src._private.position.y;
-					
-//					edge._private.rscratch.selfEdgeMidX =
-//						(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
-//				
-//					edge._private.rscratch.selfEdgeMidY =
-//						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
 					
 					// New -- fix for large nodes
 					edge._private.rscratch.cp2ax = src._private.position.x;

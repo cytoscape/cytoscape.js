@@ -70,7 +70,7 @@
 			this.data.bufferCanvases[i] = document.createElement("canvas");
 			this.data.bufferCanvases[i].style.position = "absolute";
 			this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
-			this.data.bufferCanvases[i].style.zIndex = String(-i);
+			this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
 			this.data.bufferCanvases[i].style.visibility = "visible";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);
 		}
@@ -101,6 +101,24 @@
 	};
 	
 	CanvasRenderer.prototype.png = function(){
+		var data = this.data;
+
+		// Rasterize the layers, but only if container has nonzero size
+		if (this.data.container.clientHeight > 0
+				&& this.data.container.clientWidth > 0) {
+			
+			context = data.bufferCanvases[1].getContext("2d");
+			context.globalCompositeOperation = "copy";
+			context.drawImage(data.canvases[4], 0, 0);
+			context.globalCompositeOperation = "source-over";
+			context.drawImage(data.canvases[2], 0, 0);
+			context.drawImage(data.canvases[0], 0, 0);
+			
+			context = data.bufferCanvases[0].getContext("2d");
+			context.globalCompositeOperation = "copy";
+			context.drawImage(data.bufferCanvases[1], 0, 0);
+		}
+
 		var canvas = this.data.bufferCanvases[0];
 
 		return canvas.toDataURL("image/png");

@@ -900,6 +900,7 @@
 
 		window.addEventListener("touchmove", function(e) {
 		
+			var select = r.data.select;
 			var capture = r.touchData.capture; //if (!capture) { return; }; 
 			capture && e.preventDefault();
 		
@@ -912,7 +913,17 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
+			if( capture && e.touches[2] ){
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+
+				select[0] = Math.min(select[0] || 999999999999999, now[0], now[2], now[4]);
+				select[1] = Math.min(select[1] || 999999999999999, now[1], now[3], now[5]);
+				select[2] = Math.max(select[2] || -1, now[0], now[2], now[4]);
+				select[3] = Math.max(select[3] || -1, now[1], now[3], now[5]);
+				select[4] = 1;
+
+			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 
 				// console.log('touchmove ptz');
 
@@ -1064,7 +1075,7 @@
 					now[0] = pos[0]; now[1] = pos[1];
 				}
 			}
-			
+
 			for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
 			r.redraw();
 			
@@ -1074,6 +1085,7 @@
 			
 			var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
 			e.preventDefault();
+			var select = r.data.select;
 			
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
@@ -1084,6 +1096,34 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
+			// no more box selection if we don't have three fingers
+			if( !e.touches[2] ){
+				var newlySelected = [];
+				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+				// console.log(box);
+				var event = new $$.Event(e, {type: "select"});
+				for (var i=0;i<box.length;i++) { 
+					if (box[i]._private.selectable) {
+						newlySelected.push( box[i] );
+					}
+				}
+
+				(new $$.Collection( cy, newlySelected )).select();
+				
+				if (box.length > 0) { 
+					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
+				}
+
+				select[0] = undefined;
+				select[1] = undefined;
+				select[2] = undefined;
+				select[3] = undefined;
+				select[4] = 0;
+
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+			}
+
 			var updateStartStyle = false;
 
 			if( start != null ){

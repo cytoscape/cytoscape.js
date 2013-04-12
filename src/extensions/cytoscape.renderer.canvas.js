@@ -1,5 +1,7 @@
 (function($$) {
 
+
+
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
 	var rendFunc = CanvasRenderer.prototype;
@@ -1986,6 +1988,30 @@
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
 		
+		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
+
+		var minRedrawLimit = 1000/60; // people can't see much better than 60fps
+		var maxRedrawLimit = 1000/30; // 30 fps is a movie; we need animations and interaction to be smooth
+		var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
+
+		redrawLimit = Math.max(minRedrawLimit, redrawLimit);
+		redrawLimit = Math.min(redrawLimit, maxRedrawLimit);
+
+		//console.log('--\nideal: %i; effective: %i', this.averageRedrawTime, redrawLimit);
+
+		if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
+
+		var nowTime = +new Date;
+		var callAfterLimit =  nowTime - this.lastDrawTime >= redrawLimit;
+
+		if( !callAfterLimit ){
+			return;
+		}
+
+		this.lastDrawTime = nowTime;
+
+		var startTime = nowTime;
+
 		var looperMax = 100;
 		//console.log('-- redraw --')
 
@@ -2306,6 +2332,16 @@
 			// }
 			// } console.timeEnd('raster')
 		}
+
+		var endTime = +new Date;
+
+		if( this.averageRedrawTime === undefined ){
+			this.averageRedrawTime = endTime - startTime;
+		}
+
+		// use a weighted average with a bias from the previous average so we don't spike so easily
+		this.averageRedrawTime = this.averageRedrawTime/2 + (endTime - startTime)/2;
+		//console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 	};
 	
 	var imageCache = {};

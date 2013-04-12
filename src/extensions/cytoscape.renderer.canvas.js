@@ -885,6 +885,8 @@
 							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
 						} else {
 							r.data.cy.trigger(new $$.Event(e, {type: "taphold"}));
+
+							cy.$(':selected').unselect();
 						}
 
 //						console.log("taphold");
@@ -892,7 +894,7 @@
 				}, 1000);
 			}
 			
-			//r.redraw();
+			r.redraw();
 			
 		}, false);
 		
@@ -2027,6 +2029,7 @@
 	
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function() {
+		var r = this;
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
@@ -2042,9 +2045,15 @@
 		if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
 
 		var nowTime = +new Date;
-		var callAfterLimit =  nowTime - this.lastDrawTime >= redrawLimit;
+		var timeElapsed = nowTime - this.lastDrawTime;
+		var callAfterLimit = timeElapsed >= redrawLimit;
 
 		if( !callAfterLimit ){
+			clearTimeout( this.redrawTimeout );
+			this.redrawTimeout = setTimeout(function(){
+				r.redraw();
+			}, redrawLimit);
+
 			return;
 		}
 

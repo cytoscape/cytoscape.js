@@ -970,10 +970,18 @@
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
 
-				select[0] = Math.min(select[0] || 999999999999999, now[0], now[2], now[4]);
-				select[1] = Math.min(select[1] || 999999999999999, now[1], now[3], now[5]);
-				select[2] = Math.max(select[2] || -1, now[0], now[2], now[4]);
-				select[3] = Math.max(select[3] || -1, now[1], now[3], now[5]);
+				if( select[0] === undefined ){
+					select[0] = (now[0] + now[2] + now[4])/3;
+					select[1] = (now[1] + now[3] + now[5])/3;
+					select[2] = (now[0] + now[2] + now[4])/3 + 1;
+					select[3] = (now[1] + now[3] + now[5])/3 + 1;
+					console.log('select')
+				} else {
+					select[2] = (now[0] + now[2] + now[4])/3;
+					select[3] = (now[1] + now[3] + now[5])/3;
+					console.log('select 2')
+				}
+
 				select[4] = 1;
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom

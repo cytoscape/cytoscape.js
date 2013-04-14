@@ -541,6 +541,7 @@
 			var shiftDown = e.shiftKey;
 			
 			r.data.bgActivePosistion = undefined; // not active bg now
+			clearTimeout( r.bgActiveTimeout );
 
 			if( down ){
 				down.unactivate();
@@ -965,6 +966,9 @@
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
 			if( capture && e.touches[2] ){
+				clearTimeout( this.threeFingerSelectTimeout );
+				this.lastThreeTouch = +new Date;
+
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
 
@@ -973,13 +977,12 @@
 					select[1] = (now[1] + now[3] + now[5])/3;
 					select[2] = (now[0] + now[2] + now[4])/3 + 1;
 					select[3] = (now[1] + now[3] + now[5])/3 + 1;
-					console.log('select')
 				} else {
 					select[2] = (now[0] + now[2] + now[4])/3;
 					select[3] = (now[1] + now[3] + now[5])/3;
-					console.log('select 2')
-					select[4] = 1;
 				}
+
+				select[4] = 1;
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 
@@ -1168,32 +1171,38 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
+			var nowTime = +new Date;
 			// no more box selection if we don't have three fingers
 			if( !e.touches[2] ){
-				var newlySelected = [];
-				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
-				// console.log(box);
-				var event = new $$.Event(e, {type: "select"});
-				for (var i=0;i<box.length;i++) { 
-					if (box[i]._private.selectable) {
-						newlySelected.push( box[i] );
+				clearTimeout( this.threeFingerSelectTimeout );
+				this.threeFingerSelectTimeout = setTimeout(function(){
+					var newlySelected = [];
+					var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+
+					select[0] = undefined;
+					select[1] = undefined;
+					select[2] = undefined;
+					select[3] = undefined;
+					select[4] = 0;
+
+					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+					r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+					
+					// console.log(box);
+					var event = new $$.Event(e, {type: "select"});
+					for (var i=0;i<box.length;i++) { 
+						if (box[i]._private.selectable) {
+							newlySelected.push( box[i] );
+						}
 					}
-				}
 
-				(new $$.Collection( cy, newlySelected )).select();
-				
-				if (box.length > 0) { 
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
-				}
+					(new $$.Collection( cy, newlySelected )).select();
+					
+					if (box.length > 0) { 
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
+					}
 
-				select[0] = undefined;
-				select[1] = undefined;
-				select[2] = undefined;
-				select[3] = undefined;
-				select[4] = 0;
-
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+				}, 50);
 			}
 
 			var updateStartStyle = false;

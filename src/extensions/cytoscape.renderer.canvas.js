@@ -107,7 +107,7 @@
 		this.redraw();
 	};
 	
-	CanvasRenderer.prototype.drawPanzoomLayer = function(){
+	CanvasRenderer.prototype.drawPanzoomLayer = function(){ return; // disable until done
 		var data = this.data;
 		var bb = this.data.cy.boundingBox();
 		this.panzoomBB = bb;
@@ -440,15 +440,18 @@
 
 				if( cy.panningEnabled() ){
 					var deltaP = {x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()};
-					cy._private.pan.x += deltaP.x;
-					cy._private.pan.y += deltaP.y;
 
-					r.data.canvases[PANZOOM].style.marginLeft = (r.panzoomBB.x1 + cy._private.pan.x) + 'px';
-					r.data.canvases[PANZOOM].style.marginTop = (r.panzoomBB.y1 + cy._private.pan.y) + 'px';
-					r.data.canvases[PANZOOM].style.width = (r.data.canvases[PANZOOM].width / PANZOOM_MULTIPLIER) + 'px';
-					r.data.canvases[PANZOOM].style.height = (r.data.canvases[PANZOOM].height / PANZOOM_MULTIPLIER) + 'px';
+					cy.panBy( deltaP );
 
-					cy.trigger('pan');
+					// cy._private.pan.x += deltaP.x;
+					// cy._private.pan.y += deltaP.y;
+
+					// r.data.canvases[PANZOOM].style.marginLeft = (r.panzoomBB.x1 + cy._private.pan.x) + 'px';
+					// r.data.canvases[PANZOOM].style.marginTop = (r.panzoomBB.y1 + cy._private.pan.y) + 'px';
+					// r.data.canvases[PANZOOM].style.width = (r.data.canvases[PANZOOM].width / PANZOOM_MULTIPLIER) + 'px';
+					// r.data.canvases[PANZOOM].style.height = (r.data.canvases[PANZOOM].height / PANZOOM_MULTIPLIER) + 'px';
+
+					// cy.trigger('pan');
 				}
 				
 				// Needs reproject due to pan changing viewport
@@ -1187,7 +1190,7 @@
 
 					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 					r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
-					
+
 					// console.log(box);
 					var event = new $$.Event(e, {type: "select"});
 					for (var i=0;i<box.length;i++) { 

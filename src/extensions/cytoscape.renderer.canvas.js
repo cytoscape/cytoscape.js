@@ -7,7 +7,8 @@
 	var rendFunc = CanvasRenderer.prototype;
 
 	// Canvas layer constants
-	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, NODE = 4, BUFFER_COUNT = 2;
+	var CANVAS_LAYERS = 6, SELECT_BOX = 0, DRAG = 2, NODE = 4, PANZOOM = 5, BUFFER_COUNT = 2;
+	var PANZOOM_MULTIPLIER = 2;
 	
 	function CanvasRenderer(options) {
 		
@@ -48,6 +49,8 @@
 		//--Wheel-related data 
 		this.zoomData = {freeToZoom: false, lastPointerX: null};
 		//--
+
+		this.panzoomBB;
 		
 		this.redraws = 0;
 		
@@ -67,6 +70,8 @@
 		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
 		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
 		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
+		this.data.canvases[PANZOOM].setAttribute("data-id", "layer" + PANZOOM + '-panzoom');
+		this.data.canvases[PANZOOM].style.zIndex = String(CANVAS_LAYERS + 1);
 		
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -102,6 +107,28 @@
 		this.redraw();
 	};
 	
+	CanvasRenderer.prototype.drawPanzoomLayer = function(){
+		var data = this.data;
+		var bb = this.data.cy.boundingBox();
+		this.panzoomBB = bb;
+
+		this.data.canvases[PANZOOM].width = bb.w * PANZOOM_MULTIPLIER;
+		this.data.canvases[PANZOOM].height = bb.h * PANZOOM_MULTIPLIER;
+		var pzContext = this.data.canvases[PANZOOM].getContext('2d');
+
+		console.log('drag panzoom layer'); 
+		this.redraw( pzContext, true );
+
+		this.data.canvases[NODE].style.visibility = 'hidden';
+		this.data.canvases[DRAG].style.visibility = 'hidden';
+	};
+
+	CanvasRenderer.prototype.clearPanzoomLayer = function(){
+
+		this.data.canvases[NODE].style.visibility = '';
+		this.data.canvases[DRAG].style.visibility = '';
+	};
+
 	CanvasRenderer.prototype.png = function(){
 		var data = this.data;
 
@@ -325,25 +352,40 @@
 					
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
+
 				}
 			
 				// Selection box
-				if ( near == null ) { select[4] = 1; }
+				if ( near == null || near.isEdge() ) {
+					select[4] = 1;
+					var timeUntilActive = Math.max( 0, 400 - (+new Date - r.hoverData.downTime) );
+
+					clearTimeout( r.bgActiveTimeout );
+					r.bgActiveTimeout = setTimeout(function(){
+						if( near ){
+							near.unactivate();
+						}
+
+						r.data.bgActivePosistion = {
+							x: pos[0],
+							y: pos[1]
+						};
+
+						r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+						r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+
+						r.redraw();
+					}, timeUntilActive);
+					
+				}
 			
-			// Middle/auxilliary button
-			} else if (e.button == 1) {
-				
-				// Drag pan
-				r.hoverData.dragging = true;
-				r.hoverData.initialPan = [cy.pan().x, cy.pan().y];
-				
-			}
+			} 
 			
 			// Initialize selection box coordinates
 			select[0] = select[2] = pos[0];
 			select[1] = select[3] = pos[1];
 			
-			//r.redraw();
+			r.redraw();
 			
 		}, false);
 		
@@ -377,7 +419,9 @@
 					return;
 				}
 			}
-			
+
+			preventDefault = true;
+
 			// Mousemove event
 			{
 				var event = new $$.Event(e, {type: "mousemove"});
@@ -395,21 +439,35 @@
 				preventDefault = true;
 
 				if( cy.panningEnabled() ){
-					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+					var deltaP = {x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()};
+					cy._private.pan.x += deltaP.x;
+					cy._private.pan.y += deltaP.y;
+
+					r.data.canvases[PANZOOM].style.marginLeft = (r.panzoomBB.x1 + cy._private.pan.x) + 'px';
+					r.data.canvases[PANZOOM].style.marginTop = (r.panzoomBB.y1 + cy._private.pan.y) + 'px';
+					r.data.canvases[PANZOOM].style.width = (r.data.canvases[PANZOOM].width / PANZOOM_MULTIPLIER) + 'px';
+					r.data.canvases[PANZOOM].style.height = (r.data.canvases[PANZOOM].height / PANZOOM_MULTIPLIER) + 'px';
+
+					cy.trigger('pan');
 				}
 				
 				// Needs reproject due to pan changing viewport
 				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
-			} else if (select[4] == 1 && down == null 
+			} else if (select[4] == 1 && (down == null || down.isEdge())
 					&& ( !cy.boxSelectionEnabled() || (new Date()).getTime() - r.hoverData.downTime > 400 )
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
 					&& cy.panningEnabled() ) {
 				
 				r.hoverData.dragging = true;
 				select[4] = 0;
+
+				r.drawPanzoomLayer();
 				
 			} else {
+				clearTimeout( r.bgActiveTimeout );
+				if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
 				if (near != last) {
 					
 					if (last) { last.trigger(new $$.Event(e, {type: "mouseout"})); }
@@ -482,6 +540,8 @@
 			var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
 			var shiftDown = e.shiftKey;
 			
+			r.data.bgActivePosistion = undefined; // not active bg now
+
 			if( down ){
 				down.unactivate();
 			}
@@ -715,7 +775,8 @@
 			e.preventDefault();
 		
 			r.touchData.capture = true;
-		
+			r.data.bgActivePosistion = undefined;
+
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 			var now = r.touchData.now; var earlier = r.touchData.earlier;
@@ -773,31 +834,12 @@
 				var near = r.findNearestElement(now[0], now[1], true);
 
 				if (near != null) {
-					//near.activate();
-					near._private.active = true;
-					near.updateStyle(false);
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("activate node");
-					r.redraw();
-					near.trigger(new $$.Event(e, {type: "activate"}));
+					near.activate();
 
 					r.touchData.start = near;
 					
 					if (near._private.group == "nodes" && r.nodeIsDraggable(near))
 					{
-//						near._private.grabbed = true;
-//						near._private.rscratch.inDragLayer = true;
-//						near.trigger(new $$.Event(e, {type: "grab"}));
-						
-						// r.data.canvasNeedsRedraw[DRAG] = true;
-						// r.data.canvasRedrawReason[DRAG].push("touchdrag node start");
-						
-						// r.data.canvasNeedsRedraw[NODE] = true;
-						// r.data.canvasRedrawReason[NODE].push("touchdrag node start");
-						
-//						var sEdges = near._private.edges;
-//						for (var j=0;j<sEdges.length;j++) {
-//						  sEdges[j]._private.rscratch.inDragLayer = true;
-//						}
 
 						var draggedEles = r.dragData.touchDragEles = [];
 						addNodeToDrag(near, draggedEles);
@@ -855,12 +897,21 @@
 						.trigger(new $$.Event(e, {type: "tapstart"}))
 						.trigger(new $$.Event(e, {type: "vmousdown"}))
 					;
-				} else if (near == null) {
+				} if (near == null) {
 					cy
 						.trigger(new $$.Event(e, {type: "touchstart"}))
 						.trigger(new $$.Event(e, {type: "tapstart"}))
 						.trigger(new $$.Event(e, {type: "vmousedown"}))
 					;
+
+					r.data.bgActivePosistion = {
+						x: pos[0],
+						y: pos[1]
+					};
+
+					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+					r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+
 				}
 				
 				
@@ -1069,7 +1120,21 @@
 					}
 				}
 				
-				if ( capture && start == null && cy.panningEnabled() ) {
+				if ( capture && (start == null || start.isEdge()) && cy.panningEnabled() ) {
+					if( start ){
+						start.unactivate();
+
+						if( !r.data.bgActivePosistion ){
+							r.data.bgActivePosistion = {
+								x: now[0],
+								y: now[1]
+							};
+						}
+
+						r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+						r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+					}
+
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
 					
 					// Re-project
@@ -1135,7 +1200,7 @@
 			}
 
 			if (e.touches[2]) {
-			
+				r.data.bgActivePosistion = undefined;
 			} else if (e.touches[1]) {
 				
 			} else if (e.touches[0]) {
@@ -1143,6 +1208,8 @@
 			// Last touch released
 			} else if (!e.touches[0]) {
 				
+				r.data.bgActivePosistion = undefined;
+
 				if (start != null ) {
 
 					if (start._private.grabbed == true) {
@@ -2002,8 +2069,10 @@
 		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
 		
 		var canvas;
-		for (var i = 0; i < 5; i++) {
+		for (var i = 0; i < CANVAS_LAYERS; i++) {
 			
+			if( i === PANZOOM ){ continue } // we manually manage its size
+
 			canvas = data.canvases[i];
 			
 			if (canvas.width !== width || canvas.height !== height) {
@@ -2014,7 +2083,7 @@
 			}
 		}
 		
-		for (var i = 0; i < 2; i++) {
+		for (var i = 0; i < BUFFER_COUNT; i++) {
 			
 			canvas = data.bufferCanvases[i];
 			
@@ -2028,8 +2097,10 @@
 	}
 	
 	// Redraw frame
-	CanvasRenderer.prototype.redraw = function() {
+	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
 		var r = this;
+
+		console.log(forcedContext)
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
@@ -2048,16 +2119,18 @@
 		var timeElapsed = nowTime - this.lastDrawTime;
 		var callAfterLimit = timeElapsed >= redrawLimit;
 
-		if( !callAfterLimit ){
-			clearTimeout( this.redrawTimeout );
-			this.redrawTimeout = setTimeout(function(){
-				r.redraw();
-			}, redrawLimit);
+		if( !forcedContext ){
+			if( !callAfterLimit ){
+				clearTimeout( this.redrawTimeout );
+				this.redrawTimeout = setTimeout(function(){
+					r.redraw();
+				}, redrawLimit);
 
-			return;
+				return;
+			}
+
+			this.lastDrawTime = nowTime;
 		}
-
-		this.lastDrawTime = nowTime;
 
 		var startTime = nowTime;
 
@@ -2099,7 +2172,7 @@
 			}
 		};
 
-		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE]) {
+		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE] || drawAll) {
 			//NB : VERY EXPENSIVE
 			// console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
@@ -2197,7 +2270,7 @@
 
 
 		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-		if (data.canvasNeedsRedraw[NODE]) {
+		if (data.canvasNeedsRedraw[NODE] || drawAll) {
 			// console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
 		  
 		  	if( !elesInDragLayer || !elesNotInDragLayer ){
@@ -2215,13 +2288,20 @@
 				}
 			}	
 
-			var context = data.canvases[NODE].getContext("2d");
+			var context = forcedContext || data.canvases[NODE].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
-			context.translate(cy.pan().x, cy.pan().y);
-			context.scale(cy.zoom(), cy.zoom());
+			if( !drawAll ){
+				context.translate(cy.pan().x, cy.pan().y);
+				context.scale(cy.zoom(), cy.zoom());
+			} else {
+				var bb = this.panzoomBB;
+
+				context.translate( -bb.x1, -bb.y1 );
+				context.scale(PANZOOM_MULTIPLIER, PANZOOM_MULTIPLIER);
+			}
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
 				element = elesNotInDragLayer[index];
@@ -2251,10 +2331,12 @@
 				}
 			}
 			
-			data.canvasNeedsRedraw[NODE] = false; data.canvasRedrawReason[NODE] = [];
+			if( !drawAll ){
+				data.canvasNeedsRedraw[NODE] = false; data.canvasRedrawReason[NODE] = [];
+			}
 		}
 		
-		if (data.canvasNeedsRedraw[DRAG]) {
+		if (data.canvasNeedsRedraw[DRAG] || drawAll) {
 			// console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
 		  
 			if( !elesInDragLayer || !elesNotInDragLayer ){
@@ -2272,13 +2354,15 @@
 				}
 			}
 
-			var context = data.canvases[DRAG].getContext("2d");
+			var context = forcedContext || data.canvases[DRAG].getContext("2d");
 			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-			
-			context.translate(cy.pan().x, cy.pan().y);
-			context.scale(cy.zoom(), cy.zoom());
+			if( !drawAll ){
+				context.setTransform(1, 0, 0, 1, 0, 0);
+				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+				
+				context.translate(cy.pan().x, cy.pan().y);
+				context.scale(cy.zoom(), cy.zoom());
+			}
 			
 			var element;
 
@@ -2309,23 +2393,29 @@
 				}
 			}
 			
-			data.canvasNeedsRedraw[DRAG] = false; data.canvasRedrawReason[DRAG] = [];
+			if( !drawAll ){
+				data.canvasNeedsRedraw[DRAG] = false; data.canvasRedrawReason[DRAG] = [];
+			}
 		}
 		
 		if (data.canvasNeedsRedraw[SELECT_BOX]) {
 			// console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
 		  
-			var context = data.canvases[SELECT_BOX].getContext("2d");
+			var context = forcedContext || data.canvases[SELECT_BOX].getContext("2d");
 			
-			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-		
-			context.translate(cy.pan().x, cy.pan().y);
-			context.scale(cy.zoom(), cy.zoom());			
+			if( !drawAll ){
+				context.setTransform(1, 0, 0, 1, 0, 0);
+				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
+				context.translate(cy.pan().x, cy.pan().y);
+				context.scale(cy.zoom(), cy.zoom());		
+			}	
+			
+			var coreStyle = cy.style()._private.coreStyle;
+
 			if (data.select[4] == 1) {
-				var coreStyle = cy.style()._private.coreStyle;
-				var borderWidth = coreStyle["selection-box-border-width"].value / data.cy.zoom();
+				var zoom = data.cy.zoom();
+				var borderWidth = coreStyle["selection-box-border-width"].value / zoom;
 				
 				context.lineWidth = borderWidth;
 				context.fillStyle = "rgba(" 
@@ -2354,8 +2444,25 @@
 						data.select[3] - data.select[1]);
 				}
 			}
+
+			if( data.bgActivePosistion ){
+				var zoom = data.cy.zoom();
+				var pos = data.bgActivePosistion;
+
+				context.fillStyle = "rgba(" 
+					+ coreStyle["active-bg-color"].value[0] + ","
+					+ coreStyle["active-bg-color"].value[1] + ","
+					+ coreStyle["active-bg-color"].value[2] + ","
+					+ coreStyle["active-bg-opacity"].value + ")";
+
+				context.beginPath();
+				context.arc(pos.x, pos.y, coreStyle["active-bg-size"].pxValue / zoom, 0, 2 * Math.PI); 
+				context.fill();
+			}
 			
-			data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
+			if( !drawAll ){
+				data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
+			}
 		}
 
 		// } console.timeEnd('drawing')

@@ -33,12 +33,6 @@ $(function(){
 					"source-arrow-color": "#000",
 					"target-arrow-color": "#000"
 				})
-			.selector(":active")
-				.css({
-					"overlay-color": "black",
-					"overlay-padding": 10,
-					"overlay-opacity": 0.25
-				})
 			.selector(".ui-cytoscape-edgehandles-source")
 				.css({
 					"border-color": "#5CC2ED",

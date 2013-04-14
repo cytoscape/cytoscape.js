@@ -1,5 +1,7 @@
 ;(function($$, window){
 	
+	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+
 	$$.Style = function( cy ){
 
 		if( !(this instanceof $$.Style) ){
@@ -229,7 +231,10 @@
 			{ name: "selection-box-opacity", type: t.zeroOneNumber },
 			{ name: "selection-box-border-color", type: t.color },
 			{ name: "selection-box-border-width", type: t.size },
-			{ name: "panning-cursor", type: t.cursor }
+			{ name: "panning-cursor", type: t.cursor },
+			{ name: "active-bg-color", type: t.color },
+			{ name: "active-bg-opacity", type: t.zeroOneNumber },
+			{ name: "active-bg-size", type: t.size }
 		];
 
 		// allow access of properties by name ( e.g. $$.style.properties.height )
@@ -317,13 +322,22 @@
 					"control-point-step-size": 40,
 					"curve-style": "bezier"
 				})
+			.selector(":active")
+				.css({
+					"overlay-color": "black",
+					"overlay-padding": 10,
+					"overlay-opacity": 0.25
+				})
 			.selector("core") // just core properties
 				.css({
 					"selection-box-color": "#ddd",
 					"selection-box-opacity": 0.65,
 					"selection-box-border-color": "#aaa",
 					"selection-box-border-width": 1,
-					"panning-cursor": "grabbing"
+					"panning-cursor": "grabbing",
+					"active-bg-color": "black",
+					"active-bg-opacity": 0.25,
+					"active-bg-size": isTouch ? 40 : 20
 				})
 		;
 	};

@@ -258,6 +258,7 @@
 
 		// Primary key
 		r.data.container.addEventListener("mousedown", function(e) {
+			e.preventDefault();
 
 			r.hoverData.capture = true;
 			

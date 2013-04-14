@@ -14,7 +14,7 @@
 		
 		this.data = {
 				
-			select: [0, 0, 0, 0, 0], // Coordinates for selection box, plus enabled flag 
+			select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
 			renderer: this, cy: options.cy, container: options.cy.container(),
 			
 			canvases: new Array(CANVAS_LAYERS),
@@ -785,7 +785,6 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
-			
 			// record starting points for pinch-to-zoom
 			if( e.touches[1] ){
 				var offsets = r.findContainerPageCoords();
@@ -930,8 +929,7 @@
 					if (r.touchData.singleTouchMoved == false
 							// This time double constraint prevents multiple quick taps
 							// followed by a taphold triggering multiple taphold events
-							&& time() - r.touchData.singleTouchStartTime < 1040
-							&& time() - r.touchData.singleTouchStartTime > 960) {
+							&& time() - r.touchData.singleTouchStartTime > 500) {
 						if (r.touchData.start) {
 							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
 						} else {
@@ -970,7 +968,7 @@
 				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
 
-				if( select[0] === undefined ){
+				if( !select || select.length === 0 || select[0] === undefined ){
 					select[0] = (now[0] + now[2] + now[4])/3;
 					select[1] = (now[1] + now[3] + now[5])/3;
 					select[2] = (now[0] + now[2] + now[4])/3 + 1;
@@ -980,9 +978,8 @@
 					select[2] = (now[0] + now[2] + now[4])/3;
 					select[3] = (now[1] + now[3] + now[5])/3;
 					console.log('select 2')
+					select[4] = 1;
 				}
-
-				select[4] = 1;
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 

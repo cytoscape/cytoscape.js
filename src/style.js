@@ -337,7 +337,7 @@
 					"panning-cursor": "grabbing",
 					"active-bg-color": "black",
 					"active-bg-opacity": 0.25,
-					"active-bg-size": isTouch ? 40 : 20
+					"active-bg-size": isTouch ? 40 : 15
 				})
 		;
 	};

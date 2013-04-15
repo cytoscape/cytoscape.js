@@ -640,15 +640,22 @@
 				if (near != null && near._private.grabbed) {
 					// console.log('ungrab single drag')
 
-					var freeEvent = new $$.Event(e, {type: "free"});
-					
-					near._private.grabbed = false; near.trigger(freeEvent);
-					
-					var sEdges = near._private.edges;
-					for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+					var grabbedEles = cy.$(':grabbed');
 
-					// for compound nodes, also remove related nodes and edges from the drag layer
-					updateAncestorsInDragLayer(near, false);
+					for(var i = 0; i < grabbedEles.length; i++){
+						var ele = grabbedEles[i];
+
+						ele._private.grabbed = false;
+						
+						var sEdges = ele._private.edges;
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+
+						// for compound nodes, also remove related nodes and edges from the drag layer
+						updateAncestorsInDragLayer(ele, false);
+					}
+
+					var freeEvent = new $$.Event(e, {type: "free"});
+					grabbedEles.trigger(freeEvent);
 				}
 			}
 			

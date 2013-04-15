@@ -5,6 +5,10 @@
 		layout: function( params ){
 			var cy = this;
 			
+			if( this._private.layoutRunning ){ // don't run another layout if one's already going
+				return this;
+			}
+
 			// if no params, use the previous ones
 			if( params == null ){
 				params = this._private.options.layout;
@@ -14,6 +18,11 @@
 			
 			cy.trigger("layoutstart");
 			
+			this._private.layoutRunning = true;
+			this.one('layoutstop', function(){
+				this._private.layoutRunning = false;
+			});
+
 			this._private.layout.run();
 			
 			return this;

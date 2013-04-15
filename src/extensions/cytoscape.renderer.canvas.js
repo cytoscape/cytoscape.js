@@ -941,7 +941,7 @@
 					if (r.touchData.singleTouchMoved == false
 							// This time double constraint prevents multiple quick taps
 							// followed by a taphold triggering multiple taphold events
-							&& time() - r.touchData.singleTouchStartTime > 500) {
+							&& time() - r.touchData.singleTouchStartTime > 250) {
 						if (r.touchData.start) {
 							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
 						} else {
@@ -1213,7 +1213,7 @@
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
 					}
 
-				}, 50);
+				}, 100);
 			}
 
 			var updateStartStyle = false;

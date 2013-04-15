@@ -7,8 +7,7 @@
 	var rendFunc = CanvasRenderer.prototype;
 
 	// Canvas layer constants
-	var CANVAS_LAYERS = 7, SELECT_BOX = 0, DRAG = 2, NODE = 4, PANZOOM = 5, PANZOOM_TRANSFORMED = 6, BUFFER_COUNT = 2;
-	var PANZOOM_MULTIPLIER = 2;
+	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, NODE = 4, BUFFER_COUNT = 2;
 	
 	function CanvasRenderer(options) {
 		
@@ -49,8 +48,6 @@
 		//--Wheel-related data 
 		this.zoomData = {freeToZoom: false, lastPointerX: null};
 		//--
-
-		this.panzoomBB;
 		
 		this.redraws = 0;
 		
@@ -70,11 +67,6 @@
 		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
 		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
 		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
-		
-		this.data.canvases[PANZOOM].setAttribute("data-id", "layer" + PANZOOM + '-panzoom');
-		this.data.canvases[PANZOOM].style.zIndex = String(CANVAS_LAYERS + 1);
-		this.data.canvases[PANZOOM_TRANSFORMED].setAttribute("data-id", "layer" + PANZOOM_TRANSFORMED + '-panzoom-transformed');
-		this.data.canvases[PANZOOM_TRANSFORMED].style.visibility = "hidden";
 		
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -110,53 +102,7 @@
 		this.redraw();
 	};
 	
-	CanvasRenderer.prototype.updatePanzoomLayer = function(){
-		var r = this;
-		var cy = r.data.cy;
-		var left = (r.panzoomBB.x1 + cy._private.pan.x);
-		var top = (r.panzoomBB.y1 + cy._private.pan.y);
-		var pzContext = this.data.canvases[PANZOOM].getContext('2d');
-		var context = this.data.canvases[PANZOOM_TRANSFORMED].getContext('2d');
-		var zoom = cy._private.zoom;
-		var pan = cy._private.pan;
-		var bb = this.panzoomBB;
-
-		// context.setTransform(1, 0, 0, 1, 0, 0);
-		// context.translate(pan.x + bb.x1/PANZOOM_MULTIPLIER, pan.y + bb.y1/PANZOOM_MULTIPLIER);
-		// context.scale(1 / PANZOOM_MULTIPLIER, 1 / PANZOOM_MULTIPLIER);
-
-		// context.globalCompositeOperation = "copy";
-		// context.drawImage(this.data.canvases[PANZOOM], 0, 0);
-
-		var style = this.data.canvases[PANZOOM].style;
-		style.marginLeft = pan.x + bb.x1/PANZOOM_MULTIPLIER + 'px';
-		style.marginTop = pan.y + bb.y1/PANZOOM_MULTIPLIER + 'px';
-		style.width = 1 / PANZOOM_MULTIPLIER * this.data.canvases[PANZOOM].width + 'px';
-		style.height = 1 / PANZOOM_MULTIPLIER * this.data.canvases[PANZOOM].height + 'px';
-	};
-
-	CanvasRenderer.prototype.drawPanzoomLayer = function(){
-		var data = this.data;
-		var bb = this.data.cy.boundingBox();
-		this.panzoomBB = bb;
-		var zoom = data.cy.zoom();
-
-		this.data.canvases[PANZOOM].width = (100 + bb.w) * PANZOOM_MULTIPLIER * zoom;
-		this.data.canvases[PANZOOM].height = (100 + bb.h) * PANZOOM_MULTIPLIER * zoom;
-		var pzContext = this.data.canvases[PANZOOM].getContext('2d');
-
-		this.redraw( pzContext, true );
-
-		this.data.canvases[NODE].style.visibility = 'hidden';
-		this.data.canvases[DRAG].style.visibility = 'hidden';
-	};
-
-	CanvasRenderer.prototype.clearPanzoomLayer = function(){
-
-		this.data.canvases[NODE].style.visibility = '';
-		this.data.canvases[DRAG].style.visibility = '';
-	};
-
+	
 	CanvasRenderer.prototype.png = function(){
 		var data = this.data;
 
@@ -2116,8 +2062,6 @@
 		
 		var canvas;
 		for (var i = 0; i < CANVAS_LAYERS; i++) {
-			
-			if( i === PANZOOM ){ continue } // we manually manage its size
 
 			canvas = data.canvases[i];
 			
@@ -2345,13 +2289,7 @@
 			if( !drawAll ){
 				context.translate(cy.pan().x, cy.pan().y);
 				context.scale(cy.zoom(), cy.zoom());
-			} else {
-				var bb = this.panzoomBB;
-				var zoom = cy.zoom();
-
-				context.translate( -bb.x1, -bb.y1 );
-				context.scale(PANZOOM_MULTIPLIER * zoom, PANZOOM_MULTIPLIER * zoom);
-			}
+			} 
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
 				element = elesNotInDragLayer[index];

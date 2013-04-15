@@ -24,7 +24,7 @@
 
 		startAnimationLoop: function(){
 			var cy = this;
-			var stepDelay = 10;
+			var stepDelay = 1000/60;
 			var useTimeout = false;
 			var useRequestAnimationFrame = true;
 			

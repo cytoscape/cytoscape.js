@@ -1,13 +1,13 @@
 (function($$) {
 
 
-
+	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
 	var rendFunc = CanvasRenderer.prototype;
 
 	// Canvas layer constants
-	var CANVAS_LAYERS = 6, SELECT_BOX = 0, DRAG = 2, NODE = 4, PANZOOM = 5, BUFFER_COUNT = 2;
+	var CANVAS_LAYERS = 7, SELECT_BOX = 0, DRAG = 2, NODE = 4, PANZOOM = 5, PANZOOM_TRANSFORMED = 6, BUFFER_COUNT = 2;
 	var PANZOOM_MULTIPLIER = 2;
 	
 	function CanvasRenderer(options) {
@@ -70,8 +70,11 @@
 		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
 		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
 		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
+		
 		this.data.canvases[PANZOOM].setAttribute("data-id", "layer" + PANZOOM + '-panzoom');
 		this.data.canvases[PANZOOM].style.zIndex = String(CANVAS_LAYERS + 1);
+		this.data.canvases[PANZOOM_TRANSFORMED].setAttribute("data-id", "layer" + PANZOOM_TRANSFORMED + '-panzoom-transformed');
+		this.data.canvases[PANZOOM_TRANSFORMED].style.visibility = "hidden";
 		
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -107,16 +110,41 @@
 		this.redraw();
 	};
 	
-	CanvasRenderer.prototype.drawPanzoomLayer = function(){ return; // disable until done
+	CanvasRenderer.prototype.updatePanzoomLayer = function(){
+		var r = this;
+		var cy = r.data.cy;
+		var left = (r.panzoomBB.x1 + cy._private.pan.x);
+		var top = (r.panzoomBB.y1 + cy._private.pan.y);
+		var pzContext = this.data.canvases[PANZOOM].getContext('2d');
+		var context = this.data.canvases[PANZOOM_TRANSFORMED].getContext('2d');
+		var zoom = cy._private.zoom;
+		var pan = cy._private.pan;
+		var bb = this.panzoomBB;
+
+		// context.setTransform(1, 0, 0, 1, 0, 0);
+		// context.translate(pan.x + bb.x1/PANZOOM_MULTIPLIER, pan.y + bb.y1/PANZOOM_MULTIPLIER);
+		// context.scale(1 / PANZOOM_MULTIPLIER, 1 / PANZOOM_MULTIPLIER);
+
+		// context.globalCompositeOperation = "copy";
+		// context.drawImage(this.data.canvases[PANZOOM], 0, 0);
+
+		var style = this.data.canvases[PANZOOM].style;
+		style.marginLeft = pan.x + bb.x1/PANZOOM_MULTIPLIER + 'px';
+		style.marginTop = pan.y + bb.y1/PANZOOM_MULTIPLIER + 'px';
+		style.width = 1 / PANZOOM_MULTIPLIER * this.data.canvases[PANZOOM].width + 'px';
+		style.height = 1 / PANZOOM_MULTIPLIER * this.data.canvases[PANZOOM].height + 'px';
+	};
+
+	CanvasRenderer.prototype.drawPanzoomLayer = function(){
 		var data = this.data;
 		var bb = this.data.cy.boundingBox();
 		this.panzoomBB = bb;
+		var zoom = data.cy.zoom();
 
-		this.data.canvases[PANZOOM].width = bb.w * PANZOOM_MULTIPLIER;
-		this.data.canvases[PANZOOM].height = bb.h * PANZOOM_MULTIPLIER;
+		this.data.canvases[PANZOOM].width = (100 + bb.w) * PANZOOM_MULTIPLIER * zoom;
+		this.data.canvases[PANZOOM].height = (100 + bb.h) * PANZOOM_MULTIPLIER * zoom;
 		var pzContext = this.data.canvases[PANZOOM].getContext('2d');
 
-		console.log('drag panzoom layer'); 
 		this.redraw( pzContext, true );
 
 		this.data.canvases[NODE].style.visibility = 'hidden';
@@ -443,16 +471,6 @@
 					var deltaP = {x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()};
 
 					cy.panBy( deltaP );
-
-					// cy._private.pan.x += deltaP.x;
-					// cy._private.pan.y += deltaP.y;
-
-					// r.data.canvases[PANZOOM].style.marginLeft = (r.panzoomBB.x1 + cy._private.pan.x) + 'px';
-					// r.data.canvases[PANZOOM].style.marginTop = (r.panzoomBB.y1 + cy._private.pan.y) + 'px';
-					// r.data.canvases[PANZOOM].style.width = (r.data.canvases[PANZOOM].width / PANZOOM_MULTIPLIER) + 'px';
-					// r.data.canvases[PANZOOM].style.height = (r.data.canvases[PANZOOM].height / PANZOOM_MULTIPLIER) + 'px';
-
-					// cy.trigger('pan');
 				}
 				
 				// Needs reproject due to pan changing viewport
@@ -466,8 +484,6 @@
 				r.hoverData.dragging = true;
 				select[4] = 0;
 
-				r.drawPanzoomLayer();
-				
 			} else {
 				clearTimeout( r.bgActiveTimeout );
 				if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -1068,6 +1084,8 @@
 					f1y1 = f1y2;
 					f2x1 = f2x2;
 					f2y1 = f2y2;
+
+					r.pinching = true;
 				}
 				
 				// Re-project
@@ -1214,6 +1232,10 @@
 					}
 
 				}, 100);
+			}
+
+			if( !e.touches[1] ){
+				r.pinching = false;
 			}
 
 			var updateStartStyle = false;
@@ -1459,7 +1481,6 @@
 	CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly) {
 		var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var near = [];
 		
-		var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 		var zoom = this.data.cy.zoom();
 		var edgeThreshold = (isTouch ? 256 : 32) / zoom;
 		var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
@@ -2124,13 +2145,16 @@
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
 		var r = this;
-
-		console.log(forcedContext)
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
 		var minRedrawLimit = 1000/60; // people can't see much better than 60fps
 		var maxRedrawLimit = 1000/30; // 30 fps is a movie; we need animations and interaction to be smooth
+
+		if( isTouch ){
+			maxRedrawLimit = 200; // almost no limit on framerate on touch => sometimes lower framerate BUT more responsive
+		}
+
 		var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
 
 		redrawLimit = Math.max(minRedrawLimit, redrawLimit);
@@ -2323,9 +2347,10 @@
 				context.scale(cy.zoom(), cy.zoom());
 			} else {
 				var bb = this.panzoomBB;
+				var zoom = cy.zoom();
 
 				context.translate( -bb.x1, -bb.y1 );
-				context.scale(PANZOOM_MULTIPLIER, PANZOOM_MULTIPLIER);
+				context.scale(PANZOOM_MULTIPLIER * zoom, PANZOOM_MULTIPLIER * zoom);
 			}
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
@@ -2618,6 +2643,8 @@
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
+		//if( this.pinching ){ return; } // save cycles on pinching
+
 		var startNode, endNode;
 
 		startNode = edge.source()[0];
@@ -2832,35 +2859,37 @@
 
 		var bpts = edge._private.rstyle.bezierPts;
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
-		});
+		if( pts.length === 6 ){
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
+			});
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
-		});
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
+			});
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
-		});
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
+			});
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
-		});
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
+			});
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
-		});
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
+			});
 
-		bpts.push({
-			x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
-			y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
-		});
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
+			});
+		}
 
 		if (type == "solid") {
 			
@@ -3105,8 +3134,7 @@
 				+ node._private.style["border-color"].value[0] + ","
 				+ node._private.style["border-color"].value[1] + ","
 				+ node._private.style["border-color"].value[2] + ","
-				+ (node._private.style["border-opacity"].value 
-				* node._private.style["opacity"].value) + ")";
+				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value) + ")";
 			
 			
 			{
@@ -3169,7 +3197,7 @@
 			}
 			
 			// Border width, draw border
-			context.lineWidth = node._private.style["border-width"].value;
+			context.lineWidth = node._private.style["border-width"].pxValue;
 			if (node._private.style["border-width"].value > 0) {
 				context.stroke();
 			}

@@ -1,5 +1,8 @@
 ;(function($$){
 	
+	var borderWidthMultiplier = 1.4;
+	var borderWidthAdjustment = 1;
+
 	$$.fn.eles({
 
 		// fully updates (recalculates) the style for the elements
@@ -307,7 +310,7 @@
 			if( ele ){
 				var style = this._private.style;
 				var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
-				var border = style["border-width"] ? style["border-width"].pxValue : 0;
+				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
 				return width + border;
 			}
@@ -347,7 +350,7 @@
 			if( ele ){
 				var style = this._private.style;
 				var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
-				var border = style["border-width"] ? style["border-width"].pxValue : 0;
+				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
 				return height + border;
 			}
@@ -571,7 +574,7 @@
 
 			// testing on debug page
 			// $('#bb').remove();
-			// $('#cytoscape').append('<div id="bb"></div>');
+			// $('#cytoscape').css('position', 'relative').append('<div id="bb"></div>');
 			// $('#bb').css({
 			// 	'position': 'absolute',
 			// 	'left': x1,

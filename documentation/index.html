@@ -215,6 +215,8 @@
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span> cy.load() </a></div>
 					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark"></span> cy.batchData() </a></div>
+					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span> cy.collection() </a></div>
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span> cy.$() et al</a></div>
@@ -248,6 +250,8 @@
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span> cy.minZoom() </a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.maxZoom"><span class="icon-bookmark"></span> cy.maxZoom() </a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.boxSelectionEnabled"><span class="icon-bookmark"></span> cy.boxSelectionEnabled() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -948,7 +952,7 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>border-color</code> : The colour of the node&#39;s border.</li>
 <li><code>border-width</code> : The size of the node&#39;s border.</li>
 <li><code>height</code> : The height of the node&#39;s body.</li>
-<li><code>shape</code> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, or <code>triangle</code>.</li>
+<li><code>shape</code> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</li>
 </ul>
 <h3>Edge properties</h3>
 <p>These properties apply only to edges:
@@ -960,6 +964,7 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>target-arrow-shape</code> : The shape of the edge&#39;s arrow on the target side; may be <code>tee</code>, <code>triangle</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
 <li><code>target-arrow-color</code> : The colour of the edge&#39;s arrow on the target side.</li>
 <li><code>line-color</code> : The colour of the edge&#39;s line.</li>
+<li><code>line-style</code> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 </ul>
 <h3>Core properties</h3>
 <p>These properties apply only to the core.  You can use the special <code>core</code> selector string to set these properties.
@@ -1529,6 +1534,49 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code><
 						</div>
 					
 						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.batchData"><span class="fn-name">cy.batchData()</span>  <a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.batchData">Update several data fields for several elements all at once (in batch).</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.batchData( <span class="comma">, </span>map )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">map</span>
+													<span class="descr">Element IDs mapped to data to set.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function take a map whose indices are element IDs (e.g. <code>&#39;n0&#39;</code>) mapped to objects that are used to update the corresponding data object.  If an element already has data with the specified field name, then it is overwritten.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.batchData({
+  &#39;n0&#39;: { foo: 1, bar: 1 },
+  &#39;n1&#39;: { foo: 2, bar: 2 }
+});</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.collection"><span class="fn-name">cy.collection()</span>  <a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="core/graph-manipulation/cy.collection">Return a new, empty collection.</div>
 
@@ -1792,7 +1840,7 @@ cy.center(n0);</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">cy.fit( <span class="comma">, </span>eles )</div>
+											<div class="name">cy.fit(  [<span class="comma">, </span>eles] [<span class="comma">, </span>padding] )</div>
 										
 										<div class="descr">Fit to the specified elements.</div>
 										<ul class="args">
@@ -1800,6 +1848,13 @@ cy.center(n0);</code></pre>
 												<li>
 													<span class="name">eles</span>
 													<span class="descr">The collection to fit to.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">padding</span>
+													<span class="descr">An amount of padding (in pixels) to have around the graph</span>
 
 													
 												</li>
@@ -2239,6 +2294,48 @@ cy.zoom({
 												<li>
 													<span class="name">zoom</span>
 													<span class="descr">The new maximum zoom level to use.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.boxSelectionEnabled"><span class="fn-name">cy.boxSelectionEnabled()</span>  <a href="#core/viewport-manipulation/cy.boxSelectionEnabled"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.boxSelectionEnabled">Get or set whether box selection is enabled.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.boxSelectionEnabled()</div>
+										
+										<div class="descr">Get whether box selection is enabled.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.boxSelectionEnabled( <span class="comma">, </span>bool )</div>
+										
+										<div class="descr">Set whether box selection is enabled.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">bool</span>
+													<span class="descr">A truthy value enables box selection; a falsey value disables it.</span>
 
 													
 												</li>

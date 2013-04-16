@@ -942,7 +942,7 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if( capture && e.touches[2] ){
+			if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
 				clearTimeout( this.threeFingerSelectTimeout );
 				this.lastThreeTouch = +new Date;
 
@@ -1152,7 +1152,7 @@
 			
 			var nowTime = +new Date;
 			// no more box selection if we don't have three fingers
-			if( !e.touches[2] ){
+			if( !e.touches[2] && cy.boxSelectionEnabled() ){
 				clearTimeout( this.threeFingerSelectTimeout );
 				this.threeFingerSelectTimeout = setTimeout(function(){
 					var newlySelected = [];

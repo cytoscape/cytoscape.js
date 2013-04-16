@@ -577,7 +577,7 @@
 			}
 			
 			// Single selection
-			if (near == down && (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) < 7)) {
+			if (near == down && !r.dragData.didDrag) {
 				if (near != null && near._private.selectable) {
 					
 					// console.log('single selection')

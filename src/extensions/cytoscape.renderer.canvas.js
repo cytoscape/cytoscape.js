@@ -1737,9 +1737,7 @@
 		if (node._private.style["visibility"].value != "visible")
 		{
 			// do not calculate bounds for invisible compounds,
-			// return last calculated position, and zero width & height
-			bounds.width = 0;
-			bounds.height = 0;
+			// just return last calculated values
 			return bounds;
 		}
 

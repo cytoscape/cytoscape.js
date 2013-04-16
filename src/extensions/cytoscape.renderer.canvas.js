@@ -691,7 +691,6 @@
 		}, false);
 		
 		var wheelHandler = function(e) {
-			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
@@ -711,8 +710,13 @@
 		
 		// Functions to help with whether mouse wheel should trigger zooming
 		// --
-		r.data.container.addEventListener("mousewheel", wheelHandler, false);
-		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
+		r.data.container.addEventListener("mousewheel", wheelHandler, true);
+		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, true);
+		r.data.container.addEventListener("MozMousePixelScroll", function(e){
+			if (r.zoomData.freeToZoom) {
+				e.preventDefault();
+			}
+		}, false);
 		
 		r.data.container.addEventListener("mousemove", function(e) { 
 			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 

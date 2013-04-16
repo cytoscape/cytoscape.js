@@ -153,8 +153,8 @@
 						var pan = cy.pan();
 						var zoom = cy.zoom();
 
-						zx = ($container.width()/2 - pan.x) / zoom;
-						zy = ($container.height()/2 - pan.y) / zoom;
+						zx = $container.width()/2;
+						zy = $container.height()/2;
 					}
 
 					var zooming = false;
@@ -177,25 +177,9 @@
 							calculateZoomCenterPoint();
 						}
 
-						// zoom to the new level
-						cy.zoom( level );
-
-						var pan = cy.pan();
-
-						// find where the center point (zx, zy) is actually rendered
-						var renderedZxy = {
-							x: zx * level + pan.x,
-							y: zy * level + pan.y
-						};
-
-						var renderedCenter = {
-							x: $container.width()/2,
-							y: $container.height()/2
-						};
-
-						cy.panBy({
-							x: renderedCenter.x - renderedZxy.x,
-							y: renderedCenter.y - renderedZxy.y
+						cy.zoom({
+							level: level,
+							renderedPosition: { x: zx, y: zy }
 						});
 					}
 

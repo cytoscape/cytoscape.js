@@ -2095,11 +2095,7 @@
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
 		var minRedrawLimit = 1000/60; // people can't see much better than 60fps
-		var maxRedrawLimit = 1000/30; // 30 fps is a movie; we need animations and interaction to be smooth
-
-		if( isTouch ){
-			maxRedrawLimit = 200; // almost no limit on framerate on touch => sometimes lower framerate BUT more responsive
-		}
+		var maxRedrawLimit = 1000; // don't cap max b/c it's more important to be responsive than smooth
 
 		var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
 

@@ -230,23 +230,38 @@
 			return false;
 		}
 
+		// stop right click menu from appearing on cy
+		r.data.container.addEventListener("contextmenu", function(e){
+			e.preventDefault();
+		});
+
 		// Primary key
 		r.data.container.addEventListener("mousedown", function(e) {
 			e.preventDefault();
-
 			r.hoverData.capture = true;
+			r.hoverData.which = e.which;
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var select = r.data.select;
-			
 			var near = r.findNearestElement(pos[0], pos[1], true);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
-
 			var grabEvent = new $$.Event(e, {type: "grab"});
 
+			// Right click button
+			if( e.which == 3 ){
+
+				if( near ){
+					near.activate();
+					near.trigger( new $$.Event(e, {type: "cxttapstart"}) );
+
+					r.hoverData.down = near;
+					r.hoverData.downTime = (new Date()).getTime();
+					r.hoverData.cxtDragged = false;
+				}
+
 			// Primary button
-			if (e.button == 0) {
+			} else if (e.which == 1) {
 				
 				if( near ){
 					near.activate();
@@ -367,7 +382,9 @@
 		window.addEventListener("mousemove", function(e) {
 			var preventDefault = false;
 
-			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+			var cy = r.data.cy;
+			var pos = r.projectIntoViewport(e.pageX, e.pageY);
+			var select = r.data.select;
 			
 			var near = r.findNearestElement(pos[0], pos[1], true);
 			var last = r.hoverData.last;
@@ -407,10 +424,24 @@
 				} else if (near == null) {
 					cy.trigger(event);
 				}
+
 			}
 			
+			
+			// trigger context drag if rmouse down
+			if( r.hoverData.which === 3 ){
+				var cxtEvt = new $$.Event(e, {type: "cxtdrag"});
+
+				if( down ){
+					down.trigger( cxtEvt );
+				} else {
+					cy.trigger( cxtEvt );
+				}
+
+				r.hoverData.cxtDragged = true;
+
 			// Check if we are drag panning the entire graph
-			if (r.hoverData.dragging) {
+			} else if (r.hoverData.dragging) {
 				preventDefault = true;
 
 				if( cy.panningEnabled() ){
@@ -513,170 +544,194 @@
 				down.unactivate();
 			}
 
-			// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-			if ( (down == null) // not mousedown on node
-				&& !r.dragData.didDrag // didn't move the node around
-				&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
-				&& !r.hoverData.dragging // not panning
-			) {
+			if( r.hoverData.which === 3 ){
+				var cxtEvt = new $$.Event(e, {type: "cxttapend"});
 
-				// console.log('unselect all from bg');
+				if( down ){
+					down.trigger( cxtEvt );
+				} else {
+					cy.trigger( cxtEvt );
+				}
 
-//++clock+unselect
-//				var a = time();
-				cy.$(':selected').unselect();
-				
-//++clock+unselect
-//				console.log("unselect", time() - a);
-				
-				if (draggedElements.length > 0) {
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("De-select");
+				if( !r.hoverData.cxtDragged ){
+					var cxtTap = new $$.Event(e, {type: "cxttap"});
+
+					if( down ){
+						down.trigger( cxtTap );
+					} else {
+						cy.trigger( cxtTap );
+					}
+				}
+
+			// if not right mouse
+			} else {
+
+				// Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+				if ( (down == null) // not mousedown on node
+					&& !r.dragData.didDrag // didn't move the node around
+					&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
+					&& !r.hoverData.dragging // not panning
+				) {
+
+					// console.log('unselect all from bg');
+
+	//++clock+unselect
+	//				var a = time();
+					cy.$(':selected').unselect();
+					
+	//++clock+unselect
+	//				console.log("unselect", time() - a);
+					
+					if (draggedElements.length > 0) {
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("De-select");
+					}
+					
+					r.dragData.possibleDragElements = draggedElements = [];
 				}
 				
-				r.dragData.possibleDragElements = draggedElements = [];
-			}
-			
-			// Click event
-			{
-				// console.log('trigger click et al');
+				// Click event
+				{
+					// console.log('trigger click et al');
 
-				if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
+					if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
+						if (near != null) {
+							near
+								.trigger( new $$.Event(e, {type: "click"}) )
+								.trigger( new $$.Event(e, {type: "tap"}) )
+								.trigger( new $$.Event(e, {type: "vclick"}) )
+							;
+						} else if (near == null) {
+							cy
+								.trigger( new $$.Event(e, {type: "click"}) )
+								.trigger( new $$.Event(e, {type: "tap"}) )
+								.trigger( new $$.Event(e, {type: "vclick"}) )
+							;
+						}
+					}
+				}
+				
+				// Mouseup event
+				{
+					// console.log('trigger mouseup et al');
+
 					if (near != null) {
 						near
-							.trigger( new $$.Event(e, {type: "click"}) )
-							.trigger( new $$.Event(e, {type: "tap"}) )
-							.trigger( new $$.Event(e, {type: "vclick"}) )
+							.trigger(new $$.Event(e, {type: "mouseup"}))
+							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					} else if (near == null) {
 						cy
-							.trigger( new $$.Event(e, {type: "click"}) )
-							.trigger( new $$.Event(e, {type: "tap"}) )
-							.trigger( new $$.Event(e, {type: "vclick"}) )
+							.trigger(new $$.Event(e, {type: "mouseup"}))
+							.trigger(new $$.Event(e, {type: "tapend"}))
+							.trigger(new $$.Event(e, {type: "vmouseup"}))
 						;
 					}
 				}
-			}
-			
-			// Mouseup event
-			{
-				// console.log('trigger mouseup et al');
+				
+				// Single selection
+				if (near == down && !r.dragData.didDrag) {
+					if (near != null && near._private.selectable) {
+						
+						// console.log('single selection')
 
-				if (near != null) {
-					near
-						.trigger(new $$.Event(e, {type: "mouseup"}))
-						.trigger(new $$.Event(e, {type: "tapend"}))
-						.trigger(new $$.Event(e, {type: "vmouseup"}))
-					;
-				} else if (near == null) {
-					cy
-						.trigger(new $$.Event(e, {type: "mouseup"}))
-						.trigger(new $$.Event(e, {type: "tapend"}))
-						.trigger(new $$.Event(e, {type: "vmouseup"}))
-					;
+						if( !shiftDown ){
+							cy.$(':selected').unselect();
+						}
+
+						if( near.selected() ){
+							near.unselect();
+						} else {
+							near.select();
+						}
+
+						updateAncestorsInDragLayer(near, false);
+						
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+						
+					}
+				// Ungrab single drag
+				} else if (near == down) {
+					if (near != null && near._private.grabbed) {
+						// console.log('ungrab single drag')
+
+						var grabbedEles = cy.$(':grabbed');
+
+						for(var i = 0; i < grabbedEles.length; i++){
+							var ele = grabbedEles[i];
+
+							ele._private.grabbed = false;
+							
+							var sEdges = ele._private.edges;
+							for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+
+							// for compound nodes, also remove related nodes and edges from the drag layer
+							updateAncestorsInDragLayer(ele, false);
+						}
+
+						var freeEvent = new $$.Event(e, {type: "free"});
+						grabbedEles.trigger(freeEvent);
+					}
 				}
-			}
-			
-			// Single selection
-			if (near == down && !r.dragData.didDrag) {
-				if (near != null && near._private.selectable) {
+				
+				if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
+					// console.log("box selection");
 					
-					// console.log('single selection')
-
 					if( !shiftDown ){
 						cy.$(':selected').unselect();
 					}
 
-					if( near.selected() ){
-						near.unselect();
-					} else {
-						near.select();
+					var newlySelected = [];
+					var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+					// console.log(box);
+					var event = new $$.Event(e, {type: "select"});
+					for (var i=0;i<box.length;i++) { 
+						if (box[i]._private.selectable) {
+							draggedElements.push( box[i] ); 
+							newlySelected.push( box[i] );
+						}
 					}
 
-					updateAncestorsInDragLayer(near, false);
+					(new $$.Collection( cy, newlySelected )).select();
 					
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
-					
+					if (box.length > 0) { 
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
+					}
 				}
-			// Ungrab single drag
-			} else if (near == down) {
-				if (near != null && near._private.grabbed) {
-					// console.log('ungrab single drag')
-
-					var grabbedEles = cy.$(':grabbed');
-
-					for(var i = 0; i < grabbedEles.length; i++){
-						var ele = grabbedEles[i];
-
-						ele._private.grabbed = false;
+				
+				// Cancel drag pan
+				r.hoverData.dragging = false;
+				
+				if (!select[4]) {
+					// console.log('free at end', draggedElements)
+					var freeEvent = new $$.Event(e, {type: "free"}); 
+					
+					for (var i=0;i<draggedElements.length;i++) {
 						
-						var sEdges = ele._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+						if (draggedElements[i]._private.group == "nodes") { 
+							draggedElements[i]._private.rscratch.inDragLayer = false;
+						  
+							var sEdges = draggedElements[i]._private.edges;
+							for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 
-						// for compound nodes, also remove related nodes and edges from the drag layer
-						updateAncestorsInDragLayer(ele, false);
-					}
-
-					var freeEvent = new $$.Event(e, {type: "free"});
-					grabbedEles.trigger(freeEvent);
-				}
-			}
-			
-			if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
-				// console.log("box selection");
-				
-				if( !shiftDown ){
-					cy.$(':selected').unselect();
-				}
-
-				var newlySelected = [];
-				var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
-				// console.log(box);
-				var event = new $$.Event(e, {type: "select"});
-				for (var i=0;i<box.length;i++) { 
-					if (box[i]._private.selectable) {
-						draggedElements.push( box[i] ); 
-						newlySelected.push( box[i] );
-					}
-				}
-
-				(new $$.Collection( cy, newlySelected )).select();
-				
-				if (box.length > 0) { 
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
-				}
-			}
-			
-			// Cancel drag pan
-			r.hoverData.dragging = false;
-			
-			if (!select[4]) {
-				// console.log('free at end', draggedElements)
-				var freeEvent = new $$.Event(e, {type: "free"}); 
-				
-				for (var i=0;i<draggedElements.length;i++) {
-					
-					if (draggedElements[i]._private.group == "nodes") { 
-						draggedElements[i]._private.rscratch.inDragLayer = false;
-					  
-						var sEdges = draggedElements[i]._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
-
-						// for compound nodes, also remove related nodes and edges from the drag layer
-						updateAncestorsInDragLayer(draggedElements[i], false);
+							// for compound nodes, also remove related nodes and edges from the drag layer
+							updateAncestorsInDragLayer(draggedElements[i], false);
+							
+						} else if (draggedElements[i]._private.group == "edges") {
+							draggedElements[i]._private.rscratch.inDragLayer = false;
+						}
 						
-					} else if (draggedElements[i]._private.group == "edges") {
-						draggedElements[i]._private.rscratch.inDragLayer = false;
 					}
-					
+
+					if( down){ down.trigger(freeEvent); }
+
+	//				draggedElements = r.dragData.possibleDragElements = [];
+					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Node/nodes back from drag");
+					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Node/nodes back from drag");
 				}
-
-				if( down){ down.trigger(freeEvent); }
-
-//				draggedElements = r.dragData.possibleDragElements = [];
-				r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Node/nodes back from drag");
-				r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Node/nodes back from drag");
-			}
 			
+			} // else not right mouse
+
 			select[4] = 0; r.hoverData.down = null;
 			
 			r.data.canvasNeedsRedraw[SELECT_BOX] = true; r.data.canvasRedrawReason[SELECT_BOX].push("Mouse up, selection box gone");

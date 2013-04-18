@@ -16,6 +16,13 @@ These are normal browser events that you can bind to via Cytoscape.js.  You can 
  * `touchmove` : when one or more fingers are moved on the screen
  * `touchend` : when one or more fingers are removed from the screen
 
+There are also some higher level events that you can use so you don't have to bind to different events for mouse-input devices and for touch devices.
+
+ * `tapstart` or `vmousedown` : normalised tap start event (either `mousedown` or `touchstart`)
+ * `tapend` or `vmouseup` : normalised tap end event (either `mouseup` or `touchend`)
+ * `tap` or `vclick` : normalised tap event (either `click`, or `touchstart` followed by `touchend` without `touchmove`)
+ * `taphold` : normalised tap hold event
+
 ## Collection events
 
 These events are custom to Cytoscape.js.  You can bind to these events for collections.

@@ -1020,6 +1020,15 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>touchmove</code> : when one or more fingers are moved on the screen</li>
 <li><code>touchend</code> : when one or more fingers are removed from the screen</li>
 </ul>
+<p>There are also some higher level events that you can use so you don&#39;t have to bind to different events for mouse-input devices and for touch devices.
+
+</p>
+<ul>
+<li><code>tapstart</code> or <code>vmousedown</code> : normalised tap start event (either <code>mousedown</code> or <code>touchstart</code>)</li>
+<li><code>tapend</code> or <code>vmouseup</code> : normalised tap end event (either <code>mouseup</code> or <code>touchend</code>)</li>
+<li><code>tap</code> or <code>vclick</code> : normalised tap event (either <code>click</code>, or <code>touchstart</code> followed by <code>touchend</code> without <code>touchmove</code>)</li>
+<li><code>taphold</code> : normalised tap hold event</li>
+</ul>
 <h2 id="events/collection-events">Collection events <a href="#events/collection-events"><span class="icon-bookmark"></span></a></h2>
 <p>These events are custom to Cytoscape.js.  You can bind to these events for collections.
 

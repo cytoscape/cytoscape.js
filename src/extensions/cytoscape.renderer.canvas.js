@@ -563,6 +563,9 @@
 					}
 				}
 
+				r.hoverData.cxtDragged = false;
+				r.hoverData.which = null;
+
 			// if not right mouse
 			} else {
 

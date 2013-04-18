@@ -823,6 +823,18 @@
 			
 			// record starting points for pinch-to-zoom
 			if( e.touches[1] ){
+
+				// anything in the set of dragged eles should be released
+				function release( eles ){
+					for( var i = 0; i < eles.length; i++ ){
+						eles[i]._private.grabbed = false;
+						eles[i]._private.rscratch.inDragLayer = false;
+						if( eles[i].active() ){ eles[i].unactivate(); }
+					}
+				}
+				release(nodes);
+				release(edges);
+
 				var offsets = r.findContainerPageCoords();
 				offsetTop = offsets[1];
 				offsetLeft = offsets[0];
@@ -850,8 +862,41 @@
 					(center1[1] - pan.y) / zoom
 				];
 
-				// console.log(center1);
+				// consider context tap
+				if( distance1 < 100 ){
 
+					var near1 = r.findNearestElement(now[0], now[1], true);
+					var near2 = r.findNearestElement(now[2], now[3], true);
+					var cxtEvt = new $$.Event(e, {type: "cxttapstart"});
+
+					//console.log(distance1)
+
+					if( near1 && near1.isNode() ){
+						near1.activate().trigger( cxtEvt );
+						r.touchData.start = near1;
+					
+					} else if( near2 && near2.isNode() ){
+						near2.activate().trigger( cxtEvt );
+						r.touchData.start = near2;
+					
+					} else {
+						cy.trigger( cxtEvt );
+						r.touchData.start = null;
+					} 
+
+					if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+					r.touchData.cxt = true;
+					r.touchData.cxtDragged = false;
+					r.data.bgActivePosistion = undefined;
+
+					//console.log('cxttapstart')
+
+					r.redraw();
+					return;
+					
+				}
+
+				// console.log(center1);
 				// console.log('touchstart ptz');
 				// console.log(offsetLeft, offsetTop);
 				// console.log(f1x1, f1y1);
@@ -859,6 +904,8 @@
 				// console.log(distance1);
 				// console.log(center1);
 			}
+
+			// console.log('another tapstart')
 			
 			
 			if (e.touches[2]) {
@@ -1000,7 +1047,43 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 			
-			if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+
+			if( capture && r.touchData.cxt ){
+				var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
+				var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
+				var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+				var factor = distance2 / distance1;
+
+				//console.log(factor, distance2)
+
+				// cancel ctx gestures if the distance b/t the fingers increases
+				if( factor >= 1.5 || distance2 >= 150 ){
+					 r.touchData.cxt = false;
+					 if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
+					 r.data.bgActivePosistion = undefined;
+					 r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				}
+
+			}  
+
+			if( capture && r.touchData.cxt ){
+				var cxtEvt = new $$.Event(e, {type: "cxtdrag"});
+				r.data.bgActivePosistion = undefined;
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+
+				if( r.touchData.start ){
+					r.touchData.start.trigger( cxtEvt );
+				} else {
+					cy.trigger( cxtEvt );
+				}
+
+				if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+				r.touchData.cxtDragged = true;
+
+				//console.log('cxtdrag')
+
+			} else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+				r.data.bgActivePosistion = undefined;
 				clearTimeout( this.threeFingerSelectTimeout );
 				this.lastThreeTouch = +new Date;
 
@@ -1020,6 +1103,7 @@
 				select[4] = 1;
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
+				r.data.bgActivePosistion = undefined;
 
 				// console.log('touchmove ptz');
 
@@ -1208,6 +1292,38 @@
 			if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
+			if( r.touchData.cxt ){
+				ctxTapend = new $$.Event(e, { type: 'cxttapend' });
+
+				if( start ){
+					start.unactivate();
+					start.trigger( ctxTapend );
+				} else {
+					cy.trigger( ctxTapend );
+				}
+
+				//console.log('cxttapend')
+
+				if( !r.touchData.cxtDragged ){
+					var ctxTap = new $$.Event(e, { type: 'cxttap' });
+
+					if( start ){
+						start.trigger( ctxTap );
+					} else {
+						cy.trigger( ctxTap );
+					}
+
+					//console.log('cxttap')
+				}
+
+				if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+				r.touchData.cxt = false;
+				r.touchData.start = null;
+
+				r.redraw();
+				return;
+			}
+
 			var nowTime = +new Date;
 			// no more box selection if we don't have three fingers
 			if( !e.touches[2] && cy.boxSelectionEnabled() ){

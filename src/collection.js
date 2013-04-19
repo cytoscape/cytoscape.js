@@ -512,23 +512,6 @@
 				removeEdgeRef( tgt, ele );
 			}
 		}
-		
-		// check for empty remaining parent nodes
-		var checkedParentId = {};
-		for( var i = 0; i < elesToRemove.length; i++ ){
-			var ele = elesToRemove[i];
-			var isNode = ele._private.group === "nodes";
-			var parentId = ele._private.parent;
-
-			if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){
-				checkedParentId[ parentId ] = true;
-				var parent = cy.getElementById( parentId );
-
-				if( parent && parent.length !== 0 && !parent._private.removed && parent.children().length === 0 ){
-					parent.updateStyle();
-				}
-			}
-		}
 
 		var removedElements = new $$.Collection( this.cy(), removed );
 		if( removedElements.size() > 0 ){
@@ -543,7 +526,27 @@
 			
 			removedElements.trigger("remove");
 		}
-		
+
+		// check for empty remaining parent nodes
+		var checkedParentId = {};
+		for( var i = 0; i < elesToRemove.length; i++ ){
+			var ele = elesToRemove[i];
+			var isNode = ele._private.group === "nodes";
+			var parentId = ele._private.data.parent;
+
+			if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){
+				checkedParentId[ parentId ] = true;
+				var parent = cy.getElementById( parentId );
+
+				if( parent && parent.length !== 0 &&
+				    !parent._private.removed &&
+				    parent.children().not(":removed").length === 0 )
+				{
+					parent.updateStyle();
+				}
+			}
+		}
+
 		return this;
 	};
 	

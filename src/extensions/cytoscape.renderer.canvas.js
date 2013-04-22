@@ -4,6 +4,7 @@
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
 	var rendFunc = CanvasRenderer.prototype;
+	var panOrBoxSelectDelay = 400;
 
 	// Canvas layer constants
 	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, NODE = 4, BUFFER_COUNT = 2;
@@ -347,7 +348,7 @@
 				// Selection box
 				if ( near == null || near.isEdge() ) {
 					select[4] = 1;
-					var timeUntilActive = Math.max( 0, 400 - (+new Date - r.hoverData.downTime) );
+					var timeUntilActive = Math.max( 0, panOrBoxSelectDelay - (+new Date - r.hoverData.downTime) );
 
 					clearTimeout( r.bgActiveTimeout );
 					r.bgActiveTimeout = setTimeout(function(){
@@ -451,9 +452,10 @@
 				
 				// Needs reproject due to pan changing viewport
 				pos = r.projectIntoViewport(e.pageX, e.pageY);
+
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && (down == null || down.isEdge())
-					&& ( !cy.boxSelectionEnabled() || (new Date()).getTime() - r.hoverData.downTime > 400 )
+					&& ( !cy.boxSelectionEnabled() || +new Date - r.hoverData.downTime >= panOrBoxSelectDelay )
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
 					&& cy.panningEnabled() ) {
 				
@@ -461,7 +463,11 @@
 				select[4] = 0;
 
 			} else {
-				clearTimeout( r.bgActiveTimeout );
+				// deactivate bg on box selection
+				if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
+					clearTimeout( r.bgActiveTimeout );
+				}
+				
 				if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
 				if (near != last) {

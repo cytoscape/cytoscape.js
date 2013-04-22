@@ -2627,28 +2627,6 @@
 
 		// } console.timeEnd('drawing')
 
-		{
-			var context;
-			
-			// console.time('raster'); for( var looper = 0; looper <= looperMax; looper++ ){
-			// Rasterize the layers, but only if container has nonzero size
-			// if (this.data.container.clientHeight > 0
-			// 		&& this.data.container.clientWidth > 0) {
-				
-			// 	context = data.bufferCanvases[1].getContext("2d");
-			// 	context.globalCompositeOperation = "copy";
-			// 	context.drawImage(data.canvases[4], 0, 0);
-			// 	context.globalCompositeOperation = "source-over";
-			// 	context.drawImage(data.canvases[2], 0, 0);
-			// 	context.drawImage(data.canvases[0], 0, 0);
-				
-			// 	context = data.bufferCanvases[0].getContext("2d");
-			// 	context.globalCompositeOperation = "copy";
-			// 	context.drawImage(data.bufferCanvases[1], 0, 0);
-			// }
-			// } console.timeEnd('raster')
-		}
-
 		var endTime = +new Date;
 
 		if( this.averageRedrawTime === undefined ){

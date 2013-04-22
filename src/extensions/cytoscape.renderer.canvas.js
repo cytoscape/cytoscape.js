@@ -1,6 +1,5 @@
 (function($$) {
 
-
 	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 	var time = function() { return Date.now(); } ; 
 	var arrowShapes = {}; var nodeShapes = {}; 
@@ -76,6 +75,8 @@
 			this.data.bufferCanvases[i].style.visibility = "visible";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);
 		}
+
+		this.load();
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
@@ -87,8 +88,6 @@
 			this.updateNodesCache();
 			this.updateEdgesCache();
 		}
-		
-		if (params.type == "load") {this.load(); }
 
 		if (params.type == "viewport") {
 			this.data.canvasNeedsRedraw[SELECT_BOX] = true;
@@ -2261,7 +2260,7 @@
 			}
 		}
 	}
-	
+
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
 		var r = this;

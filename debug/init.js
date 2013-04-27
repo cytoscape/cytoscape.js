@@ -151,6 +151,27 @@ $(function(){
 				console.log("stop(%o)", sourceNode);
 			}
 		});
+
+		$container.cxtmenu({
+			selector: 'node',
+			commands: [
+				{
+					content: 'delete',
+					select: function(){
+						this.remove();
+					}
+				},
+
+				{
+					content: 'bar'
+				},
+
+				{
+					content: 'baz'
+				}
+
+			]
+		});
 		
 		function number(group){
 			var input = $("#" + group + "-number");

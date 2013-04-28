@@ -619,8 +619,8 @@
 							if( !isLoop || (isLoop && loopAllowed) ){							
 								makeEdges(false, source, target);
 
-								options().complete( node );
-								node.trigger('cyedgehandles.complete');	
+								//options().complete( node );
+								//node.trigger('cyedgehandles.complete');	
 							}
 
 							inForceStart = false; // now we're done so reset the flag

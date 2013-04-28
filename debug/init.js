@@ -156,18 +156,17 @@ $(function(){
 			selector: 'node',
 			commands: [
 				{
-					content: 'delete',
+					content: 'Connect',
 					select: function(){
-						this.remove();
+						$('#cytoscape').cytoscapeEdgehandles('start', this.id());
 					}
 				},
 
 				{
-					content: 'bar'
-				},
-
-				{
-					content: 'baz'
+					content: 'Delete',
+					select: function(){
+						this.remove();
+					}
 				}
 
 			]

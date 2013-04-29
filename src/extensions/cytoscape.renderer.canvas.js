@@ -3964,25 +3964,25 @@
 		}
 		
 		// 4 ortho extreme points
-		var east = [centerX - width / 2 - padding, centerY];
-		var west = [centerX + width / 2 + padding, centerY];
-		var north = [centerX, centerY + height / 2 + padding];
-		var south = [centerX, centerY - height / 2 - padding];
+		var west = [centerX - width / 2 - padding, centerY];
+		var east = [centerX + width / 2 + padding, centerY];
+		var north = [centerX, centerY - height / 2 - padding];
+		var south = [centerX, centerY + height / 2 + padding];
 		
 		// out of bounds: return false
-		if (x2 < east[0]) {
+		if (x2 < west[0]) {
 			return false;
 		}
 		
-		if (x1 > west[0]) {
+		if (x1 > east[0]) {
 			return false;
 		}
 		
-		if (y2 < south[1]) {
+		if (y1 > south[1]) {
 			return false;
 		}
 		
-		if (y1 > north[1]) {
+		if (y2 < north[1]) {
 			return false;
 		}
 		
@@ -4008,11 +4008,11 @@
 		}
 		
 		// box corner in ellipse: return true		
-		x1 = (x1 - centerX) / (width + padding);
-		x2 = (x2 - centerX) / (width + padding);
+		x1 = (x1 - centerX) / (width / 2 + padding);
+		x2 = (x2 - centerX) / (width / 2 + padding);
 		
-		y1 = (y1 - centerY) / (height + padding);
-		y2 = (y2 - centerY) / (height + padding);
+		y1 = (y1 - centerY) / (height / 2 + padding);
+		y2 = (y2 - centerY) / (height / 2 + padding);
 		
 		if (x1 * x1 + y1 * y1 <= 1) {
 			return true;

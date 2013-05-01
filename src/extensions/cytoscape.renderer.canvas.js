@@ -4067,17 +4067,58 @@
 		
 		for (var i = 0; i < transformedPoints.length / 2; i++) {
 			transformedPoints[i * 2] = 
-				width * (basePoints[i * 2] * cos
+				width / 2 * (basePoints[i * 2] * cos
 					- basePoints[i * 2 + 1] * sin);
 			
 			transformedPoints[i * 2 + 1] = 
-				height * (basePoints[i * 2 + 1] * cos 
+				height / 2 * (basePoints[i * 2 + 1] * cos 
 					+ basePoints[i * 2] * sin);
 			
 			transformedPoints[i * 2] += centerX;
 			transformedPoints[i * 2 + 1] += centerY;
 		}
 		
+		// Assume transformedPoints.length > 0, and check if intersection is possible
+		var minTransformedX = transformedPoints[0];
+		var maxTransformedX = transformedPoints[0];
+		var minTransformedY = transformedPoints[1];
+		var maxTransformedY = transformedPoints[1];
+		
+		for (var i = 1; i < transformedPoints.length / 2; i++) {
+			if (transformedPoints[i * 2] > maxTransformedX) {
+				maxTransformedX = transformedPoints[i * 2];
+			}
+			
+			if (transformedPoints[i * 2] < minTransformedX) {
+				minTransformedX = transformedPoints[i * 2];
+			}
+			
+			if (transformedPoints[i * 2 + 1] > maxTransformedY) {
+				maxTransformedY = transformedPoints[i * 2 + 1];
+			}
+			
+			if (transformedPoints[i * 2 + 1] < minTransformedY) {
+				minTransformedY = transformedPoints[i * 2 + 1];
+			}
+		}
+		
+		if (x2 < minTransformedX - padding) {
+			return false;
+		}
+		
+		if (x1 > maxTransformedX + padding) {
+			return false;
+		}
+		
+		if (y2 < minTransformedY - padding) {
+			return false;
+		}
+		
+		if (y1 > maxTransformedY + padding) {
+			return false;
+		}
+		
+		// Continue checking with padding-corrected points
 		var points;
 		
 		if (padding > 0) {
@@ -4103,6 +4144,45 @@
 			}
 		}
 		
+		
+		// Check for intersections with the selection box
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			var currentX = points[i * 2];
+			var currentY = points[i * 2 + 1];
+			var nextX;
+			var nextY;
+			
+			if (i < points.length / 2 - 1) {
+				nextX = points[(i + 1) * 2];
+				nextY = points[(i + 1) * 2 + 1]
+			} else {
+				nextX = points[0];
+				nextY = points[1];
+			}
+			
+			// Intersection with top of selection box
+			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x2, y1, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with bottom of selection box
+			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y2, x2, y2, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with left side of selection box
+			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x1, y2, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with right side of selection box
+			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x2, y1, x2, y2, false).length > 0) {
+				return true;
+			}
+		}
+
+		/*
 		// Check if box corner in the polygon
 		if (renderer.pointInsidePolygon(
 			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
@@ -4114,14 +4194,14 @@
 			return true;
 		} else if (renderer.pointInsidePolygon(
 			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
+			 
+			return true; 
 		} else if (renderer.pointInsidePolygon(
 			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
 			
 			return true;
 		}
-		
+		*/
 		return false;
 	}
 	
@@ -4159,7 +4239,7 @@
 			currentY = points[i * 2 + 1];
 
 			if (i < points.length / 2 - 1) {
-				nextX = points[(i + 1) * 2];
+				nextX = points[(i + 1) * 2]; 
 				nextY = points[(i + 1) * 2 + 1];
 			} else {
 				nextX = points[0]; 

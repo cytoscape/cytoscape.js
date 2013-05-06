@@ -376,8 +376,8 @@ $(function(){
 			},
 
 			teardown: function(){
-				var stylesheet = window.options.style;
-				var style = cy.style;
+				var stylesheet = window.defaultSty;
+				var style = cy.style();
 
 				stylesheet.assignToStyle( style );
 				style.update();

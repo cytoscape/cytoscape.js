@@ -112,8 +112,12 @@
 		return style;
 	};
 
-	$$.Stylesheet.prototype.assignToStyle = function( style ){
+	$$.Stylesheet.prototype.assignToStyle = function( style, addDefaultStylesheet ){
 		style.clear();
+
+		if( addDefaultStylesheet || addDefaultStylesheet === undefined ){
+			style.addDefaultStylesheet();
+		}
 
 		for( var i = 0; i < this.length; i++ ){
 			var context = this[i];
@@ -344,6 +348,8 @@
 
 	// remove all contexts
 	$$.styfn.clear = function(){
+		this._private.newStyle = true;
+
 		for( var i = 0; i < this.length; i++ ){
 			delete this[i];
 		}
@@ -705,7 +711,7 @@
 	// 
 	// for parsedProp:{ bypass: true }
 	// the generated flattenedProp:{ bypassed: parsedProp } 
-	$$.styfn.applyParsedProperty = function( ele, parsedProp ){
+	$$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
 		var prop = parsedProp;
 		var style = ele._private.style;
 		var fieldVal, flatProp;
@@ -813,34 +819,78 @@
 				prop.bypassed = origProp;
 			}
 
+			var prevProp = style[ prop.name ];
+			if( prevProp ){
+				prop.prev = prevProp;
+			}
+
 			style[ prop.name ] = prop; // and set
 		
 		} else { // prop is not bypass
 			if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
+				var prevProp = origProp.bypassed;
+				if( prevProp ){
+					prop.prev = prevProp;
+				}
+
 				origProp.bypassed = prop;
 			} else { // then just replace the old prop with the new one
+				var prevProp = style[ prop.name ];
+				if( prevProp ){
+					prop.prev = prevProp;
+				}
+
 				style[ prop.name ] = prop; 
 			}
 		}
 
+		prop.context = context;
+
 		return true;
 	};
 
-	// parse a property and then apply it
-	$$.styfn.applyProperty = function( ele, name, value ){
-		var parsedProp = this.parse(name, value);
-		if( !parsedProp ){ return false; } // can't apply if we can't parse
+	$$.styfn.rollBackContext = function( ele, context ){
+		for( var j = 0; j < context.properties.length; j++ ){ // for each prop
+			var prop = context.properties[j];
+			var eleProp = ele._private.style[ prop.name ];
 
-		return this.applyParsedProperty( ele, parsedProp );
+			var first = true;
+			var lastEleProp;
+			while( eleProp.prev ){
+				var prev = eleProp.prev;
+
+				if( eleProp.context === context ){
+
+					if( first ){
+						ele._private.style[ prop.name ] = eleProp.prev;
+					} else if( lastEleProp ){
+						lastEleProp.prev = prev;
+					}
+					
+				}
+
+				lastEleProp = eleProp;
+				eleProp = prev;
+				first = false;
+			}
+		}
 	};
+
 
 	// (potentially expensive calculation)
 	// apply the style to the element based on
 	// - its bypass
 	// - what selectors match it
 	$$.styfn.apply = function( eles ){
+		var self = this;
+
 		for( var ie = 0; ie < eles.length; ie++ ){
 			var ele = eles[ie];
+
+			if( self._private.newStyle ){
+				ele._private.styleCxts = [];
+				ele._private.style = {};
+			}
 
 			// apply the styles
 			for( var i = 0; i < this.length; i++ ){
@@ -849,14 +899,31 @@
 				var props = context.properties;
 
 				if( contextSelectorMatches ){ // then apply its properties
-					for( var j = 0; j < props.length; j++ ){ // for each prop
-						var prop = props[j];
-						this.applyParsedProperty( ele, prop );
+
+					// apply the properties in the context
+					if( !ele._private.styleCxts[i] ){
+						for( var j = 0; j < props.length; j++ ){ // for each prop
+							var prop = props[j];
+							this.applyParsedProperty( ele, prop, context );
+						}
 					}
+
+					// keep a note that this context matches
+					ele._private.styleCxts[i] = context;
+				} else {
+
+					// roll back style cxts that don't match now
+					if( ele._private.styleCxts[i] ){
+						this.rollBackContext( ele, context );
+					}
+
+					delete ele._private.styleCxts[i];
 				}
 			} // for context
 
 		} // for elements
+
+		self._private.newStyle = false;
 	};
 
 	// updates the visual style for all elements (useful for manual style modification after init)

@@ -2,7 +2,7 @@ $(function(){
 				
 	var height, width;
 	
-	var defaultSty = cytoscape.stylesheet()
+	var defaultSty = window.defaultSty = cytoscape.stylesheet()
 			.selector("node")
 				.css({
 					"content": "data(id)",

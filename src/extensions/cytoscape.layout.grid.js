@@ -13,7 +13,8 @@
 	}
 	
 	GridLayout.prototype.run = function(){
-		var params = options = this.options;
+		var params = this.options;
+		var options = params;
 		
 		var cy = params.cy;
 		var nodes = cy.nodes();

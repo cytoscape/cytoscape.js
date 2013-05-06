@@ -492,6 +492,19 @@
 			}
 		}
 
+		function removeChildRef(parent, ele){
+			ele = ele[0];
+			parent = parent[0];
+			var children = parent._private.children;
+
+			for( var j = 0; j < children.length; j++ ){
+				if( children[j][0] === ele[0] ){
+					children.splice(j, 1);
+					break;
+				}
+			}
+		}
+
 		for( var i = 0; i < elesToRemove.length; i++ ){
 			var ele = elesToRemove[i];
 
@@ -510,6 +523,13 @@
 
 				removeEdgeRef( src, ele );
 				removeEdgeRef( tgt, ele );
+
+			} else { // remove reference to parent 
+				var parent = ele.parent();
+
+				if( parent.length !== 0 ){
+					removeChildRef(parent, ele);
+				}
 			}
 		}
 
@@ -538,10 +558,7 @@
 				checkedParentId[ parentId ] = true;
 				var parent = cy.getElementById( parentId );
 
-				if( parent && parent.length !== 0 &&
-				    !parent._private.removed &&
-				    parent.children().not(":removed").length === 0 )
-				{
+				if( parent && parent.length !== 0 && !parent._private.removed && parent.children().length === 0 ){
 					parent.updateStyle();
 				}
 			}

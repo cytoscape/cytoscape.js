@@ -381,6 +381,7 @@
 		
 		window.addEventListener("mousemove", function(e) {
 			var preventDefault = false;
+			var capture = r.hoverData.capture;
 
 			if (!capture) {
 				
@@ -407,8 +408,7 @@
 			var edges = r.getCachedEdges();
 		
 			var draggedElements = r.dragData.possibleDragElements;
-			
-			var capture = r.hoverData.capture;
+		
 
 			var shiftDown = e.shiftKey;
 			

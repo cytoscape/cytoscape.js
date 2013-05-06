@@ -156,6 +156,26 @@
 
 					c2d.restore();
 				}
+				
+				var lastCallTime = 0;
+				var minCallDelta = 1000/30;
+				var endCallTimeout;
+				function rateLimitedCall( fn ){
+					var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+					var now = +new Date;
+
+					clearTimeout( endCallTimeout );
+
+					if( now >= lastCallTime + minCallDelta ){
+						requestAnimationFrame(fn);
+						lastCallTime = now;
+					} else {
+						endCallTimeout = setTimeout(function(){
+							requestAnimationFrame(fn);
+							lastCallTime = now;
+						}, minCallDelta * 2);
+					}
+				}
 
 				var ctrx, ctry, rs;
 
@@ -179,12 +199,15 @@
 						rs = Math.max(rw, rh);
 						rs = 32;
 
-						drawBg();
+						rateLimitedCall(function(){
+							drawBg();
+						});
 
 						activeCommandI = undefined;
 					})
 
-					.on('cxtdrag', options.selector, function(e){
+					.on('cxtdrag', options.selector, function(e){ rateLimitedCall(function(){
+
 						var dx = e.originalEvent.pageX - $container.offset().left - ctrx;
 						var dy = e.originalEvent.pageY - $container.offset().top - ctry;
 
@@ -270,7 +293,7 @@
 						c2d.fill();
 
 						c2d.restore();
-					})
+					}) })
 
 					.on('cxttapend', options.selector, function(e){
 						var ele = this;

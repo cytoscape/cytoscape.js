@@ -404,8 +404,8 @@
 		restored = new $$.Collection( cy, restored );
 		if( restored.length > 0 ){
 
-			restored.updateStyle( notifyRenderer ); // when we restore/add elements, they need their style
-			restored.connectedNodes().updateStyle( notifyRenderer ); // may need to update style b/c of {degree} selectors
+			var toUpdateStyle = restored.add( restored.connectedNodes() ).add( restored.parent() );
+			toUpdateStyle.updateStyle( notifyRenderer );
 
 			if( notifyRenderer ){
 				restored.rtrigger("add");

@@ -55,7 +55,8 @@
 			pan: {
 				x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
 				y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0,
-			}
+			},
+			hasCompoundNodes: false
 		};
 
 		// init zoom bounds
@@ -122,6 +123,10 @@
 
 			// worst case, return an empty collection
 			return new $$.Collection( this );
+		},
+
+		hasCompoundNodes: function(){
+			return this._private.hasCompoundNodes;
 		},
 
 		addToPool: function( eles ){

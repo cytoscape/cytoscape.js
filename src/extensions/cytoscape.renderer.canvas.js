@@ -236,7 +236,7 @@
 		});
 
 		// Primary key
-		r.data.container.addEventListener("mousedown", function(e) {
+		r.data.container.addEventListener("mousedown", function(e) { 
 			e.preventDefault();
 			r.hoverData.capture = true;
 			r.hoverData.which = e.which;
@@ -382,6 +382,18 @@
 		window.addEventListener("mousemove", function(e) {
 			var preventDefault = false;
 
+			if (!capture) {
+				
+				var containerPageCoords = r.findContainerPageCoords();
+				
+				if (e.pageX > containerPageCoords[0] && e.pageX < containerPageCoords[0] + r.data.container.clientWidth
+					&& e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
+					
+				} else {
+					return;
+				}
+			}
+
 			var cy = r.data.cy;
 			var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var select = r.data.select;
@@ -400,17 +412,6 @@
 
 			var shiftDown = e.shiftKey;
 			
-			if (!capture) {
-				
-				var containerPageCoords = r.findContainerPageCoords();
-				
-				if (e.pageX > containerPageCoords[0] && e.pageX < containerPageCoords[0] + r.data.container.clientWidth
-					&& e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
-					
-				} else {
-					return;
-				}
-			}
 
 			preventDefault = true;
 
@@ -1770,25 +1771,9 @@
 			}
 		} 
 		
-		near.sort(function(a, b) {
+		near.sort( zOrderSort );
 		
-			var zIndexCompare = b._private.style["z-index"].value - a._private.style["z-index"].value;
-			// Reverse id order, same as given by cy.nodes()
-			var idCompare = b._private.data.id.localeCompare(a._private.data.id);
-			var nodeEdgeTypeCompare = (function(a, b){
-				if (a.isEdge() && b.isNode()) {
-					return 1;
-				} else if (a.isNode() && b.isEdge()) {
-					return -1;
-				}
-				
-				return 0;
-			})(a, b);
-			
-			return zIndexCompare || nodeEdgeTypeCompare || idCompare;
-		});
-		
-		if (near.length > 0) { return near[0]; } else { return null; }
+		if (near.length > 0) { return near[ near.length - 1 ]; } else { return null; }
 	}
 	
 	// "Give me everything from this box"
@@ -2267,6 +2252,75 @@
 		}
 	}
 
+
+	// helper function for the sort operation
+	var elementDepth = function(ele) {
+		if (ele._private.group == "nodes")
+		{
+			return ele.parents().size();
+		}
+		else if (ele._private.group == "edges")
+		{
+			return Math.max(ele.source()[0].parents().size(),
+			                ele.target()[0].parents().size());
+		}
+		else
+		{
+			return 0;
+		}
+	};
+
+
+	var zOrderSort = function(a, b) {
+		var result = a._private.style["z-index"].value
+			- b._private.style["z-index"].value;
+
+		var depthA = 0;
+		var depthB = 0;
+
+		// no need to calculate element depth if there is no compound node
+		if ( a.cy().hasCompoundNodes() )
+		{
+			depthA = elementDepth(a);
+			depthB = elementDepth(b);
+		}
+
+		if (result == 0)
+		{
+			// if both elements has same depth,
+			// then edges should be drawn first
+			if (depthA - depthB == 0)
+			{
+				// "a" is a node, it should be drawn later
+				if (a._private.group == "nodes"
+					&& b._private.group == "edges")
+				{
+					return 1;
+				}
+				// "a" is an edge, it should be drawn first
+				else if (a._private.group == "edges"
+					&& b._private.group == "nodes")
+				{
+					return -1;
+				}
+				// both nodes or both edges
+				else
+				{
+					return 0;
+				}
+			}
+			// elements on different level
+			else
+			{
+				// deeper element should be drawn later
+				return depthA - depthB;
+			}
+		}
+
+		// return zero if z-index values are not the same
+		return 0;
+	};
+
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
 		var r = this;
@@ -2323,24 +2377,7 @@
 
 		// } console.timeEnd('init')
 
-		
-
-		// helper function for the sort operation
-		var elementDepth = function(ele) {
-			if (ele._private.group == "nodes")
-			{
-				return ele.parents().size();
-			}
-			else if (ele._private.group == "edges")
-			{
-				return Math.max(ele.source()[0].parents().size(),
-				                ele.target()[0].parents().size());
-			}
-			else
-			{
-				return 0;
-			}
-		};
+	
 
 		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE] || drawAll) {
 			//NB : VERY EXPENSIVE
@@ -2350,20 +2387,7 @@
 
 			// } console.timeEnd('edgectlpts')
 
-			
-			// console.time('compoundck'); for( var looper = 0; looper <= looperMax; looper++ ){
-			// check if there is a compound node
-			var compoundGraph = false;
-			for (var i = 0; i < elements.length; i++)
-			{
-				if( elements[i].isNode() && elements[i].isParent() )
-				{
-					compoundGraph = true;
-					break;
-				}
-			}
-
-			// } console.timeEnd('compoundck')
+		
 
 			// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
 			var elements = [];
@@ -2374,60 +2398,12 @@
 				elements.push( edges[i] );
 			}
 
-			elements.sort(function(a, b) {
-				var result = a._private.style["z-index"].value
-					- b._private.style["z-index"].value;
-
-				var depthA = 0;
-				var depthB = 0;
-
-				// no need to calculate element depth if there is no compound node
-				if (compoundGraph)
-				{
-					depthA = elementDepth(a);
-					depthB = elementDepth(b);
-				}
-
-				if (result == 0)
-				{
-					// if both elements has same depth,
-					// then edges should be drawn first
-					if (depthA - depthB == 0)
-					{
-						// "a" is a node, it should be drawn later
-						if (a._private.group == "nodes"
-							&& b._private.group == "edges")
-						{
-							return 1;
-						}
-						// "a" is an edge, it should be drawn first
-						else if (a._private.group == "edges"
-							&& b._private.group == "nodes")
-						{
-							return -1;
-						}
-						// both nodes or both edges
-						else
-						{
-							return 0;
-						}
-					}
-					// elements on different level
-					else
-					{
-						// deeper element should be drawn later
-						return depthA - depthB;
-					}
-				}
-
-				// return zero if z-index values are not the same
-				return 0;
-			});
+			elements.sort( zOrderSort );
 			// } console.timeEnd('sort')
 
 			// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// no need to update graph if there is no compound node
-			if (compoundGraph)
+			if ( cy.hasCompoundNodes() )
 			{
 				this.updateAllCompounds(elements);
 			}

@@ -393,6 +393,9 @@
 					if( !selfAsParent ){
 						// connect with children
 						parent[0]._private.children.push( node );
+
+						// let the core know we have a compound graph
+						cy._private.hasCompoundNodes = true;
 					}
 				} // else
 			} // if specified parent
@@ -401,7 +404,7 @@
 		restored = new $$.Collection( cy, restored );
 		if( restored.length > 0 ){
 
-			restored.updateStyle( false ); // when we restore/add elements, they need their style
+			restored.updateStyle( notifyRenderer ); // when we restore/add elements, they need their style
 			restored.connectedNodes().updateStyle( notifyRenderer ); // may need to update style b/c of {degree} selectors
 
 			if( notifyRenderer ){
@@ -530,6 +533,18 @@
 				if( parent.length !== 0 ){
 					removeChildRef(parent, ele);
 				}
+			}
+		}
+
+		// check to see if we have a compound graph or not
+		var elesStillInside = cy._private.elements;
+		cy._private.hasCompoundNodes = false;
+		for( var i = 0; i < elesStillInside.length; i++ ){
+			var ele = elesStillInside[i];
+
+			if( ele.isParent() ){
+				cy._private.hasCompoundNodes = true;
+				break;
 			}
 		}
 

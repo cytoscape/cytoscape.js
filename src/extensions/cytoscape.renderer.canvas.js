@@ -1117,6 +1117,7 @@
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 				r.data.bgActivePosistion = undefined;
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
 
 				// console.log('touchmove ptz');
 

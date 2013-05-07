@@ -2907,7 +2907,8 @@
 		// 3 points given -> assume Bezier
 		// 2 -> assume straight
 		
-		var zoom = this.data.cy.zoom();
+		var cy = this.data.cy;
+		var zoom = cy.zoom();
 		
 		// Adjusted edge width for dotted
 //		width = Math.max(width * 1.6, 3.4) * zoom;
@@ -3013,7 +3014,7 @@
 			
 			// Now use buffer
 			context.beginPath();
-			context.save();
+			//context.save();
 			
 			for (var i=0; i<pt.length/2; i++) {
 				
@@ -3029,7 +3030,7 @@
 						bufH / zoom);
 			}
 			
-			context.restore();
+			//context.restore();
 			
 		} else if (type == "dashed") {
 			var pt;
@@ -3073,7 +3074,7 @@
 	//		context2.fill();
 			context2.stroke();
 			
-			context.save();
+			//context.save();
 			
 			// document.body.appendChild(buffer[0]);
 			
@@ -3084,8 +3085,7 @@
 			if (pts.length == 2 * 2) {
 				rotateVector = [pts[2] - pts[0], pts[3] - pt[1]];
 				
-				angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1)
-						/ Math.sqrt(rotateVector[0] * rotateVector[0] 
+				angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1) / Math.sqrt(rotateVector[0] * rotateVector[0] 
 						+ rotateVector[1] * rotateVector[1]));
 	
 				if (rotateVector[0] < 0) {
@@ -3107,8 +3107,7 @@
 					                    2 * (1-p) * (pts[3] - pts[1]) 
 					                    + 2 * p * (pts[5] - pts[3])];
 	
-					angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1)
-							/ Math.sqrt(rotateVector[0] * rotateVector[0] 
+					angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1) / Math.sqrt(rotateVector[0] * rotateVector[0] 
 								+ rotateVector[1] * rotateVector[1]));
 	
 					if (rotateVector[0] < 0) {
@@ -3134,7 +3133,9 @@
 				context.translate(-pt[i*2], -pt[i*2+1]);
 				
 			}
-			context.restore();
+			
+			
+			//context.restore();
 		} else {
 			this.drawStyledEdge(edge, context, pts, "solid", width);
 		}
@@ -3302,7 +3303,7 @@
 	};
 	
 	CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
-		
+		var r = this;
 //		console.log(this.data);
 		var zoom = this.data.cy._private.zoom;
 		
@@ -4573,8 +4574,7 @@
 			angle = - (Math.PI / 2 + angle);
 		}
 		
-		context.save();
-		
+		//context.save();
 		context.translate(x, y);
 		
 		context.moveTo(0, 0);
@@ -4592,8 +4592,13 @@
 		
 //		context.stroke();
 		context.fill();
-		context.restore();
+
+		context.scale(1/size, 1/size);
+		context.rotate(angle);
+		context.translate(-x, -y);
+		//context.restore();
 	}
+
 	}
 	
 	// @O Node shapes
@@ -4680,14 +4685,19 @@
 		},
 		
 		drawPath: function(context, centerX, centerY, width, height) {
+			
+			//context.save();
+			
 			context.beginPath();
-			context.save();
 			context.translate(centerX, centerY);
 			context.scale(width / 2, height / 2);
 			// At origin, radius 1, 0 to 2pi
 			context.arc(0, 0, 1, 0, Math.PI * 2, false);
 			context.closePath();
-			context.restore();
+
+			context.scale(2/width, 2/height);
+			context.translate(-centerX, -centerY);
+			//context.restore();
 			
 //			console.log("drawing ellipse");
 //			console.log(arguments);
@@ -5388,7 +5398,9 @@
 	CanvasRenderer.prototype.drawPolygonPath = function(
 		context, x, y, width, height, points) {
 
-		context.save();
+		//context.save();
+		
+
 		context.translate(x, y);
 		context.beginPath();
 		
@@ -5400,7 +5412,10 @@
 		}
 		
 		context.closePath();
-		context.restore();
+		
+		context.scale(2/width, 2/height);
+		context.translate(-x, -y);
+		// context.restore();
 	}
 	
 	CanvasRenderer.prototype.drawPolygon = function(

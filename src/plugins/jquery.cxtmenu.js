@@ -107,7 +107,7 @@
 				function drawBg( rspotlight ){
 					rspotlight = rspotlight !== undefined ? rspotlight : rs;
 
-					c2d.save();
+					c2d.globalCompositeOperation = 'source-over';
 
 					c2d.clearRect(0, 0, containerSize, containerSize);
 
@@ -154,21 +154,23 @@
 					c2d.closePath();
 					c2d.fill();
 
-					c2d.restore();
+					c2d.globalCompositeOperation = 'source-over';
 				}
 				
 				var lastCallTime = 0;
 				var minCallDelta = 1000/30;
 				var endCallTimeout;
+				var firstCall = true;
 				function rateLimitedCall( fn ){
 					var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 					var now = +new Date;
 
 					clearTimeout( endCallTimeout );
 
-					if( now >= lastCallTime + minCallDelta ){
+					if( firstCall || now >= lastCallTime + minCallDelta ){
 						requestAnimationFrame(fn);
 						lastCallTime = now;
+						firstCall = false;
 					} else {
 						endCallTimeout = setTimeout(function(){
 							requestAnimationFrame(fn);
@@ -178,6 +180,7 @@
 				}
 
 				var ctrx, ctry, rs;
+				var tapendHandler;
 
 				cy
 					.on('cxttapstart', options.selector, function(e){
@@ -199,9 +202,7 @@
 						rs = Math.max(rw, rh);
 						rs = 32;
 
-						rateLimitedCall(function(){
-							drawBg();
-						});
+						drawBg();
 
 						activeCommandI = undefined;
 					})
@@ -225,8 +226,6 @@
 						}
 
 						drawBg();
-
-						c2d.save();
 
 						var rx = dx*r / d;
 						var ry = dy*r / d;
@@ -292,7 +291,7 @@
 						c2d.closePath();
 						c2d.fill();
 
-						c2d.restore();
+						c2d.globalCompositeOperation = 'source-over';
 					}) })
 
 					.on('cxttapend', options.selector, function(e){
@@ -306,6 +305,10 @@
 								select.apply( ele );
 							}
 						}
+					})
+
+					.on('cxttapend', function(e){
+						$parent.hide();
 					})
 				;
 			}

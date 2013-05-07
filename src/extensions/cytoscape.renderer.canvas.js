@@ -1064,10 +1064,17 @@
 
 				// cancel ctx gestures if the distance b/t the fingers increases
 				if( factor >= 1.5 || distance2 >= 150 ){
-					 r.touchData.cxt = false;
-					 if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
-					 r.data.bgActivePosistion = undefined;
-					 r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+					r.touchData.cxt = false;
+					if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
+					r.data.bgActivePosistion = undefined;
+					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+
+					var cxtEvt = new $$.Event(e, {type: "cxttapend"});
+					if( r.touchData.start ){
+						r.touchData.start.trigger( cxtEvt );
+					} else {
+						cy.trigger( cxtEvt );
+					}
 				}
 
 			}  

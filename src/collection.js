@@ -283,6 +283,7 @@
 		// create arrays of nodes and edges, since we need to
 		// restore the nodes first
 		var elements = [];
+		var nodes = [], edges = [];
 		var numNodes = 0;
 		var numEdges = 0;
 		for( var i = 0, l = self.length; i < l; i++ ){
@@ -290,13 +291,15 @@
 			
 			// keep nodes first in the array and edges after
 			if( ele.isNode() ){ // put to front of array if node
-				elements.unshift( ele );
+				nodes.push( ele );
 				numNodes++;
 			} else { // put to end of array if edge
-				elements.push( ele );
+				edges.push( ele );
 				numEdges++;
 			}
 		}
+
+		elements = nodes.concat( edges );
 
 		// now, restore each element
 		for( var i = 0, l = elements.length; i < l; i++ ){

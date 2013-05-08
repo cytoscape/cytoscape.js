@@ -247,7 +247,8 @@ $(function(){
 				       { data: { id: 'n2' } },
 				       { data: { id: 'node6', parent: 'n2' } },
 				       { data: { id: 'n7', parent: 'n2', shape: 'square' } },
-					   { data: { id: 'n3', shape: 'rectangle' } }],
+					   { data: { id: 'n3', parent: 'non-auto', shape: 'rectangle' } },
+					   { data: { id: 'non-auto'}}],
 				   edges: [ { data: { id: 'e1', source: 'n1', target: 'n3' } },
 				       { data: { id: 'e2', source: 'n3', target: 'n7' } },
 				       { data: { id: 'e3', source: 'node6', target: 'n7' } },
@@ -264,6 +265,10 @@ $(function(){
 				       var node = this;
 				       console.log("%o", node);
 				   });
+
+				   // set random size & shape for one of the parents
+				   var nonAutoParent = cy2.getElementById('non-auto');
+				   nonAutoParent.css({width: 80, height: 50, shape: 'triangle'});
 				}
 			});
 

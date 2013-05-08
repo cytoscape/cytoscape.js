@@ -5402,11 +5402,12 @@
 		
 
 		context.translate(x, y);
-		context.beginPath();
-		
 		context.scale(width / 2, height / 2);
+
+		context.beginPath();
+
 		context.moveTo(points[0], points[1]);
-		
+
 		for (var i = 1; i < points.length / 2; i++) {
 			context.lineTo(points[i * 2], points[i * 2 + 1]);
 		}

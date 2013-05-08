@@ -65,6 +65,7 @@
 			globalAnimationStep(); // first call
 			
 			function handleElements(now){
+				now = +new Date;
 
 				var eles = cy._private.aniEles;
 				for( var e = 0; e < eles.length; e++ ){
@@ -144,7 +145,7 @@
 			} // handleElements
 				
 			function step( self, animation, now ){
-				var style = cy.style();
+				var style = cy._private.style;
 				var properties = animation.properties;
 				var params = animation.params;
 				var startTime = animation.callTime;

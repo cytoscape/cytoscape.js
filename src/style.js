@@ -819,24 +819,19 @@
 				prop.bypassed = origProp;
 			}
 
-			var prevProp = style[ prop.name ];
-			if( prevProp ){
-				prop.prev = prevProp;
-			}
-
 			style[ prop.name ] = prop; // and set
 		
 		} else { // prop is not bypass
 			if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
 				var prevProp = origProp.bypassed;
-				if( prevProp ){
+				if( prevProp && prevProp !== prop ){
 					prop.prev = prevProp;
 				}
 
 				origProp.bypassed = prop;
 			} else { // then just replace the old prop with the new one
 				var prevProp = style[ prop.name ];
-				if( prevProp ){
+				if( prevProp && prevProp !== prop ){
 					prop.prev = prevProp;
 				}
 
@@ -854,8 +849,14 @@
 			var prop = context.properties[j];
 			var eleProp = ele._private.style[ prop.name ];
 
+			// because bypasses do not store prevs, look at the bypassed property
+			if( eleProp.bypassed ){
+				eleProp = eleProp.bypassed;
+			}
+
 			var first = true;
 			var lastEleProp;
+			var l = 0;
 			while( eleProp.prev ){
 				var prev = eleProp.prev;
 
@@ -872,6 +873,12 @@
 				lastEleProp = eleProp;
 				eleProp = prev;
 				first = false;
+				l++;
+
+				// in case we have a problematic prev list
+				// if( l >= 100 ){
+				// 	debugger;
+				// }
 			}
 		}
 	};

@@ -824,18 +824,20 @@
 		} else { // prop is not bypass
 			if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
 				var prevProp = origProp.bypassed;
-				if( prevProp && prevProp !== prop ){
-					prop.prev = prevProp;
-				}
-
+				
 				origProp.bypassed = prop;
 			} else { // then just replace the old prop with the new one
 				var prevProp = style[ prop.name ];
-				if( prevProp && prevProp !== prop ){
-					prop.prev = prevProp;
-				}
 
 				style[ prop.name ] = prop; 
+			}
+
+			if( prevProp && prevProp.mapping && prop.mapping && prevProp.context === context ){
+				prevProp = prevProp.prev;
+			}
+
+			if( prevProp && prevProp !== prop ){
+				prop.prev = prevProp;
 			}
 		}
 
@@ -908,9 +910,13 @@
 				if( contextSelectorMatches ){ // then apply its properties
 
 					// apply the properties in the context
-					if( !ele._private.styleCxts[i] ){
-						for( var j = 0; j < props.length; j++ ){ // for each prop
-							var prop = props[j];
+					
+					for( var j = 0; j < props.length; j++ ){ // for each prop
+						var prop = props[j];
+
+						//if(prop.mapped) debugger;
+
+						if( !ele._private.styleCxts[i] || prop.mapped ){
 							this.applyParsedProperty( ele, prop, context );
 						}
 					}

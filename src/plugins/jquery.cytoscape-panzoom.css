@@ -146,6 +146,7 @@
 
 .ui-cytoscape-panzoom-slider-handle .icon {
 	margin: 0 4px;
+	line-height: 10px;
 }
 
 .ui-cytoscape-panzoom-no-zoom-tick {

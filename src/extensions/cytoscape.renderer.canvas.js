@@ -763,7 +763,9 @@
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();
 				
-				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
+				var diff = e.wheelDeltaY / 1000 || e.detail / -32;
+
+				console.log(diff)
 				
 				if( cy.panningEnabled() && cy.zoomingEnabled() ){
 					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});

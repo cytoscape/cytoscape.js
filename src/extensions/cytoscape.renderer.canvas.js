@@ -764,8 +764,6 @@
 				e.preventDefault();
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -32;
-
-				console.log(diff)
 				
 				if( cy.panningEnabled() && cy.zoomingEnabled() ){
 					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
@@ -2295,36 +2293,40 @@
 			depthB = elementDepth(b);
 		}
 
-		if (result == 0)
+		// if both elements has same depth,
+		// then edges should be drawn first
+		if (depthA - depthB === 0)
 		{
-			// if both elements has same depth,
-			// then edges should be drawn first
-			if (depthA - depthB == 0)
+			// "a" is a node, it should be drawn later
+			if (a._private.group === "nodes"
+				&& b._private.group === "edges")
 			{
-				// "a" is a node, it should be drawn later
-				if (a._private.group == "nodes"
-					&& b._private.group == "edges")
-				{
-					return 1;
-				}
-				// "a" is an edge, it should be drawn first
-				else if (a._private.group == "edges"
-					&& b._private.group == "nodes")
-				{
-					return -1;
-				}
-				// both nodes or both edges
-				else
-				{
-					return 0;
-				}
+				return 1;
 			}
-			// elements on different level
+			
+			// "a" is an edge, it should be drawn first
+			else if (a._private.group === "edges"
+				&& b._private.group === "nodes")
+			{
+				return -1;
+			}
+
+			// both nodes or both edges
 			else
 			{
-				// deeper element should be drawn later
-				return depthA - depthB;
+				if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
+					return a._private.index - b._private.index;
+				} else {
+					return result;
+				}
 			}
+		}
+
+		// elements on different level
+		else
+		{
+			// deeper element should be drawn later
+			return depthA - depthB;
 		}
 
 		// return zero if z-index values are not the same

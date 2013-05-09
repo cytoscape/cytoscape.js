@@ -2428,11 +2428,11 @@
 
 		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE] || drawAll) {
 			//NB : VERY EXPENSIVE
-			// console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
+			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
 			this.findEdgeControlPoints(edges);
 
-			// } console.timeEnd('edgectlpts')
+			//} console.timeEnd('edgectlpts')
 
 		
 
@@ -3537,39 +3537,41 @@
 			
 			for (var i = 0; i < hashTable[pairId].length; i++) {
 				edge = hashTable[pairId][i];
+				
+				var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
+				var srcX2 = src._private.position.x;
+				var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
+				var srcY2 = src._private.position.y;
+				var srcW1 = edge._private.rscratch.lastSrcCtlPtW;
+				var srcW2 = src.outerWidth();
+				var srcH1 = edge._private.rscratch.lastSrcCtlPtH;
+				var srcH2 = src.outerHeight();
 
-				// var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
-				// var srcX2 = src._private.position.x;
-				// var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
-				// var srcY2 = src._private.position.y;
-				// var srcW1 = edge._private.rscratch.lastSrcCtlPtW;
-				// var srcW2 = src.outerWidth();
-				// var srcH1 = edge._private.rscratch.lastSrcCtlPtH;
-				// var srcH2 = src.outerHeight();
+				var tgtX1 = edge._private.rscratch.lastTgtCtlPtX;
+				var tgtX2 = tgt._private.position.x;
+				var tgtY1 = edge._private.rscratch.lastTgtCtlPtY;
+				var tgtY2 = tgt._private.position.y;
+				var tgtW1 = edge._private.rscratch.lastTgtCtlPtW;
+				var tgtW2 = tgt.outerWidth();
+				var tgtH1 = edge._private.rscratch.lastTgtCtlPtH;
+				var tgtH2 = tgt.outerHeight();
 
-				// var tgtX1 = edge._private.rscratch.lastTgtCtlPtX;
-				// var tgtX2 = tgt._private.position.x;
-				// var tgtY1 = edge._private.rscratch.lastTgtCtlPtY;
-				// var tgtY2 = tgt._private.position.y;
-				// var tgtW1 = edge._private.rscratch.lastTgtCtlPtW;
-				// var tgtW2 = tgt.outerWidth();
-				// var tgtH1 = edge._private.rscratch.lastTgtCtlPtH;
-				// var tgtH2 = tgt.outerHeight();
+				if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
+				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 ){
+					// console.log('edge ctrl pt cache HIT')
+					continue; // then the control points haven't changed and we can skip calculating them
+				} else {
+					edge._private.rscratch.lastSrcCtlPtX = srcX2;
+					edge._private.rscratch.lastSrcCtlPtY = srcY2;
+					edge._private.rscratch.lastSrcCtlPtW = srcW2;
+					edge._private.rscratch.lastSrcCtlPtH = srcH2;
+					edge._private.rscratch.lastTgtCtlPtX = tgtX2;
+					edge._private.rscratch.lastTgtCtlPtY = tgtY2;
+					edge._private.rscratch.lastTgtCtlPtW = tgtW2;
+					edge._private.rscratch.lastTgtCtlPtH = tgtH2;
+					// console.log('edge ctrl pt cache MISS')
+				}
 
-				// if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
-				// &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 ){
-				// 	continue; // then the control points haven't changed and we can skip calculating them
-				// } else {
-				// 	src._private.rscratch.lastSrcCtlPtX = srcX2;
-				// 	src._private.rscratch.lastSrcCtlPtY = srcY2;
-				// 	src._private.rscratch.lastSrcCtlPtW = srcW2;
-				// 	src._private.rscratch.lastSrcCtlPtH = srcH2;
-				// 	tgt._private.rscratch.lastTgtCtlPtX = tgtX2;
-				// 	tgt._private.rscratch.lastTgtCtlPtY = tgtY2;
-				// 	tgt._private.rscratch.lastTgtCtlPtW = tgtW2;
-				// 	tgt._private.rscratch.lastTgtCtlPtH = tgtH2;
-				// }
-							
 				// Self-edge
 				if (src._private.data.id == tgt._private.data.id) {
 					var stepSize = edge._private.style["control-point-step-size"].pxValue;

@@ -1696,7 +1696,9 @@
 					 { addCurrentEdge = true; }
 			
 			} else if (rs.edgeType == "straight") {
-				if (Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
+				if (this.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].value * 2)
+						&&
+					Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
 					this.sqDistanceToFiniteLine(x, y,
 						rs.startX,
 						rs.startY,
@@ -5526,23 +5528,29 @@
 		// 1 - curve may be in box; needs precise check
 		// 2 - curve is in box
 		
+		// midpoint
+		var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
+		var midY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
+
 		var boxMinX = Math.min(x1box, x2box) - tolerance;
 		var boxMinY = Math.min(y1box, y2box) - tolerance;
 		var boxMaxX = Math.max(x1box, x2box) + tolerance;
 		var boxMaxY = Math.max(y1box, y2box) + tolerance;
 		
-		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) { // (x1, y1) in box
 			return 2;
-		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) { // (x3, y3) in box
 			return 2;
-		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { 
+		} else if (midX >= boxMinX && midX <= boxMaxX && midY >= boxMinY && midY <= boxMaxY) { // (midX, midY) in box
+			return 2;
+		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { // ctrl pt in box
 			return 1;
 		}
 		
-		var curveMinX = Math.min(x1, x2, x3);
-		var curveMinY = Math.min(y1, y2, y3);
-		var curveMaxX = Math.max(x1, x2, x3);
-		var curveMaxY = Math.max(y1, y2, y3);
+		var curveMinX = Math.min(x1, midX, x3);
+		var curveMinY = Math.min(y1, midY, y3);
+		var curveMaxX = Math.max(x1, midX, x3);
+		var curveMaxY = Math.max(y1, midY, y3);
 		
 		/*
 		console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX 
@@ -5732,6 +5740,18 @@
 		return false;
 	}
 	
+	CanvasRenderer.prototype.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
+		var t = tolerance;
+
+		var x1 = Math.min(lx1, lx2);
+		var x2 = Math.max(lx1, lx2);
+		var y1 = Math.min(ly1, ly2);
+		var y2 = Math.max(ly1, ly2);
+
+		return x1 - t <= x && x <= x2 + t
+			&& y1 - t <= y && y <= y2 + t;
+	};
+
 	CanvasRenderer.prototype.inBezierVicinity = function(
 		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
 		
@@ -5739,6 +5759,22 @@
 		// is closest to (x2, y2)
 		var middlePointX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
 		var middlePointY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
+
+		// a rough bounding box of the bezier curve
+		var bb = {
+			x1: Math.min( x1, x3, middlePointX ),
+			x2: Math.max( x1, x3, middlePointX ),
+			y1: Math.min( y1, y3, middlePointY ),
+			y2: Math.max( y1, y3, middlePointY )
+		};
+
+		// if outside the rough bounding box for the bezier, then it can't be a hit
+		if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
+			// console.log('bezier out of rough bb')
+			return false;
+		} else {
+			// console.log('do more expensive check');
+		}
 		
 		var displacementX, displacementY, offsetX, offsetY;
 		var dotProduct, dotSquared, hypSquared;

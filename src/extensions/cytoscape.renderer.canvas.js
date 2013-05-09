@@ -2279,6 +2279,41 @@
 	};
 
 
+	CanvasRenderer.prototype.getCachedZSortedEles = function(){
+		var lastNodes = this.lastZOrderCachedNodes;
+		var lastEdges = this.lastZOrderCachedEdges;
+		var nodes = this.getCachedNodes();
+		var edges = this.getCachedEdges();
+		var eles = [];
+
+		if( !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
+			//console.time('cachezorder')
+			
+			for( var i = 0; i < nodes.length; i++ ){
+				eles.push( nodes[i] );
+			}
+
+			for( var i = 0; i < edges.length; i++ ){
+				eles.push( edges[i] );
+			}
+
+			eles.sort( zOrderSort );
+			this.cachedZSortedEles = eles;
+			//console.log('make cache')
+
+			//console.timeEnd('cachezorder')
+		} else {
+			eles = this.cachedZSortedEles;
+			//console.log('read cache')
+		}
+
+		this.lastZOrderCachedNodes = nodes;
+		this.lastZOrderCachedEdges = edges;
+
+		return eles;
+	};
+
+
 	var zOrderSort = function(a, b) {
 		var result = a._private.style["z-index"].value
 			- b._private.style["z-index"].value;
@@ -2402,15 +2437,7 @@
 		
 
 			// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-			var elements = [];
-			for( var i = 0; i < nodes.length; i++ ){
-				elements.push( nodes[i] );
-			}
-			for( var i = 0; i < edges.length; i++ ){
-				elements.push( edges[i] );
-			}
-
-			elements.sort( zOrderSort );
+			var elements = this.getCachedZSortedEles();
 			// } console.timeEnd('sort')
 
 			// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){

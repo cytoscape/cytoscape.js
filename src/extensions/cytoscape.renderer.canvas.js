@@ -172,7 +172,7 @@
 			{
 				// if addSelected is true, then add node in any case,
 				// if not, then add only non-selected nodes
-				if ( !hasNonAutoParent( innerNodes[i] ) && (addSelected || !innerNodes[i]._private.selected) )
+				if ( (addSelected || !innerNodes[i]._private.selected) )
 				{
 					innerNodes[i]._private.rscratch.inDragLayer = true;
 					//innerNodes[i].trigger(new $$.Event(e, {type: "grab"}));
@@ -211,11 +211,11 @@
 			{
 				parent = parent.parent()[0];
 
-				var pstyle = parent._private.style;
-				if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
-					parent = node;
-					break;
-				}
+				// var pstyle = parent._private.style;
+				// if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
+				// 	parent = node;
+				// 	break;
+				// }
 			}
 
 			// no parent node: no node to add to the drag layer

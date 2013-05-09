@@ -152,12 +152,27 @@
 
 			var innerNodes = node.descendants();
 
+			function hasNonAutoParent(ele){
+				while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
+					parent = ele.parent()[0];
+					var pstyle = parent._private.style;
+
+					if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
+						return true;
+					}
+
+					ele = ele.parent();
+				}
+
+				return false;
+			}
+
 			// TODO do not drag hidden children & children of hidden children?
 			for (var i=0; i < innerNodes.size(); i++)
 			{
 				// if addSelected is true, then add node in any case,
 				// if not, then add only non-selected nodes
-				if (addSelected || !innerNodes[i]._private.selected)
+				if ( !hasNonAutoParent( innerNodes[i] ) && (addSelected || !innerNodes[i]._private.selected) )
 				{
 					innerNodes[i]._private.rscratch.inDragLayer = true;
 					//innerNodes[i].trigger(new $$.Event(e, {type: "grab"}));
@@ -195,6 +210,12 @@
 			while (parent.parent().nonempty())
 			{
 				parent = parent.parent()[0];
+
+				var pstyle = parent._private.style;
+				if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
+					parent = node;
+					break;
+				}
 			}
 
 			// no parent node: no node to add to the drag layer
@@ -207,6 +228,7 @@
 
 			for (var i=0; i < nodes.size(); i++)
 			{
+
 				nodes[i]._private.rscratch.inDragLayer = inDragLayer;
 
 				// TODO when calling this function for a set of nodes, we visit same edges over and over again,
@@ -1902,7 +1924,7 @@
 		//var children = node.children(":visible").not(":removed");
 
 		// consider only not removed children
-		var children = node.children().not(":removed");
+		var children = node.descendants().not(":removed");
 
 		// TODO instead of last calculated width & height define a default compound node size?
 		// last calculated bounds
@@ -2189,7 +2211,17 @@
 //			return "rectangle";
 //		}
 
-		return node._private.style["shape"].value;
+		var shape = node._private.style["shape"].value;
+
+		if( node.isParent() ){
+			if( shape === 'rectangle' || shape === 'roundrectangle' ){
+				return shape;
+			} else {
+				return 'rectangle';
+			}
+		}
+
+		return shape;
 	};
 
 	CanvasRenderer.prototype.getNodePadding = function(node)
@@ -3223,8 +3255,21 @@
 
 		var nodeWidth, nodeHeight;
 		
-		if (node._private.style["visibility"].value != "visible") {
+		if ( node._private.style["visibility"].value != "visible" ) {
 			return;
+		}
+
+		var parentOpacity = 1;
+		var parents = node.parents();
+		for( var i = 0; i < parents.length; i++ ){
+			var parent = parents[i];
+			var opacity = parent._private.style.opacity.value;
+
+			parentOpacity = opacity * parentOpacity;
+
+			if( opacity === 0 ){
+				return;
+			}
 		}
 		
 		nodeWidth = this.getNodeWidth(node);
@@ -3238,14 +3283,14 @@
 				+ node._private.style["background-color"].value[1] + ","
 				+ node._private.style["background-color"].value[2] + ","
 				+ (node._private.style["background-opacity"].value 
-				* node._private.style["opacity"].value) + ")";
+				* node._private.style["opacity"].value * parentOpacity) + ")";
 			
 			// Node border color & opacity
 			context.strokeStyle = "rgba(" 
 				+ node._private.style["border-color"].value[0] + ","
 				+ node._private.style["border-color"].value[1] + ","
 				+ node._private.style["border-color"].value[2] + ","
-				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value) + ")";
+				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value * parentOpacity) + ")";
 			
 			
 			{
@@ -3426,6 +3471,19 @@
 	// Draw text
 	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
 	
+		var parentOpacity = 1;
+		var parents = element.parents();
+		for( var i = 0; i < parents.length; i++ ){
+			var parent = parents[i];
+			var opacity = parent._private.style.opacity.value;
+
+			parentOpacity = opacity * parentOpacity;
+
+			if( opacity === 0 ){
+				return;
+			}
+		}
+
 		// Font style
 		var labelStyle = element._private.style["font-style"].strValue;
 		var labelSize = element._private.style["font-size"].value + "px";
@@ -3456,14 +3514,14 @@
 			+ element._private.style["color"].value[1] + ","
 			+ element._private.style["color"].value[2] + ","
 			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value) + ")";
+			* element._private.style["opacity"].value * parentOpacity) + ")";
 		
 		context.strokeStyle = "rgba(" 
 			+ element._private.style["text-outline-color"].value[0] + ","
 			+ element._private.style["text-outline-color"].value[1] + ","
 			+ element._private.style["text-outline-color"].value[2] + ","
 			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value) + ")";
+			* element._private.style["opacity"].value * parentOpacity) + ")";
 		
 		if (text != undefined) {
 			var lineWidth = 2  * element._private.style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle

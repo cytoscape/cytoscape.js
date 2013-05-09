@@ -712,6 +712,9 @@
 	// for parsedProp:{ bypass: true }
 	// the generated flattenedProp:{ bypassed: parsedProp } 
 	$$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
+		parsedProp = $$.util.clone( parsedProp ); // copy b/c the same parsedProp may be applied to many elements, BUT
+		// the instances put in each element should be unique to avoid overwriting other the lists of other elements
+
 		var prop = parsedProp;
 		var style = ele._private.style;
 		var fieldVal, flatProp;
@@ -822,12 +825,14 @@
 			style[ prop.name ] = prop; // and set
 		
 		} else { // prop is not bypass
+			var prevProp;
+
 			if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
-				var prevProp = origProp.bypassed;
+				prevProp = origProp.bypassed;
 				
 				origProp.bypassed = prop;
 			} else { // then just replace the old prop with the new one
-				var prevProp = style[ prop.name ];
+				prevProp = style[ prop.name ];
 
 				style[ prop.name ] = prop; 
 			}
@@ -865,7 +870,7 @@
 				if( eleProp.context === context ){
 
 					if( first ){
-						ele._private.style[ prop.name ] = eleProp.prev;
+						ele._private.style[ prop.name ] = prev;
 					} else if( lastEleProp ){
 						lastEleProp.prev = prev;
 					}

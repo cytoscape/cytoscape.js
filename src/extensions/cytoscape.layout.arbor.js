@@ -232,7 +232,7 @@
 		}
 		
 		var doneHandler = function(){
-			if( $.browser.msie ){
+			if( window.isIE ){
 				packToCenter(function(){
 					done();
 				});

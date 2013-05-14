@@ -156,9 +156,13 @@
 				}
 			}
 
+			i = 0;
+			var depth = 0;
 			while( Q.length !== 0 ){ // while Q not empty
 				var t = Q.shift();
-				var ret = fn.call(t);
+				var ret = fn.call(t, i, depth);
+				i++;
+				depth++;
 
 				// on return true, return the result
 				if( ret === true ){

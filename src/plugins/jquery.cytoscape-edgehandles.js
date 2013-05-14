@@ -380,7 +380,7 @@
 						
 						//console.log("mouseover startHandler %s %o", this.id(), this);
 						
-						$container.unbind('mousedown', lastMdownHandler);
+						$canvas.unbind('mousedown', lastMdownHandler);
 
 						var node = this;
 						var source = this;
@@ -467,7 +467,7 @@
 							return false;
 						}
 
-						$container.one('mousedown', mdownHandler);
+						$canvas.one('mousedown', mdownHandler);
 						lastMdownHandler = mdownHandler;
 
 						

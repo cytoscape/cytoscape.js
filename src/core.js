@@ -81,7 +81,7 @@
 			div.style.position = 'absolute';
 			div.style.width = options.container.clientWidth + 'px';
 			div.style.height = options.container.clientHeight + 'px';
-			div.style.zIndex = '9999999';
+			div.style.zIndex = '10';
 			div.style.overflow = 'hidden';
 
 			div.innerHTML = '<a style="position: absolute; right: 0; bottom: 0; text-decoration: none; font-family: helvetica neue, helvetica, arial; background: rgba(255, 255, 255, 0.75); box-shadow: 0 0 12px 6px rgba(255, 255, 255, 0.95); color: #888; font-size: 14px; text-shadow: -1px 0 1px #fff, 0 -1px 1px #fff, 1px 0 1px #fff, 0 1px 1px #fff, 1px 1px 1px #fff;" href="http://cytoscape.github.io/cytoscape.js">cytoscape.js</a>';

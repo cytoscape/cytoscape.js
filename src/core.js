@@ -74,6 +74,18 @@
 
 		cy.initRenderer( options.renderer );
 
+		if( (options.showOverlay === undefined || options.showOverlay) && options.container ){
+			var div = document.createElement('div');
+			options.container.appendChild(div);
+
+			div.style.position = 'absolute';
+			div.style.width = options.container.clientWidth + 'px';
+			div.style.height = options.container.clientHeight + 'px';
+			div.style.zIndex = '9999999';
+
+			div.innerHTML = '<a style="position: absolute; right: 0; bottom: 0; text-decoration: none; font-family: helvetica neue, helvetica, arial; color: #fff; font-size: 14px; text-shadow: 0 0 2px rgba(0,0,0,0.5), 0 -1px 2px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.5);" href="http://cytoscape.github.io/cytoscape.js">cytoscape.js</a>';
+		}
+
 		// initial load
 		cy.load(options.elements, function(){ // onready
 			cy.startAnimationLoop();

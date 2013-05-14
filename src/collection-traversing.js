@@ -140,7 +140,8 @@
 	$$.fn.eles({
 		// do a breadth first search from the nodes in the collection
 		// from pseudocode on wikipedia
-		breadthFirst: function( fn, directed ){
+		breadthFirstSearch: function( fn, directed ){
+			fn = fn || function(){};
 			var cy = this._private.cy;
 			var v = this;
 			var Q = [];
@@ -193,6 +194,78 @@
 			return new $$.Collection( cy, [] ); // return none
 		},
 
+		// do a depth first search on the nodes in the collection
+		// from pseudocode on wikipedia (iterative impl)
+		depthFirstSearch: function( fn, directed ){
+			fn = fn || function(){};
+			var cy = this._private.cy;
+			var v = this;
+			var S = [];
+			var discovered = [];
+			var forwardEdge = {};
+			var backEdge = {};
+			var crossEdge = {};
+			var treeEdge = {};
+			var explored = {};
+
+			function labelled(e){
+				var id = e.id();
+				return forwardEdge[id] || backEdge[id] || crossEdge[id] || treeEdge[id];
+			}
+
+			// push v
+			for( var i = 0; i < v.length; i++ ){
+				if( v[i].isNode() ){
+					S.push( v[i] );
+
+					// and mark discovered
+					discovered[ v[i].id() ] = true;
+				}
+			}
+
+			while( S.length !== 0 ){
+				var t = S[ S.length - 1 ];
+				var ret = fn.call(t);
+				var breaked = false;
+
+				if( ret === true ){
+					return new $$.Collection( cy, [t] );
+				}
+
+				var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
+				for( var i = 0; i < adjacentEdges.length; i++ ){
+					var e = adjacentEdges[i];
+
+					if( labelled(e) ){
+						continue;
+					}
+
+					var w = e.connectedNodes('[id != "' + t.id() + '"]');
+					if( w.length !== 0 ){
+						w = w[0];
+						var wid = w.id();
+
+						if( !discovered[wid] && !explored[wid] ){
+							treeEdge[wid] = true;
+							discovered[wid] = true;
+							S.push(w);
+							breaked = true;
+							break;
+						} else if( discovered[wid] ){
+							backEdge[wid] = true;
+						} else {
+							crossEdge[wid] = true;
+						}	
+					}
+				}
+
+				if( !breaked ){
+					explored[ t.id() ] = true;
+					S.pop();
+				}
+			}
+		},
+
 		// get the root nodes in the DAG
 		roots: function( selector ){
 			var eles = this;
@@ -215,7 +288,8 @@
 	});
 
 	// nice, short mathemathical alias
-	$$.fn.eles.bfs = $$.fn.eles.breadthFirst;
+	$$.fn.eles.bfs = $$.fn.eles.breadthFirstSearch;
+	$$.fn.eles.dfs = $$.fn.eles.depthFirstSearch;
 
 
 

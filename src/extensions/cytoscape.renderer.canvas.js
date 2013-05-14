@@ -3598,6 +3598,12 @@
 			for (var i = 0; i < hashTable[pairId].length; i++) {
 				edge = hashTable[pairId][i];
 				
+				var edgeIndex1 = edge._private.rscratch.lastEdgeIndex;
+				var edgeIndex2 = i;
+
+				var numEdges1 = edge._private.rscratch.lastNumEdges;
+				var numEdges2 = hashTable[pairId].length;
+
 				var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
 				var srcX2 = src._private.position.x;
 				var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
@@ -3617,18 +3623,23 @@
 				var tgtH2 = tgt.outerHeight();
 
 				if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
-				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 ){
+				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
+				&&  edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 ){
 					// console.log('edge ctrl pt cache HIT')
 					continue; // then the control points haven't changed and we can skip calculating them
 				} else {
-					edge._private.rscratch.lastSrcCtlPtX = srcX2;
-					edge._private.rscratch.lastSrcCtlPtY = srcY2;
-					edge._private.rscratch.lastSrcCtlPtW = srcW2;
-					edge._private.rscratch.lastSrcCtlPtH = srcH2;
-					edge._private.rscratch.lastTgtCtlPtX = tgtX2;
-					edge._private.rscratch.lastTgtCtlPtY = tgtY2;
-					edge._private.rscratch.lastTgtCtlPtW = tgtW2;
-					edge._private.rscratch.lastTgtCtlPtH = tgtH2;
+					var rs = edge._private.rscratch;
+
+					rs.lastSrcCtlPtX = srcX2;
+					rs.lastSrcCtlPtY = srcY2;
+					rs.lastSrcCtlPtW = srcW2;
+					rs.lastSrcCtlPtH = srcH2;
+					rs.lastTgtCtlPtX = tgtX2;
+					rs.lastTgtCtlPtY = tgtY2;
+					rs.lastTgtCtlPtW = tgtW2;
+					rs.lastTgtCtlPtH = tgtH2;
+					rs.lastEdgeIndex = edgeIndex2;
+					rs.lastNumEdges = numEdges2;
 					// console.log('edge ctrl pt cache MISS')
 				}
 

@@ -7,7 +7,7 @@
 	var panOrBoxSelectDelay = 400;
 
 	// Canvas layer constants
-	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, NODE = 4, BUFFER_COUNT = 2;
+	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, OVERLAY = 3, NODE = 4, BUFFER_COUNT = 2;
 	
 	function CanvasRenderer(options) {
 		
@@ -67,6 +67,7 @@
 		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
 		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
 		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
+		this.data.canvases[OVERLAY].setAttribute("data-id", "layer" + OVERLAY + '-overlay');
 		
 		for (var i = 0; i < BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -2677,6 +2678,85 @@
 			if( !drawAll ){
 				data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
 			}
+		}
+
+		if( false && !data.overlayDrawn ){
+			var context = data.canvases[OVERLAY].getContext("2d");
+
+			context.lineJoin = 'round';
+			context.font = '14px helvetica';
+			context.strokeStyle = '#fff';
+			context.lineWidth = '4';
+			context.fillStyle = '#666';
+			context.textAlign = 'right';
+
+			var text = 'cytoscape.js';
+			
+			var w = context.canvas.width;
+			var h = context.canvas.height;
+			var p = 4;
+			var tw = context.measureText(text).width;
+			var th = 14; 
+
+			context.clearRect(0, 0, w, h);
+			context.strokeText(text, w - p, h - p);
+			context.fillText(text, w - p, h - p);
+
+			data.overlayDrawn = true;
+			var onTop = false;
+
+			var mmoveHandler;
+			data.container.addEventListener('mousemove', mmoveHandler = function(e){
+				var pt = r.projectIntoViewport(e.pageX || e.touches[0].pageX, e.pageY || e.touches[0].pageY);
+				var x = pt[0];
+				var y = pt[1];
+
+				var x2 = w - tw - p;
+				var y2 = h - th - p;
+
+				if( !mdown ){
+					if( x >= x2 && y >= y2 ){
+						data.container.style.cursor = 'pointer';
+						onTop = true;
+					} else {
+						data.container.style.cursor = '';
+						onTop = false;
+					}
+				} else {
+					if( x >= x2 && y >= y2 ){
+						// ok
+					} else {
+						data.container.style.cursor = '';
+						onTop = false;
+					}
+				}
+
+				
+			});
+
+			var mdown = false;
+			var mdownHandler;
+			data.container.addEventListener('mousedown', mdownHandler = function(e){
+				if( onTop ){
+					mdown = true;
+				}
+			});
+
+			var mupHandler;
+			data.container.addEventListener('mouseup', mupHandler = function(e){
+				var pt = r.projectIntoViewport(e.pageX || e.touches[0].pageX, e.pageY || e.touches[0].pageY);
+				var x = pt[0];
+				var y = pt[1];
+
+				var x2 = w - tw - p;
+				var y2 = h - th - p;
+
+				if( x >= x2 && y >= y2 && mdown && onTop ){
+					window.open('http://google.com');
+				}
+
+				mdown = false;
+			});	
 		}
 
 		// } console.timeEnd('drawing')

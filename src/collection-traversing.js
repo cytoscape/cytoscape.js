@@ -284,12 +284,65 @@
 			}
 
 			return new $$.Collection( this._private.cy, roots ).filter( selector );
+		},
+
+		// kruskal's algorithm
+		// implemented from pseudocode from wikipedia
+		kruskal: function( weightFn ){
+			weightFn = weightFn || function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+
+			function findSet(ele){
+				for( var i = 0; i < forest.length; i++ ){
+					var eles = forest[i];
+
+					if( eles.anySame(ele) ){
+						return {
+							eles: eles,
+							index: i
+						};
+					}
+				}
+			}
+
+			var A = new $$.Collection(this._private.cy, []);
+			var forest = [];
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){
+				forest.push( nodes[i].collection() );
+			}
+
+			var edges = this.edges();
+			var S = edges.toArray().sort(function(a, b){
+				var weightA = weightFn.call(a);
+				var weightB = weightFn.call(b);
+
+				return weightA - weightB;
+			});
+
+			for(var i = 0; i < S.length; i++){
+				var edge = S[i];
+				var u = edge.source()[0];
+				var v = edge.target()[0];
+				var setU = findSet(u);
+				var setV = findSet(v);
+
+				if( setU.eles !== setV.eles ){
+					A = A.add( edge );
+
+					forest[ setU.index ] = setU.eles.add( setV.eles );
+					forest.splice( setV.index, 1 );
+				}
+			}
+
+			return A;
+
 		}
 	});
 
 	// nice, short mathemathical alias
-	$$.fn.eles.bfs = $$.fn.eles.breadthFirstSearch;
-	$$.fn.eles.dfs = $$.fn.eles.depthFirstSearch;
+	$$.elesfn.bfs = $$.elesfn.breadthFirstSearch;
+	$$.elesfn.dfs = $$.elesfn.depthFirstSearch;
 
 
 

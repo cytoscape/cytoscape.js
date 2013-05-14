@@ -137,6 +137,82 @@
 		}
 	});
 
+	$$.fn.eles({
+		// do a breadth first search from the nodes in the collection
+		// from pseudocode on wikipedia
+		breadthFirst: function( fn, directed ){
+			var cy = this._private.cy;
+			var v = this;
+			var Q = [];
+			var marked = {};
+
+			// enqueue v
+			for( var i = 0; i < v.length; i++ ){
+				if( v[i].isNode() ){
+					Q.unshift( v[i] );
+
+					// and mark v
+					marked[ v[i].id() ] = true;
+				}
+			}
+
+			while( Q.length !== 0 ){ // while Q not empty
+				var t = Q.shift();
+				var ret = fn.call(t);
+
+				// on return true, return the result
+				if( ret === true ){
+					return new $$.Collection( cy, [ t ] );
+				} 
+
+				// on return false, stop iteration
+				else if( ret === false ){
+					break;
+				}
+
+				var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
+				for( var i = 0; i < adjacentEdges.length; i++ ){
+					var e = adjacentEdges[i];
+					var u = e.connectedNodes('[id != "' + t.id() + '"]');
+
+					if( u.length !== 0 ){
+						u = u[0];
+
+						if( !marked[ u.id() ] ){
+							marked[ u.id() ] = true; // mark u
+							Q.unshift( u ); // enqueue u onto W
+						}
+					}
+				}
+			}
+
+			return new $$.Collection( cy, [] ); // return none
+		},
+
+		// get the root nodes in the DAG
+		roots: function( selector ){
+			var eles = this;
+			var roots = [];
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+				if( !ele.isNode() ){
+					continue;
+				}
+
+				var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"]').length > 0;
+
+				if( !hasEdgesPointingIn ){
+					roots.push( ele );
+				}
+			}
+
+			return new $$.Collection( this._private.cy, roots ).filter( selector );
+		}
+	});
+
+	// nice, short mathemathical alias
+	$$.fn.eles.bfs = $$.fn.eles.breadthFirst;
+
 
 
 	// Neighbourhood functions

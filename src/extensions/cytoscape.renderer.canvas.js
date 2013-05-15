@@ -1830,7 +1830,7 @@
 						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
@@ -1840,7 +1840,7 @@
 						edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
@@ -1854,7 +1854,7 @@
 						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierCrossesBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
@@ -1867,7 +1867,7 @@
 						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&& /* console.log("test", heur) == undefined && */
-						(heur == 2 || (heur == 1 && this.checkStraightEdgeCrossesBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && this.checkStraightEdgeInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
 				{ box.push(edges[i]); }
@@ -5687,11 +5687,11 @@
 		var boxMaxY = Math.max(y1box, y2box) + tolerance;
 		
 		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) { // (x1, y1) in box
-			return 2;
+			return 1;
 		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) { // (x3, y3) in box
-			return 2;
+			return 1;
 		} else if (midX >= boxMinX && midX <= boxMaxX && midY >= boxMinY && midY <= boxMaxY) { // (midX, midY) in box
-			return 2;
+			return 1;
 		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { // ctrl pt in box
 			return 1;
 		}
@@ -5719,7 +5719,43 @@
 		
 		return 1;
 	}
+
+	CanvasRenderer.prototype.checkBezierInBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
+
+
+		function qbezierAt(p0, p1, p2, t){
+			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+		}
+
+		function sampleInBox(t){
+			var x = qbezierAt(x1, x2, x3, t);
+			var y = qbezierAt(y1, y2, y3, t);
+
+			return x1box <= x && x <= x2box
+				&& y1box <= y && y <= y2box
+			;
+		}
+
+		for( var t = 0; t <= 1; t += 0.25 ){
+			if( !sampleInBox(t) ){
+				return false;
+			}
+		}
+
+		return true;
+	};
 	
+	CanvasRenderer.prototype.checkStraightEdgeInBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+
+		return x1box <= x1 && x1 <= x2box
+			&& x1box <= x2 && x2 <= x2box
+			&& y1box <= y1 && y1 <= y2box
+			&& y1box <= y2 && y2 <= y2box
+		;
+	};
+
 	CanvasRenderer.prototype.checkStraightEdgeCrossesBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
 		

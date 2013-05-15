@@ -286,7 +286,7 @@
 			return new $$.Collection( this._private.cy, roots ).filter( selector );
 		},
 
-		// kruskal's algorithm
+		// kruskal's algorithm (finds min spanning tree, assuming undirected graph)
 		// implemented from pseudocode from wikipedia
 		kruskal: function( weightFn ){
 			weightFn = weightFn || function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
@@ -335,9 +335,105 @@
 				}
 			}
 
-			return A;
+			return nodes.add( A );
 
-		}
+		},
+
+		dijkstra: function( target, weightFn, directed ){
+			var cy = this._private.cy;
+			directed = !$$.is.fn(weightFn) ? weightFn : directed;
+			directed = directed === undefined || directed;
+			weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+
+			if( this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0 ){
+				return new $$.Collection(cy, []);
+			}
+
+			var source = this[0];
+			target = target[0];
+			var dist = {};
+			var prev = {};
+
+			var nodes = cy.nodes();
+			for( var i = 0; i < nodes.length; i++ ){
+				dist[ nodes[i].id() ] = Infinity;
+			}
+
+			dist[ source.id() ] = 0;
+			var Q = nodes;
+
+			var smallestDist = function(Q){
+				var smallest = Infinity;
+				var index;
+				for(var i in dist){
+					if( dist[i] < smallest && Q.$('#' + i).length !== 0 ){
+						smallest = dist[i];
+						index = i;
+					}
+				}
+
+				return index;
+			};
+
+			var distBetween = function(u, v){
+				var edges = u.edgesWith(v);
+				var smallestDistance = Infinity;
+				var smallestEdge;
+
+				for( var i = 0; i < edges.length; i++ ){
+					var edge = edges[i];
+					var weight = weightFn.call(edge);
+
+					if( weight < smallestDistance ){
+						smallestDistance = weight;
+						smallestEdge = edge;
+					}
+				}
+
+				return {
+					edge: smallestEdge,
+					dist: smallestDistance
+				};
+			};
+
+			while( Q.length !== 0 ){
+				var uid = smallestDist(Q);
+				var u = Q.filter('#' + uid);
+
+				if( u.length === 0 ){
+					continue;
+				}
+
+				debugger;
+
+				Q = Q.not( u );
+
+				if( u.same(target) ){
+					break;
+				}
+
+				if( dist[uid] === Math.Infinite ){
+					break;
+				}
+
+				var neighbors = u.neighborhood().nodes();
+				for( var i = 0; i < neighbors.length; i++ ){
+					var v = neighbors[i];
+					var vid = v.id()
+
+					var duv = distBetween(u, v);
+					var alt = dist[uid] + duv.dist;
+					if( alt < dist[vid] ){
+						dist[vid] = alt;
+						prev[vid] = {
+							node: v,
+							edge: duv.edge
+						};
+						// TODO decrease-key v in Q
+					}
+				}
+			}
+		}  
 	});
 
 	// nice, short mathemathical alias

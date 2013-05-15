@@ -380,7 +380,9 @@
 						
 						//console.log("mouseover startHandler %s %o", this.id(), this);
 						
-						$canvas.unbind('mousedown', lastMdownHandler);
+						if( lastMdownHandler ){
+							$container[0].removeEventListener('mousedown', lastMdownHandler, true);
+						}
 
 						var node = this;
 						var source = this;
@@ -403,6 +405,8 @@
 						
 
 						function mdownHandler(e){
+							$container[0].removeEventListener('mousedown', mdownHandler, true);
+
 							var x = e.pageX - $container.offset().left;
 							var y = e.pageY - $container.offset().top;
 
@@ -467,7 +471,7 @@
 							return false;
 						}
 
-						$canvas.one('mousedown', mdownHandler);
+						$container[0].addEventListener('mousedown', mdownHandler, true);
 						lastMdownHandler = mdownHandler;
 
 						

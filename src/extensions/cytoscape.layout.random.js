@@ -3,7 +3,8 @@
 	var defaults = {
 		ready: undefined, // callback on layoutready
 		stop: undefined, // callback on layoutstop
-		fit: true // whether to fit to viewport
+		fit: true, // whether to fit to viewport
+		padding: 30 // fit padding
 	};
 	
 	function RandomLayout( options ){
@@ -39,7 +40,7 @@
 		cy.trigger("layoutready");
 		
 		if( options.fit ){
-			cy.fit();
+			cy.fit( options.padding );
 		}
 		
 		// layoutstop should be triggered when the layout stops running

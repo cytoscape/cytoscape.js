@@ -576,18 +576,21 @@
 								disableGestures();
 								mdownOnHandle = true; // enable the regular logic for handling going over target nodes
 								
-								var moveHandler;
-								$canvas.bind("mousemove touchmove", moveHandler = function(me){
+								var moveHandler = function(me){
 									var x = (me.pageX !== undefined ? me.pageX : me.originalEvent.touches[0].pageX) - $container.offset().left;
 									var y = (me.pageY !== undefined ? me.pageY : me.originalEvent.touches[0].pageY) - $container.offset().top;
 
 									clearDraws();
 									drawHandle(hx, hy, hr);
 									drawLine(hx, hy, x, y);
-								});
+								}
+
+								$container[0].addEventListener('mousemove', moveHandler, true);
+								$container[0].addEventListener('touchmove', moveHandler, true);
 
 								$(window).one("mouseup touchend blur", function(){
-									$canvas.unbind("mousemove touchmove", moveHandler);
+									$container[0].removeEventListener('mousemove', moveHandler, true);
+									$container[0].removeEventListener('touchmove', moveHandler, true);
 
 									inForceStart = false; // now we're done so reset the flag
 									mdownOnHandle = false; // we're also no longer down on the node

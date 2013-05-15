@@ -11,6 +11,8 @@
 	
 	function CanvasRenderer(options) {
 		
+		this.options = options;
+
 		this.data = {
 				
 			select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
@@ -76,6 +78,62 @@
 			this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
 			this.data.bufferCanvases[i].style.visibility = "visible";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);
+		}
+
+		var overlay = document.createElement('div');
+		this.data.container.appendChild( overlay );
+		this.data.overlay = overlay;
+		overlay.style.position = 'absolute';
+		overlay.style.zIndex = 9999;
+
+		if( options.showOverlay ){
+
+			var link = document.createElement('a');
+			overlay.appendChild( link );
+
+			link.innerHTML = 'cytoscape.js';
+			link.style.font = '14px helvetica';
+			link.style.position = 'absolute';
+			link.style.right = 0;
+			link.style.bottom = 0;
+			link.style.padding = '1px 3px';
+			link.style.paddingLeft = '5px';
+			link.style.paddingTop = '5px';
+			link.style.opacity = 0;
+			link.style['-webkit-tap-highlight-color'] = 'transparent';
+			link.style.background = 'red';
+
+			link.href = 'http://cytoscape.github.io/cytoscape.js/';
+			link.target = '_blank';
+
+			var dragged = false;
+			var touched = false;
+
+			link.addEventListener('touchstart', function(){
+				dragged = false;
+				touched = true;
+			});
+
+			window.addEventListener('touchmove', function(){
+				dragged = true;
+			});
+
+			window.addEventListener('click', function(e){
+				var retFalse = false;
+
+				if( touched && dragged ){
+					e.preventDefault();
+					retFalse = true;
+				}
+
+				dragged = false;
+				touched = false;
+
+				if( retFalse ){
+					return false;
+				}
+			}, true);
+
 		}
 
 		this.load();
@@ -837,7 +895,7 @@
 		}
 
 		r.data.container.addEventListener("touchstart", function(e) {
-			e.preventDefault();
+			//e.preventDefault();
 		
 			r.touchData.capture = true;
 			r.data.bgActivePosistion = undefined;
@@ -2293,6 +2351,9 @@
 				
 			}
 		}
+
+		this.data.overlay.style.width = width + 'px';
+		this.data.overlay.style.height = height + 'px';
 	}
 
 
@@ -2680,7 +2741,7 @@
 			}
 		}
 
-		if( false && !data.overlayDrawn ){
+		if( this.options.showOverlay && !data.overlayDrawn ){
 			var context = data.canvases[OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';
@@ -2703,60 +2764,6 @@
 			context.fillText(text, w - p, h - p);
 
 			data.overlayDrawn = true;
-			var onTop = false;
-
-			var mmoveHandler;
-			data.container.addEventListener('mousemove', mmoveHandler = function(e){
-				var pt = r.projectIntoViewport(e.pageX || e.touches[0].pageX, e.pageY || e.touches[0].pageY);
-				var x = pt[0];
-				var y = pt[1];
-
-				var x2 = w - tw - p;
-				var y2 = h - th - p;
-
-				if( !mdown ){
-					if( x >= x2 && y >= y2 ){
-						data.container.style.cursor = 'pointer';
-						onTop = true;
-					} else {
-						data.container.style.cursor = '';
-						onTop = false;
-					}
-				} else {
-					if( x >= x2 && y >= y2 ){
-						// ok
-					} else {
-						data.container.style.cursor = '';
-						onTop = false;
-					}
-				}
-
-				
-			});
-
-			var mdown = false;
-			var mdownHandler;
-			data.container.addEventListener('mousedown', mdownHandler = function(e){
-				if( onTop ){
-					mdown = true;
-				}
-			});
-
-			var mupHandler;
-			data.container.addEventListener('mouseup', mupHandler = function(e){
-				var pt = r.projectIntoViewport(e.pageX || e.touches[0].pageX, e.pageY || e.touches[0].pageY);
-				var x = pt[0];
-				var y = pt[1];
-
-				var x2 = w - tw - p;
-				var y2 = h - th - p;
-
-				if( x >= x2 && y >= y2 && mdown && onTop ){
-					window.open('http://google.com');
-				}
-
-				mdown = false;
-			});	
 		}
 
 		// } console.timeEnd('drawing')

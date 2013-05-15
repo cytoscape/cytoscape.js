@@ -1,4 +1,8 @@
 ;(function($$){
+
+	var defaults = {
+		showOverlay: true
+	};
 	
 	$$.fn.core = function( fnMap, options ){
 		for( var name in fnMap ){
@@ -12,6 +16,8 @@
 			return new $$.Core(opts);
 		}
 		var cy = this;
+
+		opts = $$.util.extend({}, defaults, opts);
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);

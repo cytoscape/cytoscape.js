@@ -561,9 +561,11 @@
 						node.trigger('cyedgehandles.showhandle');
 
 						// case: down and drag as normal
-						var downHandler;
-						$canvas.one("mousedown touchstart", downHandler = function(e){
+						var downHandler = function(e){
 							
+							$container[0].removeEventListener('mousedown', downHandler, true);
+							$container[0].removeEventListener('touchstart', downHandler, true);
+
 							var x = (e.pageX !== undefined ? e.pageX : e.originalEvent.touches[0].pageX) - $container.offset().left;
 							var y = (e.pageY !== undefined ? e.pageY : e.originalEvent.touches[0].pageY) - $container.offset().top;
 							var d = hr/2;
@@ -604,11 +606,15 @@
 								e.preventDefault();
 								return false;
 							}
-						});
+						};
+
+						$container[0].addEventListener('mousedown', downHandler, true);
+						$container[0].addEventListener('touchstart', downHandler, true);
 
 						var removeBeforeHandler;
 						node.one("remove", function(){
-							$canvas.unbind("mousedown touchstart", downHandler);
+							$container[0].removeEventListener('mousedown', downHandler, true);
+							$container[0].removeEventListener('touchstart', downHandler, true);
 							cy.off("tap", "node", tapHandler);
 						});
 
@@ -632,7 +638,8 @@
 							options().stop( node );
 							node.trigger('cyedgehandles.stop');
 
-							$canvas.unbind("mousedown touchstart", downHandler);
+							$container[0].removeEventListener('mousedown', downHandler, true);
+							$container[0].removeEventListener('touchstart', downHandler, true);
 							node.off("remove", removeBeforeHandler);
 							resetToDefaultState();
 						});

@@ -90,6 +90,7 @@
 
 			var link = document.createElement('a');
 			overlay.appendChild( link );
+			this.data.link = link;
 
 			link.innerHTML = 'cytoscape.js';
 			link.style.font = '14px helvetica';
@@ -895,7 +896,10 @@
 		}
 
 		r.data.container.addEventListener("touchstart", function(e) {
-			//e.preventDefault();
+
+			if( e.target !== r.data.link ){
+				e.preventDefault();
+			}
 		
 			r.touchData.capture = true;
 			r.data.bgActivePosistion = undefined;

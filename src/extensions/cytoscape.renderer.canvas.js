@@ -84,7 +84,7 @@
 		this.data.container.appendChild( overlay );
 		this.data.overlay = overlay;
 		overlay.style.position = 'absolute';
-		overlay.style.zIndex = 2140000000;
+		overlay.style.zIndex = 1000;
 
 		if( options.showOverlay ){
 

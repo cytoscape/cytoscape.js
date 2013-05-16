@@ -135,6 +135,7 @@
                 return cachedWeightedPercent[ ele.id() ];
             }
 
+            var eleDepth = ele._private.scratch.treeLayout.depth;
             var neighbors = ele.neighborhood().nodes();
             var percent = 0;
             var samples = 0;
@@ -146,12 +147,18 @@
                 var depth = neighbor._private.scratch.treeLayout.depth;
                 var nDepth = depths[depth].length;
 
-                percent += index / nDepth;
-                samples++;
+                if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
+                    percent += index / nDepth;
+                    samples++;
+                }
             }
 
             samples = Math.max(1, samples);
             percent = percent / samples;
+
+            if( samples === 0 ){ // so lone nodes have a "don't care" state in sorting
+                percent = undefined;
+            }
 
             cachedWeightedPercent[ ele.id() ] = percent;
             return percent;
@@ -167,6 +174,7 @@
                 depths[i] = depths[i].sort(function(a, b){
                     var apct = getWeightedPercent( a );
                     var bpct = getWeightedPercent( b );
+
 
                     return apct - bpct;
                 });

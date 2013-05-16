@@ -101,18 +101,21 @@
         }
 
         // assign the nodes a depth and index
-        for( var i = 0; i < depths.length; i++ ){
-            var eles = depths[i];
+        function assignDepthsToEles(){
+            for( var i = 0; i < depths.length; i++ ){
+                var eles = depths[i];
 
-            for( var j = 0; j < eles.length; j++ ){
-                var ele = eles[j];
+                for( var j = 0; j < eles.length; j++ ){
+                    var ele = eles[j];
 
-                ele._private.scratch.treeLayout = {
-                    depth: i,
-                    index: j
-                };
+                    ele._private.scratch.treeLayout = {
+                        depth: i,
+                        index: j
+                    };
+                }
             }
         }
+        assignDepthsToEles();
 
         // find min distance we need to leave between nodes
         var minDistance = 0;
@@ -121,6 +124,53 @@
             var h = nodes[i].outerHeight();
             
             minDistance = Math.max(minDistance, w, h);
+        }
+
+        // get the weighted percent for an element based on its connectivity to other levels
+        var cachedWeightedPercent = {};
+        function getWeightedPercent( ele ){
+            if( cachedWeightedPercent[ ele.id() ] ){
+                return cachedWeightedPercent[ ele.id() ];
+            }
+
+            var neighbors = ele.neighborhood().nodes();
+            var percent = 0;
+            var samples = 0;
+
+            for( var i = 0; i < neighbors.length; i++ ){
+                var neighbor = neighbors[i];
+                var nEdges = neighbor.edgesWith( ele );
+                var index = neighbor._private.scratch.treeLayout.index;
+                var depth = neighbor._private.scratch.treeLayout.depth;
+                var nDepth = depths[depth].length;
+
+                percent += index / nDepth;
+                samples++;
+            }
+
+            samples = Math.max(1, samples);
+            percent = percent / samples;
+
+            cachedWeightedPercent[ ele.id() ] = percent;
+            return percent;
+        }
+
+        // rearrange the indices in each depth level based on connectivity
+        for( var times = 0; times < 10; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
+
+            for( var i = 0; i < depths.length; i++ ){
+                var depth = i;
+                var newDepths = [];
+
+                depths[i] = depths[i].sort(function(a, b){
+                    var apct = getWeightedPercent( a );
+                    var bpct = getWeightedPercent( b );
+
+                    return apct - bpct;
+                });
+            }
+            assignDepthsToEles(); // and update
+
         }
 
         nodes.positions(function(){

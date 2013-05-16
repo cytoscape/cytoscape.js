@@ -5,7 +5,8 @@
         ready: undefined, // callback on layoutready
         stop: undefined, // callback on layoutstop
         directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
-        padding: 30 // padding on fit
+        padding: 30, // padding on fit
+        circle: false // put depths in concentric circles if true, put depths top down if false
     };
     
     function TreeLayout( options ){
@@ -125,6 +126,7 @@
             
             minDistance = Math.max(minDistance, w, h);
         }
+        minDistance *= 2; // just to have some nice spacing
 
         // get the weighted percent for an element based on its connectivity to other levels
         var cachedWeightedPercent = {};
@@ -173,18 +175,37 @@
 
         }
 
+        var center = {
+            x: width/2,
+            y: height/2
+        };
         nodes.positions(function(){
             var ele = this[0];
             var info = ele._private.scratch.treeLayout;
             var depth = info.depth;
             var index = info.index;
-            var distanceX = width / (depths[depth].length + 1);
-            var distanceY = height / (depths.length + 1);
 
-            return {
-                x: (index + 1) * distanceX,
-                y: (depth + 1) * distanceY
-            };
+            var distanceX = Math.max( width / (depths[depth].length + 1), minDistance );
+            var distanceY = Math.max( height / (depths.length + 1), minDistance );
+            var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
+            radiusStepSize = Math.max( radiusStepSize, minDistance );
+
+            if( options.circle ){
+                var radius = radiusStepSize * (depth + 1);
+                var theta = 2 * Math.PI / depths[depth].length * index;
+
+                return {
+                    x: center.x + radius * Math.cos(theta),
+                    y: center.y + radius * Math.sin(theta)
+                };
+
+            } else {
+                return {
+                    x: (index + 1) * distanceX,
+                    y: (depth + 1) * distanceY
+                };
+            }
+            
         });
         
         if( params.fit ){

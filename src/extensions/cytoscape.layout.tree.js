@@ -156,7 +156,7 @@
         }
 
         // rearrange the indices in each depth level based on connectivity
-        for( var times = 0; times < 10; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
+        for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
 
             for( var i = 0; i < depths.length; i++ ){
                 var depth = i;

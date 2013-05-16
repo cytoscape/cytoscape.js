@@ -82,6 +82,7 @@ EXTENSIONS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.preset.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.arbor.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.circle.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.tree.js\
 
 # plugins (list them manually if you don't want them all)
 PLUGINS = $(wildcard $(PLUGINS_DIR)/*)

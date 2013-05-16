@@ -146,6 +146,9 @@
 			var v = this;
 			var Q = [];
 			var marked = {};
+			var id2depth = {};
+			var connectedFrom = {};
+			var connectedEles = [];
 
 			// enqueue v
 			for( var i = 0; i < v.length; i++ ){
@@ -154,16 +157,27 @@
 
 					// and mark v
 					marked[ v[i].id() ] = true;
+
+					id2depth[ v[i].id() ] = 0;
+
+					connectedEles.push( v[i] );
 				}
 			}
 
 			i = 0;
-			var depth = 0;
 			while( Q.length !== 0 ){ // while Q not empty
 				var t = Q.shift();
+				var depth = 0;
+
+				var fromNodeId = connectedFrom[ t.id() ];
+				while( fromNodeId ){
+					depth++;
+					fromNodeId = connectedFrom[ fromNodeId ];
+				}
+
+				id2depth[ t.id() ] = depth;
 				var ret = fn.call(t, i, depth);
 				i++;
-				depth++;
 
 				// on return true, return the result
 				if( ret === true ){
@@ -176,8 +190,9 @@
 				}
 
 				var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
-				for( var i = 0; i < adjacentEdges.length; i++ ){
-					var e = adjacentEdges[i];
+
+				for( var j = 0; j < adjacentEdges.length; j++ ){
+					var e = adjacentEdges[j];
 					var u = e.connectedNodes('[id != "' + t.id() + '"]');
 
 					if( u.length !== 0 ){
@@ -185,13 +200,18 @@
 
 						if( !marked[ u.id() ] ){
 							marked[ u.id() ] = true; // mark u
-							Q.unshift( u ); // enqueue u onto W
+							Q.unshift( u ); // enqueue u onto Q
+							
+							connectedFrom[ u.id() ] = t.id();
+							
+							connectedEles.push( u );
+							connectedEles.push( e );
 						}
 					}
 				}
 			}
 
-			return new $$.Collection( cy, [] ); // return none
+			return new $$.Collection( cy, connectedEles ); // return none
 		},
 
 		// do a depth first search on the nodes in the collection
@@ -276,7 +296,7 @@
 					continue;
 				}
 
-				var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"]').length > 0;
+				var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"][source != "' + ele.id() + '"]').length > 0;
 
 				if( !hasEdgesPointingIn ){
 					roots.push( ele );

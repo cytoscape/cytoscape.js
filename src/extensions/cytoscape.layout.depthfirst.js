@@ -6,14 +6,14 @@
         stop: undefined, // callback on layoutstop
         directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
         padding: 30, // padding on fit
-        circle: false // put depths in concentric circles if true, put depths top down if false
+        circle: true // put depths in concentric circles if true, put depths top down if false
     };
     
-    function TreeLayout( options ){
+    function DepthFirstLayout( options ){
         this.options = $$.util.extend({}, defaults, options);
     }
     
-    TreeLayout.prototype.run = function(){
+    DepthFirstLayout.prototype.run = function(){
         var params = this.options;
         var options = params;
         
@@ -109,7 +109,7 @@
                 for( var j = 0; j < eles.length; j++ ){
                     var ele = eles[j];
 
-                    ele._private.scratch.treeLayout = {
+                    ele._private.scratch.DepthFirstLayout = {
                         depth: i,
                         index: j
                     };
@@ -135,7 +135,7 @@
                 return cachedWeightedPercent[ ele.id() ];
             }
 
-            var eleDepth = ele._private.scratch.treeLayout.depth;
+            var eleDepth = ele._private.scratch.DepthFirstLayout.depth;
             var neighbors = ele.neighborhood().nodes();
             var percent = 0;
             var samples = 0;
@@ -143,8 +143,8 @@
             for( var i = 0; i < neighbors.length; i++ ){
                 var neighbor = neighbors[i];
                 var nEdges = neighbor.edgesWith( ele );
-                var index = neighbor._private.scratch.treeLayout.index;
-                var depth = neighbor._private.scratch.treeLayout.depth;
+                var index = neighbor._private.scratch.DepthFirstLayout.index;
+                var depth = neighbor._private.scratch.DepthFirstLayout.depth;
                 var nDepth = depths[depth].length;
 
                 if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
@@ -189,7 +189,7 @@
         };
         nodes.positions(function(){
             var ele = this[0];
-            var info = ele._private.scratch.treeLayout;
+            var info = ele._private.scratch.DepthFirstLayout;
             var depth = info.depth;
             var index = info.index;
 
@@ -227,10 +227,10 @@
         cy.trigger("layoutstop");
     };
 
-    TreeLayout.prototype.stop = function(){
+    DepthFirstLayout.prototype.stop = function(){
         // not a continuous layout
     };
     
-    $$("layout", "tree", TreeLayout);
+    $$("layout", "depthfirst", DepthFirstLayout);
     
 })( cytoscape );

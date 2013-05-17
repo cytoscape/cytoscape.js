@@ -6,7 +6,8 @@
         stop: undefined, // callback on layoutstop
         directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
         padding: 30, // padding on fit
-        circle: false // put depths in concentric circles if true, put depths top down if false
+        circle: false, // put depths in concentric circles if true, put depths top down if false
+        roots: undefined // the roots of the trees
     };
     
     function DepthFirstLayout( options ){
@@ -25,7 +26,24 @@
         var width = container.clientWidth;
         var height = container.clientHeight;
 
-        var roots = nodes.roots();
+        var roots;
+        if( $$.is.elementOrCollection(options.roots) ){
+            roots = options.roots;
+        } else if( $$.is.array(options.roots) ){
+            var rootsArray = [];
+
+            for( var i = 0; i < options.roots.length; i++ ){
+                var id = options.roots[i];
+                var ele = cy.getElementById( id );
+                roots.push( ele );
+            }
+
+            roots = new $$.Collection( cy, rootsArray );
+        } else {
+            roots = nodes.roots();
+        }
+
+
         var depths = [];
         var foundByBfs = {};
         var id2depth = {};
@@ -126,7 +144,7 @@
             
             minDistance = Math.max(minDistance, w, h);
         }
-        minDistance *= 2; // just to have some nice spacing
+        minDistance *= 1.75; // just to have some nice spacing
 
         // get the weighted percent for an element based on its connectivity to other levels
         var cachedWeightedPercent = {};
@@ -199,7 +217,7 @@
             radiusStepSize = Math.max( radiusStepSize, minDistance );
 
             if( options.circle ){
-                var radius = radiusStepSize * (depth + 1);
+                var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
                 var theta = 2 * Math.PI / depths[depth].length * index;
 
                 return {

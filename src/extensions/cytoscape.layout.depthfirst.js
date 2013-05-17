@@ -6,7 +6,7 @@
         stop: undefined, // callback on layoutstop
         directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
         padding: 30, // padding on fit
-        circle: true // put depths in concentric circles if true, put depths top down if false
+        circle: false // put depths in concentric circles if true, put depths top down if false
     };
     
     function DepthFirstLayout( options ){

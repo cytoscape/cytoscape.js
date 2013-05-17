@@ -10,11 +10,11 @@
         roots: undefined // the roots of the trees
     };
     
-    function DepthFirstLayout( options ){
+    function BreadthFirstLayout( options ){
         this.options = $$.util.extend({}, defaults, options);
     }
     
-    DepthFirstLayout.prototype.run = function(){
+    BreadthFirstLayout.prototype.run = function(){
         var params = this.options;
         var options = params;
         
@@ -127,7 +127,7 @@
                 for( var j = 0; j < eles.length; j++ ){
                     var ele = eles[j];
 
-                    ele._private.scratch.DepthFirstLayout = {
+                    ele._private.scratch.BreadthFirstLayout = {
                         depth: i,
                         index: j
                     };
@@ -153,7 +153,7 @@
                 return cachedWeightedPercent[ ele.id() ];
             }
 
-            var eleDepth = ele._private.scratch.DepthFirstLayout.depth;
+            var eleDepth = ele._private.scratch.BreadthFirstLayout.depth;
             var neighbors = ele.neighborhood().nodes();
             var percent = 0;
             var samples = 0;
@@ -161,8 +161,8 @@
             for( var i = 0; i < neighbors.length; i++ ){
                 var neighbor = neighbors[i];
                 var nEdges = neighbor.edgesWith( ele );
-                var index = neighbor._private.scratch.DepthFirstLayout.index;
-                var depth = neighbor._private.scratch.DepthFirstLayout.depth;
+                var index = neighbor._private.scratch.BreadthFirstLayout.index;
+                var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
                 var nDepth = depths[depth].length;
 
                 if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
@@ -207,7 +207,7 @@
         };
         nodes.positions(function(){
             var ele = this[0];
-            var info = ele._private.scratch.DepthFirstLayout;
+            var info = ele._private.scratch.BreadthFirstLayout;
             var depth = info.depth;
             var index = info.index;
 
@@ -245,10 +245,10 @@
         cy.trigger("layoutstop");
     };
 
-    DepthFirstLayout.prototype.stop = function(){
+    BreadthFirstLayout.prototype.stop = function(){
         // not a continuous layout
     };
     
-    $$("layout", "depthfirst", DepthFirstLayout);
+    $$("layout", "breadthfirst", BreadthFirstLayout);
     
 })( cytoscape );

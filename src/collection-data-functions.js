@@ -143,7 +143,7 @@
 
 					var pos = fn.apply(ele, [i, ele]);
 
-					if( pos ){
+					if( pos && !ele.locked() ){
 						var elePos = ele._private.position;
 						elePos.x = pos.x;
 						elePos.y = pos.y;

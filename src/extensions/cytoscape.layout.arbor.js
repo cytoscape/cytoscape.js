@@ -196,6 +196,10 @@
 				y: node.position().y
 			});
 
+			if( node.locked() ){
+				return;
+			}
+
 			this.scratch().arbor = sys.addNode(id, {
 				element: this,
 				mass: mass,

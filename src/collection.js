@@ -254,8 +254,7 @@
 			locked: p.locked,
 			grabbed: p.grabbed,
 			grabbable: p.grabbable,
-			classes: "",
-			scratch: p.scratch
+			classes: ""
 		});
 		
 		var classes = [];

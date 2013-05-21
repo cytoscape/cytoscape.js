@@ -424,7 +424,7 @@
 					continue;
 				}
 
-				debugger;
+				//debugger;
 
 				Q = Q.not( u );
 

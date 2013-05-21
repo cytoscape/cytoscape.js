@@ -9,6 +9,8 @@
 
 		<script src="js/jquery.js"></script>
 		<script src="js/script.js"></script>
+		<script src="js/cytoscape.min.js"></script>
+		<script src="js/demo.js"></script>
 	</head>
 
 	<body>
@@ -56,15 +58,11 @@
 				<a href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-briefcase"></span> File an issue</a>
 			</div>
 
-			
-			<div id="demo-link">
-				<a href="demo.html">
-					<img src="img/demo.png" />
+			<div id="demo"></div>
 
-					<div class="description">Open a Cytoscape.js demo</div>
-				</a>
-			</div>	
-			
+			<div id="demo-source">
+				<iframe id="demo-code" src="js/demo.js"></iframe>
+			</div>
 
 			<div id="documentation">
 			{{#each sections}}

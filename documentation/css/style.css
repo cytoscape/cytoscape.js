@@ -90,7 +90,6 @@ body {
 
 
 #demo, #demo-source {
-	height: 20em;
 	border: 1px solid #ddd;
 	margin: 1em 0;
 	overflow: hidden !important;
@@ -99,12 +98,18 @@ body {
 }
 
 #demo {
+	height: 20em;
+	width: 20em;
 	float: left;
-	width: 30em;
 }
 
 #demo-source {
-	margin-top: 1.2em;
+	height: 20em;
+}
+
+#demo-source + * {
+	clear: both;
+	padding-top: 1em;
 }
 
 #demo-code {

@@ -20,6 +20,11 @@ $(function(){
 					"padding-top": 5,
 					"padding-bottom": 30
 				})
+			.selector("node[id='non-auto']") // to init a non-auto sized compound
+				.css({"width": 100,
+					"height": 50,
+					"shape": "triangle"
+			    })
 			.selector("edge")
 				.css({
 					"width": "mapData(weight, 0, 100, 1, 4)",
@@ -265,10 +270,6 @@ $(function(){
 				       var node = this;
 				       console.log("%o", node);
 				   });
-
-				   // set random size & shape for one of the parents
-				   var nonAutoParent = cy2.getElementById('non-auto');
-				   nonAutoParent.css({width: 80, height: 50, shape: 'triangle'});
 				}
 			});
 

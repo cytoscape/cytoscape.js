@@ -87,6 +87,13 @@
 
 					
 				
+					<div class="section lvl2">
+						
+						<a href="#notation/elements-json"><span class="icon-bookmark"></span> Elements JSON</a>
+					</div>
+
+					
+				
 			
 				<div class="section lvl1">
 					<span class="expander">
@@ -543,6 +550,8 @@
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.codirectedEdges"><span class="icon-bookmark"></span> edges.codirectedEdges() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/traversing/eles.breadthFirstSearch"><span class="icon-bookmark"></span> eles.breadthFirstSearch() </a></div>
+					
 				
 					<div class="section lvl2">
 						<span class="expander">
@@ -696,9 +705,7 @@
 
 				
 					<ul>
-<li><p><strong>Compound nodes</strong> : A compound node is one that has children nodes.  They behave much like parent divs in HTML.  Support for compound nodes is half finished.  Support is in the core, and we will add support in the canvas renderer.</p>
-</li>
-<li><p><strong>Layouts from Cytoscape Web</strong> : Several layouts from Cytoscape Web will be written for Cytoscape.js, including the hierarchical layout, the circle layout, and so on.</p>
+<li><p><strong>Compound node layouts</strong> : We are in the process of porting layouts tailored to compound graphs to Cytoscape.js.  In the meanwhile, you can still use compound nodes with other layouts like <code>preset</code>.</p>
 </li>
 <li><p><strong>Graph importers</strong> : Cytoscape.js supports graph data in JSON format.  We will not be adding support for other formats in Cytoscape.js itself, but we will be working to create a separate library that could be used on the client side or the server side (via Node.js) to convert formats like GraphML and XGMML to JSON.</p>
 </li>
@@ -748,10 +755,64 @@ edge ......... a collection of a single edge</code></pre>
 </p>
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.
 
+
 </p>
+<h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
+<p>Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:
+
+</p>
+<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
+
+  elements: [
+    { // node n1
+      group: &#39;nodes&#39;, // &#39;nodes&#39; for a node, &#39;edges&#39; for an edge
+
+      data: { // element data (put dev data here)
+          id: &#39;n1&#39;, // mandatory for each element, assigned automatically on undefined
+          parent: &#39;nparent&#39;, // indicates the compound node parent id; not defined =&gt; no parent
+      },
+
+      position: { // the model position of the node (optional on init, mandatory after)
+          x: 100,
+          y: 100
+      },
+
+      selected: false, // whether the element is selected (default false)
+
+      selectable: true, // whether the selection state is mutable (default true)
+
+      locked: false, // when locked a node&#39;s position is immutable (default false)
+
+      grabbable: true, // whether the node can be grabbed and moved by the user
+
+      classes: &#39;foo bar&#39; // a space separated list of class names that the element has
+    },
+
+    { // node n2
+      data: { id: &#39;n2&#39; },
+      renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
+    },
+
+    { // node nparent
+      data: { id: &#39;nparent&#39; }
+    },
+
+    { // edge e1
+      data: {
+          id: &#39;e1&#39;,
+          source: &#39;n1&#39;, // the source node id (edge comes from this node)
+          target: &#39;n2&#39;  // the target node id (edge goes to this node)
+      }
+    }
+  ]
+
+});</code></pre>
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -1136,6 +1197,9 @@ var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;); // now we have a global 
 
 </p>
 <p>Because the <code>ready</code> event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in <code>options.ready</code>.
+
+</p>
+<p><strong>NB: You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can&#39;t modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.</strong>
 
 </p>
 <pre><code class="lang-js">// in foo.js
@@ -2784,6 +2848,28 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
     columns: undefined, // force num of cols in the grid
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
+};</code></pre>
+<p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
+</p>
+<pre><code class="lang-js">options = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
+    padding: 30, // padding on fit
+    circle: false, // put depths in concentric circles if true, put depths top down if false
+    roots: undefined // the roots of the trees
+};</code></pre>
+<p><em>The <code>circle</code> layout puts nodes in a circle:</em>
+</p>
+<pre><code class="lang-js">options = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    rStepSize: 10, // the step size for increasing the radius if the nodes don&#39;t fit on screen
+    padding: 30, // the padding on fit
+    startAngle: 3/2 * Math.PI, // the position of the first node
+    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
 };</code></pre>
 <p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
 </p>
@@ -5461,6 +5547,69 @@ n1.trigger(&#39;click&#39;); // click!!</code></pre>
 								
 									<h3>Details</h3>
 <p>Two edges are said to be codirected if they connect the same two nodes in the same direction.  That is, <code>edge1.source() === edge2.source() &amp;&amp; edge1.target() === edge2.target()</code>.</p>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/traversing/eles.breadthFirstSearch"><span class="fn-name">eles.breadthFirstSearch()</span>  <a href="#collection/traversing/eles.breadthFirstSearch"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/eles.breadthFirstSearch">Perform a breadth-first search, with this collection as the root nodes of the search.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.breadthFirstSearch(  [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, depth)</span>
+													<span class="descr">A handler function that is called when a node is visited in the search.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The index indicating this node is the ith visited node.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">depth</span>
+															<span class="descr">How many edge hops away this node is from the root nodes.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+												<li>
+													<span class="name">directed</span>
+													<span class="descr">A boolean indicating whether the search should only go along edges from source to target (default true).</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function has a shorter alias, <code>eles.bfs()</code>.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.$(&#39;#n0&#39;).bfs(function(i, depth){
+  console.log(&#39;visitiing &#39; + this.id());
+}, true);</code></pre>
 
 								
 							</div>		

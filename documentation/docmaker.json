@@ -1324,6 +1324,23 @@
                 }
               ],
               "md": "collection/codirectedEdges"
+            },
+
+            {
+              "name": "eles.breadthFirstSearch",
+              "descr": "Perform a breadth-first search, with this collection as the root nodes of the search.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.", "optional": true, "fields": [
+                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                    ] },
+                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default true).", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/breadthFirstSearch"
             }
           ]
         },

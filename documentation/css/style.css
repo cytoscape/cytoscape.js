@@ -254,9 +254,9 @@ pre code {
 }
 
 .function {
-	border-top: 1px solid #eaeaea;
+	border-top: 1px dashed #bbb;
 	padding: 1em 0;
-	border-bottom: 1px solid #eaeaea;
+	border-bottom: 1px dashed #bbb;
 }
 
 .function + .function {

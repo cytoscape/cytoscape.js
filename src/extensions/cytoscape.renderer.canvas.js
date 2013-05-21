@@ -107,35 +107,9 @@
 			link.href = 'http://cytoscape.github.io/cytoscape.js/';
 			link.target = '_blank';
 
-			var dragged = false;
-			var touched = false;
-
-			link.addEventListener('touchstart', function(){
-				dragged = false;
-				touched = true;
-			});
-
-			window.addEventListener('touchmove', function(){
-				dragged = true;
-			});
-
-			window.addEventListener('click', function(e){
-				var retFalse = false;
-
-				if( touched && dragged ){
-					e.preventDefault();
-					retFalse = true;
-				}
-
-				dragged = false;
-				touched = false;
-
-				if( retFalse ){
-					return false;
-				}
-			}, true);
-
 		}
+
+		this.hideEdgesOnViewport = options.hideEdgesOnViewport;
 
 		this.load();
 	}
@@ -858,6 +832,14 @@
 				if( cy.panningEnabled() && cy.zoomingEnabled() ){
 					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
 				}
+
+				r.data.wheel = true;
+				clearTimeout(r.data.wheelTimeout);
+				r.data.wheelTimeout = setTimeout(function(){
+					r.data.wheel = false;
+					r.data.canvasNeedsRedraw[NODE] = true;
+					r.redraw();
+				}, 100);
 			}
 
 		}
@@ -1372,6 +1354,7 @@
 					}
 
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+					r.swipePanning = true;
 					
 					// Re-project
 					var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY);
@@ -1389,6 +1372,8 @@
 			var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
 			e.preventDefault();
 			var select = r.data.select;
+
+			r.swipePanning = false;
 			
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
@@ -2884,7 +2869,7 @@
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
-		//if( this.pinching ){ return; } // save cycles on pinching
+		if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
 		var startNode, endNode;
 

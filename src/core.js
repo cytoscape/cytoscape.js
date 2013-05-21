@@ -1,7 +1,8 @@
 ;(function($$){
 
 	var defaults = {
-		showOverlay: true
+		showOverlay: true,
+		hideEdgesOnViewport: false
 	};
 	
 	$$.fn.core = function( fnMap, options ){
@@ -79,7 +80,8 @@
 		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : new $$.Style( cy );
 
 		cy.initRenderer( $$.util.extend({
-			showOverlay: options.showOverlay
+			showOverlay: options.showOverlay,
+			hideEdgesOnViewport: options.hideEdgesOnViewport
 		}, options.renderer) );
 
 		// initial load

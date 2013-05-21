@@ -115,6 +115,10 @@
             }
 
             if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
+                if( depths.length === 0 ){
+                    depths.push([]);
+                }
+                
                 depths[0].push( node );
             }
         }

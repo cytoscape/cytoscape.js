@@ -312,6 +312,14 @@
 			return false;
 		}
 
+		// auto resize
+		window.addEventListener("resize", function(e) { 
+			r.data.canvasNeedsRedraw[NODE] = true;
+			r.data.canvasNeedsRedraw[OVERLAY] = true;
+			r.matchCanvasSize( r.data.container );
+			r.redraw();
+		}, true);
+
 		// stop right click menu from appearing on cy
 		r.data.container.addEventListener("contextmenu", function(e){
 			e.preventDefault();
@@ -2745,7 +2753,7 @@
 			}
 		}
 
-		if( this.options.showOverlay && !data.overlayDrawn ){
+		if( this.options.showOverlay ){
 			var context = data.canvases[OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';

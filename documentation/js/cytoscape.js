@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0beta3-github-snapshot-2013.05.21-14.43.19.
+ * This file is part of cytoscape.js 2.0.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -8253,6 +8253,14 @@ var cytoscape;
 			return false;
 		}
 
+		// auto resize
+		window.addEventListener("resize", function(e) { 
+			r.data.canvasNeedsRedraw[NODE] = true;
+			r.data.canvasNeedsRedraw[OVERLAY] = true;
+			r.matchCanvasSize( r.data.container );
+			r.redraw();
+		}, true);
+
 		// stop right click menu from appearing on cy
 		r.data.container.addEventListener("contextmenu", function(e){
 			e.preventDefault();
@@ -10686,7 +10694,7 @@ var cytoscape;
 			}
 		}
 
-		if( this.options.showOverlay && !data.overlayDrawn ){
+		if( this.options.showOverlay ){
 			var context = data.canvases[OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';

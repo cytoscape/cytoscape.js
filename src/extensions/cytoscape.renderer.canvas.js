@@ -3297,6 +3297,13 @@
 		if (edge._private.style["visibility"].value != "visible") {
 			return;
 		}
+
+		var computedSize = edge._private.style["font-size"].pxValue * edge.cy().zoom();
+		var minSize = edge._private.style["min-zoomed-font-size"].pxValue;
+
+		if( computedSize < minSize ){
+			return;
+		}
 	
 		// Calculate text draw position
 		
@@ -3504,6 +3511,13 @@
 	CanvasRenderer.prototype.drawNodeText = function(context, node) {
 		
 		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+
+		var computedSize = node._private.style["font-size"].pxValue * node.cy().zoom();
+		var minSize = node._private.style["min-zoomed-font-size"].pxValue;
+
+		if( computedSize < minSize ){
 			return;
 		}
 	

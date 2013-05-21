@@ -34,3 +34,56 @@ A rendered position is an on-screen location relative to the viewport.  For exam
 
 In this documentation, "position" refers to model position unless otherwise stated.
 
+
+## Elements JSON
+
+Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:
+
+```js
+$('#cy').cytoscape({
+  
+  elements: [
+    { // node n1
+      group: 'nodes', // 'nodes' for a node, 'edges' for an edge
+
+      data: { // element data (put dev data here)
+      	id: 'n1', // mandatory for each element, assigned automatically on undefined
+      	parent: 'nparent', // indicates the compound node parent id; not defined => no parent
+      },
+
+      position: { // the model position of the node (optional on init, mandatory after)
+      	x: 100,
+      	y: 100
+      },
+
+      selected: false, // whether the element is selected (default false)
+
+      selectable: true, // whether the selection state is mutable (default true)
+
+      locked: false, // when locked a node's position is immutable (default false)
+
+      grabbable: true, // whether the node can be grabbed and moved by the user
+
+      classes: 'foo bar' // a space separated list of class names that the element has
+    },
+
+    { // node n2
+      data: { id: 'n2' },
+      renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
+    },
+
+    { // node nparent
+      data: { id: 'nparent' }
+    },
+
+    { // edge e1
+      data: {
+      	id: 'e1',
+      	source: 'n1', // the source node id (edge comes from this node)
+      	target: 'n2'  // the target node id (edge goes to this node)
+      }
+    }
+  ]
+
+});
+```

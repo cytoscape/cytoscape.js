@@ -63,6 +63,8 @@ All of your code that uses the core object API, i.e. through the `cy` object in 
 
 Because the `ready` event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in `options.ready`.
 
+**NB: You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can't modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.**
+
 ```js
 // in foo.js
 $(function(){ // on jquery ready

@@ -34,6 +34,32 @@ options = {
 };
 ```
 
+*The `breadthfirst` layout puts nodes in a hierarchy:*
+```js
+options = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
+    padding: 30, // padding on fit
+    circle: false, // put depths in concentric circles if true, put depths top down if false
+    roots: undefined // the roots of the trees
+};
+```
+
+*The `circle` layout puts nodes in a circle:*
+```js
+options = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+    padding: 30, // the padding on fit
+    startAngle: 3/2 * Math.PI, // the position of the first node
+    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+};
+```
+
 *The `arbor` layout uses a force-directed simulation:*
 ```js
 options = {

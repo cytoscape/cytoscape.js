@@ -2523,7 +2523,10 @@
 			//NB : VERY EXPENSIVE
 			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
-			this.findEdgeControlPoints(edges);
+			if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ 
+			} else {
+				this.findEdgeControlPoints(edges);
+			}
 
 			//} console.timeEnd('edgectlpts')
 
@@ -3293,6 +3296,8 @@
 	
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
+	
+		if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 	
 		if (edge._private.style["visibility"].value != "visible") {
 			return;

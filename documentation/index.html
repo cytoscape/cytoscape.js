@@ -127,6 +127,13 @@
 				
 					<div class="section lvl2">
 						
+						<a href="#selectors/compound-nodes"><span class="icon-bookmark"></span> Compound nodes</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
 						<a href="#selectors/state"><span class="icon-bookmark"></span> State</a>
 					</div>
 
@@ -392,6 +399,8 @@
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/nodes.unlock"><span class="icon-bookmark"></span> nodes.unlock() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/position--dimensions/ele.active"><span class="icon-bookmark"></span> ele.active() </a></div>
+					
 				
 					<div class="section lvl2">
 						<span class="expander">
@@ -623,7 +632,7 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">2.0.0-beta3</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.0.0</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -899,6 +908,18 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 </p>
 <p><strong><code>{}</code> (metadata brackets)</strong><br>Use curly brackets in place of square ones to match against metadata instead of data (e.g. <code>{degree &gt; 2}</code> matches elements of degree greater than 2).  The properties that are supported include <code>degree</code>, <code>indegree</code>, and <code>outdegree</code>.
 
+
+</p>
+<h2 id="selectors/compound-nodes">Compound nodes <a href="#selectors/compound-nodes"><span class="icon-bookmark"></span></a></h2>
+<p><strong><code>&gt;</code> (child selector)</strong><br>Matches direct children of the parent node (e.g. <code>node &gt; node</code>).
+
+</p>
+<p><strong><code> </code> (descendant selector)</strong><br>Matches descendants of the parent node (e.g. <code>node node</code>).
+
+</p>
+<p><strong><code>$</code> (subject selector)</strong><br>Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select the parent nodes instead of the children).
+
+
 </p>
 <h2 id="selectors/state">State <a href="#selectors/state"><span class="icon-bookmark"></span></a></h2>
 <p><strong><code>:animated</code></strong><br>Matches elements that are currently being animated.
@@ -946,10 +967,19 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <p><strong><code>:removed</code></strong><br>Matches elements that have been removed from the graph.
 
 </p>
-<p><strong><code>:inside</code></strong><br>Matches elements that have are in the graph (they are not removed).</p>
+<p><strong><code>:inside</code></strong><br>Matches elements that have are in the graph (they are not removed).
+
+</p>
+<p><strong><code>:active</code></strong><br>Matches elements that are active (i.e. user interaction).
+
+</p>
+<p><strong><code>:inactive</code></strong><br>Matches elements that are inactive (i.e. no user interaction).</p>
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -1087,6 +1117,10 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <li><code>tapend</code> or <code>vmouseup</code> : normalised tap end event (either <code>mouseup</code> or <code>touchend</code>)</li>
 <li><code>tap</code> or <code>vclick</code> : normalised tap event (either <code>click</code>, or <code>touchstart</code> followed by <code>touchend</code> without <code>touchmove</code>)</li>
 <li><code>taphold</code> : normalised tap hold event</li>
+<li><code>cxttapstart</code> : normalised right-click mousedown or two-finger tapstart</li>
+<li><code>cxttapend</code> : normalised right-click mouseup or two-finger tapend</li>
+<li><code>cxttap</code> : normalised right-click or two-finger tap</li>
+<li><code>cxtdrag</code> : normalised mousemove or two-finger drag after <code>cxttapstart</code> but before <code>cxttapend</code></li>
 </ul>
 <h2 id="events/collection-events">Collection events <a href="#events/collection-events"><span class="icon-bookmark"></span></a></h2>
 <p>These events are custom to Cytoscape.js.  You can bind to these events for collections.
@@ -3825,6 +3859,17 @@ cy.$(&#39;#n2&#39;).position({
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.unlock"><span class="fn-name">nodes.unlock()</span>  <a href="#collection/position--dimensions/nodes.unlock"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/position--dimensions/nodes.unlock">Unlock the nodes such that their positions can be changed.</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/position--dimensions/ele.active"><span class="fn-name">ele.active()</span>  <a href="#collection/position--dimensions/ele.active"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/position--dimensions/ele.active">Gets whether the element is active.</div>
 
 							
 

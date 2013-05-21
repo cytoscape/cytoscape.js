@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0-beta3",
+  "version": "2.0.0",
   "jqueryVersion": "1.4",
 
   "templates": {
@@ -735,6 +735,11 @@
             {
               "name": "nodes.unlock",
               "descr": "Unlock the nodes such that their positions can be changed."
+            },
+
+            {
+              "name": "ele.active",
+              "descr": "Gets whether the element is active."
             }
 
           ]

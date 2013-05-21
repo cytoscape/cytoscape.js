@@ -22,6 +22,10 @@ There are also some higher level events that you can use so you don't have to bi
  * `tapend` or `vmouseup` : normalised tap end event (either `mouseup` or `touchend`)
  * `tap` or `vclick` : normalised tap event (either `click`, or `touchstart` followed by `touchend` without `touchmove`)
  * `taphold` : normalised tap hold event
+ * `cxttapstart` : normalised right-click mousedown or two-finger tapstart
+ * `cxttapend` : normalised right-click mouseup or two-finger tapend
+ * `cxttap` : normalised right-click or two-finger tap
+ * `cxtdrag` : normalised mousemove or two-finger drag after `cxttapstart` but before `cxttapend`
 
 ## Collection events
 

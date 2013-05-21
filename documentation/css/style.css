@@ -230,7 +230,7 @@ pre {
 	font-family: Consolas, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	font-size: 0.76em;
+	font-size: 1em;
 	background: #fafafa;
 }
 
@@ -242,7 +242,7 @@ pre {
 pre code {
 	background: transparent;
 	border: 0;
-	font-size: 1em;
+	font-size: 0.8em;
 }
 
 .function .formats ul {
@@ -250,7 +250,7 @@ pre code {
 }
 
 .function pre {
-	font-size: 0.8em;
+	
 }
 
 .function {

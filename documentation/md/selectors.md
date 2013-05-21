@@ -81,6 +81,19 @@ Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[f
 **`{}` (metadata brackets)**  
 Use curly brackets in place of square ones to match against metadata instead of data (e.g. `{degree > 2}` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
 
+
+## Compound nodes
+
+**`>` (child selector)**  
+Matches direct children of the parent node (e.g. `node > node`).
+
+**` ` (descendant selector)**  
+Matches descendants of the parent node (e.g. `node node`).
+
+**`$` (subject selector)**  
+Sets the subject of the selector (e.g. `$node > node` to select the parent nodes instead of the children).
+
+
 ## State
 
 **`:animated`**  
@@ -130,3 +143,9 @@ Matches elements that have been removed from the graph.
 
 **`:inside`**  
 Matches elements that have are in the graph (they are not removed).
+
+**`:active`**  
+Matches elements that are active (i.e. user interaction).
+
+**`:inactive`**  
+Matches elements that are inactive (i.e. no user interaction).

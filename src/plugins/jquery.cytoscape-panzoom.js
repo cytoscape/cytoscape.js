@@ -179,7 +179,7 @@
 
 						cy.zoom({
 							level: level,
-							renderedPosition: { x: zx, y: zy }
+							position: { x: zx, y: zy }
 						});
 					}
 
@@ -309,9 +309,8 @@
 				
 					$slider.bind('mousedown', function(e){
 						if( e.target !== $sliderHandle[0] ){
-							setSliderFromMouse(e);
-
 							sliderMdownHandler(e);
+							setSliderFromMouse(e);
 						}
 					});
 

@@ -2496,6 +2496,10 @@
 			this.lastDrawTime = nowTime;
 		}
 
+
+		// start on thread ready
+		setTimeout(function(){
+
 		var startTime = nowTime;
 
 		var looperMax = 100;
@@ -2503,9 +2507,9 @@
 
 		// console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
 		
-		var cy = this.data.cy; var data = this.data; 
-		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
-		this.matchCanvasSize(data.container);
+		var cy = r.data.cy; var data = r.data; 
+		var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+		r.matchCanvasSize(data.container);
 		
 		var elements = [];
 		for( var i = 0; i < nodes.length; i++ ){
@@ -2523,9 +2527,9 @@
 			//NB : VERY EXPENSIVE
 			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
-			if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ 
+			if( r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.data.wheel || r.swipePanning) ){ 
 			} else {
-				this.findEdgeControlPoints(edges);
+				r.findEdgeControlPoints(edges);
 			}
 
 			//} console.timeEnd('edgectlpts')
@@ -2533,14 +2537,14 @@
 		
 
 			// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-			var elements = this.getCachedZSortedEles();
+			var elements = r.getCachedZSortedEles();
 			// } console.timeEnd('sort')
 
 			// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// no need to update graph if there is no compound node
 			if ( cy.hasCompoundNodes() )
 			{
-				this.updateAllCompounds(elements);
+				r.updateAllCompounds(elements);
 			}
 			// } console.timeEnd('updatecompounds')
 		}
@@ -2583,10 +2587,10 @@
 				element = elesNotInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element);
+					r.drawNode(context, element);
 					
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element);
+					r.drawEdge(context, element);
 				}
 			}
 			
@@ -2594,16 +2598,16 @@
 				element = elesNotInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNodeText(context, element);
+					r.drawNodeText(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdgeText(context, element);
+					r.drawEdgeText(context, element);
 				}
 
 				// draw the overlay
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element, true);
+					r.drawNode(context, element, true);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element, true);
+					r.drawEdge(context, element, true);
 				}
 			}
 			
@@ -2646,9 +2650,9 @@
 				element = elesInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element);
+					r.drawNode(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element);
+					r.drawEdge(context, element);
 				}
 			}
 			
@@ -2656,16 +2660,16 @@
 				element = elesInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNodeText(context, element);
+					r.drawNodeText(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdgeText(context, element);
+					r.drawEdgeText(context, element);
 				}
 
 				// draw the overlay
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element, true);
+					r.drawNode(context, element, true);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element, true);
+					r.drawEdge(context, element, true);
 				}
 			}
 			
@@ -2741,7 +2745,7 @@
 			}
 		}
 
-		if( this.options.showOverlay ){
+		if( r.options.showOverlay ){
 			var context = data.canvases[OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';
@@ -2770,13 +2774,17 @@
 
 		var endTime = +new Date;
 
-		if( this.averageRedrawTime === undefined ){
-			this.averageRedrawTime = endTime - startTime;
+		if( r.averageRedrawTime === undefined ){
+			r.averageRedrawTime = endTime - startTime;
 		}
 
 		// use a weighted average with a bias from the previous average so we don't spike so easily
-		this.averageRedrawTime = this.averageRedrawTime/2 + (endTime - startTime)/2;
+		r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
 		//console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
+
+
+		// end on thread ready
+		}, 0);
 	};
 	
 	var imageCache = {};

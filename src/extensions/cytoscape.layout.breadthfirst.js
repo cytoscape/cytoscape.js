@@ -224,6 +224,10 @@
                 var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
                 var theta = 2 * Math.PI / depths[depth].length * index;
 
+                if( depth === 0 && depths[0].length === 1 ){
+                    radius = 1;
+                }
+
                 return {
                     x: center.x + radius * Math.cos(theta),
                     y: center.y + radius * Math.sin(theta)

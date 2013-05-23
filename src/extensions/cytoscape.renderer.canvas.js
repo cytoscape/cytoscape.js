@@ -2880,7 +2880,7 @@
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
-		if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
+		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
 		var startNode, endNode;
 
@@ -3305,7 +3305,7 @@
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
 	
-		if( this.hideEdgesOnViewport && (this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
+		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 	
 		if (edge._private.style["visibility"].value != "visible") {
 			return;

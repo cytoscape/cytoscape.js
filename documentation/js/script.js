@@ -22,7 +22,7 @@ $(function(){
         .selector('node')
           .css({
             'content': 'data(name)',
-            'text-outline-width': 2,
+            'text-outline-width': 3,
             'text-outline-color': '#fff',
             'width': 'mapData(weight, 0, 100, 20, 50)',
             'height': 'mapData(weight, 0, 100, 20, 50)'
@@ -71,6 +71,16 @@ $(function(){
 
   $('#cy-refresh').on('mousedown touchstart', function(){
     refresh();
+  });
+
+  $('#cy-hide').on('mousedown touchstart', function(){
+    $('#cy, #cy-hide, #cy-refresh').hide();
+    $('#cy-show').show();
+  });
+
+  $('#cy-show').on('mousedown touchstart', function(){
+    $('#cy, #cy-hide, #cy-refresh').show();
+    $('#cy-show').hide();
   });
 
   var $codes = $('pre code[class = "lang-js"]');

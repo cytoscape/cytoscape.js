@@ -34,10 +34,12 @@ body {
 	background: transparent;
 }
 
-#cy-refresh {
+#cy-refresh,
+#cy-show,
+#cy-hide {
 	position: fixed;
-	bottom: 0;
-	right: 0;
+	bottom: 270px;
+	right: 270px;
 	background: #fff;
 	border-radius: 1em;
 	line-height: 1;
@@ -45,6 +47,19 @@ body {
 	color: rgba(0, 0, 0, 0.75);
 	cursor: pointer;
 	z-index: 999;
+}
+
+#cy-hide,
+#cy-show {
+	right: 0;
+	bottom: 0;
+}
+
+#cy-show {
+	box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
+	background: rgba(255, 255, 255, 0.5);
+	border-radius: 0;
+	display: none;
 }
 
 button {

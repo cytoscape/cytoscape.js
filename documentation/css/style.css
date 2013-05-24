@@ -92,7 +92,6 @@ body {
 #demo, #demo-source {
 	border: 1px solid #ddd;
 	margin: 1em 0;
-	overflow: hidden !important;
 	border-radius: 0.25em;
 	margin: 0.25em;
 }
@@ -101,6 +100,7 @@ body {
 	height: 20em;
 	width: 20em;
 	float: left;
+	overflow: hidden !important;
 }
 
 #demo-source {

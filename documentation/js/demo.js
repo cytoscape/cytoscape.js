@@ -80,7 +80,7 @@ $(function(){
     ,
 
     ready: function(){
-      window.cy = this; // for debugging
+      var cy = this; // now, we can do stuff
     
     }
     

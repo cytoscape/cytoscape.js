@@ -25,6 +25,12 @@
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
+
+			for( var i = 0; i < container.children.length; i++ ){
+				var child = container.children[i];
+				child.remove();
+			} 
+
 		} else { // then we have to register
 			reg = $$.registerInstance( cy, container );
 		}

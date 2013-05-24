@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-12.53.12.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-19.06.22.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -3310,6 +3310,12 @@ var cytoscape;
 		if( reg ){ // already registered => just update ref
 			reg.cy = this;
 			reg.domElement = container;
+
+			for( var i = 0; i < container.children.length; i++ ){
+				var child = container.children[i];
+				child.remove();
+			} 
+
 		} else { // then we have to register
 			reg = $$.registerInstance( cy, container );
 		}

@@ -3,6 +3,71 @@ body {
 	line-height: 1.5;
 }
 
+#cy {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	height: 300px;
+	width: 300px;
+	box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
+	background: rgba(255, 255, 255, 0.5);
+}
+
+#cy-title {
+	position: fixed;
+	right: 0;
+	bottom: 300px;
+	width: 300px;
+	overflow: hidden;
+	color: rgba(0, 0, 0, 0.5);
+	text-align: left;
+	font-family: Andale Mono, monospace;
+	font-size: 0.8em;
+}
+
+#cy-title .content {
+	width: 9999px;
+}
+
+#cy-title pre {
+	border: 0;
+	background: transparent;
+}
+
+#cy-refresh {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+	background: #fff;
+	border-radius: 1em;
+	line-height: 1;
+	padding: 4px 6px;
+	color: rgba(0, 0, 0, 0.75);
+	cursor: pointer;
+	z-index: 999;
+}
+
+button {
+	font: inherit;
+	border: 0;
+	background: #4183C4;
+	border-radius: 0.25em;
+	color: #fff;
+	cursor: pointer;
+}
+
+button:active {
+	background: #2B4C6E;
+}
+
+.run {
+	margin-bottom: 0;
+}
+
+.run + * {
+	margin-top: 0.25em;
+}
+
 #navigation {
 	position: fixed;
 	left: 0;
@@ -94,17 +159,18 @@ body {
 	margin: 1em 0;
 	border-radius: 0.25em;
 	margin: 0.25em;
+	overflow: hidden !important;
 }
 
 #demo {
 	height: 20em;
 	width: 20em;
 	float: left;
-	overflow: hidden !important;
 }
 
 #demo-source {
 	height: 20em;
+	overflow: auto;
 }
 
 #demo-source + * {

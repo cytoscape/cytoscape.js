@@ -14,11 +14,17 @@
 
 		<script src="js/jquery.js"></script>
 		<script src="js/script.js"></script>
-		<script src="js/cytoscape.min.js"></script>
+		<script src="js/cytoscape.js"></script>
 		<script src="js/demo.js"></script>
 	</head>
 
 	<body>
+
+		<div id="cy-title"><pre class="content"></pre></div>
+		<div id="cy"></div>
+		<div id="cy-refresh">
+			<span class="icon-refresh"></span>
+		</div>
 
 		<div id="navigation">
 			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
@@ -642,20 +648,17 @@
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Downloads"><span class="icon-download-alt"></span> Downloads</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="https://groups.google.com/forum/#!forum/cytoscape-discuss"><span class="icon-bullhorn"></span> Google Group</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-briefcase"></span> File an issue</a>
 			</div>
 
-			<div id="demo"></div>
+			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
 
 			<div id="demo-source">
 				<iframe id="demo-code" src="js/demo.js"></iframe>
-			</div>
-
-			<div id="tutorials">
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> See live code examples for Cytoscape.js</a> (like the above but even better; great for getting started)
 			</div>
 
 			<div id="documentation">

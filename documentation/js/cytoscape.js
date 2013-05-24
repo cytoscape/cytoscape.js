@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-12.44.49.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2335,6 +2335,7 @@ var cytoscape;
 			{ name: "font-variant", type: t.fontVariant },
 			{ name: "font-weight", type: t.fontWeight },
 			{ name: "font-size", type: t.size },
+			{ name: "min-zoomed-font-size", type: t.size },
 			{ name: "visibility", type: t.visibility },
 			{ name: "opacity", type: t.zeroOneNumber },
 			{ name: "z-index", type: t.nonNegativeInt },
@@ -2426,6 +2427,7 @@ var cytoscape;
 					"font-variant": fontVariant,
 					"font-weight": fontWeight,
 					"font-size": fontSize,
+					"min-zoomed-font-size": 0,
 					"visibility": "visible",
 					"opacity": 1,
 					"z-index": 0,
@@ -3284,7 +3286,8 @@ var cytoscape;
 ;(function($$){
 
 	var defaults = {
-		showOverlay: true
+		showOverlay: true,
+		hideEdgesOnViewport: false
 	};
 	
 	$$.fn.core = function( fnMap, options ){
@@ -3362,7 +3365,8 @@ var cytoscape;
 		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : new $$.Style( cy );
 
 		cy.initRenderer( $$.util.extend({
-			showOverlay: options.showOverlay
+			showOverlay: options.showOverlay,
+			hideEdgesOnViewport: options.hideEdgesOnViewport
 		}, options.renderer) );
 
 		// initial load
@@ -7366,7 +7370,7 @@ var cytoscape;
 					regex: subject,
 					populate: function(){
 						if( currentSubject != null && this.subject != this ){
-							$$.util.error("Redefinition of subject in selector `%s`", selector);
+							$$.util.error("Redefinition of subject in selector `" + selector + "`");
 							return false;
 						}
 
@@ -7441,7 +7445,7 @@ var cytoscape;
 				var check = consumeExpr();
 				
 				if( check.expr == null ){
-					$$.util.error("The selector `%s` is invalid", selector);
+					$$.util.error("The selector `"+ selector +"`is invalid");
 					return;
 				} else {
 					var args = [];
@@ -7489,7 +7493,7 @@ var cytoscape;
 
 							query = ancestor; // go up the tree
 						} else {
-							$.error("When adjusting references for the selector `%s`, neither parent nor ancestor was found");
+							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
 							break;
 						}
 					} // for
@@ -7502,7 +7506,7 @@ var cytoscape;
 			if( onlyThisGroup != null ){
 				for(var j = 0; j < self.length; j++){
 					if( self[j].group != null && self[j].group != onlyThisGroup ){
-						$.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[j].group, onlyThisGroup, selector);
+						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
 						return;
 					}
 
@@ -7511,7 +7515,7 @@ var cytoscape;
 			}
 			
 		} else {
-			$.error("A selector must be created from a string; found %o", selector);
+			$$.util.error("A selector must be created from a string; found " + selector);
 			return;
 		}
 
@@ -8048,35 +8052,9 @@ var cytoscape;
 			link.href = 'http://cytoscape.github.io/cytoscape.js/';
 			link.target = '_blank';
 
-			var dragged = false;
-			var touched = false;
-
-			link.addEventListener('touchstart', function(){
-				dragged = false;
-				touched = true;
-			});
-
-			window.addEventListener('touchmove', function(){
-				dragged = true;
-			});
-
-			window.addEventListener('click', function(e){
-				var retFalse = false;
-
-				if( touched && dragged ){
-					e.preventDefault();
-					retFalse = true;
-				}
-
-				dragged = false;
-				touched = false;
-
-				if( retFalse ){
-					return false;
-				}
-			}, true);
-
 		}
+
+		this.hideEdgesOnViewport = options.hideEdgesOnViewport;
 
 		this.load();
 	}
@@ -8799,6 +8777,14 @@ var cytoscape;
 				if( cy.panningEnabled() && cy.zoomingEnabled() ){
 					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
 				}
+
+				r.data.wheel = true;
+				clearTimeout(r.data.wheelTimeout);
+				r.data.wheelTimeout = setTimeout(function(){
+					r.data.wheel = false;
+					r.data.canvasNeedsRedraw[NODE] = true;
+					r.redraw();
+				}, 100);
 			}
 
 		}
@@ -9313,6 +9299,7 @@ var cytoscape;
 					}
 
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+					r.swipePanning = true;
 					
 					// Re-project
 					var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY);
@@ -9330,6 +9317,8 @@ var cytoscape;
 			var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
 			e.preventDefault();
 			var select = r.data.select;
+
+			r.swipePanning = false;
 			
 			var cy = r.data.cy; 
 			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
@@ -10452,6 +10441,10 @@ var cytoscape;
 			this.lastDrawTime = nowTime;
 		}
 
+
+		// start on thread ready
+		setTimeout(function(){
+
 		var startTime = nowTime;
 
 		var looperMax = 100;
@@ -10459,9 +10452,9 @@ var cytoscape;
 
 		// console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
 		
-		var cy = this.data.cy; var data = this.data; 
-		var nodes = this.getCachedNodes(); var edges = this.getCachedEdges();
-		this.matchCanvasSize(data.container);
+		var cy = r.data.cy; var data = r.data; 
+		var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+		r.matchCanvasSize(data.container);
 		
 		var elements = [];
 		for( var i = 0; i < nodes.length; i++ ){
@@ -10479,21 +10472,24 @@ var cytoscape;
 			//NB : VERY EXPENSIVE
 			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
-			this.findEdgeControlPoints(edges);
+			if( r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.data.wheel || r.swipePanning) ){ 
+			} else {
+				r.findEdgeControlPoints(edges);
+			}
 
 			//} console.timeEnd('edgectlpts')
 
 		
 
 			// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-			var elements = this.getCachedZSortedEles();
+			var elements = r.getCachedZSortedEles();
 			// } console.timeEnd('sort')
 
 			// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 			// no need to update graph if there is no compound node
 			if ( cy.hasCompoundNodes() )
 			{
-				this.updateAllCompounds(elements);
+				r.updateAllCompounds(elements);
 			}
 			// } console.timeEnd('updatecompounds')
 		}
@@ -10536,10 +10532,10 @@ var cytoscape;
 				element = elesNotInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element);
+					r.drawNode(context, element);
 					
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element);
+					r.drawEdge(context, element);
 				}
 			}
 			
@@ -10547,16 +10543,16 @@ var cytoscape;
 				element = elesNotInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNodeText(context, element);
+					r.drawNodeText(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdgeText(context, element);
+					r.drawEdgeText(context, element);
 				}
 
 				// draw the overlay
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element, true);
+					r.drawNode(context, element, true);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element, true);
+					r.drawEdge(context, element, true);
 				}
 			}
 			
@@ -10599,9 +10595,9 @@ var cytoscape;
 				element = elesInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element);
+					r.drawNode(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element);
+					r.drawEdge(context, element);
 				}
 			}
 			
@@ -10609,16 +10605,16 @@ var cytoscape;
 				element = elesInDragLayer[index];
 				
 				if (element._private.group == "nodes") {
-					this.drawNodeText(context, element);
+					r.drawNodeText(context, element);
 				} else if (element._private.group == "edges") {
-					this.drawEdgeText(context, element);
+					r.drawEdgeText(context, element);
 				}
 
 				// draw the overlay
 				if (element._private.group == "nodes") {
-					this.drawNode(context, element, true);
+					r.drawNode(context, element, true);
 				} else if (element._private.group == "edges") {
-					this.drawEdge(context, element, true);
+					r.drawEdge(context, element, true);
 				}
 			}
 			
@@ -10694,7 +10690,7 @@ var cytoscape;
 			}
 		}
 
-		if( this.options.showOverlay ){
+		if( r.options.showOverlay ){
 			var context = data.canvases[OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';
@@ -10723,13 +10719,17 @@ var cytoscape;
 
 		var endTime = +new Date;
 
-		if( this.averageRedrawTime === undefined ){
-			this.averageRedrawTime = endTime - startTime;
+		if( r.averageRedrawTime === undefined ){
+			r.averageRedrawTime = endTime - startTime;
 		}
 
 		// use a weighted average with a bias from the previous average so we don't spike so easily
-		this.averageRedrawTime = this.averageRedrawTime/2 + (endTime - startTime)/2;
+		r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
 		//console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
+
+
+		// end on thread ready
+		}, 0);
 	};
 	
 	var imageCache = {};
@@ -10825,7 +10825,7 @@ var cytoscape;
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
-		//if( this.pinching ){ return; } // save cycles on pinching
+		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
 		var startNode, endNode;
 
@@ -11250,7 +11250,16 @@ var cytoscape;
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
 	
+		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
+	
 		if (edge._private.style["visibility"].value != "visible") {
+			return;
+		}
+
+		var computedSize = edge._private.style["font-size"].pxValue * edge.cy().zoom();
+		var minSize = edge._private.style["min-zoomed-font-size"].pxValue;
+
+		if( computedSize < minSize ){
 			return;
 		}
 	
@@ -11460,6 +11469,13 @@ var cytoscape;
 	CanvasRenderer.prototype.drawNodeText = function(context, node) {
 		
 		if (node._private.style["visibility"].value != "visible") {
+			return;
+		}
+
+		var computedSize = node._private.style["font-size"].pxValue * node.cy().zoom();
+		var minSize = node._private.style["min-zoomed-font-size"].pxValue;
+
+		if( computedSize < minSize ){
 			return;
 		}
 	
@@ -15115,6 +15131,10 @@ var cytoscape;
             if( options.circle ){
                 var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
                 var theta = 2 * Math.PI / depths[depth].length * index;
+
+                if( depth === 0 && depths[0].length === 1 ){
+                    radius = 1;
+                }
 
                 return {
                     x: center.x + radius * Math.cos(theta),

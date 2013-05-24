@@ -1307,6 +1307,9 @@ $(function(){ // on jquery ready
 <p><strong>ready</strong> : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.
 
 </p>
+<p><strong>showOverlay</strong> : A boolean, indacating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).
+
+</p>
 <p><strong>elements</strong> : An array of elements specified as plain objects.
 
 </p>
@@ -2558,9 +2561,9 @@ cy.zoom({
 							<div class="details">
 								
 									<h3>Examples</h3>
-<p>Bind to events that bubble up from elements matching the specified <code>nodes</code> selector:
+<p>Bind to events that bubble up from elements matching the specified <code>node</code> selector:
 </p>
-<pre><code class="lang-js">cy.on(&#39;click&#39;, &#39;nodes&#39;, { foo: &#39;bar&#39; }, function(evt){
+<pre><code class="lang-js">cy.on(&#39;click&#39;, &#39;node&#39;, { foo: &#39;bar&#39; }, function(evt){
   console.log( evt.data.foo ); // &#39;bar&#39;
 
   var node = this;
@@ -3168,7 +3171,7 @@ eles.restore();</code></pre>
 <ul>
 <li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
 <li><code>source</code> &amp; <code>target</code> : These fields define an edge&#39;s relationship to nodes, and this relationship can not be changed after creation.</li>
-<li><code>parent</code> : The <code>parent</code> field defaines the parent (compound) node.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
 </ul>
 <h3>Examples</h3>
 <pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
@@ -3235,7 +3238,7 @@ var weight = n1.data(&#39;weight&#39;);</code></pre>
 <ul>
 <li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
 <li><code>source</code> &amp; <code>target</code> : These fields define an edge&#39;s relationship to nodes, and this relationship can not be changed after creation.</li>
-<li><code>parent</code> : The <code>parent</code> field is a reserved field for the future implementation of compound nodes.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
 </ul>
 
 								

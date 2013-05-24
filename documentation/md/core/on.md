@@ -1,8 +1,8 @@
 ## Examples
 
-Bind to events that bubble up from elements matching the specified `nodes` selector:
+Bind to events that bubble up from elements matching the specified `node` selector:
 ```js
-cy.on('click', 'nodes', { foo: 'bar' }, function(evt){
+cy.on('click', 'node', { foo: 'bar' }, function(evt){
   console.log( evt.data.foo ); // 'bar'
 
   var node = this;

@@ -240,7 +240,7 @@
 					regex: subject,
 					populate: function(){
 						if( currentSubject != null && this.subject != this ){
-							$$.util.error("Redefinition of subject in selector `%s`", selector);
+							$$.util.error("Redefinition of subject in selector `" + selector + "`");
 							return false;
 						}
 
@@ -315,7 +315,7 @@
 				var check = consumeExpr();
 				
 				if( check.expr == null ){
-					$$.util.error("The selector `%s` is invalid", selector);
+					$$.util.error("The selector `"+ selector +"`is invalid");
 					return;
 				} else {
 					var args = [];
@@ -363,7 +363,7 @@
 
 							query = ancestor; // go up the tree
 						} else {
-							$.error("When adjusting references for the selector `%s`, neither parent nor ancestor was found");
+							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
 							break;
 						}
 					} // for
@@ -376,7 +376,7 @@
 			if( onlyThisGroup != null ){
 				for(var j = 0; j < self.length; j++){
 					if( self[j].group != null && self[j].group != onlyThisGroup ){
-						$.error("Group `%s` conflicts with implicit group `%s` in selector `%s`", self[j].group, onlyThisGroup, selector);
+						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
 						return;
 					}
 
@@ -385,7 +385,7 @@
 			}
 			
 		} else {
-			$.error("A selector must be created from a string; found %o", selector);
+			$$.util.error("A selector must be created from a string; found " + selector);
 			return;
 		}
 

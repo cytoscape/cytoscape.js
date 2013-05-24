@@ -139,6 +139,8 @@ For example:
 
 **ready** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
 
+**showOverlay** : A boolean, indacating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
+
 **elements** : An array of elements specified as plain objects.
 
 For example:

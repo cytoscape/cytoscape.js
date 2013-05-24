@@ -6,7 +6,8 @@
 		stop: undefined, // callback on layoutstop
 		positions: undefined, // map of (node id) => (position obj)
 		zoom: undefined, // the zoom level to set (prob want fit = false if set)
-		pan: undefined // the pan level to set (prob want fit = false if set)
+		pan: undefined, // the pan level to set (prob want fit = false if set)
+		padding: 30 // padding on fit
 	};
 	
 	function PresetLayout( options ){
@@ -54,7 +55,7 @@
 		cy.trigger("layoutready");
 		
 		if( options.fit ){
-			cy.fit();
+			cy.fit( options.padding );
 		}
 		
 		cy.one("layoutstop", options.stop);

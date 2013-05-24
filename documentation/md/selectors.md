@@ -87,7 +87,7 @@ Use curly brackets in place of square ones to match against metadata instead of 
 **`>` (child selector)**  
 Matches direct children of the parent node (e.g. `node > node`).
 
-**` ` (descendant selector)**  
+**<code>&nbsp;</code> (descendant selector)**  
 Matches descendants of the parent node (e.g. `node node`).
 
 **`$` (subject selector)**  

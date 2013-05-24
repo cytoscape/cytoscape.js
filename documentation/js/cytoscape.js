@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-12.44.49.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-12.53.12.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -14439,7 +14439,8 @@ var cytoscape;
 		stop: undefined, // callback on layoutstop
 		positions: undefined, // map of (node id) => (position obj)
 		zoom: undefined, // the zoom level to set (prob want fit = false if set)
-		pan: undefined // the pan level to set (prob want fit = false if set)
+		pan: undefined, // the pan level to set (prob want fit = false if set)
+		padding: 30 // padding on fit
 	};
 	
 	function PresetLayout( options ){
@@ -14487,7 +14488,7 @@ var cytoscape;
 		cy.trigger("layoutready");
 		
 		if( options.fit ){
-			cy.fit();
+			cy.fit( options.padding );
 		}
 		
 		cy.one("layoutstop", options.stop);

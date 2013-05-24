@@ -237,6 +237,7 @@ pre {
 pre {
 	margin: 1.25em 0;
 	overflow: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 pre code {
@@ -254,7 +255,6 @@ pre code {
 }
 
 .function {
-	border-top: 1px dashed #bbb;
 	padding: 1em 0;
 	border-bottom: 1px dashed #bbb;
 }

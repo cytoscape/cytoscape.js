@@ -2,6 +2,8 @@ $(loadCy = function(){
 
   options = {
     showOverlay: false,
+    minZoom: 0.5,
+    maxZoom: 2,
 
     style: cytoscape.stylesheet()
       .selector('node')

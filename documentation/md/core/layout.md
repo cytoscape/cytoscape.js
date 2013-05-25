@@ -5,15 +5,19 @@ Several layouts are included with Cytoscape.js by default, and their options are
 *The `random` layout:*
 ```js
 options = {
+	name: 'random',
 	ready: undefined, // callback on layoutready
 	stop: undefined, // callback on layoutstop
 	fit: true // whether to fit to viewport
 };
+
+cy.layout( options );
 ```
 
 *The `preset` layout puts nodes in the positions you specify manually:*
 ```js
 options = {
+	name: 'preset',
 	fit: true, // whether to fit to viewport
 	ready: undefined, // callback on layoutready
 	stop: undefined, // callback on layoutstop
@@ -21,22 +25,29 @@ options = {
 	zoom: undefined, // the zoom level to set (prob want fit = false if set)
 	pan: undefined // the pan level to set (prob want fit = false if set)
 };
+
+cy.layout( options );
 ```
 
 *The `grid` layout puts nodes in a well-spaced grid:*
 ```js
 options = {
+	name: 'grid',
 	fit: true, // whether to fit the viewport to the graph
 	rows: undefined, // force num of rows in the grid
 	columns: undefined, // force num of cols in the grid
 	ready: undefined, // callback on layoutready
 	stop: undefined // callback on layoutstop
 };
+
+cy.layout( options );
+
 ```
 
 *The `breadthfirst` layout puts nodes in a hierarchy:*
 ```js
 options = {
+	name: 'breadthfirst',
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -45,11 +56,14 @@ options = {
     circle: false, // put depths in concentric circles if true, put depths top down if false
     roots: undefined // the roots of the trees
 };
+
+cy.layout( options );
 ```
 
 *The `circle` layout puts nodes in a circle:*
 ```js
 options = {
+	name: 'circle',
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -58,11 +72,14 @@ options = {
     startAngle: 3/2 * Math.PI, // the position of the first node
     counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
 };
+
+cy.layout( options );
 ```
 
 *The `arbor` layout uses a force-directed simulation:*
 ```js
 options = {
+	name: 'arbor',
 	liveUpdate: true, // whether to show the layout as it's running
 	ready: undefined, // callback on layoutready 
 	stop: undefined, // callback on layoutstop
@@ -93,6 +110,9 @@ options = {
 		return (e.max <= 0.5) || (e.mean <= 0.3);
 	}
 };
+
+
+cy.layout( options );
 ```
 
 NB: You must reference the version of `arbor.js` included with Cytoscape.js in the `<head>` of your HTML document:

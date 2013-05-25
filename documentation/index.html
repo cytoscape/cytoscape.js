@@ -14,6 +14,7 @@
 
 		<script src="js/jquery.js"></script>
 		<script src="js/cytoscape.js"></script>
+		<script src="js/arbor.js"></script>
 		<script src="js/load.js"></script>
 		<script src="js/script.js"></script>
 		
@@ -2882,32 +2883,42 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 <p><em>The <code>random</code> layout:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;random&#39;,
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     fit: true // whether to fit to viewport
-};</code></pre>
+};
+
+cy.layout( options );</code></pre>
 <p><em>The <code>preset</code> layout puts nodes in the positions you specify manually:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;preset&#39;,
     fit: true, // whether to fit to viewport
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     positions: undefined, // map of (node id) =&gt; (position obj)
     zoom: undefined, // the zoom level to set (prob want fit = false if set)
     pan: undefined // the pan level to set (prob want fit = false if set)
-};</code></pre>
+};
+
+cy.layout( options );</code></pre>
 <p><em>The <code>grid</code> layout puts nodes in a well-spaced grid:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;grid&#39;,
     fit: true, // whether to fit the viewport to the graph
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
-};</code></pre>
+};
+
+cy.layout( options );</code></pre>
 <p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;breadthfirst&#39;,
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -2915,10 +2926,13 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
     roots: undefined // the roots of the trees
-};</code></pre>
+};
+
+cy.layout( options );</code></pre>
 <p><em>The <code>circle</code> layout puts nodes in a circle:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;circle&#39;,
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -2926,10 +2940,13 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
     padding: 30, // the padding on fit
     startAngle: 3/2 * Math.PI, // the position of the first node
     counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
-};</code></pre>
+};
+
+cy.layout( options );</code></pre>
 <p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;arbor&#39;,
     liveUpdate: true, // whether to show the layout as it&#39;s running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
@@ -2959,7 +2976,10 @@ cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
         var e = energy; 
         return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
     }
-};</code></pre>
+};
+
+
+cy.layout( options );</code></pre>
 <p>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:
 
 </p>

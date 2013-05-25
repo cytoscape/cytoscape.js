@@ -41,7 +41,7 @@ $(function(){
 
     (function(text){
       $button.on('click', function(){
-        $('#cy-title .content').html( text ).hide().fadeIn(100).delay(1000).hide(200, function(){
+        $('#cy-title .content').html( text ).hide().fadeIn(100).delay(250).hide(200, function(){
           var ret = eval( text );
           console.log(ret)
         });

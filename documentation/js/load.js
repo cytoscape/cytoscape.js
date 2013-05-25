@@ -7,44 +7,64 @@ $(loadCy = function(){
       .selector('node')
         .css({
           'content': 'data(name)',
+          'font-family': 'helvetica',
+          'font-size': 14,
           'text-outline-width': 3,
-          'text-outline-color': '#fff',
+          'text-outline-color': '#888',
+          'text-valign': 'center',
+          'color': '#fff',
           'width': 'mapData(weight, 0, 100, 20, 50)',
-          'height': 'mapData(weight, 0, 100, 20, 50)'
+          'height': 'mapData(weight, 0, 100, 20, 50)',
+          'border-color': '#fff'
         })
       .selector(':selected')
         .css({
           'background-color': '#000',
           'line-color': '#000',
-          'target-arrow-color': '#000'
+          'target-arrow-color': '#000',
+          'text-outline-color': '#000'
         })
       .selector('edge')
         .css({
-          'width': 3
+          'width': 2,
+          'target-arrow-shape': 'triangle'
         })
     ,
 
-    elements: [
-      {
-        data: { id: 'j', name: 'Jerry', weight: 65, height: 174 }, 
-        group: 'nodes'
-      },
+    elements: {
+      nodes: [
+        {
+          data: { id: 'j', name: 'Jerry', weight: 65, height: 174 }
+        },
 
-      {
-        data: { id: 'e', name: 'Elaine', weight: 48, height: 160 },
-        group: 'nodes'
-      },
+        {
+          data: { id: 'e', name: 'Elaine', weight: 48, height: 160 }
+        },
 
-      {
-        data: { id: 'k', name: 'Kramer', weight: 24 },
-        group: 'nodes'
-      },
+        {
+          data: { id: 'k', name: 'Kramer', weight: 75, height: 185 }
+        },
 
-      {
-        data: { id: 'g', weight: 64 },
-        group: 'nodes'
-      }
-    ],
+        {
+          data: { id: 'g', name: 'George', weight: 64, height: 150 }
+        }
+      ],
+
+      edges: [
+        { data: { source: 'j', target: 'e' } },
+        { data: { source: 'j', target: 'k' } },
+        { data: { source: 'j', target: 'g' } },
+
+        { data: { source: 'e', target: 'j' } },
+        { data: { source: 'e', target: 'k' } },
+
+        { data: { source: 'k', target: 'j' } },
+        { data: { source: 'k', target: 'e' } },
+        { data: { source: 'k', target: 'g' } },
+
+        { data: { source: 'g', target: 'j' } }
+      ],
+    },
 
     ready: function(){
       cy = this;

@@ -35,7 +35,7 @@ $(function(){
           })
         .selector('edge')
           .css({
-            'width': 'mapData(weight, 0, 100, 2, 5)'
+            'width': 3
           })
       ,
 

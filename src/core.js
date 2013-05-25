@@ -22,18 +22,16 @@
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg ){ // already registered => just update ref
-			reg.cy = this;
-			reg.domElement = container;
-
-			for( var i = 0; i < container.children.length; i++ ){
-				var child = container.children[i];
+		if( reg ){ 
+			for( var i = 0; i < reg.domElement.children.length; i++){
+				var child = reg.domElement.children[i];
 				child.remove();
-			} 
+			}
 
-		} else { // then we have to register
-			reg = $$.registerInstance( cy, container );
-		}
+			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
+		} 
+
+		reg = $$.registerInstance( cy, container );
 		var readies = reg.readies;
 
 		var options = opts;
@@ -49,7 +47,7 @@
 		
 		this._private = {
 			ready: false, // whether ready has been triggered
-			instanceId: null, // the registered instance id
+			instanceId: reg.id, // the registered instance id
 			options: options, // cached options
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array

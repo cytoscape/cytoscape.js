@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-19.06.22.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-20.21.44.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -1264,6 +1264,31 @@ var cytoscape;
 		return registration;
 	};
 
+	$$.removeRegistrationForInstance = function(instance, domElement){
+		var cy;
+
+		if( $$.is.core(instance) ){
+			cy = instance;
+		} else if( $$.is.domElement(instance) ){
+			domElement = instance;
+		}
+
+		if( $$.is.core(cy) ){
+			var id = cy._private.instanceId;
+			return $$.instances.splice(id, 1);
+
+		} else if( $$.is.domElement(domElement) ){
+			for( var i = 0; i < $$.instances.length; i++ ){
+				var reg = $$.instances[i];
+
+				if( reg.domElement === domElement ){
+					$$.instances.splice(i, 1);
+					i--;
+				}
+			}
+		}
+	}
+
 	$$.getRegistrationForInstance = function( instance, domElement ){
 		var cy;
 
@@ -1276,7 +1301,7 @@ var cytoscape;
 		}
 
 		if( $$.is.core(cy) ){
-			var id = cy.instanceId();
+			var id = cy._private.instanceId;
 			return $$.instances[ id ];
 
 		} else if( $$.is.domElement(domElement) ){
@@ -3307,18 +3332,16 @@ var cytoscape;
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg ){ // already registered => just update ref
-			reg.cy = this;
-			reg.domElement = container;
-
-			for( var i = 0; i < container.children.length; i++ ){
-				var child = container.children[i];
+		if( reg ){ 
+			for( var i = 0; i < reg.domElement.children.length; i++){
+				var child = reg.domElement.children[i];
 				child.remove();
-			} 
+			}
 
-		} else { // then we have to register
-			reg = $$.registerInstance( cy, container );
-		}
+			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
+		} 
+
+		reg = $$.registerInstance( cy, container );
 		var readies = reg.readies;
 
 		var options = opts;
@@ -3334,7 +3357,7 @@ var cytoscape;
 		
 		this._private = {
 			ready: false, // whether ready has been triggered
-			instanceId: null, // the registered instance id
+			instanceId: reg.id, // the registered instance id
 			options: options, // cached options
 			elements: [], // array of elements
 			id2index: {}, // element id => index in elements array

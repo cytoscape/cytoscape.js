@@ -45,6 +45,31 @@
 		return registration;
 	};
 
+	$$.removeRegistrationForInstance = function(instance, domElement){
+		var cy;
+
+		if( $$.is.core(instance) ){
+			cy = instance;
+		} else if( $$.is.domElement(instance) ){
+			domElement = instance;
+		}
+
+		if( $$.is.core(cy) ){
+			var id = cy._private.instanceId;
+			return $$.instances.splice(id, 1);
+
+		} else if( $$.is.domElement(domElement) ){
+			for( var i = 0; i < $$.instances.length; i++ ){
+				var reg = $$.instances[i];
+
+				if( reg.domElement === domElement ){
+					$$.instances.splice(i, 1);
+					i--;
+				}
+			}
+		}
+	}
+
 	$$.getRegistrationForInstance = function( instance, domElement ){
 		var cy;
 
@@ -57,7 +82,7 @@
 		}
 
 		if( $$.is.core(cy) ){
-			var id = cy.instanceId();
+			var id = cy._private.instanceId;
 			return $$.instances[ id ];
 
 		} else if( $$.is.domElement(domElement) ){

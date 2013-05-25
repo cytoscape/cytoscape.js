@@ -23,10 +23,7 @@
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg ){ 
-			for( var i = 0; i < reg.domElement.children.length; i++){
-				var child = reg.domElement.children[i];
-				child.remove();
-			}
+			reg.domElement.innerHTML = '';
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
 		} 

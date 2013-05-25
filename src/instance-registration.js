@@ -56,13 +56,15 @@
 
 		if( $$.is.core(cy) ){
 			var id = cy._private.instanceId;
-			return $$.instances.splice(id, 1);
+			delete $$.instances[ id ];
+			$$.instances.splice(id, 1);
 
 		} else if( $$.is.domElement(domElement) ){
 			for( var i = 0; i < $$.instances.length; i++ ){
 				var reg = $$.instances[i];
 
 				if( reg.domElement === domElement ){
+					delete $$.instances[ reg.id ];
 					$$.instances.splice(i, 1);
 					i--;
 				}

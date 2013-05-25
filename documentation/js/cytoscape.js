@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-20.21.44.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-20.27.54.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -1275,13 +1275,15 @@ var cytoscape;
 
 		if( $$.is.core(cy) ){
 			var id = cy._private.instanceId;
-			return $$.instances.splice(id, 1);
+			delete $$.instances[ id ];
+			$$.instances.splice(id, 1);
 
 		} else if( $$.is.domElement(domElement) ){
 			for( var i = 0; i < $$.instances.length; i++ ){
 				var reg = $$.instances[i];
 
 				if( reg.domElement === domElement ){
+					delete $$.instances[ reg.id ];
 					$$.instances.splice(i, 1);
 					i--;
 				}
@@ -3333,10 +3335,7 @@ var cytoscape;
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg ){ 
-			for( var i = 0; i < reg.domElement.children.length; i++){
-				var child = reg.domElement.children[i];
-				child.remove();
-			}
+			reg.domElement.innerHTML = '';
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
 		} 

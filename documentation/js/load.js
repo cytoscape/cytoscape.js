@@ -15,8 +15,8 @@ $(loadCy = function(){
           'text-outline-color': '#888',
           'text-valign': 'center',
           'color': '#fff',
-          'width': 'mapData(weight, 0, 100, 20, 50)',
-          'height': 'mapData(weight, 0, 100, 20, 50)',
+          'width': 'mapData(weight, 30, 80, 20, 50)',
+          'height': 'mapData(height, 0, 200, 10, 45)',
           'border-color': '#fff'
         })
       .selector(':selected')
@@ -48,7 +48,7 @@ $(loadCy = function(){
         },
 
         {
-          data: { id: 'g', name: 'George', weight: 64, height: 150 }
+          data: { id: 'g', name: 'George', weight: 70, height: 150 }
         }
       ],
 

@@ -1,5 +1,9 @@
 $(function(){
-  
+
+  setTimeout(function(){
+    cytoscape.defaults( window.options );
+  }, 100);
+
   // fix for webkit
   $('#navigation').on('mousewheel DOMMouseScroll MozMousePixelScroll', function(e){
     e.stopPropagation();
@@ -43,7 +47,43 @@ $(function(){
       $button.on('click', function(){
         $('#cy-title .content').html( text ).hide().fadeIn(100).delay(250).hide(200, function(){
           var ret = eval( text );
-          console.log(ret)
+          
+          if( ret && cytoscape.is.elementOrCollection( ret ) ){
+            console.log(ret)
+
+            var css = {
+              'text-outline-color': '#4183C4',
+              'background-color': '#4183C4',
+              'line-color': '#4183C4',
+              'target-arrow-color': '#4183C4',
+              'source-arrow-color': '#4183C4'
+            };
+
+            var delay = 200;
+
+            ret
+              .stop( true )
+
+              .animate({ css: css })
+              
+              .delay(delay, function(){
+                ret.removeCss();
+              })
+
+              .animate({ css: css })
+              
+              .delay(delay, function(){
+                ret.removeCss();
+              })
+
+              .animate({ css: css })
+              
+              .delay(delay, function(){
+                ret.removeCss();
+              })
+            ;
+
+          }
         });
 
       });

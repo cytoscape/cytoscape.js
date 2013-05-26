@@ -5,6 +5,12 @@
 		hideEdgesOnViewport: false
 	};
 	
+	var origDefaults = $$.util.copy( defaults );
+
+	$$.defaults = function( opts ){
+		defaults = $$.util.extend({}, origDefaults, defaults);
+	};
+
 	$$.fn.core = function( fnMap, options ){
 		for( var name in fnMap ){
 			var fn = fnMap[name];
@@ -22,7 +28,7 @@
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg ){ 
+		if( reg && reg.cy ){ 
 			reg.domElement.innerHTML = '';
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);

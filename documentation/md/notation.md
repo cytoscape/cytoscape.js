@@ -68,22 +68,38 @@ $('#cy').cytoscape({
     },
 
     { // node n2
+      group: 'nodes',
       data: { id: 'n2' },
       renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
     },
 
+    { // node n3
+      group: 'nodes',
+      data: { id: 'n3', parent: 'nparent' },
+      position: { x: 123, y: 234 }
+    },
+
     { // node nparent
+      group: 'nodes',
       data: { id: 'nparent' }
     },
 
     { // edge e1
+      group: 'edges',
       data: {
       	id: 'e1',
       	source: 'n1', // the source node id (edge comes from this node)
       	target: 'n2'  // the target node id (edge goes to this node)
       }
     }
-  ]
+  ],
+
+  // so we can see the ids
+  style: cytoscape.stylesheet().
+    selector('node')
+      .css({
+          'content': 'data(id)'
+        })
 
 });
 ```

@@ -16,33 +16,48 @@
 			domElement = instance;
 		}
 
-		var time = +new Date;
-		var suffix;
+		// if we have an old reg that is empty (no cy), then 
+		var oldReg = $$.getRegistrationForInstance(instance, domElement);
+		if( oldReg ){
+			if( !oldReg.cy ){
+				oldReg.cy = instance;
+				oldReg.domElement = domElement;
+			} else {
+				$$.util.error('Tried to register on a pre-existing registration');
+			}
 
-		// add a suffix in case instances collide on the same time
-		if( !$$.lastInstanceTime || $$.lastInstanceTime === time ){
-			$$.instanceCounter = 0;
+			return oldReg;
+
+		// otherwise, just make a new registration
 		} else {
-			++$$.instanceCounter;
+			var time = +new Date;
+			var suffix;
+
+			// add a suffix in case instances collide on the same time
+			if( !$$.lastInstanceTime || $$.lastInstanceTime === time ){
+				$$.instanceCounter = 0;
+			} else {
+				++$$.instanceCounter;
+			}
+			$$.lastInstanceTime = time;
+			suffix = $$.instanceCounter;
+
+			var id = "cy-" + time + "-" + suffix;
+
+			// create the registration object
+			var registration = {
+				id: id,
+				cy: cy,
+				domElement: domElement,
+				readies: [] // list of bound ready functions before calling init
+			};
+
+			// put the registration object in the pool
+			$$.instances.push( registration );
+			$$.instances[ id ] = registration;
+
+			return registration;
 		}
-		$$.lastInstanceTime = time;
-		suffix = $$.instanceCounter;
-
-		var id = "cy-" + time + "-" + suffix;
-
-		// create the registration object
-		var registration = {
-			id: id,
-			cy: cy,
-			domElement: domElement,
-			readies: [] // list of bound ready functions before calling init
-		};
-
-		// put the registration object in the pool
-		$$.instances.push( registration );
-		$$.instances[ id ] = registration;
-
-		return registration;
 	};
 
 	$$.removeRegistrationForInstance = function(instance, domElement){

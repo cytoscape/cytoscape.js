@@ -291,10 +291,9 @@
 					"content": "",
 					"overlay-opacity": 0,
 					"overlay-color": "#000",
-					"overlay-padding": 10
-				})
-			.selector("node") // just node properties
-				.css({
+					"overlay-padding": 10,
+
+					// node props
 					"background-color": "#888",
 					"background-opacity": 1,
 					"background-image": "none",
@@ -308,25 +307,32 @@
 					"padding-bottom": 0,
 					"padding-left": 0,
 					"padding-right": 0,
-					"shape": "ellipse"
-				})
-			.selector("$node > node") // compound (parent) node properties
-				.css({
-					"width": "auto",
-					"height": "auto",
-					"shape": "rectangle"
-				})
-			.selector("edge") // just edge properties
-				.css({
+					"shape": "ellipse",
+
+					// edge props
 					"source-arrow-shape": "none",
 					"target-arrow-shape": "none",
 					"source-arrow-color": "#bbb",
 					"target-arrow-color": "#bbb",
 					"line-style": "solid",
 					"line-color": "#bbb",
-					"width": 1,
 					"control-point-step-size": 40,
 					"curve-style": "bezier"
+				})
+			.selector("$node > node") // compound (parent) node properties
+				.css({
+					"width": "auto",
+					"height": "auto",
+					"shape": "rectangle",
+					"background-opacity": 0.5,
+					"padding-top": 10,
+					"padding-right": 10,
+					"padding-left": 10,
+					"padding-bottom": 10
+				})
+			.selector("edge") // just edge properties
+				.css({
+					"width": 1,
 				})
 			.selector(":active")
 				.css({

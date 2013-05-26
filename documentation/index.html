@@ -818,22 +818,38 @@ edge ......... a collection of a single edge</code></pre>
     },
 
     { // node n2
+      group: &#39;nodes&#39;,
       data: { id: &#39;n2&#39; },
       renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
     },
 
+    { // node n3
+      group: &#39;nodes&#39;,
+      data: { id: &#39;n3&#39;, parent: &#39;nparent&#39; },
+      position: { x: 123, y: 234 }
+    },
+
     { // node nparent
+      group: &#39;nodes&#39;,
       data: { id: &#39;nparent&#39; }
     },
 
     { // edge e1
+      group: &#39;edges&#39;,
       data: {
           id: &#39;e1&#39;,
           source: &#39;n1&#39;, // the source node id (edge comes from this node)
           target: &#39;n2&#39;  // the target node id (edge goes to this node)
       }
     }
-  ]
+  ],
+
+  // so we can see the ids
+  style: cytoscape.stylesheet().
+    selector(&#39;node&#39;)
+      .css({
+          &#39;content&#39;: &#39;data(id)&#39;
+        })
 
 });</code></pre>
 
@@ -863,8 +879,8 @@ edge ......... a collection of a single edge</code></pre>
 <p>The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 
 </p>
-<pre><code class="lang-js">// get all selected nodes with weight greater than or equal to 30
-cy.elements(&quot;node[weight &gt;= 30]:selected&quot;);</code></pre>
+<pre><code class="lang-js">// get all nodes with weight greater than or equal to 30
+cy.elements(&quot;node[weight &gt;= 50][height &lt; 180]&quot;);</code></pre>
 <p>Selectors can be joined together (effectively creating a logical OR) with commas:
 
 </p>

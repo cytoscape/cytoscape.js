@@ -5,8 +5,8 @@ A selector functions similar to a [jQuery selector](http://api.jquery.com/catego
 The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 
 ```js
-// get all selected nodes with weight greater than or equal to 30
-cy.elements("node[weight >= 30]:selected"); 
+// get all nodes with weight greater than or equal to 30
+cy.elements("node[weight >= 50][height < 180]"); 
 ```
 
 Selectors can be joined together (effectively creating a logical OR) with commas:

@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.24-20.27.54.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.26-00.15.38.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -1235,33 +1235,48 @@ var cytoscape;
 			domElement = instance;
 		}
 
-		var time = +new Date;
-		var suffix;
+		// if we have an old reg that is empty (no cy), then 
+		var oldReg = $$.getRegistrationForInstance(instance, domElement);
+		if( oldReg ){
+			if( !oldReg.cy ){
+				oldReg.cy = instance;
+				oldReg.domElement = domElement;
+			} else {
+				$$.util.error('Tried to register on a pre-existing registration');
+			}
 
-		// add a suffix in case instances collide on the same time
-		if( !$$.lastInstanceTime || $$.lastInstanceTime === time ){
-			$$.instanceCounter = 0;
+			return oldReg;
+
+		// otherwise, just make a new registration
 		} else {
-			++$$.instanceCounter;
+			var time = +new Date;
+			var suffix;
+
+			// add a suffix in case instances collide on the same time
+			if( !$$.lastInstanceTime || $$.lastInstanceTime === time ){
+				$$.instanceCounter = 0;
+			} else {
+				++$$.instanceCounter;
+			}
+			$$.lastInstanceTime = time;
+			suffix = $$.instanceCounter;
+
+			var id = "cy-" + time + "-" + suffix;
+
+			// create the registration object
+			var registration = {
+				id: id,
+				cy: cy,
+				domElement: domElement,
+				readies: [] // list of bound ready functions before calling init
+			};
+
+			// put the registration object in the pool
+			$$.instances.push( registration );
+			$$.instances[ id ] = registration;
+
+			return registration;
 		}
-		$$.lastInstanceTime = time;
-		suffix = $$.instanceCounter;
-
-		var id = "cy-" + time + "-" + suffix;
-
-		// create the registration object
-		var registration = {
-			id: id,
-			cy: cy,
-			domElement: domElement,
-			readies: [] // list of bound ready functions before calling init
-		};
-
-		// put the registration object in the pool
-		$$.instances.push( registration );
-		$$.instances[ id ] = registration;
-
-		return registration;
 	};
 
 	$$.removeRegistrationForInstance = function(instance, domElement){
@@ -2461,10 +2476,9 @@ var cytoscape;
 					"content": "",
 					"overlay-opacity": 0,
 					"overlay-color": "#000",
-					"overlay-padding": 10
-				})
-			.selector("node") // just node properties
-				.css({
+					"overlay-padding": 10,
+
+					// node props
 					"background-color": "#888",
 					"background-opacity": 1,
 					"background-image": "none",
@@ -2478,25 +2492,32 @@ var cytoscape;
 					"padding-bottom": 0,
 					"padding-left": 0,
 					"padding-right": 0,
-					"shape": "ellipse"
-				})
-			.selector("$node > node") // compound (parent) node properties
-				.css({
-					"width": "auto",
-					"height": "auto",
-					"shape": "rectangle"
-				})
-			.selector("edge") // just edge properties
-				.css({
+					"shape": "ellipse",
+
+					// edge props
 					"source-arrow-shape": "none",
 					"target-arrow-shape": "none",
 					"source-arrow-color": "#bbb",
 					"target-arrow-color": "#bbb",
 					"line-style": "solid",
 					"line-color": "#bbb",
-					"width": 1,
 					"control-point-step-size": 40,
 					"curve-style": "bezier"
+				})
+			.selector("$node > node") // compound (parent) node properties
+				.css({
+					"width": "auto",
+					"height": "auto",
+					"shape": "rectangle",
+					"background-opacity": 0.5,
+					"padding-top": 10,
+					"padding-right": 10,
+					"padding-left": 10,
+					"padding-bottom": 10
+				})
+			.selector("edge") // just edge properties
+				.css({
+					"width": 1,
 				})
 			.selector(":active")
 				.css({
@@ -3317,6 +3338,12 @@ var cytoscape;
 		hideEdgesOnViewport: false
 	};
 	
+	var origDefaults = $$.util.copy( defaults );
+
+	$$.defaults = function( opts ){
+		defaults = $$.util.extend({}, origDefaults, defaults);
+	};
+
 	$$.fn.core = function( fnMap, options ){
 		for( var name in fnMap ){
 			var fn = fnMap[name];
@@ -3334,7 +3361,7 @@ var cytoscape;
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg ){ 
+		if( reg && reg.cy ){ 
 			reg.domElement.innerHTML = '';
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
@@ -12880,7 +12907,7 @@ var cytoscape;
 			context.translate(centerX, centerY);
 			context.scale(width / 2, height / 2);
 			// At origin, radius 1, 0 to 2pi
-			context.arc(0, 0, 1, 0, Math.PI * 2, false);
+			context.arc(0, 0, 1, 0, Math.PI * 2 * 0.999, false); // *0.999 b/c chrome rendering bug on full circle
 			context.closePath();
 
 			context.scale(2/width, 2/height);

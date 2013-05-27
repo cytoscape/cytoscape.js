@@ -97,7 +97,7 @@ MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
 # configure what files to include in the zip
 ZIP_FILE = $(BUILD_DIR)/cytoscape.js-$(VERSION).zip
-ZIP_CONTENTS = $(JS_FILE) $(MIN_JS_FILE) $(LIBS) $(LICENSE)
+ZIP_CONTENTS = $(JS_FILE) $(MIN_JS_FILE) $(LIBS) $(LICENSE) $(BUILD_PLUGINS) $(MIN_BUILD_PLUGINS)
 ZIP_DIR = cytoscape.js-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = etc/PREAMBLE

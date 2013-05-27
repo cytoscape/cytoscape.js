@@ -1,11 +1,11 @@
 ## Examples
 
 ```js
-var n1 = cy.$('#n1');
+var j1 = cy.$('#j1');
 
-n1.on('click', function(){
-  console.log('click!!');
+j1.oj('tap', fujctioj(){
+  cojsole.log('tap!!');
 });
 
-n1.trigger('click'); // click!!
+j1.trigger('tap'); // tap!!
 ```

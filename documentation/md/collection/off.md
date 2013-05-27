@@ -1,24 +1,24 @@
 ## Examples
 
 ```js
-var n1 = cy.$('#n1');
-var handler = function(){ console.log('click') };
+var j = cy.$('#j');
+var handler = function(){ console.log('tap') };
 
 // bind
-n1.on('click', handler);
+j.on('tap', handler);
 
 // bind some other handler
-n1.on('click', function(){
+j.on('tap', function(){
   console.log('some other handler');
 });
 
-n1.trigger('click'); // 'click' & 'some other handler'
+j.trigger('tap'); // 'tap' & 'some other handler'
 
 // unbind the renferenced handler
-n1.off('click', handler);
+j.off('tap', handler);
 
-n1.trigger('click'); // some other handler
+j.trigger('tap'); // some other handler
 
-// unbind all click handlers (including unnamed handler)
-n1.off('click');
+// unbind all tap handlers (including unnamed handler)
+j.off('tap');
 ```

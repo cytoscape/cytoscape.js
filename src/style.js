@@ -273,7 +273,7 @@
 					"text-halign": "center",
 					"color": color,
 					"content": undefined, // => no label
-					"text-outline-color": "transparent",
+					"text-outline-color": "#000",
 					"text-outline-width": 0,
 					"text-outline-opacity": 1,
 					"text-opacity": 1,

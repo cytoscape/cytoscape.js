@@ -9,17 +9,16 @@ The following fields are immutable:
 ## Examples
 
 ```js
-var n1 = cy.$('#n1');
+var j = cy.$('#j');
 
 // set the weight field in data
-n1.data('weight', 75);
+j.data('weight', 60);
 
 // set several fields at once
-n1.data({
-  foo: 'some value',
-  bar: 'another value',
-  baz: 'yet another value'
+j.data({
+  name: 'Jerry Jerry Dingleberry',
+  height: 176
 });
 
-var weight = n1.data('weight');
+var weight = j.data('weight');
 ```

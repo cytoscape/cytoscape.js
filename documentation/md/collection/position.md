@@ -5,18 +5,18 @@ A position has two fields, `x` and `y`, that can take on numerical values.  Non-
 ## Examples
 
 ```js
-// get x for n1
-var x = cy.$('#n1').position('x');
+// get x for j
+var x = cy.$('#j').position('x');
 
-// get the whole position for n2
-var pos = cy.$('#n2').position();
+// get the whole position for e
+var pos = cy.$('#e').position();
 
-// set y for n1
-cy.$('#n1').position('y', 100);
+// set y for j
+cy.$('#j').position('y', 100);
 
 // set multiple
-cy.$('#n2').position({
+cy.$('#e').position({
   x: 123,
-  y: 456
+  y: 200
 });
 ```

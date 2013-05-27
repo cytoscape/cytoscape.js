@@ -3091,10 +3091,9 @@ cy.layout( options );</code></pre>
 					<p>A collection contains a set of nodes and edges.  Calling a function applies the function to all elements in the collection.  When reading values from a collection, <code>eles.data()</code> for example, the value of the first element in the collection is returned.  This follows the jQuery convention.  For example:
 
 </p>
-<pre><code class="lang-js">// assume graph:
-// n1[weight = 10], n2[weight = 60], n3[weight = 90]
+<pre><code class="lang-js">var weight = cy.nodes().data(&quot;weight&quot;);
 
-var weight = cy.nodes().data(&quot;weight&quot;); // returns 10</code></pre>
+console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight ); // weight is the first ele&#39;s weight</code></pre>
 <p>You can insure that you&#39;re reading from the element you want by using a <a href="#selectors">selector</a> to narrow down the collection to one element (i.e. <code>eles.size() === 1</code>) or the <code>eles.eq()</code> function.</p>
 
 				
@@ -3264,19 +3263,18 @@ eles.restore();</code></pre>
 <li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
 </ul>
 <h3>Examples</h3>
-<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
+<pre><code class="lang-js">var j = cy.$(&#39;#j&#39;);
 
 // set the weight field in data
-n1.data(&#39;weight&#39;, 75);
+j.data(&#39;weight&#39;, 60);
 
 // set several fields at once
-n1.data({
-  foo: &#39;some value&#39;,
-  bar: &#39;another value&#39;,
-  baz: &#39;yet another value&#39;
+j.data({
+  name: &#39;Jerry Jerry Dingleberry&#39;,
+  height: 176
 });
 
-var weight = n1.data(&#39;weight&#39;);</code></pre>
+var weight = j.data(&#39;weight&#39;);</code></pre>
 
 								
 							</div>		
@@ -3625,19 +3623,19 @@ var weight = n1.data(&#39;weight&#39;);</code></pre>
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">// get x for n1
-var x = cy.$(&#39;#n1&#39;).position(&#39;x&#39;);
+<pre><code class="lang-js">// get x for j
+var x = cy.$(&#39;#j&#39;).position(&#39;x&#39;);
 
-// get the whole position for n2
-var pos = cy.$(&#39;#n2&#39;).position();
+// get the whole position for e
+var pos = cy.$(&#39;#e&#39;).position();
 
-// set y for n1
-cy.$(&#39;#n1&#39;).position(&#39;y&#39;, 100);
+// set y for j
+cy.$(&#39;#j&#39;).position(&#39;y&#39;, 100);
 
 // set multiple
-cy.$(&#39;#n2&#39;).position({
+cy.$(&#39;#e&#39;).position({
   x: 123,
-  y: 456
+  y: 200
 });</code></pre>
 
 								
@@ -4139,12 +4137,12 @@ cy.$(&#39;#n2&#39;).position({
 							<div class="details">
 								
 									<h3>Defails</h3>
-<p>In the handler function, <code>this</code> references the element that triggered the event.
+<p>In the handler function, <code>this</code> references the originally bound object, and <code>evt.cyTarget</code> references the target of the event.
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.on(&#39;click&#39;, function(evt){
-  console.log( &#39;clicked &#39; + this.id() );
+<pre><code class="lang-js">cy.on(&#39;tap&#39;, function(evt){
+  console.log( &#39;tap &#39; + evt.cyTarget.id() );
 });</code></pre>
 
 								
@@ -4232,14 +4230,10 @@ cy.$(&#39;#n2&#39;).position({
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;node&#39;).one(&#39;click&#39;, function(){
-  var ele = this;
-  console.log(&#39;clicked &#39; + ele.id());
-});
-
-cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // clicked n1
-cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // nothing
-cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // clicked n2</code></pre>
+<pre><code class="lang-js">cy.$(&#39;node&#39;).one(&#39;tap&#39;, function(e){
+  var ele = e.cyTarget;
+  console.log(&#39;tapped &#39; + ele.id());
+});</code></pre>
 
 								
 							</div>		
@@ -4326,14 +4320,10 @@ cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // clicked n2</code></pre>
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;node&#39;).once(&#39;click&#39;, function(){
-  var ele = this;
+<pre><code class="lang-js">cy.$(&#39;node&#39;).once(&#39;click&#39;, function(e){
+  var ele = e.cyTarget;
   console.log(&#39;clicked &#39; + ele.id());
-});
-
-cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // clicked n1
-cy.$(&#39;#n1&#39;).trigger(&#39;click&#39;); // nothing
-cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // nothing</code></pre>
+});</code></pre>
 
 								
 							</div>		
@@ -4400,26 +4390,26 @@ cy.$(&#39;#n2&#39;).trigger(&#39;click&#39;); // nothing</code></pre>
 							<div class="details">
 								
 									<h3>Examples</h3>
-<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
-var handler = function(){ console.log(&#39;click&#39;) };
+<pre><code class="lang-js">var j = cy.$(&#39;#j&#39;);
+var handler = function(){ console.log(&#39;tap&#39;) };
 
 // bind
-n1.on(&#39;click&#39;, handler);
+j.on(&#39;tap&#39;, handler);
 
 // bind some other handler
-n1.on(&#39;click&#39;, function(){
+j.on(&#39;tap&#39;, function(){
   console.log(&#39;some other handler&#39;);
 });
 
-n1.trigger(&#39;click&#39;); // &#39;click&#39; &amp; &#39;some other handler&#39;
+j.trigger(&#39;tap&#39;); // &#39;tap&#39; &amp; &#39;some other handler&#39;
 
 // unbind the renferenced handler
-n1.off(&#39;click&#39;, handler);
+j.off(&#39;tap&#39;, handler);
 
-n1.trigger(&#39;click&#39;); // some other handler
+j.trigger(&#39;tap&#39;); // some other handler
 
-// unbind all click handlers (including unnamed handler)
-n1.off(&#39;click&#39;);</code></pre>
+// unbind all tap handlers (including unnamed handler)
+j.off(&#39;tap&#39;);</code></pre>
 
 								
 							</div>		
@@ -4462,13 +4452,13 @@ n1.off(&#39;click&#39;);</code></pre>
 							<div class="details">
 								
 									<h3>Examples</h3>
-<pre><code class="lang-js">var n1 = cy.$(&#39;#n1&#39;);
+<pre><code class="lang-js">var j1 = cy.$(&#39;#j1&#39;);
 
-n1.on(&#39;click&#39;, function(){
-  console.log(&#39;click!!&#39;);
+j1.oj(&#39;tap&#39;, fujctioj(){
+  cojsole.log(&#39;tap!!&#39;);
 });
 
-n1.trigger(&#39;click&#39;); // click!!</code></pre>
+j1.trigger(&#39;tap&#39;); // tap!!</code></pre>
 
 								
 							</div>		

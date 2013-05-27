@@ -156,6 +156,12 @@
 				} else {
 					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
+
+				if( percent < 0 ){
+					percent = 0;
+				} else if( percent > 1 ){
+					percent = 1;
+				}
 				
 				if( properties.delay == null ){ // then update the position
 					var startPos = animation.startPosition;
@@ -213,8 +219,14 @@
 			}
 			
 			function ease(start, end, percent){
+				if( percent < 0 ){
+					percent = 0;
+				} else if( percent > 1 ){
+					percent = 1;
+				}
+
 				if( $$.is.number(start) && $$.is.number(end) ){
-					return start + (end - start) * percent;
+					return start + Math.abs(end - start) * percent;
 
 				} else if( $$.is.number(start[0]) && $$.is.number(end[0]) ){ // then assume a colour
 					var c1 = start;
@@ -230,7 +242,7 @@
 					var g = ch( c1[1], c2[1] );
 					var b = ch( c1[2], c2[2] );
 					
-					return $$.util.tuple2hex( [r, g, b] );
+					return 'rgb(' + r + ', ' + g + ', ' + b + ')';
 				}
 				
 				return undefined;

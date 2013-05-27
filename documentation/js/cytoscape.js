@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.27-16.28.07.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.27-17.36.06.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2458,7 +2458,7 @@ var cytoscape;
 					"text-halign": "center",
 					"color": color,
 					"content": undefined, // => no label
-					"text-outline-color": "transparent",
+					"text-outline-color": "#000",
 					"text-outline-width": 0,
 					"text-outline-opacity": 1,
 					"text-opacity": 1,
@@ -3852,6 +3852,12 @@ var cytoscape;
 				} else {
 					percent = Math.min(1, (now - startTime)/animation.duration);
 				}
+
+				if( percent < 0 ){
+					percent = 0;
+				} else if( percent > 1 ){
+					percent = 1;
+				}
 				
 				if( properties.delay == null ){ // then update the position
 					var startPos = animation.startPosition;
@@ -3909,8 +3915,14 @@ var cytoscape;
 			}
 			
 			function ease(start, end, percent){
+				if( percent < 0 ){
+					percent = 0;
+				} else if( percent > 1 ){
+					percent = 1;
+				}
+
 				if( $$.is.number(start) && $$.is.number(end) ){
-					return start + (end - start) * percent;
+					return start + Math.abs(end - start) * percent;
 
 				} else if( $$.is.number(start[0]) && $$.is.number(end[0]) ){ // then assume a colour
 					var c1 = start;
@@ -3926,7 +3938,7 @@ var cytoscape;
 					var g = ch( c1[1], c2[1] );
 					var b = ch( c1[2], c2[2] );
 					
-					return $$.util.tuple2hex( [r, g, b] );
+					return 'rgb(' + r + ', ' + g + ', ' + b + ')';
 				}
 				
 				return undefined;

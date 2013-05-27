@@ -5,7 +5,7 @@ This function has a shorter alias, `eles.bfs()`.
 ## Examples
 
 ```js
-cy.$('#n0').bfs(function(i, depth){
-  console.log('visitiing ' + this.id());
-}, true);
+cy.$('#j').bfs(function(i, depth){
+  console.log('visit ' + this.id());
+}, false);
 ```

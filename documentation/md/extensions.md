@@ -2,7 +2,7 @@
 
 The extensions API is very simple, following this format:
 
-```js
+```
 cytoscape( type, name, extension );
 ```
 
@@ -30,6 +30,10 @@ cytoscape('collection', 'forEach', function( fn ){
   }
 
   return this; // chainability
+});
+
+cy.elements().forEach(function(){
+  console.log( 'forEach ' + this.id() );
 });
 ```
 

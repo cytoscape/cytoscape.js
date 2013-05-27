@@ -5735,9 +5735,9 @@ j1.trigger(&#39;tap&#39;); // tap!!</code></pre>
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;#n0&#39;).bfs(function(i, depth){
-  console.log(&#39;visitiing &#39; + this.id());
-}, true);</code></pre>
+<pre><code class="lang-js">cy.$(&#39;#j&#39;).bfs(function(i, depth){
+  console.log(&#39;visit &#39; + this.id());
+}, false);</code></pre>
 
 								
 							</div>		
@@ -5991,7 +5991,7 @@ j1.trigger(&#39;tap&#39;); // tap!!</code></pre>
 <p>The extensions API is very simple, following this format:
 
 </p>
-<pre><code class="lang-js">cytoscape( type, name, extension );</code></pre>
+<pre><code>cytoscape( type, name, extension );</code></pre>
 <p>The value of <code>type</code> can take on the following values:
 
 </p>
@@ -6019,6 +6019,10 @@ j1.trigger(&#39;tap&#39;); // tap!!</code></pre>
   }
 
   return this; // chainability
+});
+
+cy.elements().forEach(function(){
+  console.log( &#39;forEach &#39; + this.id() );
 });</code></pre>
 <h2 id="extensions/layouts">Layouts <a href="#extensions/layouts"><span class="icon-bookmark"></span></a></h2>
 <p>A layout modifies the positions of nodes in the graph.  A layout has number of options, which are specific to the particular layout.

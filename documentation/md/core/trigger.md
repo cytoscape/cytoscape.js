@@ -1,9 +1,9 @@
 ## Examples
 
 ```js
-cy.bind('click', function(evt, foo, bar){
-  console.log('click');
+cy.bind('tap', function(evt, foo, bar){
+  console.log('tap');
 });
 
-cy.trigger('click', ['foo', 'bar']);
+cy.trigger('tap', ['foo', 'bar']);
 ```

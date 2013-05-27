@@ -3,10 +3,10 @@
 For all handlers:
 
 ```js
-cy.on("click", function(){ /* ... */ });
+cy.on("tap", function(){ /* ... */ });
 
-// unbind all click handlers, including the one above
-cy.off("click");
+// unbind all tap handlers, including the one above
+cy.off("tap");
 ```
 
 For a particular handler:
@@ -15,13 +15,13 @@ For a particular handler:
 var handler = function(){
   console.log("called handler");
 };
-cy.on("click", handler);
+cy.on("tap", handler);
 
 var otherHandler = function(){
   console.log("called other handler");
 };
-cy.on("click", otherHandler);
+cy.on("tap", otherHandler);
 
 // just unbind handler
-cy.off("click", handler);
+cy.off("tap", handler);
 ```

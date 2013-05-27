@@ -9,7 +9,16 @@ cy.style()
   .resetToDefault() // start a fresh default stylesheet
 
   // and then define new styles
+  .selector('node')
+  	.css('background-color', 'blue')
   .selector('node:selected')
-    .css({ ... })
-  ...
+    .css({
+      'background-color': 'red',
+
+      // , ...
+    })
+
+  // ...
+
+  .update()
 ```

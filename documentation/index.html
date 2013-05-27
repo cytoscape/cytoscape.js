@@ -2624,25 +2624,25 @@ cy.zoom({
 									<h3>Examples</h3>
 <p>Bind to events that bubble up from elements matching the specified <code>node</code> selector:
 </p>
-<pre><code class="lang-js">cy.on(&#39;click&#39;, &#39;node&#39;, { foo: &#39;bar&#39; }, function(evt){
+<pre><code class="lang-js">cy.on(&#39;tap&#39;, &#39;node&#39;, { foo: &#39;bar&#39; }, function(evt){
   console.log( evt.data.foo ); // &#39;bar&#39;
 
   var node = evt.cyTarget;
-  console.log( &#39;clicked &#39; + node.id() );
+  console.log( &#39;tapped &#39; + node.id() );
   debugger;
 });</code></pre>
-<p>Bind to all click events that the core receives:
+<p>Bind to all tap events that the core receives:
 
 </p>
-<pre><code class="lang-js">cy.on(&#39;click&#39;, function(event){
+<pre><code class="lang-js">cy.on(&#39;tap&#39;, function(event){
   // cyTarget holds a reference to the originator
   // of the event (core or element)
   var evtTarget = event.cyTarget;
 
   if( evtTarget === cy ){
-      console.log(&#39;click on background&#39;);
+      console.log(&#39;tap on background&#39;);
   } else {
-    console.log(&#39;click on some element&#39;);
+    console.log(&#39;tap on some element&#39;);
   }
 });</code></pre>
 
@@ -2727,12 +2727,12 @@ cy.zoom({
 							<div class="details">
 								
 									<h3>Examples</h3>
-<pre><code class="lang-js">cy.one(&#39;click&#39;, &#39;node&#39;, function(){
-  console.log(&#39;click!&#39;);
+<pre><code class="lang-js">cy.one(&#39;tap&#39;, &#39;node&#39;, function(){
+  console.log(&#39;tap!&#39;);
 });
 
-cy.$(&#39;node&#39;).eq(0).trigger(&#39;click&#39;); // click!
-cy.$(&#39;node&#39;).eq(1).trigger(&#39;click&#39;); // nothing b/c already clicked</code></pre>
+cy.$(&#39;node&#39;).eq(0).trigger(&#39;tap&#39;); // tap!
+cy.$(&#39;node&#39;).eq(1).trigger(&#39;tap&#39;); // nothing b/c already tapped</code></pre>
 
 								
 							</div>		
@@ -2809,25 +2809,25 @@ cy.$(&#39;node&#39;).eq(1).trigger(&#39;click&#39;); // nothing b/c already clic
 <p>For all handlers:
 
 </p>
-<pre><code class="lang-js">cy.on(&quot;click&quot;, function(){ /* ... */ });
+<pre><code class="lang-js">cy.on(&quot;tap&quot;, function(){ /* ... */ });
 
-// unbind all click handlers, including the one above
-cy.off(&quot;click&quot;);</code></pre>
+// unbind all tap handlers, including the one above
+cy.off(&quot;tap&quot;);</code></pre>
 <p>For a particular handler:
 
 </p>
 <pre><code class="lang-js">var handler = function(){
   console.log(&quot;called handler&quot;);
 };
-cy.on(&quot;click&quot;, handler);
+cy.on(&quot;tap&quot;, handler);
 
 var otherHandler = function(){
   console.log(&quot;called other handler&quot;);
 };
-cy.on(&quot;click&quot;, otherHandler);
+cy.on(&quot;tap&quot;, otherHandler);
 
 // just unbind handler
-cy.off(&quot;click&quot;, handler);</code></pre>
+cy.off(&quot;tap&quot;, handler);</code></pre>
 
 								
 							</div>		
@@ -2870,11 +2870,11 @@ cy.off(&quot;click&quot;, handler);</code></pre>
 							<div class="details">
 								
 									<h3>Examples</h3>
-<pre><code class="lang-js">cy.bind(&#39;click&#39;, function(evt, foo, bar){
-  console.log(&#39;click&#39;);
+<pre><code class="lang-js">cy.bind(&#39;tap&#39;, function(evt, foo, bar){
+  console.log(&#39;tap&#39;);
 });
 
-cy.trigger(&#39;click&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
+cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 
 								
 							</div>		
@@ -3064,9 +3064,18 @@ cy.layout( options );</code></pre>
   .resetToDefault() // start a fresh default stylesheet
 
   // and then define new styles
+  .selector(&#39;node&#39;)
+      .css(&#39;background-color&#39;, &#39;blue&#39;)
   .selector(&#39;node:selected&#39;)
-    .css({ ... })
-  ...</code></pre>
+    .css({
+      &#39;background-color&#39;: &#39;red&#39;,
+
+      // , ...
+    })
+
+  // ...
+
+  .update()</code></pre>
 
 								
 							</div>		

@@ -1,10 +1,10 @@
 ## Examples
 
 ```js
-cy.one('click', 'node', function(){
-  console.log('click!');
+cy.one('tap', 'node', function(){
+  console.log('tap!');
 });
 
-cy.$('node').eq(0).trigger('click'); // click!
-cy.$('node').eq(1).trigger('click'); // nothing b/c already clicked
+cy.$('node').eq(0).trigger('tap'); // tap!
+cy.$('node').eq(1).trigger('tap'); // nothing b/c already tapped
 ```

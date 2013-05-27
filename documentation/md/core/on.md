@@ -2,27 +2,27 @@
 
 Bind to events that bubble up from elements matching the specified `node` selector:
 ```js
-cy.on('click', 'node', { foo: 'bar' }, function(evt){
+cy.on('tap', 'node', { foo: 'bar' }, function(evt){
   console.log( evt.data.foo ); // 'bar'
 
   var node = evt.cyTarget;
-  console.log( 'clicked ' + node.id() );
+  console.log( 'tapped ' + node.id() );
   debugger;
 });
 ```
 
-Bind to all click events that the core receives:
+Bind to all tap events that the core receives:
 
 ```js
-cy.on('click', function(event){
+cy.on('tap', function(event){
   // cyTarget holds a reference to the originator
   // of the event (core or element)
   var evtTarget = event.cyTarget;
 
   if( evtTarget === cy ){
-  	console.log('click on background');
+  	console.log('tap on background');
   } else {
-    console.log('click on some element');
+    console.log('tap on some element');
   }
 });
 ```

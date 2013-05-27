@@ -7,19 +7,19 @@ When zooming about a point via `cy.zoom( options )`, the options are defined as 
 For zooming about a rendered position (i.e. a position on-screen):
 
 ```js
-var options = {
+cy.zoom({
   level: 2.0, // the zoom level
   renderedPosition: { x: 100, y: 100 }
-};
+});
 ```
 
 For zooming about a model position:
 
 ```js
-var options = {
+cy.zoom({
   level: 2.0, // the zoom level
-  position: { x: 500, y: 625 }
-};
+  position: { x: 0, y: 0 }
+});
 ```
 
 For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of `options.position` or `options.renderedPosition`.
@@ -45,9 +45,9 @@ cy.zoom(1/0); // infinity is outside of the valid range and
 
 Zoom about a node
 ```js
-var pos = cy.nodes("#n0").position();
+var pos = cy.nodes("#j").position();
 cy.zoom({
-  level: 2.5,
+  level: 1.5,
   position: pos
 });
 ```

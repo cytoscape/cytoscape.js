@@ -5,8 +5,9 @@ Bind to events that bubble up from elements matching the specified `node` select
 cy.on('click', 'node', { foo: 'bar' }, function(evt){
   console.log( evt.data.foo ); // 'bar'
 
-  var node = this;
+  var node = evt.cyTarget;
   console.log( 'clicked ' + node.id() );
+  debugger;
 });
 ```
 

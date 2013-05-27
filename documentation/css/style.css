@@ -46,7 +46,7 @@ body {
 	padding: 4px 6px;
 	color: rgba(0, 0, 0, 0.75);
 	cursor: pointer;
-	z-index: 999;
+	z-index: 999999;
 }
 
 #cy-hide,

@@ -158,7 +158,7 @@
                   "args": [ { "name": "eles", "descr": "The collection to fit to.", "optional": true }, { "name": "padding", "descr": "An amount of padding (in pixels) to have around the graph", "optional": true } ] 
                 }
               ],
-              "md": "core/center"
+              "md": "core/fit"
             },
 
             {

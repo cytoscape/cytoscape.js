@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.26-00.31.13.
+ * This file is part of cytoscape.js 2.0.0-github-snapshot-2013.05.27-16.28.07.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -3341,7 +3341,7 @@ var cytoscape;
 	var origDefaults = $$.util.copy( defaults );
 
 	$$.defaults = function( opts ){
-		defaults = $$.util.extend({}, origDefaults, defaults);
+		defaults = $$.util.extend({}, origDefaults, opts);
 	};
 
 	$$.fn.core = function( fnMap, options ){
@@ -3363,6 +3363,7 @@ var cytoscape;
 		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg && reg.cy ){ 
 			reg.domElement.innerHTML = '';
+			reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
 		} 
@@ -3626,7 +3627,7 @@ var cytoscape;
 		},
 		
 		remove: function(collection){
-			if( !$$.is.elementOrCollection(collection) ){
+			if( $$.is.elementOrCollection(collection) ){
 				collection = collection;
 			} else if( $$.is.string(collection) ){
 				var selector = collection;
@@ -4383,7 +4384,14 @@ var cytoscape;
 				return this;
 			}
 
-			var bb = this.boundingBox( elements );
+			if( $$.is.string(elements) ){
+				var sel = elements;
+				elements = this.$( sel );
+			} else if( !$$.is.elementOrCollection(elements) ){
+				elements = this.elements();
+			}
+
+			var bb = elements.boundingBox();
 			var style = this.style();
 
 			var w = parseFloat( style.containerCss("width") );
@@ -4514,7 +4522,14 @@ var cytoscape;
 				return this;
 			}
 
-			var bb = this.boundingBox( elements );
+			if( $$.is.string(elements) ){
+				var selector = elements;
+				elements = cy.elements( selector );
+			} else if( !$$.is.elementOrCollection(elements) ){
+				elements = cy.elements();
+			}
+
+			var bb = elements.boundingBox();
 			var style = this.style();
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );
@@ -8052,6 +8067,8 @@ var cytoscape;
 		//--
 		
 		this.redraws = 0;
+
+		this.bindings = [];
 		
 		this.init();
 		
@@ -8115,7 +8132,11 @@ var cytoscape;
 	}
 
 	CanvasRenderer.prototype.notify = function(params) {
-		if (params.type == "add"
+		if ( params.type == "destroy" ){
+			this.destroy();
+			return;
+
+		} else if (params.type == "add"
 			|| params.type == "remove"
 			|| params.type == "load"
 		) {
@@ -8134,6 +8155,28 @@ var cytoscape;
 
 		this.redraws++;
 		this.redraw();
+	};
+
+	CanvasRenderer.prototype.registerBinding = function(target, event, handler, useCapture){
+		this.bindings.push({
+			target: target,
+			event: event,
+			handler: handler,
+			useCapture: useCapture
+		});
+
+		target.addEventListener(event, handler, useCapture);
+	};
+
+	CanvasRenderer.prototype.destroy = function(){
+		this.destroyed = true;
+
+		for( var i = 0; i < this.bindings.length; i++ ){
+			var binding = this.bindings[i];
+			var b = binding;
+
+			b.target.removeEventListener(b.event, b.handler, b.useCapture);
+		}
 	};
 	
 	
@@ -8287,7 +8330,7 @@ var cytoscape;
 		}
 
 		// auto resize
-		window.addEventListener("resize", function(e) { 
+		r.registerBinding(window, "resize", function(e) { 
 			r.data.canvasNeedsRedraw[NODE] = true;
 			r.data.canvasNeedsRedraw[OVERLAY] = true;
 			r.matchCanvasSize( r.data.container );
@@ -8295,12 +8338,12 @@ var cytoscape;
 		}, true);
 
 		// stop right click menu from appearing on cy
-		r.data.container.addEventListener("contextmenu", function(e){
+		r.registerBinding(r.data.container, "contextmenu", function(e){
 			e.preventDefault();
 		});
 
 		// Primary key
-		r.data.container.addEventListener("mousedown", function(e) { 
+		r.registerBinding(r.data.container, "mousedown", function(e) { 
 			e.preventDefault();
 			r.hoverData.capture = true;
 			r.hoverData.which = e.which;
@@ -8443,7 +8486,7 @@ var cytoscape;
 			
 		}, false);
 		
-		window.addEventListener("mousemove", function(e) {
+		r.registerBinding(window, "mousemove", function(e) {
 			var preventDefault = false;
 			var capture = r.hoverData.capture;
 
@@ -8596,7 +8639,7 @@ var cytoscape;
     		}
 		}, false);
 		
-		window.addEventListener("mouseup", function(e) {
+		r.registerBinding(window, "mouseup", function(e) {
 			// console.log('--\nmouseup', e)
 
 			var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
@@ -8846,31 +8889,31 @@ var cytoscape;
 		
 		// Functions to help with whether mouse wheel should trigger zooming
 		// --
-		r.data.container.addEventListener("mousewheel", wheelHandler, true);
-		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, true);
-		r.data.container.addEventListener("MozMousePixelScroll", function(e){
+		r.registerBinding(r.data.container, "mousewheel", wheelHandler, true);
+		r.registerBinding(r.data.container, "DOMMouseScroll", wheelHandler, true);
+		r.registerBinding(r.data.container, "MozMousePixelScroll", function(e){
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();
 			}
 		}, false);
 		
-		r.data.container.addEventListener("mousemove", function(e) { 
+		r.registerBinding(r.data.container, "mousemove", function(e) { 
 			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
 				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; 
 		}, false);
 		
-		r.data.container.addEventListener("mouseout", function(e) { 
+		r.registerBinding(r.data.container, "mouseout", function(e) { 
 			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null 
 		}, false);
 		// --
 		
 		// Functions to help with handling mouseout/mouseover on the Cytoscape container
 					// Handle mouseout on Cytoscape container
-		r.data.container.addEventListener("mouseout", function(e) { 
+		r.registerBinding(r.data.container, "mouseout", function(e) { 
 			r.data.cy.trigger(new $$.Event(e, {type: "mouseout"}));
 		}, false);
 		
-		r.data.container.addEventListener("mouseover", function(e) { 
+		r.registerBinding(r.data.container, "mouseover", function(e) { 
 			r.data.cy.trigger(new $$.Event(e, {type: "mouseover"}));
 		}, false);
 		
@@ -8885,7 +8928,7 @@ var cytoscape;
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
 		}
 
-		r.data.container.addEventListener("touchstart", function(e) {
+		r.registerBinding(r.data.container, "touchstart", function(e) {
 
 			if( e.target !== r.data.link ){
 				e.preventDefault();
@@ -9113,7 +9156,7 @@ var cytoscape;
 		
 // console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
-		window.addEventListener("touchmove", function(e) {
+		r.registerBinding(window, "touchmove", function(e) {
 		
 			var select = r.data.select;
 			var capture = r.touchData.capture; //if (!capture) { return; }; 
@@ -9367,7 +9410,7 @@ var cytoscape;
 			
 		}, false);
 		
-		window.addEventListener("touchend", function(e) {
+		r.registerBinding(window, "touchend", function(e) {
 			
 			var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
 			e.preventDefault();

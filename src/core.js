@@ -8,7 +8,7 @@
 	var origDefaults = $$.util.copy( defaults );
 
 	$$.defaults = function( opts ){
-		defaults = $$.util.extend({}, origDefaults, defaults);
+		defaults = $$.util.extend({}, origDefaults, opts);
 	};
 
 	$$.fn.core = function( fnMap, options ){
@@ -30,6 +30,7 @@
 		var reg = $$.getRegistrationForInstance(cy, container);
 		if( reg && reg.cy ){ 
 			reg.domElement.innerHTML = '';
+			reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
 		} 

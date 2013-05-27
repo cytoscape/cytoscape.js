@@ -5,7 +5,16 @@ This resets the viewport to the origin (0, 0) at zoom level 1.
 ## Examples
 
 ```js
-cy.pan({ x: 100, y: 100 });
-cy.zoom( 2 );
-cy.reset();
+setTimeout( function(){
+	cy.pan({ x: 50, y: -100 });
+}, 1000 );
+
+setTimeout( function(){
+	cy.zoom( 2 );
+}, 2000 );
+
+setTimeout( function(){
+	cy.reset();
+}, 3000 );
+
 ```

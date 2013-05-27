@@ -22,6 +22,8 @@ $(function(){
 
   $('#cy-refresh').on('mousedown touchstart', function(){
     loadCy();
+
+    $('#cy').attr('style', '');
   });
 
   $('#cy-hide').on('mousedown touchstart', function(){
@@ -48,8 +50,8 @@ $(function(){
         $('#cy-title .content').html( text ).hide().fadeIn(100).delay(250).hide(200, function(){
           var ret = eval( text );
           
-          if( ret && cytoscape.is.elementOrCollection( ret ) ){
-            console.log(ret)
+          if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
+            //console.log(ret)
 
             var css = {
               'text-outline-color': '#4183C4',

@@ -9,7 +9,11 @@ It is important to note that the positions of newly added nodes must be defined 
 Add a node from a plain object.
 
 ```js
-cy.add({ group: "nodes", data: { id: "n0" } });
+cy.add({
+	group: "nodes",
+	data: { weight: 75 },
+	position: { x: 200, y: 200 }
+});
 ```
 
 Add nodes and edges to the graph as plain objects:
@@ -21,17 +25,4 @@ var eles = cy.add([
   { group: "nodes", data: { id: "n1" }, position: { x: 200, y: 200 } },
   { group: "edges", data: { id: "e0", source: "n0", target: "n1" } }
 ]);
-```
-
-Add elements:
-
-```js
-var n0 = cy.node("n1");
-var n1 = cy.node("n2");
-var e0 = cy.edge("e0");
-n1.collection().add(n2).add(n3).remove(); // remove n0, n1, and e0
-
-var n1e0 = n1.collection().add(e0);
-cy.add(n0); // add a single element, n0
-cy.add(n1e0); // add the collection of n1 and e0
 ```

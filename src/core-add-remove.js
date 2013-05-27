@@ -62,7 +62,7 @@
 		},
 		
 		remove: function(collection){
-			if( !$$.is.elementOrCollection(collection) ){
+			if( $$.is.elementOrCollection(collection) ){
 				collection = collection;
 			} else if( $$.is.string(collection) ){
 				var selector = collection;

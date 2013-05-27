@@ -154,7 +154,14 @@
 				return this;
 			}
 
-			var bb = this.boundingBox( elements );
+			if( $$.is.string(elements) ){
+				var sel = elements;
+				elements = this.$( sel );
+			} else if( !$$.is.elementOrCollection(elements) ){
+				elements = this.elements();
+			}
+
+			var bb = elements.boundingBox();
 			var style = this.style();
 
 			var w = parseFloat( style.containerCss("width") );
@@ -285,7 +292,14 @@
 				return this;
 			}
 
-			var bb = this.boundingBox( elements );
+			if( $$.is.string(elements) ){
+				var selector = elements;
+				elements = cy.elements( selector );
+			} else if( !$$.is.elementOrCollection(elements) ){
+				elements = cy.elements();
+			}
+
+			var bb = elements.boundingBox();
 			var style = this.style();
 			var w = parseFloat( style.containerCss("width") );
 			var h = parseFloat( style.containerCss("height") );

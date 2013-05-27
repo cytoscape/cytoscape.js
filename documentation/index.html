@@ -12,6 +12,7 @@
 		<link href="css/font-awesome.css" rel="stylesheet" />
 		<link href="css/style.css" rel="stylesheet" />
 
+		<script src="js/require.js"></script>
 		<script src="js/jquery.js"></script>
 		<script src="js/cytoscape.js"></script>
 		<script src="js/arbor.js"></script>
@@ -884,13 +885,13 @@ cy.elements(&quot;node[weight &gt;= 50][height &lt; 180]&quot;);</code></pre>
 <p>Selectors can be joined together (effectively creating a logical OR) with commas:
 
 </p>
-<pre><code class="lang-js">// get both locked nodes AND selected edges 
-cy.elements(&quot;node:locked, edge:selected&quot;);</code></pre>
+<pre><code class="lang-js">// get node j and the edges coming out from it
+cy.elements(&quot;node#j, edge[source = &#39;j&#39;]&quot;);</code></pre>
 <p>It is important to note that strings need to be enclosed by quotation marks:
 
 </p>
-<pre><code class="lang-js">cy.filter(&quot;node[foo = bar]&quot;);   // this doesn&#39;t work
-cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
+<pre><code class="lang-js">//cy.filter(&quot;node[name = Jerry]&quot;); // this doesn&#39;t work
+cy.filter(&quot;node[name = &#39;Jerry&#39;]&quot;); // but this does</code></pre>
 <h2 id="selectors/group-amp-class">Group &amp; class <a href="#selectors/group-amp-class"><span class="icon-bookmark"></span></a></h2>
 <p><strong><code>node</code> or <code>edge</code> (group selector)</strong><br>Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges).
 
@@ -1227,14 +1228,14 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <p>To use Cytoscape.js in Node.js:
 
 </p>
-<pre><code class="lang-js">var cytoscape = require(&#39;cytoscape&#39;);</code></pre>
+<pre><code>var cytoscape = require(&#39;cytoscape&#39;);</code></pre>
 <h3>Getting started</h3>
 <p>An instance of Cytoscape.js correeponds to a graph.  You can create an instance as follows:
 
 </p>
 <pre><code class="lang-js">cytoscape({
-  container: someHtmlDomElement,
-  ready: function(){}
+  container: document.getElementById(&#39;cy&#39;),
+  ready: function(){ console.log(&#39;ready&#39;) }
 });</code></pre>
 <p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.
 
@@ -1245,8 +1246,11 @@ cy.filter(&quot;node[foo = &#39;bar&#39;]&quot;); // but this does</code></pre>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({ // for some div with id &#39;cy&#39;
   ready: function(){
     // you can access the core object API through cy
-  },
-  ...
+
+    console.log(&quot;ready&quot;);
+  }
+
+  // , ...
 });</code></pre>
 <p>This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
 
@@ -1296,15 +1300,16 @@ $(function(){ // on jquery ready
 
 </p>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
-  layout: { ... },
+  showOverlay: false,
+  layout: { /* ... */ },
   zoom: 1,
   minZoom: 1e-50,
   maxZoom: 1e50,
   pan: { x: 0, y: 0 },
-  renderer: { ... },
-  style: { ... },
-  ready: function(evt){ ... },
-  elements: ...
+  renderer: { /* ... */ },
+  style: undefined /* ... */,
+  ready: function(evt){ /* ... */ },
+  elements: [ /* ... */ ]
 });</code></pre>
 <p><strong>layout</strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports.
 
@@ -1324,8 +1329,8 @@ $(function(){ // on jquery ready
 <p>For example:
 
 </p>
-<pre><code class="lang-js">{
-  ...
+<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
+  /* ... */
 
   style: cytoscape.stylesheet()
     .selector(&#39;node&#39;)
@@ -1338,8 +1343,8 @@ $(function(){ // on jquery ready
         &#39;line-color&#39;: &#39;blue&#39;
       })
 
-  ...
-}</code></pre>
+  /* ... */
+});</code></pre>
 <p><strong>ready</strong> : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.
 
 </p>
@@ -1352,8 +1357,8 @@ $(function(){ // on jquery ready
 <p>For example:
 
 </p>
-<pre><code class="lang-js">{
-  ...
+<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
+  /* ... */
 
   elements: [
     {
@@ -1386,28 +1391,42 @@ $(function(){ // on jquery ready
     }
   ]
 
-  ...
-}</code></pre>
+  /* ... */
+});</code></pre>
 <p>You can alternatively specify separate arrays indexed in a object by the group names so you don&#39;t have to specify the <code>group</code> property over and over for each element:
 
 </p>
-<pre><code class="lang-js">{
-  ...
+<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
+  /* ... */
 
   elements: {
     nodes: [
       { data: { id: &#39;foo&#39; } }, // NB no group specified
-      { ... },
-      { ... }
+
+      { data: { id: &#39;bar&#39; } },
+
+      {
+        data: { weight: 100 }, // elided id =&gt; autogenerated id 
+        group: &#39;nodes&#39;,
+        position: {
+          x: 100,
+          y: 100
+        },
+        classes: &#39;className1 className2&#39;,
+        selected: true,
+        selectable: true,
+        locked: true,
+        grabbable: true
+      }
     ],
 
     edges: [
-      { ... }
+      { data: { id: &#39;baz&#39;, source: &#39;foo&#39;, target: &#39;bar&#39; } } // NB no group specified
     ]
   }
 
-  ...
-}</code></pre>
+  /* ... */
+});</code></pre>
 
 					
 
@@ -1495,7 +1514,11 @@ $(function(){ // on jquery ready
 <p>Add a node from a plain object.
 
 </p>
-<pre><code class="lang-js">cy.add({ group: &quot;nodes&quot;, data: { id: &quot;n0&quot; } });</code></pre>
+<pre><code class="lang-js">cy.add({
+    group: &quot;nodes&quot;,
+    data: { weight: 75 },
+    position: { x: 200, y: 200 }
+});</code></pre>
 <p>Add nodes and edges to the graph as plain objects:
 
 </p>
@@ -1505,17 +1528,6 @@ var eles = cy.add([
   { group: &quot;nodes&quot;, data: { id: &quot;n1&quot; }, position: { x: 200, y: 200 } },
   { group: &quot;edges&quot;, data: { id: &quot;e0&quot;, source: &quot;n0&quot;, target: &quot;n1&quot; } }
 ]);</code></pre>
-<p>Add elements:
-
-</p>
-<pre><code class="lang-js">var n0 = cy.node(&quot;n1&quot;);
-var n1 = cy.node(&quot;n2&quot;);
-var e0 = cy.edge(&quot;e0&quot;);
-n1.collection().add(n2).add(n3).remove(); // remove n0, n1, and e0
-
-var n1e0 = n1.collection().add(e0);
-cy.add(n0); // add a single element, n0
-cy.add(n1e0); // add the collection of n1 and e0</code></pre>
 
 								
 							</div>		
@@ -1575,17 +1587,17 @@ cy.add(n1e0); // add the collection of n1 and e0</code></pre>
 <p>Remove an element:
 
 </p>
-<pre><code class="lang-js">var n0 = cy.nodes(&quot;#n0&quot;);
-cy.remove(n0);</code></pre>
+<pre><code class="lang-js">var j = cy.$(&quot;#j&quot;);
+cy.remove( j );</code></pre>
 <p>Remove a collection:
 
 </p>
-<pre><code class="lang-js">var collection = cy.elements(&quot;node[weight&gt;50]&quot;);
-cy.remove(collection);</code></pre>
+<pre><code class="lang-js">var collection = cy.elements(&quot;node[weight &gt; 50]&quot;);
+cy.remove( collection );</code></pre>
 <p>Remove elements matching a selector:
 
 </p>
-<pre><code class="lang-js">cy.remove(&quot;node[weight&gt;50]&quot;); // remove nodes with weight greater than 50</code></pre>
+<pre><code class="lang-js">cy.remove(&quot;node[weight &gt; 50]&quot;); // remove nodes with weight greater than 50</code></pre>
 
 								
 							</div>		
@@ -1669,7 +1681,7 @@ cy.remove(collection);</code></pre>
 </p>
 <pre><code class="lang-js">cy.one(&quot;load&quot;, function(e){
   console.log(&quot;cy loaded elements&quot;);
-}).one(&quot;layoutdone&quot;, function(e){
+}).one(&quot;layoutstop&quot;, function(e){
   console.log(&quot;cy laid out elements&quot;);
 });
 
@@ -1714,8 +1726,14 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code><
 </p>
 <h3>Examples</h3>
 <pre><code class="lang-js">cy.batchData({
-  &#39;n0&#39;: { foo: 1, bar: 1 },
-  &#39;n1&#39;: { foo: 2, bar: 2 }
+  &#39;j&#39;: {
+      weight: 73 // too much non-fat yoghourt
+  },
+
+  &#39;g&#39;: {
+      weight: 72,
+      height: 154 // shoe inserts
+  }
 });</code></pre>
 
 								
@@ -1884,17 +1902,17 @@ cy.nodes().live(&quot;click&quot;, function(){
 <h3>Examples</h3>
 <p>Get nodes with weight greater than 50:
 </p>
-<pre><code class="lang-js">var collection = cy.nodes(&quot;[weight&gt;50]&quot;);</code></pre>
+<pre><code class="lang-js">cy.nodes(&quot;[weight&gt;50]&quot;);</code></pre>
 <p>Get edges with source node <code>n0</code>:
 </p>
-<pre><code class="lang-js">var collection = cy.edges(&quot;[source=n0]&quot;);</code></pre>
+<pre><code class="lang-js">cy.edges(&quot;[source=&#39;j&#39;]&quot;);</code></pre>
 <p>Get all nodes and edges with weight greater than 50:
 </p>
-<pre><code class="lang-js">var collection = cy.elements(&quot;[weight&gt;50]&quot;);
-collection = cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line</code></pre>
+<pre><code class="lang-js">cy.elements(&quot;[weight&gt;50]&quot;);
+cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line</code></pre>
 <p>Get nodes with weight greater than 50 with a filter function:
 </p>
-<pre><code class="lang-js">var collection = cy.filter(function(i, element){
+<pre><code class="lang-js">cy.filter(function(i, element){
   if( element.isNode() &amp;&amp; element.data(&quot;weight&quot;) &gt; 50 ){
     return true;
   }
@@ -1958,10 +1976,10 @@ collection = cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the abo
 
 </p>
 <h3>Examples</h3>
-<p>Centre the graph on node <code>n0</code>:
+<p>Centre the graph on node <code>j</code>:
 </p>
-<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
-cy.center(n0);</code></pre>
+<pre><code class="lang-js">var j = cy.$(&quot;#j&quot;);
+cy.center( j );</code></pre>
 
 								
 							</div>		
@@ -2014,14 +2032,13 @@ cy.center(n0);</code></pre>
 							<div class="details">
 								
 									<h3>Details</h3>
-<p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.
+<p>If an empty collection or no collection is specified, then the graph is fit to all nodes and edges in the graph.
 
 </p>
 <h3>Examples</h3>
-<p>Centre the graph on node <code>n0</code>:
+<p>Fit the graph on nodes <code>j</code> and <code>e</code>:
 </p>
-<pre><code class="lang-js">var n0 = cy.node(&quot;n0&quot;);
-cy.center(n0);</code></pre>
+<pre><code class="lang-js">cy.fit( cy.$(&#39;#j, #e&#39;) );</code></pre>
 
 								
 							</div>		
@@ -2054,9 +2071,17 @@ cy.center(n0);</code></pre>
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.pan({ x: 100, y: 100 });
-cy.zoom( 2 );
-cy.reset();</code></pre>
+<pre><code class="lang-js">setTimeout( function(){
+    cy.pan({ x: 50, y: -100 });
+}, 1000 );
+
+setTimeout( function(){
+    cy.zoom( 2 );
+}, 2000 );
+
+setTimeout( function(){
+    cy.reset();
+}, 3000 );</code></pre>
 
 								
 							</div>		
@@ -2291,17 +2316,17 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 <p>For zooming about a rendered position (i.e. a position on-screen):
 
 </p>
-<pre><code class="lang-js">var options = {
+<pre><code class="lang-js">cy.zoom({
   level: 2.0, // the zoom level
   renderedPosition: { x: 100, y: 100 }
-};</code></pre>
+});</code></pre>
 <p>For zooming about a model position:
 
 </p>
-<pre><code class="lang-js">var options = {
+<pre><code class="lang-js">cy.zoom({
   level: 2.0, // the zoom level
-  position: { x: 500, y: 625 }
-};</code></pre>
+  position: { x: 0, y: 0 }
+});</code></pre>
 <p>For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.
 
 </p>
@@ -2319,9 +2344,9 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
               // its closest valid level is the max</code></pre>
 <p>Zoom about a node
 </p>
-<pre><code class="lang-js">var pos = cy.nodes(&quot;#n0&quot;).position();
+<pre><code class="lang-js">var pos = cy.nodes(&quot;#j&quot;).position();
 cy.zoom({
-  level: 2.5,
+  level: 1.5,
   position: pos
 });</code></pre>
 
@@ -2602,8 +2627,9 @@ cy.zoom({
 <pre><code class="lang-js">cy.on(&#39;click&#39;, &#39;node&#39;, { foo: &#39;bar&#39; }, function(evt){
   console.log( evt.data.foo ); // &#39;bar&#39;
 
-  var node = this;
+  var node = evt.cyTarget;
   console.log( &#39;clicked &#39; + node.id() );
+  debugger;
 });</code></pre>
 <p>Bind to all click events that the core receives:
 

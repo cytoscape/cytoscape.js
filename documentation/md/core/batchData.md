@@ -6,7 +6,13 @@ This function take a map whose indices are element IDs (e.g. `'n0'`) mapped to o
 
 ```js
 cy.batchData({
-  'n0': { foo: 1, bar: 1 },
-  'n1': { foo: 2, bar: 2 }
+  'j': {
+  	weight: 73 // too much non-fat yoghourt
+  },
+
+  'g': {
+  	weight: 72,
+  	height: 154 // shoe inserts
+  }
 });
 ```

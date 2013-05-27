@@ -7,19 +7,19 @@ Though the elements specified to this function are removed from the graph, they 
 Remove an element:
 
 ```js
-var n0 = cy.nodes("#n0");
-cy.remove(n0);
+var j = cy.$("#j");
+cy.remove( j );
 ```
 
 Remove a collection:
 
 ```js
-var collection = cy.elements("node[weight>50]");
-cy.remove(collection);
+var collection = cy.elements("node[weight > 50]");
+cy.remove( collection );
 ```
 
 Remove elements matching a selector:
 
 ```js
-cy.remove("node[weight>50]"); // remove nodes with weight greater than 50
+cy.remove("node[weight > 50]"); // remove nodes with weight greater than 50
 ```

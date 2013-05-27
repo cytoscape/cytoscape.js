@@ -40,7 +40,7 @@ This is equivalent to:
 ```js
 cy.one("load", function(e){
   console.log("cy loaded elements");
-}).one("layoutdone", function(e){
+}).one("layoutstop", function(e){
   console.log("cy laid out elements");
 });
 

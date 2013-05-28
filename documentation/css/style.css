@@ -5,6 +5,7 @@ body {
 
 #cy {
 	position: fixed;
+	z-index: 99999;
 	right: 0;
 	bottom: 0;
 	height: 300px;

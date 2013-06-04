@@ -1688,6 +1688,10 @@
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
 		x = pageX - offsetLeft; y = pageY - offsetTop;
 		
+		var scale = 'devicePixelRatio' in window ? devicePixelRatio : 1;
+		x *= scale;
+		y *= scale;
+
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
 	}
@@ -2352,16 +2356,24 @@
 	CanvasRenderer.prototype.matchCanvasSize = function(container) {
 		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
 		
-		var canvas;
+		var canvas, canvasWidth = width, canvasHeight = height;
+
+		if ('devicePixelRatio' in window) {
+			canvasWidth *= devicePixelRatio;
+			canvasHeight *= devicePixelRatio;
+		}
+
 		for (var i = 0; i < CANVAS_LAYERS; i++) {
 
 			canvas = data.canvases[i];
 			
-			if (canvas.width !== width || canvas.height !== height) {
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
 				
-				canvas.width = width;
-				canvas.height = height;
-			
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
+
+				canvas.style.width = width + 'px';
+				canvas.style.height = height + 'px';
 			}
 		}
 		
@@ -2369,11 +2381,10 @@
 			
 			canvas = data.bufferCanvases[i];
 			
-			if (canvas.width !== width || canvas.height !== height) {
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
 				
-				canvas.width = width;
-				canvas.height = height;
-				
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
 			}
 		}
 

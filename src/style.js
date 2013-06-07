@@ -167,8 +167,8 @@
 			bgRepeat: { enums: ["repeat", "repeat-x", "repeat-y", "no-repeat"] },
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
-			data: { mapping: true, regex: "^data\\s*\\(\\s*(\\w+)\\s*\\)$" },
-			mapData: { mapping: true, regex: "^mapData\\((\\w+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" },
+			data: { mapping: true, regex: "^data\\s*\\(\\s*([\\w\\.]+)\\s*\\)$" },
+			mapData: { mapping: true, regex: "^mapData\\(([\\w\\.]+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" },
 			url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
 		};
 
@@ -804,7 +804,7 @@
 			break;
 
 		case $$.style.types.data: // direct mapping
-			fieldVal = ele._private.data[ prop.field ];
+			fieldVal = eval('ele._private.data.' + prop.field );
 
 			flatProp = this.parse( prop.name, fieldVal, prop.bypass );
 			if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself

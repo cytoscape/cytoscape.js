@@ -2352,16 +2352,24 @@
 	CanvasRenderer.prototype.matchCanvasSize = function(container) {
 		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
 		
-		var canvas;
+		var canvas, canvasWidth = width, canvasHeight = height;
+
+		if ('devicePixelRatio' in window) {
+			canvasWidth *= devicePixelRatio;
+			canvasHeight *= devicePixelRatio;
+		}
+
 		for (var i = 0; i < CANVAS_LAYERS; i++) {
 
 			canvas = data.canvases[i];
 			
-			if (canvas.width !== width || canvas.height !== height) {
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
 				
-				canvas.width = width;
-				canvas.height = height;
-			
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
+
+				canvas.style.width = width + 'px';
+				canvas.style.height = height + 'px';
 			}
 		}
 		
@@ -2369,11 +2377,10 @@
 			
 			canvas = data.bufferCanvases[i];
 			
-			if (canvas.width !== width || canvas.height !== height) {
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
 				
-				canvas.width = width;
-				canvas.height = height;
-				
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
 			}
 		}
 
@@ -2538,6 +2545,20 @@
 		var cy = r.data.cy; var data = r.data; 
 		var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 		r.matchCanvasSize(data.container);
+
+		var zoom = cy.zoom();
+		var effectiveZoom = zoom;
+		var pan = cy.pan();
+		var effectivePan = {
+			x: pan.x,
+			y: pan.y
+		};
+
+		if( 'devicePixelRatio' in window ){
+			effectiveZoom *= devicePixelRatio;
+			effectivePan.x *= devicePixelRatio;
+			effectivePan.y *= devicePixelRatio;
+		}
 		
 		var elements = [];
 		for( var i = 0; i < nodes.length; i++ ){
@@ -2607,8 +2628,8 @@
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
 			if( !drawAll ){
-				context.translate(cy.pan().x, cy.pan().y);
-				context.scale(cy.zoom(), cy.zoom());
+				context.translate(effectivePan.x, effectivePan.y);
+				context.scale(effectiveZoom, effectiveZoom);
 			} 
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
@@ -2668,8 +2689,8 @@
 				context.setTransform(1, 0, 0, 1, 0, 0);
 				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 				
-				context.translate(cy.pan().x, cy.pan().y);
-				context.scale(cy.zoom(), cy.zoom());
+				context.translate(effectivePan.x, effectivePan.y);
+				context.scale(effectiveZoom, effectiveZoom);
 			}
 			
 			var element;
@@ -2715,8 +2736,8 @@
 				context.setTransform(1, 0, 0, 1, 0, 0);
 				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
-				context.translate(cy.pan().x, cy.pan().y);
-				context.scale(cy.zoom(), cy.zoom());		
+				context.translate(effectivePan.x, effectivePan.y);
+				context.scale(effectiveZoom, effectiveZoom);		
 			}	
 			
 			var coreStyle = cy.style()._private.coreStyle;

@@ -1688,6 +1688,10 @@
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
 		x = pageX - offsetLeft; y = pageY - offsetTop;
 		
+		var scale = 'devicePixelRatio' in window ? devicePixelRatio : 1;
+		x *= scale;
+		y *= scale;
+
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
 	}

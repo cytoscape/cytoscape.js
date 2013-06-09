@@ -110,10 +110,11 @@
 			var rpos = params.renderedPosition;
 			var pan = cy.pan();
 			var zoom = cy.zoom();
+			var scale = 'devicePixelRatio' in window ? devicePixelRatio : 1;
 
 			this._private.position = {
-				x: (rpos.x - pan.x)/zoom,
-				y: (rpos.y - pan.y)/zoom
+				x: (rpos.x * scale - pan.x)/zoom,
+				y: (rpos.y * scale - pan.y)/zoom
 			};
 		}
 		

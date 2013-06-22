@@ -91,6 +91,47 @@
 		return this; // chaining
 	};
 
+	// static function
+	$$.style.fromJson = function( cy, json ){
+		var style = new $$.Style(cy);
+
+		for( var i = 0; i < json.length; i++ ){
+			var context = json[i];
+			var selector = context.selector;
+			var props = context.css;
+
+			style.selector(selector); // apply selector
+
+			for( var name in props ){
+				var value = props[name];
+
+				style.css( name, value ); // apply property
+			}
+		}
+
+		return style;
+	};
+
+	$$.styfn.fromJson = function( json ){
+		var style = this;
+
+		for( var i = 0; i < json.length; i++ ){
+			var context = json[i];
+			var selector = context.selector;
+			var props = context.css;
+
+			style.selector(selector); // apply selector
+
+			for( var name in props ){
+				var value = props[name];
+
+				style.css( name, value ); // apply property
+			}
+		}
+
+		return style;
+	};
+
 	// generate a real style object from the dummy stylesheet
 	$$.Stylesheet.prototype.generateStyle = function( cy ){
 		var style = new $$.Style(cy);

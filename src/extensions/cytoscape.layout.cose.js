@@ -4,8 +4,10 @@
     * @brief :  default layout options
     */
     var defaults = {
-	ready: function(){},
-	stop: function(){}
+	ready:   function(){},
+	stop:    function(){},
+	numIter: 10,
+	refresh: 1     // TODO: Change it to 0
     };
 
 
@@ -40,9 +42,12 @@
 	    tempNode.parentId   = nodes[i].data('parent');	    
 	    tempNode.children   = [];
 	    tempNode.positionX  = nodes[i].position('x');
-	    tempNode.positionY  = nodes[i].position('y');	    
+	    tempNode.positionY  = nodes[i].position('y');
+	    tempNode.offsetX    = 0;	    
+	    tempNode.offsetY    = 0;
+	    // Add new node
 	    layoutInfo.layoutNodes.push(tempNode);
-	    // Add entry to id to index map
+	    // Add entry to id-index map
 	    layoutInfo.idToIndexMap[tempNode.id] = i;
 	}
 
@@ -123,9 +128,38 @@
 	    console.debug("Set : " + i + ": " + set[i].toString());
 	} 
 	
-
 	return;
     }
+
+
+    /**
+     * @brief          : Updates the positions 
+     * @arg layoutInfo : LayoutInfo object
+     * @arg cy         : Cytoscape object
+     * @arg options    : Layout options
+     */
+    function updatePositions(layoutInfo, cy, options) {
+	var container = cy.container();
+	var width     = container.clientWidth;
+	var height    = container.clientHeight;
+
+	cy.nodes().positions(function(i, ele){
+	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndexMap[ele.data('id')]];
+	    return {
+		x: lnode.positionX,
+		y: lnode.positionY
+	    };
+	});	
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function step(layoutInfo, cy, options) {
+
+    }
+
 
     /**
      * @brief : runs the layout
@@ -139,19 +173,28 @@
 	
 	// Only for debbuging - TODO: Remove before release
 	printLayoutInfo(layoutInfo);
+	
+	for (var i = 0; i < options.numIter; i++) {
+	    // Do one step in the phisical simmulation
+	    step(layoutInfo, cy, options);
 
+	    // If required, update positions
+	    if (0 < options.refresh && 
+		0 == i % options.refresh) {
+		updatePositions(layoutInfo, cy, options);
+	    }
 
-	// Random node placement for now
-	var container = cy.container();
-	var width = container.clientWidth;
-	var height = container.clientHeight;
-	cy.nodes().positions(function(){
-	    return {
-		x: Math.round( Math.random() * width ),
-		y: Math.round( Math.random() * height )
-	    };
-	});
+	    // ONLY FOR DEBBUGING! TODO: Remove before release
+	    var delay       = 1; 
+	    var now         = new Date();
+	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+	    while (now < desiredTime) {
+		now = new Date();
+	    }
 
+	}
+	
+	updatePositions(layoutInfo, cy, options);
 
 	// trigger layoutready when each node has had its position set at least once
 	cy.one("layoutready", options.ready);
@@ -162,6 +205,7 @@
 	cy.trigger("layoutstop");
     };
 
+
     /**
      * @brief : called on continuous layouts to stop them before they finish
      */
@@ -171,6 +215,7 @@
 	cy.one("layoutstop", options.stop);
 	cy.trigger("layoutstop");
     };
+
 
     // register the layout
     $$("layout", "cose", CoseLayout);

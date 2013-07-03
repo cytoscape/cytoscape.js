@@ -28,10 +28,13 @@
     function createLayoutInfo(cy) {
 	var layoutInfo   = {
 	    layoutNodes  : [], 
-	    idToIndexMap : {},
+	    idToIndex    : {},
 	    nodeSize     : cy.nodes().size(),
-	    graphSet     : []
-	};
+	    graphSet     : [],
+	    indexToGraph : [], 
+	    layoutEdges  : [],
+	    edgeSize     : cy.edges().size()
+	}; 
 	
 	var nodes = cy.nodes();
 	
@@ -48,7 +51,7 @@
 	    // Add new node
 	    layoutInfo.layoutNodes.push(tempNode);
 	    // Add entry to id-index map
-	    layoutInfo.idToIndexMap[tempNode.id] = i;
+	    layoutInfo.idToIndex[tempNode.id] = i;
 	}
 
 	// Inline implementation of a queue, used for traversing the graph in BFS order
@@ -66,22 +69,23 @@
 	    // Check if node n has a parent node
 	    if (undefined != p_id) {
 		// Add node Id to parent's list of children
-		layoutInfo.layoutNodes[layoutInfo.idToIndexMap[p_id]].children.push(n.id);
+		layoutInfo.layoutNodes[layoutInfo.idToIndex[p_id]].children.push(n.id);
 	    } else {
 		// If a node doesn't have a parent, then it's in the root graph
 		queue[++end] = n.id;
 		tempGraph.push(n.id);
+		
 	    }
 	}
 	
 	// Add root graph to graphSet
 	layoutInfo.graphSet.push(tempGraph);
 
-	// traverse the graph, level by level, 
+	// Traverse the graph, level by level, 
 	while (start <= end) {
-	    // get the node to visit and remove it from queue
+	    // Get the node to visit and remove it from queue
 	    var node_id  = queue[start++];
-	    var node_ix  = layoutInfo.idToIndexMap[node_id];
+	    var node_ix  = layoutInfo.idToIndex[node_id];
 	    var node     = layoutInfo.layoutNodes[node_ix];
 	    var children = node.children;
 	    if (children.length > 0) {
@@ -92,6 +96,33 @@
 		    queue[++end] = children[i];
 		}
 	    }
+	}
+
+	// Create indexToGraph map
+	for (var i = 0; i < layoutInfo.graphSet.length; i++) {	    
+	    var graph = layoutInfo.graphSet[i];
+	    for (var j = 0; j < graph.length; j++) {
+		var index = layoutInfo.idToIndex[graph[j]];
+		layoutInfo.indexToGraph[index] = i;
+	    }
+	}
+
+	var edges = cy.edges();
+	
+	// Iterate over all edges, creating Layout Edges
+	for (var i = 0; i < layoutInfo.edgeSize; i++) {
+	    var e = edges[i];
+	    var tempEdge = {};	    
+	    tempEdge.id       = e.data('id');
+	    tempEdge.sourceId = e.data('source');
+	    tempEdge.targetId = e.data('target');
+	    var weigth = e.data('weigth');
+	    if (undefined != weigth) {
+		tempEdge.weigth = weigth;
+	    } else {
+		tempEdge.weigth = 1; // TODO: Define an option for default weigth
+	    }
+	    layoutInfo.layoutEdges.push(tempEdge);
 	}
 
 	// Finally, return layoutInfo object
@@ -117,9 +148,9 @@
 	    console.debug(s);		
 	}	
 	
-	console.debug("idToIndexMap");
-	for (var i in layoutInfo.idToIndexMap) {
-	    console.debug("Id: " + i + "\nIndex: " + layoutInfo.idToIndexMap[i]);
+	console.debug("idToIndex");
+	for (var i in layoutInfo.idToIndex) {
+	    console.debug("Id: " + i + "\nIndex: " + layoutInfo.idToIndex[i]);
 	}
 
 	console.debug("Graph Set");
@@ -127,7 +158,22 @@
 	for (var i = 0; i < set.length; i ++) {
 	    console.debug("Set : " + i + ": " + set[i].toString());
 	} 
-	
+
+	var s = "IndexToGraph";
+	for (var i = 0; i < layoutInfo.indexToGraph.length; i ++) {
+	    s += "\nIndex : " + i + " Graph: "+ layoutInfo.indexToGraph[i]
+	}
+	console.debug(s);
+
+	s = "Layout Edges";
+	for (var i = 0; i < layoutInfo.layoutEdges.length; i++) {
+	    var e = layoutInfo.layoutEdges[i];
+	    s += "\nEdge Index: " + i + " ID: " + e.id + 
+		" SouceID: " + e.sourceId + " TargetId: " + e.targetId + 
+		" Weigth: " + e.weigth;
+	}
+	console.debug(s);
+
 	return;
     }
 
@@ -144,7 +190,7 @@
 	var height    = container.clientHeight;
 
 	cy.nodes().positions(function(i, ele){
-	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndexMap[ele.data('id')]];
+	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 	    return {
 		x: lnode.positionX,
 		y: lnode.positionY
@@ -185,16 +231,19 @@
 	    }
 
 	    // ONLY FOR DEBBUGING! TODO: Remove before release
-	    var delay       = 1; 
-	    var now         = new Date();
-	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-	    while (now < desiredTime) {
-		now = new Date();
-	    }
+// 	    var delay       = 1; 
+// 	    var now         = new Date();
+// 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+// 	    while (now < desiredTime) {
+// 		now = new Date();
+// 	    }
 
 	}
 	
 	updatePositions(layoutInfo, cy, options);
+
+	// Fit the graph
+	cy.fit();
 
 	// trigger layoutready when each node has had its position set at least once
 	cy.one("layoutready", options.ready);

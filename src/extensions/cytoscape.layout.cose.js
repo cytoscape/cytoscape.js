@@ -1,8 +1,8 @@
 ;(function($$){
 
     /**
-    * @brief :  default layout options
-    */
+     * @brief :  default layout options
+     */
     var defaults = {
 	ready     : function(){},
 	stop      : function(){},
@@ -24,7 +24,7 @@
 
     /**
      * @brief     : Creates an object which is contains all the data
-                    used in the layout process
+     *              used in the layout process
      * @arg cy    : cytoscape.js object
      * @return    : layoutInfo object initialized
      */
@@ -166,7 +166,7 @@
 
 	var s = "IndexToGraph";
 	for (var i = 0; i < layoutInfo.indexToGraph.length; i ++) {
-	    s += "\nIndex : " + i + " Graph: "+ layoutInfo.indexToGraph[i]
+	    s += "\nIndex : " + i + " Graph: "+ layoutInfo.indexToGraph[i];
 	}
 	console.debug(s);
 
@@ -189,12 +189,12 @@
      * @arg cy         : Cytoscape object
      * @arg options    : Layout options
      */
-    function updatePositions(layoutInfo, cy, options) {
+    function refreshPositions(layoutInfo, cy, options) {
 	var container = cy.container();
 	var width     = container.clientWidth;
 	var height    = container.clientHeight;
 
-	cy.nodes().positions(function(i, ele){
+	cy.nodes().positions(function(i, ele) {
 	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 	    return {
 		x: lnode.positionX,
@@ -202,8 +202,8 @@
 	    };
 	});
 	
-	if (true != updatePositions.ready) {
-	    updatePositions.ready = true;
+	if (true != refreshPositions.ready) {
+	    refreshPositions.ready = true;
 	    cy.one("layoutready", options.ready);
 	    cy.trigger("layoutready");
 	}
@@ -213,34 +213,71 @@
     /**
      * @brief : 
      */
-    randomizePositions(layoutInfo, cy) {
+    function randomizePositions(layoutInfo, cy) {
+	var container = cy.container();
+	var width     = container.clientWidth;
+	var height    = container.clientHeight;
 
+	for (var i = 0; i < layoutInfo.nodeSize; i++) {
+	    var n = layoutInfo.layoutNodes[i];
+	    n.positionX = Math.round(Math.random() * width);
+	    n.positionY = Math.round(Math.random() * height);
+	}
     }
 
     
     /**
      * @brief : 
      */
-    calculateNodeForces(layoutInfo, cy, options) {
-
+    function calculateNodeForces(layoutInfo, cy, options) {
+	// Go through each of the graphs in graphSet
+	// Nodes only repel each other if they belong to the same graph
+	for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
+	    var graph    = layoutInfo.graphSet[i];
+	    var numNodes = graph.length;
+	    // Now get all the pairs of nodes 
+	    // Only get each pair once, (A, B) = (B, A)
+	    for (var j = 0; i < numNodes; j++) {
+		var node1 = graph[j];
+		for (var k = j + 1; k < numNodes; k++) {
+		    var node2 = graph[k];
+		    nodeRepulsion(node1, node2, layoutInfo, cy, options);
+		} 
+	    } 
+	}	
     }
 
 
     /**
      * @brief : 
      */
-    calculateEdgeForces(layoutInfo, cy, options) {
-
+    function calculateEdgeForces(layoutInfo, cy, options) {
+	return;
     }
 
 
     /**
      * @brief : 
      */
-    calculateGravityForces(layoutInfo, cy, options) {
-
+    function calculateGravityForces(layoutInfo, cy, options) {
+	return;
     }
 
+
+    /**
+     * @brief : 
+     */
+    function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
+	return;
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function updatePositions(layoutInfo, cy, options) {
+	return;
+    }
 
 
     /**
@@ -255,7 +292,9 @@
 	// Calculate edge forces
 	calculateEdgeForces(layoutInfo, cy, options);
 	// Calculate gravity forces
-	calculateGravityForces(layoutInfo, cy, options);	
+	calculateGravityForces(layoutInfo, cy, options);
+	// Update positions based on calculated forces
+	updatePositions(layoutInfo, cy, options);
     }
 
 
@@ -265,7 +304,7 @@
     CoseLayout.prototype.run = function(){
 	var options = this.options;
 	var cy      = options.cy;
-		
+	
 	// Initialize layout info
 	var layoutInfo = createLayoutInfo(cy);
 	
@@ -283,24 +322,23 @@
 	    step(layoutInfo, cy, options);
 
 	    // If required, update positions
-	    if (0 < options.refresh && 
-		0 == i % options.refresh) {
-		updatePositions(layoutInfo, cy, options);
+	    if (0 < options.refresh && 0 == (i % options.refresh)) {
+		refreshPositions(layoutInfo, cy, options);
 	    }
 
 	    // ONLY FOR DEBUGIGNG! TODO: Remove before release
-// 	    var delay       = 1; 
-// 	    var now         = new Date();
-// 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-// 	    while (now < desiredTime) {
-// 		now = new Date();
-// 	    }
+	    // 	    var delay       = 1; 
+	    // 	    var now         = new Date();
+	    // 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+	    // 	    while (now < desiredTime) {
+	    // 		now = new Date();
+	    // 	    }
 
 	}
 	
-	updatePositions(layoutInfo, cy, options);
+	refreshPositions(layoutInfo, cy, options);
 
-	// Fit the graph
+	// Fit the graph if necessary
 	if (true == options.fit) {
 	    cy.fit();
 	}

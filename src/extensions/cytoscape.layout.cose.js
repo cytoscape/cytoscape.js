@@ -4,10 +4,12 @@
     * @brief :  default layout options
     */
     var defaults = {
-	ready:   function(){},
-	stop:    function(){},
-	numIter: 10,
-	refresh: 1     // TODO: Change it to 0
+	ready     : function(){},
+	stop      : function(){},
+	numIter   : 10,
+	refresh   : 1,     // TODO: Change it to 0
+	fit       : true, 
+	randomize : false
     };
 
 
@@ -21,9 +23,10 @@
 
 
     /**
-     * @brief     : 
+     * @brief     : Creates an object which is contains all the data
+                    used in the layout process
      * @arg cy    : cytoscape.js object
-     * @return    : layout info object
+     * @return    : layoutInfo object initialized
      */
     function createLayoutInfo(cy) {
 	var layoutInfo   = {
@@ -36,6 +39,7 @@
 	    edgeSize     : cy.edges().size()
 	}; 
 	
+	// Shortcut
 	var nodes = cy.nodes();
 	
 	// Iterate over all nodes, creating layout nodes
@@ -107,6 +111,7 @@
 	    }
 	}
 
+	// Shortcut
 	var edges = cy.edges();
 	
 	// Iterate over all edges, creating Layout Edges
@@ -195,15 +200,62 @@
 		x: lnode.positionX,
 		y: lnode.positionY
 	    };
-	});	
+	});
+	
+	if (true != updatePositions.ready) {
+	    updatePositions.ready = true;
+	    cy.one("layoutready", options.ready);
+	    cy.trigger("layoutready");
+	}
     }
 
 
     /**
      * @brief : 
      */
-    function step(layoutInfo, cy, options) {
+    randomizePositions(layoutInfo, cy) {
 
+    }
+
+    
+    /**
+     * @brief : 
+     */
+    calculateNodeForces(layoutInfo, cy, options) {
+
+    }
+
+
+    /**
+     * @brief : 
+     */
+    calculateEdgeForces(layoutInfo, cy, options) {
+
+    }
+
+
+    /**
+     * @brief : 
+     */
+    calculateGravityForces(layoutInfo, cy, options) {
+
+    }
+
+
+
+    /**
+     * @brief          : Performs one iteration of the physical simulation
+     * @arg layoutInfo : LayoutInfo object already initialized
+     * @arg cy         : Cytoscape object
+     * @arg options    : Layout options
+     */
+    function step(layoutInfo, cy, options) {	
+	// Calculate node repulsions
+	calculateNodeForces(layoutInfo, cy, options);
+	// Calculate edge forces
+	calculateEdgeForces(layoutInfo, cy, options);
+	// Calculate gravity forces
+	calculateGravityForces(layoutInfo, cy, options);	
     }
 
 
@@ -219,7 +271,13 @@
 	
 	// Only for debbuging - TODO: Remove before release
 	printLayoutInfo(layoutInfo);
-	
+
+	// If required, randomize node positions
+	if (true == options.randomize) {
+	    randomizePositions(layoutInfo, cy);
+	}
+
+	// Main loop
 	for (var i = 0; i < options.numIter; i++) {
 	    // Do one step in the phisical simmulation
 	    step(layoutInfo, cy, options);
@@ -230,7 +288,7 @@
 		updatePositions(layoutInfo, cy, options);
 	    }
 
-	    // ONLY FOR DEBBUGING! TODO: Remove before release
+	    // ONLY FOR DEBUGIGNG! TODO: Remove before release
 // 	    var delay       = 1; 
 // 	    var now         = new Date();
 // 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
@@ -243,13 +301,11 @@
 	updatePositions(layoutInfo, cy, options);
 
 	// Fit the graph
-	cy.fit();
+	if (true == options.fit) {
+	    cy.fit();
+	}
 
-	// trigger layoutready when each node has had its position set at least once
-	cy.one("layoutready", options.ready);
-	cy.trigger("layoutready");
-
-	// trigger layoutstop when the layout stops (e.g. finishes)
+	// Layout has finished
 	cy.one("layoutstop", options.stop);
 	cy.trigger("layoutstop");
     };

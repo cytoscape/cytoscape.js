@@ -85,7 +85,7 @@
 		}
 
 		// init style
-		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.plainObject(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
+		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.array(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
 
 		cy.initRenderer( $$.util.extend({
 			showOverlay: options.showOverlay,

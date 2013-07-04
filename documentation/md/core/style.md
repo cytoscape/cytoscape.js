@@ -13,7 +13,7 @@ cy.style()
   	.css('background-color', 'blue')
   .selector('node:selected')
     .css({
-      'background-color': 'red',
+      'background-color': 'red'
 
       // , ...
     })
@@ -22,3 +22,30 @@ cy.style()
 
   .update()
 ```
+
+You can also set the style from plain JSON:
+
+```js
+cy.style()
+  .fromJson([
+    {
+      selector: 'node',
+      css: {
+        'background-color': 'blue'
+      }
+    },
+
+    {
+      selector: 'node:selected',
+      css: {
+        'background-color': 'red'
+
+        // , ...
+      }
+    }
+
+    // , ...
+  ])
+
+  .update()
+  ```

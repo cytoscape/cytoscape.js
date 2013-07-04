@@ -33,6 +33,7 @@
 			var callTime = +new Date;
 			var cy = this._private.cy;
 			var style = cy.style();
+			var q;
 			
 			if( params === undefined ){
 				params = {};

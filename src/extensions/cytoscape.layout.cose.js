@@ -8,7 +8,7 @@
 	stop      : function(){},
 	numIter   : 10,
 	refresh   : 1,     // TODO: Change it to 0
-	fit       : true, 
+	fit       : false, 
 	randomize : false
     };
 
@@ -184,7 +184,7 @@
 
 
     /**
-     * @brief          : Updates the positions 
+     * @brief          : Updates the positions of nodes in the network
      * @arg layoutInfo : LayoutInfo object
      * @arg cy         : Cytoscape object
      * @arg options    : Layout options
@@ -193,9 +193,15 @@
 	var container = cy.container();
 	var width     = container.clientWidth;
 	var height    = container.clientHeight;
+	
+	var s = "Refreshing positions";
+	console.debug(s);
 
 	cy.nodes().positions(function(i, ele) {
 	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
+	    s = "Node: " + lnode.id + ". New position: (" + 
+		lnode.positionX + ", " + lnode.positionY + ").";
+	    console.debug(s);
 	    return {
 		x: lnode.positionX,
 		y: lnode.positionY
@@ -203,6 +209,8 @@
 	});
 	
 	if (true != refreshPositions.ready) {
+	    s = "Triggering layoutready";
+	    console.debug(s);
 	    refreshPositions.ready = true;
 	    cy.one("layoutready", options.ready);
 	    cy.trigger("layoutready");
@@ -211,7 +219,7 @@
 
 
     /**
-     * @brief : 
+     * @brief : Randomizes the position of all nodes
      */
     function randomizePositions(layoutInfo, cy) {
 	var container = cy.container();
@@ -232,18 +240,25 @@
     function calculateNodeForces(layoutInfo, cy, options) {
 	// Go through each of the graphs in graphSet
 	// Nodes only repel each other if they belong to the same graph
+	var s = "calculateNodeForces.\n";
+	console.debug(s);
 	for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
 	    var graph    = layoutInfo.graphSet[i];
 	    var numNodes = graph.length;
+
+	    s = "Set: " + graph.toString();
+	    console.debug(s);
+
 	    // Now get all the pairs of nodes 
 	    // Only get each pair once, (A, B) = (B, A)
-	    for (var j = 0; i < numNodes; j++) {
-		var node1 = graph[j];
+	    for (var j = 0; j < numNodes; j++) {
+		var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
 		for (var k = j + 1; k < numNodes; k++) {
-		    var node2 = graph[k];
+		    var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
 		    nodeRepulsion(node1, node2, layoutInfo, cy, options);
 		} 
 	    } 
+	    console.debug(s);
 	}	
     }
 
@@ -268,6 +283,25 @@
      * @brief : 
      */
     function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
+	// Compute distances between nodes
+	var distanceX   = node2.positionX - node1.positionX;
+	var distanceY   = node2.positionY - node1.positionY;
+	var distanceSqr = distanceX * distanceX + distanceY * distanceY;
+	var distance    = Math.sqrt(distanceSqr);
+	// Compute the module of the force vector
+	var force  = 100000 / distanceSqr;  // TODO: Modify this
+	var forceX = force * distanceX / distance;
+	var forceY = force * distanceY / distance;
+	// Apply force
+	node1.offsetX -= forceX;
+	node1.offsetY -= forceY;
+	node2.offsetX += forceX;
+	node2.offsetY += forceY;
+	
+	var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id +
+	    " Distance: " + distance + " ForceX: " + forceX + " ForceY: " + forceY;
+	console.debug(s);
+	
 	return;
     }
 
@@ -276,7 +310,21 @@
      * @brief : 
      */
     function updatePositions(layoutInfo, cy, options) {
-	return;
+	var s = "Updating positions";
+	console.debug(s);
+	// TODO: Add parent to child force propagation
+	for (var i = 0; i < layoutInfo.nodeSize; i++) {
+	    var n = layoutInfo.layoutNodes[i];
+	    s = "Node: " + n.id + " Previous position: (" + 
+		n.positionX + ", " + n.positionY + ")."; 
+	    n.positionX += n.offsetX; 
+	    n.positionY += n.offsetY;
+	    n.offsetX = 0;
+	    n.offsetY = 0;
+	    s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
+	    console.debug(s);
+	    
+	}
     }
 
 
@@ -327,12 +375,12 @@
 	    }
 
 	    // ONLY FOR DEBUGIGNG! TODO: Remove before release
-	    // 	    var delay       = 1; 
-	    // 	    var now         = new Date();
-	    // 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-	    // 	    while (now < desiredTime) {
-	    // 		now = new Date();
-	    // 	    }
+	    var delay       = 1; 
+	    var now         = new Date();
+	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+	    while (now < desiredTime) {
+	    	now = new Date();
+	    }
 
 	}
 	

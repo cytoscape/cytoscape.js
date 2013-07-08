@@ -4,12 +4,14 @@
      * @brief :  default layout options
      */
     var defaults = {
-	ready     : function(){},
-	stop      : function(){},
-	numIter   : 10,
-	refresh   : 1,     // TODO: Change it to 0
-	fit       : false, 
-	randomize : false
+	ready             : function() {},
+	stop              : function() {},
+	numIter           : 100,
+	refresh           : 1,     // TODO: Change it to 0
+	fit               : false, 
+	randomize         : true, 
+	debug             : true,
+	defaultEdgeWeigth : 1
     };
 
 
@@ -17,9 +19,80 @@
      * @brief       : constructor
      * @arg options : object containing layout options
      */
-    function CoseLayout(options){
+    function CoseLayout(options) {
 	this.options = $$.util.extend(true, {}, defaults, options); 
     }
+
+
+    /**
+     * @brief : runs the layout
+     */
+    CoseLayout.prototype.run = function(){	
+	var options = this.options;
+	var cy      = options.cy;
+	
+	// Set DEBUG - Gloval variable
+	if (true == options.debug) {
+	    DEBUG = true;
+	} else {
+	    DEBUG = false;
+	}
+
+	// Initialize layout info
+	var layoutInfo = createLayoutInfo(cy, options);
+	
+	// Show LayoutInfo contents if debugging
+	if (DEBUG) {	    
+	    printLayoutInfo(layoutInfo);
+	}
+
+	// If required, randomize node positions
+	if (true == options.randomize) {
+	    randomizePositions(layoutInfo, cy);
+	}
+
+	// Main loop
+	for (var i = 0; i < options.numIter; i++) {
+	    // Do one step in the phisical simmulation
+	    step(layoutInfo, cy, options);
+
+	    // If required, update positions
+	    if (0 < options.refresh && 0 == (i % options.refresh)) {
+		refreshPositions(layoutInfo, cy, options);
+	    }
+
+	    // ONLY FOR DEBUGGING! TODO: Remove before release
+// 	    var delay       = 1; 
+// 	    var now         = new Date();
+// 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+// 	    while (now < desiredTime) {
+// 	    	now = new Date();
+// 	    }
+
+	}
+	
+	refreshPositions(layoutInfo, cy, options);
+
+	// Fit the graph if necessary
+	if (true == options.fit) {
+	    cy.fit();
+	}
+
+	// Layout has finished
+	cy.one("layoutstop", options.stop);
+	cy.trigger("layoutstop");
+    };
+
+
+    /**
+     * @brief : called on continuous layouts to stop them before they finish
+     */
+    CoseLayout.prototype.stop = function(){
+	var options = this.options;
+
+	cy.one("layoutstop", options.stop);
+	cy.trigger("layoutstop");
+    };
 
 
     /**
@@ -28,7 +101,7 @@
      * @arg cy    : cytoscape.js object
      * @return    : layoutInfo object initialized
      */
-    function createLayoutInfo(cy) {
+    function createLayoutInfo(cy, options) {
 	var layoutInfo   = {
 	    layoutNodes  : [], 
 	    idToIndex    : {},
@@ -121,11 +194,13 @@
 	    tempEdge.id       = e.data('id');
 	    tempEdge.sourceId = e.data('source');
 	    tempEdge.targetId = e.data('target');
+	    // Check whether the edge has a defined weigth
 	    var weigth = e.data('weigth');
 	    if (undefined != weigth) {
 		tempEdge.weigth = weigth;
 	    } else {
-		tempEdge.weigth = 1; // TODO: Define an option for default weigth
+		// Use default weigth
+		tempEdge.weigth = options.defaultEdgeWeigth;
 	    }
 	    layoutInfo.layoutEdges.push(tempEdge);
 	}
@@ -195,13 +270,13 @@
 	var height    = container.clientHeight;
 	
 	var s = "Refreshing positions";
-	console.debug(s);
+	logDebug(s);
 
 	cy.nodes().positions(function(i, ele) {
 	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 	    s = "Node: " + lnode.id + ". New position: (" + 
 		lnode.positionX + ", " + lnode.positionY + ").";
-	    console.debug(s);
+	    logDebug(s);
 	    return {
 		x: lnode.positionX,
 		y: lnode.positionY
@@ -210,7 +285,7 @@
 	
 	if (true != refreshPositions.ready) {
 	    s = "Triggering layoutready";
-	    console.debug(s);
+	    logDebug(s);
 	    refreshPositions.ready = true;
 	    cy.one("layoutready", options.ready);
 	    cy.trigger("layoutready");
@@ -228,8 +303,11 @@
 
 	for (var i = 0; i < layoutInfo.nodeSize; i++) {
 	    var n = layoutInfo.layoutNodes[i];
-	    n.positionX = Math.round(Math.random() * width);
-	    n.positionY = Math.round(Math.random() * height);
+	    // No need to randomize compound nodes
+	    if (0 == n.children.length) {
+		n.positionX = Math.round(Math.random() * width);
+		n.positionY = Math.round(Math.random() * height);
+	    }
 	}
     }
 
@@ -240,14 +318,14 @@
     function calculateNodeForces(layoutInfo, cy, options) {
 	// Go through each of the graphs in graphSet
 	// Nodes only repel each other if they belong to the same graph
-	var s = "calculateNodeForces.\n";
-	console.debug(s);
+	var s = "calculateNodeForces";
+	logDebug(s);
 	for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
 	    var graph    = layoutInfo.graphSet[i];
 	    var numNodes = graph.length;
 
 	    s = "Set: " + graph.toString();
-	    console.debug(s);
+	    logDebug(s);
 
 	    // Now get all the pairs of nodes 
 	    // Only get each pair once, (A, B) = (B, A)
@@ -257,8 +335,8 @@
 		    var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
 		    nodeRepulsion(node1, node2, layoutInfo, cy, options);
 		} 
-	    } 
-	    console.debug(s);
+	    }
+	    logDebug(s);
 	}	
     }
 
@@ -297,11 +375,11 @@
 	node1.offsetY -= forceY;
 	node2.offsetX += forceX;
 	node2.offsetY += forceY;
-	
+
 	var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id +
 	    " Distance: " + distance + " ForceX: " + forceX + " ForceY: " + forceY;
-	console.debug(s);
-	
+	logDebug(s);
+
 	return;
     }
 
@@ -311,7 +389,7 @@
      */
     function updatePositions(layoutInfo, cy, options) {
 	var s = "Updating positions";
-	console.debug(s);
+	logDebug(s);
 	// TODO: Add parent to child force propagation
 	for (var i = 0; i < layoutInfo.nodeSize; i++) {
 	    var n = layoutInfo.layoutNodes[i];
@@ -322,8 +400,7 @@
 	    n.offsetX = 0;
 	    n.offsetY = 0;
 	    s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
-	    console.debug(s);
-	    
+	    logDebug(s);	    
 	}
     }
 
@@ -345,67 +422,15 @@
 	updatePositions(layoutInfo, cy, options);
     }
 
-
+    
     /**
-     * @brief : runs the layout
+     * @brief : Logs a debug message in JS console, if DEBUG is on
      */
-    CoseLayout.prototype.run = function(){
-	var options = this.options;
-	var cy      = options.cy;
-	
-	// Initialize layout info
-	var layoutInfo = createLayoutInfo(cy);
-	
-	// Only for debbuging - TODO: Remove before release
-	printLayoutInfo(layoutInfo);
-
-	// If required, randomize node positions
-	if (true == options.randomize) {
-	    randomizePositions(layoutInfo, cy);
+    function logDebug(text) {
+	if (DEBUG) {
+	    console.debug(text);
 	}
-
-	// Main loop
-	for (var i = 0; i < options.numIter; i++) {
-	    // Do one step in the phisical simmulation
-	    step(layoutInfo, cy, options);
-
-	    // If required, update positions
-	    if (0 < options.refresh && 0 == (i % options.refresh)) {
-		refreshPositions(layoutInfo, cy, options);
-	    }
-
-	    // ONLY FOR DEBUGIGNG! TODO: Remove before release
-	    var delay       = 1; 
-	    var now         = new Date();
-	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-	    while (now < desiredTime) {
-	    	now = new Date();
-	    }
-
-	}
-	
-	refreshPositions(layoutInfo, cy, options);
-
-	// Fit the graph if necessary
-	if (true == options.fit) {
-	    cy.fit();
-	}
-
-	// Layout has finished
-	cy.one("layoutstop", options.stop);
-	cy.trigger("layoutstop");
-    };
-
-
-    /**
-     * @brief : called on continuous layouts to stop them before they finish
-     */
-    CoseLayout.prototype.stop = function(){
-	var options = this.options;
-
-	cy.one("layoutstop", options.stop);
-	cy.trigger("layoutstop");
-    };
+    }
 
 
     // register the layout

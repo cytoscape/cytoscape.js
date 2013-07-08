@@ -9,7 +9,7 @@
 	numIter           : 100,
 	refresh           : 1,     // TODO: Change it to 0
 	fit               : false, 
-	randomize         : true, 
+	randomize         : false, 
 	debug             : true,
 	defaultEdgeWeigth : 1
     };
@@ -49,6 +49,9 @@
 	// If required, randomize node positions
 	if (true == options.randomize) {
 	    randomizePositions(layoutInfo, cy);
+	    if (0 < options.refresh) {
+		refreshPositions(layoutInfo, cy, options);
+	    }
 	}
 
 	// Main loop
@@ -336,24 +339,7 @@
 		    nodeRepulsion(node1, node2, layoutInfo, cy, options);
 		} 
 	    }
-	    logDebug(s);
-	}	
-    }
-
-
-    /**
-     * @brief : 
-     */
-    function calculateEdgeForces(layoutInfo, cy, options) {
-	return;
-    }
-
-
-    /**
-     * @brief : 
-     */
-    function calculateGravityForces(layoutInfo, cy, options) {
-	return;
+	} 
     }
 
 
@@ -387,12 +373,40 @@
     /**
      * @brief : 
      */
+    function calculateEdgeForces(layoutInfo, cy, options) {
+	return;
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function calculateGravityForces(layoutInfo, cy, options) {
+	return;
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function propagateForces(layoutInfo, cy, options) {
+	return;
+    }
+
+
+    /**
+     * @brief : 
+     */
     function updatePositions(layoutInfo, cy, options) {
 	var s = "Updating positions";
 	logDebug(s);
-	// TODO: Add parent to child force propagation
 	for (var i = 0; i < layoutInfo.nodeSize; i++) {
 	    var n = layoutInfo.layoutNodes[i];
+	    if (0 < n.children.length) {
+		// No need to set compound node position
+		logDebug("Skipping position update of node: " + n.id);
+		continue;
+	    }
 	    s = "Node: " + n.id + " Previous position: (" + 
 		n.positionX + ", " + n.positionY + ")."; 
 	    n.positionX += n.offsetX; 
@@ -418,6 +432,8 @@
 	calculateEdgeForces(layoutInfo, cy, options);
 	// Calculate gravity forces
 	calculateGravityForces(layoutInfo, cy, options);
+	// Propagate forces from parent to child
+	propagateForces(layoutInfo, cy, options);
 	// Update positions based on calculated forces
 	updatePositions(layoutInfo, cy, options);
     }

@@ -11,7 +11,8 @@
 	fit               : false, 
 	randomize         : false, 
 	debug             : true,
-	defaultEdgeWeigth : 1
+	defaultEdgeWeigth : 1,
+	nestingFactor     : 1.5
     };
 
 
@@ -207,18 +208,44 @@
 	    }
 	    // Compute ideal length
 	    var idealLength = 100;       // TODO: Change this.
+
+	    // Check if it's an inter graph edge
 	    var sourceIx    = layoutInfo.idToIndex[tempEdge.sourceId];
 	    var targetIx    = layoutInfo.idToIndex[tempEdge.targetId];
 	    var sourceGraph = layoutInfo.indexToGraph[sourceIx];
 	    var targetGraph = layoutInfo.indexToGraph[targetIx];
-	    // Check if it's an inter graph edge
+
 	    if (sourceGraph != targetGraph) {
 		// Find lowest common graph ancestor
 		// 0 is the root graph index
 		var lca = findLCA(tempEdge.sourceId, tempEdge.sourceId, 0, layoutInfo);
+
+		// Compute sum of node depths, relative to lca graph
+		var lcaGraph = layoutInfo.graphSet[lca];
+		var depth    = 0;
+
+		// Source depth
+		var tempNode = layoutInfo.layoutNodes[sourceIx];
+		while (-1 == $.inArray(tempNode.id, lcaGraph)) {
+		    tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
+		    depth++;
+		}
+
+		// Target depth
+		tempNode = layoutInfo.layoutNodes[targetIx];
+		while (-1 == $.inArray(tempNode.id, lcaGraph)) {
+		    tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
+		    depth++;
+		}
+
 		logDebug("LCA of nodes " + tempEdge.sourceId + " and " + tempEdge.targetId +  
-			 ". Index: " + lca + " Contents: " + layoutInfo.graphSet[lca].toString());
+			 ". Index: " + lca + " Contents: " + lcaGraph.toString() + 
+			 ". Depth: " + depth);
+
+		// Update idealLength
+		idealLength *= depth * options.nestingFactor;
 	    }
+
 	    tempEdge.idealLength = idealLength;
 
 	    layoutInfo.layoutEdges.push(tempEdge);

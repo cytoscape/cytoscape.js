@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$) {
 
     /**
      * @brief :  default layout options
@@ -6,7 +6,7 @@
     var defaults = {
 	ready             : function() {},
 	stop              : function() {},
-	numIter           : 100,
+	numIter           : 5,
 	refresh           : 1,     // TODO: Change it to 0
 	fit               : false, 
 	randomize         : false, 
@@ -31,7 +31,7 @@
 	var options = this.options;
 	var cy      = options.cy;
 	
-	// Set DEBUG - Gloval variable
+	// Set DEBUG - Global variable
 	if (true == options.debug) {
 	    DEBUG = true;
 	} else {
@@ -205,11 +205,65 @@
 		// Use default weigth
 		tempEdge.weigth = options.defaultEdgeWeigth;
 	    }
+	    // Compute ideal length
+	    var idealLength = 100;       // TODO: Change this.
+	    var sourceIx    = layoutInfo.idToIndex[tempEdge.sourceId];
+	    var targetIx    = layoutInfo.idToIndex[tempEdge.targetId];
+	    var sourceGraph = layoutInfo.indexToGraph[sourceIx];
+	    var targetGraph = layoutInfo.indexToGraph[targetIx];
+	    // Check if it's an inter graph edge
+	    if (sourceGraph != targetGraph) {
+		// Find lowest common graph ancestor
+		// 0 is the root graph index
+		var lca = findLCA(tempEdge.sourceId, tempEdge.sourceId, 0, layoutInfo);
+		logDebug("LCA of nodes " + tempEdge.sourceId + " and " + tempEdge.targetId +  
+			 ". Index: " + lca + " Contents: " + layoutInfo.graphSet[lca].toString());
+	    }
+	    tempEdge.idealLength = idealLength;
+
 	    layoutInfo.layoutEdges.push(tempEdge);
 	}
 
 	// Finally, return layoutInfo object
 	return layoutInfo;
+    }
+
+    
+    /**
+     * @brief : This function finds the index of the lowest common 
+     *          graph ancestor between 2 nodes in the subtree 
+     *          (from the graph hierarchy induced tree) whose
+     *          root is graphIx
+     *
+     * @pre   : Both nodes belong to the subtree whose root is graphIx 
+     */
+    function findLCA(node1, node2, graphIx, layoutInfo) {
+	var graph = layoutInfo.graphSet[graphIx];
+	// If either node  belongs to graphIx
+	if (-1 < $.inArray(node1, graph) || -1 < $.inArray(node2, graph)) {
+	    return graphIx;
+	}
+
+	// Make recursive calls for all subgraphs
+	var result = undefined;
+	for (var i = 0; i < graph.length; i++) {
+	    var nodeId   = graph[i];
+	    var nodeIx   = layoutInfo.idToIndex[nodeId];
+	    var children = layoutInfo.layoutNodes[nodeIx].children;
+	    // If the node has no child, skip it
+	    if (0 == children.length) {
+		continue;
+	    }
+	    var childGraphIx = layoutInfo.indexToGraph[layoutInfo.idToIndex[children[0]]];
+	    result = findLCA(node1, node2, childGraphIx, layoutInfo);
+	    // If found common ancestor
+	    if (undefined != result) {
+		return result;
+	    }
+	}
+	
+	// If no better result found, then they are in separate subtrees
+	return graphIx;
     }
 
 
@@ -253,46 +307,11 @@
 	    var e = layoutInfo.layoutEdges[i];
 	    s += "\nEdge Index: " + i + " ID: " + e.id + 
 		" SouceID: " + e.sourceId + " TargetId: " + e.targetId + 
-		" Weigth: " + e.weigth;
+		" Weigth: " + e.weigth + " Ideal Length: " + e.idealLength;
 	}
 	console.debug(s);
 
 	return;
-    }
-
-
-    /**
-     * @brief          : Updates the positions of nodes in the network
-     * @arg layoutInfo : LayoutInfo object
-     * @arg cy         : Cytoscape object
-     * @arg options    : Layout options
-     */
-    function refreshPositions(layoutInfo, cy, options) {
-	var container = cy.container();
-	var width     = container.clientWidth;
-	var height    = container.clientHeight;
-	
-	var s = "Refreshing positions";
-	logDebug(s);
-
-	cy.nodes().positions(function(i, ele) {
-	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
-	    s = "Node: " + lnode.id + ". New position: (" + 
-		lnode.positionX + ", " + lnode.positionY + ").";
-	    logDebug(s);
-	    return {
-		x: lnode.positionX,
-		y: lnode.positionY
-	    };
-	});
-	
-	if (true != refreshPositions.ready) {
-	    s = "Triggering layoutready";
-	    logDebug(s);
-	    refreshPositions.ready = true;
-	    cy.one("layoutready", options.ready);
-	    cy.trigger("layoutready");
-	}
     }
 
 
@@ -312,6 +331,61 @@
 		n.positionY = Math.round(Math.random() * height);
 	    }
 	}
+    }
+
+    
+    /**
+     * @brief          : Updates the positions of nodes in the network
+     * @arg layoutInfo : LayoutInfo object
+     * @arg cy         : Cytoscape object
+     * @arg options    : Layout options
+     */
+    function refreshPositions(layoutInfo, cy, options) {
+	var container = cy.container();
+	var width     = container.clientWidth;
+	var height    = container.clientHeight;
+	
+	var s = "Refreshing positions";
+	logDebug(s);
+
+	cy.nodes().positions(function(i, ele) {
+	    lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
+	    s = "Node: " + lnode.id + ". Refreshed position: (" + 
+		lnode.positionX + ", " + lnode.positionY + ").";
+	    logDebug(s);
+	    return {
+		x: lnode.positionX,
+		y: lnode.positionY
+	    };
+	});
+	
+	if (true != refreshPositions.ready) {
+	    s = "Triggering layoutready";
+	    logDebug(s);
+	    refreshPositions.ready = true;
+	    cy.one("layoutready", options.ready);
+	    cy.trigger("layoutready");
+	}
+    }
+
+
+    /**
+     * @brief          : Performs one iteration of the physical simulation
+     * @arg layoutInfo : LayoutInfo object already initialized
+     * @arg cy         : Cytoscape object
+     * @arg options    : Layout options
+     */
+    function step(layoutInfo, cy, options) {	
+	// Calculate node repulsions
+	calculateNodeForces(layoutInfo, cy, options);
+	// Calculate edge forces
+	calculateEdgeForces(layoutInfo, cy, options);
+	// Calculate gravity forces
+	calculateGravityForces(layoutInfo, cy, options);
+	// Propagate forces from parent to child
+	propagateForces(layoutInfo, cy, options);
+	// Update positions based on calculated forces
+	updatePositions(layoutInfo, cy, options);
     }
 
     
@@ -374,7 +448,15 @@
      * @brief : 
      */
     function calculateEdgeForces(layoutInfo, cy, options) {
-	return;
+	// Iterate over all edges
+	for (var i = 0; i < layoutInfo.edgeSize; i++) {
+	    // Get edge, source & target nodes
+	    var edge        = layoutInfo.layoutEdges[i];
+	    var sourceIx    = layoutInfo.idToIndex[edge.sourceId];
+	    var source      = layoutInfo.layoutNodes[sourceIx];
+	    var targetIx    = layoutInfo.idToIndex[edge.targetId];
+	    var target      = layoutInfo.layoutNodes[targetIx];
+	}
     }
 
 
@@ -387,10 +469,57 @@
 
 
     /**
-     * @brief : 
+     * @brief          : This function propagates the existing offsets from 
+     *                   parent nodes to its descendents.
+     * @arg layoutInfo : layoutInfo Object
+     * @arg cy         : cytoscape Object
+     * @arg options    : Layout options
      */
-    function propagateForces(layoutInfo, cy, options) {
-	return;
+    function propagateForces(layoutInfo, cy, options) {	
+	// Inline implementation of a queue, used for traversing the graph in BFS order
+	var queue = [];
+	var start = 0;   // Points to the start the queue
+	var end   = -1;  // Points to the end of the queue
+
+	logDebug("propagateForces");
+
+	// Start by visiting the nodes in the root graph
+	queue.push.apply(queue, layoutInfo.graphSet[0]);
+	end += layoutInfo.graphSet[0].length;
+
+	// Traverse the graph, level by level, 
+	while (start <= end) {
+	    // Get the node to visit and remove it from queue
+	    var nodeId    = queue[start++];
+	    var nodeIndex = layoutInfo.idToIndex[nodeId];
+	    var node      = layoutInfo.layoutNodes[nodeIndex];
+	    var children  = node.children;
+
+	    // We only need to process the node if it's compound
+	    if (0 < children.length) {		
+		var offX = node.offsetX;
+		var offY = node.offsetY;
+
+		var s = "Propagating offset from parent node : " + node.id + 
+		    ". OffsetX: " + offX + ". OffsetY: " + offY;
+		s += "\n Children: " + children.toString();
+		logDebug(s);
+		
+		for (var i = 0; i < children.length; i++) {
+		    var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]];
+		    // Propagate offset
+		    childNode.offsetX += offX;
+		    childNode.offsetY += offY;
+		    // Add children to queue to be visited
+		    queue[++end] = children[i];
+		}
+		
+		// Reset parent offsets
+		node.offsetX = 0;
+		node.offsetY = 0;
+	    }
+	    
+	}
     }
 
 
@@ -419,26 +548,6 @@
     }
 
 
-    /**
-     * @brief          : Performs one iteration of the physical simulation
-     * @arg layoutInfo : LayoutInfo object already initialized
-     * @arg cy         : Cytoscape object
-     * @arg options    : Layout options
-     */
-    function step(layoutInfo, cy, options) {	
-	// Calculate node repulsions
-	calculateNodeForces(layoutInfo, cy, options);
-	// Calculate edge forces
-	calculateEdgeForces(layoutInfo, cy, options);
-	// Calculate gravity forces
-	calculateGravityForces(layoutInfo, cy, options);
-	// Propagate forces from parent to child
-	propagateForces(layoutInfo, cy, options);
-	// Update positions based on calculated forces
-	updatePositions(layoutInfo, cy, options);
-    }
-
-    
     /**
      * @brief : Logs a debug message in JS console, if DEBUG is on
      */

@@ -2496,8 +2496,12 @@
 		return 0;
 	};
 
+	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+		this.redraw( cxt, true, zoom, pan );
+	};
+
 	// Redraw frame
-	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
+	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll, forcedZoom, forcedPan ) {
 		var r = this;
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
@@ -2547,12 +2551,16 @@
 		r.matchCanvasSize(data.container);
 
 		var zoom = cy.zoom();
-		var effectiveZoom = zoom;
+		var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
 		var pan = cy.pan();
 		var effectivePan = {
 			x: pan.x,
 			y: pan.y
 		};
+
+		if( forcedPan ){
+			effectivePan = forcedPan;
+		}
 
 		if( 'devicePixelRatio' in window ){
 			effectiveZoom *= devicePixelRatio;
@@ -2630,7 +2638,13 @@
 			if( !drawAll ){
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
+			}
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
 			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
+			}
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
 				element = elesNotInDragLayer[index];
@@ -2691,6 +2705,12 @@
 				
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
+			} 
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
+			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
 			}
 			
 			var element;
@@ -2738,7 +2758,13 @@
 			
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);		
-			}	
+			} 
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
+			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
+			}
 			
 			var coreStyle = cy.style()._private.coreStyle;
 

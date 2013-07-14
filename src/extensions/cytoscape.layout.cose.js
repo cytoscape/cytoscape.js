@@ -6,13 +6,13 @@
     var defaults = {
 	ready             : function() {},
 	stop              : function() {},
-	numIter           : 5,
-	refresh           : 1,     // TODO: Change it to 0
-	fit               : false, 
+	numIter           : 1,
+	refresh           : 0,
+	fit               : true, 
 	randomize         : false, 
 	debug             : true,
 	defaultEdgeWeigth : 1,
-	nestingFactor     : 1.5
+	nestingFactor     : 5
     };
 
 
@@ -33,7 +33,7 @@
 	var cy      = options.cy;
 	
 	// Set DEBUG - Global variable
-	if (true == options.debug) {
+xs	if (true == options.debug) {
 	    DEBUG = true;
 	} else {
 	    DEBUG = false;
@@ -207,7 +207,7 @@
 		tempEdge.weigth = options.defaultEdgeWeigth;
 	    }
 	    // Compute ideal length
-	    var idealLength = 100;       // TODO: Change this.
+	    var idealLength = 10;       // TODO: Change this.
 
 	    // Check if it's an inter graph edge
 	    var sourceIx    = layoutInfo.idToIndex[tempEdge.sourceId];
@@ -449,12 +449,14 @@
      */
     function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
 	// Compute distances between nodes
+	// TODO: Compute distance using node sizes
 	var distanceX   = node2.positionX - node1.positionX;
 	var distanceY   = node2.positionY - node1.positionY;
 	var distanceSqr = distanceX * distanceX + distanceY * distanceY;
 	var distance    = Math.sqrt(distanceSqr);
 	// Compute the module of the force vector
 	var force  = 100000 / distanceSqr;  // TODO: Modify this
+	// TODO: Add case for distance = 0
 	var forceX = force * distanceX / distance;
 	var forceY = force * distanceY / distance;
 	// Apply force
@@ -478,11 +480,32 @@
 	// Iterate over all edges
 	for (var i = 0; i < layoutInfo.edgeSize; i++) {
 	    // Get edge, source & target nodes
-	    var edge        = layoutInfo.layoutEdges[i];
-	    var sourceIx    = layoutInfo.idToIndex[edge.sourceId];
-	    var source      = layoutInfo.layoutNodes[sourceIx];
-	    var targetIx    = layoutInfo.idToIndex[edge.targetId];
-	    var target      = layoutInfo.layoutNodes[targetIx];
+	    var edge     = layoutInfo.layoutEdges[i];
+	    var sourceIx = layoutInfo.idToIndex[edge.sourceId];
+	    var source   = layoutInfo.layoutNodes[sourceIx];
+	    var targetIx = layoutInfo.idToIndex[edge.targetId];
+	    var target   = layoutInfo.layoutNodes[targetIx];
+
+	    // TODO: Compute current length using node sizes
+	    var lx = target.positionX - source.positionX;
+	    var ly = target.positionY - source.positionY;
+	    var l  = Math.sqrt(lx * lx + ly * ly);
+
+	    // TODO: Use options for elasticity constant
+	    var force  = Math.pow(edge.idealLength - l, 2) / 2000; 
+	    // TODO: Add case for l = 0
+	    var forceX = force * lx / l;
+	    var forceY = force * ly / l;
+
+	    // Add this force to target and source nodes
+	    source.offsetX += forceX;
+	    source.offsetY += forceY;
+	    target.offsetX -= forceX;
+	    target.offsetY -= forceY;
+
+	    var s = "Edge force between nodes " + source.id + " and " + target.id;
+	    s += "\nDistance: " + l + " Force: " + force;
+	    logDebug(s);
 	}
     }
 

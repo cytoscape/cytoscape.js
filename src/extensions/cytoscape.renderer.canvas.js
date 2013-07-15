@@ -3453,6 +3453,8 @@
 		
 		nodeWidth = this.getNodeWidth(node);
 		nodeHeight = this.getNodeHeight(node);
+		
+		context.lineWidth = node._private.style["border-width"].pxValue;
 
 		if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
@@ -3532,7 +3534,6 @@
 			}
 			
 			// Border width, draw border
-			context.lineWidth = node._private.style["border-width"].pxValue;
 			if (node._private.style["border-width"].value > 0) {
 				context.stroke();
 			}

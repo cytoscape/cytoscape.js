@@ -12,7 +12,8 @@
 	randomize         : false, 
 	debug             : true,
 	defaultEdgeWeigth : 1,
-	nestingFactor     : 5
+	nestingFactor     : 5, 
+	gravity           : 1
     };
 
 
@@ -33,7 +34,7 @@
 	var cy      = options.cy;
 	
 	// Set DEBUG - Global variable
-xs	if (true == options.debug) {
+	if (true == options.debug) {
 	    DEBUG = true;
 	} else {
 	    DEBUG = false;
@@ -514,7 +515,43 @@ xs	if (true == options.debug) {
      * @brief : 
      */
     function calculateGravityForces(layoutInfo, cy, options) {
-	return;
+	var s = "calculateGravityForces";
+	logDebug(s);
+	for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
+	    var graph    = layoutInfo.graphSet[i];
+	    var numNodes = graph.length;
+
+	    s = "Set: " + graph.toString();
+	    logDebug(s);
+	    	    
+	    // Compute graph center
+	    if (0 == i) {
+		var container = cy.container();		
+		var centerX   = container.clientHeight / 2;
+		var centerY   = container.clientWidth  / 2;		
+	    } else {
+		// Get Parent node for this graph, and use its position as center
+		var parent  = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
+		var centerX = parent.positionX;
+		var centerY = parent.positionY;
+	    }
+	    s = "Center found at: " + centerX + ", " + centerY;
+	    logDebug(s);
+
+	    // Apply force to all nodes in graph
+	    for (var j = 0; j < numNodes; j++) {
+		var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
+		var dx = centerX - node.positionX;
+		var dy = centerY - node.positionY;
+		var d  = Math.sqrt(dx * dx + dy * dy);
+		if (d > 1) { // TODO: Use global variable for distance threshold
+		    var fx = options.gravity * dx / d;
+		    var fy = options.gravity * dy / d;
+		    node.offsetX += fx;
+		    node.offsetY += fy;
+		}
+	    }
+	}
     }
 
 

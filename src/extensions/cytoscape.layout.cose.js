@@ -66,6 +66,8 @@
 		refreshPositions(layoutInfo, cy, options);
 	    }
 
+	    printLayoutInfo(layoutInfo);
+
 	    // ONLY FOR DEBUGGING! TODO: Remove before release
 // 	    var delay       = 1; 
 // 	    var now         = new Date();
@@ -130,6 +132,13 @@
 	    tempNode.positionY  = nodes[i].position('y');
 	    tempNode.offsetX    = 0;	    
 	    tempNode.offsetY    = 0;
+	    tempNode.height     = nodes[i].height();
+	    tempNode.width      = nodes[i].width();
+	    tempNode.maxX       = tempNode.positionX + tempNode.width  / 2;
+	    tempNode.minX       = tempNode.positionX - tempNode.width  / 2;
+	    tempNode.maxY       = tempNode.positionY + tempNode.height / 2;
+	    tempNode.minY       = tempNode.positionY - tempNode.height / 2;
+	    
 	    // Add new node
 	    layoutInfo.layoutNodes.push(tempNode);
 	    // Add entry to id-index map
@@ -309,7 +318,9 @@
 		"\nChildren: "  + n.children.toString() +  
 		"\nparentId: "  + n.parentId  + 
 		"\npositionX: " + n.positionX + 
-		"\npositionY: " + n.positionY;
+		"\npositionY: " + n.positionY +
+		"\nOffsetX: " + n.offsetX + 
+		"\nOffsetY: " + n.offsetY;
 	    console.debug(s);		
 	}	
 	
@@ -531,7 +542,8 @@
 		var centerY   = container.clientWidth  / 2;		
 	    } else {
 		// Get Parent node for this graph, and use its position as center
-		var parent  = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
+		var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
+		var parent  = layoutInfo.layoutNodes[layoutInfo.idToIndex[temp.parentId]];
 		var centerX = parent.positionX;
 		var centerY = parent.positionY;
 	    }
@@ -541,6 +553,7 @@
 	    // Apply force to all nodes in graph
 	    for (var j = 0; j < numNodes; j++) {
 		var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
+		s = "Node: " + node.id;
 		var dx = centerX - node.positionX;
 		var dy = centerY - node.positionY;
 		var d  = Math.sqrt(dx * dx + dy * dy);
@@ -549,7 +562,11 @@
 		    var fy = options.gravity * dy / d;
 		    node.offsetX += fx;
 		    node.offsetY += fy;
+		    s += ": Applied force: " + fx + ", " + fy;
+		} else {
+		    s += ": skypped since it's too close to center";
 		}
+		logDebug(s);
 	    }
 	}
     }
@@ -616,6 +633,19 @@
     function updatePositions(layoutInfo, cy, options) {
 	var s = "Updating positions";
 	logDebug(s);
+
+	// Reset boundaries for compound nodes
+	for (var i = 0; i < layoutInfo.nodeSize; i++) {
+	    var n = layoutInfo.layoutNodes[i];
+	    if (0 < n.children.length) {
+		logDebug("Resetting boundaries of compound node: " + n.id);
+		n.maxX = undefined;
+		n.minX = undefined;
+		n.maxY = undefined;
+		n.minY = undefined;
+	    }
+	}
+
 	for (var i = 0; i < layoutInfo.nodeSize; i++) {
 	    var n = layoutInfo.layoutNodes[i];
 	    if (0 < n.children.length) {
@@ -630,8 +660,94 @@
 	    n.offsetX = 0;
 	    n.offsetY = 0;
 	    s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
-	    logDebug(s);	    
+	    // If node has a parent, update its boundaries
+	    if (undefined != n.parentId) {
+		var p = layoutInfo.layoutNodes[layoutInfo.idToIndex[n.parentId]];
+		// MaxX
+		var temp = n.positionX + n.width / 2;
+		if (undefined == p.maxX || temp > p.maxX) {
+		    p.maxX = temp;
+		    s += "\nNew maxX for parent node " + p.id + ": " + temp;
+		}
+		// MinX
+		temp = n.positionX - n.width / 2;
+		if (undefined == p.minX || temp < p.minX) {
+		    p.minX = temp;
+		    s += "\nNew minX for parent node " + p.id + ": " + temp;
+		}
+		// MaxY
+		temp = n.positionY + n.height / 2;
+		if (undefined == p.maxY || temp > p.maxY) {
+		    p.maxY = temp;
+		    s += "\nNew maxY for parent node " + p.id + ": " + temp;
+		}
+		// MinY
+		var temp = n.positionY - n.height / 2;
+		if (undefined == p.minY || temp < p.minY) {
+		    p.minY = temp;
+		    s += "\nNew minY for parent node " + p.id + ": " + temp;
+		}
+	    }
+	    logDebug(s);
 	}
+
+	// Update size, position of compund nodes
+	for (var i = 0; i < layoutInfo.nodeSize; i++) {
+	    var n = layoutInfo.layoutNodes[i];
+	    if (0 < n.children.length) {
+		n.positionX = (n.maxX + n.minX) /2;
+		n.positionY = (n.maxY + n.minY) /2;
+		n.width     = n.maxX - n.minX;
+		n.height    = n.maxY - n.minY;
+		s = "Updating position, size of compound node " + n.id;
+		s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
+		s += "\nWidth: " + n.width + ", Height: " + n.height;
+		logDebug(s);
+	    }
+	}
+	// Now update the position of compond nodes, since they are determined 
+	// by their offpring positions
+	//updateCompoundPositions(layoutInfo, cy, options);
+	
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function updateCompoundPositions(layoutInfo, cy, options) {
+	var s = "Computing Compound Node Positions";
+	logDebug(s);
+	for (var i = 0; i < layoutInfo.nodeSize; i++) {
+	    var n = layoutInfo.layoutNodes[i];	    
+	    if (n.children.length > 0) {
+		updateCompoundPositionsInternal(n, layoutInfo);
+	    }
+	}
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function updateCompoundPositionsInternal(n, layoutInfo) {
+	
+	var child0 = n.children[0];
+	var minX = undefined;
+	var maxX = undefined;
+	var minY = undefined;
+	var maxY = undefined;
+	
+	// Iterate over children nodes getting their extreme points
+	for (var i = 0; i < n.children.length; i++) {
+	    var node = n.children[i];
+	    // If it is a compound node, recursively compute position
+	    if (n.children.length > 0) {
+		updateCompoundPositionsInternal(n, layoutInfo);
+	    }
+	    
+	}
+
     }
 
 

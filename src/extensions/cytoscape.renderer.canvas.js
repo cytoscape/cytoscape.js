@@ -3592,7 +3592,10 @@
 				imgDim[1]);
 		
 		context.restore();
-		context.stroke();
+		
+		if (node._private.style["border-width"].value > 0) {
+			context.stroke();
+		}
 		
 	};
 	

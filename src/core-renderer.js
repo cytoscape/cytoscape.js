@@ -2,6 +2,12 @@
 	
 	$$.fn.core({
 		
+		renderTo: function( context, zoom, pan ){
+			var r = this._private.renderer;
+
+			r.renderTo( context, zoom, pan );
+		},
+
 		renderer: function(){
 			return this._private.renderer;
 		},

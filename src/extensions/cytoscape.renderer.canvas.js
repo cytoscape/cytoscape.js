@@ -1732,15 +1732,15 @@
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
 			if (nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
-					nodes[i]._private.style["border-width"].value,
+					nodes[i]._private.style["border-width"].value / 2,
 					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 					this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
 				nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
-					nodes[i]._private.style["border-width"].value,
+					nodes[i]._private.style["border-width"].value / 2,
 					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
-					(this.getNodeWidth(nodes[i]) + nodeThreshold) / 2, (this.getNodeHeight(nodes[i]) + nodeThreshold) / 2,
+					(this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
 				if (visibleElementsOnly) {
@@ -2496,8 +2496,12 @@
 		return 0;
 	};
 
+	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+		this.redraw( cxt, true, zoom, pan );
+	};
+
 	// Redraw frame
-	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll ) {
+	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll, forcedZoom, forcedPan ) {
 		var r = this;
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
@@ -2547,12 +2551,16 @@
 		r.matchCanvasSize(data.container);
 
 		var zoom = cy.zoom();
-		var effectiveZoom = zoom;
+		var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
 		var pan = cy.pan();
 		var effectivePan = {
 			x: pan.x,
 			y: pan.y
 		};
+
+		if( forcedPan ){
+			effectivePan = forcedPan;
+		}
 
 		if( 'devicePixelRatio' in window ){
 			effectiveZoom *= devicePixelRatio;
@@ -2630,7 +2638,13 @@
 			if( !drawAll ){
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
+			}
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
 			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
+			}
 			
 			for (var index = 0; index < elesNotInDragLayer.length; index++) {
 				element = elesNotInDragLayer[index];
@@ -2691,6 +2705,12 @@
 				
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
+			} 
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
+			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
 			}
 			
 			var element;
@@ -2738,7 +2758,13 @@
 			
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);		
-			}	
+			} 
+			if( forcedPan ){
+				context.translate(forcedPan.x, forcedPan.y);
+			} 
+			if( forcedZoom ){
+				context.scale(forcedZoom, forcedZoom);
+			}
 			
 			var coreStyle = cy.style()._private.coreStyle;
 
@@ -3427,6 +3453,8 @@
 		
 		nodeWidth = this.getNodeWidth(node);
 		nodeHeight = this.getNodeHeight(node);
+		
+		context.lineWidth = node._private.style["border-width"].pxValue;
 
 		if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
@@ -3506,7 +3534,6 @@
 			}
 			
 			// Border width, draw border
-			context.lineWidth = node._private.style["border-width"].pxValue;
 			if (node._private.style["border-width"].value > 0) {
 				context.stroke();
 			}
@@ -3565,7 +3592,10 @@
 				imgDim[1]);
 		
 		context.restore();
-		context.stroke();
+		
+		if (node._private.style["border-width"].value > 0) {
+			context.stroke();
+		}
 		
 	};
 	
@@ -4115,6 +4145,82 @@
 		return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
 	}
 	
+	CanvasRenderer.prototype.dotProduct = function(
+		vec1, vec2) {
+		
+		if (vec1.length != 2 || vec2.length != 2) {
+			throw 'dot product: arguments are not vectors';
+		}
+		
+		return (vec1[0] * vec2[0] + vec1[1] * vec2[1]);
+	}
+	
+	// Returns intersections of increasing distance from line's start point
+	CanvasRenderer.prototype.intersectLineCircle = function(
+		x1, y1, x2, y2, centerX, centerY, radius) {
+		
+		// Calculate d, direction vector of line
+		var d = [x2 - x1, y2 - y1]; // Direction vector of line
+		var s = [x1, y1]; // Start of line
+		var c = [centerX, centerY]; // Center of circle
+		var f = [x1 - centerX, y1 - centerY]
+		
+		var a = d[0] * d[0] + d[1] * d[1];
+		var b = 2 * (f[0] * d[0] + f[1] * d[1]);
+		var c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
+		
+		/*
+		var a = this.dotProduct(d, d);
+		var b = 2 * this.dotProduct(s, d) - this.dotProduct(d, c);
+		var c = this.dotProduct(s, s) - 2 * this.dotProduct(s, c) + this.dotProduct(c, c) - radius * radius ;
+		*/
+		
+		var discriminant = b*b-4*a*c;
+		
+		if (discriminant < 0) {
+			return [];
+		}
+		
+		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+		
+		var tMin = Math.min(t1, t2);
+		var tMax = Math.max(t1, t2);
+		var inRangeParams = [];
+		
+		if (tMin >= 0 && tMin <= 1) {
+			inRangeParams.push(tMin);
+		}
+		
+		if (tMax >= 0 && tMax <= 1) {
+			inRangeParams.push(tMax);
+		}
+		
+		if (inRangeParams.length == 0) {
+			return [];
+		}
+		
+		var nearIntersectionX = inRangeParams[0] * d[0] + x1;
+		var nearIntersectionY = inRangeParams[0] * d[1] + y1;
+		
+		if (inRangeParams.length > 1) {
+		
+			if (inRangeParams[0] == inRangeParams[1]) {
+				return [nearIntersectionX, nearIntersectionY];
+			} else {
+			  
+				var farIntersectionX = inRangeParams[1] * d[0] + x1;
+				var farIntersectionY = inRangeParams[1] * d[1] + y1;
+			
+				return [nearIntersectionX, nearIntersectionY, farIntersectionX, farIntersectionY];
+			}
+			
+		} else {
+			return [nearIntersectionX, nearIntersectionY]
+		}
+	  
+	}
+	
 	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
 		radius, farX, farY) {
 		
@@ -4196,6 +4302,9 @@
 			}
 		}
 	}
+	
+	// (boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+	//			cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
 	
 	CanvasRenderer.prototype.boxIntersectEllipse = function(
 		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
@@ -5000,8 +5109,8 @@
 			x -= centerX;
 			y -= centerY;
 			
-			x /= (width + padding);
-			y /= (height + padding);
+			x /= (width / 2 + padding);
+			y /= (height / 2 + padding);
 			
 			return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
 		}
@@ -5135,7 +5244,130 @@
 	
 	nodeShapes["octogon"] = {};
 	
-	nodeShapes["roundrectangle"] = nodeShapes["square"];
+	nodeShapes["roundrectangle"] = {
+		points: generateUnitNgonPoints(4, 0),
+		
+		draw: function(context, centerX, centerY, width, height) {
+			renderer.drawRoundRectangle(context,
+				centerX, centerY,
+				width, height,
+				10);
+		},
+		
+		drawPath: function(context, centerX, centerY, width, height) {
+			renderer.drawRoundRectanglePath(context,
+				centerX, centerY,
+				width, height,
+				10);
+		},
+		
+		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
+			return renderer.roundRectangleIntersectLine(
+					x, y,
+					nodeX,
+					nodeY,
+					width, height,
+					padding);
+		},
+		
+		intersectBox: function(
+			x1, y1, x2, y2,
+			width, height, centerX, 
+			centerY, padding) {
+
+			return renderer.roundRectangleIntersectBox(
+				x1, y1, x2, y2, 
+				width, height, centerX, centerY, padding);
+		},
+		
+		checkPointRough: function(
+			x, y, padding, width, height,
+			centerX, centerY) {
+		
+			// This check is OK because it assumes the round rectangle
+			// has sharp edges for the rough check 
+			return renderer.checkInBoundingBox(
+				x, y, nodeShapes["roundrectangle"].points, 
+					padding, width, height, centerX, centerY);
+		},
+		
+		// Looks like the width passed into this function is actually the total width / 2
+		checkPoint: function(
+			x, y, padding, width, height, centerX, centerY) {
+			
+			var cornerRadius = renderer.getRoundRectangleRadius(width, height);
+			
+			// Check hBox
+			if (renderer.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+				centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
+				return true;
+			}
+			
+			// Check vBox
+			if (renderer.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+				centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
+				return true;
+			}
+			
+			var checkInEllipse = function(x, y, centerX, centerY, width, height, padding) {
+				x -= centerX;
+				y -= centerY;
+				
+				x /= (width / 2 + padding);
+				y /= (height / 2 + padding);
+				
+				return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
+			}
+			
+			
+			// Check top left quarter circle
+			if (checkInEllipse(x, y,
+				centerX - width / 2 + cornerRadius,
+				centerY - height / 2 + cornerRadius,
+				cornerRadius * 2, cornerRadius * 2, padding)) {
+				
+				return true;
+			}
+			
+			/*
+			if (renderer.boxIntersectEllipse(x, y, x, y, padding, 
+				cornerRadius * 2, cornerRadius * 2,
+				centerX - width + cornerRadius,
+				centerY - height + cornerRadius)) {
+				return true;
+			}
+			*/
+			
+			// Check top right quarter circle
+			if (checkInEllipse(x, y,
+				centerX + width / 2 - cornerRadius,
+				centerY - height / 2 + cornerRadius,
+				cornerRadius * 2, cornerRadius * 2, padding)) {
+				
+				return true;
+			}
+			
+			// Check bottom right quarter circle
+			if (checkInEllipse(x, y,
+				centerX + width / 2 - cornerRadius,
+				centerY + height / 2 - cornerRadius,
+				cornerRadius * 2, cornerRadius * 2, padding)) {
+				
+				return true;
+			}
+			
+			// Check bottom left quarter circle
+			if (checkInEllipse(x, y,
+				centerX - width / 2 + cornerRadius,
+				centerY + height / 2 - cornerRadius,
+				cornerRadius * 2, cornerRadius * 2, padding)) {
+				
+				return true;
+			}
+			
+			return false;
+		}
+	};
 	
 	nodeShapes["roundrectangle2"] = {
 		roundness: 4.99,
@@ -5578,11 +5810,11 @@
 //		console.log("base: " + basePoints);
 		for (var i = 0; i < transformedPoints.length / 2; i++) {
 			transformedPoints[i * 2] = 
-				width * (basePoints[i * 2] * cos
+				width / 2 * (basePoints[i * 2] * cos
 					- basePoints[i * 2 + 1] * sin);
 			
 			transformedPoints[i * 2 + 1] = 
-				height * (basePoints[i * 2 + 1] * cos 
+				height / 2 * (basePoints[i * 2 + 1] * cos 
 					+ basePoints[i * 2] * sin);
 
 			transformedPoints[i * 2] += centerX;
@@ -5691,6 +5923,356 @@
 		
 		// Fill path
 		context.fill();
+	}
+	
+	CanvasRenderer.prototype.getRoundRectangleRadius = function(width, height) {
+		
+		// Set the default radius, unless half of width or height is smaller than default
+		return Math.min(width / 2, height / 2, 10);
+	}
+	
+	// Round rectangle drawing
+	CanvasRenderer.prototype.drawRoundRectanglePath = function(
+		context, x, y, width, height, radius) {
+		
+		var halfWidth = width / 2;
+		var halfHeight = height / 2;
+		var cornerRadius = this.getRoundRectangleRadius(width, height);
+		context.translate(x, y);
+		
+		context.beginPath();
+		
+		// Start at top middle
+		context.moveTo(0, -halfHeight);
+		// Arc from middle top to right side
+		context.arcTo(halfWidth, -halfHeight, halfWidth, 0, cornerRadius);
+		// Arc from right side to bottom
+		context.arcTo(halfWidth, halfHeight, 0, halfHeight, cornerRadius);
+		// Arc from bottom to left side
+		context.arcTo(-halfWidth, halfHeight, -halfWidth, 0, cornerRadius);
+		// Arc from left side to topBorder
+		context.arcTo(-halfWidth, -halfHeight, 0, -halfHeight, cornerRadius);
+		// Join line
+		context.lineTo(0, -halfHeight);
+		
+		/*
+		void arc(unrestricted double x, 
+				 unrestricted double y, 
+				 unrestricted double radius, 
+				 unrestricted double startAngle, 
+				 unrestricted double endAngle, 
+				 optional boolean anticlockwise = false);
+		*/
+		/*
+		context.arc(-width / 2 + cornerRadius,
+					-height / 2 + cornerRadius,
+					cornerRadius,
+					0,
+					Math.PI * 2 * 0.999);
+		*/
+		
+		context.closePath();
+		
+		context.translate(-x, -y);
+	}
+	
+	CanvasRenderer.prototype.drawRoundRectangle = function(
+		context, x, y, width, height, radius) {
+		
+		this.drawRoundRectanglePath(context, x, y, width, height, radius);
+		
+		context.fill();
+	}
+	
+	CanvasRenderer.prototype.roundRectangleIntersectLine = function(
+		x, y, nodeX, nodeY, width, height, padding) {
+		
+		var cornerRadius = this.getRoundRectangleRadius(width, height);
+	  
+		var halfWidth = width / 2;
+		var halfHeight = height / 2;
+		
+		// Check intersections with straight line segments
+		var straightLineIntersections;
+		
+		// Top segment, left to right
+		{
+			var topStartX = nodeX - halfWidth + cornerRadius - padding;
+			var topStartY = nodeY - halfHeight - padding;
+			var topEndX = nodeX + halfWidth - cornerRadius + padding;
+			var topEndY = topStartY;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Right segment, top to bottom
+		{
+			var rightStartX = nodeX + halfWidth + padding;
+			var rightStartY = nodeY - halfHeight + cornerRadius - padding;
+			var rightEndX = rightStartX;
+			var rightEndY = nodeY + halfHeight - cornerRadius + padding;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Bottom segment, left to right
+		{
+			var bottomStartX = nodeX - halfWidth + cornerRadius - padding;
+			var bottomStartY = nodeY + halfHeight + padding;
+			var bottomEndX = nodeX + halfWidth - cornerRadius + padding;
+			var bottomEndY = bottomStartY;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Left segment, top to bottom
+		{
+			var leftStartX = nodeX - halfWidth - padding;
+			var leftStartY = nodeY - halfHeight + cornerRadius - padding;
+			var leftEndX = leftStartX;
+			var leftEndY = nodeY + halfHeight - cornerRadius + padding;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Check intersections with arc segments
+		var arcIntersections;
+		
+		// Top Left
+		{
+			var topLeftCenterX = nodeX - halfWidth + cornerRadius;
+			var topLeftCenterY = nodeY - halfHeight + cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				topLeftCenterX, topLeftCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] <= topLeftCenterX
+				&& arcIntersections[1] <= topLeftCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Top Right
+		{
+			var topRightCenterX = nodeX + halfWidth - cornerRadius;
+			var topRightCenterY = nodeY - halfHeight + cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				topRightCenterX, topRightCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] >= topRightCenterX
+				&& arcIntersections[1] <= topRightCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Bottom Right
+		{
+			var bottomRightCenterX = nodeX + halfWidth - cornerRadius;
+			var bottomRightCenterY = nodeY + halfHeight - cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				bottomRightCenterX, bottomRightCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] >= bottomRightCenterX
+				&& arcIntersections[1] >= bottomRightCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Bottom Left
+		{
+			var bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
+			var bottomLeftCenterY = nodeY + halfHeight - cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] <= bottomLeftCenterX
+				&& arcIntersections[1] >= bottomLeftCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+	}
+	
+	CanvasRenderer.prototype.roundRectangleIntersectBox = function(
+		boxX1, boxY1, boxX2, boxY2, width, height, centerX, centerY, padding) {
+		
+		// We have the following shpae
+		
+		//    _____
+		//  _|     |_
+		// |         |
+		// |_       _|
+		//   |_____|
+		//
+		// With a quarter circle at each corner.
+		
+		var cornerRadius = this.getRoundRectangleRadius(width, height);
+		
+		var hBoxTopLeftX = centerX - width / 2 - padding;
+		var hBoxTopLeftY = centerY - height / 2 + cornerRadius - padding;
+		var hBoxBottomRightX = centerX + width / 2 + padding;
+		var hBoxBottomRightY = centerY + height / 2 - cornerRadius + padding;
+		
+		var vBoxTopLeftX = centerX - width / 2 + cornerRadius - padding;
+		var vBoxTopLeftY = centerY - height / 2 - padding;
+		var vBoxBottomRightX = centerX + width / 2 - cornerRadius + padding;
+		var vBoxBottomRightY = centerY + height / 2 + padding;
+		
+		// Check if the box is out of bounds
+		var boxMinX = Math.min(boxX1, boxX2);
+		var boxMaxX = Math.max(boxX1, boxX2);
+		var boxMinY = Math.min(boxY1, boxY2);
+		var boxMaxY = Math.max(boxY1, boxY2);
+		
+		if (boxMaxX < hBoxTopLeftX) {
+			return false;
+		} else if (boxMinX > hBoxBottomRightX) {
+			return false;
+		}
+		
+		if (boxMaxY < vBoxTopLeftY) {
+			return false;
+		} else if (boxMinY > vBoxBottomRightY) {
+			return false;
+		}
+		
+		// Check if an hBox point is in given box
+		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
+			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
+			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
+			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
+			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		// Check if a given point box is in the hBox
+		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
+			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
+			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
+			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
+			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		// Check if an vBox point is in given box
+		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
+			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
+			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
+			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
+			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		// Check if a given point box is in the vBox
+		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
+			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
+			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
+			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
+			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		// Lastly, check if one of the ellipses coincide with the box
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxTopLeftY + padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxBottomRightY - padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxBottomRightY - padding)) {
+			return true;
+		}
+		
+		return false;
 	}
 	
 	// @O Approximate collision functions

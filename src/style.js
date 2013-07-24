@@ -115,6 +115,8 @@
 	$$.styfn.fromJson = function( json ){
 		var style = this;
 
+		style.resetToDefault();
+
 		for( var i = 0; i < json.length; i++ ){
 			var context = json[i];
 			var selector = context.selector;

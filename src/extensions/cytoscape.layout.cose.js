@@ -6,11 +6,12 @@
     var defaults = {
 	ready             : function() {},
 	stop              : function() {},
-	numIter           : 1,
+	numIter           : 50,
 	refresh           : 0,
 	fit               : true, 
 	randomize         : false, 
-	debug             : true,
+	debug             : false,
+	nodeRepulsion     : 10000,
 	defaultEdgeWeigth : 1,
 	nestingFactor     : 5, 
 	gravity           : 1
@@ -40,11 +41,14 @@
 	    DEBUG = false;
 	}
 
+	// Get start time
+	var startTime = new Date();
+
 	// Initialize layout info
 	var layoutInfo = createLayoutInfo(cy, options);
 	
 	// Show LayoutInfo contents if debugging
-	if (DEBUG) {	    
+	if (DEBUG) {
 	    printLayoutInfo(layoutInfo);
 	}
 
@@ -65,17 +69,17 @@
 	    if (0 < options.refresh && 0 == (i % options.refresh)) {
 		refreshPositions(layoutInfo, cy, options);
 	    }
-
-	    printLayoutInfo(layoutInfo);
+	    
+	    // TODO: Remove before release
+	    //printLayoutInfo(layoutInfo);
 
 	    // ONLY FOR DEBUGGING! TODO: Remove before release
-// 	    var delay       = 1; 
-// 	    var now         = new Date();
-// 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-// 	    while (now < desiredTime) {
-// 	    	now = new Date();
-// 	    }
-
+	    // 	    var delay       = 1; 
+	    // 	    var now         = new Date();
+	    // 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
+	    // 	    while (now < desiredTime) {
+	    // 	    	now = new Date();
+	    // 	    }
 	}
 	
 	refreshPositions(layoutInfo, cy, options);
@@ -84,6 +88,11 @@
 	if (true == options.fit) {
 	    cy.fit();
 	}
+	
+	// Get end time
+	var endTime = new Date();
+
+	console.info("Layout took " + (endTime - startTime) + " ms");
 
 	// Layout has finished
 	cy.one("layoutstop", options.stop);
@@ -309,6 +318,9 @@
      *         Only used for debbuging 
      */
     function printLayoutInfo(layoutInfo) {
+	if (!DEBUG) {
+	    return;
+	}
 	console.debug("layoutNodes:");
 	for (var i = 0; i < layoutInfo.nodeSize; i++) {
 	    var n = layoutInfo.layoutNodes[i];
@@ -461,16 +473,28 @@
      */
     function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
 	// Compute distances between nodes
-	// TODO: Compute distance using node sizes
-	var distanceX   = node2.positionX - node1.positionX;
-	var distanceY   = node2.positionY - node1.positionY;
+	// TODO: Add case for distance = 0
+	// TODO: Add case for overlapping nodes
+
+	// Get direction of line connecting both node centers
+	var directionX = node2.positionX - node1.positionX;
+	var directionY = node2.positionY - node1.positionY;
+
+	// Get clipping points for both nodes
+	var point1 = findClippingPoint(node1, directionX, directionY);
+	var point2 = findClippingPoint(node2, -1 * directionX, -1 * directionY);
+
+	// Use clipping points to compute distance
+	var distanceX   = point2.x - point1.x;
+	var distanceY   = point2.y - point1.y;
 	var distanceSqr = distanceX * distanceX + distanceY * distanceY;
 	var distance    = Math.sqrt(distanceSqr);
+
 	// Compute the module of the force vector
-	var force  = 100000 / distanceSqr;  // TODO: Modify this
-	// TODO: Add case for distance = 0
+	var force  = options.nodeRepulsion / distanceSqr;
 	var forceX = force * distanceX / distance;
 	var forceY = force * distanceY / distance;
+
 	// Apply force
 	node1.offsetX -= forceX;
 	node1.offsetY -= forceY;
@@ -482,6 +506,91 @@
 	logDebug(s);
 
 	return;
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function findClippingPoint(node, dX, dY) {
+
+	// Shorcuts
+	var X = node.positionX;
+	var Y = node.positionY;
+	var H = node.height;
+	var W = node.width;
+	var dirSlope     = dY / dX;
+	var nodeSlope    = H / W;
+	var nodeinvSlope = W / H;
+
+	var s = "Computing clipping point of node " + node.id + 
+	    " . Height:  " + H + ", Width: " + W + 
+	    "\nDirection " + dX + ", " + dY; 
+	
+	// Compute intersection
+	var res = {};
+	do {
+	    // Case: Vertical direction (up)
+	    if (0 == dX && 0 < dY) {
+		res.x = X;
+		s += "\nUp direction";
+		res.y = Y + H / 2;
+		break;
+	    }
+
+	    // Case: Vertical direction (down)
+	    if (0 == dX && 0 > dY) {
+		res.x = X;
+		res.y = Y + H / 2;
+		s += "\nDown direction";
+		break;
+	    }	    
+
+	    // Case: Intersects the right border
+	    if (0 < dX && 
+		-1 * nodeSlope <= dirSlope && 
+		dirSlope <= nodeSlope) {
+		res.x = X + W / 2;
+		res.y = Y + (W * dY / 2 / dX);
+		s += "\nRightborder";
+		break;
+	    }
+
+	    // Case: Intersects the left border
+	    if (0 > dX && 
+		-1 * nodeSlope <= dirSlope && 
+		dirSlope <= nodeSlope) {
+		res.x = X - W / 2;
+		res.y = Y - (W * dY / 2 / dX);
+		s += "\Leftborder";
+		break;
+	    }
+
+	    // Case: Intersects the top border
+	    if (0 < dY && 
+		( dirSlope <= -1 * nodeSlope ||
+		  dirSlope >= nodeSlope )) {
+		res.x = X + (H * dX / 2 / dY);
+		res.y = Y + H / 2;
+		s += "\nTop border";
+		break;
+	    }
+
+	    // Case: Intersects the bottom border
+	    if (0 > dY && 
+		( dirSlope <= -1 * nodeSlope ||
+		  dirSlope >= nodeSlope )) {
+		res.x = X - (H * dX / 2 / dY);
+		res.y = Y - H / 2;
+		s += "\nBottom border";
+		break;
+	    }
+
+	} while (false);
+
+	s += "\nClipping point found at " + res.x + ", " + res.y;
+	logDebug(s);
+	return res;
     }
 
 

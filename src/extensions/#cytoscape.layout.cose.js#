@@ -32,7 +32,7 @@
     /**
      * @brief : runs the layout
      */
-    CoseLayout.prototype.run = function(){	
+    CoseLayout.prototype.run = function() {	
 	var options = this.options;
 	var cy      = options.cy;
 	

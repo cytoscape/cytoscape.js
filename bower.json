@@ -1,0 +1,12 @@
+{
+  "name": "cytoscape.js",
+  "version": "2.0.2",
+  "main": "build/cytoscape.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

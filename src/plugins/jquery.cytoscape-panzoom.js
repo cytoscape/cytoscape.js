@@ -433,19 +433,8 @@
 						if( cy.elements().size() === 0 ){
 							cy.reset();
 						} else {
-							cy.fit();
+							cy.fit( options.fitPadding );
 						}
-
-						var length = Math.max( $container.width(), $container.height() );
-						var zoom = cy.zoom() * (length - options.fitPadding*2)/length;
-
-						cy.zoom({
-							level: zoom,
-							renderedPosition: {
-								x: $container.width()/2,
-								y: $container.height()/2
-							}
-						});
 
 						return false;
 					});

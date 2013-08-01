@@ -652,7 +652,7 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">2.0.1</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.0.2</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -3068,12 +3068,37 @@ cy.layout( options );</code></pre>
       .css(&#39;background-color&#39;, &#39;blue&#39;)
   .selector(&#39;node:selected&#39;)
     .css({
-      &#39;background-color&#39;: &#39;red&#39;,
+      &#39;background-color&#39;: &#39;red&#39;
 
       // , ...
     })
 
   // ...
+
+  .update()</code></pre>
+<p>You can also set the style from plain JSON:
+
+</p>
+<pre><code class="lang-js">cy.style()
+  .fromJson([
+    {
+      selector: &#39;node&#39;,
+      css: {
+        &#39;background-color&#39;: &#39;blue&#39;
+      }
+    },
+
+    {
+      selector: &#39;node:selected&#39;,
+      css: {
+        &#39;background-color&#39;: &#39;red&#39;
+
+        // , ...
+      }
+    }
+
+    // , ...
+  ])
 
   .update()</code></pre>
 

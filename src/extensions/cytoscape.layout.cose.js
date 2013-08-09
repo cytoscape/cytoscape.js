@@ -6,7 +6,7 @@
     var defaults = {
 	ready             : function() {},
 	stop              : function() {},
-	numIter           : 50,
+	numIter           : 100,
 	refresh           : 0,
 	fit               : true, 
 	randomize         : false, 
@@ -32,7 +32,7 @@
     /**
      * @brief : runs the layout
      */
-    CoseLayout.prototype.run = function(){	
+    CoseLayout.prototype.run = function() {	
 	var options = this.options;
 	var cy      = options.cy;
 	
@@ -238,8 +238,7 @@
 
 	    if (sourceGraph != targetGraph) {
 		// Find lowest common graph ancestor
-		// 0 is the root graph index
-		var lca = findLCA(tempEdge.sourceId, tempEdge.sourceId, 0, layoutInfo);
+		var lca = findLCA(tempEdge.sourceId, tempEdge.targetId, layoutInfo);
 
 		// Compute sum of node depths, relative to lca graph
 		var lcaGraph = layoutInfo.graphSet[lca];
@@ -283,35 +282,64 @@
      *          (from the graph hierarchy induced tree) whose
      *          root is graphIx
      *
-     * @pre   : Both nodes belong to the subtree whose root is graphIx 
      */
-    function findLCA(node1, node2, graphIx, layoutInfo) {
+    function findLCA(node1, node2, layoutInfo) {
+	// Find their common ancester, starting from the root graph
+	var res = findLCA_aux(node1, node2, 0, layoutInfo);
+	if (2 > res.count) {
+	    // If aux function couldn't find the common ancester, 
+	    // then it is the root graph
+	    return 0;
+	} else {
+	    return res.graph;
+	}
+    }
+
+
+    /**
+     * @brief : 
+     *          
+     *          
+     *          
+     */
+    function findLCA_aux(node1, node2, graphIx, layoutInfo) {
 	var graph = layoutInfo.graphSet[graphIx];
-	// If either node  belongs to graphIx
-	if (-1 < $.inArray(node1, graph) || -1 < $.inArray(node2, graph)) {
-	    return graphIx;
+	// If both nodes belongs to graphIx
+	if (-1 < $.inArray(node1, graph) && -1 < $.inArray(node2, graph)) {
+	    return {count:2, graph:graphIx};
 	}
 
 	// Make recursive calls for all subgraphs
-	var result = undefined;
+	var c = 0;
 	for (var i = 0; i < graph.length; i++) {
 	    var nodeId   = graph[i];
 	    var nodeIx   = layoutInfo.idToIndex[nodeId];
 	    var children = layoutInfo.layoutNodes[nodeIx].children;
+
 	    // If the node has no child, skip it
 	    if (0 == children.length) {
 		continue;
 	    }
+
 	    var childGraphIx = layoutInfo.indexToGraph[layoutInfo.idToIndex[children[0]]];
-	    result = findLCA(node1, node2, childGraphIx, layoutInfo);
-	    // If found common ancestor
-	    if (undefined != result) {
+	    var result = findLCA_aux(node1, node2, childGraphIx, layoutInfo);
+	    if (0 == result.count) {
+		// Neither node1 nor node2 are present in this subgraph
+		continue;
+	    } else if (1 == result.count) {
+		// One of (node1, node2) is present in this subgraph
+		c++;
+		if (2 == c) {
+		    // We've already found both nodes, no need to keep searching
+		    break;
+		}
+	    } else {
+		// Both nodes are present in this subgraph
 		return result;
-	    }
+	    }	    
 	}
 	
-	// If no better result found, then they are in separate subtrees
-	return graphIx;
+	return {count:c, graph:graphIx};
     }
 
 

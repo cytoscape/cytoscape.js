@@ -4,19 +4,21 @@
      * @brief :  default layout options
      */
     var defaults = {
-	ready             : function() {},
-	stop              : function() {},
-	numIter           : 100,
-	refresh           : 0,
-	fit               : true, 
-	randomize         : false, 
-	debug             : false,
-	nodeRepulsion     : 10000,
-	nodeOverlap       : 1,
-	defaultEdgeWeigth : 1,
-	nestingFactor     : 5, 
-	gravity           : 1, 
-	maxForce          : 100
+	ready               : function() {},
+	stop                : function() {},
+	numIter             : 100,
+	refresh             : 0,
+	fit                 : true, 
+	randomize           : false,
+	debug               : false,
+	nodeRepulsion       : 10000,
+	nodeOverlap         : 1,
+	edgeElasticity      : 2000,
+	defaultEdgeWeigth   : 1,
+	nestingFactor       : 10, 
+	gravity             : 10, 
+	initialTemp         : 100,
+	coolingFactor       : 0.9
     };
 
 
@@ -35,7 +37,7 @@
     CoseLayout.prototype.run = function() {	
 	var options = this.options;
 	var cy      = options.cy;
-	
+
 	// Set DEBUG - Global variable
 	if (true == options.debug) {
 	    DEBUG = true;
@@ -65,23 +67,16 @@
 	// Main loop
 	for (var i = 0; i < options.numIter; i++) {
 	    // Do one step in the phisical simmulation
-	    step(layoutInfo, cy, options);
+	    step(layoutInfo, cy, options, i);
 
 	    // If required, update positions
 	    if (0 < options.refresh && 0 == (i % options.refresh)) {
 		refreshPositions(layoutInfo, cy, options);
 	    }
 	    
-	    // TODO: Remove before release
-	    //printLayoutInfo(layoutInfo);
-
-	    // ONLY FOR DEBUGGING! TODO: Remove before release
-	    // 	    var delay       = 1; 
-	    // 	    var now         = new Date();
-	    // 	    var desiredTime = new Date().setSeconds(now.getSeconds() + delay);	
-	    // 	    while (now < desiredTime) {
-	    // 	    	now = new Date();
-	    // 	    }
+	    // Update temperature
+	    layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
+	    logDebug("New temperature: " + layoutInfo.temperature);
 	}
 	
 	refreshPositions(layoutInfo, cy, options);
@@ -127,7 +122,8 @@
 	    graphSet     : [],
 	    indexToGraph : [], 
 	    layoutEdges  : [],
-	    edgeSize     : cy.edges().size()
+	    edgeSize     : cy.edges().size(),
+	    temperature  : options.initialTemp
 	}; 
 	
 	// Shortcut
@@ -392,6 +388,11 @@
 	}
 	console.debug(s);
 
+	s =  "nodeSize: " + layoutInfo.nodeSize;
+	s += "\nedgeSize: " + layoutInfo.edgeSize;
+	s += "\ntemperature: " + layoutInfo.temperature;
+	console.debug(s);
+
 	return;
     }
 
@@ -408,8 +409,8 @@
 	    var n = layoutInfo.layoutNodes[i];
 	    // No need to randomize compound nodes
 	    if (0 == n.children.length) {
-		n.positionX = Math.round(Math.random() * width);
-		n.positionY = Math.round(Math.random() * height);
+		n.positionX = Math.random() * width;
+		n.positionY = Math.random() * height;
 	    }
 	}
     }
@@ -456,7 +457,12 @@
      * @arg cy         : Cytoscape object
      * @arg options    : Layout options
      */
-    function step(layoutInfo, cy, options) {	
+    function step(layoutInfo, cy, options, step) {	
+	var s = "\n\n###############################";
+	s += "\nSTEP: " + step;
+	s += "\n###############################\n";
+	logDebug(s);
+
 	// Calculate node repulsions
 	calculateNodeForces(layoutInfo, cy, options);
 	// Calculate edge forces
@@ -721,11 +727,15 @@
 	    var ly = target.positionY - source.positionY;
 	    var l  = Math.sqrt(lx * lx + ly * ly);
 
-	    // TODO: Use options for elasticity constant
-	    var force  = Math.pow(edge.idealLength - l, 2) / 2000; 
-	    // TODO: Add case for l = 0
-	    var forceX = force * lx / l;
-	    var forceY = force * ly / l;
+	    var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity; 
+
+	    if (0 != l) {
+		var forceX = force * lx / l;
+		var forceY = force * ly / l;
+	    } else {
+		var forceX = 0;
+		var forceY = 0;
+	    }
 
 	    // Add this force to target and source nodes
 	    source.offsetX += forceX;
@@ -734,7 +744,7 @@
 	    target.offsetY -= forceY;
 
 	    var s = "Edge force between nodes " + source.id + " and " + target.id;
-	    s += "\nDistance: " + l + " Force: " + force;
+	    s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
 	    logDebug(s);
 	}
     }
@@ -775,7 +785,7 @@
 		var dx = centerX - node.positionX;
 		var dy = centerY - node.positionY;
 		var d  = Math.sqrt(dx * dx + dy * dy);
-		if (d > 1) { // TODO: Use global variable for distance threshold
+		if (d > 1.0) { // TODO: Use global variable for distance threshold
 		    var fx = options.gravity * dx / d;
 		    var fy = options.gravity * dy / d;
 		    node.offsetX += fx;
@@ -875,8 +885,8 @@
 		n.positionX + ", " + n.positionY + ")."; 
 
 	    // Limit displacement in order to improve stability
-	    var tempX = limitForce(n.offsetX, options.maxForce);
-	    var tempY = limitForce(n.offsetY, options.maxForce);
+	    var tempX = limitForce(n.offsetX, layoutInfo.temperature);
+	    var tempY = limitForce(n.offsetY, layoutInfo.temperature);
 	    n.positionX += tempX; 
 	    n.positionY += tempY;
 	    n.offsetX = 0;
@@ -886,6 +896,7 @@
 	    n.minY    = n.positionY - n.height; 
 	    n.maxY    = n.positionY + n.height; 
 	    s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
+	    logDebug(s);
 
 	    // Update ancestry boudaries
 	    updateAncestryBoundaries(n, layoutInfo);
@@ -912,15 +923,19 @@
      * @brief : 
      */
     function limitForce(force, max) {
+	var s = "Limiting force: " + force;
+	s += ". Max: " + max;
 	if (force > max) {
-	    return max;
+	    var res = max;
+	} else if (force < (-1 * max)) {
+	    var res =  -1 * max;
+	} else {
+	    var res = force;
 	}
+	s += ".\nResult: " + res;
+	logDebug(s);
 
-	if (force < (-1 * max)) {
-	    return (-1 *max);
-	}
-	
-	return force;
+	return res;
     }
 
 

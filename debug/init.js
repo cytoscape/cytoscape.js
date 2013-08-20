@@ -240,7 +240,6 @@ $(function(){
 
 //		$container2.cy(options);
 
-return;
 		// compound graph in the second instance
 		$container2.cy({
 				elements: {

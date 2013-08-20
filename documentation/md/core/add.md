@@ -4,6 +4,8 @@ If plain element objects are used, then [the same format used at initialisation]
 
 It is important to note that the positions of newly added nodes must be defined when calling `cy.add()`.  Nodes can not be placed in the graph without a valid position &mdash; otherwise they could not be displayed.
 
+**NB: If a collection of existing elements is specified, then copies of those elements are added, which allows for elements to be effectively transferred between instances of Cytoscape.js.  If you want to add removed elements back to the graph, use `eles.restore()` instead.**
+
 ## Examples
 
 Add a node from a plain object.

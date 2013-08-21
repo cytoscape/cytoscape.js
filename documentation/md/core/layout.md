@@ -46,15 +46,15 @@ cy.layout( options );
 
 *The `breadthfirst` layout puts nodes in a hierarchy:*
 ```js
-options = {
-	name: 'breadthfirst',
+defaults = {
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined // the roots of the trees
+    roots: undefined, // the roots of the trees
+    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
 cy.layout( options );

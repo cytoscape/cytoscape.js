@@ -12,12 +12,12 @@
 	randomize           : false,
 	debug               : false,
 	nodeRepulsion       : 10000,
-	nodeOverlap         : 1,
-	edgeElasticity      : 2000,
-	defaultEdgeWeigth   : 1,
+	nodeOverlap         : 100,
+	idealEdgeLength     : 10,
+	edgeElasticity      : 10000,
 	nestingFactor       : 10, 
 	gravity             : 10, 
-	initialTemp         : 100,
+	initialTemp         : 200,
 	coolingFactor       : 0.9
     };
 
@@ -215,16 +215,9 @@
 	    tempEdge.id       = e.data('id');
 	    tempEdge.sourceId = e.data('source');
 	    tempEdge.targetId = e.data('target');
-	    // Check whether the edge has a defined weigth
-	    var weigth = e.data('weigth');
-	    if (undefined != weigth) {
-		tempEdge.weigth = weigth;
-	    } else {
-		// Use default weigth
-		tempEdge.weigth = options.defaultEdgeWeigth;
-	    }
+
 	    // Compute ideal length
-	    var idealLength = 10;       // TODO: Change this.
+	    var idealLength = options.idealEdgeLength;
 
 	    // Check if it's an inter graph edge
 	    var sourceIx    = layoutInfo.idToIndex[tempEdge.sourceId];
@@ -384,7 +377,7 @@
 	    var e = layoutInfo.layoutEdges[i];
 	    s += "\nEdge Index: " + i + " ID: " + e.id + 
 		" SouceID: " + e.sourceId + " TargetId: " + e.targetId + 
-		" Weigth: " + e.weigth + " Ideal Length: " + e.idealLength;
+		" Ideal Length: " + e.idealLength;
 	}
 	console.debug(s);
 

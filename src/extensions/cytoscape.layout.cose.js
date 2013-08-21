@@ -722,9 +722,23 @@
 	    var targetIx = layoutInfo.idToIndex[edge.targetId];
 	    var target   = layoutInfo.layoutNodes[targetIx];
 
-	    // TODO: Compute current length using node sizes
-	    var lx = target.positionX - source.positionX;
-	    var ly = target.positionY - source.positionY;
+	    // Get direction of line connecting both node centers
+	    var directionX = target.positionX - source.positionX;
+	    var directionY = target.positionY - source.positionY;
+	    
+	    // If both centers are the same, do nothing.
+	    // A random force has already been applied as node repulsion
+	    if (0 == directionX && 0 == directionY) {
+		return;
+	    }
+
+	    // Get clipping points for both nodes
+	    var point1 = findClippingPoint(source, directionX, directionY);
+	    var point2 = findClippingPoint(target, -1 * directionX, -1 * directionY);
+
+
+	    var lx = point2.x - point1.x;
+	    var ly = point2.y - point1.y;
 	    var l  = Math.sqrt(lx * lx + ly * ly);
 
 	    var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity; 

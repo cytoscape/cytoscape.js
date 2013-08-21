@@ -6,12 +6,16 @@
 		<script type="text/javascript" src="qunit/$versions.js"></script>
 		<script type="text/javascript">
 		(function(){
+			// version of jquery to test against
+			var versions = [ "1.4.4", "1.5.2", "1.6.4", "1.7.2", "1.8.3", "1.9.1", "1.10.2", "2.0.3" ];
+			var latestVersion = versions[ versions.length - 1 ];
+
 			var parts = document.location.search.slice( 1 ).split( "&" ),
 			    length = parts.length,
 			    i = 0,
 			    current,
 			    minified = false,
-			    version = "1.8";
+			    version = latestVersion;
 			for ( ; i < length; i++ ) {
 			    current = parts[ i ].split( "=" );
 			    if ( current[ 0 ] === "jquery" ) {
@@ -20,14 +24,11 @@
 			    	minified = eval( current[ 1 ] );
 			    }
 			}
-			
-			// version of jquery to test against
-			var versions = [ "1.4", "1.5", "1.6", "1.7", "1.8" ];
 
 			// use only latest jquery with `latest` url flag set
 			var search = window.location.search;
 			if( search.match(/[\?\&]latest/) && !search.match(/[\?\&]latest\=false/) ){
-				versions = ["1.8"];
+				versions = [ latestVersion ];
 			}
 			
 			// cytoscape web as separate source files

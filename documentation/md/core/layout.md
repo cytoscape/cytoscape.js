@@ -79,13 +79,13 @@ cy.layout( options );
 *The `arbor` layout uses a force-directed simulation:*
 ```js
 options = {
-	name: 'arbor',
 	liveUpdate: true, // whether to show the layout as it's running
 	ready: undefined, // callback on layoutready 
 	stop: undefined, // callback on layoutstop
 	maxSimulationTime: 4000, // max length in ms to run the layout
-	fit: true, // fit to viewport
+	fit: true, // reset viewport to fit default simulationBounds
 	padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+	simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
 	ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
 
 	// forces used by arbor (use arbor default on undefined)

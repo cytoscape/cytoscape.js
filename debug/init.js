@@ -81,6 +81,10 @@ $(function(){
 
 			window.cy = this;
 			window.$$ = cytoscape;
+		},
+		initrender: function(){
+			console.log('initrender');
+			console.log(arguments);
 		}
 	};
 	

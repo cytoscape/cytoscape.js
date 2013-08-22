@@ -92,6 +92,10 @@
 			hideEdgesOnViewport: options.hideEdgesOnViewport
 		}, options.renderer) );
 
+		if( options.initrender ){
+			cy.on('initrender', options.initrender);
+		}
+
 		// initial load
 		cy.load(options.elements, function(){ // onready
 			cy.startAnimationLoop();

@@ -659,7 +659,7 @@
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
-				<a target="_blank" href="https://groups.google.com/forum/#!forum/cytoscape-discuss"><span class="icon-bullhorn"></span> Google Group</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous code questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-briefcase"></span> File an issue</a>
 			</div>
@@ -1508,6 +1508,9 @@ $(function(){ // on jquery ready
 
 </p>
 <p>It is important to note that the positions of newly added nodes must be defined when calling <code>cy.add()</code>.  Nodes can not be placed in the graph without a valid position &mdash; otherwise they could not be displayed.
+
+</p>
+<p><strong>NB: If a collection of existing elements is specified, then copies of those elements are added, which allows for elements to be effectively transferred between instances of Cytoscape.js.  If you want to add removed elements back to the graph, use <code>eles.restore()</code> instead.</strong>
 
 </p>
 <h3>Examples</h3>
@@ -2959,15 +2962,15 @@ cy.layout( options );</code></pre>
 cy.layout( options );</code></pre>
 <p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
 </p>
-<pre><code class="lang-js">options = {
-    name: &#39;breadthfirst&#39;,
+<pre><code class="lang-js">defaults = {
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined // the roots of the trees
+    roots: undefined, // the roots of the trees
+    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
 cy.layout( options );</code></pre>
@@ -2988,13 +2991,13 @@ cy.layout( options );</code></pre>
 <p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
 </p>
 <pre><code class="lang-js">options = {
-    name: &#39;arbor&#39;,
     liveUpdate: true, // whether to show the layout as it&#39;s running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // fit to viewport
+    fit: true, // reset viewport to fit default simulationBounds
     padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
     ungrabifyWhileSimulating: true, // so you can&#39;t drag nodes during layout
 
     // forces used by arbor (use arbor default on undefined)

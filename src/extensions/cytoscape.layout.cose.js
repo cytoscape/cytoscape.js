@@ -12,13 +12,14 @@
 	randomize           : false,
 	debug               : false,
 	nodeRepulsion       : 10000,
-	nodeOverlap         : 100,
+	nodeOverlap         : 200,
 	idealEdgeLength     : 10,
 	edgeElasticity      : 10000,
 	nestingFactor       : 10, 
 	gravity             : 10, 
 	initialTemp         : 200,
-	coolingFactor       : 0.9
+	coolingFactor       : 0.95, 
+	minTemp             : 1
     };
 
 
@@ -77,6 +78,11 @@
 	    // Update temperature
 	    layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
 	    logDebug("New temperature: " + layoutInfo.temperature);
+
+	    if (layoutInfo.temperature < options.minTemp) {
+		logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
+		break;
+	    }
 	}
 	
 	refreshPositions(layoutInfo, cy, options);
@@ -659,7 +665,7 @@
      * @brief : 
      */
     function nodesOverlap(node1, node2, point1, point2, dX, dY) {
-
+	// TODO: Rewrite properly
 	if (0 != dX) {
 	    // 'distance' to point1 from node1
 	    var aux1 = solveAuxEq(point1.x, node1.positionX, dX);
@@ -901,10 +907,9 @@
 		n.positionX + ", " + n.positionY + ")."; 
 
 	    // Limit displacement in order to improve stability
-	    var tempX = limitForce(n.offsetX, layoutInfo.temperature);
-	    var tempY = limitForce(n.offsetY, layoutInfo.temperature);
-	    n.positionX += tempX; 
-	    n.positionY += tempY;
+	    var tempForce = limitForce(n.offsetX, n.offsetY, layoutInfo.temperature);
+	    n.positionX += tempForce.x; 
+	    n.positionY += tempForce.y;
 	    n.offsetX = 0;
 	    n.offsetY = 0;
 	    n.minX    = n.positionX - n.width; 
@@ -938,17 +943,24 @@
     /**
      * @brief : 
      */
-    function limitForce(force, max) {
-	var s = "Limiting force: " + force;
-	s += ". Max: " + max;
+    function limitForce(forceX, forceY, max) {
+	var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
+	var force = Math.sqrt(forceX * forceX + forceY * forceY);
+
 	if (force > max) {
-	    var res = max;
-	} else if (force < (-1 * max)) {
-	    var res =  -1 * max;
+	    var res = {
+		x : max * forceX / force,
+		y : max * forceY / force
+	    };	    
+
 	} else {
-	    var res = force;
+	    var res = {
+		x : forceX,
+		y : forceY
+	    };
 	}
-	s += ".\nResult: " + res;
+
+	s += ".\nResult: (" + res.x + ", " + res.y + ")";
 	logDebug(s);
 
 	return res;

@@ -145,6 +145,10 @@
 	    tempNode.minX       = tempNode.positionX - tempNode.width  / 2;
 	    tempNode.maxY       = tempNode.positionY + tempNode.height / 2;
 	    tempNode.minY       = tempNode.positionY - tempNode.height / 2;
+	    tempNode.padLeft    = nodes[i]._private.style['padding-left'].pxValue;
+	    tempNode.padRight   = nodes[i]._private.style['padding-right'].pxValue;
+	    tempNode.padTop     = nodes[i]._private.style['padding-top'].pxValue;
+	    tempNode.padBottom  = nodes[i]._private.style['padding-bottom'].pxValue;
 	    
 	    // Add new node
 	    layoutInfo.layoutNodes.push(tempNode);
@@ -351,7 +355,12 @@
 		"\npositionX: " + n.positionX + 
 		"\npositionY: " + n.positionY +
 		"\nOffsetX: " + n.offsetX + 
-		"\nOffsetY: " + n.offsetY;
+		"\nOffsetY: " + n.offsetY + 
+		"\npadLeft: " + n.padLeft + 
+		"\npadRight: " + n.padRight + 
+		"\npadTop: " + n.padTop + 
+		"\npadBottom: " + n.padBottom;
+
 	    console.debug(s);		
 	}	
 	
@@ -964,29 +973,29 @@
 	var flag = false;
 
 	// MaxX
-	if (undefined == p.maxX || node.maxX > p.maxX) {
-	    p.maxX = node.maxX;
+	if (undefined == p.maxX || node.maxX + p.padRight > p.maxX) {
+	    p.maxX = node.maxX + p.padRight;
 	    flag = true;
 	    s += "\nNew maxX for parent node " + p.id + ": " + p.maxX;
 	}
 
 	// MinX
-	if (undefined == p.minX || node.minX < p.minX) {
-	    p.minX = node.minX;
+	if (undefined == p.minX || node.minX - p.padLeft < p.minX) {
+	    p.minX = node.minX - p.padLeft;
 	    flag = true;
 	    s += "\nNew minX for parent node " + p.id + ": " + p.minX;
 	}
 
 	// MaxY
-	if (undefined == p.maxY || node.maxY > p.maxY) {
-	    p.maxY = node.maxY;
+	if (undefined == p.maxY || node.maxY + p.padBottom > p.maxY) {
+	    p.maxY = node.maxY + p.padBottom;
 	    flag = true;
 	    s += "\nNew maxY for parent node " + p.id + ": " + p.maxY;
 	}
 
 	// MinY
-	if (undefined == p.minY || node.minY < p.minY) {
-	    p.minY = node.minY;
+	if (undefined == p.minY || node.minY - p.padTop < p.minY) {
+	    p.minY = node.minY - p.padTop;
 	    flag = true;
 	    s += "\nNew minY for parent node " + p.id + ": " + p.minY;
 	}

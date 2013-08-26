@@ -12,7 +12,7 @@
 	randomize           : false,
 	debug               : false,
 	nodeRepulsion       : 10000,
-	nodeOverlap         : 200,
+	nodeOverlap         : 10,
 	idealEdgeLength     : 10,
 	edgeElasticity      : 10000,
 	nestingFactor       : 10, 
@@ -521,6 +521,7 @@
 	// Get direction of line connecting both node centers
 	var directionX = node2.positionX - node1.positionX;
 	var directionY = node2.positionY - node1.positionY;
+	s += "\ndirectionX: " + directionX + ", directionY: " + directionY;
 
 	// If both centers are the same, apply a random force
 	if (0 == directionX && 0 == directionY) {
@@ -528,28 +529,30 @@
 	    return; // TODO
 	}
 
-	// Get clipping points for both nodes
-	var point1 = findClippingPoint(node1, directionX, directionY);
-	var point2 = findClippingPoint(node2, -1 * directionX, -1 * directionY);
-
-	if (nodesOverlap(node1, node2, point1, point2, directionX, directionY)) {
+	overlap = nodesOverlap(node1, node2, directionX, directionY);
+	
+	if (overlap > 0) {
 	    s += "\nNodes DO overlap.";
+	    s += "\nOverlap: " + overlap;
 	    // If nodes overlap, repulsion force is proportional 
 	    // to the overlap
-	    // Use clipping points to compute overlap
-	    var overlapX   = point1.x - point2.x;
-	    var overlapY   = point1.y - point2.y;
-	    var overlapSqr = overlapX * overlapX + overlapY * overlapY;
-	    var overlap    = Math.sqrt(overlapSqr);
-	    s += "\nOverlap: " + overlap;
+	    var force    = options.nodeOverlap * overlap;
+
 	    // Compute the module and components of the force vector
-	    var force  = options.nodeOverlap * overlap;
-	    var forceX = force * overlapX / overlap;
-	    var forceY = force * overlapY / overlap;
+	    var distance = Math.sqrt(directionX * directionX + directionY * directionY);
+	    s += "\nDistance: " + distance;
+	    var forceX   = force * directionX / distance;
+	    var forceY   = force * directionY / distance;
 
 	} else {
 	    s += "\nNodes do NOT overlap.";
-	    // If there's no overlap, force is inversely to squared distance
+	    // If there's no overlap, force is inversely proportional 
+	    // to squared distance
+
+	    // Get clipping points for both nodes
+	    var point1 = findClippingPoint(node1, directionX, directionY);
+	    var point2 = findClippingPoint(node2, -1 * directionX, -1 * directionY);
+
 	    // Use clipping points to compute distance
 	    var distanceX   = point2.x - point1.x;
 	    var distanceY   = point2.y - point1.y;
@@ -664,7 +667,32 @@
     /**
      * @brief : 
      */
-    function nodesOverlap(node1, node2, point1, point2, dX, dY) {
+    function nodesOverlap(node1, node2, dX, dY) {
+
+	if (dX > 0) {
+	    var overlapX = node1.maxX - node2.minX;
+	} else {
+	    var overlapX = node2.maxX - node1.minX;
+	}
+
+	if (dY > 0) {
+	    var overlapY = node1.maxY - node2.minY;
+	} else {
+	    var overlapY = node2.maxY - node1.minY;
+	}
+
+	if (overlapX >= 0 && overlapY >= 0) {
+	    return Math.sqrt(overlapX * overlapX + overlapY * overlapY);
+	} else {
+	    return 0;
+	}
+    }
+
+
+    /**
+     * @brief : 
+     */
+    function nodesOverlap2(node1, node2, point1, point2, dX, dY) {
 	// TODO: Rewrite properly
 	if (0 != dX) {
 	    // 'distance' to point1 from node1

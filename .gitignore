@@ -3,3 +3,5 @@
 .buildpath
 node_modules
 build
+build/*
+build/**

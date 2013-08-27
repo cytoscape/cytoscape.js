@@ -8,18 +8,18 @@ body {
 	z-index: 999;
 	right: 0;
 	bottom: 0;
-	height: 300px;
-	width: 300px;
-	background: #fff;
-	border: 1px solid #aaa;
+	height: 15em;
+	width: 15em;
+	background: rgba(255, 255, 255, 0.66);
+	border: 1px solid rgba(127, 127, 127, 0.25);
 }
 
 #cy-refresh,
 #cy-show,
 #cy-hide {
 	position: fixed;
-	bottom: 270px;
-	right: 270px;
+	bottom: 13.75em;
+	right: 13.75em;
 	line-height: 1;
 	padding: 4px 6px;
 	color: #333;
@@ -30,6 +30,9 @@ body {
 #cy-hide,
 #cy-show {
 	right: 0;
+}
+
+#cy-show {
 	bottom: 0;
 }
 
@@ -133,16 +136,16 @@ button:active {
 	overflow: hidden !important;
 }
 
-#demo {
-	height: 20em;
-	width: 20em;
-	float: left;
-}
-
 #demo-source {
-	height: 64em;
+	height: auto;
 	width: 100%;
 	position: relative;
+}
+
+#demo-source pre {
+	margin: 0;
+	border: 0;
+	line-height: 1;
 }
 
 #demo-source .expander,
@@ -381,4 +384,53 @@ pre code {
 
 .args .fields .name {
 	margin-left: 0.5em;
+}
+
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px) {
+
+	body {
+		width: 100%;
+	}
+
+	#navigation {
+		display: none;
+	}
+
+	#content {
+		margin-left: 0.5em;
+	}
+
+	.title {
+		font-size: 2.75em;
+	}
+
+}
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px)
+and (orientation:landscape) {
+
+	#navigation {
+		display: block;
+	}
+
+	#content {
+		margin-left: 16em;
+	}
+
+}
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px)
+and (orientation:portrait) {
+
+	#content {
+		font-size: 2.5em;
+	}
+
 }

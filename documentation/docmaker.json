@@ -2,6 +2,7 @@
   "version": "2.1.0",
   "jqueryVersion": "1.4",
 
+
   "templates": {
     "TODO": "we are not using function templates yet but it might be nice"
   },

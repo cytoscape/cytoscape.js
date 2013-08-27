@@ -6,6 +6,8 @@
 		<meta name="keywords" content="cytoscape,graph,graph theory,library,javascript,jquery,visualisation,visualization,node.js,node,example,demo,tutorial,layout,extension,plugin,api,documentation,node,edge,link,network,vertex,editor,interactive,json,dynamic,selector,compound,class,event,collection,pan,zoom,degree,grab,lock,select,binding,bind,listener,animation,iteration,search,analysis,filter,renderer,canvas,force directed">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
+		<meta name="viewport" content="user-scalable=false;">
+
 		<title>Cytoscape.js</title>
 
 		<link href="css/reset.css" rel="stylesheet" />
@@ -679,7 +681,95 @@
 				</div>
 
 
-				<iframe id="demo-code" src="js/load.js"></iframe>
+				<pre><code>$(function(){
+
+  var nodeCount = 10;
+  var edgeCount = 12;
+
+  var demoNodes = [];
+  var demoEdges = [];
+
+  var r = $(&#x27;#demo&#x27;).width() * 0.333;
+  var ctr = {
+    x: $(&#x27;#demo&#x27;).width()/2,
+    y: $(&#x27;#demo&#x27;).height()/2
+  };
+
+  for (var i = 0; i &lt; nodeCount; i++) {
+    var theta = 2 * Math.PI * i / nodeCount;
+
+    demoNodes.push({
+      data: {
+        id: &#x27;n&#x27; + i,
+        weight: Math.round( Math.random() * 100 )
+      },
+
+      position: {
+        x: ctr.x + r * Math.cos(theta),
+        y: ctr.y + r * Math.sin(theta)
+      }
+    });
+  }
+
+  for (var i = 0; i &lt; nodeCount; i++) {
+    demoEdges.push({
+      data: {
+        id: &#x27;e&#x27; + (i * 2),
+        source: &#x27;n&#x27; + ((i + 1) &gt;= nodeCount ? i + 1 - nodeCount : i + 1),
+        target: &#x27;n&#x27; + i,
+        weight: 30
+      }
+    });
+
+    if (i % 2 == 0) {
+      demoEdges.push({
+        data: {
+          id: &#x27;e&#x27; + (i * 2 + 1),
+          target: &#x27;n&#x27; + i,
+          source: &#x27;n&#x27; + ((i + 3) &gt;= nodeCount ? i + 3 - nodeCount : i + 3),
+          weight: 21
+        }
+      });
+    }
+  }
+
+  $(&#x27;#demo&#x27;).cytoscape({
+    layout: {
+      name: &#x27;preset&#x27;
+    },
+
+    elements: { 
+      nodes: demoNodes,
+      edges: demoEdges
+    },
+
+    style: cytoscape.stylesheet()
+      .selector(&#x27;node&#x27;)
+        .css({
+          &#x27;content&#x27;: &#x27;data(id)&#x27;
+        })
+      .selector(&#x27;edge&#x27;)
+        .css({
+          &#x27;target-arrow-shape&#x27;: &#x27;triangle&#x27;,
+          &#x27;source-arrow-shape&#x27;: &#x27;circle&#x27;
+        })
+      .selector(&#x27;:selected&#x27;)
+        .css({
+          &#x27;background-color&#x27;: &#x27;#000&#x27;,
+          &#x27;line-color&#x27;: &#x27;#000&#x27;,
+          &#x27;source-arrow-color&#x27;: &#x27;#000&#x27;,
+          &#x27;target-arrow-color&#x27;: &#x27;#000&#x27;
+        })
+    ,
+
+    ready: function(){
+      var cy = this; // now, we can do stuff
+    
+    }
+    
+  });
+  
+});</code></pre>
 			</div>
 
 			<div id="documentation">

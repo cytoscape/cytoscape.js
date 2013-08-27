@@ -23,7 +23,6 @@
 
 	<body>
 
-		<div id="cy-title"><pre class="content"></pre></div>
 		<div id="cy"></div>
 		<div id="cy-refresh">
 			<span class="icon-refresh"></span>
@@ -76,12 +75,25 @@
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous code questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-briefcase"></span> File an issue</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a>
 			</div>
 
 			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
 
-			<div id="demo-source">
+			<div id="demo-source" class="collapsed">
+				<div class="expander">
+					<div class="text">
+						<span class="icon-arrow-down"></span> Show all the code...
+					</div>
+				</div>
+
+				<div class="collapser">
+					<div class="text">
+						<span class="icon-arrow-up"></span> Less code...
+					</div>
+				</div>
+
+
 				<iframe id="demo-code" src="js/load.js"></iframe>
 			</div>
 

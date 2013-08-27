@@ -6,7 +6,7 @@
 		<meta name="keywords" content="cytoscape,graph,graph theory,library,javascript,jquery,visualisation,visualization,node.js,node,example,demo,tutorial,layout,extension,plugin,api,documentation,node,edge,link,network,vertex,editor,interactive,json,dynamic,selector,compound,class,event,collection,pan,zoom,degree,grab,lock,select,binding,bind,listener,animation,iteration,search,analysis,filter,renderer,canvas,force directed">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
-		<meta name="viewport" content="user-scalable=false;">
+		<meta name="viewport" content="user-scalable=false; initial-zoom=1.0;">
 
 		<title>Cytoscape.js</title>
 
@@ -681,94 +681,83 @@
 				</div>
 
 
-				<pre><code>$(function(){
+				<pre><code>$(loadCy = function(){
 
-  var nodeCount = 10;
-  var edgeCount = 12;
-
-  var demoNodes = [];
-  var demoEdges = [];
-
-  var r = $(&#x27;#demo&#x27;).width() * 0.333;
-  var ctr = {
-    x: $(&#x27;#demo&#x27;).width()/2,
-    y: $(&#x27;#demo&#x27;).height()/2
-  };
-
-  for (var i = 0; i &lt; nodeCount; i++) {
-    var theta = 2 * Math.PI * i / nodeCount;
-
-    demoNodes.push({
-      data: {
-        id: &#x27;n&#x27; + i,
-        weight: Math.round( Math.random() * 100 )
-      },
-
-      position: {
-        x: ctr.x + r * Math.cos(theta),
-        y: ctr.y + r * Math.sin(theta)
-      }
-    });
-  }
-
-  for (var i = 0; i &lt; nodeCount; i++) {
-    demoEdges.push({
-      data: {
-        id: &#x27;e&#x27; + (i * 2),
-        source: &#x27;n&#x27; + ((i + 1) &gt;= nodeCount ? i + 1 - nodeCount : i + 1),
-        target: &#x27;n&#x27; + i,
-        weight: 30
-      }
-    });
-
-    if (i % 2 == 0) {
-      demoEdges.push({
-        data: {
-          id: &#x27;e&#x27; + (i * 2 + 1),
-          target: &#x27;n&#x27; + i,
-          source: &#x27;n&#x27; + ((i + 3) &gt;= nodeCount ? i + 3 - nodeCount : i + 3),
-          weight: 21
-        }
-      });
-    }
-  }
-
-  $(&#x27;#demo&#x27;).cytoscape({
-    layout: {
-      name: &#x27;preset&#x27;
-    },
-
-    elements: { 
-      nodes: demoNodes,
-      edges: demoEdges
-    },
+  options = {
+    showOverlay: false,
+    minZoom: 0.5,
+    maxZoom: 2,
 
     style: cytoscape.stylesheet()
       .selector(&#x27;node&#x27;)
         .css({
-          &#x27;content&#x27;: &#x27;data(id)&#x27;
-        })
-      .selector(&#x27;edge&#x27;)
-        .css({
-          &#x27;target-arrow-shape&#x27;: &#x27;triangle&#x27;,
-          &#x27;source-arrow-shape&#x27;: &#x27;circle&#x27;
+          &#x27;content&#x27;: &#x27;data(name)&#x27;,
+          &#x27;font-family&#x27;: &#x27;helvetica&#x27;,
+          &#x27;font-size&#x27;: 14,
+          &#x27;text-outline-width&#x27;: 3,
+          &#x27;text-outline-color&#x27;: &#x27;#888&#x27;,
+          &#x27;text-valign&#x27;: &#x27;center&#x27;,
+          &#x27;color&#x27;: &#x27;#fff&#x27;,
+          &#x27;width&#x27;: &#x27;mapData(weight, 30, 80, 20, 50)&#x27;,
+          &#x27;height&#x27;: &#x27;mapData(height, 0, 200, 10, 45)&#x27;,
+          &#x27;border-color&#x27;: &#x27;#fff&#x27;
         })
       .selector(&#x27;:selected&#x27;)
         .css({
           &#x27;background-color&#x27;: &#x27;#000&#x27;,
           &#x27;line-color&#x27;: &#x27;#000&#x27;,
-          &#x27;source-arrow-color&#x27;: &#x27;#000&#x27;,
-          &#x27;target-arrow-color&#x27;: &#x27;#000&#x27;
+          &#x27;target-arrow-color&#x27;: &#x27;#000&#x27;,
+          &#x27;text-outline-color&#x27;: &#x27;#000&#x27;
+        })
+      .selector(&#x27;edge&#x27;)
+        .css({
+          &#x27;width&#x27;: 2,
+          &#x27;target-arrow-shape&#x27;: &#x27;triangle&#x27;
         })
     ,
 
+    elements: {
+      nodes: [
+        {
+          data: { id: &#x27;j&#x27;, name: &#x27;Jerry&#x27;, weight: 65, height: 174 }
+        },
+
+        {
+          data: { id: &#x27;e&#x27;, name: &#x27;Elaine&#x27;, weight: 48, height: 160 }
+        },
+
+        {
+          data: { id: &#x27;k&#x27;, name: &#x27;Kramer&#x27;, weight: 75, height: 185 }
+        },
+
+        {
+          data: { id: &#x27;g&#x27;, name: &#x27;George&#x27;, weight: 70, height: 150 }
+        }
+      ],
+
+      edges: [
+        { data: { source: &#x27;j&#x27;, target: &#x27;e&#x27; } },
+        { data: { source: &#x27;j&#x27;, target: &#x27;k&#x27; } },
+        { data: { source: &#x27;j&#x27;, target: &#x27;g&#x27; } },
+
+        { data: { source: &#x27;e&#x27;, target: &#x27;j&#x27; } },
+        { data: { source: &#x27;e&#x27;, target: &#x27;k&#x27; } },
+
+        { data: { source: &#x27;k&#x27;, target: &#x27;j&#x27; } },
+        { data: { source: &#x27;k&#x27;, target: &#x27;e&#x27; } },
+        { data: { source: &#x27;k&#x27;, target: &#x27;g&#x27; } },
+
+        { data: { source: &#x27;g&#x27;, target: &#x27;j&#x27; } }
+      ],
+    },
+
     ready: function(){
-      var cy = this; // now, we can do stuff
-    
+      cy = this;
     }
-    
-  });
-  
+  };
+
+  $(&#x27;#cy&#x27;).cytoscape(options);
+
 });</code></pre>
 			</div>
 

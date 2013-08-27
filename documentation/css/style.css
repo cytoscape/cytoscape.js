@@ -14,6 +14,28 @@ body {
 	border: 1px solid rgba(127, 127, 127, 0.25);
 }
 
+#cy-title {
+	position: fixed;
+	right: 0;
+	bottom: 300px;
+	width: 300px;
+	overflow: hidden;
+	color: rgba(0, 0, 0, 0.5);
+	text-align: left;
+	font-family: Andale Mono, monospace;
+	font-size: 0.8em;
+}
+
+#cy-title .content {
+	width: 9999px;
+}
+
+#cy-title pre {
+	border: 0;
+	background: transparent;
+}
+
+
 #cy-refresh,
 #cy-show,
 #cy-hide {
@@ -385,6 +407,8 @@ pre code {
 .args .fields .name {
 	margin-left: 0.5em;
 }
+
+
 
 
 @media only screen 

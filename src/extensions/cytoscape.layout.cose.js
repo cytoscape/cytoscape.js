@@ -6,19 +6,36 @@
     var defaults = {
 	ready               : function() {},
 	stop                : function() {},
-	numIter             : 100,
+
+	// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
 	refresh             : 0,
+	// Whether to fit the network view after when done
 	fit                 : true, 
+	// Whether to randomize node positions on the beginning
 	randomize           : false,
+	// Whether to use the JS console to print debug messages
 	debug               : false,
+
+	// Node repulsion (non overlapping) multiplier
 	nodeRepulsion       : 10000,
+	// Node repulsion (overlapping) multiplier
 	nodeOverlap         : 10,
+	// Ideal edge (non nested) length
 	idealEdgeLength     : 10,
+	// Divisor to compute edge forces
 	edgeElasticity      : 10000,
+	// Nesting factor (multiplier) to compute ideal edge length for nested edges
 	nestingFactor       : 10, 
+	// Gravity force (constant)
 	gravity             : 10, 
+	
+	// Maximum number of iterations to perform
+	numIter             : 100,
+	// Initial temperature (maximum node displacement)
 	initialTemp         : 200,
+	// Cooling factor (how the temperature is reduced between consecutive iterations
 	coolingFactor       : 0.95, 
+	// Lower temperature threshold (below this point the layout will end)
 	minTemp             : 1
     };
 

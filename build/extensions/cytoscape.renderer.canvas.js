@@ -2,7 +2,7 @@
 /* cytoscape.renderer.canvas.js */
 
 /**
- * This file is part of cytoscape.js 2.0.2.
+ * This file is part of cytoscape.js 2.0.2-github-snapshot-2013.09.02-09.14.40.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2877,6 +2877,11 @@
 		r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
 		//console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
+
+		if( !forcedContext && !r.initrender ){
+			r.initrender = true;
+			cy.trigger('initrender');
+		}
 
 		// end on thread ready
 		}, 0);

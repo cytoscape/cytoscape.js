@@ -52,7 +52,7 @@
     /**
      * @brief : runs the layout
      */
-    CoseLayout.prototype.run = function() {	
+    CoseLayout.prototype.run = function() {
 	var options = this.options;
 	var cy      = options.cy;
 
@@ -84,7 +84,7 @@
 
 	// Main loop
 	for (var i = 0; i < options.numIter; i++) {
-	    // Do one step in the phisical simmulation
+	    // Do one step in the phisical simulation
 	    step(layoutInfo, cy, options, i);
 
 	    // If required, update positions
@@ -198,8 +198,7 @@
 	    } else {
 		// If a node doesn't have a parent, then it's in the root graph
 		queue[++end] = n.id;
-		tempGraph.push(n.id);
-		
+		tempGraph.push(n.id);		
 	    }
 	}
 	
@@ -298,6 +297,10 @@
      *          (from the graph hierarchy induced tree) whose
      *          root is graphIx
      *
+     * @arg node1: node1's ID
+     * @arg node2: node2's ID
+     * @arg layoutInfo: layoutInfo object
+     *
      */
     function findLCA(node1, node2, layoutInfo) {
 	// Find their common ancester, starting from the root graph
@@ -313,10 +316,18 @@
 
 
     /**
-     * @brief : 
-     *          
-     *          
-     *          
+     * @brief          : Auxiliary function used for LCA computation
+     * 
+     * @arg node1      : node1's ID
+     * @arg node2      : node2's ID
+     * @arg graphIx    : subgraph index
+     * @arg layoutInfo : layoutInfo object
+     *
+     * @return         : object of the form {count: X, graph: Y}, where:
+     *                   X is the number of ancesters (max: 2) found in 
+     *                   graphIx (and it's subgraphs),
+     *                   Y is the graph index of the lowest graph containing 
+     *                   all X nodes
      */
     function findLCA_aux(node1, node2, graphIx, layoutInfo) {
 	var graph = layoutInfo.graphSet[graphIx];
@@ -465,7 +476,8 @@
 		y: lnode.positionY
 	    };
 	});
-	
+
+	// Trigger layoutReady only on first call
 	if (true != refreshPositions.ready) {
 	    s = "Triggering layoutready";
 	    logDebug(s);
@@ -502,7 +514,7 @@
 
     
     /**
-     * @brief : 
+     * @brief : Computes the node repulsion forces
      */
     function calculateNodeForces(layoutInfo, cy, options) {
 	// Go through each of the graphs in graphSet
@@ -530,7 +542,7 @@
 
 
     /**
-     * @brief : 
+     * @brief : Compute the node repulsion forces between a pair of nodes
      */
     function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
 	var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
@@ -597,7 +609,8 @@
 
 
     /**
-     * @brief : 
+     * @brief : Finds the point in which an edge (direction dX, dY) intersects 
+     *          the rectangular bounding box of it's source/target node 
      */
     function findClippingPoint(node, dX, dY) {
 
@@ -682,7 +695,8 @@
 
 
     /**
-     * @brief : 
+     * @brief  : Determines whether two nodes overlap or not
+     * @return : Amount of overlapping (0 => no overlap)
      */
     function nodesOverlap(node1, node2, dX, dY) {
 
@@ -704,66 +718,10 @@
 	    return 0;
 	}
     }
-
-
-    /**
-     * @brief : 
-     */
-    function nodesOverlap2(node1, node2, point1, point2, dX, dY) {
-	// TODO: Rewrite properly
-	if (0 != dX) {
-	    // 'distance' to point1 from node1
-	    var aux1 = solveAuxEq(point1.x, node1.positionX, dX);
-	    // 'distance' to point2 from node1
-	    var aux2 = solveAuxEq(point2.x, node1.positionX, dX);
-
-	    // 'distance' to point2 from node2
-	    var aux3 = solveAuxEq(point2.x, node2.positionX, -1 * dX);
-	    // 'distance' to point1 from node2
-	    var aux4 = solveAuxEq(point1.x, node2.positionX, -1 * dX);
-
-	} else {
-
-	    // 'distance' to point1 from node1
-	    var aux1 = solveAuxEq(point1.y, node1.positionY, dY);
-	    // 'distance' to point2 from node1
-	    var aux2 = solveAuxEq(point2.y, node1.positionY, dY);
-
-	    // 'distance' to point2 from node2
-	    var aux3 = solveAuxEq(point2.y, node2.positionY, -1 * dY);
-	    // 'distance' to point1 from node2
-	    var aux4 = solveAuxEq(point1.y, node2.positionY, -1 * dY);
-	}
-	
-	// If clipping point of node2 is 'before' than the clipping 
-	// point of node1, going from the center of node1 in direction 
-	// (dX, dY), then there's an overlapping
-	if (aux1 > aux2) {
-	    return true;
-	}
-
-	// If clipping point of node1 is 'before' than the clipping 
-	// point of node2, going from the center of node2 in direction 
-	// (-dX, -dY), then there's an overlapping
-	if (aux3 > aux4) {
-	    return true;
-	}
-
-	// Otherwise, nodes do not overlap
-	return false;
-    }
-    
-
-    /**
-     * @brief : 
-     */
-    function solveAuxEq(point, center, direction) {
-	return ((point - center) / direction);	
-    }
-    
+        
     
     /**
-     * @brief : 
+     * @brief : Calculates all edge forces
      */
     function calculateEdgeForces(layoutInfo, cy, options) {
 	// Iterate over all edges
@@ -818,7 +776,7 @@
 
 
     /**
-     * @brief : 
+     * @brief : Computes gravity forces for all nodes
      */
     function calculateGravityForces(layoutInfo, cy, options) {
 	var s = "calculateGravityForces";
@@ -923,7 +881,8 @@
 
 
     /**
-     * @brief : 
+     * @brief : Updates the layout model positions, based on 
+     *          the accumulated forces
      */
     function updatePositions(layoutInfo, cy, options) {
 	var s = "Updating positions";
@@ -986,7 +945,9 @@
 
 
     /**
-     * @brief : 
+     * @brief : Limits a force (forceX, forceY) to be not 
+     *          greater (in modulo) than max. 
+     8          Preserves force direction. 
      */
     function limitForce(forceX, forceY, max) {
 	var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
@@ -1013,7 +974,8 @@
 
 
     /**
-     * @brief : 
+     * @brief : Function used for keeping track of compound node 
+     *          sizes, since they should bound all their subnodes.
      */
     function updateAncestryBoundaries(node, layoutInfo) {
 	var s = "Propagating new position/size of node " + node.id;
@@ -1070,7 +1032,7 @@
 
 
     /**
-     * @brief : Logs a debug message in JS console, if DEBUG is on
+     * @brief : Logs a debug message in JS console, if DEBUG is ON
      */
     function logDebug(text) {
 	if (DEBUG) {

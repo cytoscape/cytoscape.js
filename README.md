@@ -5,7 +5,7 @@
 
 ## Documentation
 
-You can find the documentation on the [project website](http://cytoscape.github.com/cytoscape.js).  This readme is mostly for developers of Cytoscape.js.
+You can find the documentation on the [project website](http://cytoscape.github.com/cytoscape.js), or you may be interested in [downloading the library](https://github.com/cytoscape/cytoscape.js/wiki/Downloads).  This readme is mostly for developers of Cytoscape.js.
 
 
 
@@ -64,6 +64,18 @@ A note to developers:
 For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
 actual release ZIP.
 
+
+
+
+## Release instructions
+
+ 1. Make sure the qunit tests are passing on jQuery 1.4-latest (may need to add new versions to the tests).
+ 1. Update `package.json` with the new version number.
+ 1. Make a release ZIP: `make zip`
+ 1. Put the release ZIP -- after upload -- on the download page.
+ 1. Build and upload the docs to `gh-pages`.
+ 1. Update `bower.json`.
+ 1. Tag the repo with the version number.
 
 
 

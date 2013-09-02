@@ -88,5 +88,40 @@
 		$.fn.cy = $.fn.cytoscape;
 		$.cy = $.cytoscape;
 	}
+
+	// allow jquery mobile style init
+	$(function(){ // on ready
+
+		function parse($this, attr){
+			var str = $this.attr( attr );
+			var ret;
+
+			try {
+				ret = $.parseJSON( attr );
+			} catch(e){
+				ret = undefined;
+			}
+		}
+
+		$('[data-role="cytoscape"]').each(function(){
+			var $this = $(this);
+
+			// NB core init options must be added here if they are going to be supported 
+			// with jquery-mobile-like syntax
+			var options = {
+				showOverlay: parse($this, 'data-show-overlay'),
+				layout: parse($this, 'data-layout'),
+				zoom: parse($this, 'data-zoom'),
+				minZoom: parse($this, 'data-min-zoom'),
+				maxZoom: parse($this, 'data-max-zoom'),
+				pan: parse($this, 'data-pan'),
+				renderer: parse($this, 'data-renderer'),
+				style: parse($this, 'data-style'),
+				elements: parse($this, 'data-elements')
+			};
+
+			$this.cytoscape( options );
+		});
+	});
 	
 })(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);

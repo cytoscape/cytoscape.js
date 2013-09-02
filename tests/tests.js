@@ -4,8 +4,10 @@
 	
 	window.cy = null;
 	window.$$ = null;
+
+	var isIE = navigator.userAgent.indexOf(' MSIE ') > -1;
 	
-	if( $.browser.msie ){
+	if( isIE ){
 		window.console = {
 			log: function(){},
 			group: function(){},

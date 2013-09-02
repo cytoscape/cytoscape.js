@@ -1,9 +1,7 @@
-
 .project
-
-build
-
 .DS_Store
 .buildpath
-
 node_modules
+build
+build/*
+build/**

@@ -1,17 +1,17 @@
 body {
-	font: 14pt Helvetica, Arial, sans-serif;
+	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
 }
 
 #cy {
 	position: fixed;
-	z-index: 99999;
+	z-index: 999;
 	right: 0;
 	bottom: 0;
-	height: 300px;
-	width: 300px;
-	box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
-	background: rgba(255, 255, 255, 0.5);
+	height: 15em;
+	width: 15em;
+	background: rgba(255, 255, 255, 0.66);
+	border: 1px solid rgba(127, 127, 127, 0.25);
 }
 
 #cy-title {
@@ -35,30 +35,31 @@ body {
 	background: transparent;
 }
 
+
 #cy-refresh,
 #cy-show,
 #cy-hide {
 	position: fixed;
-	bottom: 270px;
-	right: 270px;
-	background: #fff;
-	border-radius: 1em;
+	bottom: 13.75em;
+	right: 13.75em;
 	line-height: 1;
 	padding: 4px 6px;
-	color: rgba(0, 0, 0, 0.75);
+	color: #333;
 	cursor: pointer;
-	z-index: 999999;
+	z-index: 1000;
 }
 
 #cy-hide,
 #cy-show {
 	right: 0;
+}
+
+#cy-show {
 	bottom: 0;
 }
 
 #cy-show {
-	box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
-	background: rgba(255, 255, 255, 0.5);
+	background: #fff;
 	border-radius: 0;
 	display: none;
 }
@@ -92,8 +93,8 @@ button:active {
 	width: 14em;
 	background: #f5f5f5;
 	z-index: 1;
-	overflow-y: auto;
 	padding: 0 0.5em;
+	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 }
 
@@ -114,7 +115,7 @@ button:active {
 #navigation .lvl3 {
 	margin-left: 2em;
 	font-size: 0.7em;
-	font-family: Andale Mono, monospace;
+	font-family: /*Andale Mono,*/ courier new, monospace;
 }
 
 #navigation .expander {
@@ -149,27 +150,6 @@ button:active {
 	margin-left: 16em;
 }
 
-#demo-link {
-	height: 20em;
-	width: 30em;
-	border: 1px solid #ddd;
-	margin: 1em 0;
-	overflow: hidden !important;
-	position: relative;
-	border-radius: 0.25em;
-}
-
-#demo-link .description {
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	background: rgba(0, 0, 0, 0.5);
-	width: 100%;
-	color: #fff;
-	text-align: center;
-}
-
-
 #demo, #demo-source {
 	border: 1px solid #ddd;
 	margin: 1em 0;
@@ -178,15 +158,56 @@ button:active {
 	overflow: hidden !important;
 }
 
-#demo {
-	height: 20em;
-	width: 20em;
-	float: left;
+#demo-source {
+	height: auto;
+	width: 100%;
+	position: relative;
 }
 
-#demo-source {
-	height: 20em;
-	overflow: auto;
+#demo-source pre {
+	margin: 0;
+	border: 0;
+	line-height: 1;
+}
+
+#demo-source .expander,
+#demo-source .collapser {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	cursor: pointer;
+}
+
+#demo-source .expander .text,
+#demo-source .collapser .text {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	padding: 0.25em;
+	background: #fff;
+	width: 100%;
+}
+
+#demo-source.collapsed {
+	height: 16em;
+}
+
+#demo-source .collapser {
+	display: none;
+}
+
+#demo-source.collapsed .collapser {
+	display: none;
+}
+
+#demo-source .expander {
+	display: none;
+}
+
+#demo-source.collapsed .expander {
+	display: block;
 }
 
 #demo-source + * {
@@ -274,13 +295,12 @@ hr {
 a {
 	color: #4183C4;
 	text-decoration: none;
+	border-radius: 0.125em;
 }
 
 a:active {
 	background-color: #4183C4;
 	color: #fff;
-	border-radius: 0.125em;
-	box-shadow: 0 0 0 0.2em #4183C4;
 }
 
 em {
@@ -296,20 +316,9 @@ ul {
 	list-style-type: disc;
 }
 
-/*
 code,
 pre {
-	font-family: Andale Mono, monospace;
-	border: 1px solid #ddd;
-	border-radius: 0.25em;
-	font-size: 0.85em;
-	background: #fafafa;
-}
-*/
-
-code,
-pre {
-	font-family: Consolas, monospace;
+	font-family: /*Consolas,*/ courier new, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	font-size: 1em;
@@ -318,14 +327,15 @@ pre {
 
 pre {
 	margin: 1.25em 0;
-	overflow: auto;
-	-webkit-overflow-scrolling: touch;
+	overflow-x: auto;
+	/* -webkit-overflow-scrolling: touch; */
 }
 
 pre code {
 	background: transparent;
 	border: 0;
 	font-size: 0.8em;
+	overflow: auto;
 }
 
 .function .formats ul {
@@ -348,7 +358,7 @@ pre code {
 }
 
 .function .name {
-	font-family: Andale Mono, monospace;
+	font-family: /*Andale Mono,*/ courier new, monospace;
 	font-weight: bold;
 }
 
@@ -396,4 +406,55 @@ pre code {
 
 .args .fields .name {
 	margin-left: 0.5em;
+}
+
+
+
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px) {
+
+	body {
+		width: 100%;
+	}
+
+	#navigation {
+		display: none;
+	}
+
+	#content {
+		margin-left: 0.5em;
+	}
+
+	.title {
+		font-size: 2.75em;
+	}
+
+}
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px)
+and (orientation:landscape) {
+
+	#navigation {
+		display: block;
+	}
+
+	#content {
+		margin-left: 16em;
+	}
+
+}
+
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 480px)
+and (orientation:portrait) {
+
+	#content {
+		font-size: 2.5em;
+	}
+
 }

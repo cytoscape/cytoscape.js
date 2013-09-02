@@ -234,20 +234,22 @@
 				for( var i = 0; i < aliases.length; i++ ){
 					var eventType = aliases[i];
 
-					thisPrototype[ eventType ] = function(data, callback){
-						if( $$.is.fn(callback) ){
-							this.on(eventType, data, callback);
+					(function(eventType){
+						thisPrototype[ eventType ] = function(data, callback){
+							if( $$.is.fn(callback) ){
+								this.on(eventType, data, callback);
 
-						} else if( $$.is.fn(data) ){
-							callback = data;
-							this.on(eventType, callback);
+							} else if( $$.is.fn(data) ){
+								callback = data;
+								this.on(eventType, callback);
 
-						} else {
-							this.trigger(eventType);
-						}
+							} else {
+								this.trigger(eventType);
+							}
 
-						return this; // maintain chaining
-					};
+							return this; // maintain chaining
+						};
+					})( eventType );
 				}
 			},
 

@@ -7,7 +7,7 @@ var Handlebars = require('./js/handlebars').Handlebars;
 var encoding = 'utf8';
 var config;
 var configFile = './docmaker.json';
-var demoFile = './js/demo.js';
+var demoFile = './js/load.js';
 
 try {
   config = require(configFile);

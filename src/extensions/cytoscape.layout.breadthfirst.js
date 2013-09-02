@@ -7,7 +7,8 @@
         directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
         padding: 30, // padding on fit
         circle: false, // put depths in concentric circles if true, put depths top down if false
-        roots: undefined // the roots of the trees
+        roots: undefined, // the roots of the trees
+        maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
     };
     
     function BreadthFirstLayout( options ){
@@ -139,6 +140,68 @@
             }
         }
         assignDepthsToEles();
+
+         // make maximal if so set by adjusting depths
+        for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
+
+            function intersectsDepth( node ){ // returns true if has edges pointing in from a higher depth
+                var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+                var thisInfo = node._private.scratch.BreadthFirstLayout;
+                var highestDepthOfOther = 0;
+                var highestOther;
+                for( var i = 0; i < edges.length; i++ ){
+                    var edge = edges[i];
+                    var otherNode = edge.source()[0];
+                    var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+
+                    if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+                        highestDepthOfOther = otherInfo.depth;
+                        highestOther = otherNode;
+                    }
+                }
+
+                return highestOther;
+            }
+
+            var nDepths = depths.length;
+            var elesToMove = [];
+            for( var i = 0; i < nDepths; i++ ){
+                var depth = depths[i];
+
+                var nDepth = depth.length;
+                for( var j = 0; j < nDepth; j++ ){
+                    var ele = depth[j];
+                    var info = ele._private.scratch.BreadthFirstLayout;
+                    var intEle = intersectsDepth(ele);
+
+                    if( intEle ){
+                        info.intEle = intEle;
+                        elesToMove.push( ele );
+                    }
+                }
+            }
+
+            for( var i = 0; i < elesToMove.length; i++ ){ 
+                var ele = elesToMove[i];
+                var info = ele._private.scratch.BreadthFirstLayout;
+                var intEle = info.intEle;
+                var intInfo = intEle._private.scratch.BreadthFirstLayout;
+
+                depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
+
+                // add to end of new depth
+                var newDepth = intInfo.depth + 1;
+                while( newDepth > depths.length - 1 ){
+                    depths.push([]);
+                }
+                depths[ newDepth ].push( ele );
+
+                info.depth = newDepth;
+                info.index = depths[newDepth].length - 1;
+            }
+
+            assignDepthsToEles();
+        }
 
         // find min distance we need to leave between nodes
         var minDistance = 0;

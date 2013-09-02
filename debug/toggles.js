@@ -1,6 +1,6 @@
 $(function(){
 
-	$("button.toggler").live("click", function(){
+	$(document).on("click", "button.toggler", function(){
 		var $this = $(this);
 		var name = $this.text();
 

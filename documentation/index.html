@@ -6,6 +6,8 @@
 		<meta name="keywords" content="cytoscape,graph,graph theory,library,javascript,jquery,visualisation,visualization,node.js,node,example,demo,tutorial,layout,extension,plugin,api,documentation,node,edge,link,network,vertex,editor,interactive,json,dynamic,selector,compound,class,event,collection,pan,zoom,degree,grab,lock,select,binding,bind,listener,animation,iteration,search,analysis,filter,renderer,canvas,force directed">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
+		<meta name="viewport" content="user-scalable=false, initial-zoom=1.0;">
+
 		<title>Cytoscape.js</title>
 
 		<link href="css/reset.css" rel="stylesheet" />
@@ -652,22 +654,112 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">2.0.1</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.1.0</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
-				<a target="_blank" href="https://groups.google.com/forum/#!forum/cytoscape-discuss"><span class="icon-bullhorn"></span> Google Group</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous code questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-briefcase"></span> File an issue</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a>
 			</div>
 
 			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
 
-			<div id="demo-source">
-				<iframe id="demo-code" src="js/load.js"></iframe>
+			<div id="demo-source" class="collapsed">
+				<div class="expander">
+					<div class="text">
+						<span class="icon-arrow-down"></span> Show all the code...
+					</div>
+				</div>
+
+				<div class="collapser">
+					<div class="text">
+						<span class="icon-arrow-up"></span> Less code...
+					</div>
+				</div>
+
+
+				<pre><code>$(loadCy = function(){
+
+  options = {
+    showOverlay: false,
+    minZoom: 0.5,
+    maxZoom: 2,
+
+    style: cytoscape.stylesheet()
+      .selector(&#x27;node&#x27;)
+        .css({
+          &#x27;content&#x27;: &#x27;data(name)&#x27;,
+          &#x27;font-family&#x27;: &#x27;helvetica&#x27;,
+          &#x27;font-size&#x27;: 14,
+          &#x27;text-outline-width&#x27;: 3,
+          &#x27;text-outline-color&#x27;: &#x27;#888&#x27;,
+          &#x27;text-valign&#x27;: &#x27;center&#x27;,
+          &#x27;color&#x27;: &#x27;#fff&#x27;,
+          &#x27;width&#x27;: &#x27;mapData(weight, 30, 80, 20, 50)&#x27;,
+          &#x27;height&#x27;: &#x27;mapData(height, 0, 200, 10, 45)&#x27;,
+          &#x27;border-color&#x27;: &#x27;#fff&#x27;
+        })
+      .selector(&#x27;:selected&#x27;)
+        .css({
+          &#x27;background-color&#x27;: &#x27;#000&#x27;,
+          &#x27;line-color&#x27;: &#x27;#000&#x27;,
+          &#x27;target-arrow-color&#x27;: &#x27;#000&#x27;,
+          &#x27;text-outline-color&#x27;: &#x27;#000&#x27;
+        })
+      .selector(&#x27;edge&#x27;)
+        .css({
+          &#x27;width&#x27;: 2,
+          &#x27;target-arrow-shape&#x27;: &#x27;triangle&#x27;
+        })
+    ,
+
+    elements: {
+      nodes: [
+        {
+          data: { id: &#x27;j&#x27;, name: &#x27;Jerry&#x27;, weight: 65, height: 174 }
+        },
+
+        {
+          data: { id: &#x27;e&#x27;, name: &#x27;Elaine&#x27;, weight: 48, height: 160 }
+        },
+
+        {
+          data: { id: &#x27;k&#x27;, name: &#x27;Kramer&#x27;, weight: 75, height: 185 }
+        },
+
+        {
+          data: { id: &#x27;g&#x27;, name: &#x27;George&#x27;, weight: 70, height: 150 }
+        }
+      ],
+
+      edges: [
+        { data: { source: &#x27;j&#x27;, target: &#x27;e&#x27; } },
+        { data: { source: &#x27;j&#x27;, target: &#x27;k&#x27; } },
+        { data: { source: &#x27;j&#x27;, target: &#x27;g&#x27; } },
+
+        { data: { source: &#x27;e&#x27;, target: &#x27;j&#x27; } },
+        { data: { source: &#x27;e&#x27;, target: &#x27;k&#x27; } },
+
+        { data: { source: &#x27;k&#x27;, target: &#x27;j&#x27; } },
+        { data: { source: &#x27;k&#x27;, target: &#x27;e&#x27; } },
+        { data: { source: &#x27;k&#x27;, target: &#x27;g&#x27; } },
+
+        { data: { source: &#x27;g&#x27;, target: &#x27;j&#x27; } }
+      ],
+    },
+
+    ready: function(){
+      cy = this;
+    }
+  };
+
+  $(&#x27;#cy&#x27;).cytoscape(options);
+
+});</code></pre>
 			</div>
 
 			<div id="documentation">
@@ -1309,6 +1401,7 @@ $(function(){ // on jquery ready
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
+  initrender: function(evt){ /* ... */ },
   elements: [ /* ... */ ]
 });</code></pre>
 <p><strong>layout</strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports.
@@ -1346,6 +1439,9 @@ $(function(){ // on jquery ready
   /* ... */
 });</code></pre>
 <p><strong>ready</strong> : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.
+
+</p>
+<p><strong>initrender</strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.
 
 </p>
 <p><strong>showOverlay</strong> : A boolean, indacating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).
@@ -1508,6 +1604,9 @@ $(function(){ // on jquery ready
 
 </p>
 <p>It is important to note that the positions of newly added nodes must be defined when calling <code>cy.add()</code>.  Nodes can not be placed in the graph without a valid position &mdash; otherwise they could not be displayed.
+
+</p>
+<p><strong>NB: If a collection of existing elements is specified, then copies of those elements are added, which allows for elements to be effectively transferred between instances of Cytoscape.js.  If you want to add removed elements back to the graph, use <code>eles.restore()</code> instead.</strong>
 
 </p>
 <h3>Examples</h3>
@@ -2959,15 +3058,15 @@ cy.layout( options );</code></pre>
 cy.layout( options );</code></pre>
 <p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
 </p>
-<pre><code class="lang-js">options = {
-    name: &#39;breadthfirst&#39;,
+<pre><code class="lang-js">defaults = {
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined // the roots of the trees
+    roots: undefined, // the roots of the trees
+    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
 cy.layout( options );</code></pre>
@@ -2988,13 +3087,13 @@ cy.layout( options );</code></pre>
 <p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
 </p>
 <pre><code class="lang-js">options = {
-    name: &#39;arbor&#39;,
     liveUpdate: true, // whether to show the layout as it&#39;s running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // fit to viewport
+    fit: true, // reset viewport to fit default simulationBounds
     padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
     ungrabifyWhileSimulating: true, // so you can&#39;t drag nodes during layout
 
     // forces used by arbor (use arbor default on undefined)
@@ -3068,12 +3167,37 @@ cy.layout( options );</code></pre>
       .css(&#39;background-color&#39;, &#39;blue&#39;)
   .selector(&#39;node:selected&#39;)
     .css({
-      &#39;background-color&#39;: &#39;red&#39;,
+      &#39;background-color&#39;: &#39;red&#39;
 
       // , ...
     })
 
   // ...
+
+  .update()</code></pre>
+<p>You can also set the style from plain JSON:
+
+</p>
+<pre><code class="lang-js">cy.style()
+  .fromJson([
+    {
+      selector: &#39;node&#39;,
+      css: {
+        &#39;background-color&#39;: &#39;blue&#39;
+      }
+    },
+
+    {
+      selector: &#39;node:selected&#39;,
+      css: {
+        &#39;background-color&#39;: &#39;red&#39;
+
+        // , ...
+      }
+    }
+
+    // , ...
+  ])
 
   .update()</code></pre>
 

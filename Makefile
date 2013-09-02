@@ -18,7 +18,7 @@ PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(T
 MAKE = make
 
 # version (update this when building release zip)
-VERSION := 2.0.1-github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+VERSION := 2.0.2-github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
 
 # directories
 LIB_DIR = lib

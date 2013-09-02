@@ -36,6 +36,11 @@ $(function(){
     $('#cy-show').hide();
   });
 
+
+  $('#demo-source .expander').on('mousedown touchstart', function(){
+    $('#demo-source').removeClass('collapsed');
+  });
+
   var $codes = $('pre code[class = "lang-js"]');
   for( var i = 0; i < $codes.length; i++ ){
     var $code = $( $codes[i] );

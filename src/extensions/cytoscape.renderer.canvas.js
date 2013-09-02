@@ -2858,6 +2858,11 @@
 		//console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
 
+		if( !forcedContext && !r.initrender ){
+			r.initrender = true;
+			cy.trigger('initrender');
+		}
+
 		// end on thread ready
 		}, 0);
 	};

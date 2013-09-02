@@ -154,9 +154,7 @@ $v(function(jQuery, $, version){
 			ready: function(){
 				window.cy = this;
 
-				ok( cy.$("#n1").parent().same("#n2"), "n1 has parent n2" );
-				ok( cy.$("#n2").parent().size() === 0, "n2 has no parent since it creates a cycle" );
-				
+				ok( cy.$("#n1").parent().parent().length === 0, "there is no cycle between n1 and n2" );
 				start();
 			}
 		});

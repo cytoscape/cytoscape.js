@@ -143,7 +143,7 @@ options = {
 	// Whether to fit the network view after when done
 	fit                 : true, 
 	// Whether to randomize node positions on the beginning
-	randomize           : false,
+	randomize           : true,
 	// Whether to use the JS console to print debug messages
 	debug               : false,
 

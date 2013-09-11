@@ -847,6 +847,10 @@
 		}, false);
 		
 		var wheelHandler = function(e) {
+			// Do not process mousewheel event if its source is not overlay
+			if (e.srcElement !== r.data.overlay)
+				return;
+
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,

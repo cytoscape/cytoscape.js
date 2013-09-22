@@ -1,0 +1,12 @@
+body { font: 14pt arial; }
+#cytoscape, #cytoscape2 { border: 1px solid #888; height: 600px; background: #fff; width: 600px; position: relative; }
+#commands { position: absolute; right: 0; top: 4.5em; margin: 0.5em; font-size: 0.75em; line-height: 1; }
+#commands h2 { margin-top: 1em; font-size: 1.25em; }
+label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left: 0.5em; background: #fff; }
+#nodes-number, #edges-number, #parent-node { width: 5em; }
+.ui-tooltip { font-size: 0.75em; max-width: 400px; }
+#cytoscape .cytoscape-navigatorView { background: #B7E1ED; opacity: 0.5; }
+#cytoscape2Navigator { position: absolute; border: 2px solid #ccc; background: #B7E1ED; top: -1px; bottom: auto; right: -205px; height: 300px;}
+#cytoscape2Navigator .cytoscape-navigatorView { border: 5px solid red; border-radius: 3px; background: none; }
+#cytoscape2Navigator:hover .cytoscape-navigatorOverlay { background: rgba(0,128,128,0.1); }
+#cytoscape2Navigator.mouseover-view .cytoscape-navigatorView { background: rgba(255,0,0,0.5); }

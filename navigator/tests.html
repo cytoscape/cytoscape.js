@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+    <script type="text/javascript" src="../lib/arbor.js"></script>
+    <script type="text/javascript" src="../lib/springy.js"></script>
+
+    <!-- the core as split up dev scripts -->
+    <script type="text/javascript" src="../src/namespace.js"></script>
+    <script type="text/javascript" src="../src/is.js"></script>
+    <script type="text/javascript" src="../src/util.js"></script>
+    <script type="text/javascript" src="../src/math.js"></script>
+    <script type="text/javascript" src="../src/instance-registration.js"></script>
+    <script type="text/javascript" src="../src/extension.js"></script>
+    <script type="text/javascript" src="../src/jquery-plugin.js"></script>
+    <script type="text/javascript" src="../src/event.js"></script>
+    <script type="text/javascript" src="../src/define.js"></script>
+    <script type="text/javascript" src="../src/style.js"></script>
+    <script type="text/javascript" src="../src/core.js"></script>
+    <script type="text/javascript" src="../src/core-add-remove.js"></script>
+    <script type="text/javascript" src="../src/core-animation.js"></script>
+    <script type="text/javascript" src="../src/core-data-functions.js"></script>
+    <script type="text/javascript" src="../src/core-events.js"></script>
+    <script type="text/javascript" src="../src/core-export.js"></script>
+    <script type="text/javascript" src="../src/core-layout.js"></script>
+    <script type="text/javascript" src="../src/core-notification.js"></script>
+    <script type="text/javascript" src="../src/core-renderer.js"></script>
+    <script type="text/javascript" src="../src/core-search.js"></script>
+    <script type="text/javascript" src="../src/core-style.js"></script>
+    <script type="text/javascript" src="../src/core-viewport.js"></script>
+    <script type="text/javascript" src="../src/collection.js"></script>
+    <script type="text/javascript" src="../src/collection-animation.js"></script>
+    <script type="text/javascript" src="../src/collection-class.js"></script>
+    <script type="text/javascript" src="../src/collection-comparators.js"></script>
+    <script type="text/javascript" src="../src/collection-data-functions.js"></script>
+    <script type="text/javascript" src="../src/collection-degree.js"></script>
+    <script type="text/javascript" src="../src/collection-events.js"></script>
+    <script type="text/javascript" src="../src/collection-group.js"></script>
+    <script type="text/javascript" src="../src/collection-iteration.js"></script>
+    <script type="text/javascript" src="../src/collection-switch-functions.js"></script>
+    <script type="text/javascript" src="../src/collection-traversing.js"></script>
+    <script type="text/javascript" src="../src/selector.js"></script>
+
+    <!-- extensions -->
+    <script type="text/javascript" src="../src/extensions/cytoscape.renderer.null.js"></script>
+
+    <!--
+    <script type="text/javascript" src="../src/extensions/cytoscape.renderer.svg.js"></script>
+    -->
+    <script type="text/javascript" src="../src/extensions/cytoscape.renderer.canvas.js"></script>
+
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.null.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.random.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.grid.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.preset.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.springy.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.arbor.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.circle.js"></script>
+    <script type="text/javascript" src="../src/extensions/cytoscape.layout.breadthfirst.js"></script>
+
+    <script type="text/javascript" src="../src/plugins/jquery.cytoscape-edgehandles.js"></script>
+    <script type="text/javascript" src="../src/plugins/jquery.cytoscape-panzoom.js"></script>
+    <script type="text/javascript" src="../src/plugins/jquery.cytoscape-navigator.js"></script>
+    <script type="text/javascript" src="../src/plugins/jquery.cxtmenu.js"></script>
+
+    <script type="text/javascript" src="qunit/qunit-git.js"></script>
+
+    <link rel="stylesheet" href="qunit/qunit-git.css" />
+    <link rel="stylesheet" href="../src/plugins/jquery.cytoscape-panzoom.css" />
+    <link rel="stylesheet" href="../src/plugins/jquery.cytoscape-navigator.css" />
+
+    <!-- add new test scripts here -->
+    <script type="text/javascript" src="tests.js"></script>
+
+    <title>cytoscape.js tests</title>
+  </head>
+
+  <body>
+    <div id="qunit_report">
+        <h1 id="qunit-header">cytoscape.js tests</h1>
+        <h2 id="qunit-banner"></h2>
+        <h2 id="qunit-userAgent"></h2>
+        <ol id="qunit-tests"></ol>
+        <p id="qunit-testresult"></p>
+      </div>
+
+      <div id="cytoscape"></div>
+  </body>
+
+</html>

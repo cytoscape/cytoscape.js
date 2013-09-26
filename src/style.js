@@ -134,6 +134,29 @@
 		return style;
 	};
 
+	// get json from style api
+	$$.styfn.json = function(){
+		var json = [];
+
+		for( var i = 0; i < this.length; i++ ){
+			var cxt = this[i];
+			var selector = cxt.selector;
+			var props = cxt.properties;
+			var css = {};
+
+			for( var i = 0; i < props.length; i++ ){
+				css[ prop.name ] = prop.strValue;
+			}
+
+			json.push({
+				selector: selector.toString(),
+				css: css
+			});
+		}
+
+		return json;
+	};
+
 	// generate a real style object from the dummy stylesheet
 	$$.Stylesheet.prototype.generateStyle = function( cy ){
 		var style = new $$.Style(cy);

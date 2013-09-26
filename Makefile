@@ -83,6 +83,7 @@ EXTENSIONS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.arbor.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.circle.js\
 	$(EXTENSIONS_DIR)/cytoscape.layout.breadthfirst.js\
+	$(EXTENSIONS_DIR)/cytoscape.layout.cose.js\
 
 # plugins (list them manually if you don't want them all)
 PLUGINS = $(wildcard $(PLUGINS_DIR)/*)
@@ -111,7 +112,7 @@ CWD = `$(PWD)`
 all : zip
 
 zip : $(ZIP_CONTENTS) $(ZIP_FILE)
-	
+
 minify : $(MIN_JS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
 
 docs : minify
@@ -134,7 +135,7 @@ $(JS_FILE) : $(BUILD_DIR)
 $(BUILD_PLUGINS) : $(BUILD_PLUGINS_DIR)
 	$(CP) $(patsubst $(BUILD_DIR)/%,$(SRC_DIR)/%,$@) $(BUILD_PLUGINS_DIR)
 	$(call PREAMBLIFY)
-	
+
 $(BUILD_EXTENSIONS) : $(BUILD_EXTENSIONS_DIR)
 	$(CP) $(patsubst $(BUILD_DIR)/%,$(SRC_DIR)/%,$@) $(BUILD_EXTENSIONS_DIR)
 	$(call PREAMBLIFY)

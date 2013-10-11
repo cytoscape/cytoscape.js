@@ -64,7 +64,7 @@
             return dist;
         }
 
-        while( distanceBetweenNodes() < maxNodeSize ){
+        while( distanceBetweenNodes() < maxNodeSize && !(nodes.length < 2) ){
             r += options.rStepSize;
         }
 

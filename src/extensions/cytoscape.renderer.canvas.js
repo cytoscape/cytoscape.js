@@ -78,7 +78,7 @@
 			this.data.bufferCanvases[i].style.position = "absolute";
 			this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
 			this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-			this.data.bufferCanvases[i].style.visibility = "visible";
+			this.data.bufferCanvases[i].style.visibility = "hidden";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);
 		}
 

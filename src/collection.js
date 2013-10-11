@@ -12,6 +12,8 @@
 	//
 	// Having this integration guarantees that we can call any
 	// collection function on an element and vice versa.
+
+	// e.g. $$.fn.collection({ someFunc: function(){ /* ... */ } })
 	$$.fn.collection = $$.fn.eles = function( fnMap, options ){
 		for( var name in fnMap ){
 			var fn = fnMap[name];

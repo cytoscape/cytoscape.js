@@ -668,7 +668,7 @@
 		var cy = this._private.cy;
 		var domElement = cy.container();
 
-		if( window && domElement ){
+		if( window && domElement && window.getComputedStyle ){
 			var pxAsStr = window.getComputedStyle(domElement).getPropertyValue("font-size");
 			var px = parseFloat( pxAsStr );
 			return px;
@@ -682,7 +682,7 @@
 		var cy = this._private.cy;
 		var domElement = cy.container();
 
-		if( window && domElement ){
+		if( window && domElement && window.getComputedStyle ){
 			return window.getComputedStyle(domElement).getPropertyValue( propName );
 		}
 	};

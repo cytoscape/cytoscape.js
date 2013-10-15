@@ -9,14 +9,20 @@
 			// add the elements
 			if( $$.is.elementOrCollection(opts) ){
 				var eles = opts;
-				var jsons = [];
 
-				for( var i = 0; i < eles.length; i++ ){
-					var ele = eles[i];
-					jsons.push( ele.json() );
+				if( eles._private.cy === cy ){ // same instance => just restore
+					elements = eles.restore();
+
+				} else { // otherwise, copy from json
+					var jsons = [];
+
+					for( var i = 0; i < eles.length; i++ ){
+						var ele = eles[i];
+						jsons.push( ele.json() );
+					}
+
+					elements = new $$.Collection( cy, jsons );
 				}
-
-				elements = new $$.Collection( cy, jsons );
 			}
 			
 			// specify an array of options
@@ -56,9 +62,7 @@
 				elements = (new $$.Element( cy, json )).collection();
 			}
 			
-			return elements.filter(function(){
-				return !this.removed();
-			});
+			return elements;
 		},
 		
 		remove: function(collection){

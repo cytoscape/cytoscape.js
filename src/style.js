@@ -321,14 +321,19 @@
 	$$.styfn.addDefaultStylesheet = function(){
 		// to be nice, we build font related style properties from the core container
 		// so that cytoscape matches the style of its container by default
-		var fontFamily = this.containerPropertyAsString("font-family") || "sans-serif";
-		var fontStyle = this.containerPropertyAsString("font-style") || "normal";
-		var fontVariant = this.containerPropertyAsString("font-variant") || "normal";
-		var fontWeight = this.containerPropertyAsString("font-weight") || "normal";
-		var color = this.containerPropertyAsString("color") || "#000";
-		var textTransform = this.containerPropertyAsString("text-transform") || "none";
-		var textDecoration = this.containerPropertyAsString("text-decoration") || "none";
-		var fontSize = this.containerPropertyAsString("font-size") || 12;
+		// 
+		// unfortunately, this doesn't seem work consistently and can grab the default stylesheet values
+		// instead of the developer's values so let's just make it explicit for the dev for now
+		//
+		// delaying the read of these val's is not an opt'n: that would delay init'l load time
+		var fontFamily = "Helvetica" || this.containerPropertyAsString("font-family") || "sans-serif";
+		var fontStyle = "normal" || this.containerPropertyAsString("font-style") || "normal";
+		var fontVariant = "normal" || this.containerPropertyAsString("font-variant") || "normal";
+		var fontWeight = "normal" || this.containerPropertyAsString("font-weight") || "normal";
+		var color = "#000" || this.containerPropertyAsString("color") || "#000";
+		var textTransform = "none" || this.containerPropertyAsString("text-transform") || "none";
+		var textDecoration = "none" || this.containerPropertyAsString("text-decoration") || "none";
+		var fontSize = 16 || this.containerPropertyAsString("font-size") || 16;
 
 		// fill the style with the default stylesheet
 		this

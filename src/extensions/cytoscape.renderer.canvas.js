@@ -846,20 +846,27 @@
 			
 		}, false);
 		
-		var wheelHandler = function(e) {
-			// Do not process mousewheel event if its source is not overlay
-			if (e.srcElement !== r.data.overlay)
-				return;
+		var wheelHandler = function(e) { 
+
+			// console.dir(e) 
+			// console.log( e.srcElement );
+			// console.log( r.data.overlay );
 
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			if (r.zoomData.freeToZoom) {
+			// console.log( r.zoomData.freeToZoom );
+
+			// TODO re-evaluate whether freeToZoom is necessary at all now
+			if (true || r.zoomData.freeToZoom) {
+				//console.log('free')
 				e.preventDefault();
 				
-				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32;
+				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
+
+				//console.log(diff)
 				
 				if( cy.panningEnabled() && cy.zoomingEnabled() ){
 					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
@@ -878,8 +885,12 @@
 		
 		// Functions to help with whether mouse wheel should trigger zooming
 		// --
+		r.registerBinding(r.data.container, "wheel", wheelHandler, true);
+
 		r.registerBinding(r.data.container, "mousewheel", wheelHandler, true);
+		
 		r.registerBinding(r.data.container, "DOMMouseScroll", wheelHandler, true);
+
 		r.registerBinding(r.data.container, "MozMousePixelScroll", function(e){
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();

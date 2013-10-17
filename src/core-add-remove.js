@@ -1,5 +1,5 @@
 (function($$, window){
-	
+
 	$$.fn.core({
 		add: function(opts){
 			
@@ -117,12 +117,14 @@
 
 			}
 
-			// TODO remove timeout when chrome reports dimensions onload properly
-			// TODO investigate dimensions reporting issue (also affects safari/ios)
-			if( true || window && window.chrome ){
-				setTimeout(function(){
-					callback();
-				}, 30);
+			if( window ){
+				function ready(f) {
+					var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
+
+					setTimeout(fn, 9, f);
+				}
+
+				ready( callback );
 			} else {
 				callback();
 			}

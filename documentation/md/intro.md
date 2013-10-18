@@ -16,7 +16,7 @@ Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/),
 
 Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java_Script_.
 
-We do follow some similar philosophies with Cytoscape:  Graph style and data should be separate, and the library should provide core functionality with extensions adding functionality on top of the library.
+We are trying to make the two projects intercompatible as possible, and we do share philosophies with Cytoscape:  Graph style and data should be separate, the library should provide core functionality with extensions adding functionality on top of the library, and so on.
 
 
 

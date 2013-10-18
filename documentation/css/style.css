@@ -11,7 +11,9 @@ body {
 	height: 15em;
 	width: 15em;
 	background: rgba(255, 255, 255, 0.66);
-	border: 1px solid rgba(127, 127, 127, 0.25);
+	border: 1px solid rgba(127, 127, 127, 0.5);
+	border-right: none;
+	border-bottom: none;
 }
 
 #cy-title {
@@ -91,7 +93,7 @@ button:active {
 	top: 0;
 	bottom: 0;
 	width: 14em;
-	background: #f5f5f5;
+	background: #f0f0f0;
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;

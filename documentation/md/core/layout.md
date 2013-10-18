@@ -46,7 +46,7 @@ cy.layout( options );
 
 *The `breadthfirst` layout puts nodes in a hierarchy:*
 ```js
-defaults = {
+options = {
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop

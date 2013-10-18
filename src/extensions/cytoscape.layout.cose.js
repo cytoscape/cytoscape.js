@@ -23,11 +23,11 @@
 	// Ideal edge (non nested) length
 	idealEdgeLength     : 10,
 	// Divisor to compute edge forces
-	edgeElasticity      : 10000,
+	edgeElasticity      : 100,
 	// Nesting factor (multiplier) to compute ideal edge length for nested edges
-	nestingFactor       : 10, 
+	nestingFactor       : 5, 
 	// Gravity force (constant)
-	gravity             : 10, 
+	gravity             : 250, 
 	
 	// Maximum number of iterations to perform
 	numIter             : 100,

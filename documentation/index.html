@@ -135,7 +135,7 @@
 				
 					<div class="section lvl2">
 						
-						<a href="#selectors/group-amp-class"><span class="icon-bookmark"></span> Group &amp; class</a>
+						<a href="#selectors/group-class-amp-id"><span class="icon-bookmark"></span> Group, class, &amp; ID</a>
 					</div>
 
 					
@@ -663,7 +663,8 @@
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous code questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a>
 			</div>
 
 			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
@@ -827,18 +828,7 @@
 
 				
 					<p>Plans for future versions of Cytoscape.js can be found on <a href="https://github.com/cytoscape/cytoscape.js/issues/milestones">the issue tracker</a>.
-
-
-
 </p>
-<ul>
-<li><p><strong>Compound node layouts</strong> : We are in the process of porting layouts tailored to compound graphs to Cytoscape.js.  In the meanwhile, you can still use compound nodes with other layouts like <code>preset</code>.</p>
-</li>
-<li><p><strong>New and improved layouts</strong> : Cytoscape.js supports some basic layouts currently, and we will add layouts and improve the existing ones to provide more options to developers and users.</p>
-</li>
-<li><p><strong>Graph importers</strong> : Cytoscape.js supports graph data in JSON format.  We will not be adding support for other formats in Cytoscape.js itself, but we will be working to create a separate library that could be used on the client side or the server side (via Node.js) to convert formats like GraphML and XGMML to JSON.</p>
-</li>
-</ul>
 
 				
 
@@ -869,6 +859,9 @@ node ......... a collection of a single node
 edges ........ a collection of one or more edges
 edge ......... a collection of a single edge</code></pre>
 <p>By default, a function returns a reference back to the calling object to allow for jQuery-like chaining (e.g. <code>obj.fn1().fn2().fn3()</code>).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
+
+</p>
+<p>For functions that return a value, note that calling a singular &mdash; <code>ele</code>, <code>node</code>, or <code>edge</code> &mdash; function on a collection of more than one element will return the expected value for only the first element.
 
 
 </p>
@@ -945,11 +938,14 @@ edge ......... a collection of a single edge</code></pre>
   ],
 
   // so we can see the ids
-  style: cytoscape.stylesheet().
-    selector(&#39;node&#39;)
-      .css({
-          &#39;content&#39;: &#39;data(id)&#39;
-        })
+  style: [
+    {
+      selector: &#39;node&#39;,
+      css: {
+        &#39;content&#39;: &#39;data(id)&#39;
+      }
+    }
+  ]
 
 });</code></pre>
 
@@ -979,7 +975,7 @@ edge ......... a collection of a single edge</code></pre>
 <p>The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 
 </p>
-<pre><code class="lang-js">// get all nodes with weight greater than or equal to 30
+<pre><code class="lang-js">// get all nodes with weight more than 50 and height strictly less than 180
 cy.elements(&quot;node[weight &gt;= 50][height &lt; 180]&quot;);</code></pre>
 <p>Selectors can be joined together (effectively creating a logical OR) with commas:
 
@@ -991,11 +987,17 @@ cy.elements(&quot;node#j, edge[source = &#39;j&#39;]&quot;);</code></pre>
 </p>
 <pre><code class="lang-js">//cy.filter(&quot;node[name = Jerry]&quot;); // this doesn&#39;t work
 cy.filter(&quot;node[name = &#39;Jerry&#39;]&quot;); // but this does</code></pre>
-<h2 id="selectors/group-amp-class">Group &amp; class <a href="#selectors/group-amp-class"><span class="icon-bookmark"></span></a></h2>
-<p><strong><code>node</code> or <code>edge</code> (group selector)</strong><br>Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges).
+<h2 id="selectors/group-class-amp-id">Group, class, &amp; ID <a href="#selectors/group-class-amp-id"><span class="icon-bookmark"></span></a></h2>
+<p><strong><code>node</code>,  <code>edge</code>, or <code>*</code> (group selector)</strong>
+Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges, <code>*</code> for all).
 
 </p>
-<p><strong><code>.className</code></strong><br>Matches elements that have the specified class (e.g. use <code>.foo</code> for a class named &quot;foo&quot;).
+<p><strong><code>.className</code></strong>
+Matches elements that have the specified class (e.g. use <code>.foo</code> for a class named &quot;foo&quot;).
+
+</p>
+<p><strong><code>#id</code></strong>
+Matches element with the matching ID (e.g. <code>#foo</code> is the same as <code>[id = &#39;foo&#39;]</code>)
 
 
 </p>
@@ -1058,58 +1060,62 @@ cy.filter(&quot;node[name = &#39;Jerry&#39;]&quot;); // but this does</code></pr
 
 </p>
 <h2 id="selectors/state">State <a href="#selectors/state"><span class="icon-bookmark"></span></a></h2>
-<p><strong><code>:animated</code></strong><br>Matches elements that are currently being animated.
+<p><strong>Animation</strong>
 
 </p>
-<p><strong><code>:unanimated</code></strong><br>Matches elements that are not currently being animated.
+<ul>
+<li><strong><code>:animated</code></strong> : Matches elements that are currently being animated.</li>
+<li><strong><code>:unanimated</code></strong> : Matches elements that are not currently being animated.</li>
+</ul>
+<p><strong>Selection</strong>
 
 </p>
-<p><strong><code>:selected</code></strong><br>Matches selected elements.
+<ul>
+<li><strong><code>:selected</code></strong> : Matches selected elements.</li>
+<li><strong><code>:unselected</code></strong> : Matches elements that aren&#39;t selected.</li>
+<li><strong><code>:selectable</code></strong> : Matches elements that are selectable.</li>
+<li><strong><code>:unselectable</code></strong> : Matches elements that aren&#39;t selectable.</li>
+</ul>
+<p><strong>Locking</strong>
 
 </p>
-<p><strong><code>:unselected</code></strong><br>Matches elements that aren&#39;t selected.
+<ul>
+<li><strong><code>:locked</code></strong> : Matches locked elements.</li>
+<li><strong><code>:unlocked</code></strong> : Matches elements that aren&#39;t locked.</li>
+</ul>
+<p><strong>Visibility</strong>
 
 </p>
-<p><strong><code>:selectable</code></strong><br>Matches elements that are selectable.
+<ul>
+<li><strong><code>:visible</code></strong> : Matches elements that are visible.</li>
+<li><strong><code>:hidden</code></strong> : Matches elements that are hidden.</li>
+</ul>
+<p><strong>User interaction:</strong>
 
 </p>
-<p><strong><code>:unselectable</code></strong><br>Matches elements that aren&#39;t selectable.
+<ul>
+<li><strong><code>:grabbed</code></strong> :  Matches elements that are being grabbed by the user.</li>
+<li><strong><code>:free</code></strong> :  Matches elements that are not currently being grabbed by the user.</li>
+<li><strong><code>:grabbable</code></strong> :  Matches elements that are grabbable by the user.</li>
+<li><strong><code>:ungrabbable</code></strong> :  Matches elements that are not grabbable by the user.</li>
+<li><strong><code>:active</code></strong> :  Matches elements that are active (i.e. user interaction, similar to <code>:active</code> in CSS).</li>
+<li><strong><code>:inactive</code></strong> : Matches elements that are inactive (i.e. no user interaction).</li>
+<li><strong><code>:touch</code></strong> : Matches elements when displayed in a touch-based enviroment (e.g. on a tablet).</li>
+</ul>
+<p><strong>In or out of graph</strong>
 
 </p>
-<p><strong><code>:locked</code></strong><br>Matches locked elements.
+<ul>
+<li><strong><code>:removed</code></strong> : Matches elements that have been removed from the graph.</li>
+<li><strong><code>:inside</code></strong> : Matches elements that have are in the graph (they are not removed).</li>
+</ul>
+<p><strong>Compound nodes</strong>
 
 </p>
-<p><strong><code>:unlocked</code></strong><br>Matches elements that aren&#39;t locked.
-
-</p>
-<p><strong><code>:visible</code></strong><br>Matches elements that are visible.
-
-</p>
-<p><strong><code>:hidden</code></strong><br>Matches elements that are hidden.
-
-</p>
-<p><strong><code>:grabbed</code></strong><br>Matches elements that are being grabbed by the user.
-
-</p>
-<p><strong><code>:free</code></strong><br>Matches elements that are not currently being grabbed by the user.
-
-</p>
-<p><strong><code>:grabbable</code></strong><br>Matches elements that are grabbable by the user.
-
-</p>
-<p><strong><code>:ungrabbable</code></strong><br>Matches elements that are not grabbable by the user.
-
-</p>
-<p><strong><code>:removed</code></strong><br>Matches elements that have been removed from the graph.
-
-</p>
-<p><strong><code>:inside</code></strong><br>Matches elements that have are in the graph (they are not removed).
-
-</p>
-<p><strong><code>:active</code></strong><br>Matches elements that are active (i.e. user interaction).
-
-</p>
-<p><strong><code>:inactive</code></strong><br>Matches elements that are inactive (i.e. no user interaction).</p>
+<ul>
+<li><strong><code>:parent</code></strong> : Matches parent nodes (they have one or more child nodes).</li>
+<li><strong><code>:child</code></strong> : Matches child nodes (they each have a parent).</li>
+</ul>
 
 				
 
@@ -3167,11 +3173,11 @@ Based on the article &quot;A layout algorithm for undirected compound graphs&quo
     // Ideal edge (non nested) length
     idealEdgeLength     : 10,
     // Divisor to compute edge forces
-    edgeElasticity      : 10000,
+    edgeElasticity      : 100,
     // Nesting factor (multiplier) to compute ideal edge length for nested edges
-    nestingFactor       : 10, 
+    nestingFactor       : 5, 
     // Gravity force (constant)
-    gravity             : 10, 
+    gravity             : 250, 
 
     // Maximum number of iterations to perform
     numIter             : 100,

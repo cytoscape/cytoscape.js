@@ -1,5 +1,7 @@
 Style in Cytoscape.js follows CSS conventions as closely as possible.  In most cases, a property has the same name and behaviour as its corresponding CSS namesake.  However, the properties in CSS are not sufficient to specify the style of some parts of the graph.  In that case, additional properties are introduced that are unique to Cytoscape.js.
 
+It is important to note that in your stylesheet, [specificity rules](http://www.w3.org/TR/css3-selectors/#specificity) are completely ignored.  In CSS, specificity often makes stylesheets behave in ways contrary to developer's natural mental model.  This is terrible, because it wastes time and overcomplicates things.  Thus, there is no analogue of CSS specificity in Cytoscape.js stylesheets.  For a given style property for a given element, the last matching selector wins.  In general, you should be using something along the lines of [OOCSS](http://oocss.org) principles, anyway &mdash; making specificity irrelevant.
+
 
 
 ## Properties
@@ -14,7 +16,6 @@ Style in Cytoscape.js follows CSS conventions as closely as possible.  In most c
 
 These properties can be used on any element:
 
- * `cursor` : The [CSS cursor](http://www.w3schools.com/cssref/pr_class_cursor.asp) shown when the cursor is over top the element. 
  * `color` :  The colour of the element's label.
  * `content` : The text to display for an element's label.
  * `text-outline-color` : The colour of the outline around the element's label text.

@@ -23,6 +23,8 @@ edge ......... a collection of a single edge
 
 By default, a function returns a reference back to the calling object to allow for jQuery-like chaining (e.g. `obj.fn1().fn2().fn3()`).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
 
+For functions that return a value, note that calling a singular &mdash; `ele`, `node`, or `edge` &mdash; function on a collection of more than one element will return the expected value for only the first element.
+
 
 ## Position
 
@@ -95,11 +97,14 @@ $('#cy').cytoscape({
   ],
 
   // so we can see the ids
-  style: cytoscape.stylesheet().
-    selector('node')
-      .css({
-          'content': 'data(id)'
-        })
+  style: [
+    {
+      selector: 'node',
+      css: {
+        'content': 'data(id)'
+      }
+    }
+  ]
 
 });
 ```

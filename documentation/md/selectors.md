@@ -5,7 +5,7 @@ A selector functions similar to a [jQuery selector](http://api.jquery.com/catego
 The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 
 ```js
-// get all nodes with weight greater than or equal to 30
+// get all nodes with weight more than 50 and height strictly less than 180
 cy.elements("node[weight >= 50][height < 180]"); 
 ```
 
@@ -25,13 +25,16 @@ cy.filter("node[name = 'Jerry']"); // but this does
 
 
 
-## Group & class
+## Group, class, & ID
 
-**`node` or `edge` (group selector)**  
-Matches elements based on group (`node` for nodes, `edge` for edges).
+**`node`,  `edge`, or `*` (group selector)**
+Matches elements based on group (`node` for nodes, `edge` for edges, `*` for all).
 
-**`.className`**  
+**`.className`**
 Matches elements that have the specified class (e.g. use `.foo` for a class named "foo").
+
+**`#id`**
+Matches element with the matching ID (e.g. `#foo` is the same as `[id = 'foo']`)
 
 
 ## Data
@@ -96,56 +99,49 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 
 ## State
 
-**`:animated`**  
-Matches elements that are currently being animated.
+**Animation**
 
-**`:unanimated`**  
-Matches elements that are not currently being animated.
+* **`:animated`** : Matches elements that are currently being animated.
+* **`:unanimated`** : Matches elements that are not currently being animated.
 
-**`:selected`**  
-Matches selected elements.
 
-**`:unselected`**  
-Matches elements that aren't selected.
+**Selection**
 
-**`:selectable`**  
-Matches elements that are selectable.
+* **`:selected`** : Matches selected elements.
+* **`:unselected`** : Matches elements that aren't selected.
+* **`:selectable`** : Matches elements that are selectable.
+* **`:unselectable`** : Matches elements that aren't selectable.
 
-**`:unselectable`**  
-Matches elements that aren't selectable.
 
-**`:locked`**  
-Matches locked elements.
+**Locking**
 
-**`:unlocked`**  
-Matches elements that aren't locked.
+* **`:locked`** : Matches locked elements.
+* **`:unlocked`** : Matches elements that aren't locked.
 
-**`:visible`**  
-Matches elements that are visible.
 
-**`:hidden`**  
-Matches elements that are hidden.
+**Visibility**
 
-**`:grabbed`**  
-Matches elements that are being grabbed by the user.
+* **`:visible`** : Matches elements that are visible.
+* **`:hidden`** : Matches elements that are hidden.
 
-**`:free`**  
-Matches elements that are not currently being grabbed by the user.
 
-**`:grabbable`**  
-Matches elements that are grabbable by the user.
+**User interaction:**
 
-**`:ungrabbable`**  
-Matches elements that are not grabbable by the user.
+ * **`:grabbed`** :  Matches elements that are being grabbed by the user.
+ * **`:free`** :  Matches elements that are not currently being grabbed by the user.
+ * **`:grabbable`** :  Matches elements that are grabbable by the user.
+ * **`:ungrabbable`** :  Matches elements that are not grabbable by the user.
+ * **`:active`** :  Matches elements that are active (i.e. user interaction, similar to `:active` in CSS).
+ * **`:inactive`** : Matches elements that are inactive (i.e. no user interaction).
+ * **`:touch`** : Matches elements when displayed in a touch-based enviroment (e.g. on a tablet).
 
-**`:removed`**  
-Matches elements that have been removed from the graph.
+**In or out of graph**
 
-**`:inside`**  
-Matches elements that have are in the graph (they are not removed).
+* **`:removed`** : Matches elements that have been removed from the graph.
+* **`:inside`** : Matches elements that have are in the graph (they are not removed).
 
-**`:active`**  
-Matches elements that are active (i.e. user interaction).
 
-**`:inactive`**  
-Matches elements that are inactive (i.e. no user interaction).
+**Compound nodes**
+
+* **`:parent`** : Matches parent nodes (they have one or more child nodes).
+* **`:child`** : Matches child nodes (they each have a parent).

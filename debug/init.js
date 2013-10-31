@@ -8,7 +8,11 @@ $(function(){
 					"content": "data(id)",
 					"border-width": 3,
 					"background-color": "#DDD",
-					"border-color": "#555"
+					"border-color": "#555",
+					//"border-style": "dashed"
+					//"background-size-x": '5',
+					//"background-image": "images/test-bg.png",
+					//"background-position-x": 5
 				})
 			.selector("$node > node") // compound (parent) nodes
 				.css({"textValign": "bottom",

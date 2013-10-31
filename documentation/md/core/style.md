@@ -20,7 +20,7 @@ cy.style()
 
   // ...
 
-  .update()
+  .update() // update the elements in the graph with the new style
 ```
 
 You can also set the style from plain JSON:
@@ -47,5 +47,5 @@ cy.style()
     // , ...
   ])
 
-  .update()
+  .update() // update the elements in the graph with the new style
   ```

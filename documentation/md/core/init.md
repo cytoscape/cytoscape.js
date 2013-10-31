@@ -6,7 +6,7 @@ To use Cytoscape.js in your HTML document:
 <script src="cytoscape.js"></script>
 ```
 
-To use Cytoscape.js in Node.js:
+To use Cytoscape.js in a CommonJS environment like Node.js:
 
 ```
 var cytoscape = require('cytoscape');
@@ -14,7 +14,7 @@ var cytoscape = require('cytoscape');
 
 ### Getting started
 
-An instance of Cytoscape.js correeponds to a graph.  You can create an instance as follows:
+An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
 
 ```js
 cytoscape({
@@ -111,15 +111,15 @@ $("#cy").cytoscape({
 });
 ```
 
-**layout** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports.
+**`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports, as described in [`cy.layout()`](#core/visuals/cy.layout).
 
-**zoom** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.  You can set **minZoom** and **maxZoom** to set restrictions on the zoom level.
+**`zoom`** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.  You can set **`options.minZoom`** and **`options.maxZoom`** to set restrictions on the zoom level.
 
-**pan** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied. 
+**`pan`** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied. 
 
-**renderer** : A plain object containing options for the renderer to be used.  The `name` field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  
+**`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  
 
-**style** : The stylesheet used to style the document.
+**`style`** : The stylesheet used to style the document.
 
 For example:
 
@@ -142,13 +142,13 @@ $("#cy").cytoscape({
 });
 ```
 
-**ready** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
+**`ready`** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
 
-**initrender** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
+**`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
 
-**showOverlay** : A boolean, indacating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
+**`showOverlay`** : A boolean, indicating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
 
-**elements** : An array of elements specified as plain objects.
+**`elements`** : An array of elements specified as plain objects.
 
 For example:
 

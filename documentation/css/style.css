@@ -76,7 +76,7 @@ button {
 }
 
 button:active {
-	background: #2B4C6E;
+	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
 .run {
@@ -164,6 +164,7 @@ button:active {
 	height: auto;
 	width: 100%;
 	position: relative;
+	display: block;
 }
 
 #demo-source pre {
@@ -301,8 +302,7 @@ a {
 }
 
 a:active {
-	background-color: #4183C4;
-	color: #fff;
+	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
 em {

@@ -1,6 +1,6 @@
 ## Details
 
-Note that `eleObjs` can be specified as an array with each element specifying its `group`, or alternatively, `eleObjs` can be specified as a `group`-indexed map, following the same format as in [initialisation](#core/initialisation).
+Note that `eleObjs` can be specified as an array with each element specifying its `group`, or alternatively, `eleObjs` can be specified as a `group`-indexed map, following the same format as in [initialisation](#core/initialisation) and outlined in the [element JSON format](#notation/elements-json).
 
 ## Examples
 

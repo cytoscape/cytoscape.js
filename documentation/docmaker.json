@@ -117,7 +117,7 @@
 
                 {
                   "name": "cy.filter",
-                  "descr": "Get elements in the graph matching the specified selector.",
+                  "descr": "Get elements in the graph matching the specified filter function.",
                   "args": [
                     { 
                       "name": "function(i, ele)", 
@@ -511,7 +511,8 @@
 
             {
               "name": "ele.json",
-              "descr": "Get the element's plain JavaScript object representation."
+              "descr": "Get the element's plain JavaScript object representation.",
+              "md": "collection/json"
             },
 
             {
@@ -606,14 +607,14 @@
                 },
 
                 {
-                  "descr": "Get the value of a specified posisition dimension.",
+                  "descr": "Get the value of a specified position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to get." }
                   ]
                 },
 
                 {
-                  "descr": "Set the value of a specified posisition dimension.",
+                  "descr": "Set the value of a specified position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to set." },
                     { "name": "value", "descr": "The value to set to the dimension." }
@@ -740,7 +741,7 @@
 
             {
               "name": "ele.active",
-              "descr": "Gets whether the element is active."
+              "descr": "Gets whether the element is active (e.g. on user tap, grab, etc)."
             }
 
           ]
@@ -991,7 +992,7 @@
                 {
                   "args": [
                     { "name": "classes", "descr": "A space-separated list of class names to toggle on the elements." },
-                    { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on `true` or removes them on `false`.", "optional": true }
+                    { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.", "optional": true }
                   ]
                 }
               ]
@@ -1203,7 +1204,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "start", "descr": "An integer that specifies where to start the selection (The first element has an index of 0). Use negative numbers to select from the end of an array." },
+                    { "name": "start", "descr": "An integer that specifies where to start the selection.  The first element has an index of 0.  Use negative numbers to select from the end of an array." },
                     { "name": "end", "descr": "An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.", "optional": true }
                   ]
                 }
@@ -1252,7 +1253,13 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                    { "name": "eles", "descr": "The other collection." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "The other collection, specified as a selector which is matched against all elements in the graph." }
                   ]
                 }
               ]
@@ -1264,7 +1271,13 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                    { "name": "eles", "descr": "The other collection." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "The other collection, specified as a selector which is matched against all elements in the graph." }
                   ]
                 }
               ]
@@ -1378,7 +1391,7 @@
 
                 {
                   "args": [
-                    { "name": "selector", "descr": "Elements matching this selector will not be in the resultant collection." }
+                    { "name": "selector", "descr": "Elements from the calling collection matching this selector will not be in the resultant collection." }
                   ]
                 }
               ]

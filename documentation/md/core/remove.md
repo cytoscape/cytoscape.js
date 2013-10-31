@@ -1,6 +1,6 @@
 ## Details
 
-Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, some functions will not work on removed elements.  For example, the `neighborhood` function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.
+Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, almost all functions will not work on removed elements.  For example, the `eles.neighborhood()` function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.  In effect, removed elements just exist so you can restore them back to the originating core instance or to a new instance.
 
 ## Examples
 

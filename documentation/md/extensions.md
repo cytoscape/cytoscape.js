@@ -51,7 +51,7 @@ A layout has two events that must be triggereed on the core, including `layoutre
 
  * `layoutstop` : This is triggered on the core (via `cy.trigger('layoutstop')`) when the layout has finished.  It should be triggered after `layoutready`.  The layout should not change node positions after triggering `layoutstop`.
 
-For an example layout, please refer to the [null layout source code](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Arbor layout]([null layout source code](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.arbor.js)) is a good example of a continuous layout.
+For an example layout, please refer to the [null layout source code](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Arbor layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.arbor.js) is a good example of a continuous layout.
  
 
 

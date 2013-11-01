@@ -70,11 +70,11 @@ actual release ZIP.
 ## Release instructions
 
  1. Make sure the qunit tests are passing on jQuery 1.4-latest (may need to add new versions to the tests).
- 1. Update `package.json` with the new version number.
+ 1. Update `package.json` with the new version number, and `make npm`.
+ 1. Update `bower.json` with the new version number.
  1. Make a release ZIP: `make zip`
  1. Put the release ZIP -- after upload -- on the download page.
  1. Build and upload the docs to `gh-pages`.
- 1. Update `bower.json`.
  1. Tag the repo with the version number.
 
 

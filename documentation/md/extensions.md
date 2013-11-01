@@ -64,4 +64,4 @@ The API of the renderer follows the actor model, and so it has a single main ent
  * `event.type` : A string containing the name of the event that has occured.
  * `event.collection` : A collection of elements associated with the event.
 
-If you're interested in writing a custom renderer for Cytoscape.js, please [send an email to Max](mailto:maxkfranz@gmail.com) for more help if needed.
+If you're interested in writing a custom renderer for Cytoscape.js, please [file an issue](https://github.com/cytoscape/cytoscape.js/issues) for more help if needed.

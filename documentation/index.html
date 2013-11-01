@@ -669,14 +669,14 @@
 		<div id="content">
 
 			<div id="top" class="title">Cytoscape.js <span class="version">2.0.3</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS></a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
-				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous code questions</a> |
-				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code question</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a>
 			</div>
@@ -1228,7 +1228,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 </p>
 <ul>
-<li><strong><code>opacity</code></strong> : The opacity of the element.</li>
+<li><strong><code>opacity</code></strong> * : The opacity of the element.</li>
 <li><strong><code>visibility</code></strong> : Whether the element is visible; can be <code>visible</code> or <code>hidden</code>.</li>
 <li><strong><code>width</code></strong> : The element&#39;s width; the line width for edges or the horizontal size of a node.</li>
 <li><strong><code>z-index</code></strong> : A non-negative integer that specifies the z-ordering of the element.  An element with a higher <code>z-index</code> is put on top of an element with a lower value.</li>
@@ -1526,9 +1526,13 @@ $(function(){ // on jquery ready
 <p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. 
 
 </p>
-<p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for this option, unless you want to use a custom renderer.  
+<p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:
 
 </p>
+<ul>
+<li><code>renderer.name</code> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
+<li><code>renderer.hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
+</ul>
 <p><strong><code>style</code></strong> : The stylesheet used to style the document.
 
 </p>
@@ -3234,6 +3238,9 @@ cy.layout( options );</code></pre>
 
 
 cy.layout( options );</code></pre>
+<p>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.
+
+</p>
 <p>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:
 
 </p>
@@ -6374,7 +6381,7 @@ cy.elements().forEach(function(){
 <li><code>event.type</code> : A string containing the name of the event that has occured.</li>
 <li><code>event.collection</code> : A collection of elements associated with the event.</li>
 </ul>
-<p>If you&#39;re interested in writing a custom renderer for Cytoscape.js, please <a href="mailto:maxkfranz@gmail.com">send an email to Max</a> for more help if needed.</p>
+<p>If you&#39;re interested in writing a custom renderer for Cytoscape.js, please <a href="https://github.com/cytoscape/cytoscape.js/issues">file an issue</a> for more help if needed.</p>
 
 				
 

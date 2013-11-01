@@ -207,13 +207,14 @@ docspublish :
 	@echo Confirm that docmaker.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read
+
+	@echo --
+	@echo Building docs
 	$(CD) $(DOC_DIR)
 	$(MAKE)
-	$(CD) ..
-	$(RM) $(TEMP_DIR)/$(DOC_DIR)
-	$(CP) $(DOC_DIR) $(TEMP_DIR)
-	@echo If you run into trouble switching to gh-pages, make sure you don't have uncommitted changed.
-	git checkout gh-pages
+
+	@echo --
+	@echo 
 
 
 

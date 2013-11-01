@@ -18,7 +18,9 @@ PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(T
 MAKE = make
 
 # version (update this when building release zip)
-VERSION := 2.0.2-github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+ifndef VERSION
+	VERSION = github-snapshot-$(shell date +%Y.%m.%d-%H.%M.%S)
+endif
 
 # directories
 LIB_DIR = lib
@@ -33,6 +35,7 @@ BUILD_DIR = build
 DOC_DIR = documentation
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
+TEMP_DIR = /tmp
 
 # dependencies for the .all.js file
 LIBS = $(LIB_DIR)/arbor.js
@@ -103,6 +106,7 @@ ZIP_DIR = cytoscape.js-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
 PREAMBLE = etc/PREAMBLE
 README = README.md
+RELEASE_DIR = releases
 
 # temp stuff
 TEMP = $(BUILD_DIR)/temp
@@ -152,13 +156,79 @@ $(BUILD_DIR) :
 	$(YUI) $(YUIFLAGS) $? -o $@
 	$(call PREAMBLIFY)
 
+#confirms the version info before proceeding
+version : 
+	@echo -- VERSION environment variable
+	@echo $(VERSION)
+	@echo --
+	@echo If not set as desired for release, use \"export VERSION=1.2.3\" or similar.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read 
+
+tag : version
+	git tag -a v$(VERSION) -m "v$(VERSION)"
+
+# makes the release files but doesn't publish them
+release : version all
+	$(MKDIR) $(RELEASE_DIR)
+	$(MKDIR) $(RELEASE_DIR)/$(VERSION)
+	$(CP) $(JS_FILE) $(RELEASE_DIR)/$(VERSION)
+	$(CP) $(MIN_JS_FILE) $(RELEASE_DIR)/$(VERSION)
+
+# publish to npm
+npm : release tag
+	@echo -- package.json
+	@cat package.json
+	@echo --
+	@echo Confirm that package.json is set properly for release, with matching VERSION etc.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read 
+	npm publish .
+
+# publish to bower
+bower : release tag
+	@echo -- bower.json
+	@cat bower.json
+	@echo --
+	@echo Confirm that bower.json is set properly for release, with matching VERSION etc.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read 
+	bower 
+
+# publish the documentation
+docspublish : 
+	@echo -- VERSION environment variable
+	@echo $(VERSION)
+	@echo --
+	@echo -- documentation/docmaker.json
+	@head documentation/docmaker.json
+	@echo ...
+	@echo --
+	@echo Confirm that docmaker.json is set properly for release, with matching VERSION etc.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read
+	$(CD) $(DOC_DIR)
+	$(MAKE)
+	$(CD) ..
+	$(RM) $(TEMP_DIR)/$(DOC_DIR)
+	$(CP) $(DOC_DIR) $(TEMP_DIR)
+	@echo If you run into trouble switching to gh-pages, make sure you don't have uncommitted changed.
+	git checkout gh-pages
+
+
+
+# publish a new version of cy.js
+publish : test version release tag npm
+
 clean : 
 	$(RM) $(BUILD_DIR)
 
-.PHONY: debug
 debug : 
 	$(OPEN) $(DEBUG_PAGE)
 
-.PHONY: test
 test : 
 	$(OPEN) $(TEST_PAGE)
+	@echo --
+	@echo Confirm that the tests are passing.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read 

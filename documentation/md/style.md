@@ -57,7 +57,7 @@ $('#cy').cytoscape({
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
-
+ 
 
 
 ### Element properties
@@ -79,7 +79,7 @@ Labels:
 
 Size & visibility:
 
- * **`opacity`** : The opacity of the element.
+ * **`opacity`** * : The opacity of the element.
  * **`visibility`** : Whether the element is visible; can be `visible` or `hidden`.
  * **`width`** : The element's width; the line width for edges or the horizontal size of a node.
  * **`z-index`** : A non-negative integer that specifies the z-ordering of the element.  An element with a higher `z-index` is put on top of an element with a lower value.

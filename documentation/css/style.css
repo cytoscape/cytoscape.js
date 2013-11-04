@@ -3,6 +3,8 @@ body {
 	line-height: 1.5;
 }
 
+* { -webkit-tap-highlight-color: transparent !important; }
+
 #cy {
 	position: fixed;
 	z-index: 999;

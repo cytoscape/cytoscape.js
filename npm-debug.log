@@ -1,0 +1,31 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'info', 'lessc' ]
+2 info using npm@1.3.5
+3 info using node@v0.10.15
+4 verbose url raw lessc
+5 verbose url resolving [ 'https://registry.npmjs.org/', './lessc' ]
+6 verbose url resolved https://registry.npmjs.org/lessc
+7 info trying registry request attempt 1 at 13:58:00
+8 http GET https://registry.npmjs.org/lessc
+9 info retry will retry, error on last attempt: Error: socket hang up
+10 info trying registry request attempt 2 at 13:58:34
+11 http GET https://registry.npmjs.org/lessc
+12 http 404 https://registry.npmjs.org/lessc
+13 silly registry.get cb [ 404,
+13 silly registry.get   { server: 'CouchDB/1.3.1 (Erlang OTP/R15B03)',
+13 silly registry.get     date: 'Mon, 04 Nov 2013 18:58:58 GMT',
+13 silly registry.get     'content-type': 'application/json',
+13 silly registry.get     'content-length': '52',
+13 silly registry.get     'cache-control': 'must-revalidate' } ]
+14 error 404 'lessc' is not in the npm registry.
+14 error 404 You should bug the author to publish it
+14 error 404
+14 error 404 Note that you can also install from a
+14 error 404 tarball, folder, or http url, or git url.
+15 error System Darwin 13.0.0
+16 error command "node" "/usr/local/bin/npm" "info" "lessc"
+17 error cwd /Users/maxfranz/Documents/workspace/cytoscape.js
+18 error node -v v0.10.15
+19 error npm -v 1.3.5
+20 error code E404
+21 verbose exit [ 1, true ]

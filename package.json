@@ -37,7 +37,5 @@
 	],
 	"main": "./release/2.0.3/cytoscape.js",
 	"scripts": {
-		"pretest": "make release",
-		"prepublish": "make release"
 	}
 }

@@ -62,7 +62,7 @@ Run `make` in the console.  The targets are:
 
 A note to developers:
 
-For `zip`, make sure to define the `VERSION` environment variable in the terminal if you're making an
+For `zip` and `publish`, make sure to define the `VERSION` environment variable in the terminal if you're making an
 actual release ZIP.
 
 

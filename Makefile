@@ -130,9 +130,7 @@ zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 minify : $(MIN_JS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
 
 docs : minify
-	$(CD) $(DOC_DIR)
-	$(MAKE)
-	$(CD) $(ROOT_DIR)
+	$(MAKE) -C $(DOC_DIR)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)
@@ -235,9 +233,7 @@ docsrefresh :
 	@echo $(LINE_SEP)
 	@echo -- Building docs...
 	@echo $(LINE_SEP)
-	$(CD) $(DOC_DIR)
-	$(MAKE)
-	$(CD) $(ROOT_DIR)
+	$(MAKE) -C $(DOC_DIR)
 	@echo
 
 	@echo $(LINE_SEP)
@@ -265,8 +261,7 @@ docspublish : docsrefresh
 	$(RM) $(TEMP_DIR)/cytoscape.js
 	git clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $(TEMP_DIR)/cytoscape.js
 	$(CP) $(DOC_DIR) $(TEMP_DIR)/cytoscape.js
-	$(CD) $(TEMP_DIR)/cytoscape.js
-	$(MAKE) publish
+	$(MAKE) -C $(TEMP_DIR)/cytoscape.js publish
 	@echo
 
 

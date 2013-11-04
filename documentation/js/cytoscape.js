@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.2-github-snapshot-2013.10.17-17.05.23.
+ * This file is part of cytoscape.js 2.0.3.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -16139,11 +16139,11 @@ var cytoscape;
 	// Ideal edge (non nested) length
 	idealEdgeLength     : 10,
 	// Divisor to compute edge forces
-	edgeElasticity      : 10000,
+	edgeElasticity      : 100,
 	// Nesting factor (multiplier) to compute ideal edge length for nested edges
-	nestingFactor       : 10, 
+	nestingFactor       : 5, 
 	// Gravity force (constant)
-	gravity             : 10, 
+	gravity             : 250, 
 	
 	// Maximum number of iterations to perform
 	numIter             : 100,

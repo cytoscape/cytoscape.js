@@ -194,7 +194,7 @@ release : version all
 	$(CP) $(MIN_JS_FILE) $(RELEASE_DIR)/$(VERSION)
 
 # publish to npm
-npm : release tag
+npm : 
 	@echo $(LINE_SEP)
 	@echo -- Publishing to npm...
 	@echo $(LINE_SEP)
@@ -208,7 +208,7 @@ npm : release tag
 	npm publish .
 
 # publish to bower
-bower : release tag
+bower : 
 	@echo $(LINE_SEP)
 	@echo -- Publishing to bower...
 	@echo $(LINE_SEP)

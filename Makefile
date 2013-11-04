@@ -5,6 +5,7 @@ RM = rm -rf
 CAT = cat
 CP = cp -R
 ZIP = zip
+UNZIP = unzip
 MV = mv
 PRINTF = printf
 SED = sed
@@ -16,6 +17,9 @@ OPEN = open
 AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 MAKE = make
+
+# misc
+LINE_SEP = --------------------------------------------------------------------------------
 
 # version (update this when building release zip)
 ifndef VERSION
@@ -33,6 +37,9 @@ PLUGINS_DIR = $(SRC_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_PLUGINS_DIR = $(BUILD_DIR)/$(PLUGINS_DIR_NAME)
 BUILD_DIR = build
 DOC_DIR = documentation
+DOC_API_DIR = documentation/api
+DOC_API_LATEST = documentation/api/cytoscape.js-latest
+DOC_API_NEW = documentation/api/cytoscape.js-$(VERSION)
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
 TEMP_DIR = /tmp
@@ -100,7 +107,8 @@ BUILD_EXTENSIONS = $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(EXTENSIONS))
 MIN_BUILD_EXTENSIONS =  $(BUILD_EXTENSIONS:%.js=%.min.js)
 
 # configure what files to include in the zip
-ZIP_FILE = $(BUILD_DIR)/cytoscape.js-$(VERSION).zip
+ZIP_FILE_NAME = cytoscape.js-$(VERSION).zip
+ZIP_FILE = $(BUILD_DIR)/$(ZIP_FILE_NAME)
 ZIP_CONTENTS = $(JS_FILE) $(MIN_JS_FILE) $(LIBS) $(LICENSE) $(BUILD_PLUGINS) $(MIN_BUILD_PLUGINS)
 ZIP_DIR = cytoscape.js-$(VERSION)
 LICENSE = LGPL-LICENSE.txt
@@ -111,7 +119,7 @@ RELEASE_DIR = releases
 # temp stuff
 TEMP = $(BUILD_DIR)/temp
 TEMPFILE = $(TEMP)/temp-file
-CWD = `$(PWD)`
+ROOT_DIR = $(shell pwd)
 
 all : zip
 
@@ -160,7 +168,7 @@ $(BUILD_DIR) :
 version : 
 	@echo -- VERSION environment variable
 	@echo $(VERSION)
-	@echo --
+	@echo $(SEPARATOR)
 	@echo If not set as desired for release, use \"export VERSION=1.2.3\" or similar.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read 
@@ -177,9 +185,11 @@ release : version all
 
 # publish to npm
 npm : release tag
+	@echo $(LINE_SEP)
 	@echo -- package.json
+	@echo $(LINE_SEP)
 	@cat package.json
-	@echo --
+	@echo $(LINE_SEP)
 	@echo Confirm that package.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read 
@@ -187,9 +197,11 @@ npm : release tag
 
 # publish to bower
 bower : release tag
+	@echo $(LINE_SEP)
 	@echo -- bower.json
+	@echo $(LINE_SEP)
 	@cat bower.json
-	@echo --
+	@echo $(LINE_SEP)
 	@echo Confirm that bower.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read 
@@ -197,24 +209,43 @@ bower : release tag
 
 # publish the documentation
 docspublish : 
+	@echo $(LINE_SEP)
 	@echo -- VERSION environment variable
+	@echo $(LINE_SEP)
 	@echo $(VERSION)
-	@echo --
+	@echo
+
+	@echo $(LINE_SEP)
 	@echo -- documentation/docmaker.json
+	@echo $(LINE_SEP)
 	@head documentation/docmaker.json
 	@echo ...
-	@echo --
+	@echo
+	
+	@echo $(LINE_SEP)
 	@echo Confirm that docmaker.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read
+	@echo
 
-	@echo --
-	@echo Building docs
+	@echo $(LINE_SEP)
+	@echo -- Building docs...
+	@echo $(LINE_SEP)
 	$(CD) $(DOC_DIR)
 	$(MAKE)
+	$(CD) $(ROOT_DIR)
+	@echo
 
-	@echo --
-	@echo 
+	@echo $(LINE_SEP)
+	@echo -- Copying api resources to docs...
+	@echo $(LINE_SEP)
+	$(CP) $(ZIP_FILE) $(DOC_API_DIR)
+	$(RM) $(DOC_API_NEW)
+	$(UNZIP) $(DOC_API_DIR)/$(ZIP_FILE_NAME) -d $(DOC_API_DIR)
+	$(MKDIR) $(DOC_API_LATEST)
+	$(CP) $(DOC_API_NEW)/* $(DOC_API_LATEST)
+	$(RM) $(DOC_API_DIR)/$(ZIP_FILE_NAME)
+	@echo
 
 
 

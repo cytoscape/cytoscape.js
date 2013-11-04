@@ -167,7 +167,9 @@ $(BUILD_DIR) :
 
 #confirms the version info before proceeding
 version : 
+	@echo $(LINE_SEP)
 	@echo -- VERSION environment variable
+	@echo $(LINE_SEP)
 	@echo $(VERSION)
 	@echo $(SEPARATOR)
 	@echo If not set as desired for release, use \"export VERSION=1.2.3\" or similar.
@@ -175,11 +177,17 @@ version :
 	@read 
 
 tag : version
+	@echo $(LINE_SEP)
+	@echo -- Tagging repo...
+	@echo $(LINE_SEP)
 	git tag -a v$(VERSION) -m "v$(VERSION)"
 	git push origin v$(VERSION)
 
 # makes the release files but doesn't publish them
 release : version all
+	@echo $(LINE_SEP)
+	@echo -- Making release resources...
+	@echo $(LINE_SEP)
 	$(MKDIR) $(RELEASE_DIR)
 	$(MKDIR) $(RELEASE_DIR)/$(VERSION)
 	$(CP) $(JS_FILE) $(RELEASE_DIR)/$(VERSION)
@@ -187,6 +195,8 @@ release : version all
 
 # publish to npm
 npm : release tag
+	@echo $(LINE_SEP)
+	@echo -- Publishing to npm...
 	@echo $(LINE_SEP)
 	@echo -- package.json
 	@echo $(LINE_SEP)
@@ -200,6 +210,8 @@ npm : release tag
 # publish to bower
 bower : release tag
 	@echo $(LINE_SEP)
+	@echo -- Publishing to bower...
+	@echo $(LINE_SEP)
 	@echo -- bower.json
 	@echo $(LINE_SEP)
 	@cat bower.json
@@ -211,6 +223,11 @@ bower : release tag
 
 # refresh the documentation
 docsrefresh : 
+	@echo $(LINE_SEP)
+	@echo -- Refreshing local copy of docs...
+	@echo $(LINE_SEP)
+	@echo
+
 	@echo $(LINE_SEP)
 	@echo -- VERSION environment variable
 	@echo $(LINE_SEP)

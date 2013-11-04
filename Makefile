@@ -178,6 +178,7 @@ version :
 
 tag : version
 	git tag -a v$(VERSION) -m "v$(VERSION)"
+	git push origin v$(VERSION)
 
 # makes the release files but doesn't publish them
 release : version all

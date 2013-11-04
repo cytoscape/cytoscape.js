@@ -40,6 +40,7 @@ DOC_DIR = documentation
 DOC_API_DIR = documentation/api
 DOC_API_LATEST = documentation/api/cytoscape.js-latest
 DOC_API_NEW = documentation/api/cytoscape.js-$(VERSION)
+DOC_DL_DIR = documentation/download
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
 TEMP_DIR = /tmp
@@ -241,10 +242,17 @@ docspublish :
 	@echo $(LINE_SEP)
 	$(CP) $(ZIP_FILE) $(DOC_API_DIR)
 	$(RM) $(DOC_API_NEW)
+	$(RM) $(DOC_API_LATEST)
 	$(UNZIP) $(DOC_API_DIR)/$(ZIP_FILE_NAME) -d $(DOC_API_DIR)
 	$(MKDIR) $(DOC_API_LATEST)
 	$(CP) $(DOC_API_NEW)/* $(DOC_API_LATEST)
 	$(RM) $(DOC_API_DIR)/$(ZIP_FILE_NAME)
+	@echo
+
+	@echo $(LINE_SEP)
+	@echo -- Copying download resources to docs...
+	@echo $(LINE_SEP)
+	$(CP) $(ZIP_FILE) $(DOC_DL_DIR)
 	@echo
 
 

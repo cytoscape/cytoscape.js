@@ -1,0 +1,61 @@
+
+/* jquery.cytoscape-navigator.css */
+
+/**
+ * This file is part of cytoscape.js 2.0.3.
+ * 
+ * Cytoscape.js is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * Cytoscape.js is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along with
+ * cytoscape.js. If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+.cytoscape-navigator{
+	position: absolute;
+	border: 1px solid #000;
+	background: #fff;
+	z-index: 99999;
+	width: 200px;
+	height: 150px;
+	bottom: -1px;
+	right: -1px;
+	overflow: hidden;
+}
+
+.cytoscape-navigator > canvas{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 101;
+}
+
+.cytoscape-navigatorView{
+	position: absolute;
+	top: 0;
+	left: 0;
+	cursor: move;
+	background: #B7E1ED;
+	-moz-opacity: 0.50;
+	opacity: 0.50;
+	-ms-filter:"progid:DXImageTransform.Microsoft.Alpha"(Opacity=50);
+	z-index: 102;
+}
+
+.cytoscape-navigatorOverlay{
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 103;
+}

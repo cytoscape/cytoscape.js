@@ -58,10 +58,11 @@ Run `make` in the console.  The targets are:
  * `minify` : build the production minified JS
  * `zip` : minify and make a ZIP file for release
  * `clean` : deletes built files
+ * `publish` : make a release and publish it; follow the terminal prompts
 
 A note to developers:
 
-For `zip`, make sure to define `VERSION` in `Makefile` if you're making an
+For `zip`, make sure to define the `VERSION` environment variable in the terminal if you're making an
 actual release ZIP.
 
 
@@ -69,13 +70,7 @@ actual release ZIP.
 
 ## Release instructions
 
- 1. Make sure the qunit tests are passing on jQuery 1.4-latest (may need to add new versions to the tests).
- 1. Update `package.json` with the new version number, and `make npm`.
- 1. Update `bower.json` with the new version number.
- 1. Make a release ZIP: `make zip`
- 1. Put the release ZIP -- after upload -- on the download page.
- 1. Build and upload the docs to `gh-pages`.
- 1. Tag the repo with the version number.
+Run `make publish`.  Follow the prompts and a full release should be made for you.
 
 
 

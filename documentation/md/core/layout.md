@@ -115,9 +115,11 @@ options = {
 cy.layout( options );
 ```
 
-Please note that the `liveUpdate` option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to `false`.
+Notes about arbor:
 
-NB: You must reference the version of `arbor.js` included with Cytoscape.js in the `<head>` of your HTML document:
+ * For webworkers to work properly, you need to point your browser to a server URL (e.g. `http://`) rather than a local address (e.g. `file://`).
+ * Please note that the `liveUpdate` option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to `false`.
+ * NB: You must reference the version of `arbor.js` included with Cytoscape.js in the `<head>` of your HTML document:
 
 ```html
 <head>

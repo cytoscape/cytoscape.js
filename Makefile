@@ -44,6 +44,7 @@ DOC_DL_DIR = documentation/download
 DEBUG_PAGE = debug/index.html
 TEST_PAGE = tests/index.html
 TEMP_DIR = /tmp
+TEMP_DOC_DIR_NAME = cy-docs-temp
 
 # dependencies for the .all.js file
 LIBS = $(LIB_DIR)/arbor.js
@@ -131,6 +132,7 @@ minify : $(MIN_JS_FILE) $(MIN_BUILD_PLUGINS) $(MIN_BUILD_EXTENSIONS)
 docs : minify
 	$(CD) $(DOC_DIR)
 	$(MAKE)
+	$(CD) $(ROOT_DIR)
 
 $(ZIP_DIR) : minify
 	$(RM) $(ZIP_DIR)
@@ -208,8 +210,8 @@ bower : release tag
 	@read 
 	bower 
 
-# publish the documentation
-docspublish : 
+# refresh the documentation
+docsrefresh : 
 	@echo $(LINE_SEP)
 	@echo -- VERSION environment variable
 	@echo $(LINE_SEP)
@@ -255,10 +257,21 @@ docspublish :
 	$(CP) $(ZIP_FILE) $(DOC_DL_DIR)
 	@echo
 
+docspublish : docsrefresh
+	@echo $(LINE_SEP)
+	@echo -- Publishing docs to gh-pages...
+	@echo $(LINE_SEP)
+	$(RM) $(TEMP_DIR)/cytoscape.js
+	git clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $(TEMP_DIR)/cytoscape.js
+	$(CP) $(DOC_DIR) $(TEMP_DIR)/cytoscape.js
+	$(CD) $(TEMP_DIR)/cytoscape.js
+	$(MAKE) publish
+	@echo
+
 
 
 # publish a new version of cy.js
-publish : test version release tag npm
+publish : test version release docspublish tag npm
 
 clean : 
 	$(RM) $(BUILD_DIR)

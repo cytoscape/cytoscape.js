@@ -240,9 +240,20 @@ docsrefresh :
 	@head documentation/docmaker.json
 	@echo ...
 	@echo
-	
 	@echo $(LINE_SEP)
 	@echo Confirm that docmaker.json is set properly for release, with matching VERSION etc.
+	@echo Press ENTER to continue the build process, or CTRL+C to quit.
+	@read
+	@echo
+
+	@echo $(LINE_SEP)
+	@echo -- documentation/md/downloads.json
+	@echo $(LINE_SEP)
+	@cat documentation/md/downloads.json
+	@echo ...
+	@echo
+	@echo $(LINE_SEP)
+	@echo Confirm that downloads.json has downloads specified up to the current version.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read
 	@echo

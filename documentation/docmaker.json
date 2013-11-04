@@ -10,6 +10,8 @@
   "sections": [
     { "name": "Introduction", "md": "intro" },
 
+    { "name": "Downloads", "md": "downloads" },
+
     { "name": "Roadmap", "md": "roadmap" },
 
     { "name": "Notation", "md": "notation" },

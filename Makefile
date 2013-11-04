@@ -277,7 +277,7 @@ docspublish : docsrefresh
 	@echo $(LINE_SEP)
 	$(RM) $(TEMP_DIR)/cytoscape.js
 	git clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $(TEMP_DIR)/cytoscape.js
-	$(CP) $(DOC_DIR) $(TEMP_DIR)/cytoscape.js
+	$(CP) $(DOC_DIR)/* $(TEMP_DIR)/cytoscape.js
 	$(MAKE) -C $(TEMP_DIR)/cytoscape.js publish
 	@echo
 

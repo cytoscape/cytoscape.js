@@ -247,13 +247,13 @@ docsrefresh :
 	@echo
 
 	@echo $(LINE_SEP)
-	@echo -- documentation/md/downloads.json
+	@echo -- documentation/md/downloads.md
 	@echo $(LINE_SEP)
-	@cat documentation/md/downloads.json
+	@cat documentation/md/downloads.md
 	@echo ...
 	@echo
 	@echo $(LINE_SEP)
-	@echo Confirm that downloads.json has downloads specified up to the current version.
+	@echo Confirm that downloads.md has downloads specified up to the current version.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read
 	@echo

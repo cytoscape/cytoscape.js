@@ -1,3 +1,9 @@
+/*
+  The CoSE layout was written by Gerardo Huck.
+
+  Modifications tracked on Github.
+*/
+
 ;(function($$) {
 
     /**

@@ -1,3 +1,9 @@
+/*
+  The canvas renderer was written by Yue Dong.
+
+  Modifications tracked on Github.
+*/
+
 (function($$) {
 
 	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;

@@ -1,3 +1,9 @@
+/*
+  The navigator plugin was written by Alexandr Truhin (aka bumbu)
+
+  Modifications tracked on Github
+*/
+
 !(function($){
 
 	"use strict";

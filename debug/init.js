@@ -96,7 +96,8 @@ $(function(){
 		initrender: function(){
 			console.log('initrender');
 			console.log(arguments);
-		}
+		},
+		selectionType: 'additive'
 	};
 	
 	var cliques = 2;

@@ -736,7 +736,7 @@
 						
 						// console.log('single selection')
 
-						if( !shiftDown ){
+						if( !shiftDown && !cy.selectionType() === 'additive' ){
 							cy.$(':selected').unselect();
 						}
 
@@ -778,7 +778,7 @@
 				if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
 					// console.log("box selection");
 					
-					if( !shiftDown ){
+					if( !shiftDown && !cy.selectionType() === 'additive' ){
 						cy.$(':selected').unselect();
 					}
 

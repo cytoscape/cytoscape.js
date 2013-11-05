@@ -1,5 +1,7 @@
 ;(function($$){
 
+	var isTouch = window && ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+
 	var defaults = {
 		showOverlay: true,
 		hideEdgesOnViewport: false
@@ -74,6 +76,20 @@
 			hasCompoundNodes: false
 		};
 
+		// set selection type
+		var selType = options.selectionType;
+		if( selType === undefined || (selType !== "additive" || selType !== "single") ){
+			// then set default
+
+			if( isTouch ){
+				this._private.selectionType = "additive";
+			} else {
+				this._private.selectionType = "single";
+			}
+		} else {
+			this._private.selectionType = selType;
+		}
+
 		// init zoom bounds
 		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
 			this._private.minZoom = options.minZoom;
@@ -87,11 +103,13 @@
 		// init style
 		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.array(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
 
+		// create the renderer
 		cy.initRenderer( $$.util.extend({
 			showOverlay: options.showOverlay,
 			hideEdgesOnViewport: options.hideEdgesOnViewport
 		}, options.renderer) );
 
+		// trigger the passed function for the `initrender` event
 		if( options.initrender ){
 			cy.on('initrender', options.initrender);
 		}
@@ -145,6 +163,10 @@
 
 			// worst case, return an empty collection
 			return new $$.Collection( this );
+		},
+
+		selectionType: function(){
+			return this._private.selectionType;
 		},
 
 		hasCompoundNodes: function(){

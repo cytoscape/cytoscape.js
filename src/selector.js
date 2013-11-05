@@ -130,7 +130,7 @@
 				
 				state: {
 					query: true,
-					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
+					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
 					populate: function( state ){
 						this.colonSelectors.push( state );
 					}
@@ -454,6 +454,9 @@
 					break;
 				case ":hidden":
 					allColonSelectorsMatch = !element.visible();
+					break;
+				case ":transparent":
+					allColonSelectorsMatch = !element.transparent();
 					break;
 				case ":grabbed":
 					allColonSelectorsMatch = element.grabbed();

@@ -247,12 +247,12 @@
 		},
 
 		show: function(){
-			this.css("visibility", "visible");
+			this.css("display", "element");
 			return this; // chaining
 		},
 
 		hide: function(){
-			this.css("visibility", "hidden");
+			this.css("display", "none");
 			return this; // chaining
 		},
 
@@ -260,7 +260,11 @@
 			var ele = this[0];
 
 			if( ele ){
-				if( ele.css("visibility") !== "visible" ){
+				if(
+					ele.css("visibility") !== "visible"
+				||  ele.css("display") !== "element"
+				// ||  parseFloat( ele.css("opacity") ) === 0
+				){
 					return false;
 				}
 				
@@ -268,9 +272,11 @@
 					var parents = ele.parents();
 					for( var i = 0; i < parents.length; i++ ){
 						var parent = parents[i];
-						var parentVisibility = parent.css("visibility");
+						var pVis = parent.css("visibility");
+						var pDis = parent.css("display");
+						var pOpac = parseFloat( parent.css("opacity") );
 
-						if( parentVisibility !== "visible" ){
+						if( pVis !== "visible" || pDis !== "element" ){
 							return false;
 						}
 					}
@@ -291,6 +297,14 @@
 
 			if( ele ){
 				return !this.visible();
+			}
+		},
+
+		transparent: function(){
+			var ele = this[0];
+
+			if( ele ){
+				return parseFloat( this.css("opacity") ) === 0;
 			}
 		},
 

@@ -157,11 +157,25 @@ $(function(){
 		
 		test({
 			name: "hideOnClick",
-			displayName: "Hide on click",
-			description: "Hide nodes and edges when clicked",
+			displayName: "visibility:hidden on click",
+			description: "visibility:hidden on nodes and edges when clicked",
 			setup: function(){
 				cy.elements().bind("click", function(){
 					this.hide();
+				});
+			},
+			teardown: function(){
+				cy.elements().unbind("click").css("*", "");
+			}
+		});
+
+		test({
+			name: "hideOnClick2",
+			displayName: "display:none on click",
+			description: "display:none on nodes and edges when clicked",
+			setup: function(){
+				cy.elements().bind("click", function(){
+					this.css("display", "none");
 				});
 			},
 			teardown: function(){

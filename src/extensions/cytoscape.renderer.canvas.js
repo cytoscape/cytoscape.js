@@ -736,15 +736,20 @@
 						
 						// console.log('single selection')
 
-						if( !shiftDown && !cy.selectionType() === 'additive' ){
-							cy.$(':selected').unselect();
-						}
-
-						if( near.selected() ){
+						if( cy.selectionType() === 'additive' ){
+							if( near.selected() ){
 							near.unselect();
+							} else {
+								near.select();
+							}
 						} else {
+							if( !shiftDown ){
+								cy.$(':selected').unselect();
+							}
+
 							near.select();
 						}
+
 
 						updateAncestorsInDragLayer(near, false);
 						
@@ -778,10 +783,6 @@
 				if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
 					// console.log("box selection");
 					
-					if( !shiftDown && !cy.selectionType() === 'additive' ){
-						cy.$(':selected').unselect();
-					}
-
 					var newlySelected = [];
 					var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
 					// console.log(box);
@@ -793,7 +794,17 @@
 						}
 					}
 
-					(new $$.Collection( cy, newlySelected )).select();
+					var newlySelCol = new $$.Collection( cy, newlySelected );
+
+					if( cy.selectionType() === "additive" ){
+						newlySelCol.select();
+					} else {
+						if( !shiftDown ){
+							cy.$(':selected').unselect();
+						}
+
+						newlySelCol.select();
+					}
 					
 					if (box.length > 0) { 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
@@ -1489,7 +1500,7 @@
 					var newlySelCol = (new $$.Collection( cy, newlySelected ));
 
 					if( cy.selectionType() === 'single' ){
-						//cy.$(':selected').unselect();
+						cy.$(':selected').unselect();
 					}
 
 					newlySelCol.select();
@@ -1590,10 +1601,15 @@
 						&& start._private.selectable 
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 
-					if( start.selected() ){
-						start.unselect();
-					} else {
+					if( cy.selectionType() === "single" ){
+						cy.$(':selected').unselect();
 						start.select();
+					} else {
+						if( start.selected() ){
+							start.unselect();
+						} else {
+							start.select();
+						}
 					}
 
 					updateStartStyle = true;

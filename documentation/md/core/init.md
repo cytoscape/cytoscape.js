@@ -97,6 +97,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 ```js
 $("#cy").cytoscape({
+  selectionType: (isTouchDevice ? 'additive' : 'single'),
   showOverlay: false,
   layout: { /* ... */ },
   zoom: 1,
@@ -110,6 +111,10 @@ $("#cy").cytoscape({
   elements: [ /* ... */ ]
 });
 ```
+
+**`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `"additive"` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `"single"` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
+
+**`showOverlay`** : A boolean, indicating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports, as described in [`cy.layout()`](#core/visuals/cy.layout).
 
@@ -148,8 +153,6 @@ $("#cy").cytoscape({
 **`ready`** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
 
 **`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
-
-**`showOverlay`** : A boolean, indicating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
 
 **`elements`** : An array of elements specified as plain objects.
 

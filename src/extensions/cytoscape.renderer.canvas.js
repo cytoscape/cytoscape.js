@@ -930,6 +930,8 @@
 
 		r.registerBinding(r.data.container, "touchstart", function(e) {
 
+			clearTimeout( this.threeFingerSelectTimeout );
+
 			if( e.target !== r.data.link ){
 				e.preventDefault();
 			}
@@ -1463,7 +1465,7 @@
 			// no more box selection if we don't have three fingers
 			if( !e.touches[2] && cy.boxSelectionEnabled() ){
 				clearTimeout( this.threeFingerSelectTimeout );
-				this.threeFingerSelectTimeout = setTimeout(function(){
+				//this.threeFingerSelectTimeout = setTimeout(function(){
 					var newlySelected = [];
 					var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
 
@@ -1484,13 +1486,19 @@
 						}
 					}
 
-					(new $$.Collection( cy, newlySelected )).select();
+					var newlySelCol = (new $$.Collection( cy, newlySelected ));
+
+					if( cy.selectionType() === 'single' ){
+						//cy.$(':selected').unselect();
+					}
+
+					newlySelCol.select();
 					
 					if (box.length > 0) { 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
 					}
 
-				}, 100);
+				//}, 100);
 			}
 
 			if( !e.touches[1] ){
@@ -1583,11 +1591,9 @@
 						&& (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 
 					if( start.selected() ){
-						start._private.selected = false;
-						start.trigger( new $$.Event(e, {type: "unselect"}) );
+						start.unselect();
 					} else {
-						start._private.selected = true;
-						start.trigger( new $$.Event(e, {type: "select"}) );
+						start.select();
 					}
 
 					updateStartStyle = true;

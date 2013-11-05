@@ -78,7 +78,7 @@
 
 		// set selection type
 		var selType = options.selectionType;
-		if( selType === undefined || (selType !== "additive" || selType !== "single") ){
+		if( selType === undefined || (selType !== "additive" && selType !== "single") ){
 			// then set default
 
 			if( isTouch ){

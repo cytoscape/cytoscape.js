@@ -121,8 +121,9 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 
 **Visibility**
 
-* **`:visible`** : Matches elements that are visible.
+* **`:visible`** : Matches elements that are visible (i.e. `display: element` and `visibility: visible`).
 * **`:hidden`** : Matches elements that are hidden.
+* **`:transparent`** : Matches elements that are transparent (i.e. `opacity: 0`).
 
 
 **User interaction:**

@@ -311,6 +311,7 @@
 		CanvasRenderer.prototype.nodeIsDraggable = function(node) {
 			if (node._private.style["opacity"].value != 0
 				&& node._private.style["visibility"].value == "visible"
+				&& node._private.style["display"].value == "element"
 				&& !node._private.locked
 				&& node._private.grabbable) {
 	
@@ -1788,7 +1789,8 @@
 				
 				if (visibleElementsOnly) {
 					if (nodes[i]._private.style["opacity"].value != 0
-						&& nodes[i]._private.style["visibility"].value == "visible") {
+						&& nodes[i]._private.style["visibility"].value == "visible"
+						&& nodes[i]._private.style["display"].value == "element") {
 						
 						near.push(nodes[i]);	
 					}
@@ -1917,10 +1919,13 @@
 					
 					if (edges[i]._private.style["opacity"].value != 0
 						&& edges[i]._private.style["visibility"].value == "visible"
+						&& edges[i]._private.style["display"].value == "element"
 						&& source._private.style["opacity"].value != 0
 						&& source._private.style["visibility"].value == "visible"
+						&& source._private.style["display"].value == "element"
 						&& target._private.style["opacity"].value != 0
-						&& target._private.style["visibility"].value == "visible") {
+						&& target._private.style["visibility"].value == "visible"
+						&& target._private.style["display"].value == "element") {
 						
 						near.push(edges[i]);	
 					}
@@ -2061,7 +2066,7 @@
 			height: node._private.autoHeight};
 
 		// check node visibility
-		if (node._private.style["visibility"].value != "visible")
+		if (node._private.style["visibility"].value != "visible" || node._private.style["display"].value != "element")
 		{
 			// do not calculate bounds for invisible compounds,
 			// just return last calculated values
@@ -2073,7 +2078,7 @@
 		// find out visible children
 		for (var i=0; i < children.size(); i++)
 		{
-			if (children[i]._private.style["visibility"].value == "visible")
+			if (children[i]._private.style["visibility"].value == "visible" && children[i]._private.style["display"].value == "element")
 			{
 				visibleChildren.push(children[i]);
 			}
@@ -3003,6 +3008,10 @@
 	// Draw edge
 	CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
 
+		if( !edge.visible() ){
+			return;
+		}
+
 		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
 		var startNode, endNode;
@@ -3010,9 +3019,14 @@
 		startNode = edge.source()[0];
 		endNode = edge.target()[0];
 		
-		if (edge._private.style["visibility"].value != "visible"
+		if ( 
+			   edge._private.style["visibility"].value != "visible"
+			|| edge._private.style["display"].value != "element"
 			|| startNode._private.style["visibility"].value != "visible"
-			|| endNode._private.style["visibility"].value != "visible") {
+			|| startNode._private.style["display"].value != "element"
+			|| endNode._private.style["visibility"].value != "visible"
+			|| endNode._private.style["display"].value != "element"
+		){
 			return;
 		}
 		
@@ -3428,11 +3442,11 @@
 	// Draw edge text
 	CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
 	
-		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
-	
-		if (edge._private.style["visibility"].value != "visible") {
+		if( !edge.visible() ){
 			return;
 		}
+
+		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
 		var computedSize = edge._private.style["font-size"].pxValue * edge.cy().zoom();
 		var minSize = edge._private.style["min-zoomed-font-size"].pxValue;
@@ -3482,7 +3496,7 @@
 
 		var nodeWidth, nodeHeight;
 		
-		if ( node._private.style["visibility"].value != "visible" ) {
+		if ( !node.visible() ) {
 			return;
 		}
 
@@ -3650,7 +3664,7 @@
 	// Draw node text
 	CanvasRenderer.prototype.drawNodeText = function(context, node) {
 		
-		if (node._private.style["visibility"].value != "visible") {
+		if ( !node.visible() ) {
 			return;
 		}
 
@@ -3794,7 +3808,14 @@
 		var pairIds = [];
 		
 		var pairId;
-		for (var i = 0; i < edges.length; i++) {
+		for (var i = 0; i < edges.length; i++){
+
+			// ignore edges who are not to be displayed
+			// they shouldn't take up space
+			if( edges[i]._private.style.display.value === 'none' ){
+				continue;
+			}
+
 			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
 				edges[i]._private.data.target + '-' + edges[i]._private.data.source :
 				edges[i]._private.data.source + '-' + edges[i]._private.data.target ;

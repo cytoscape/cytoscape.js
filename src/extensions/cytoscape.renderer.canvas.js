@@ -6190,6 +6190,8 @@
 				return [arcIntersections[0], arcIntersections[1]];
 			}
 		}
+
+		return []; // if nothing
 	}
 	
 	CanvasRenderer.prototype.roundRectangleIntersectBox = function(

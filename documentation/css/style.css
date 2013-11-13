@@ -53,18 +53,16 @@ body {
 	z-index: 1000;
 }
 
-#cy-hide,
-#cy-show {
+#cy-hide {
 	right: 0;
 }
 
 #cy-show {
-	bottom: 0;
-}
-
-#cy-show {
-	background: #fff;
+	right: 0.75em;
+	bottom: 0.75em;
+	background: rgba(255, 255, 255, 0.66);
 	border-radius: 0;
+	border: 1px solid #ccc;
 	display: none;
 }
 

@@ -8,16 +8,7 @@
 		
 			<!-- library dependencies -->
 			<script type="text/javascript" src="../lib/arbor.js"></script>
-			<script type="text/javascript" src="../lib/springy.js"></script>
 
-
-			<!-- uncomment for svg renderer -->
-			<!--
-			<script type="text/javascript" src="../lib/jquery.svg.js"></script>
-			<script type="text/javascript" src="../lib/jquery.color.js"></script>
-			<script type="text/javascript" src="../lib/2D.js"></script>
-			<script type="text/javascript" src="../lib/jquery.mousewheel.js"></script>
-			-->
 
 			<!-- the core as split up dev scripts -->
 			<script type="text/javascript" src="../src/namespace.js"></script>
@@ -58,9 +49,6 @@
 			<!-- extensions -->
 			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.null.js"></script>
 			
-			<!--
-			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.svg.js"></script>
-			-->
 			<script type="text/javascript" src="../src/extensions/cytoscape.renderer.canvas.js"></script>
 
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.null.js"></script>
@@ -71,14 +59,13 @@
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.arbor.js"></script>
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.circle.js"></script>
 			<script type="text/javascript" src="../src/extensions/cytoscape.layout.breadthfirst.js"></script>
+			<script type="text/javascript" src="../src/extensions/cytoscape.layout.cose.js"></script>
 		<!-- -->
 		
-		<!-- cytoweb minified script (or just use this) --1>
-			<script type="text/javascript" src="../build/cytoscape.all.min.js"></script>
+		<!-- minified script (or just use this) --1>
+			<script type="text/javascript" src="../build/cytoscape.min.js"></script>
 			<script type="text/javascript" src="../lib/arbor.js"></script>
-			<script type="text/javascript" src="../build/cytoscape.layout.arbor.min.js"></script>
-			<script type="text/javascript" src="../build/cytoscape.layout.springy.min.js"></script>
-		<1!-- -->
+		<!-- -->
 		
 		<script type="text/javascript" src="../src/plugins/jquery.cytoscape-edgehandles.js"></script>
 		<script type="text/javascript" src="../src/plugins/jquery.cytoscape-panzoom.js"></script>
@@ -134,6 +121,7 @@
 	    		<option value="arbor" selected>Arbor</option>
 	    		<option value="circle">Circle</option>
 	    		<option value="breadthfirst">Breadth first</option>
+	    		<option value="cose">CoSE</option>
 	    		<option value="null">Null</option>
 	    	</select>
 	    	<button id="layout-button">Apply</button>
@@ -259,6 +247,7 @@
             <button id="compound-hide-selected-button">Hide selected</button>
             <button id="compound-show-all-button">Show all</button><br />
             <button id="set-random-style">Randomize style (selected)</button>
+            <button id="run-cose">Run CoSE</button>
 
 	    </div>
 	</body>

@@ -53,7 +53,7 @@
 		
 		this._private = {
 			ready: false, // whether ready has been triggered
-			initrender: false // has initrender has been triggered
+			initrender: false, // has initrender has been triggered
 			instanceId: reg.id, // the registered instance id
 			options: options, // cached options
 			elements: [], // array of elements

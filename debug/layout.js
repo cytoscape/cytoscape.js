@@ -23,4 +23,16 @@ $(function(){
 		
 	});
 
+	$("#cytoscape2").cy(function(){
+		var cy2 = this;
+
+		$("#run-cose").on("click", function(){
+			cy2.layout({
+				name: 'cose'
+			});
+		});
+
+		
+	});
+
 });

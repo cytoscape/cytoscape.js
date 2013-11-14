@@ -53,6 +53,7 @@
 		
 		this._private = {
 			ready: false, // whether ready has been triggered
+			initrender: false // has initrender has been triggered
 			instanceId: reg.id, // the registered instance id
 			options: options, // cached options
 			elements: [], // array of elements
@@ -112,6 +113,9 @@
 		// trigger the passed function for the `initrender` event
 		if( options.initrender ){
 			cy.on('initrender', options.initrender);
+			cy.on('initrender', function(){
+				cy._private.initrender = true;
+			});
 		}
 
 		// initial load
@@ -141,6 +145,10 @@
 	$$.fn.core({
 		ready: function(){
 			return this._private.ready;
+		},
+
+		initrender: function(){
+			return this._private.initrender;
 		},
 
 		registered: function(){

@@ -141,7 +141,7 @@ Arbor does some automatic path finding because it uses web workers, and so it mu
 ```
 
 
-*The `CoSE` (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.*<br>
+*The `cose` (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.*<br>
 It was implemented by Gerardo Huck as part of Google Summer of Code 2013.<br>
 Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz.<br>
 Based on the article "A layout algorithm for undirected compound graphs" by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.<br>

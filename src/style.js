@@ -235,6 +235,7 @@
 
 		// each visual style property has a type and needs to be validated according to it
 		$$.style.types = {
+			percent: { number: true, min: 0, max: 100, units: "%" },
 			zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
 			nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
 			size: { number: true, min: 0, enums: ["auto"] },
@@ -303,6 +304,38 @@
 			{ name: "background-repeat", type: t.bgRepeat },
 			{ name: "background-size-x", type: t.bgSize },
 			{ name: "background-size-y", type: t.bgSize },
+			{ name: "pie-1-background-color", type: t.color },
+			{ name: "pie-2-background-color", type: t.color },
+			{ name: "pie-3-background-color", type: t.color },
+			{ name: "pie-4-background-color", type: t.color },
+			{ name: "pie-5-background-color", type: t.color },
+			{ name: "pie-6-background-color", type: t.color },
+			{ name: "pie-7-background-color", type: t.color },
+			{ name: "pie-8-background-color", type: t.color },
+			{ name: "pie-9-background-color", type: t.color },
+			{ name: "pie-10-background-color", type: t.color },
+			{ name: "pie-11-background-color", type: t.color },
+			{ name: "pie-12-background-color", type: t.color },
+			{ name: "pie-13-background-color", type: t.color },
+			{ name: "pie-14-background-color", type: t.color },
+			{ name: "pie-15-background-color", type: t.color },
+			{ name: "pie-16-background-color", type: t.color },
+			{ name: "pie-1-background-size", type: t.percent },
+			{ name: "pie-2-background-size", type: t.percent },
+			{ name: "pie-3-background-size", type: t.percent },
+			{ name: "pie-4-background-size", type: t.percent },
+			{ name: "pie-5-background-size", type: t.percent },
+			{ name: "pie-6-background-size", type: t.percent },
+			{ name: "pie-7-background-size", type: t.percent },
+			{ name: "pie-8-background-size", type: t.percent },
+			{ name: "pie-9-background-size", type: t.percent },
+			{ name: "pie-10-background-size", type: t.percent },
+			{ name: "pie-11-background-size", type: t.percent },
+			{ name: "pie-12-background-size", type: t.percent },
+			{ name: "pie-13-background-size", type: t.percent },
+			{ name: "pie-14-background-size", type: t.percent },
+			{ name: "pie-15-background-size", type: t.percent },
+			{ name: "pie-16-background-size", type: t.percent },
 			{ name: "border-color", type: t.color },
 			{ name: "border-opacity", type: t.zeroOneNumber },
 			{ name: "border-width", type: t.size },
@@ -408,6 +441,38 @@
 					"padding-left": 0,
 					"padding-right": 0,
 					"shape": "ellipse",
+					"pie-1-background-color": "black",
+					"pie-1-background-size": "0%",
+					"pie-2-background-color": "black",
+					"pie-2-background-size": "0%",
+					"pie-3-background-color": "black",
+					"pie-3-background-size": "0%",
+					"pie-4-background-color": "black",
+					"pie-4-background-size": "0%",
+					"pie-5-background-color": "black",
+					"pie-5-background-size": "0%",
+					"pie-6-background-color": "black",
+					"pie-6-background-size": "0%",
+					"pie-7-background-color": "black",
+					"pie-7-background-size": "0%",
+					"pie-8-background-color": "black",
+					"pie-8-background-size": "0%",
+					"pie-9-background-color": "black",
+					"pie-9-background-size": "0%",
+					"pie-10-background-color": "black",
+					"pie-10-background-size": "0%",
+					"pie-11-background-color": "black",
+					"pie-11-background-size": "0%",
+					"pie-12-background-color": "black",
+					"pie-12-background-size": "0%",
+					"pie-13-background-color": "black",
+					"pie-13-background-size": "0%",
+					"pie-14-background-color": "black",
+					"pie-14-background-size": "0%",
+					"pie-15-background-color": "black",
+					"pie-15-background-size": "0%",
+					"pie-16-background-color": "black",
+					"pie-16-background-size": "0%",
 
 					// edge props
 					"source-arrow-shape": "none",
@@ -579,18 +644,26 @@
 		// check the type and return the appropriate object
 		if( type.number ){
 			var units;
+			var implicitUnit = "px"; // not set => px
+
+			if( type.units ){ // use specified units if set
+				units = type.units;
+			}
+
 			if( !type.unitless ){
 				if( valueIsString ){
-					var match = value.match( "^(" + $$.util.regex.number + ")(px|em" + (type.allowPercent ? "|\\%" : "") + ")?" + "$" );
+					var unitsRegex = "px|em" + (type.allowPercent ? "|\\%" : "");
+					if( units ){ unitsRegex = units; } // only allow explicit units if so set 
+					var match = value.match( "^(" + $$.util.regex.number + ")(" + unitsRegex + ")?" + "$" );
 					
 					if( !type.enums ){
 						if( !match ){ return null; } // no match => not a number
 
 						value = match[1];
-						units = match[2] || "px";
+						units = match[2] || implicitUnit;
 					}
-				} else {
-					units = "px"; // implicitly px if unspecified
+				} else if( !units ) {
+					units = implicitUnit; // implicitly px if unspecified
 				}
 			}
 

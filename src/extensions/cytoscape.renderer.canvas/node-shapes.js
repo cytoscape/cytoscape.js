@@ -2,7 +2,6 @@
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var renderer = CanvasRenderer.prototype;
-	var rendFunc = CanvasRenderer.prototype;
 
 	// Node shape contract:
 	//

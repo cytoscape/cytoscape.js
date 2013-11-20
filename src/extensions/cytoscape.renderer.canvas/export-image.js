@@ -26,4 +26,8 @@
 		return canvas.toDataURL("image/png");
 	};
 
+	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+		this.redraw( cxt, true, zoom, pan );
+	};
+
 })( cytoscape );

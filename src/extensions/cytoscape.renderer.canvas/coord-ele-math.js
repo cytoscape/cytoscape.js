@@ -613,6 +613,37 @@
 		return shape;
 	};
 
+	/**
+	 * Updates bounds of all compounds in the given element list.
+	 * Assuming the nodes are sorted top down, i.e. a parent node
+	 * always has a lower index than its all children.
+	 *
+	 * @param elements  set of elements containing both nodes and edges
+	 */
+	CanvasRenderer.prototype.updateAllCompounds = function(elements)
+	{
+		// traverse in reverse order, since rendering is top-down,
+		// but we need to calculate bounds bottom-up
+		for(var i = elements.length - 1; i >= 0; i--)
+		{
+			if (elements[i].isNode() &&
+			    (elements[i]._private.style["width"].value == "auto" ||
+			     elements[i]._private.style["height"].value == "auto") &&
+			    elements[i].children().length > 0)
+			{
+				var node = elements[i];
+				var bounds = this.calcCompoundBounds(node);
+
+				//console.log("%s : %o", node._private.data.id, bounds);
+				node._private.position.x = bounds.x;
+				node._private.position.y = bounds.y;
+				node._private.autoWidth = bounds.width;
+				node._private.autoHeight = bounds.height;
+			}
+		}
+
+	};
+
 	CanvasRenderer.prototype.getNodePadding = function(node)
 	{
 		var left = node._private.style["padding-left"].value;

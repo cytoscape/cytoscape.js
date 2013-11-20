@@ -647,6 +647,22 @@
 	};
 
 	CanvasRenderer.prototype.zOrderSort = function(a, b) {
+		var elementDepth = function(ele) {
+			if (ele._private.group == "nodes")
+			{
+				return ele.parents().size();
+			}
+			else if (ele._private.group == "edges")
+			{
+				return Math.max(ele.source()[0].parents().size(),
+				                ele.target()[0].parents().size());
+			}
+			else
+			{
+				return 0;
+			}
+		};
+
 		var result = a._private.style["z-index"].value
 			- b._private.style["z-index"].value;
 
@@ -698,6 +714,40 @@
 
 		// return zero if z-index values are not the same
 		return 0;
+	};
+
+	CanvasRenderer.prototype.getCachedZSortedEles = function(){
+		var lastNodes = this.lastZOrderCachedNodes;
+		var lastEdges = this.lastZOrderCachedEdges;
+		var nodes = this.getCachedNodes();
+		var edges = this.getCachedEdges();
+		var eles = [];
+
+		if( !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
+			//console.time('cachezorder')
+			
+			for( var i = 0; i < nodes.length; i++ ){
+				eles.push( nodes[i] );
+			}
+
+			for( var i = 0; i < edges.length; i++ ){
+				eles.push( edges[i] );
+			}
+
+			eles.sort( this.zOrderSort );
+			this.cachedZSortedEles = eles;
+			//console.log('make cache')
+
+			//console.timeEnd('cachezorder')
+		} else {
+			eles = this.cachedZSortedEles;
+			//console.log('read cache')
+		}
+
+		this.lastZOrderCachedNodes = nodes;
+		this.lastZOrderCachedEdges = edges;
+
+		return eles;
 	};
 
 

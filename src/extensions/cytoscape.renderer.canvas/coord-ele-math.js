@@ -781,6 +781,363 @@
 		return eles;
 	};
 
+	// Find edge control points
+	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+		var hashTable = {}; var cy = this.data.cy;
+		var pairIds = [];
+		
+		var pairId;
+		for (var i = 0; i < edges.length; i++){
+
+			// ignore edges who are not to be displayed
+			// they shouldn't take up space
+			if( edges[i]._private.style.display.value === 'none' ){
+				continue;
+			}
+
+			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
+				edges[i]._private.data.target + '-' + edges[i]._private.data.source :
+				edges[i]._private.data.source + '-' + edges[i]._private.data.target ;
+
+			if (hashTable[pairId] == undefined) {
+				hashTable[pairId] = [];
+			}
+			
+			hashTable[pairId].push( edges[i] );
+			pairIds.push( pairId );
+		}
+		var src, tgt;
+		
+		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
+		for (var p = 0; p < pairIds.length; p++) {
+			pairId = pairIds[p];
+		
+			src = cy.getElementById( hashTable[pairId][0]._private.data.source );
+			tgt = cy.getElementById( hashTable[pairId][0]._private.data.target );
+
+			var midPointX = (src._private.position.x + tgt._private.position.x) / 2;
+			var midPointY = (src._private.position.y + tgt._private.position.y) / 2;
+			
+			var displacementX, displacementY;
+			
+			if (hashTable[pairId].length > 1) {
+				displacementX = tgt._private.position.y - src._private.position.y;
+				displacementY = src._private.position.x - tgt._private.position.x;
+				
+				var displacementLength = Math.sqrt(displacementX * displacementX
+					+ displacementY * displacementY);
+				
+				displacementX /= displacementLength;
+				displacementY /= displacementLength;
+			}
+			
+			var edge;
+			
+			for (var i = 0; i < hashTable[pairId].length; i++) {
+				edge = hashTable[pairId][i];
+				
+				var edgeIndex1 = edge._private.rscratch.lastEdgeIndex;
+				var edgeIndex2 = i;
+
+				var numEdges1 = edge._private.rscratch.lastNumEdges;
+				var numEdges2 = hashTable[pairId].length;
+
+				var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
+				var srcX2 = src._private.position.x;
+				var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
+				var srcY2 = src._private.position.y;
+				var srcW1 = edge._private.rscratch.lastSrcCtlPtW;
+				var srcW2 = src.outerWidth();
+				var srcH1 = edge._private.rscratch.lastSrcCtlPtH;
+				var srcH2 = src.outerHeight();
+
+				var tgtX1 = edge._private.rscratch.lastTgtCtlPtX;
+				var tgtX2 = tgt._private.position.x;
+				var tgtY1 = edge._private.rscratch.lastTgtCtlPtY;
+				var tgtY2 = tgt._private.position.y;
+				var tgtW1 = edge._private.rscratch.lastTgtCtlPtW;
+				var tgtW2 = tgt.outerWidth();
+				var tgtH1 = edge._private.rscratch.lastTgtCtlPtH;
+				var tgtH2 = tgt.outerHeight();
+
+				if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
+				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
+				&&  edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 ){
+					// console.log('edge ctrl pt cache HIT')
+					continue; // then the control points haven't changed and we can skip calculating them
+				} else {
+					var rs = edge._private.rscratch;
+
+					rs.lastSrcCtlPtX = srcX2;
+					rs.lastSrcCtlPtY = srcY2;
+					rs.lastSrcCtlPtW = srcW2;
+					rs.lastSrcCtlPtH = srcH2;
+					rs.lastTgtCtlPtX = tgtX2;
+					rs.lastTgtCtlPtY = tgtY2;
+					rs.lastTgtCtlPtW = tgtW2;
+					rs.lastTgtCtlPtH = tgtH2;
+					rs.lastEdgeIndex = edgeIndex2;
+					rs.lastNumEdges = numEdges2;
+					// console.log('edge ctrl pt cache MISS')
+				}
+
+				// Self-edge
+				if (src._private.data.id == tgt._private.data.id) {
+					var stepSize = edge._private.style["control-point-step-size"].pxValue;
+						
+					edge._private.rscratch.edgeType = "self";
+					
+					// New -- fix for large nodes
+					edge._private.rscratch.cp2ax = src._private.position.x;
+					edge._private.rscratch.cp2ay = src._private.position.y
+						- (1 + Math.pow(this.getNodeHeight(src), 1.12) / 100) * stepSize * (i / 3 + 1);
+					
+					edge._private.rscratch.cp2cx = src._private.position.x
+						- (1 + Math.pow(this.getNodeWidth(src), 1.12) / 100) * stepSize * (i / 3 + 1);
+					edge._private.rscratch.cp2cy = src._private.position.y;
+					
+					edge._private.rscratch.selfEdgeMidX =
+						(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
+				
+					edge._private.rscratch.selfEdgeMidY =
+						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
+					
+				// Straight edge
+				} else if (hashTable[pairId].length % 2 == 1
+					&& i == Math.floor(hashTable[pairId].length / 2)) {
+					
+					edge._private.rscratch.edgeType = "straight";
+					
+				// Bezier edge
+				} else {
+					var stepSize = edge._private.style["control-point-step-size"].value;
+					var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+					
+					edge._private.rscratch.edgeType = "bezier";
+					
+					edge._private.rscratch.cp2x = midPointX
+						+ displacementX * distanceFromMidpoint;
+					edge._private.rscratch.cp2y = midPointY
+						+ displacementY * distanceFromMidpoint;
+					
+					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
+				}
+			}
+		}
+		
+		return hashTable;
+	}
+
+	CanvasRenderer.prototype.findEndpoints = function(edge) {
+		var intersect;
+
+		var source = edge.source()[0];
+		var target = edge.target()[0];
+		
+//		var sourceRadius = Math.max(edge.source()[0]._private.style["width"].value,
+//			edge.source()[0]._private.style["height"].value);
+
+		var sourceRadius = Math.max(this.getNodeWidth(source),
+			this.getNodeHeight(source));
+		
+//		var targetRadius = Math.max(edge.target()[0]._private.style["width"].value,
+//			edge.target()[0]._private.style["height"].value);
+
+		var targetRadius = Math.max(this.getNodeWidth(target),
+			this.getNodeHeight(target));
+
+		sourceRadius = 0;
+		targetRadius /= 2;
+		
+		var start = [edge.source().position().x, edge.source().position().y];
+		var end = [edge.target().position().x, edge.target().position().y];
+		
+		if (edge._private.rscratch.edgeType == "self") {
+			
+			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
+			
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
+				target._private.position.x,
+				target._private.position.y,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
+				cp[0], //halfPointX,
+				cp[1], //halfPointY
+				target._private.style["border-width"].value / 2
+			);
+			
+			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+			
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
+			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			
+			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
+
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
+				source._private.position.x,
+				source._private.position.y,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
+				cp[0], //halfPointX,
+				cp[1], //halfPointY
+				source._private.style["border-width"].value / 2
+			);
+			
+			var arrowStart = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
+			var edgeStart = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+			
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
+			
+		} else if (edge._private.rscratch.edgeType == "straight") {
+		
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
+				target._private.position.x,
+				target._private.position.y,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
+				source.position().x,
+				source.position().y,
+				target._private.style["border-width"].value / 2);
+				
+			if (intersect.length == 0) {
+				edge._private.rscratch.noArrowPlacement = true;
+	//			return;
+			} else {
+				edge._private.rscratch.noArrowPlacement = false;
+			}
+			
+			var arrowEnd = $$.math.shortenIntersection(intersect,
+				[source.position().x, source.position().y],
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+			var edgeEnd = $$.math.shortenIntersection(intersect,
+				[source.position().x, source.position().y],
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
+			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+		
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
+				source._private.position.x,
+				source._private.position.y,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
+				target.position().x,
+				target.position().y,
+				source._private.style["border-width"].value / 2);
+			
+			if (intersect.length == 0) {
+				edge._private.rscratch.noArrowPlacement = true;
+	//			return;
+			} else {
+				edge._private.rscratch.noArrowPlacement = false;
+			}
+			
+			/*
+			console.log("1: "
+				+ CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value],
+					edge._private.style["source-arrow-shape"].value);
+			*/
+			var arrowStart = $$.math.shortenIntersection(intersect,
+				[target.position().x, target.position().y],
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
+			var edgeStart = $$.math.shortenIntersection(intersect,
+				[target.position().x, target.position().y],
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
+						
+		} else if (edge._private.rscratch.edgeType == "bezier") {
+			
+			var cp = [edge._private.rscratch.cp2x, edge._private.rscratch.cp2y];
+			
+			// Point at middle of Bezier
+			var halfPointX = start[0] * 0.25 + end[0] * 0.25 + cp[0] * 0.5;
+			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
+			
+			intersect = CanvasRenderer.nodeShapes[
+				this.getNodeShape(target)].intersectLine(
+				target._private.position.x,
+				target._private.position.y,
+				//target._private.style["width"].value,
+				//target._private.style["height"].value,
+				this.getNodeWidth(target),
+				this.getNodeHeight(target),
+				cp[0], //halfPointX,
+				cp[1], //halfPointY
+				target._private.style["border-width"].value / 2
+			);
+			
+			/*
+			console.log("2: "
+				+ CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value],
+					edge._private.style["source-arrow-shape"].value);
+			*/
+			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+			
+			edge._private.rscratch.endX = edgeEnd[0];
+			edge._private.rscratch.endY = edgeEnd[1];
+			
+			edge._private.rscratch.arrowEndX = arrowEnd[0];
+			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			
+			intersect = CanvasRenderer.nodeShapes[
+				this.getNodeShape(source)].intersectLine(
+				source._private.position.x,
+				source._private.position.y,
+				//source._private.style["width"].value,
+				//source._private.style["height"].value,
+				this.getNodeWidth(source),
+				this.getNodeHeight(source),
+				cp[0], //halfPointX,
+				cp[1], //halfPointY
+				source._private.style["border-width"].value / 2
+			);
+			
+			var arrowStart = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
+			var edgeStart = $$.math.shortenIntersection(intersect, cp,
+				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+			
+			edge._private.rscratch.startX = edgeStart[0];
+			edge._private.rscratch.startY = edgeStart[1];
+			
+			edge._private.rscratch.arrowStartX = arrowStart[0];
+			edge._private.rscratch.arrowStartY = arrowStart[1];
+			
+		} else if (edge._private.rscratch.isArcEdge) {
+			return;
+		}
+	}
 
 
 })( cytoscape );

@@ -2,6 +2,46 @@
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
+	// Resize canvas
+	CanvasRenderer.prototype.matchCanvasSize = function(container) {
+		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
+		
+		var canvas, canvasWidth = width, canvasHeight = height;
+
+		if ('devicePixelRatio' in window) {
+			canvasWidth *= devicePixelRatio;
+			canvasHeight *= devicePixelRatio;
+		}
+
+		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
+
+			canvas = data.canvases[i];
+			
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+				
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
+
+				canvas.style.width = width + 'px';
+				canvas.style.height = height + 'px';
+			}
+		}
+		
+		for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
+			
+			canvas = data.bufferCanvases[i];
+			
+			if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+				
+				canvas.width = canvasWidth;
+				canvas.height = canvasHeight;
+			}
+		}
+
+		this.data.overlay.style.width = width + 'px';
+		this.data.overlay.style.height = height + 'px';
+	}
+
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll, forcedZoom, forcedPan ) {
 		var r = this;
@@ -368,5 +408,5 @@
 		// end on thread ready
 		}, 0);
 	};
-	
+
 })( cytoscape );

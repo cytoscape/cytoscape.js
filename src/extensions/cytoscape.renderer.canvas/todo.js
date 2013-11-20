@@ -6,16 +6,15 @@
 
 (function($$) {
 
-	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
-	var time = function() { return Date.now(); } ; 
-	var rendFunc = CanvasRenderer.prototype;
-	var panOrBoxSelectDelay = 400;
-
-	// Canvas layer constants
-	var CANVAS_LAYERS = 5, SELECT_BOX = 0, DRAG = 2, OVERLAY = 3, NODE = 4, BUFFER_COUNT = 2;
-	
 	function CanvasRenderer(options) {
 		
+		CanvasRenderer.CANVAS_LAYERS = 5;
+		CanvasRenderer.SELECT_BOX = 0;
+		CanvasRenderer.DRAG = 2;
+		CanvasRenderer.OVERLAY = 3;
+		CanvasRenderer.NODE = 4;
+		CanvasRenderer.BUFFER_COUNT = 2;
+
 		this.options = options;
 
 		this.data = {
@@ -23,11 +22,11 @@
 			select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
 			renderer: this, cy: options.cy, container: options.cy.container(),
 			
-			canvases: new Array(CANVAS_LAYERS),
-			canvasRedrawReason: new Array(CANVAS_LAYERS),
-			canvasNeedsRedraw: new Array(CANVAS_LAYERS),
+			canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
+			canvasRedrawReason: new Array(CanvasRenderer.CANVAS_LAYERS),
+			canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
 			
-			bufferCanvases: new Array(BUFFER_COUNT)
+			bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT)
 
 		};
 		
@@ -62,23 +61,23 @@
 		
 		this.init();
 		
-		for (var i = 0; i < CANVAS_LAYERS; i++) {
+		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
 			this.data.canvases[i] = document.createElement("canvas");
 			this.data.canvases[i].style.position = "absolute";
 			this.data.canvases[i].setAttribute("data-id", "layer" + i);
-			this.data.canvases[i].style.zIndex = String(CANVAS_LAYERS - i);
+			this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
 			this.data.container.appendChild(this.data.canvases[i]);
 			
 			this.data.canvasRedrawReason[i] = new Array();
 			this.data.canvasNeedsRedraw[i] = false;
 		}
 
-		this.data.canvases[NODE].setAttribute("data-id", "layer" + NODE + '-node');
-		this.data.canvases[SELECT_BOX].setAttribute("data-id", "layer" + SELECT_BOX + '-selectbox');
-		this.data.canvases[DRAG].setAttribute("data-id", "layer" + DRAG + '-drag');
-		this.data.canvases[OVERLAY].setAttribute("data-id", "layer" + OVERLAY + '-overlay');
+		this.data.canvases[CanvasRenderer.NODE].setAttribute("data-id", "layer" + CanvasRenderer.NODE + '-node');
+		this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute("data-id", "layer" + CanvasRenderer.SELECT_BOX + '-selectbox');
+		this.data.canvases[CanvasRenderer.DRAG].setAttribute("data-id", "layer" + CanvasRenderer.DRAG + '-drag');
+		this.data.canvases[CanvasRenderer.OVERLAY].setAttribute("data-id", "layer" + CanvasRenderer.OVERLAY + '-overlay');
 		
-		for (var i = 0; i < BUFFER_COUNT; i++) {
+		for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
 			this.data.bufferCanvases[i].style.position = "absolute";
 			this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
@@ -121,6 +120,9 @@
 		this.load();
 	}
 
+	CanvasRenderer.panOrBoxSelectDelay = 400;
+	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+
 	CanvasRenderer.prototype.notify = function(params) {
 		if ( params.type == "destroy" ){
 			this.destroy();
@@ -136,12 +138,12 @@
 		}
 
 		if (params.type == "viewport") {
-			this.data.canvasNeedsRedraw[SELECT_BOX] = true;
-			this.data.canvasRedrawReason[SELECT_BOX].push("viewchange");
+			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+			this.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("viewchange");
 		}
 		
-		this.data.canvasNeedsRedraw[DRAG] = true; this.data.canvasRedrawReason[DRAG].push("notify");
-		this.data.canvasNeedsRedraw[NODE] = true; this.data.canvasRedrawReason[NODE].push("notify");
+		this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; this.data.canvasRedrawReason[CanvasRenderer.DRAG].push("notify");
+		this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; this.data.canvasRedrawReason[CanvasRenderer.NODE].push("notify");
 
 		this.redraws++;
 		this.redraw();
@@ -299,8 +301,8 @@
 
 		// auto resize
 		r.registerBinding(window, "resize", function(e) { 
-			r.data.canvasNeedsRedraw[NODE] = true;
-			r.data.canvasNeedsRedraw[OVERLAY] = true;
+			r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+			r.data.canvasNeedsRedraw[CanvasRenderer.OVERLAY] = true;
 			r.matchCanvasSize( r.data.container );
 			r.redraw();
 		}, true);
@@ -404,8 +406,8 @@
 							.trigger(new $$.Event(e, {type: "vmousedown"}))
 						;
 						
-						// r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
-						// r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
+						// r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("Single node moved to drag layer"); 
+						// r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("Single node moved to drag layer");
 						
 					} else if (near == null) {
 						cy
@@ -423,7 +425,7 @@
 				// Selection box
 				if ( near == null || near.isEdge() ) {
 					select[4] = 1;
-					var timeUntilActive = Math.max( 0, panOrBoxSelectDelay - (+new Date - r.hoverData.downTime) );
+					var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date - r.hoverData.downTime) );
 
 					clearTimeout( r.bgActiveTimeout );
 					r.bgActiveTimeout = setTimeout(function(){
@@ -436,8 +438,8 @@
 							y: pos[1]
 						};
 
-						r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-						r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+						r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+						r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("bgactive");
 
 						r.redraw();
 					}, timeUntilActive);
@@ -531,7 +533,7 @@
 
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && (down == null || down.isEdge())
-					&& ( !cy.boxSelectionEnabled() || +new Date - r.hoverData.downTime >= panOrBoxSelectDelay )
+					&& ( !cy.boxSelectionEnabled() || +new Date - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
 					&& cy.panningEnabled() ) {
 				
@@ -577,17 +579,17 @@
 					;
 
 					if (select[2] == select[0] && select[3] == select[1]) {
-						r.data.canvasNeedsRedraw[NODE] = true;
-						r.data.canvasRedrawReason[NODE].push("Node(s) and edge(s) moved to drag layer");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+						r.data.canvasRedrawReason[CanvasRenderer.NODE].push("Node(s) and edge(s) moved to drag layer");
 					}
 					
-					r.data.canvasNeedsRedraw[DRAG] = true;
-					r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
+					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+					r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("Nodes dragged");
 				}
 				
 				if( cy.boxSelectionEnabled() ){
-					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-					r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+					r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("Mouse moved, redraw selection box");
 				}
 
 				// prevent the dragging from triggering text selection on the page
@@ -667,7 +669,7 @@
 	//				console.log("unselect", time() - a);
 					
 					if (draggedElements.length > 0) {
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("De-select");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("De-select");
 					}
 					
 					r.dragData.possibleDragElements = draggedElements = [];
@@ -736,7 +738,7 @@
 
 						updateAncestorsInDragLayer(near, false);
 						
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("sglslct");
 						
 					}
 				// Ungrab single drag
@@ -790,7 +792,7 @@
 					}
 					
 					if (box.length > 0) { 
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("Selection");
 					}
 				}
 				
@@ -821,15 +823,15 @@
 					if( down){ down.trigger(freeEvent); }
 
 	//				draggedElements = r.dragData.possibleDragElements = [];
-					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Node/nodes back from drag");
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Node/nodes back from drag");
+					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("Node/nodes back from drag");
+					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("Node/nodes back from drag");
 				}
 			
 			} // else not right mouse
 
 			select[4] = 0; r.hoverData.down = null;
 			
-			r.data.canvasNeedsRedraw[SELECT_BOX] = true; r.data.canvasRedrawReason[SELECT_BOX].push("Mouse up, selection box gone");
+			r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true; r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("Mouse up, selection box gone");
 			
 //			console.log("mu", pos[0], pos[1]);
 //			console.log("ss", select);
@@ -870,7 +872,7 @@
 				clearTimeout(r.data.wheelTimeout);
 				r.data.wheelTimeout = setTimeout(function(){
 					r.data.wheel = false;
-					r.data.canvasNeedsRedraw[NODE] = true;
+					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
 					r.redraw();
 				}, 100);
 			}
@@ -1111,8 +1113,8 @@
 						y: pos[1]
 					};
 
-					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-					r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+					r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("bgactive");
 
 				}
 				
@@ -1126,13 +1128,13 @@
 				};
 				
 				r.touchData.singleTouchMoved = false;
-				r.touchData.singleTouchStartTime = time();
+				r.touchData.singleTouchStartTime = +new Date;
 				
 				var tapHoldTimeout = setTimeout(function() {
 					if (r.touchData.singleTouchMoved == false
 							// This time double constraint prevents multiple quick taps
 							// followed by a taphold triggering multiple taphold events
-							&& time() - r.touchData.singleTouchStartTime > 250) {
+							&& (+new Date) - r.touchData.singleTouchStartTime > 250) {
 						if (r.touchData.start) {
 							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
 						} else {
@@ -1181,7 +1183,7 @@
 					r.touchData.cxt = false;
 					if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
 					r.data.bgActivePosistion = undefined;
-					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
 					var cxtEvt = new $$.Event(e, {type: "cxttapend"});
 					if( r.touchData.start ){
@@ -1196,7 +1198,7 @@
 			if( capture && r.touchData.cxt ){
 				var cxtEvt = new $$.Event(e, {type: "cxtdrag"});
 				r.data.bgActivePosistion = undefined;
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
 				if( r.touchData.start ){
 					r.touchData.start.trigger( cxtEvt );
@@ -1214,8 +1216,8 @@
 				clearTimeout( this.threeFingerSelectTimeout );
 				this.lastThreeTouch = +new Date;
 
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-				r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+				r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("Touch moved, redraw selection box");
 
 				if( !select || select.length === 0 || select[0] === undefined ){
 					select[0] = (now[0] + now[2] + now[4])/3;
@@ -1231,7 +1233,7 @@
 
 			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
 				r.data.bgActivePosistion = undefined;
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
 				// console.log('touchmove ptz');
 
@@ -1337,14 +1339,14 @@
 						.trigger( new $$.Event(e, {type: "position"}) )
 					;
 					
-					r.data.canvasNeedsRedraw[DRAG] = true;
-					r.data.canvasRedrawReason[DRAG].push("touchdrag node");
+					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+					r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("touchdrag node");
 
 					if (r.touchData.startPosition[0] == earlier[0]
 						&& r.touchData.startPosition[1] == earlier[1]) {
 						
-						r.data.canvasNeedsRedraw[NODE] = true;
-						r.data.canvasRedrawReason[NODE].push("node drag started");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+						r.data.canvasRedrawReason[CanvasRenderer.NODE].push("node drag started");
 					}
 					
 				}
@@ -1388,8 +1390,8 @@
 							};
 						}
 
-						r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-						r.data.canvasRedrawReason[SELECT_BOX].push("bgactive");
+						r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+						r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("bgactive");
 					}
 
 					cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
@@ -1469,8 +1471,8 @@
 					select[3] = undefined;
 					select[4] = 0;
 
-					r.data.canvasNeedsRedraw[SELECT_BOX] = true;
-					r.data.canvasRedrawReason[SELECT_BOX].push("Touch moved, redraw selection box");
+					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+					r.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("Touch moved, redraw selection box");
 
 					// console.log(box);
 					var event = new $$.Event(e, {type: "select"});
@@ -1489,7 +1491,7 @@
 					newlySelCol.select();
 					
 					if (box.length > 0) { 
-						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Selection");
+						r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("Selection");
 					}
 
 				//}, 100);
@@ -1547,8 +1549,8 @@
 						}
 					}
 
-					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("touchdrag node end");
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node end");
+					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("touchdrag node end");
+					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("touchdrag node end");
 					
 					start
 						.trigger(new $$.Event(e, {type: "touchend"}))
@@ -1598,7 +1600,7 @@
 					updateStartStyle = true;
 
 					
-					r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; r.data.canvasRedrawReason[CanvasRenderer.NODE].push("sglslct");
 				}
 				
 				// Tap event, roughly same as mouse click event for touch
@@ -1692,7 +1694,7 @@
 			canvasHeight *= devicePixelRatio;
 		}
 
-		for (var i = 0; i < CANVAS_LAYERS; i++) {
+		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
 
 			canvas = data.canvases[i];
 			
@@ -1706,7 +1708,7 @@
 			}
 		}
 		
-		for (var i = 0; i < BUFFER_COUNT; i++) {
+		for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
 			
 			canvas = data.bufferCanvases[i];
 			
@@ -1804,7 +1806,7 @@
 
 	
 
-		if (data.canvasNeedsRedraw[DRAG] || data.canvasNeedsRedraw[NODE] || drawAll) {
+		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAll) {
 			//NB : VERY EXPENSIVE
 			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
@@ -1836,8 +1838,8 @@
 
 
 		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-		if (data.canvasNeedsRedraw[NODE] || drawAll) {
-			// console.log("redrawing node layer", data.canvasRedrawReason[NODE]);
+		if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAll) {
+			// console.log("redrawing node layer", data.canvasRedrawReason[CanvasRenderer.NODE]);
 		  
 		  	if( !elesInDragLayer || !elesNotInDragLayer ){
 				elesInDragLayer = [];
@@ -1854,7 +1856,7 @@
 				}
 			}	
 
-			var context = forcedContext || data.canvases[NODE].getContext("2d");
+			var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
 			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -1899,12 +1901,12 @@
 			}
 			
 			if( !drawAll ){
-				data.canvasNeedsRedraw[NODE] = false; data.canvasRedrawReason[NODE] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; data.canvasRedrawReason[CanvasRenderer.NODE] = [];
 			}
 		}
 		
-		if (data.canvasNeedsRedraw[DRAG] || drawAll) {
-			// console.log("redrawing drag layer", data.canvasRedrawReason[DRAG]);
+		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAll) {
+			// console.log("redrawing drag layer", data.canvasRedrawReason[CanvasRenderer.DRAG]);
 		  
 			if( !elesInDragLayer || !elesNotInDragLayer ){
 				elesInDragLayer = [];
@@ -1921,7 +1923,7 @@
 				}
 			}
 
-			var context = forcedContext || data.canvases[DRAG].getContext("2d");
+			var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
 			
 			if( !drawAll ){
 				context.setTransform(1, 0, 0, 1, 0, 0);
@@ -1967,14 +1969,14 @@
 			}
 			
 			if( !drawAll ){
-				data.canvasNeedsRedraw[DRAG] = false; data.canvasRedrawReason[DRAG] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false; data.canvasRedrawReason[CanvasRenderer.DRAG] = [];
 			}
 		}
 		
-		if (data.canvasNeedsRedraw[SELECT_BOX]) {
-			// console.log("redrawing selection box", data.canvasRedrawReason[SELECT_BOX]);
+		if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX]) {
+			// console.log("redrawing selection box", data.canvasRedrawReason[CanvasRenderer.SELECT_BOX]);
 		  
-			var context = forcedContext || data.canvases[SELECT_BOX].getContext("2d");
+			var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
 			
 			if( !drawAll ){
 				context.setTransform(1, 0, 0, 1, 0, 0);
@@ -2040,12 +2042,12 @@
 			}
 			
 			if( !drawAll ){
-				data.canvasNeedsRedraw[SELECT_BOX] = false; data.canvasRedrawReason[SELECT_BOX] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; data.canvasRedrawReason[CanvasRenderer.SELECT_BOX] = [];
 			}
 		}
 
 		if( r.options.showOverlay ){
-			var context = data.canvases[OVERLAY].getContext("2d");
+			var context = data.canvases[CanvasRenderer.OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';
 			context.font = '14px helvetica';
@@ -2726,10 +2728,10 @@
 							function() {
 								
 	//							console.log(e);
-								r.data.canvasNeedsRedraw[NODE] = true;
-								r.data.canvasRedrawReason[NODE].push("image finished load");
-								r.data.canvasNeedsRedraw[DRAG] = true;
-								r.data.canvasRedrawReason[DRAG].push("image finished load");
+								r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+								r.data.canvasRedrawReason[CanvasRenderer.NODE].push("image finished load");
+								r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+								r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("image finished load");
 								
 								// Replace Image object with Canvas to solve zooming too far
 								// into image graphical errors (Jan 10 2013)
@@ -3471,10 +3473,6 @@
 
 	}
 	
-
-	var renderer = rendFunc;	
-
-	
 	
 	// @O Polygon drawing
 	CanvasRenderer.prototype.drawPolygonPath = function(
@@ -3566,8 +3564,6 @@
 
 	
 	}
-
-	CanvasRenderer.isTouch = isTouch;
 
 	// copy the math functions into the renderer prototype
 	// unfortunately these functions are used interspersed t/o the code

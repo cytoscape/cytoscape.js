@@ -1043,5 +1043,568 @@
 		
 		return expandedLineSet;
 	};
+
+	$$.math.intersectLineEllipse = function(
+		x, y, centerX, centerY, ellipseWradius, ellipseHradius) {
+		
+		var dispX = centerX - x;
+		var dispY = centerY - y;
+		
+		dispX /= ellipseWradius;
+		dispY /= ellipseHradius;
+		
+		var len = Math.sqrt(dispX * dispX + dispY * dispY);
+		
+		var newLength = len - 1;
+		
+		if (newLength < 0) {
+			return [];
+		}
+		
+		var lenProportion = newLength / len;
+		
+		return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
+	};
+	
+	$$.math.dotProduct = function(
+		vec1, vec2) {
+		
+		if (vec1.length != 2 || vec2.length != 2) {
+			throw 'dot product: arguments are not vectors';
+		}
+		
+		return (vec1[0] * vec2[0] + vec1[1] * vec2[1]);
+	};
+	
+	// Returns intersections of increasing distance from line's start point
+	$$.math.intersectLineCircle = function(
+		x1, y1, x2, y2, centerX, centerY, radius) {
+		
+		// Calculate d, direction vector of line
+		var d = [x2 - x1, y2 - y1]; // Direction vector of line
+		var s = [x1, y1]; // Start of line
+		var c = [centerX, centerY]; // Center of circle
+		var f = [x1 - centerX, y1 - centerY]
+		
+		var a = d[0] * d[0] + d[1] * d[1];
+		var b = 2 * (f[0] * d[0] + f[1] * d[1]);
+		var c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
+		
+		/*
+		var a = this.dotProduct(d, d);
+		var b = 2 * this.dotProduct(s, d) - this.dotProduct(d, c);
+		var c = this.dotProduct(s, s) - 2 * this.dotProduct(s, c) + this.dotProduct(c, c) - radius * radius ;
+		*/
+		
+		var discriminant = b*b-4*a*c;
+		
+		if (discriminant < 0) {
+			return [];
+		}
+		
+		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+		
+		var tMin = Math.min(t1, t2);
+		var tMax = Math.max(t1, t2);
+		var inRangeParams = [];
+		
+		if (tMin >= 0 && tMin <= 1) {
+			inRangeParams.push(tMin);
+		}
+		
+		if (tMax >= 0 && tMax <= 1) {
+			inRangeParams.push(tMax);
+		}
+		
+		if (inRangeParams.length == 0) {
+			return [];
+		}
+		
+		var nearIntersectionX = inRangeParams[0] * d[0] + x1;
+		var nearIntersectionY = inRangeParams[0] * d[1] + y1;
+		
+		if (inRangeParams.length > 1) {
+		
+			if (inRangeParams[0] == inRangeParams[1]) {
+				return [nearIntersectionX, nearIntersectionY];
+			} else {
+			  
+				var farIntersectionX = inRangeParams[1] * d[0] + x1;
+				var farIntersectionY = inRangeParams[1] * d[1] + y1;
+			
+				return [nearIntersectionX, nearIntersectionY, farIntersectionX, farIntersectionY];
+			}
+			
+		} else {
+			return [nearIntersectionX, nearIntersectionY]
+		}
+	  
+	};
+	
+	$$.math.findCircleNearPoint = function(centerX, centerY, 
+		radius, farX, farY) {
+		
+		var displacementX = farX - centerX;
+		var displacementY = farY - centerY;
+		var distance = Math.sqrt(displacementX * displacementX 
+			+ displacementY * displacementY);
+		
+		var unitDisplacementX = displacementX / distance;
+		var unitDisplacementY = displacementY / distance;
+		
+		return [centerX + unitDisplacementX * radius, 
+			centerY + unitDisplacementY * radius];
+	};
+	
+	$$.math.findMaxSqDistanceToOrigin = function(points) {
+		var maxSqDistance = 0.000001;
+		var sqDistance;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			sqDistance = points[i * 2] * points[i * 2] 
+				+ points[i * 2 + 1] * points[i * 2 + 1];
+			
+			if (sqDistance > maxSqDistance) {
+				maxSqDistance = sqDistance;
+			}
+		}
+		
+		return maxSqDistance;
+	};
+	
+	$$.math.finiteLinesIntersect = function(
+		x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
+		
+		var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
+		var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
+		var u_b = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+
+		if (u_b != 0) {
+			var ua = ua_t / u_b;
+			var ub = ub_t / u_b;
+			
+			if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {	
+				return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+				
+			} else {
+				if (!infiniteLines) {
+					return [];
+				} else {
+					return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+				}
+			}
+		} else {
+			if (ua_t == 0 || ub_t == 0) {
+
+				// Parallel, coincident lines. Check if overlap
+
+				// Check endpoint of second line
+				if ([x1, x2, x4].sort()[1] == x4) {
+					return [x4, y4];
+				}
+				
+				// Check start point of second line
+				if ([x1, x2, x3].sort()[1] == x3) {
+					return [x3, y3];
+				}
+				
+				// Endpoint of first line
+				if ([x3, x4, x2].sort()[1] == x2) {
+					return [x2, y2];
+				}
+				
+				return [];
+			} else {
+			
+				// Parallel, non-coincident
+				return [];
+			}
+		}
+	};
+	
+	// (boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+	//			cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
+	
+	$$.math.boxIntersectEllipse = function(
+		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		// 4 ortho extreme points
+		var west = [centerX - width / 2 - padding, centerY];
+		var east = [centerX + width / 2 + padding, centerY];
+		var north = [centerX, centerY - height / 2 - padding];
+		var south = [centerX, centerY + height / 2 + padding];
+		
+		// out of bounds: return false
+		if (x2 < west[0]) {
+			return false;
+		}
+		
+		if (x1 > east[0]) {
+			return false;
+		}
+		
+		if (y1 > south[1]) {
+			return false;
+		}
+		
+		if (y2 < north[1]) {
+			return false;
+		}
+		
+		// 1 of 4 ortho extreme points in box: return true
+		if (x1 <= east[0] && east[0] <= x2
+				&& y1 <= east[1] && east[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= west[0] && west[0] <= x2
+				&& y1 <= west[1] && west[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= north[0] && north[0] <= x2
+				&& y1 <= north[1] && north[1] <= y2) {
+			return true;
+		}
+		
+		if (x1 <= south[0] && south[0] <= x2
+				&& y1 <= south[1] && south[1] <= y2) {
+			return true;
+		}
+		
+		// box corner in ellipse: return true		
+		x1 = (x1 - centerX) / (width / 2 + padding);
+		x2 = (x2 - centerX) / (width / 2 + padding);
+		
+		y1 = (y1 - centerY) / (height / 2 + padding);
+		y2 = (y2 - centerY) / (height / 2 + padding);
+		
+		if (x1 * x1 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y1 * y1 <= 1) {
+			return true;
+		}
+		
+		if (x2 * x2 + y2 * y2 <= 1) {
+			return true;
+		}
+		
+		if (x1 * x1 + y2 * y2 <= 1) {
+			return true;
+		}
+		
+		return false;
+	};
+	
+	$$.math.boxIntersectPolygon = function(
+		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
+		
+//		console.log(arguments);
+		
+		if (x2 < x1) {
+			var oldX1 = x1;
+			x1 = x2;
+			x2 = oldX1;
+		}
+		
+		if (y2 < y1) {
+			var oldY1 = y1;
+			y1 = y2;
+			y2 = oldY1;
+		}
+		
+		var transformedPoints = new Array(basePoints.length)
+		
+		// Gives negative of angle
+		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
+			+ direction[1] * direction[1])));
+		
+		if (direction[0] < 0) {
+			angle = angle + Math.PI / 2;
+		} else {
+			angle = -angle - Math.PI / 2;
+		}
+		
+		var cos = Math.cos(-angle);
+		var sin = Math.sin(-angle);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = 
+				width / 2 * (basePoints[i * 2] * cos
+					- basePoints[i * 2 + 1] * sin);
+			
+			transformedPoints[i * 2 + 1] = 
+				height / 2 * (basePoints[i * 2 + 1] * cos 
+					+ basePoints[i * 2] * sin);
+			
+			transformedPoints[i * 2] += centerX;
+			transformedPoints[i * 2 + 1] += centerY;
+		}
+		
+		// Assume transformedPoints.length > 0, and check if intersection is possible
+		var minTransformedX = transformedPoints[0];
+		var maxTransformedX = transformedPoints[0];
+		var minTransformedY = transformedPoints[1];
+		var maxTransformedY = transformedPoints[1];
+		
+		for (var i = 1; i < transformedPoints.length / 2; i++) {
+			if (transformedPoints[i * 2] > maxTransformedX) {
+				maxTransformedX = transformedPoints[i * 2];
+			}
+			
+			if (transformedPoints[i * 2] < minTransformedX) {
+				minTransformedX = transformedPoints[i * 2];
+			}
+			
+			if (transformedPoints[i * 2 + 1] > maxTransformedY) {
+				maxTransformedY = transformedPoints[i * 2 + 1];
+			}
+			
+			if (transformedPoints[i * 2 + 1] < minTransformedY) {
+				minTransformedY = transformedPoints[i * 2 + 1];
+			}
+		}
+		
+		if (x2 < minTransformedX - padding) {
+			return false;
+		}
+		
+		if (x1 > maxTransformedX + padding) {
+			return false;
+		}
+		
+		if (y2 < minTransformedY - padding) {
+			return false;
+		}
+		
+		if (y1 > maxTransformedY + padding) {
+			return false;
+		}
+		
+		// Continue checking with padding-corrected points
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = $$.math.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = $$.math.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		
+		// Check if a point is in box
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			if (x1 <= transformedPoints[i * 2]
+					&& transformedPoints[i * 2] <= x2) {
+				
+				if (y1 <= transformedPoints[i * 2 + 1]
+						&& transformedPoints[i * 2 + 1] <= y2) {
+					
+					return true;
+				}
+			}
+		}
+		
+		
+		// Check for intersections with the selection box
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			var currentX = points[i * 2];
+			var currentY = points[i * 2 + 1];
+			var nextX;
+			var nextY;
+			
+			if (i < points.length / 2 - 1) {
+				nextX = points[(i + 1) * 2];
+				nextY = points[(i + 1) * 2 + 1]
+			} else {
+				nextX = points[0];
+				nextY = points[1];
+			}
+			
+			// Intersection with top of selection box
+			if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x2, y1, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with bottom of selection box
+			if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y2, x2, y2, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with left side of selection box
+			if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x1, y2, false).length > 0) {
+				return true;
+			}
+			
+			// Intersection with right side of selection box
+			if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x2, y1, x2, y2, false).length > 0) {
+				return true;
+			}
+		}
+
+		/*
+		// Check if box corner in the polygon
+		if ($$.math.pointInsidePolygon(
+			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if ($$.math.pointInsidePolygon(
+			x1, y2, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		} else if ($$.math.pointInsidePolygon(
+			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
+			 
+			return true; 
+		} else if ($$.math.pointInsidePolygon(
+			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
+			
+			return true;
+		}
+		*/
+		return false;
+	};
+	
+	$$.math.polygonIntersectLine = function(
+		x, y, basePoints, centerX, centerY, width, height, padding) {
+		
+		var intersections = [];
+		var intersection;
+		
+		var transformedPoints = new Array(basePoints.length);
+		
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = basePoints[i * 2] * width + centerX;
+			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
+		}
+		
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = $$.math.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = $$.math.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		// var points = transformedPoints;
+		
+		var currentX, currentY, nextX, nextY;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+		
+			currentX = points[i * 2];
+			currentY = points[i * 2 + 1];
+
+			if (i < points.length / 2 - 1) {
+				nextX = points[(i + 1) * 2]; 
+				nextY = points[(i + 1) * 2 + 1];
+			} else {
+				nextX = points[0]; 
+				nextY = points[1];
+			}
+			
+			intersection = this.finiteLinesIntersect(
+				x, y, centerX, centerY,
+				currentX, currentY,
+				nextX, nextY);
+			
+			if (intersection.length != 0) {
+				intersections.push(intersection[0], intersection[1]);
+			}
+		}
+		
+		return intersections;
+	};
+	
+	$$.math.shortenIntersection = function(
+		intersection, offset, amount) {
+		
+		var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
+		
+		var length = Math.sqrt(disp[0] * disp[0] + disp[1] * disp[1]);
+		
+		var lenRatio = (length - amount) / length;
+		
+		if (lenRatio < 0) {
+			return [];
+		} else {
+			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+		}
+	};
+
+	$$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
+		
+		var increment = 1.0 / sides * 2 * Math.PI;
+		var startAngle = sides % 2 == 0 ? 
+			Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
+//		console.log(nodeShapes["square"]);
+		startAngle += rotationRadians;
+		
+		var points = new Array(sides * 2);
+		
+		var currentAngle;
+		for (var i = 0; i < sides; i++) {
+			currentAngle = i * increment + startAngle;
+			
+			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
+			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
+		}
+		
+		// The above generates points for a polygon inscribed in a radius 1 circle.
+		// Stretch so that the maximum of the height and width becomes 2 so the resulting
+		// scaled shape appears to be inscribed inside a rectangle with the given
+		// width and height. The maximum of the width and height is used to preserve
+		// the shape's aspect ratio.
+		
+		// Stretch width
+		var maxAbsX = 0
+		var maxAbsY = 0;
+		for (var i = 0; i < points.length / 2; i++) {
+			if (Math.abs(points[2 * i] > maxAbsX)) {
+				maxAbsX = Math.abs(points[2 * i]);
+			}
+			
+			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
+				maxAbsY = Math.abs(points[2 * i + 1]);
+			}
+		}
+		
+		var minScaleLimit = 0.0005;
+		
+		// Use the larger dimension to do the scale, in order to preserve the shape's
+		// aspect ratio
+		var maxDimension = Math.max(maxAbsX, maxAbsY);
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			if (maxDimension > minScaleLimit) {
+				points[2 * i] *= (1 / maxDimension);
+				points[2 * i + 1] *= (1 / maxDimension);
+			}
+		}
+		
+		return points;
+	};
 	
 })( cytoscape );

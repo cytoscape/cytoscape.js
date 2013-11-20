@@ -8,7 +8,7 @@
 
 	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 	var time = function() { return Date.now(); } ; 
-	var arrowShapes = {}; var nodeShapes = {}; 
+	var arrowShapes = {};
 	var rendFunc = CanvasRenderer.prototype;
 	var panOrBoxSelectDelay = 400;
 
@@ -1775,13 +1775,13 @@
 		
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
-			if (nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
+			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
 					nodes[i]._private.style["border-width"].value / 2,
 					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 					this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
-				nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
+				CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
 					nodes[i]._private.style["border-width"].value / 2,
 					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
 					(this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
@@ -1947,7 +1947,7 @@
 		var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
 		
 		for (var i=0;i<nodes.length;i++) {
-			if (nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
+			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
 				//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 				this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
 				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
@@ -3565,7 +3565,7 @@
 					
 					if (image.complete == false) {
 
-						nodeShapes[r.getNodeShape(node)].drawPath(
+						CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
 							context,
 							node._private.position.x,
 							node._private.position.y,
@@ -3585,7 +3585,7 @@
 				} else {
 
 					// Draw node
-					nodeShapes[this.getNodeShape(node)].draw(
+					CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
 						context,
 						node._private.position.x,
 						node._private.position.y,
@@ -3610,7 +3610,7 @@
 			if( overlayOpacity > 0 ){
 				context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
-				nodeShapes[this.getNodeShape(node)].draw(
+				CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,
@@ -3637,7 +3637,7 @@
 		
 		context.save();
 		
-		nodeShapes[r.getNodeShape(node)].drawPath(
+		CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
 				context,
 				nodeX, nodeY, 
 				nodeWidth, nodeHeight);
@@ -3977,7 +3977,7 @@
 			
 			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
 			
-			intersect = nodeShapes[this.getNodeShape(target)].intersectLine(
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
 				//target._private.style["width"].value,
@@ -3989,9 +3989,9 @@
 				target._private.style["border-width"].value / 2
 			);
 			
-			var arrowEnd = this.shortenIntersection(intersect, cp,
+			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
-			var edgeEnd = this.shortenIntersection(intersect, cp,
+			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.endX = edgeEnd[0];
@@ -4002,7 +4002,7 @@
 			
 			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
 
-			intersect = nodeShapes[this.getNodeShape(source)].intersectLine(
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
 				//source._private.style["width"].value,
@@ -4014,9 +4014,9 @@
 				source._private.style["border-width"].value / 2
 			);
 			
-			var arrowStart = this.shortenIntersection(intersect, cp,
+			var arrowStart = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
-			var edgeStart = this.shortenIntersection(intersect, cp,
+			var edgeStart = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.startX = edgeStart[0];
@@ -4027,7 +4027,7 @@
 			
 		} else if (edge._private.rscratch.edgeType == "straight") {
 		
-			intersect = nodeShapes[this.getNodeShape(target)].intersectLine(
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
 				//target._private.style["width"].value,
@@ -4045,10 +4045,10 @@
 				edge._private.rscratch.noArrowPlacement = false;
 			}
 			
-			var arrowEnd = this.shortenIntersection(intersect,
+			var arrowEnd = $$.math.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
 				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
-			var edgeEnd = this.shortenIntersection(intersect,
+			var edgeEnd = $$.math.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
 				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 
@@ -4058,7 +4058,7 @@
 			edge._private.rscratch.arrowEndX = arrowEnd[0];
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 		
-			intersect = nodeShapes[this.getNodeShape(source)].intersectLine(
+			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
 				//source._private.style["width"].value,
@@ -4081,10 +4081,10 @@
 				+ arrowShapes[edge._private.style["source-arrow-shape"].value],
 					edge._private.style["source-arrow-shape"].value);
 			*/
-			var arrowStart = this.shortenIntersection(intersect,
+			var arrowStart = $$.math.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
 				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
-			var edgeStart = this.shortenIntersection(intersect,
+			var edgeStart = $$.math.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
 				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 
@@ -4102,7 +4102,7 @@
 			var halfPointX = start[0] * 0.25 + end[0] * 0.25 + cp[0] * 0.5;
 			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
 			
-			intersect = nodeShapes[
+			intersect = CanvasRenderer.nodeShapes[
 				this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
@@ -4120,9 +4120,9 @@
 				+ arrowShapes[edge._private.style["source-arrow-shape"].value],
 					edge._private.style["source-arrow-shape"].value);
 			*/
-			var arrowEnd = this.shortenIntersection(intersect, cp,
+			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
-			var edgeEnd = this.shortenIntersection(intersect, cp,
+			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.endX = edgeEnd[0];
@@ -4131,7 +4131,7 @@
 			edge._private.rscratch.arrowEndX = arrowEnd[0];
 			edge._private.rscratch.arrowEndY = arrowEnd[1];
 			
-			intersect = nodeShapes[
+			intersect = CanvasRenderer.nodeShapes[
 				this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
@@ -4144,9 +4144,9 @@
 				source._private.style["border-width"].value / 2
 			);
 			
-			var arrowStart = this.shortenIntersection(intersect, cp,
+			var arrowStart = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
-			var edgeStart = this.shortenIntersection(intersect, cp,
+			var edgeStart = $$.math.shortenIntersection(intersect, cp,
 				arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
 			
 			edge._private.rscratch.startX = edgeStart[0];
@@ -4192,515 +4192,7 @@
 	
 	// @O Intersection functions
 	{
-	CanvasRenderer.prototype.intersectLineEllipse = function(
-		x, y, centerX, centerY, ellipseWradius, ellipseHradius) {
-		
-		var dispX = centerX - x;
-		var dispY = centerY - y;
-		
-		dispX /= ellipseWradius;
-		dispY /= ellipseHradius;
-		
-		var len = Math.sqrt(dispX * dispX + dispY * dispY);
-		
-		var newLength = len - 1;
-		
-		if (newLength < 0) {
-			return [];
-		}
-		
-		var lenProportion = newLength / len;
-		
-		return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
-	}
 	
-	CanvasRenderer.prototype.dotProduct = function(
-		vec1, vec2) {
-		
-		if (vec1.length != 2 || vec2.length != 2) {
-			throw 'dot product: arguments are not vectors';
-		}
-		
-		return (vec1[0] * vec2[0] + vec1[1] * vec2[1]);
-	}
-	
-	// Returns intersections of increasing distance from line's start point
-	CanvasRenderer.prototype.intersectLineCircle = function(
-		x1, y1, x2, y2, centerX, centerY, radius) {
-		
-		// Calculate d, direction vector of line
-		var d = [x2 - x1, y2 - y1]; // Direction vector of line
-		var s = [x1, y1]; // Start of line
-		var c = [centerX, centerY]; // Center of circle
-		var f = [x1 - centerX, y1 - centerY]
-		
-		var a = d[0] * d[0] + d[1] * d[1];
-		var b = 2 * (f[0] * d[0] + f[1] * d[1]);
-		var c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
-		
-		/*
-		var a = this.dotProduct(d, d);
-		var b = 2 * this.dotProduct(s, d) - this.dotProduct(d, c);
-		var c = this.dotProduct(s, s) - 2 * this.dotProduct(s, c) + this.dotProduct(c, c) - radius * radius ;
-		*/
-		
-		var discriminant = b*b-4*a*c;
-		
-		if (discriminant < 0) {
-			return [];
-		}
-		
-		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
-		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
-		
-		var tMin = Math.min(t1, t2);
-		var tMax = Math.max(t1, t2);
-		var inRangeParams = [];
-		
-		if (tMin >= 0 && tMin <= 1) {
-			inRangeParams.push(tMin);
-		}
-		
-		if (tMax >= 0 && tMax <= 1) {
-			inRangeParams.push(tMax);
-		}
-		
-		if (inRangeParams.length == 0) {
-			return [];
-		}
-		
-		var nearIntersectionX = inRangeParams[0] * d[0] + x1;
-		var nearIntersectionY = inRangeParams[0] * d[1] + y1;
-		
-		if (inRangeParams.length > 1) {
-		
-			if (inRangeParams[0] == inRangeParams[1]) {
-				return [nearIntersectionX, nearIntersectionY];
-			} else {
-			  
-				var farIntersectionX = inRangeParams[1] * d[0] + x1;
-				var farIntersectionY = inRangeParams[1] * d[1] + y1;
-			
-				return [nearIntersectionX, nearIntersectionY, farIntersectionX, farIntersectionY];
-			}
-			
-		} else {
-			return [nearIntersectionX, nearIntersectionY]
-		}
-	  
-	}
-	
-	CanvasRenderer.prototype.findCircleNearPoint = function(centerX, centerY, 
-		radius, farX, farY) {
-		
-		var displacementX = farX - centerX;
-		var displacementY = farY - centerY;
-		var distance = Math.sqrt(displacementX * displacementX 
-			+ displacementY * displacementY);
-		
-		var unitDisplacementX = displacementX / distance;
-		var unitDisplacementY = displacementY / distance;
-		
-		return [centerX + unitDisplacementX * radius, 
-			centerY + unitDisplacementY * radius];
-	}
-	
-	CanvasRenderer.prototype.findMaxSqDistanceToOrigin = function(points) {
-		var maxSqDistance = 0.000001;
-		var sqDistance;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			
-			sqDistance = points[i * 2] * points[i * 2] 
-				+ points[i * 2 + 1] * points[i * 2 + 1];
-			
-			if (sqDistance > maxSqDistance) {
-				maxSqDistance = sqDistance;
-			}
-		}
-		
-		return maxSqDistance;
-	}
-	
-	CanvasRenderer.prototype.finiteLinesIntersect = function(
-		x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
-		
-		var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
-		var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
-		var u_b = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-
-		if (u_b != 0) {
-			var ua = ua_t / u_b;
-			var ub = ub_t / u_b;
-			
-			if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {	
-				return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
-				
-			} else {
-				if (!infiniteLines) {
-					return [];
-				} else {
-					return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
-				}
-			}
-		} else {
-			if (ua_t == 0 || ub_t == 0) {
-
-				// Parallel, coincident lines. Check if overlap
-
-				// Check endpoint of second line
-				if ([x1, x2, x4].sort()[1] == x4) {
-					return [x4, y4];
-				}
-				
-				// Check start point of second line
-				if ([x1, x2, x3].sort()[1] == x3) {
-					return [x3, y3];
-				}
-				
-				// Endpoint of first line
-				if ([x3, x4, x2].sort()[1] == x2) {
-					return [x2, y2];
-				}
-				
-				return [];
-			} else {
-			
-				// Parallel, non-coincident
-				return [];
-			}
-		}
-	}
-	
-	// (boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-	//			cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
-	
-	CanvasRenderer.prototype.boxIntersectEllipse = function(
-		x1, y1, x2, y2, padding, width, height, centerX, centerY) {
-		
-		if (x2 < x1) {
-			var oldX1 = x1;
-			x1 = x2;
-			x2 = oldX1;
-		}
-		
-		if (y2 < y1) {
-			var oldY1 = y1;
-			y1 = y2;
-			y2 = oldY1;
-		}
-		
-		// 4 ortho extreme points
-		var west = [centerX - width / 2 - padding, centerY];
-		var east = [centerX + width / 2 + padding, centerY];
-		var north = [centerX, centerY - height / 2 - padding];
-		var south = [centerX, centerY + height / 2 + padding];
-		
-		// out of bounds: return false
-		if (x2 < west[0]) {
-			return false;
-		}
-		
-		if (x1 > east[0]) {
-			return false;
-		}
-		
-		if (y1 > south[1]) {
-			return false;
-		}
-		
-		if (y2 < north[1]) {
-			return false;
-		}
-		
-		// 1 of 4 ortho extreme points in box: return true
-		if (x1 <= east[0] && east[0] <= x2
-				&& y1 <= east[1] && east[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= west[0] && west[0] <= x2
-				&& y1 <= west[1] && west[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= north[0] && north[0] <= x2
-				&& y1 <= north[1] && north[1] <= y2) {
-			return true;
-		}
-		
-		if (x1 <= south[0] && south[0] <= x2
-				&& y1 <= south[1] && south[1] <= y2) {
-			return true;
-		}
-		
-		// box corner in ellipse: return true		
-		x1 = (x1 - centerX) / (width / 2 + padding);
-		x2 = (x2 - centerX) / (width / 2 + padding);
-		
-		y1 = (y1 - centerY) / (height / 2 + padding);
-		y2 = (y2 - centerY) / (height / 2 + padding);
-		
-		if (x1 * x1 + y1 * y1 <= 1) {
-			return true;
-		}
-		
-		if (x2 * x2 + y1 * y1 <= 1) {
-			return true;
-		}
-		
-		if (x2 * x2 + y2 * y2 <= 1) {
-			return true;
-		}
-		
-		if (x1 * x1 + y2 * y2 <= 1) {
-			return true;
-		}
-		
-		return false;
-	}
-	
-	CanvasRenderer.prototype.boxIntersectPolygon = function(
-		x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
-		
-//		console.log(arguments);
-		
-		if (x2 < x1) {
-			var oldX1 = x1;
-			x1 = x2;
-			x2 = oldX1;
-		}
-		
-		if (y2 < y1) {
-			var oldY1 = y1;
-			y1 = y2;
-			y2 = oldY1;
-		}
-		
-		var transformedPoints = new Array(basePoints.length)
-		
-		// Gives negative of angle
-		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
-			+ direction[1] * direction[1])));
-		
-		if (direction[0] < 0) {
-			angle = angle + Math.PI / 2;
-		} else {
-			angle = -angle - Math.PI / 2;
-		}
-		
-		var cos = Math.cos(-angle);
-		var sin = Math.sin(-angle);
-		
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			transformedPoints[i * 2] = 
-				width / 2 * (basePoints[i * 2] * cos
-					- basePoints[i * 2 + 1] * sin);
-			
-			transformedPoints[i * 2 + 1] = 
-				height / 2 * (basePoints[i * 2 + 1] * cos 
-					+ basePoints[i * 2] * sin);
-			
-			transformedPoints[i * 2] += centerX;
-			transformedPoints[i * 2 + 1] += centerY;
-		}
-		
-		// Assume transformedPoints.length > 0, and check if intersection is possible
-		var minTransformedX = transformedPoints[0];
-		var maxTransformedX = transformedPoints[0];
-		var minTransformedY = transformedPoints[1];
-		var maxTransformedY = transformedPoints[1];
-		
-		for (var i = 1; i < transformedPoints.length / 2; i++) {
-			if (transformedPoints[i * 2] > maxTransformedX) {
-				maxTransformedX = transformedPoints[i * 2];
-			}
-			
-			if (transformedPoints[i * 2] < minTransformedX) {
-				minTransformedX = transformedPoints[i * 2];
-			}
-			
-			if (transformedPoints[i * 2 + 1] > maxTransformedY) {
-				maxTransformedY = transformedPoints[i * 2 + 1];
-			}
-			
-			if (transformedPoints[i * 2 + 1] < minTransformedY) {
-				minTransformedY = transformedPoints[i * 2 + 1];
-			}
-		}
-		
-		if (x2 < minTransformedX - padding) {
-			return false;
-		}
-		
-		if (x1 > maxTransformedX + padding) {
-			return false;
-		}
-		
-		if (y2 < minTransformedY - padding) {
-			return false;
-		}
-		
-		if (y1 > maxTransformedY + padding) {
-			return false;
-		}
-		
-		// Continue checking with padding-corrected points
-		var points;
-		
-		if (padding > 0) {
-			var expandedLineSet = $$.math.expandPolygon(
-				transformedPoints,
-				-padding);
-			
-			points = $$.math.joinLines(expandedLineSet);
-		} else {
-			points = transformedPoints;
-		}
-		
-		// Check if a point is in box
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			if (x1 <= transformedPoints[i * 2]
-					&& transformedPoints[i * 2] <= x2) {
-				
-				if (y1 <= transformedPoints[i * 2 + 1]
-						&& transformedPoints[i * 2 + 1] <= y2) {
-					
-					return true;
-				}
-			}
-		}
-		
-		
-		// Check for intersections with the selection box
-		for (var i = 0; i < points.length / 2; i++) {
-			
-			var currentX = points[i * 2];
-			var currentY = points[i * 2 + 1];
-			var nextX;
-			var nextY;
-			
-			if (i < points.length / 2 - 1) {
-				nextX = points[(i + 1) * 2];
-				nextY = points[(i + 1) * 2 + 1]
-			} else {
-				nextX = points[0];
-				nextY = points[1];
-			}
-			
-			// Intersection with top of selection box
-			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x2, y1, false).length > 0) {
-				return true;
-			}
-			
-			// Intersection with bottom of selection box
-			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y2, x2, y2, false).length > 0) {
-				return true;
-			}
-			
-			// Intersection with left side of selection box
-			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x1, y2, false).length > 0) {
-				return true;
-			}
-			
-			// Intersection with right side of selection box
-			if (renderer.finiteLinesIntersect(currentX, currentY, nextX, nextY, x2, y1, x2, y2, false).length > 0) {
-				return true;
-			}
-		}
-
-		/*
-		// Check if box corner in the polygon
-		if (renderer.pointInsidePolygon(
-			x1, y1, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		} else if (renderer.pointInsidePolygon(
-			x1, y2, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		} else if (renderer.pointInsidePolygon(
-			x2, y2, points, 0, 0, 1, 1, 0, direction)) {
-			 
-			return true; 
-		} else if (renderer.pointInsidePolygon(
-			x2, y1, points, 0, 0, 1, 1, 0, direction)) {
-			
-			return true;
-		}
-		*/
-		return false;
-	}
-	
-	CanvasRenderer.prototype.polygonIntersectLine = function(
-		x, y, basePoints, centerX, centerY, width, height, padding) {
-		
-		var intersections = [];
-		var intersection;
-		
-		var transformedPoints = new Array(basePoints.length);
-		
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			transformedPoints[i * 2] = basePoints[i * 2] * width + centerX;
-			transformedPoints[i * 2 + 1] = basePoints[i * 2 + 1] * height + centerY;
-		}
-		
-		var points;
-		
-		if (padding > 0) {
-			var expandedLineSet = $$.math.expandPolygon(
-				transformedPoints,
-				-padding);
-			
-			points = $$.math.joinLines(expandedLineSet);
-		} else {
-			points = transformedPoints;
-		}
-		// var points = transformedPoints;
-		
-		var currentX, currentY, nextX, nextY;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-		
-			currentX = points[i * 2];
-			currentY = points[i * 2 + 1];
-
-			if (i < points.length / 2 - 1) {
-				nextX = points[(i + 1) * 2]; 
-				nextY = points[(i + 1) * 2 + 1];
-			} else {
-				nextX = points[0]; 
-				nextY = points[1];
-			}
-			
-			intersection = this.finiteLinesIntersect(
-				x, y, centerX, centerY,
-				currentX, currentY,
-				nextX, nextY);
-			
-			if (intersection.length != 0) {
-				intersections.push(intersection[0], intersection[1]);
-			}
-		}
-		
-		return intersections;
-	}
-	
-	CanvasRenderer.prototype.shortenIntersection = function(
-		intersection, offset, amount) {
-		
-		var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
-		
-		var length = Math.sqrt(disp[0] * disp[0] + disp[1] * disp[1]);
-		
-		var lenRatio = (length - amount) / length;
-		
-		if (lenRatio < 0) {
-			return [];
-		} else {
-			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
-		}
-	}
 	}
 	
 	// @O Arrow shapes
@@ -4738,7 +4230,7 @@
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["arrow"]._farthestPointSqDistance) == "undefined") {
 				arrowShapes["arrow"]._farthestPointSqDistance = 
-					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
+					$$.math.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
 			}
 		
 			return $$.math.checkInBoundingCircle(
@@ -4842,7 +4334,7 @@
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["inhibitor"]._farthestPointSqDistance) == "undefined") {
 				arrowShapes["inhibitor"]._farthestPointSqDistance = 
-					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
+					$$.math.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
 			}
 		
 			return $$.math.checkInBoundingCircle(
@@ -4880,7 +4372,7 @@
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["square"]._farthestPointSqDistance) == "undefined") {
 				arrowShapes["square"]._farthestPointSqDistance = 
-					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
+					$$.math.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
 			}
 		
 			return $$.math.checkInBoundingCircle(
@@ -4918,7 +4410,7 @@
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			if (typeof(arrowShapes["diamond"]._farthestPointSqDistance) == "undefined") {
 				arrowShapes["diamond"]._farthestPointSqDistance = 
-					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
+					$$.math.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
 			}
 				
 			return $$.math.checkInBoundingCircle(
@@ -5043,739 +4535,9 @@
 
 	}
 	
-	// @O Node shapes
-	{
-	
-	// Generate polygon points
-	var generateUnitNgonPoints = function(sides, rotationRadians) {
-		
-		var increment = 1.0 / sides * 2 * Math.PI;
-		var startAngle = sides % 2 == 0 ? 
-			Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-//		console.log(nodeShapes["square"]);
-		startAngle += rotationRadians;
-		
-		var points = new Array(sides * 2);
-		
-		var currentAngle;
-		for (var i = 0; i < sides; i++) {
-			currentAngle = i * increment + startAngle;
-			
-			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
-			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
-		}
-		
-		// The above generates points for a polygon inscribed in a radius 1 circle.
-		// Stretch so that the maximum of the height and width becomes 2 so the resulting
-		// scaled shape appears to be inscribed inside a rectangle with the given
-		// width and height. The maximum of the width and height is used to preserve
-		// the shape's aspect ratio.
-		
-		// Stretch width
-		var maxAbsX = 0
-		var maxAbsY = 0;
-		for (var i = 0; i < points.length / 2; i++) {
-			if (Math.abs(points[2 * i] > maxAbsX)) {
-				maxAbsX = Math.abs(points[2 * i]);
-			}
-			
-			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
-				maxAbsY = Math.abs(points[2 * i + 1]);
-			}
-		}
-		
-		var minScaleLimit = 0.0005;
-		
-		// Use the larger dimension to do the scale, in order to preserve the shape's
-		// aspect ratio
-		var maxDimension = Math.max(maxAbsX, maxAbsY);
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			if (maxDimension > minScaleLimit) {
-				points[2 * i] *= (1 / maxDimension);
-				points[2 * i + 1] *= (1 / maxDimension);
-			}
-		}
-		
-		return points;
-	}
-	
-	// Node shape declarations
-	
-	// Contract for node shapes:
-	{
-	// Node shape contract:
-	//
-	// draw: draw
-	// intersectLine: report intersection from x, y, to node center
-	// checkPointRough: heuristic check x, y in node, no false negatives
-	// checkPoint: check x, y in node
-	}
-	
-	// Declarations
-	{
-	
+
 	var renderer = rendFunc;	
-	
-	nodeShapes["ellipse"] = {
-		draw: function(context, centerX, centerY, width, height) {
-			nodeShapes["ellipse"].drawPath(context, centerX, centerY, width, height);
-			context.fill();
-			
-//			console.log("drawing ellipse");
-//			console.log(arguments);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			
-			//context.save();
-			
-			context.beginPath();
-			context.translate(centerX, centerY);
-			context.scale(width / 2, height / 2);
-			// At origin, radius 1, 0 to 2pi
-			context.arc(0, 0, 1, 0, Math.PI * 2 * 0.999, false); // *0.999 b/c chrome rendering bug on full circle
-			context.closePath();
 
-			context.scale(2/width, 2/height);
-			context.translate(-centerX, -centerY);
-			//context.restore();
-			
-//			console.log("drawing ellipse");
-//			console.log(arguments);
-			
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			var intersect = rendFunc.intersectLineEllipse(
-				x, y,
-				nodeX,
-				nodeY,
-				width / 2 + padding,
-				height / 2 + padding);
-			
-			return intersect;
-		},
-		
-		intersectBox: function(
-			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			return CanvasRenderer.prototype.boxIntersectEllipse(
-				x1, y1, x2, y2, padding, width, height, centerX, centerY);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return true;
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-//			console.log(arguments);
-			
-			x -= centerX;
-			y -= centerY;
-			
-			x /= (width / 2 + padding);
-			y /= (height / 2 + padding);
-			
-			return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
-		}
-	}
-	
-	nodeShapes["triangle"] = {
-		points: generateUnitNgonPoints(3, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["triangle"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["triangle"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["triangle"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		
-			/*
-			polygonIntersectLine(x, y, basePoints, centerX, centerY, 
-				width, height, padding);
-			*/
-			
-			
-			/*
-			return renderer.polygonIntersectLine(
-				node, width, height,
-				x, y, nodeShapes["triangle"].points);
-			*/
-		},
-		
-		intersectBox: function(
-			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			var points = nodeShapes["triangle"].points;
-			
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["triangle"].points, // Triangle?
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(
-				x, y, nodeShapes["triangle"].points,
-				centerX, centerY, width, height,
-				[0, -1], padding);
-		}
-	}
-	
-	nodeShapes["square"] = {
-		points: generateUnitNgonPoints(4, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["square"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["square"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-					x, y,
-					nodeShapes["square"].points,
-					nodeX,
-					nodeY,
-					width / 2, height / 2,
-					padding);
-		},
-		
-		intersectBox: function(
-			x1, y1, x2, y2,
-			width, height, centerX, 
-			centerY, padding) {
-			
-			var points = nodeShapes["square"].points;
-			
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, width, height, centerX, 
-				centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height,
-			centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["square"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["square"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	}
-	
-	nodeShapes["rectangle"] = nodeShapes["square"];
-	
-	nodeShapes["octogon"] = {};
-	
-	nodeShapes["roundrectangle"] = {
-		points: generateUnitNgonPoints(4, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawRoundRectangle(context,
-				centerX, centerY,
-				width, height,
-				10);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawRoundRectanglePath(context,
-				centerX, centerY,
-				width, height,
-				10);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return $$.math.roundRectangleIntersectLine(
-					x, y,
-					nodeX,
-					nodeY,
-					width, height,
-					padding);
-		},
-		
-		intersectBox: function(
-			x1, y1, x2, y2,
-			width, height, centerX, 
-			centerY, padding) {
-
-			return $$.math.roundRectangleIntersectBox(
-				x1, y1, x2, y2, 
-				width, height, centerX, centerY, padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height,
-			centerX, centerY) {
-		
-			// This check is OK because it assumes the round rectangle
-			// has sharp edges for the rough check 
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["roundrectangle"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		// Looks like the width passed into this function is actually the total width / 2
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			var cornerRadius = renderer.getRoundRectangleRadius(width, height);
-			
-			// Check hBox
-			if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
-				centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
-				return true;
-			}
-			
-			// Check vBox
-			if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
-				centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
-				return true;
-			}
-			
-			var checkInEllipse = function(x, y, centerX, centerY, width, height, padding) {
-				x -= centerX;
-				y -= centerY;
-				
-				x /= (width / 2 + padding);
-				y /= (height / 2 + padding);
-				
-				return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
-			}
-			
-			
-			// Check top left quarter circle
-			if (checkInEllipse(x, y,
-				centerX - width / 2 + cornerRadius,
-				centerY - height / 2 + cornerRadius,
-				cornerRadius * 2, cornerRadius * 2, padding)) {
-				
-				return true;
-			}
-			
-			/*
-			if (renderer.boxIntersectEllipse(x, y, x, y, padding, 
-				cornerRadius * 2, cornerRadius * 2,
-				centerX - width + cornerRadius,
-				centerY - height + cornerRadius)) {
-				return true;
-			}
-			*/
-			
-			// Check top right quarter circle
-			if (checkInEllipse(x, y,
-				centerX + width / 2 - cornerRadius,
-				centerY - height / 2 + cornerRadius,
-				cornerRadius * 2, cornerRadius * 2, padding)) {
-				
-				return true;
-			}
-			
-			// Check bottom right quarter circle
-			if (checkInEllipse(x, y,
-				centerX + width / 2 - cornerRadius,
-				centerY + height / 2 - cornerRadius,
-				cornerRadius * 2, cornerRadius * 2, padding)) {
-				
-				return true;
-			}
-			
-			// Check bottom left quarter circle
-			if (checkInEllipse(x, y,
-				centerX - width / 2 + cornerRadius,
-				centerY + height / 2 - cornerRadius,
-				cornerRadius * 2, cornerRadius * 2, padding)) {
-				
-				return true;
-			}
-			
-			return false;
-		}
-	};
-	
-	nodeShapes["roundrectangle2"] = {
-		roundness: 4.99,
-		
-		draw: function(node, width, height) {
-			if (width <= roundness * 2) {
-				return;
-			}
-		
-			renderer.drawPolygon(node._private.position.x,
-				node._private.position.y, width, height, nodeSapes["roundrectangle2"].points);
-		},
-
-		intersectLine: function(node, width, height, x, y) {
-			return renderer.findPolygonIntersection(
-				node, width, height, x, y, nodeShapes["square"].points);
-		},
-		
-		// TODO: Treat rectangle as sharp-cornered for now. This is a not-large approximation.
-		intersectBox: function(x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			var points = nodeShapes["square"].points;
-			
-			/*
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, 
-			*/
-		}	
-	}
-	
-	/*
-	function PolygonNodeShape(points) {
-		this.points = points;
-		
-		this.draw = function(context, node, width, height) {
-			renderer.drawPolygon(context,
-					node._private.position.x,
-					node._private.position.y,
-					width, height, nodeShapes["pentagon"].points);
-		};
-		
-		this.drawPath = 
-	}
-	*/
-	
-	nodeShapes["pentagon"] = {
-		points: generateUnitNgonPoints(5, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height, nodeShapes["pentagon"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height, nodeShapes["pentagon"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["pentagon"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		},
-		
-		intersectBox: function(
-			x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			var points = nodeShapes["pentagon"].points;
-			
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["pentagon"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	}
-	
-	nodeShapes["hexagon"] = {
-		points: generateUnitNgonPoints(6, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["hexagon"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["hexagon"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["hexagon"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		},
-		
-		intersectBox: function(
-				x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-				
-			var points = nodeShapes["hexagon"].points;
-			
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["hexagon"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	}
-	
-	nodeShapes["heptagon"] = {
-		points: generateUnitNgonPoints(7, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["heptagon"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["heptagon"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["heptagon"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		},
-		
-		intersectBox: function(
-				x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			var points = nodeShapes["heptagon"].points;
-			
-			return renderer.boxIntersectPolygon(
-				x1, y1, x2, y2,
-				points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["heptagon"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	}
-	
-	nodeShapes["octagon"] = {
-		points: generateUnitNgonPoints(8, 0),
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["octagon"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["octagon"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["octagon"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		},
-		
-		intersectBox: function(
-				x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			var points = nodeShapes["octagon"].points;
-			
-			return renderer.boxIntersectPolygon(
-					x1, y1, x2, y2,
-					points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["octagon"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["octagon"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	};
-	
-	var star5Points = new Array(20);
-	{
-		var outerPoints = generateUnitNgonPoints(5, 0);
-		var innerPoints = generateUnitNgonPoints(5, Math.PI / 5);
-		
-//		console.log(outerPoints);
-//		console.log(innerPoints);
-		
-		// Outer radius is 1; inner radius of star is smaller
-		var innerRadius = 0.5 * (3 - Math.sqrt(5));
-		innerRadius *= 1.57;
-		
-		for (var i=0;i<innerPoints.length/2;i++) {
-			innerPoints[i*2] *= innerRadius;
-			innerPoints[i*2+1] *= innerRadius;
-		}
-		
-		for (var i=0;i<20/4;i++) {
-			star5Points[i*4] = outerPoints[i*2];
-			star5Points[i*4+1] = outerPoints[i*2+1];
-			
-			star5Points[i*4+2] = innerPoints[i*2];
-			star5Points[i*4+3] = innerPoints[i*2+1];
-		}
-		
-//		console.log(star5Points);
-	}
-	
-	nodeShapes["star5"] = {
-		points: star5Points,
-		
-		draw: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygon(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["star5"].points);
-		},
-		
-		drawPath: function(context, centerX, centerY, width, height) {
-			renderer.drawPolygonPath(context,
-				centerX, centerY,
-				width, height,
-				nodeShapes["star5"].points);
-		},
-		
-		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.polygonIntersectLine(
-				x, y,
-				nodeShapes["star5"].points,
-				nodeX,
-				nodeY,
-				width / 2, height / 2,
-				padding);
-		},
-		
-		intersectBox: function(
-				x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-			
-			var points = nodeShapes["star5"].points;
-			
-			return renderer.boxIntersectPolygon(
-					x1, y1, x2, y2,
-					points, width, height, centerX, centerY, [0, -1], padding);
-		},
-		
-		checkPointRough: function(
-			x, y, padding, width, height, centerX, centerY) {
-		
-			return $$.math.checkInBoundingBox(
-				x, y, nodeShapes["star5"].points, 
-					padding, width, height, centerX, centerY);
-		},
-		
-		checkPoint: function(
-			x, y, padding, width, height, centerX, centerY) {
-			
-			return $$.math.pointInsidePolygon(x, y, nodeShapes["star5"].points,
-				centerX, centerY, width, height, [0, -1], padding);
-		}
-	};
-	
-	}
-
-	}
 	
 	
 	// @O Polygon drawing
@@ -5873,6 +4635,14 @@
 	}
 
 	
+	}
+
+	// copy the math functions into the renderer prototype
+	// unfortunately these functions are used interspersed t/o the code
+	// and this makes sure things work just in case a ref was missed in refactoring
+	// TODO remove this eventually
+	for( var fnName in $$.math ){
+		CanvasRenderer.prototype[ fnName ] = $$.math[ fnName ];
 	}
 	
 	

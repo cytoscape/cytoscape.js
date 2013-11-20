@@ -4575,19 +4575,13 @@
 		context.fill();
 	}
 	
-	CanvasRenderer.prototype.getRoundRectangleRadius = function(width, height) {
-		
-		// Set the default radius, unless half of width or height is smaller than default
-		return Math.min(width / 2, height / 2, 10);
-	}
-	
 	// Round rectangle drawing
 	CanvasRenderer.prototype.drawRoundRectanglePath = function(
 		context, x, y, width, height, radius) {
 		
 		var halfWidth = width / 2;
 		var halfHeight = height / 2;
-		var cornerRadius = this.getRoundRectangleRadius(width, height);
+		var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
 		context.translate(x, y);
 		
 		context.beginPath();

@@ -1809,7 +1809,7 @@
 			addCurrentEdge = false;
 
 			if (rs.edgeType == "self") {
-				if ((this.inBezierVicinity(x, y,
+				if (($$.math.inBezierVicinity(x, y,
 						rs.startX,
 						rs.startY,
 						rs.cp2ax,
@@ -1819,7 +1819,7 @@
 						Math.pow(edge._private.style["width"].value/2, 2))
 							&&
 					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
-						this.sqDistanceToQuadraticBezier(x, y,
+						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
 							rs.cp2ax,
@@ -1827,7 +1827,7 @@
 							rs.selfEdgeMidX,
 							rs.selfEdgeMidY)))
 					||
-					(this.inBezierVicinity(x, y,
+					($$.math.inBezierVicinity(x, y,
 						rs.selfEdgeMidX,
 						rs.selfEdgeMidY,
 						rs.cp2cx,
@@ -1837,7 +1837,7 @@
 						Math.pow(edges[i]._private.style["width"].value/2, 2))
 							&&
 					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
-						this.sqDistanceToQuadraticBezier(x, y,
+						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.selfEdgeMidX,
 							rs.selfEdgeMidY,
 							rs.cp2cx,
@@ -1847,10 +1847,10 @@
 					 { addCurrentEdge = true; }
 			
 			} else if (rs.edgeType == "straight") {
-				if (this.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].value * 2)
+				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].value * 2)
 						&&
 					Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
-					this.sqDistanceToFiniteLine(x, y,
+					$$.math.sqDistanceToFiniteLine(x, y,
 						rs.startX,
 						rs.startY,
 						rs.endX,
@@ -1858,7 +1858,7 @@
 					{ addCurrentEdge = true; }
 			
 			} else if (rs.edgeType == "bezier") {
-				if (this.inBezierVicinity(x, y,
+				if ($$.math.inBezierVicinity(x, y,
 					rs.startX,
 					rs.startY,
 					rs.cp2x,
@@ -1868,7 +1868,7 @@
 					Math.pow(edges[i]._private.style["width"].value / 2, 2))
 						&&
 					(Math.pow(edges[i]._private.style["width"].value / 2 , 2) + edgeThreshold >
-						this.sqDistanceToQuadraticBezier(x, y,
+						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
 							rs.cp2x,
@@ -1956,22 +1956,22 @@
 		
 		for (var i=0;i<edges.length;i++) {
 			if (edges[i]._private.rscratch.edgeType == "self") {
-				if ((heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+				if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
 								||
-					(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+					(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
@@ -1980,25 +1980,25 @@
 			}
 			
 			if (edges[i]._private.rscratch.edgeType == "bezier" &&
-				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+				(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&&
-						(heur == 2 || (heur == 1 && this.checkBezierInBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
 				{ box.push(edges[i]); }
 		
 			if (edges[i]._private.rscratch.edgeType == "straight" &&
-				(heur = this.boxInBezierVicinity(x1, y1, x2, y2,
+				(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
 						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
 						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
 							&& /* console.log("test", heur) == undefined && */
-						(heur == 2 || (heur == 1 && this.checkStraightEdgeInBox(x1, y1, x2, y2,
+						(heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
 				{ box.push(edges[i]); }
@@ -4549,11 +4549,11 @@
 		var points;
 		
 		if (padding > 0) {
-			var expandedLineSet = renderer.expandPolygon(
+			var expandedLineSet = $$.math.expandPolygon(
 				transformedPoints,
 				-padding);
 			
-			points = renderer.joinLines(expandedLineSet);
+			points = $$.math.joinLines(expandedLineSet);
 		} else {
 			points = transformedPoints;
 		}
@@ -4648,11 +4648,11 @@
 		var points;
 		
 		if (padding > 0) {
-			var expandedLineSet = renderer.expandPolygon(
+			var expandedLineSet = $$.math.expandPolygon(
 				transformedPoints,
 				-padding);
 			
-			points = renderer.joinLines(expandedLineSet);
+			points = $$.math.joinLines(expandedLineSet);
 		} else {
 			points = transformedPoints;
 		}
@@ -4732,7 +4732,7 @@
 			
 //			console.log("collide(): " + direction);
 			
-			return rendFunc.pointInsidePolygon(
+			return $$.math.pointInsidePolygon(
 				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
@@ -4741,7 +4741,7 @@
 					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["arrow"]._points);
 			}
 		
-			return rendFunc.checkInBoundingCircle(
+			return $$.math.checkInBoundingCircle(
 				x, y, arrowShapes["arrow"]._farthestPointSqDistance,
 				0, width, height, centerX, centerY);
 		},
@@ -4836,7 +4836,7 @@
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			var points = arrowShapes["inhibitor"]._points;
 			
-			return rendFunc.pointInsidePolygon(
+			return $$.math.pointInsidePolygon(
 				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
@@ -4845,7 +4845,7 @@
 					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["inhibitor"]._points);
 			}
 		
-			return rendFunc.checkInBoundingCircle(
+			return $$.math.checkInBoundingCircle(
 				x, y, arrowShapes["inhibitor"]._farthestPointSqDistance,
 				0, width, height, centerX, centerY);
 		},
@@ -4874,7 +4874,7 @@
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			var points = arrowShapes["square"]._points;
 			
-			return rendFunc.pointInsidePolygon(
+			return $$.math.pointInsidePolygon(
 				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
@@ -4883,7 +4883,7 @@
 					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["square"]._points);
 			}
 		
-			return rendFunc.checkInBoundingCircle(
+			return $$.math.checkInBoundingCircle(
 				x, y, arrowShapes["square"]._farthestPointSqDistance,
 				0, width, height, centerX, centerY);
 		},
@@ -4912,7 +4912,7 @@
 		collide: function(x, y, centerX, centerY, width, height, direction, padding) {
 			var points = arrowShapes["diamond"]._points;
 					
-			return rendFunc.pointInsidePolygon(
+			return $$.math.pointInsidePolygon(
 				x, y, points, centerX, centerY, width, height, direction, padding);
 		},
 		roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
@@ -4921,7 +4921,7 @@
 					rendFunc.findMaxSqDistanceToOrigin(arrowShapes["diamond"]._points);
 			}
 				
-			return rendFunc.checkInBoundingCircle(
+			return $$.math.checkInBoundingCircle(
 				x, y, arrowShapes["diamond"]._farthestPointSqDistance,
 				0, width, height, centerX, centerY);
 		},
@@ -5237,7 +5237,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["triangle"].points, // Triangle?
 					padding, width, height, centerX, centerY);
 		},
@@ -5245,7 +5245,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(
+			return $$.math.pointInsidePolygon(
 				x, y, nodeShapes["triangle"].points,
 				centerX, centerY, width, height,
 				[0, -1], padding);
@@ -5296,7 +5296,7 @@
 			x, y, padding, width, height,
 			centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["square"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5304,7 +5304,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["square"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["square"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
@@ -5331,7 +5331,7 @@
 		},
 		
 		intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
-			return renderer.roundRectangleIntersectLine(
+			return $$.math.roundRectangleIntersectLine(
 					x, y,
 					nodeX,
 					nodeY,
@@ -5344,7 +5344,7 @@
 			width, height, centerX, 
 			centerY, padding) {
 
-			return renderer.roundRectangleIntersectBox(
+			return $$.math.roundRectangleIntersectBox(
 				x1, y1, x2, y2, 
 				width, height, centerX, centerY, padding);
 		},
@@ -5355,7 +5355,7 @@
 		
 			// This check is OK because it assumes the round rectangle
 			// has sharp edges for the rough check 
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["roundrectangle"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5367,13 +5367,13 @@
 			var cornerRadius = renderer.getRoundRectangleRadius(width, height);
 			
 			// Check hBox
-			if (renderer.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+			if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
 				centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
 				return true;
 			}
 			
 			// Check vBox
-			if (renderer.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+			if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
 				centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
 				return true;
 			}
@@ -5520,7 +5520,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["pentagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5528,7 +5528,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
@@ -5573,7 +5573,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["hexagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5581,7 +5581,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
@@ -5626,7 +5626,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["heptagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5634,7 +5634,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	}
@@ -5679,7 +5679,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["octagon"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5687,7 +5687,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["octagon"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["octagon"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	};
@@ -5760,7 +5760,7 @@
 		checkPointRough: function(
 			x, y, padding, width, height, centerX, centerY) {
 		
-			return renderer.checkInBoundingBox(
+			return $$.math.checkInBoundingBox(
 				x, y, nodeShapes["star5"].points, 
 					padding, width, height, centerX, centerY);
 		},
@@ -5768,7 +5768,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
-			return renderer.pointInsidePolygon(x, y, nodeShapes["star5"].points,
+			return $$.math.pointInsidePolygon(x, y, nodeShapes["star5"].points,
 				centerX, centerY, width, height, [0, -1], padding);
 		}
 	};
@@ -5777,187 +5777,6 @@
 
 	}
 	
-	// @O Polygon calculations
-	{
-	CanvasRenderer.prototype.expandPolygon = function(points, pad) {
-		
-		var expandedLineSet = new Array(points.length * 2);
-		
-		var currentPointX, currentPointY, nextPointX, nextPointY;
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			currentPointX = points[i * 2];
-			currentPointY = points[i * 2 + 1];
-			
-			if (i < points.length / 2 - 1) {
-				nextPointX = points[(i + 1) * 2];
-				nextPointY = points[(i + 1) * 2 + 1];
-			} else {
-				nextPointX = points[0];
-				nextPointY = points[1];
-			}
-			
-			// Current line: [currentPointX, currentPointY] to [nextPointX, nextPointY]
-			
-			// Assume CCW polygon winding
-			
-			var offsetX = (nextPointY - currentPointY);
-			var offsetY = -(nextPointX - currentPointX);
-			
-			// Normalize
-			var offsetLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-			var normalizedOffsetX = offsetX / offsetLength;
-			var normalizedOffsetY = offsetY / offsetLength;
-			
-			expandedLineSet[i * 4] = currentPointX + normalizedOffsetX * pad;
-			expandedLineSet[i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
-			expandedLineSet[i * 4 + 2] = nextPointX + normalizedOffsetX * pad;
-			expandedLineSet[i * 4 + 3] = nextPointY + normalizedOffsetY * pad;
-		}
-		
-		return expandedLineSet;
-	}
-	
-	CanvasRenderer.prototype.joinLines = function(lineSet) {
-		
-		var vertices = new Array(lineSet.length / 2);
-		
-		var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
-		var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
-		
-		for (var i = 0; i < lineSet.length / 4; i++) {
-			currentLineStartX = lineSet[i * 4];
-			currentLineStartY = lineSet[i * 4 + 1];
-			currentLineEndX = lineSet[i * 4 + 2];
-			currentLineEndY = lineSet[i * 4 + 3];
-			
-			if (i < lineSet.length / 4 - 1) {
-				nextLineStartX = lineSet[(i + 1) * 4];
-				nextLineStartY = lineSet[(i + 1) * 4 + 1];
-				nextLineEndX = lineSet[(i + 1) * 4 + 2];
-				nextLineEndY = lineSet[(i + 1) * 4 + 3];
-			} else {
-				nextLineStartX = lineSet[0];
-				nextLineStartY = lineSet[1];
-				nextLineEndX = lineSet[2];
-				nextLineEndY = lineSet[3];
-			}
-			
-			var intersection = this.finiteLinesIntersect(
-				currentLineStartX, currentLineStartY,
-				currentLineEndX, currentLineEndY,
-				nextLineStartX, nextLineStartY,
-				nextLineEndX, nextLineEndY,
-				true);
-			
-			vertices[i * 2] = intersection[0];
-			vertices[i * 2 + 1] = intersection[1];
-		}
-		
-		return vertices;
-	}
-	
-	CanvasRenderer.prototype.pointInsidePolygon = function(
-		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
-
-		//var direction = arguments[6];
-		var transformedPoints = new Array(basePoints.length)
-
-		// Gives negative angle
-		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
-			+ direction[1] * direction[1])));
-		
-		if (direction[0] < 0) {
-			angle = angle + Math.PI / 2;
-		} else {
-			angle = -angle - Math.PI / 2;
-		}
-				
-		var cos = Math.cos(-angle);
-		var sin = Math.sin(-angle);
-		
-//		console.log("base: " + basePoints);
-		for (var i = 0; i < transformedPoints.length / 2; i++) {
-			transformedPoints[i * 2] = 
-				width / 2 * (basePoints[i * 2] * cos
-					- basePoints[i * 2 + 1] * sin);
-			
-			transformedPoints[i * 2 + 1] = 
-				height / 2 * (basePoints[i * 2 + 1] * cos 
-					+ basePoints[i * 2] * sin);
-
-			transformedPoints[i * 2] += centerX;
-			transformedPoints[i * 2 + 1] += centerY;
-		}
-		
-		var points;
-		
-		if (padding > 0) {
-			var expandedLineSet = renderer.expandPolygon(
-				transformedPoints,
-				-padding);
-			
-			points = renderer.joinLines(expandedLineSet);
-		} else {
-			points = transformedPoints;
-		}
-		
-		var x1, y1, x2, y2;
-		var y3;
-		
-		// Intersect with vertical line through (x, y)
-		var up = 0;
-		var down = 0;
-		for (var i = 0; i < points.length / 2; i++) {
-			
-			x1 = points[i * 2];
-			y1 = points[i * 2 + 1];
-			
-			if (i + 1 < points.length / 2) {
-				x2 = points[(i + 1) * 2];
-				y2 = points[(i + 1) * 2 + 1];
-			} else {
-				x2 = points[(i + 1 - points.length / 2) * 2];
-				y2 = points[(i + 1 - points.length / 2) * 2 + 1];
-			}
-			
-//*			console.log("line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
-
-//&			console.log(x1, x, x2);
-
-			if (x1 == x && x2 == x) {
-				
-			} else if ((x1 >= x && x >= x2)
-				|| (x1 <= x && x <= x2)) {
-				
-				y3 = (x - x1) / (x2 - x1) * (y2 - y1) + y1;
-				
-				if (y3 > y) {
-					up++;
-				}
-				
-				if (y3 < y) {
-					down++;
-				}
-				
-//*				console.log(y3, y);
-				
-			} else {
-//*				console.log("22");
-				continue;
-			}
-			
-		}
-		
-//*		console.log("up: " + up + ", down: " + down);
-		
-		if (up % 2 == 0) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-	}
 	
 	// @O Polygon drawing
 	CanvasRenderer.prototype.drawPolygonPath = function(
@@ -6052,874 +5871,10 @@
 		
 		context.fill();
 	}
-	
-	CanvasRenderer.prototype.roundRectangleIntersectLine = function(
-		x, y, nodeX, nodeY, width, height, padding) {
-		
-		var cornerRadius = this.getRoundRectangleRadius(width, height);
-	  
-		var halfWidth = width / 2;
-		var halfHeight = height / 2;
-		
-		// Check intersections with straight line segments
-		var straightLineIntersections;
-		
-		// Top segment, left to right
-		{
-			var topStartX = nodeX - halfWidth + cornerRadius - padding;
-			var topStartY = nodeY - halfHeight - padding;
-			var topEndX = nodeX + halfWidth - cornerRadius + padding;
-			var topEndY = topStartY;
-			
-			straightLineIntersections = this.finiteLinesIntersect(
-				x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false);
-			
-			if (straightLineIntersections.length > 0) {
-				return straightLineIntersections;
-			}
-		}
-		
-		// Right segment, top to bottom
-		{
-			var rightStartX = nodeX + halfWidth + padding;
-			var rightStartY = nodeY - halfHeight + cornerRadius - padding;
-			var rightEndX = rightStartX;
-			var rightEndY = nodeY + halfHeight - cornerRadius + padding;
-			
-			straightLineIntersections = this.finiteLinesIntersect(
-				x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false);
-			
-			if (straightLineIntersections.length > 0) {
-				return straightLineIntersections;
-			}
-		}
-		
-		// Bottom segment, left to right
-		{
-			var bottomStartX = nodeX - halfWidth + cornerRadius - padding;
-			var bottomStartY = nodeY + halfHeight + padding;
-			var bottomEndX = nodeX + halfWidth - cornerRadius + padding;
-			var bottomEndY = bottomStartY;
-			
-			straightLineIntersections = this.finiteLinesIntersect(
-				x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false);
-			
-			if (straightLineIntersections.length > 0) {
-				return straightLineIntersections;
-			}
-		}
-		
-		// Left segment, top to bottom
-		{
-			var leftStartX = nodeX - halfWidth - padding;
-			var leftStartY = nodeY - halfHeight + cornerRadius - padding;
-			var leftEndX = leftStartX;
-			var leftEndY = nodeY + halfHeight - cornerRadius + padding;
-			
-			straightLineIntersections = this.finiteLinesIntersect(
-				x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false);
-			
-			if (straightLineIntersections.length > 0) {
-				return straightLineIntersections;
-			}
-		}
-		
-		// Check intersections with arc segments
-		var arcIntersections;
-		
-		// Top Left
-		{
-			var topLeftCenterX = nodeX - halfWidth + cornerRadius;
-			var topLeftCenterY = nodeY - halfHeight + cornerRadius
-			arcIntersections = this.intersectLineCircle(
-				x, y, nodeX, nodeY, 
-				topLeftCenterX, topLeftCenterY, cornerRadius + padding);
-			
-			// Ensure the intersection is on the desired quarter of the circle
-			if (arcIntersections.length > 0
-				&& arcIntersections[0] <= topLeftCenterX
-				&& arcIntersections[1] <= topLeftCenterY) {
-				return [arcIntersections[0], arcIntersections[1]];
-			}
-		}
-		
-		// Top Right
-		{
-			var topRightCenterX = nodeX + halfWidth - cornerRadius;
-			var topRightCenterY = nodeY - halfHeight + cornerRadius
-			arcIntersections = this.intersectLineCircle(
-				x, y, nodeX, nodeY, 
-				topRightCenterX, topRightCenterY, cornerRadius + padding);
-			
-			// Ensure the intersection is on the desired quarter of the circle
-			if (arcIntersections.length > 0
-				&& arcIntersections[0] >= topRightCenterX
-				&& arcIntersections[1] <= topRightCenterY) {
-				return [arcIntersections[0], arcIntersections[1]];
-			}
-		}
-		
-		// Bottom Right
-		{
-			var bottomRightCenterX = nodeX + halfWidth - cornerRadius;
-			var bottomRightCenterY = nodeY + halfHeight - cornerRadius
-			arcIntersections = this.intersectLineCircle(
-				x, y, nodeX, nodeY, 
-				bottomRightCenterX, bottomRightCenterY, cornerRadius + padding);
-			
-			// Ensure the intersection is on the desired quarter of the circle
-			if (arcIntersections.length > 0
-				&& arcIntersections[0] >= bottomRightCenterX
-				&& arcIntersections[1] >= bottomRightCenterY) {
-				return [arcIntersections[0], arcIntersections[1]];
-			}
-		}
-		
-		// Bottom Left
-		{
-			var bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
-			var bottomLeftCenterY = nodeY + halfHeight - cornerRadius
-			arcIntersections = this.intersectLineCircle(
-				x, y, nodeX, nodeY, 
-				bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding);
-			
-			// Ensure the intersection is on the desired quarter of the circle
-			if (arcIntersections.length > 0
-				&& arcIntersections[0] <= bottomLeftCenterX
-				&& arcIntersections[1] >= bottomLeftCenterY) {
-				return [arcIntersections[0], arcIntersections[1]];
-			}
-		}
 
-		return []; // if nothing
-	}
-	
-	CanvasRenderer.prototype.roundRectangleIntersectBox = function(
-		boxX1, boxY1, boxX2, boxY2, width, height, centerX, centerY, padding) {
-		
-		// We have the following shpae
-		
-		//    _____
-		//  _|     |_
-		// |         |
-		// |_       _|
-		//   |_____|
-		//
-		// With a quarter circle at each corner.
-		
-		var cornerRadius = this.getRoundRectangleRadius(width, height);
-		
-		var hBoxTopLeftX = centerX - width / 2 - padding;
-		var hBoxTopLeftY = centerY - height / 2 + cornerRadius - padding;
-		var hBoxBottomRightX = centerX + width / 2 + padding;
-		var hBoxBottomRightY = centerY + height / 2 - cornerRadius + padding;
-		
-		var vBoxTopLeftX = centerX - width / 2 + cornerRadius - padding;
-		var vBoxTopLeftY = centerY - height / 2 - padding;
-		var vBoxBottomRightX = centerX + width / 2 - cornerRadius + padding;
-		var vBoxBottomRightY = centerY + height / 2 + padding;
-		
-		// Check if the box is out of bounds
-		var boxMinX = Math.min(boxX1, boxX2);
-		var boxMaxX = Math.max(boxX1, boxX2);
-		var boxMinY = Math.min(boxY1, boxY2);
-		var boxMaxY = Math.max(boxY1, boxY2);
-		
-		if (boxMaxX < hBoxTopLeftX) {
-			return false;
-		} else if (boxMinX > hBoxBottomRightX) {
-			return false;
-		}
-		
-		if (boxMaxY < vBoxTopLeftY) {
-			return false;
-		} else if (boxMinY > vBoxBottomRightY) {
-			return false;
-		}
-		
-		// Check if an hBox point is in given box
-		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
-			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
-			return true;
-		}
-		
-		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
-			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
-			return true;
-		}
-		
-		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
-			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
-			return true;
-		}
-		
-		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
-			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
-			return true;
-		}
-		
-		// Check if a given point box is in the hBox
-		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
-			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
-			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
-			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
-			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
-			return true;
-		}
-		
-		// Check if an vBox point is in given box
-		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
-			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
-			return true;
-		}
-		
-		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
-			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
-			return true;
-		}
-		
-		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
-			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
-			return true;
-		}
-		
-		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
-			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
-			return true;
-		}
-		
-		// Check if a given point box is in the vBox
-		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
-			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
-			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
-			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
-			return true;
-		}
-		
-		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
-			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
-			return true;
-		}
-		
-		// Lastly, check if one of the ellipses coincide with the box
-		
-		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
-			return true;
-		}
-		
-		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxTopLeftY + padding)) {
-			return true;
-		}
-		
-		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxBottomRightY - padding)) {
-			return true;
-		}
-		
-		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxBottomRightY - padding)) {
-			return true;
-		}
-		
-		return false;
-	}
-	
-	// @O Approximate collision functions
-	CanvasRenderer.prototype.checkInBoundingCircle = function(
-		x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
-		
-		x = (x - centerX) / (width + padding);
-		y = (y - centerY) / (height + padding);
-		
-		return (x * x + y * y) <= farthestPointSqDistance;
-	}
-	
-	CanvasRenderer.prototype.checkInBoundingBox = function(
-		x, y, points, padding, width, height, centerX, centerY) {
-		
-		// Assumes width, height >= 0, points.length > 0
-		
-		var minX = points[0], minY = points[1];
-		var maxX = points[0], maxY = points[1];
-		
-		for (var i = 1; i < points.length / 2; i++) {
-			
-			if (points[i * 2] < minX) {
-				minX = points[i * 2];
-			} else if (points[i * 2] > maxX) {
-				maxX = points[i * 2];
-			}
-			
-			if (points[i * 2 + 1] < minY) {
-				minY = points[i * 2 + 1];
-			} else if (points[i * 2 + 1] > maxY) {
-				maxY = points[i * 2 + 1];
-			}
-		}
-		
-		x -= centerX;
-		y -= centerY;
-		
-		x /= width;
-		y /= height;
-		
-		if (x < minX) {
-			return false;
-		} else if (x > maxX) {
-			return false;
-		}
-		
-		if (y < minY) {
-			return false;
-		} else if (y > maxY) {
-			return false;
-		}
-		
-		return true;
-	}
-	
-	// @O Straight/bezier edge approximate collision, precise collision, and distance calculation functions
-	{
-	CanvasRenderer.prototype.boxInBezierVicinity = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-		
-		// Return values:
-		// 0 - curve is not in box
-		// 1 - curve may be in box; needs precise check
-		// 2 - curve is in box
-		
-		// midpoint
-		var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
-		var midY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
-
-		var boxMinX = Math.min(x1box, x2box) - tolerance;
-		var boxMinY = Math.min(y1box, y2box) - tolerance;
-		var boxMaxX = Math.max(x1box, x2box) + tolerance;
-		var boxMaxY = Math.max(y1box, y2box) + tolerance;
-		
-		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) { // (x1, y1) in box
-			return 1;
-		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) { // (x3, y3) in box
-			return 1;
-		} else if (midX >= boxMinX && midX <= boxMaxX && midY >= boxMinY && midY <= boxMaxY) { // (midX, midY) in box
-			return 1;
-		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { // ctrl pt in box
-			return 1;
-		}
-		
-		var curveMinX = Math.min(x1, midX, x3);
-		var curveMinY = Math.min(y1, midY, y3);
-		var curveMaxX = Math.max(x1, midX, x3);
-		var curveMaxY = Math.max(y1, midY, y3);
-		
-		/*
-		console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX 
-			+ ", " + curveMaxY);
-		if (curveMinX == undefined) {
-			console.log("undefined curveMinX: " + x1 + ", " + x2 + ", " + x3);
-		}
-		*/
-		
-		if (curveMinX > boxMaxX
-			|| curveMaxX < boxMinX
-			|| curveMinY > boxMaxY
-			|| curveMaxY < boxMinY) {
-			
-			return 0;	
-		}
-		
-		return 1;
-	}
-
-	CanvasRenderer.prototype.checkBezierInBox = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-
-
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
-		function sampleInBox(t){
-			var x = qbezierAt(x1, x2, x3, t);
-			var y = qbezierAt(y1, y2, y3, t);
-
-			return x1box <= x && x <= x2box
-				&& y1box <= y && y <= y2box
-			;
-		}
-
-		for( var t = 0; t <= 1; t += 0.25 ){
-			if( !sampleInBox(t) ){
-				return false;
-			}
-		}
-
-		return true;
-	};
-	
-	CanvasRenderer.prototype.checkStraightEdgeInBox = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
-
-		return x1box <= x1 && x1 <= x2box
-			&& x1box <= x2 && x2 <= x2box
-			&& y1box <= y1 && y1 <= y2box
-			&& y1box <= y2 && y2 <= y2box
-		;
-	};
-
-	CanvasRenderer.prototype.checkStraightEdgeCrossesBox = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
-		
-	 //console.log(arguments);
-		
-		var boxMinX = Math.min(x1box, x2box) - tolerance;
-		var boxMinY = Math.min(y1box, y2box) - tolerance;
-		var boxMaxX = Math.max(x1box, x2box) + tolerance;
-		var boxMaxY = Math.max(y1box, y2box) + tolerance;
-		
-		// Check left + right bounds
-		var aX = x2 - x1;
-		var bX = x1;
-		var yValue;
-		
-		// Top and bottom
-		var aY = y2 - y1;
-		var bY = y1;
-		var xValue;
-		
-		if (Math.abs(aX) < 0.0001) {
-			return (x1 >= boxMinX && x1 <= boxMaxX
-				&& Math.min(y1, y2) <= boxMinY
-				&& Math.max(y1, y2) >= boxMaxY);	
-		}
-		
-		var tLeft = (boxMinX - bX) / aX;
-		if (tLeft > 0 && tLeft <= 1) {
-			yValue = aY * tLeft + bY;
-			if (yValue >= boxMinY && yValue <= boxMaxY) {
-				return true;
-			} 
-		}
-		
-		var tRight = (boxMaxX - bX) / aX;
-		if (tRight > 0 && tRight <= 1) {
-			yValue = aY * tRight + bY;
-			if (yValue >= boxMinY && yValue <= boxMaxY) {
-				return true;
-			} 
-		}
-		
-		var tTop = (boxMinY - bY) / aY;
-		if (tTop > 0 && tTop <= 1) {
-			xValue = aX * tTop + bX;
-			if (xValue >= boxMinX && xValue <= boxMaxX) {
-				return true;
-			} 
-		}
-		
-		var tBottom = (boxMaxY - bY) / aY;
-		if (tBottom > 0 && tBottom <= 1) {
-			xValue = aX * tBottom + bX;
-			if (xValue >= boxMinX && xValue <= boxMaxX) {
-				return true;
-			} 
-		}
-		
-		return false;
-	}
-	
-	CanvasRenderer.prototype.checkBezierCrossesBox = function(
-		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-		
-		var boxMinX = Math.min(x1box, x2box) - tolerance;
-		var boxMinY = Math.min(y1box, y2box) - tolerance;
-		var boxMaxX = Math.max(x1box, x2box) + tolerance;
-		var boxMaxY = Math.max(y1box, y2box) + tolerance;
-		
-		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
-			return true;
-		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
-			return true;
-		}
-		
-		var aX = x1 - 2 * x2 + x3;
-		var bX = -2 * x1 + 2 * x2;
-		var cX = x1;
-
-		var xIntervals = [];
-		
-		if (Math.abs(aX) < 0.0001) {
-			var leftParam = (boxMinX - x1) / bX;
-			var rightParam = (boxMaxX - x1) / bX;
-			
-			xIntervals.push(leftParam, rightParam);
-		} else {
-			// Find when x coordinate of the curve crosses the left side of the box
-			var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
-			var tX1, tX2;
-			if (discriminantX1 > 0) {
-				var sqrt = Math.sqrt(discriminantX1);
-				tX1 = (-bX + sqrt) / (2 * aX);
-				tX2 = (-bX - sqrt) / (2 * aX);
-				
-				xIntervals.push(tX1, tX2);
-			}
-			
-			var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
-			var tX3, tX4;
-			if (discriminantX2 > 0) {
-				var sqrt = Math.sqrt(discriminantX2);
-				tX3 = (-bX + sqrt) / (2 * aX);
-				tX4 = (-bX - sqrt) / (2 * aX);
-				
-				xIntervals.push(tX3, tX4);
-			}
-		}
-		
-		xIntervals.sort(function(a, b) { return a - b; });
-		
-		var aY = y1 - 2 * y2 + y3;
-		var bY = -2 * y1 + 2 * y2;
-		var cY = y1;
-		
-		var yIntervals = [];
-		
-		if (Math.abs(aY) < 0.0001) {
-			var topParam = (boxMinY - y1) / bY;
-			var bottomParam = (boxMaxY - y1) / bY;
-			
-			yIntervals.push(topParam, bottomParam);
-		} else {
-			var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
-			
-			var tY1, tY2;
-			if (discriminantY1 > 0) {
-				var sqrt = Math.sqrt(discriminantY1);
-				tY1 = (-bY + sqrt) / (2 * aY);
-				tY2 = (-bY - sqrt) / (2 * aY);
-				
-				yIntervals.push(tY1, tY2);
-			}
-	
-			var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
-			
-			var tY3, tY4;
-			if (discriminantY2 > 0) {
-				var sqrt = Math.sqrt(discriminantY2);
-				tY3 = (-bY + sqrt) / (2 * aY);
-				tY4 = (-bY - sqrt) / (2 * aY);
-				
-				yIntervals.push(tY3, tY4);
-			}
-		}
-				
-		yIntervals.sort(function(a, b) { return a - b; });
-
-		for (var index = 0; index < xIntervals.length; index += 2) {
-			for (var yIndex = 1; yIndex < yIntervals.length; yIndex += 2) {
-				
-				// Check if there exists values for the Bezier curve
-				// parameter between 0 and 1 where both the curve's
-				// x and y coordinates are within the bounds specified by the box
-				if (xIntervals[index] < yIntervals[yIndex]
-					&& yIntervals[yIndex] >= 0.0
-					&& xIntervals[index] <= 1.0
-					&& xIntervals[index + 1] > yIntervals[yIndex - 1]
-					&& yIntervals[yIndex - 1] <= 1.0
-					&& xIntervals[index + 1] >= 0.0) {
-					
-					return true;
-				}
-			}
-		}
-		
-		return false;
-	}
-	
-	CanvasRenderer.prototype.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
-		var t = tolerance;
-
-		var x1 = Math.min(lx1, lx2);
-		var x2 = Math.max(lx1, lx2);
-		var y1 = Math.min(ly1, ly2);
-		var y2 = Math.max(ly1, ly2);
-
-		return x1 - t <= x && x <= x2 + t
-			&& y1 - t <= y && y <= y2 + t;
-	};
-
-	CanvasRenderer.prototype.inBezierVicinity = function(
-		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
-		
-		// Middle point occurs when t = 0.5, this is when the Bezier
-		// is closest to (x2, y2)
-		var middlePointX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
-		var middlePointY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
-
-		// a rough bounding box of the bezier curve
-		var bb = {
-			x1: Math.min( x1, x3, middlePointX ),
-			x2: Math.max( x1, x3, middlePointX ),
-			y1: Math.min( y1, y3, middlePointY ),
-			y2: Math.max( y1, y3, middlePointY )
-		};
-
-		// if outside the rough bounding box for the bezier, then it can't be a hit
-		if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
-			// console.log('bezier out of rough bb')
-			return false;
-		} else {
-			// console.log('do more expensive check');
-		}
-		
-		var displacementX, displacementY, offsetX, offsetY;
-		var dotProduct, dotSquared, hypSquared;
-		var outside = function(x, y, startX, startY, endX, endY,
-				toleranceSquared, counterClockwise) {
-
-			dotProduct = (endY - startY) * (x - startX) + (startX - endX) * (y - startY);
-			dotSquared = dotProduct * dotProduct;
-			sideSquared = (endY - startY) * (endY - startY) 
-				+ (startX - endX) * (startX - endX);
-
-			if (counterClockwise) {
-				if (dotProduct > 0) {
-					return false;
-				}
-			} else {
-				if (dotProduct < 0) {
-					return false;
-				}
-			}
-			
-			return (dotSquared / sideSquared > toleranceSquared);
-		};
-		
-		// Used to check if the test polygon winding is clockwise or counterclockwise
-		var testPointX = (middlePointX + x2) / 2.0;
-		var testPointY = (middlePointY + y2) / 2.0;
-		
-		var counterClockwise = true;
-		
-		// The test point is always inside
-		if (outside(testPointX, testPointY, x1, y1, x2, y2, 0, counterClockwise)) {
-			counterClockwise = !counterClockwise;
-		}
-		
-		/*
-		return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
-			&& !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
-			&& !outside(x, y, x3, y3, middlePointX, middlePointY, toleranceSquared,
-				counterClockwise)
-			&& !outside(x, y, middlePointX, middlePointY, x1, y1, toleranceSquared,
-				counterClockwise)
-		);
-		*/
-		
-		return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
-			&& !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
-			&& !outside(x, y, x3, y3, x1, y1, toleranceSquared,
-				counterClockwise)
-		);
-	}
-	
-	CanvasRenderer.prototype.solveCubic = function(a, b, c, d, result) {
-		
-		// Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
-		// r is the real component, i is the imaginary component
-
-		// An implementation of the Cardano method from the year 1545
-		// http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
-
-		b /= a;
-		c /= a;
-		d /= a;
-		
-		var discriminant, q, r, dum1, s, t, term1, r13;
-
-		q = (3.0 * c - (b * b)) / 9.0;
-		r = -(27.0 * d) + b * (9.0 * c - 2.0 * (b * b));
-		r /= 54.0;
-		
-		discriminant = q * q * q + r * r;
-		result[1] = 0;
-		term1 = (b / 3.0);
-		
-		if (discriminant > 0) {
-			s = r + Math.sqrt(discriminant);
-			s = ((s < 0) ? -Math.pow(-s, (1.0 / 3.0)) : Math.pow(s, (1.0 / 3.0)));
-			t = r - Math.sqrt(discriminant);
-			t = ((t < 0) ? -Math.pow(-t, (1.0 / 3.0)) : Math.pow(t, (1.0 / 3.0)));
-			result[0] = -term1 + s + t;
-			term1 += (s + t) / 2.0;
-			result[4] = result[2] = -term1;
-			term1 = Math.sqrt(3.0) * (-t + s) / 2;
-			result[3] = term1;
-			result[5] = -term1;
-			return;
-		}
-		
-		result[5] = result[3] = 0;
-		
-		if (discriminant == 0) {
-			r13 = ((r < 0) ? -Math.pow(-r, (1.0 / 3.0)) : Math.pow(r, (1.0 / 3.0)));
-			result[0] = -term1 + 2.0 * r13;
-			result[4] = result[2] = -(r13 + term1);
-			return;
-		}
-		
-		q = -q;
-		dum1 = q * q * q;
-		dum1 = Math.acos(r / Math.sqrt(dum1));
-		r13 = 2.0 * Math.sqrt(q);
-		result[0] = -term1 + r13 * Math.cos(dum1 / 3.0);
-		result[2] = -term1 + r13 * Math.cos((dum1 + 2.0 * Math.PI) / 3.0);
-		result[4] = -term1 + r13 * Math.cos((dum1 + 4.0 * Math.PI) / 3.0);
-		
-		return;
-	}
-
-	CanvasRenderer.prototype.sqDistanceToQuadraticBezier = function(
-		x, y, x1, y1, x2, y2, x3, y3) {
-		
-		// Find minimum distance by using the minimum of the distance 
-		// function between the given point and the curve
-		
-		// This gives the coefficients of the resulting cubic equation
-		// whose roots tell us where a possible minimum is
-		// (Coefficients are divided by 4)
-		
-		var a = 1.0 * x1*x1 - 4*x1*x2 + 2*x1*x3 + 4*x2*x2 - 4*x2*x3 + x3*x3
-			+ y1*y1 - 4*y1*y2 + 2*y1*y3 + 4*y2*y2 - 4*y2*y3 + y3*y3;
-		
-		var b = 1.0 * 9*x1*x2 - 3*x1*x1 - 3*x1*x3 - 6*x2*x2 + 3*x2*x3
-			+ 9*y1*y2 - 3*y1*y1 - 3*y1*y3 - 6*y2*y2 + 3*y2*y3;
-		
-		var c = 1.0 * 3*x1*x1 - 6*x1*x2 + x1*x3 - x1*x + 2*x2*x2 + 2*x2*x - x3*x
-			+ 3*y1*y1 - 6*y1*y2 + y1*y3 - y1*y + 2*y2*y2 + 2*y2*y - y3*y;
-			
-		var d = 1.0 * x1*x2 - x1*x1 + x1*x - x2*x
-			+ y1*y2 - y1*y1 + y1*y - y2*y;
-		
-		debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
-		
-		var roots = [];
-		
-		// Use the cubic solving algorithm
-		this.solveCubic(a, b, c, d, roots);
-		
-		var zeroThreshold = 0.0000001;
-		
-		var params = [];
-		
-		for (var index = 0; index < 6; index += 2) {
-			if (Math.abs(roots[index + 1]) < zeroThreshold
-					&& roots[index] >= 0
-					&& roots[index] <= 1.0) {
-				params.push(roots[index]);
-			}
-		}
-		
-		params.push(1.0);
-		params.push(0.0);
-		
-		var minDistanceSquared = -1;
-		var closestParam;
-		
-		var curX, curY, distSquared;
-		for (var i = 0; i < params.length; i++) {
-			curX = Math.pow(1.0 - params[i], 2.0) * x1
-				+ 2.0 * (1 - params[i]) * params[i] * x2
-				+ params[i] * params[i] * x3;
-				
-			curY = Math.pow(1 - params[i], 2.0) * y1
-				+ 2 * (1.0 - params[i]) * params[i] * y2
-				+ params[i] * params[i] * y3;
-				
-			distSquared = Math.pow(curX - x, 2) + Math.pow(curY - y, 2);
-			debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
-			if (minDistanceSquared >= 0) {
-				if (distSquared < minDistanceSquared) {
-					minDistanceSquared = distSquared;
-					closestParam = params[i];
-				}
-			} else {
-				minDistanceSquared = distSquared;
-				closestParam = params[i];
-			}
-		}
-		
-		/*
-		debugStats.clickX = x;
-		debugStats.clickY = y;
-		
-		debugStats.closestX = Math.pow(1.0 - closestParam, 2.0) * x1
-				+ 2.0 * (1.0 - closestParam) * closestParam * x2
-				+ closestParam * closestParam * x3;
-				
-		debugStats.closestY = Math.pow(1.0 - closestParam, 2.0) * y1
-				+ 2.0 * (1.0 - closestParam) * closestParam * y2
-				+ closestParam * closestParam * y3;
-		*/
-		
-		debug("given: " 
-			+ "( " + x + ", " + y + "), " 
-			+ "( " + x1 + ", " + y1 + "), " 
-			+ "( " + x2 + ", " + y2 + "), "
-			+ "( " + x3 + ", " + y3 + ")");
-		
-		
-		debug("roots: " + roots);
-		debug("params: " + params);
-		debug("closest param: " + closestParam);
-		return minDistanceSquared;
-	}
-	
-	CanvasRenderer.prototype.sqDistanceToFiniteLine = function(x, y, x1, y1, x2, y2) {
-		var offset = [x - x1, y - y1];
-		var line = [x2 - x1, y2 - y1];
-		
-		var lineSq = line[0] * line[0] + line[1] * line[1];
-		var hypSq = offset[0] * offset[0] + offset[1] * offset[1];
-		
-		var dotProduct = offset[0] * line[0] + offset[1] * line[1];
-		var adjSq = dotProduct * dotProduct / lineSq;
-		
-		if (dotProduct < 0) {
-			return hypSq;
-		}
-		
-		if (adjSq > lineSq) {
-			return (x - x2) * (x - x2) + (y - y2) * (y - y2);
-		}
-		
-		return (hypSq - adjSq)
-	}
 	
 	}
-	}
+	
 	
 	var debug = function(){};
 	$$("renderer", "canvas", CanvasRenderer);

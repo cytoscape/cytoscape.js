@@ -2,6 +2,353 @@
 	
 	$$.math = {};
 	
+	$$.math.roundRectangleIntersectLine = function(
+		x, y, nodeX, nodeY, width, height, padding) {
+		
+		var cornerRadius = this.getRoundRectangleRadius(width, height);
+	  
+		var halfWidth = width / 2;
+		var halfHeight = height / 2;
+		
+		// Check intersections with straight line segments
+		var straightLineIntersections;
+		
+		// Top segment, left to right
+		{
+			var topStartX = nodeX - halfWidth + cornerRadius - padding;
+			var topStartY = nodeY - halfHeight - padding;
+			var topEndX = nodeX + halfWidth - cornerRadius + padding;
+			var topEndY = topStartY;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Right segment, top to bottom
+		{
+			var rightStartX = nodeX + halfWidth + padding;
+			var rightStartY = nodeY - halfHeight + cornerRadius - padding;
+			var rightEndX = rightStartX;
+			var rightEndY = nodeY + halfHeight - cornerRadius + padding;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Bottom segment, left to right
+		{
+			var bottomStartX = nodeX - halfWidth + cornerRadius - padding;
+			var bottomStartY = nodeY + halfHeight + padding;
+			var bottomEndX = nodeX + halfWidth - cornerRadius + padding;
+			var bottomEndY = bottomStartY;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Left segment, top to bottom
+		{
+			var leftStartX = nodeX - halfWidth - padding;
+			var leftStartY = nodeY - halfHeight + cornerRadius - padding;
+			var leftEndX = leftStartX;
+			var leftEndY = nodeY + halfHeight - cornerRadius + padding;
+			
+			straightLineIntersections = this.finiteLinesIntersect(
+				x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false);
+			
+			if (straightLineIntersections.length > 0) {
+				return straightLineIntersections;
+			}
+		}
+		
+		// Check intersections with arc segments
+		var arcIntersections;
+		
+		// Top Left
+		{
+			var topLeftCenterX = nodeX - halfWidth + cornerRadius;
+			var topLeftCenterY = nodeY - halfHeight + cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				topLeftCenterX, topLeftCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] <= topLeftCenterX
+				&& arcIntersections[1] <= topLeftCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Top Right
+		{
+			var topRightCenterX = nodeX + halfWidth - cornerRadius;
+			var topRightCenterY = nodeY - halfHeight + cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				topRightCenterX, topRightCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] >= topRightCenterX
+				&& arcIntersections[1] <= topRightCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Bottom Right
+		{
+			var bottomRightCenterX = nodeX + halfWidth - cornerRadius;
+			var bottomRightCenterY = nodeY + halfHeight - cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				bottomRightCenterX, bottomRightCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] >= bottomRightCenterX
+				&& arcIntersections[1] >= bottomRightCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+		
+		// Bottom Left
+		{
+			var bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
+			var bottomLeftCenterY = nodeY + halfHeight - cornerRadius
+			arcIntersections = this.intersectLineCircle(
+				x, y, nodeX, nodeY, 
+				bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding);
+			
+			// Ensure the intersection is on the desired quarter of the circle
+			if (arcIntersections.length > 0
+				&& arcIntersections[0] <= bottomLeftCenterX
+				&& arcIntersections[1] >= bottomLeftCenterY) {
+				return [arcIntersections[0], arcIntersections[1]];
+			}
+		}
+
+		return []; // if nothing
+	};
+	
+	$$.math.roundRectangleIntersectBox = function(
+		boxX1, boxY1, boxX2, boxY2, width, height, centerX, centerY, padding) {
+		
+		// We have the following shpae
+		
+		//    _____
+		//  _|     |_
+		// |         |
+		// |_       _|
+		//   |_____|
+		//
+		// With a quarter circle at each corner.
+		
+		var cornerRadius = this.getRoundRectangleRadius(width, height);
+		
+		var hBoxTopLeftX = centerX - width / 2 - padding;
+		var hBoxTopLeftY = centerY - height / 2 + cornerRadius - padding;
+		var hBoxBottomRightX = centerX + width / 2 + padding;
+		var hBoxBottomRightY = centerY + height / 2 - cornerRadius + padding;
+		
+		var vBoxTopLeftX = centerX - width / 2 + cornerRadius - padding;
+		var vBoxTopLeftY = centerY - height / 2 - padding;
+		var vBoxBottomRightX = centerX + width / 2 - cornerRadius + padding;
+		var vBoxBottomRightY = centerY + height / 2 + padding;
+		
+		// Check if the box is out of bounds
+		var boxMinX = Math.min(boxX1, boxX2);
+		var boxMaxX = Math.max(boxX1, boxX2);
+		var boxMinY = Math.min(boxY1, boxY2);
+		var boxMaxY = Math.max(boxY1, boxY2);
+		
+		if (boxMaxX < hBoxTopLeftX) {
+			return false;
+		} else if (boxMinX > hBoxBottomRightX) {
+			return false;
+		}
+		
+		if (boxMaxY < vBoxTopLeftY) {
+			return false;
+		} else if (boxMinY > vBoxBottomRightY) {
+			return false;
+		}
+		
+		// Check if an hBox point is in given box
+		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
+			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
+			  && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
+			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
+			  && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		// Check if a given point box is in the hBox
+		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
+			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
+			&& boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
+			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
+			&& boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
+			return true;
+		}
+		
+		// Check if an vBox point is in given box
+		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
+			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
+			  && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
+			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
+			  && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
+			return true;
+		}
+		
+		// Check if a given point box is in the vBox
+		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
+			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
+			&& boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
+			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
+			&& boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
+			return true;
+		}
+		
+		// Lastly, check if one of the ellipses coincide with the box
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxTopLeftY + padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxBottomRightY - padding)) {
+			return true;
+		}
+		
+		if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
+				cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxBottomRightY - padding)) {
+			return true;
+		}
+		
+		return false;
+	};
+	
+	// @O Approximate collision functions
+	$$.math.checkInBoundingCircle = function(
+		x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
+		
+		x = (x - centerX) / (width + padding);
+		y = (y - centerY) / (height + padding);
+		
+		return (x * x + y * y) <= farthestPointSqDistance;
+	};
+	
+	$$.math.checkInBoundingBox = function(
+		x, y, points, padding, width, height, centerX, centerY) {
+		
+		// Assumes width, height >= 0, points.length > 0
+		
+		var minX = points[0], minY = points[1];
+		var maxX = points[0], maxY = points[1];
+		
+		for (var i = 1; i < points.length / 2; i++) {
+			
+			if (points[i * 2] < minX) {
+				minX = points[i * 2];
+			} else if (points[i * 2] > maxX) {
+				maxX = points[i * 2];
+			}
+			
+			if (points[i * 2 + 1] < minY) {
+				minY = points[i * 2 + 1];
+			} else if (points[i * 2 + 1] > maxY) {
+				maxY = points[i * 2 + 1];
+			}
+		}
+		
+		x -= centerX;
+		y -= centerY;
+		
+		x /= width;
+		y /= height;
+		
+		if (x < minX) {
+			return false;
+		} else if (x > maxX) {
+			return false;
+		}
+		
+		if (y < minY) {
+			return false;
+		} else if (y > maxY) {
+			return false;
+		}
+		
+		return true;
+	};
+	
 	$$.math.boxInBezierVicinity = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 		
@@ -10,23 +357,29 @@
 		// 1 - curve may be in box; needs precise check
 		// 2 - curve is in box
 		
+		// midpoint
+		var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
+		var midY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
+
 		var boxMinX = Math.min(x1box, x2box) - tolerance;
 		var boxMinY = Math.min(y1box, y2box) - tolerance;
 		var boxMaxX = Math.max(x1box, x2box) + tolerance;
 		var boxMaxY = Math.max(y1box, y2box) + tolerance;
 		
-		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
-			return 2;
-		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
-			return 2;
-		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { 
+		if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) { // (x1, y1) in box
+			return 1;
+		} else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) { // (x3, y3) in box
+			return 1;
+		} else if (midX >= boxMinX && midX <= boxMaxX && midY >= boxMinY && midY <= boxMaxY) { // (midX, midY) in box
+			return 1;
+		} else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { // ctrl pt in box
 			return 1;
 		}
 		
-		var curveMinX = Math.min(x1, x2, x3);
-		var curveMinY = Math.min(y1, y2, y3);
-		var curveMaxX = Math.max(x1, x2, x3);
-		var curveMaxY = Math.max(y1, y2, y3);
+		var curveMinX = Math.min(x1, midX, x3);
+		var curveMinY = Math.min(y1, midY, y3);
+		var curveMaxX = Math.max(x1, midX, x3);
+		var curveMaxY = Math.max(y1, midY, y3);
 		
 		/*
 		console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX 
@@ -45,10 +398,48 @@
 		}
 		
 		return 1;
-	}
+	};
+
+	$$.math.checkBezierInBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
+
+
+		function qbezierAt(p0, p1, p2, t){
+			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+		}
+
+		function sampleInBox(t){
+			var x = qbezierAt(x1, x2, x3, t);
+			var y = qbezierAt(y1, y2, y3, t);
+
+			return x1box <= x && x <= x2box
+				&& y1box <= y && y <= y2box
+			;
+		}
+
+		for( var t = 0; t <= 1; t += 0.25 ){
+			if( !sampleInBox(t) ){
+				return false;
+			}
+		}
+
+		return true;
+	};
 	
+	$$.math.checkStraightEdgeInBox = function(
+		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+
+		return x1box <= x1 && x1 <= x2box
+			&& x1box <= x2 && x2 <= x2box
+			&& y1box <= y1 && y1 <= y2box
+			&& y1box <= y2 && y2 <= y2box
+		;
+	};
+
 	$$.math.checkStraightEdgeCrossesBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
+		
+	 //console.log(arguments);
 		
 		var boxMinX = Math.min(x1box, x2box) - tolerance;
 		var boxMinY = Math.min(y1box, y2box) - tolerance;
@@ -104,7 +495,7 @@
 		}
 		
 		return false;
-	}
+	};
 	
 	$$.math.checkBezierCrossesBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
@@ -155,7 +546,6 @@
 		}
 		
 		xIntervals.sort(function(a, b) { return a - b; });
-
 		
 		var aY = y1 - 2 * y2 + y3;
 		var bY = -2 * y1 + 2 * y2;
@@ -213,8 +603,20 @@
 		}
 		
 		return false;
-	}
+	};
 	
+	$$.math.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
+		var t = tolerance;
+
+		var x1 = Math.min(lx1, lx2);
+		var x2 = Math.max(lx1, lx2);
+		var y1 = Math.min(ly1, ly2);
+		var y2 = Math.max(ly1, ly2);
+
+		return x1 - t <= x && x <= x2 + t
+			&& y1 - t <= y && y <= y2 + t;
+	};
+
 	$$.math.inBezierVicinity = function(
 		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
 		
@@ -222,6 +624,22 @@
 		// is closest to (x2, y2)
 		var middlePointX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
 		var middlePointY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
+
+		// a rough bounding box of the bezier curve
+		var bb = {
+			x1: Math.min( x1, x3, middlePointX ),
+			x2: Math.max( x1, x3, middlePointX ),
+			y1: Math.min( y1, y3, middlePointY ),
+			y2: Math.max( y1, y3, middlePointY )
+		};
+
+		// if outside the rough bounding box for the bezier, then it can't be a hit
+		if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
+			// console.log('bezier out of rough bb')
+			return false;
+		} else {
+			// console.log('do more expensive check');
+		}
 		
 		var displacementX, displacementY, offsetX, offsetY;
 		var dotProduct, dotSquared, hypSquared;
@@ -272,35 +690,34 @@
 			&& !outside(x, y, x3, y3, x1, y1, toleranceSquared,
 				counterClockwise)
 		);
-	}
+	};
 	
-	// Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
-	// r is the real component, i is the imaginary component
 	$$.math.solveCubic = function(a, b, c, d, result) {
-
-		// An implementation of the Cardano method
-		// http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
-		// provided by http://www3.telus.net/thothworks/Quad3Deg.html
 		
-		// Get rid of a
+		// Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
+		// r is the real component, i is the imaginary component
+
+		// An implementation of the Cardano method from the year 1545
+		// http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
+
 		b /= a;
 		c /= a;
 		d /= a;
 		
-		var discrim, q, r, dum1, s, t, term1, r13;
+		var discriminant, q, r, dum1, s, t, term1, r13;
 
 		q = (3.0 * c - (b * b)) / 9.0;
 		r = -(27.0 * d) + b * (9.0 * c - 2.0 * (b * b));
 		r /= 54.0;
 		
-		discrim = q * q * q + r * r;
-		result[1] = 0; //The first root is always real.
+		discriminant = q * q * q + r * r;
+		result[1] = 0;
 		term1 = (b / 3.0);
 		
-		if (discrim > 0) { // one root real, two are complex
-			s = r + Math.sqrt(discrim);
+		if (discriminant > 0) {
+			s = r + Math.sqrt(discriminant);
 			s = ((s < 0) ? -Math.pow(-s, (1.0 / 3.0)) : Math.pow(s, (1.0 / 3.0)));
-			t = r - Math.sqrt(discrim);
+			t = r - Math.sqrt(discriminant);
 			t = ((t < 0) ? -Math.pow(-t, (1.0 / 3.0)) : Math.pow(t, (1.0 / 3.0)));
 			result[0] = -term1 + s + t;
 			term1 += (s + t) / 2.0;
@@ -309,19 +726,17 @@
 			result[3] = term1;
 			result[5] = -term1;
 			return;
-		} // End if (discrim > 0)
+		}
 		
-		// The remaining options are all real
 		result[5] = result[3] = 0;
 		
-		if (discrim == 0){ // All roots real, at least two are equal.
+		if (discriminant == 0) {
 			r13 = ((r < 0) ? -Math.pow(-r, (1.0 / 3.0)) : Math.pow(r, (1.0 / 3.0)));
 			result[0] = -term1 + 2.0 * r13;
 			result[4] = result[2] = -(r13 + term1);
 			return;
-		} // End if (discrim == 0)
+		}
 		
-		// Only option left is that all roots are real and unequal (to get here, q < 0)
 		q = -q;
 		dum1 = q * q * q;
 		dum1 = Math.acos(r / Math.sqrt(dum1));
@@ -329,11 +744,12 @@
 		result[0] = -term1 + r13 * Math.cos(dum1 / 3.0);
 		result[2] = -term1 + r13 * Math.cos((dum1 + 2.0 * Math.PI) / 3.0);
 		result[4] = -term1 + r13 * Math.cos((dum1 + 4.0 * Math.PI) / 3.0);
+		
 		return;
-	}
+	};
 
-	$$.math.sqDistanceToQuadraticBezier = function(x, y, 
-		x1, y1, x2, y2, x3, y3) {
+	$$.math.sqDistanceToQuadraticBezier = function(
+		x, y, x1, y1, x2, y2, x3, y3) {
 		
 		// Find minimum distance by using the minimum of the distance 
 		// function between the given point and the curve
@@ -354,7 +770,7 @@
 		var d = 1.0 * x1*x2 - x1*x1 + x1*x - x2*x
 			+ y1*y2 - y1*y1 + y1*y - y2*y;
 		
-		debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
+		// debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
 		
 		var roots = [];
 		
@@ -390,7 +806,7 @@
 				+ params[i] * params[i] * y3;
 				
 			distSquared = Math.pow(curX - x, 2) + Math.pow(curY - y, 2);
-			debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
+			// debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
 			if (minDistanceSquared >= 0) {
 				if (distSquared < minDistanceSquared) {
 					minDistanceSquared = distSquared;
@@ -415,23 +831,217 @@
 				+ closestParam * closestParam * y3;
 		*/
 		
-		debug("given: " 
-			+ "( " + x + ", " + y + "), " 
-			+ "( " + x1 + ", " + y1 + "), " 
-			+ "( " + x2 + ", " + y2 + "), "
-			+ "( " + x3 + ", " + y3 + ")");
+		// debug("given: " 
+		// 	+ "( " + x + ", " + y + "), " 
+		// 	+ "( " + x1 + ", " + y1 + "), " 
+		// 	+ "( " + x2 + ", " + y2 + "), "
+		// 	+ "( " + x3 + ", " + y3 + ")");
 		
 		
-		debug("roots: " + roots);
-		debug("params: " + params);
-		debug("closest param: " + closestParam);
+		// debug("roots: " + roots);
+		// debug("params: " + params);
+		// debug("closest param: " + closestParam);
 		return minDistanceSquared;
-	}
+	};
 	
-	var debug = function(o) {
-		if (false) {
-			console.log(o);
+	$$.math.sqDistanceToFiniteLine = function(x, y, x1, y1, x2, y2) {
+		var offset = [x - x1, y - y1];
+		var line = [x2 - x1, y2 - y1];
+		
+		var lineSq = line[0] * line[0] + line[1] * line[1];
+		var hypSq = offset[0] * offset[0] + offset[1] * offset[1];
+		
+		var dotProduct = offset[0] * line[0] + offset[1] * line[1];
+		var adjSq = dotProduct * dotProduct / lineSq;
+		
+		if (dotProduct < 0) {
+			return hypSq;
 		}
-	}
+		
+		if (adjSq > lineSq) {
+			return (x - x2) * (x - x2) + (y - y2) * (y - y2);
+		}
+		
+		return (hypSq - adjSq)
+	};
+
+	$$.math.pointInsidePolygon = function(
+		x, y, basePoints, centerX, centerY, width, height, direction, padding) {
+
+		//var direction = arguments[6];
+		var transformedPoints = new Array(basePoints.length)
+
+		// Gives negative angle
+		var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
+			+ direction[1] * direction[1])));
+		
+		if (direction[0] < 0) {
+			angle = angle + Math.PI / 2;
+		} else {
+			angle = -angle - Math.PI / 2;
+		}
+				
+		var cos = Math.cos(-angle);
+		var sin = Math.sin(-angle);
+		
+//		console.log("base: " + basePoints);
+		for (var i = 0; i < transformedPoints.length / 2; i++) {
+			transformedPoints[i * 2] = 
+				width / 2 * (basePoints[i * 2] * cos
+					- basePoints[i * 2 + 1] * sin);
+			
+			transformedPoints[i * 2 + 1] = 
+				height / 2 * (basePoints[i * 2 + 1] * cos 
+					+ basePoints[i * 2] * sin);
+
+			transformedPoints[i * 2] += centerX;
+			transformedPoints[i * 2 + 1] += centerY;
+		}
+		
+		var points;
+		
+		if (padding > 0) {
+			var expandedLineSet = this.expandPolygon(
+				transformedPoints,
+				-padding);
+			
+			points = this.joinLines(expandedLineSet);
+		} else {
+			points = transformedPoints;
+		}
+		
+		var x1, y1, x2, y2;
+		var y3;
+		
+		// Intersect with vertical line through (x, y)
+		var up = 0;
+		var down = 0;
+		for (var i = 0; i < points.length / 2; i++) {
+			
+			x1 = points[i * 2];
+			y1 = points[i * 2 + 1];
+			
+			if (i + 1 < points.length / 2) {
+				x2 = points[(i + 1) * 2];
+				y2 = points[(i + 1) * 2 + 1];
+			} else {
+				x2 = points[(i + 1 - points.length / 2) * 2];
+				y2 = points[(i + 1 - points.length / 2) * 2 + 1];
+			}
+			
+//*			console.log("line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
+
+//&			console.log(x1, x, x2);
+
+			if (x1 == x && x2 == x) {
+				
+			} else if ((x1 >= x && x >= x2)
+				|| (x1 <= x && x <= x2)) {
+				
+				y3 = (x - x1) / (x2 - x1) * (y2 - y1) + y1;
+				
+				if (y3 > y) {
+					up++;
+				}
+				
+				if (y3 < y) {
+					down++;
+				}
+				
+//*				console.log(y3, y);
+				
+			} else {
+//*				console.log("22");
+				continue;
+			}
+			
+		}
+		
+//*		console.log("up: " + up + ", down: " + down);
+		
+		if (up % 2 == 0) {
+			return false;
+		} else {
+			return true;
+		}
+	};
+
+	$$.math.joinLines = function(lineSet) {
+		
+		var vertices = new Array(lineSet.length / 2);
+		
+		var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
+		var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
+		
+		for (var i = 0; i < lineSet.length / 4; i++) {
+			currentLineStartX = lineSet[i * 4];
+			currentLineStartY = lineSet[i * 4 + 1];
+			currentLineEndX = lineSet[i * 4 + 2];
+			currentLineEndY = lineSet[i * 4 + 3];
+			
+			if (i < lineSet.length / 4 - 1) {
+				nextLineStartX = lineSet[(i + 1) * 4];
+				nextLineStartY = lineSet[(i + 1) * 4 + 1];
+				nextLineEndX = lineSet[(i + 1) * 4 + 2];
+				nextLineEndY = lineSet[(i + 1) * 4 + 3];
+			} else {
+				nextLineStartX = lineSet[0];
+				nextLineStartY = lineSet[1];
+				nextLineEndX = lineSet[2];
+				nextLineEndY = lineSet[3];
+			}
+			
+			var intersection = this.finiteLinesIntersect(
+				currentLineStartX, currentLineStartY,
+				currentLineEndX, currentLineEndY,
+				nextLineStartX, nextLineStartY,
+				nextLineEndX, nextLineEndY,
+				true);
+			
+			vertices[i * 2] = intersection[0];
+			vertices[i * 2 + 1] = intersection[1];
+		}
+		
+		return vertices;
+	};
+
+	$$.math.expandPolygon = function(points, pad) {
+		
+		var expandedLineSet = new Array(points.length * 2);
+		
+		var currentPointX, currentPointY, nextPointX, nextPointY;
+		
+		for (var i = 0; i < points.length / 2; i++) {
+			currentPointX = points[i * 2];
+			currentPointY = points[i * 2 + 1];
+			
+			if (i < points.length / 2 - 1) {
+				nextPointX = points[(i + 1) * 2];
+				nextPointY = points[(i + 1) * 2 + 1];
+			} else {
+				nextPointX = points[0];
+				nextPointY = points[1];
+			}
+			
+			// Current line: [currentPointX, currentPointY] to [nextPointX, nextPointY]
+			
+			// Assume CCW polygon winding
+			
+			var offsetX = (nextPointY - currentPointY);
+			var offsetY = -(nextPointX - currentPointX);
+			
+			// Normalize
+			var offsetLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+			var normalizedOffsetX = offsetX / offsetLength;
+			var normalizedOffsetY = offsetY / offsetLength;
+			
+			expandedLineSet[i * 4] = currentPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
+			expandedLineSet[i * 4 + 2] = nextPointX + normalizedOffsetX * pad;
+			expandedLineSet[i * 4 + 3] = nextPointY + normalizedOffsetY * pad;
+		}
+		
+		return expandedLineSet;
+	};
 	
 })( cytoscape );

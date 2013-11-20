@@ -2,6 +2,14 @@
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
+	CanvasRenderer.prototype.createBuffer = function(w, h) {
+		var buffer = document.createElement("canvas");
+		buffer.width = w;
+		buffer.height = h;
+		
+		return [buffer, buffer.getContext("2d")];
+	}
+
 	CanvasRenderer.prototype.png = function(){
 		var data = this.data;
 

@@ -86,16 +86,28 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/selector.js
 
 # extensions (list them manually if you don't want them all)	$(wildcard $(EXTENSIONS_DIR)/*)
-EXTENSIONS = $(EXTENSIONS_DIR)/cytoscape.renderer.null.js\
-	$(EXTENSIONS_DIR)/cytoscape.renderer.canvas.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.null.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.random.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.grid.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.preset.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.arbor.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.circle.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.breadthfirst.js\
-	$(EXTENSIONS_DIR)/cytoscape.layout.cose.js\
+EXTENSIONS = $(EXTENSIONS_DIR)/renderer.null.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.define-and-init-etc.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.arrow-shapes.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.cached-eles.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.coord-ele-math.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-edges.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-images.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-label-text.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-nodes.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-redraw.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.drawing-shapes.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.export-image.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.load-and-listeners.js\
+	$(EXTENSIONS_DIR)/renderer.canvas.node-shapes.js\
+	$(EXTENSIONS_DIR)/layout.null.js\
+	$(EXTENSIONS_DIR)/layout.random.js\
+	$(EXTENSIONS_DIR)/layout.grid.js\
+	$(EXTENSIONS_DIR)/layout.preset.js\
+	$(EXTENSIONS_DIR)/layout.arbor.js\
+	$(EXTENSIONS_DIR)/layout.circle.js\
+	$(EXTENSIONS_DIR)/layout.breadthfirst.js\
+	$(EXTENSIONS_DIR)/layout.cose.js\
 
 # plugins (list them manually if you don't want them all)
 PLUGINS = $(wildcard $(PLUGINS_DIR)/*)

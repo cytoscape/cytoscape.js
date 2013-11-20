@@ -2,6 +2,17 @@
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
+	CanvasRenderer.prototype.registerBinding = function(target, event, handler, useCapture){
+		this.bindings.push({
+			target: target,
+			event: event,
+			handler: handler,
+			useCapture: useCapture
+		});
+
+		target.addEventListener(event, handler, useCapture);
+	};
+
 	CanvasRenderer.prototype.load = function() {
 		var r = this;
 

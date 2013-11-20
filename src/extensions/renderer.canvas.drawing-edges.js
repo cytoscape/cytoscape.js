@@ -405,4 +405,86 @@
 		
 	};
 
+	CanvasRenderer.prototype.drawArrowheads = function(context, edge, drawOverlayInstead) {
+		if( drawOverlayInstead ){ return; } // don't do anything for overlays 
+
+		// Displacement gives direction for arrowhead orientation
+		var dispX, dispY;
+
+		var startX = edge._private.rscratch.arrowStartX;
+		var startY = edge._private.rscratch.arrowStartY;
+		
+		dispX = startX - edge.source().position().x;
+		dispY = startY - edge.source().position().y;
+		
+		//this.context.strokeStyle = "rgba("
+		context.fillStyle = "rgba("
+			+ edge._private.style["source-arrow-color"].value[0] + ","
+			+ edge._private.style["source-arrow-color"].value[1] + ","
+			+ edge._private.style["source-arrow-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
+		
+		context.lineWidth = edge._private.style["width"].value;
+		
+		this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+			startX, startY, dispX, dispY);
+		
+		var endX = edge._private.rscratch.arrowEndX;
+		var endY = edge._private.rscratch.arrowEndY;
+		
+		dispX = endX - edge.target().position().x;
+		dispY = endY - edge.target().position().y;
+		
+		//this.context.strokeStyle = "rgba("
+		context.fillStyle = "rgba("
+			+ edge._private.style["target-arrow-color"].value[0] + ","
+			+ edge._private.style["target-arrow-color"].value[1] + ","
+			+ edge._private.style["target-arrow-color"].value[2] + ","
+			+ edge._private.style.opacity.value + ")";
+		
+		context.lineWidth = edge._private.style["width"].value;
+		
+		this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+			endX, endY, dispX, dispY);
+	}
+	
+	// Draw arrowshape
+	CanvasRenderer.prototype.drawArrowShape = function(context, shape, x, y, dispX, dispY) {
+	
+		// Negative of the angle
+		var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
+	
+		if (dispX < 0) {
+			//context.strokeStyle = "AA99AA";
+			angle = angle + Math.PI / 2;
+		} else {
+			//context.strokeStyle = "AAAA99";
+			angle = - (Math.PI / 2 + angle);
+		}
+		
+		//context.save();
+		context.translate(x, y);
+		
+		context.moveTo(0, 0);
+		context.rotate(-angle);
+		
+		var size = this.getArrowWidth(context.lineWidth);
+		/// size = 100;
+		context.scale(size, size);
+		
+		context.beginPath();
+		
+		CanvasRenderer.arrowShapes[shape].draw(context);
+		
+		context.closePath();
+		
+//		context.stroke();
+		context.fill();
+
+		context.scale(1/size, 1/size);
+		context.rotate(angle);
+		context.translate(-x, -y);
+		//context.restore();
+	}
+
 })( cytoscape );

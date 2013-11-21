@@ -2,8 +2,10 @@
 	
 	var defaults = {
 		fit: true, // whether to fit the viewport to the graph
+		padding: 30, // padding used on fit
 		rows: undefined, // force num of rows in the grid
 		columns: undefined, // force num of cols in the grid
+		position: function( node ){}, // returns { row, col } for element
 		ready: undefined, // callback on layoutready
 		stop: undefined // callback on layoutstop
 	};
@@ -107,21 +109,61 @@
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
 			
+			var cellUsed = {}; // e.g. 'c-0-2' => true
+			
+			function used(row, col){
+				return cellUsed['c-' + row + '-' + col] ? true : false;
+			}
+			
+			function use(row, col){
+				cellUsed['c-' + row + '-' + col] = true;
+			}
+
 			var row = 0;
 			var col = 0;
+			var atLeastOneManSet = false;
 			nodes.positions(function(i, element){
-				
+				var x, y;
+
 				if( element.locked() ){
 					return false;
 				}
+
+				// see if we have a manual position set
+				var manPos = false;
+				var rcPos = options.position( element );
+				if( rcPos ){
+					if( rcPos.row !== undefined || rcPos.col !== undefined ){
+						if( rcPos.row === undefined ){
+							rcPos.row = row; // put in current row if undef
+						}
+
+						if( rcPos.col === undefined ){
+							rcPos.col = col; // put in current col if undef
+						}
+					}
+
+					if( !used(rcPos.row, rcPos.col) ){
+						use( rcPos.row, rcPos.col );
+						manPos = true;
+						atLeastOneManSet = true;
+
+						x = rcPos.col * cellWidth + cellWidth/2;
+						y = rcPos.row * cellHeight + cellHeight/2;
+					}
+				}
 				
-				var x = col * cellWidth + cellWidth/2;
-				var y = row * cellHeight + cellHeight/2;
-				
-				col++;
-				if( col >= cols ){
-					col = 0;
-					row++;
+				// otherwise set automatically
+				if( !manPos ){
+					x = col * cellWidth + cellWidth/2;
+					y = row * cellHeight + cellHeight/2;
+					use( row, col );
+					
+					col++;
+					if( col >= cols ){
+						col = 0;
+						row++;
+					}
 				}
 				
 				return { x: x, y: y };
@@ -130,7 +172,7 @@
 		}
 		
 		if( params.fit ){
-			cy.reset();
+			cy.fit( options.padding );
 		} 
 		
 		cy.one("layoutready", params.ready);

@@ -2,16 +2,38 @@
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
+	CanvasRenderer.prototype.getPixelRatio = function(){ 
+		var canvas = this.data.canvases[0];
+		var context = canvas.getContext("2d");
+
+		var backingStore = context.backingStorePixelRatio ||
+			context.webkitBackingStorePixelRatio ||
+			context.mozBackingStorePixelRatio ||
+			context.msBackingStorePixelRatio ||
+			context.oBackingStorePixelRatio ||
+			context.backingStorePixelRatio || 1;
+
+		//console.log(window.devicePixelRatio, backingStore);
+
+		var isFirefox = typeof InstallTrigger !== 'undefined';
+
+		if( isFirefox ){ // because ff can't scale canvas properly
+			return 1;
+		}
+
+		return (window.devicePixelRatio || 1) / backingStore;
+	}
+
 	// Resize canvas
 	CanvasRenderer.prototype.matchCanvasSize = function(container) {
 		var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
 		
 		var canvas, canvasWidth = width, canvasHeight = height;
+		var pixelRatio = this.getPixelRatio();
 
-		if ('devicePixelRatio' in window) {
-			canvasWidth *= devicePixelRatio;
-			canvasHeight *= devicePixelRatio;
-		}
+		// apply pixel ratio
+		canvasWidth *= pixelRatio;
+		canvasHeight *= pixelRatio;
 
 		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
 
@@ -45,6 +67,7 @@
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll, forcedZoom, forcedPan ) {
 		var r = this;
+		var pixelRatio = this.getPixelRatio();
 		
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
@@ -104,11 +127,10 @@
 			effectivePan = forcedPan;
 		}
 
-		if( 'devicePixelRatio' in window ){
-			effectiveZoom *= devicePixelRatio;
-			effectivePan.x *= devicePixelRatio;
-			effectivePan.y *= devicePixelRatio;
-		}
+		// apply pixel ratio
+		effectiveZoom *= pixelRatio;
+		effectivePan.x *= pixelRatio;
+		effectivePan.y *= pixelRatio;
 		
 		var elements = [];
 		for( var i = 0; i < nodes.length; i++ ){

@@ -9,10 +9,19 @@ $(function(){
 					"border-width": 3,
 					"background-color": "#DDD",
 					"border-color": "#555",
+					"shape": "ellipse",
 					//"border-style": "dashed"
 					//"background-size-x": '5',
 					//"background-image": "images/test-bg.png",
-					//"background-position-x": 5
+					//"background-position-x": 5,
+					// "pie-1-background-size": "33%",
+					// "pie-1-background-color": "red",
+					// "pie-2-background-size": "25%",
+					// "pie-2-background-color": "green",
+					// "pie-3-background-size": "10%",
+					// "pie-3-background-color": "blue",
+					// "pie-4-background-size": "15%",
+					// "pie-4-background-color": "yellow"
 				})
 			.selector("$node > node") // compound (parent) nodes
 				.css({"textValign": "bottom",

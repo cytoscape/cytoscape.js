@@ -376,6 +376,9 @@
 			
 			props[ prop.name ] = prop; // allow lookup by name
 		}
+
+		// because the pie properties are numbered, give access to a constant N (for renderer use)
+		$$.style.pieBackgroundN = 16;
 	})();
 
 	// adds the default stylesheet to the current style

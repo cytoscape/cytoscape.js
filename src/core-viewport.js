@@ -169,7 +169,7 @@
 			var zoom;
 			padding = $$.is.number(padding) ? padding : 0;
 
-			if( !isNaN(w) && !isNaN(h) ){
+			if( !isNaN(w) && !isNaN(h) && elements.length > 0 ){
 				zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
 				// crop zoom
@@ -180,13 +180,13 @@
 					x: (w - zoom*( bb.x1 + bb.x2 ))/2,
 					y: (h - zoom*( bb.y1 + bb.y2 ))/2
 				};
+
+				this.trigger("pan zoom");
+
+				this.notify({ // notify the renderer that the viewport changed
+					type: "viewport"
+				});
 			}
-
-			this.trigger("pan zoom");
-
-			this.notify({ // notify the renderer that the viewport changed
-				type: "viewport"
-			});
 
 			return this; // chaining
 		},

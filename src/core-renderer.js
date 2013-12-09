@@ -6,10 +6,19 @@
 			var r = this._private.renderer;
 
 			r.renderTo( context, zoom, pan );
+			return this;
 		},
 
 		renderer: function(){
 			return this._private.renderer;
+		},
+
+		forceRender: function(){
+			this.notify({
+				type: "draw"
+			});
+
+			return this;
 		},
 		
 		initRenderer: function( options ){

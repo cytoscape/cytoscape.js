@@ -51,7 +51,7 @@
 	 * @arg options : object containing layout options
 	 */
 	function CoseLayout(options) {
-		this.options = $$.util.extend(true, {}, defaults, options); 
+		this.options = $$.util.extend({}, defaults, options); 
 	}
 
 
@@ -84,7 +84,7 @@
 		if (true == options.randomize) {
 			randomizePositions(layoutInfo, cy);
 			if (0 < options.refresh) {
-			refreshPositions(layoutInfo, cy, options);
+				refreshPositions(layoutInfo, cy, options);
 			}
 		}
 
@@ -95,7 +95,7 @@
 
 			// If required, update positions
 			if (0 < options.refresh && 0 == (i % options.refresh)) {
-			refreshPositions(layoutInfo, cy, options);
+				refreshPositions(layoutInfo, cy, options);
 			}
 			
 			// Update temperature
@@ -103,8 +103,8 @@
 			logDebug("New temperature: " + layoutInfo.temperature);
 
 			if (layoutInfo.temperature < options.minTemp) {
-			logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-			break;
+				logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
+				break;
 			}
 		}
 		
@@ -484,10 +484,10 @@
 		});
 
 		// Trigger layoutReady only on first call
-		if (true != refreshPositions.ready) {
+		if (true != layoutInfo.ready) {
 			s = "Triggering layoutready";
 			logDebug(s);
-			refreshPositions.ready = true;
+			layoutInfo.ready = true;
 			cy.one("layoutready", options.ready);
 			cy.trigger("layoutready");
 		}

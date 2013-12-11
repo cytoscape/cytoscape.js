@@ -65,7 +65,13 @@
 	}
 
 	// Redraw frame
-	CanvasRenderer.prototype.redraw = function( forcedContext, drawAll, forcedZoom, forcedPan ) {
+	CanvasRenderer.prototype.redraw = function( options ) {
+		options = options || {};
+
+		var forcedContext = options.forcedContext;
+		var drawAllLayers = options.drawAllLayers;
+		var forcedZoom = options.forcedZoom;
+		var forcedPan = options.forcedPan;
 		var r = this;
 		var pixelRatio = this.getPixelRatio();
 		
@@ -75,7 +81,6 @@
 		var maxRedrawLimit = 1000; // don't cap max b/c it's more important to be responsive than smooth
 
 		var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
-
 		redrawLimit = Math.max(minRedrawLimit, redrawLimit);
 		redrawLimit = Math.min(redrawLimit, maxRedrawLimit);
 
@@ -100,9 +105,6 @@
 			this.lastDrawTime = nowTime;
 		}
 
-
-		// start on thread ready
-		setTimeout(function(){
 
 		var startTime = nowTime;
 
@@ -144,7 +146,7 @@
 
 	
 
-		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAll) {
+		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
 			//NB : VERY EXPENSIVE
 			//console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
@@ -176,7 +178,7 @@
 
 
 		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-		if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAll) {
+		if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
 			// console.log("redrawing node layer", data.canvasRedrawReason[CanvasRenderer.NODE]);
 		  
 		  	if( !elesInDragLayer || !elesNotInDragLayer ){
@@ -197,9 +199,9 @@
 			var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
-			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+			!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
 			}
@@ -238,13 +240,12 @@
 				}
 			}
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; data.canvasRedrawReason[CanvasRenderer.NODE] = [];
 			}
 		}
 		
-		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAll) {
-			// console.log("redrawing drag layer", data.canvasRedrawReason[CanvasRenderer.DRAG]);
+		if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
 		  
 			if( !elesInDragLayer || !elesNotInDragLayer ){
 				elesInDragLayer = [];
@@ -263,9 +264,9 @@
 
 			var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				context.setTransform(1, 0, 0, 1, 0, 0);
-				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+				!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 				
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);
@@ -306,7 +307,7 @@
 				}
 			}
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false; data.canvasRedrawReason[CanvasRenderer.DRAG] = [];
 			}
 		}
@@ -316,9 +317,9 @@
 		  
 			var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				context.setTransform(1, 0, 0, 1, 0, 0);
-				context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+				!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 			
 				context.translate(effectivePan.x, effectivePan.y);
 				context.scale(effectiveZoom, effectiveZoom);		
@@ -379,12 +380,12 @@
 				context.fill();
 			}
 			
-			if( !drawAll ){
+			if( !drawAllLayers ){
 				data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; data.canvasRedrawReason[CanvasRenderer.SELECT_BOX] = [];
 			}
 		}
 
-		if( r.options.showOverlay ){
+		if( r.options.showOverlay && !forcedContext ){
 			var context = data.canvases[CanvasRenderer.OVERLAY].getContext("2d");
 
 			context.lineJoin = 'round';
@@ -426,9 +427,7 @@
 			r.initrender = true;
 			cy.trigger('initrender');
 		}
-
-		// end on thread ready
-		}, 0);
+		
 	};
 
 })( cytoscape );

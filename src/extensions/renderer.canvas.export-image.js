@@ -13,10 +13,18 @@
 	CanvasRenderer.prototype.png = function( options ){
 		var data = this.data;
 		var cy = data.cy;
-		var width = this.data.container.clientWidth;
-		var height = this.data.container.clientHeight;
-		var buffCanvas = this.data.bufferCanvases[1];
-		var buffCxt = data.bufferCanvases[1].getContext("2d");
+		var bb = cy.boundingBox();
+		var width = options.full ? Math.ceil(bb.w) : this.data.container.clientWidth;
+		var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
+		var buffCanvas = document.createElement("canvas");
+
+		buffCanvas.width = width;
+		buffCanvas.height = height;
+
+		buffCanvas.style.width = width + 'px';
+		buffCanvas.style.height = height + 'px';
+
+		var buffCxt = buffCanvas.getContext("2d");
 
 		// Rasterize the layers, but only if container has nonzero size
 		if (width > 0 && height > 0) {
@@ -30,10 +38,19 @@
 			}
 
 			buffCxt.globalCompositeOperation = "source-over";
-			for( var i = CanvasRenderer.CANVAS_LAYERS - 1; i >=0; i-- ){
-				if( i === CanvasRenderer.OVERLAY ){ continue }
 
-				buffCxt.drawImage(data.canvases[i], 0, 0);
+			if( options.full ){ // draw the full bounds of the graph
+				this.redraw({
+					forcedContext: buffCxt,
+					drawAllLayers: true,
+					forcedZoom: 1,
+					forcedPan: { x: -bb.x1, y: -bb.y1 }
+				});
+			} else { // draw the current view
+				this.redraw({
+					forcedContext: buffCxt,
+					drawAllLayers: true
+				});
 			}
 		}
 
@@ -41,7 +58,12 @@
 	};
 
 	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
-		this.redraw( cxt, true, zoom, pan );
+		this.redraw({
+			forcedContext: cxt,
+			forcedZoom: zoom,
+			forcedPan: pan,
+			drawAllLayers: true
+		});
 	};
 
 })( cytoscape );

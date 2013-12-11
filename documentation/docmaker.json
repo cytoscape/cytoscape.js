@@ -420,6 +420,31 @@
               "md": "core/style"
             }
           ]
+        },
+
+        {
+          "name": "Export",
+
+          "fns": [
+            {
+              "name": "cy.png",
+              "descr": "Export the current graph view as a PNG image in Base64 representation.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The export options.",
+                      "fields": [
+                        { "name": "bg", "descr": "The background colour of the image (transparent by default)." },
+                        { "name": "full", "descr": "Whether to export the current viewport view (false, default) or the entire graph (true)." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
 
 

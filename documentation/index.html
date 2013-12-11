@@ -83,7 +83,7 @@
 				
 					<div class="section lvl2">
 						
-						<a href="#downloads/2.0"><span class="icon-bookmark"></span> 2.0</a>
+						<a href="#downloads/2.0.x"><span class="icon-bookmark"></span> 2.0.x</a>
 					</div>
 
 					
@@ -342,6 +342,8 @@
 					
 						<div class="section lvl3"><a href="#core/events/cy.trigger"><span class="icon-bookmark"></span> cy.trigger() </a></div>
 					
+						<div class="section lvl3"><a href="#core/events/cy.initrender"><span class="icon-bookmark"></span> cy.initrender() </a></div>
+					
 				
 					<div class="section lvl2">
 						<span class="expander">
@@ -355,6 +357,18 @@
 						<div class="section lvl3"><a href="#core/visuals/cy.layout"><span class="icon-bookmark"></span> cy.layout() </a></div>
 					
 						<div class="section lvl3"><a href="#core/visuals/cy.style"><span class="icon-bookmark"></span> cy.style() </a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a href="#core/export"><span class="icon-bookmark"></span> Export</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#core/export/cy.png"><span class="icon-bookmark"></span> cy.png() </a></div>
 					
 				
 			
@@ -517,6 +531,8 @@
 						<div class="section lvl3"><a href="#collection/style/eles.hide"><span class="icon-bookmark"></span> eles.hide() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.visible"><span class="icon-bookmark"></span> ele.visible() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span> ele.transparent() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/eles.addClass"><span class="icon-bookmark"></span> eles.addClass() </a></div>
 					
@@ -689,7 +705,7 @@
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
-				<a target="_blank" href="#downloads"><span class="icon-download-alt"></span> Downloads</a> |
+				<a href="#downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
@@ -864,7 +880,7 @@
 <p>If there&#39;s a bug or other issue preventing you from using the latest version of Cytoscape.js, we would love your feedback so we could support your use case.  Please <a href="https://github.com/cytoscape/cytoscape.js/issues/new">make a ticket</a> in the issue tracker. 
 
 </p>
-<h2 id="downloads/2.0">2.0 <a href="#downloads/2.0"><span class="icon-bookmark"></span></a></h2>
+<h2 id="downloads/2.0.x">2.0.x <a href="#downloads/2.0.x"><span class="icon-bookmark"></span></a></h2>
 <ul>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.3.zip">2.0.3</a> (latest)</li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.2.zip">2.0.2</a></li>
@@ -1145,8 +1161,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 </p>
 <ul>
-<li><strong><code>:visible</code></strong> : Matches elements that are visible.</li>
+<li><strong><code>:visible</code></strong> : Matches elements that are visible (i.e. <code>display: element</code> and <code>visibility: visible</code>).</li>
 <li><strong><code>:hidden</code></strong> : Matches elements that are hidden.</li>
+<li><strong><code>:transparent</code></strong> : Matches elements that are transparent (i.e. <code>opacity: 0</code>).</li>
 </ul>
 <p><strong>User interaction:</strong>
 
@@ -1307,7 +1324,19 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
 <li><strong><code>border-width</code></strong> : The size of the node&#39;s border.</li>
 <li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
-<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</li>
+<li><p><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</p>
+<p>Pie chart background:</p>
+</li>
+</ul>
+<p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o&#39;clock position and working clockwise.
+
+</p>
+<p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
+
+</p>
+<ul>
+<li><strong><code>pie-i-background-color</code></strong> : The colour of the node&#39;s ith pie chart slice.</li>
+<li><strong><code>pie-i-background-size</code></strong> : The size of the node&#39;s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
 </ul>
 <p>Compound nodes:
 
@@ -1549,6 +1578,7 @@ $(function(){ // on jquery ready
 
 </p>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
+  selectionType: (isTouchDevice ? &#39;additive&#39; : &#39;single&#39;),
   showOverlay: false,
   layout: { /* ... */ },
   zoom: 1,
@@ -1561,6 +1591,12 @@ $(function(){ // on jquery ready
   initrender: function(evt){ /* ... */ },
   elements: [ /* ... */ ]
 });</code></pre>
+<p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&quot;additive&quot;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&quot;single&quot;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
+
+</p>
+<p><strong><code>showOverlay</code></strong> : A boolean, indicating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).
+
+</p>
 <p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports, as described in <a href="#core/visuals/cy.layout"><code>cy.layout()</code></a>.
 
 </p>
@@ -1603,9 +1639,6 @@ $(function(){ // on jquery ready
 
 </p>
 <p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.
-
-</p>
-<p><strong><code>showOverlay</code></strong> : A boolean, indicating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).
 
 </p>
 <p><strong><code>elements</code></strong> : An array of elements specified as plain objects.
@@ -3140,6 +3173,21 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 							</div>		
 						</div>
 					
+						<div class="function">
+							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/events/cy.initrender">Get whether the initial render event has occurred (useful for plugins etc).</div>
+
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function returns whether the <code>initrender</code> event has occurred on the graph, meaning that the renderer has drawn the graph at least once.  This is useful when you need to grab image data from the core, as this function will let you know whether that data is available yet:  You can not grab the graph scene if it has not yet been rendered.</p>
+
+								
+							</div>		
+						</div>
+					
 
 				
 				
@@ -3220,6 +3268,7 @@ cy.layout( options );</code></pre>
 <p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;breadthfirst&#39;,
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -3248,6 +3297,7 @@ cy.layout( options );</code></pre>
 <p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;arbor&#39;,
     liveUpdate: true, // whether to show the layout as it&#39;s running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
@@ -3282,12 +3332,14 @@ cy.layout( options );</code></pre>
 
 
 cy.layout( options );</code></pre>
-<p>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.
+<p>Notes about arbor:
 
 </p>
-<p>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:
-
-</p>
+<ul>
+<li>For webworkers to work properly, you need to point your browser to a server URL (e.g. <code>http://</code>) rather than a local address (e.g. <code>file://</code>).</li>
+<li>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
+<li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:</li>
+</ul>
 <pre><code class="lang-html">&lt;head&gt;
     ...
 
@@ -3301,13 +3353,15 @@ cy.layout( options );</code></pre>
 <p><em>The <code>null</code> layout puts all nodes at (0, 0):</em>
 </p>
 <pre><code class="lang-js">// The null layout has no options.</code></pre>
-<p><em>The <code>CoSE</code> (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.</em><br>
+<p><em>The <code>cose</code> (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.</em><br>
 It was implemented by Gerardo Huck as part of Google Summer of Code 2013.<br>
 Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz.<br>
 Based on the article &quot;A layout algorithm for undirected compound graphs&quot; by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.<br>
 
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;cose&#39;,
+
     // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
     refresh             : 0,
     // Whether to fit the network view after when done
@@ -3342,6 +3396,9 @@ Based on the article &quot;A layout algorithm for undirected compound graphs&quo
 
 cy.layout( options );</code></pre>
 <h3>Examples</h3>
+<p>Run the grid layout:
+
+</p>
 <pre><code class="lang-js">cy.layout({ name: &#39;grid&#39; });</code></pre>
 
 								
@@ -3405,6 +3462,61 @@ cy.layout( options );</code></pre>
 
   .update() // update the elements in the graph with the new style</code></pre>
 
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="core/export">Export <a href="#core/export"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/export/cy.png"><span class="fn-name">cy.png()</span>  <a href="#core/export/cy.png"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/export/cy.png">Export the current graph view as a PNG image in Base64 representation.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.png( <span class="comma">, </span>options )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">The export options.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">bg</span>
+															<span class="descr">The background colour of the image (transparent by default).</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">full</span>
+															<span class="descr">Whether to export the current viewport view (false, default) or the entire graph (true).</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
 								
 							</div>		
 						</div>
@@ -4956,7 +5068,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.show"><span class="fn-name">eles.show()</span>  <a href="#collection/style/eles.show"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.show">Override the style of the elements such that they are visible.</div>
+							<div class="descr" id="collection/style/eles.show">Override the style of the elements such that they are visible (i.e. `display: element`).</div>
 
 							
 
@@ -4967,7 +5079,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.hide"><span class="fn-name">eles.hide()</span>  <a href="#collection/style/eles.hide"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.hide">Override the style of the elements such that they are hidden.</div>
+							<div class="descr" id="collection/style/eles.hide">Override the style of the elements such that they are hidden (i.e. `display: none`).</div>
 
 							
 
@@ -4978,7 +5090,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/ele.visible"><span class="fn-name">ele.visible()</span> et al <a href="#collection/style/ele.visible"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.visible">Get whether the element is visible.</div>
+							<div class="descr" id="collection/style/ele.visible">Get whether the element is visible (i.e. `display: element` and `visibility: visible`).</div>
 
 							
 							<div class="formats">
@@ -4998,6 +5110,31 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 											<div class="name">ele.hidden()</div>
 										
 										<div class="descr">Get whether the element is hidden.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/ele.transparent"><span class="fn-name">ele.transparent()</span>  <a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/ele.transparent">Get whether the element is completely transparent (i.e. `opacity: 0`)</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.transparent()</div>
+										
+										<div class="descr">Get whether the element is completely transparent.</div>
 										<ul class="args">
 											
 										</ul>

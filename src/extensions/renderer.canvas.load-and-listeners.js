@@ -681,38 +681,17 @@
 		}, false);
 		
 		var wheelHandler = function(e) { 
-
-			// console.dir(e) 
-			// console.log( e.srcElement );
-			// console.log( r.data.overlay );
-
-			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
-			
+			var cy = r.data.cy;
+			var pos = r.projectIntoViewport(e.pageX, e.pageY);
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			// console.log( r.zoomData.freeToZoom );
-
-			// TODO re-evaluate whether freeToZoom is necessary at all now
-			if (true || r.zoomData.freeToZoom) {
-				//console.log('free')
+			if( cy.panningEnabled() && cy.zoomingEnabled() ){
 				e.preventDefault();
-				
+			
 				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
 
-				//console.log(diff)
-				
-				if( cy.panningEnabled() && cy.zoomingEnabled() ){
-					cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
-				}
-
-				r.data.wheel = true;
-				clearTimeout(r.data.wheelTimeout);
-				r.data.wheelTimeout = setTimeout(function(){
-					r.data.wheel = false;
-					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-					r.redraw();
-				}, 100);
+				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
 			}
 
 		}
@@ -726,20 +705,7 @@
 		r.registerBinding(r.data.container, "DOMMouseScroll", wheelHandler, true);
 
 		r.registerBinding(r.data.container, "MozMousePixelScroll", function(e){
-			if (r.zoomData.freeToZoom) {
-				e.preventDefault();
-			}
 		}, false);
-		
-		r.registerBinding(r.data.container, "mousemove", function(e) { 
-			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
-				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; 
-		}, false);
-		
-		r.registerBinding(r.data.container, "mouseout", function(e) { 
-			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null 
-		}, false);
-		// --
 		
 		// Functions to help with handling mouseout/mouseover on the Cytoscape container
 					// Handle mouseout on Cytoscape container

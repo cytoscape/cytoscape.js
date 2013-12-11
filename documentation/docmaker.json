@@ -388,6 +388,12 @@
                 }
               ],
               "md": "core/trigger"
+            },
+
+            {
+              "name": "cy.initrender",
+              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "md": "core/initrender"
             }
 
 
@@ -443,6 +449,12 @@
                   ]
                 }
               ]
+            },
+
+            {
+              "name": "cy.json",
+              "descr": "Export the graph as JSON, the same format used at initialisation.",
+              "md": "core/json"
             }
           ]
         }
@@ -996,7 +1008,7 @@
               "name": "ele.transparent",
               "descr": "Get whether the element is completely transparent (i.e. `opacity: 0`)",
               "formats": [
-                { "name": "ele.transparent", "descr": "Get whether the element is completely transparent." },
+                { "name": "ele.transparent", "descr": "Get whether the element is completely transparent." }
               ]
             },
 

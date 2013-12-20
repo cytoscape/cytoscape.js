@@ -58,7 +58,13 @@ Run `make` in the console.  The targets are:
  * `minify` : build the production minified JS
  * `zip` : minify and make a ZIP file for release
  * `clean` : deletes built files
- * `publish` : make a release and publish it; follow the terminal prompts
+ * `publish` : make a release and publish it; follow the terminal prompts, which contains individually (e.g. in case you'd like to skip something)
+  * `test`
+  * `version` 
+  * `release`
+  * `docspublish`
+  * `tag`
+  * `npm`
 
 A note to developers:
 

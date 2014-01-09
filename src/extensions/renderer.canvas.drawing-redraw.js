@@ -60,8 +60,6 @@
 			}
 		}
 
-		this.data.overlay.style.width = width + 'px';
-		this.data.overlay.style.height = height + 'px';
 	}
 
 	// Redraw frame
@@ -383,31 +381,6 @@
 			if( !drawAllLayers ){
 				data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; data.canvasRedrawReason[CanvasRenderer.SELECT_BOX] = [];
 			}
-		}
-
-		if( r.options.showOverlay && !forcedContext ){
-			var context = data.canvases[CanvasRenderer.OVERLAY].getContext("2d");
-
-			context.lineJoin = 'round';
-			context.font = '14px helvetica';
-			context.strokeStyle = '#fff';
-			context.lineWidth = '4';
-			context.fillStyle = '#666';
-			context.textAlign = 'right';
-
-			var text = 'cytoscape.js';
-			
-			var w = context.canvas.width;
-			var h = context.canvas.height;
-			var p = 4;
-			var tw = context.measureText(text).width;
-			var th = 14; 
-
-			context.clearRect(0, 0, w, h);
-			context.strokeText(text, w - p, h - p);
-			context.fillText(text, w - p, h - p);
-
-			data.overlayDrawn = true;
 		}
 
 		// } console.timeEnd('drawing')

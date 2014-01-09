@@ -140,7 +140,6 @@
 		// auto resize
 		r.registerBinding(window, "resize", function(e) { 
 			r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-			r.data.canvasNeedsRedraw[CanvasRenderer.OVERLAY] = true;
 			r.matchCanvasSize( r.data.container );
 			r.redraw();
 		}, true);

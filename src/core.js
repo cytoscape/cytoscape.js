@@ -3,7 +3,6 @@
 	var isTouch = window && ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 
 	var defaults = {
-		showOverlay: true,
 		hideEdgesOnViewport: false
 	};
 	
@@ -51,7 +50,7 @@
 		// 	return;
 		// }
 		
-		this._private = {
+		var _p = this._private = {
 			ready: false, // whether ready has been triggered
 			initrender: false, // has initrender has been triggered
 			instanceId: reg.id, // the registered instance id
@@ -66,8 +65,9 @@
 			notificationsEnabled: true, // whether notifications are sent to the renderer
 			minZoom: 1e-50,
 			maxZoom: 1e50,
-			zoomEnabled: options.zoomEnabled === undefined ? true : options.zoomEnabled,
-			panEnabled: options.panEnabled === undefined ? true : options.panEnabled,
+			zoomingEnabled: options.zoomingEnabled === undefined ? true : options.zoomingEnabled,
+			userZoomingEnabled: options.userZoomingEnabled === undefined ? true : options.userZoomingEnabled,
+			panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
 			boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
 			zoom: $$.is.number(options.zoom) ? options.zoom : 1,
 			pan: {
@@ -83,30 +83,29 @@
 			// then set default
 
 			if( isTouch ){
-				this._private.selectionType = "additive";
+				_p.selectionType = "additive";
 			} else {
-				this._private.selectionType = "single";
+				_p.selectionType = "single";
 			}
 		} else {
-			this._private.selectionType = selType;
+			_p.selectionType = selType;
 		}
 
 		// init zoom bounds
 		if( $$.is.number(options.minZoom) && $$.is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
-			this._private.minZoom = options.minZoom;
-			this._private.maxZoom = options.maxZoom;
+			_p.minZoom = options.minZoom;
+			_p.maxZoom = options.maxZoom;
 		} else if( $$.is.number(options.minZoom) && options.maxZoom === undefined ){
-			this._private.minZoom = options.minZoom;
+			_p.minZoom = options.minZoom;
 		} else if( $$.is.number(options.maxZoom) && options.minZoom === undefined ){
-			this._private.maxZoom = options.maxZoom;
+			_p.maxZoom = options.maxZoom;
 		}
 
 		// init style
-		this._private.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.array(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
+		_p.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.array(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
 
 		// create the renderer
 		cy.initRenderer( $$.util.extend({
-			showOverlay: options.showOverlay,
 			hideEdgesOnViewport: options.hideEdgesOnViewport
 		}, options.renderer) );
 
@@ -253,6 +252,7 @@
 			json.style = cy.style();
 			json.scratch = cy.scratch();
 			json.zoomEnabled = cy._private.zoomEnabled;
+			json.userZoomEnabled = cy._private.userZoomEnabled;
 			json.panEnabled = cy._private.panEnabled;
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;

@@ -4,9 +4,9 @@
 		
 		panningEnabled: function( bool ){
 			if( bool !== undefined ){
-				this._private.panEnabled = bool ? true : false;
+				this._private.panningEnabled = bool ? true : false;
 			} else {
-				return this._private.panEnabled;
+				return this._private.panningEnabled;
 			}
 			
 			return this; // chaining
@@ -14,9 +14,19 @@
 		
 		zoomingEnabled: function( bool ){
 			if( bool !== undefined ){
-				this._private.zoomEnabled = bool ? true : false;
+				this._private.zoomingEnabled = bool ? true : false;
 			} else {
-				return this._private.zoomEnabled;
+				return this._private.zoomingEnabled;
+			}
+			
+			return this; // chaining
+		},
+
+		userZoomingEnabled: function( bool ){
+			if( bool !== undefined ){
+				this._private.userZoomEnabled = bool ? true : false;
+			} else {
+				return this._private.userZoomingEnabled;
 			}
 			
 			return this; // chaining

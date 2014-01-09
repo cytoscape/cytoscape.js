@@ -11,7 +11,6 @@
 		CanvasRenderer.CANVAS_LAYERS = 5;
 		CanvasRenderer.SELECT_BOX = 0;
 		CanvasRenderer.DRAG = 2;
-		CanvasRenderer.OVERLAY = 3;
 		CanvasRenderer.NODE = 4;
 		CanvasRenderer.BUFFER_COUNT = 2;
 
@@ -73,7 +72,6 @@
 		this.data.canvases[CanvasRenderer.NODE].setAttribute("data-id", "layer" + CanvasRenderer.NODE + '-node');
 		this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute("data-id", "layer" + CanvasRenderer.SELECT_BOX + '-selectbox');
 		this.data.canvases[CanvasRenderer.DRAG].setAttribute("data-id", "layer" + CanvasRenderer.DRAG + '-drag');
-		this.data.canvases[CanvasRenderer.OVERLAY].setAttribute("data-id", "layer" + CanvasRenderer.OVERLAY + '-overlay');
 		
 		for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
 			this.data.bufferCanvases[i] = document.createElement("canvas");
@@ -82,35 +80,6 @@
 			this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
 			this.data.bufferCanvases[i].style.visibility = "hidden";
 			this.data.container.appendChild(this.data.bufferCanvases[i]);
-		}
-
-		var overlay = document.createElement('div');
-		this.data.container.appendChild( overlay );
-		this.data.overlay = overlay;
-		overlay.style.position = 'absolute';
-		overlay.style.zIndex = 1000;
-
-		if( options.showOverlay ){
-
-			var link = document.createElement('a');
-			overlay.appendChild( link );
-			this.data.link = link;
-
-			link.innerHTML = 'cytoscape.js';
-			link.style.font = '14px helvetica';
-			link.style.position = 'absolute';
-			link.style.right = 0;
-			link.style.bottom = 0;
-			link.style.padding = '1px 3px';
-			link.style.paddingLeft = '5px';
-			link.style.paddingTop = '5px';
-			link.style.opacity = 0;
-			link.style['-webkit-tap-highlight-color'] = 'transparent';
-			link.style.background = 'red';
-
-			link.href = 'http://cytoscape.github.io/cytoscape.js/';
-			link.target = '_blank';
-
 		}
 
 		this.hideEdgesOnViewport = options.hideEdgesOnViewport;

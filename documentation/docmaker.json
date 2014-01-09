@@ -299,6 +299,12 @@
                   ]
                 }
               ]
+            },
+
+            {
+              "name": "cy.forceRender",
+              "descr": "Force the renderer to redraw (i.e. draw a new frame).",
+              "md": "core/forceRender"
             }
           ]
 

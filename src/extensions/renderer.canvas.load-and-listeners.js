@@ -440,7 +440,6 @@
 			if( preventDefault ){ 
 				if(e.stopPropagation) e.stopPropagation();
     			if(e.preventDefault) e.preventDefault();
-   				e.cancelBubble=true;
     			return false;
     		}
 		}, false);

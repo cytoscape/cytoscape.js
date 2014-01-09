@@ -16,7 +16,7 @@
 
 			// Events bubbling up the document may have been marked as prevented
 			// by a handler lower down the tree; reflect the correct value.
-			this.isDefaultPrevented = ( src.defaultPrevented || // src.returnValue === false || // commented out old IE support
+			this.isDefaultPrevented = ( src.defaultPrevented || 
 				src.getPreventDefault && src.getPreventDefault() ) ? returnTrue : returnFalse;
 
 		// Event type
@@ -57,10 +57,6 @@
 			// if preventDefault exists run it on the original event
 			if ( e.preventDefault ) {
 				e.preventDefault();
-
-			// otherwise set the returnValue property of the original event to false (IE)
-			} else {
-				// e.returnValue = false; // don't support old IE anymore
 			}
 		},
 		stopPropagation: function() {
@@ -74,8 +70,6 @@
 			if ( e.stopPropagation ) {
 				e.stopPropagation();
 			}
-			// otherwise set the cancelBubble property of the original event to true (IE)
-			e.cancelBubble = true;
 		},
 		stopImmediatePropagation: function() {
 			this.isImmediatePropagationStopped = returnTrue;

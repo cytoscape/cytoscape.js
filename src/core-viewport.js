@@ -24,7 +24,7 @@
 
 		userZoomingEnabled: function( bool ){
 			if( bool !== undefined ){
-				this._private.userZoomEnabled = bool ? true : false;
+				this._private.userzoomingEnabled = bool ? true : false;
 			} else {
 				return this._private.userZoomingEnabled;
 			}
@@ -53,7 +53,7 @@
 
 			case 1: 
 
-				if( !this._private.panEnabled ){
+				if( !this._private.panningEnabled ){
 					return this;
 
 				} else if( $$.is.string( args[0] ) ){ // .pan("x")
@@ -78,7 +78,7 @@
 				break;
 
 			case 2: // .pan("x", 100)
-				if( !this._private.panEnabled ){
+				if( !this._private.panningEnabled ){
 					return this;
 				}
 
@@ -108,7 +108,7 @@
 			var pan = this._private.pan;
 			var dim, val, dims, x, y;
 
-			if( !this._private.panEnabled ){
+			if( !this._private.panningEnabled ){
 				return this;
 			}
 
@@ -160,7 +160,7 @@
 				elements = undefined;
 			}
 
-			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+			if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
 				return this;
 			}
 
@@ -251,12 +251,12 @@
 					pos = params.position;
 				}
 
-				if( pos && !this._private.panEnabled ){
+				if( pos && !this._private.panningEnabled ){
 					return this; // panning disabled
 				}
 			}
 
-			if( !this._private.zoomEnabled ){
+			if( !this._private.zoomingEnabled ){
 				return this; // zooming disabled
 			}
 
@@ -298,7 +298,7 @@
 		},
 
 		center: function(elements){
-			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+			if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
 				return this;
 			}
 
@@ -330,7 +330,7 @@
 		},
 		
 		reset: function(){
-			if( !this._private.panEnabled || !this._private.zoomEnabled ){
+			if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
 				return this;
 			}
 

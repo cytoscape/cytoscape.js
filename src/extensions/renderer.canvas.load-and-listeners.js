@@ -683,7 +683,7 @@
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			if( cy.panningEnabled() && cy.zoomingEnabled() ){
+			if( cy.panningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
 				e.preventDefault();
 			
 				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
@@ -1032,7 +1032,7 @@
 
 				select[4] = 1;
 
-			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() ) { // two fingers => pinch to zoom
+			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() ) { // two fingers => pinch to zoom
 				r.data.bgActivePosistion = undefined;
 				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 

@@ -24,7 +24,7 @@
 
 		userZoomingEnabled: function( bool ){
 			if( bool !== undefined ){
-				this._private.userzoomingEnabled = bool ? true : false;
+				this._private.userZoomingEnabled = bool ? true : false;
 			} else {
 				return this._private.userZoomingEnabled;
 			}

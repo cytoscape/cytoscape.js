@@ -10,6 +10,12 @@ You can find the documentation on the [project website](http://cytoscape.github.
 
 
 
+## Contributing to Cytoscape.js
+
+Cytoscape.js is an open source project, and anyone interested is encouraged to contribute to Cytoscape.js.  We gladly accept pull requests.  If you are interested in regular contributions to Cytoscape.js, then we can arrange granting you permission to the repository by [contacting us](mailto:cytoscape-discuss@googlegroups.com?subject=Granting permission to Cytoscape.js repository).
+
+
+
 
 ## Acknowledgements
 

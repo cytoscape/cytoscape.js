@@ -23,7 +23,7 @@ cytoscape({
 });
 ```
 
-If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.
+If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `"null"` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.
 
 If you've included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: 
 
@@ -93,17 +93,19 @@ $(function(){ // on jquery ready
 
 ### Initialisation options
 
-An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
+An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.
 
 ```js
 $("#cy").cytoscape({
   selectionType: (isTouchDevice ? 'additive' : 'single'),
-  showOverlay: false,
-  layout: { /* ... */ },
+  layout: { name: 'grid' /* , ... */ },
   zoom: 1,
   minZoom: 1e-50,
   maxZoom: 1e50,
+  zoomingEnabled: true,
+  userZoomingEnabled: true,
   pan: { x: 0, y: 0 },
+  panningEnabled: true,
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
@@ -120,7 +122,15 @@ $("#cy").cytoscape({
 
 **`zoom`** : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.  You can set **`options.minZoom`** and **`options.maxZoom`** to set restrictions on the zoom level.
 
+**`zoomingEnabled`** : Whether zooming the graph is enabled, both by user events and programmatically.
+
+**`userZoomingEnabled`** : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.
+
 **`pan`** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied. 
+
+**`panningEnabled`** : Whether panning the graph is enabled, both by user events and programmatically.
+
+**`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 

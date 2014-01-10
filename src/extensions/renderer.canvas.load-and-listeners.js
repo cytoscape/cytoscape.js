@@ -359,7 +359,7 @@
 			} else if (r.hoverData.dragging) {
 				preventDefault = true;
 
-				if( cy.panningEnabled() ){
+				if( cy.panningEnabled() && cy.userPanningEnabled() ){
 					var deltaP = {x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()};
 
 					cy.panBy( deltaP );
@@ -372,7 +372,7 @@
 			} else if (select[4] == 1 && (down == null || down.isEdge())
 					&& ( !cy.boxSelectionEnabled() || +new Date - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
 					&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
-					&& cy.panningEnabled() ) {
+					&& cy.panningEnabled() && cy.userPanningEnabled() ) {
 				
 				r.hoverData.dragging = true;
 				select[4] = 0;
@@ -683,7 +683,7 @@
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			if( cy.panningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
+			if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
 				e.preventDefault();
 			
 				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
@@ -1032,7 +1032,7 @@
 
 				select[4] = 1;
 
-			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() ) { // two fingers => pinch to zoom
+			} else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
 				r.data.bgActivePosistion = undefined;
 				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
@@ -1180,7 +1180,7 @@
 					}
 				}
 				
-				if ( capture && (start == null || start.isEdge()) && cy.panningEnabled() ) {
+				if ( capture && (start == null || start.isEdge()) && cy.panningEnabled() && cy.userPanningEnabled() ) {
 					if( start ){
 						start.unactivate();
 

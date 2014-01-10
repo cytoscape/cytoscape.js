@@ -210,6 +210,23 @@
             },
 
             {
+              "name": "cy.userPanningEnabled",
+              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
+              "formats": [
+                {
+                  "descr": "Get whether user panning is enabled."
+                },
+
+                {
+                  "descr": "Set whether user panning is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables user panning; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "cy.zoom", 
               "descr": "Get or set the zoom level of the graph.",
               "formats": [
@@ -245,6 +262,23 @@
                   "descr": "Set whether zooming is enabled.",
                   "args": [
                     { "name": "bool", "descr": "A truthy value enables zooming; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.userZoomingEnabled",
+              "descr": "Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.",
+              "formats": [
+                {
+                  "descr": "Get whether user zooming is enabled."
+                },
+
+                {
+                  "descr": "Set whether user zooming is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables user zooming; a falsey value disables it." }
                   ]
                 }
               ]

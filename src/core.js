@@ -68,6 +68,7 @@
 			zoomingEnabled: options.zoomingEnabled === undefined ? true : options.zoomingEnabled,
 			userZoomingEnabled: options.userZoomingEnabled === undefined ? true : options.userZoomingEnabled,
 			panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
+			userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
 			boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
 			zoom: $$.is.number(options.zoom) ? options.zoom : 1,
 			pan: {

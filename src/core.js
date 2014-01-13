@@ -103,7 +103,16 @@
 		}
 
 		// init style
-		_p.style = $$.is.stylesheet(options.style) ? options.style.generateStyle(this) : ( $$.is.array(options.style) ? $$.style.fromJson(this, options.style) : new $$.Style( cy ) );
+
+		if( $$.is.stylesheet(options.style) ){
+			_p.style = options.style.generateStyle(this);
+		} else if( $$.is.array(options.style) ) {
+			_p.style = $$.style.fromJson(this, options.style);
+		} else if( $$.is.string(options.style) ){
+			_p.style = $$.style.fromString(this, options.style);
+		} else {
+			_p.style = new $$.Style( cy );
+		}
 
 		// create the renderer
 		cy.initRenderer( $$.util.extend({

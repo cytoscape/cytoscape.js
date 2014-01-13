@@ -81,8 +81,8 @@ Matches elements if their data attribute ends with the specified value (e.g. `[f
 **`@` (data attribute operator modifier)**  
 Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)
 
-**`{}` (metadata brackets)**  
-Use curly brackets in place of square ones to match against metadata instead of data (e.g. `{degree > 2}` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
+**`[[]]` (metadata brackets)**  
+Use double square brackets in place of square ones to match against metadata instead of data (e.g. `[[degree > 2]]` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
 
 
 ## Compound nodes

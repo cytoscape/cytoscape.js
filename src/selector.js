@@ -187,7 +187,7 @@
 				
 				metaCompare: {
 					query: true,
-					regex: "\\{\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\}",
+					regex: "\\[\\[\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\]\\]",
 					populate: function( meta, comparatorOp, number ){
 						this.meta.push({
 							field: cleanMetaChars(meta),

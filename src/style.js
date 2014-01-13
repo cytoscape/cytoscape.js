@@ -92,7 +92,11 @@
 	};
 
 	$$.style.fromString = function( string ){
+		var style = new $$.Style(cy);
 
+				
+
+		return style;
 	};
 
 	// static function

@@ -93,8 +93,28 @@
 
 	$$.style.fromString = function( string ){
 		var style = new $$.Style(cy);
+		var remaining = "" + string;
 
-				
+		while(true){
+			var nothingLeftToParse = remaining.match(/^\s+$/);
+			if( nothingLeftToParse ){ break; }
+
+			var selAndBlock = remaining.match(/^(.+?)\{(.+?)\}/);
+
+			if( !selAndBlock ){
+				$$.util.error("String stylesheet contains more to parse but no selector and block found: " + remaining);
+				break;
+			}
+
+			var selectorStr = selAndBlock[0];
+			var selector = new $$.Selector( selectorStr );
+			if( selector._private.invalid ){
+				$$.util.error("Invalid selector found in string stylesheet: " + selectorStr);
+				break;
+			}
+
+			// TODO finish parsing
+		}
 
 		return style;
 	};

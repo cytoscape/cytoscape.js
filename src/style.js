@@ -50,8 +50,7 @@
 
 		this[i] = {
 			selector: selector,
-			properties: [],
-			animations: []
+			properties: []
 		};
 
 		return this; // chaining
@@ -92,13 +91,8 @@
 		return this; // chaining
 	};
 
-	// just store the animation to be processed later
-	$$.Stylesheet.prototype.animate = function( ani ){
-		var i = this.length - 1;
+	$$.style.fromString = function( string ){
 
-		this[i].animations.push( ani );
-
-		return this; // chaining
 	};
 
 	// static function
@@ -152,7 +146,6 @@
 			var cxt = this[i];
 			var selector = cxt.selector;
 			var props = cxt.properties;
-			var anis = cxt.animations;
 			var css = {};
 
 			for( var i = 0; i < props.length; i++ ){
@@ -161,8 +154,7 @@
 
 			json.push({
 				selector: selector.toString(),
-				css: css,
-				animate: anis
+				css: css
 			});
 		}
 
@@ -177,7 +169,6 @@
 			var context = this[i];
 			var selector = context.selector;
 			var props = context.properties;
-			var anis = context.animations;
 
 			style.selector(selector); // apply selector
 
@@ -185,12 +176,6 @@
 				var prop = props[j];
 
 				style.css( prop.name, prop.value ); // apply property
-			}
-
-			for( var j = 0; j < anis.length; j++ ){
-				var ani = anis[j];
-
-				style.animate( ani ); // add animation
 			}
 		}
 
@@ -208,7 +193,6 @@
 			var context = this[i];
 			var selector = context.selector;
 			var props = context.properties;
-			var anis = context.animations;
 
 			style.selector(selector); // apply selector
 
@@ -216,12 +200,6 @@
 				var prop = props[j];
 
 				style.css( prop.name, prop.value ); // apply property
-			}
-
-			for( var j = 0; j < anis.length; j++ ){
-				var ani = anis[j];
-
-				style.animate( ani ); // add animation
 			}
 		}
 	};
@@ -819,8 +797,7 @@
 		var i = this.length++; // new context means new index
 		this[i] = {
 			selector: selector,
-			properties: [],
-			animations: []
+			properties: []
 		};
 
 		return this; // chaining
@@ -876,14 +853,6 @@
 				this._private.coreStyle[ property.name ] = property;
 			}
 		}
-
-		return this; // chaining
-	};
-
-	// add an animation to the current context
-	$$.styfn.animate = function( ani ){
-		var i = this.length - 1;
-		this[i].animations.push( ani );
 
 		return this; // chaining
 	};

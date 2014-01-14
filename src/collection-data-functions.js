@@ -195,6 +195,8 @@
 					}
 				}
 			}
+
+			return this; // chaining
 		},
 
 		// get the specified css property as a rendered value (i.e. on-screen value)

@@ -1040,7 +1040,15 @@
 		// put the property in the style objects
 		switch( prop.mapped ){ // flatten the property if mapped
 		case $$.style.types.mapData:
-			fieldVal = ele._private.data[ prop.field ];
+			
+			// flatten the field (e.g. data.foo.bar)
+			var fields = prop.field.split(".");
+			var fieldVal = ele._private.data;
+			for( var i = 0; i < fields.length && fieldVal; i++ ){
+				var field = fields[i];
+				fieldVal = fieldVal[ field ];
+			}
+
 			if( !$$.is.number(fieldVal) ){ return false; } // it had better be a number
 
 			var percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
@@ -1087,7 +1095,14 @@
 			break;
 
 		case $$.style.types.data: // direct mapping
-			fieldVal = eval('ele._private.data.' + prop.field );
+
+			// flatten the field (e.g. data.foo.bar)
+			var fields = prop.field.split(".");
+			var fieldVal = ele._private.data;
+			for( var i = 0; i < fields.length && fieldVal; i++ ){
+				var field = fields[i];
+				fieldVal = fieldVal[ field ];
+			}
 
 			flatProp = this.parse( prop.name, fieldVal, prop.bypass );
 			if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself

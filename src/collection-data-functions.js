@@ -156,25 +156,43 @@
 			return this; // chaining
 		},
 
-		// get the rendered (i.e. on screen) positon of the element
-		// TODO allow setting
-		renderedPosition: function( dim ){
+		// get/set the rendered (i.e. on screen) positon of the element
+		renderedPosition: function( dim, val ){
 			var ele = this[0];
 			var cy = this.cy();
 			var zoom = cy.zoom();
 			var pan = cy.pan();
+			var rpos = $$.is.plainObject( dim ) ? dim : undefined;
+			var setting = rpos !== undefined || ( val !== undefined && $$.is.string(dim) );
 
 			if( ele && ele.isNode() ){ // must have an element and must be a node to return position
-				var pos = ele._private.position;
-				var rpos = {
-					x: pos.x * zoom + pan.x,
-					y: pos.y * zoom + pan.y
-				};
+				if( setting ){
+					for( var i = 0; i < this.length; i++ ){
+						var ele = this[i];
 
-				if( dim === undefined ){ // then return the whole rendered position
-					return rpos;
-				} else { // then return the specified dimension
-					return rpos[ dim ];
+						if( val !== undefined ){ // set one dimension
+							ele._private.position[dim] = ( val - pan[dim] )/zoom;
+						} else if( rpos !== undefined ){ // set whole position
+							ele._private.position = {
+								x: ( rpos.x - pan.x ) /zoom,
+								y: ( rpos.y - pan.y ) /zoom
+							};
+						}
+					}
+
+					this.rtrigger("position");
+				} else { // getting
+					var pos = ele._private.position;
+					rpos = {
+						x: pos.x * zoom + pan.x,
+						y: pos.y * zoom + pan.y
+					};
+
+					if( dim === undefined ){ // then return the whole rendered position
+						return rpos;
+					} else { // then return the specified dimension
+						return rpos[ dim ];
+					}
 				}
 			}
 		},

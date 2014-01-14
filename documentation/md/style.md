@@ -6,8 +6,34 @@ It is important to note that in your stylesheet, [specificity rules](http://www.
 
 ## Format
 
-The style specified at [initialisation](#core/initialisation) can be in a functional format or in a plain JSON format, the plain JSON format being more useful if you want to pull down the style from the server.
+The style specified at [initialisation](#core/initialisation) can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string format being more useful if you want to pull down the style from the server.  If you pull the style from the server, you must initialise Cytoscape.js after the style has been loaded.
 
+
+
+### String format
+
+Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.
+
+An example style file:
+
+```
+/* comments may be entered like this */
+node {
+  background-color: green;
+}
+``` 
+
+At initialisation:
+
+```js
+$('#cy').cytoscape({
+  // ...
+
+  style: aStyleString // probably previously loaded via ajax
+
+  // , ...
+});
+```
 
 ### Plain JSON format
 

@@ -91,29 +91,154 @@
 		return this; // chaining
 	};
 
-	$$.style.fromString = function( string ){
-		var style = new $$.Style(cy);
+	$$.style.applyFromString = function( style, string ){
 		var remaining = "" + string;
+		var selAndBlockStr;
+		var blockRem;
+		var propAndValStr;
+
+		// remove comments from the style string
+		remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, "");
+
+		function removeSelAndBlockFromRemaining(){
+			// remove the parsed selector and block from the remaining text to parse
+			if( remaining.length > selAndBlockStr.length ){
+				remaining = remaining.substr( selAndBlockStr.length );
+			} else {
+				remaining = "";
+			}
+		}
+
+		function removePropAndValFromRem(){
+			// remove the parsed property and value from the remaining block text to parse
+			if( blockRem.length > propAndValStr.length ){
+				blockRem = blockRem.substr( propAndValStr.length );
+			} else {
+				blockRem = "";
+			}
+		}
 
 		while(true){
-			var nothingLeftToParse = remaining.match(/^\s+$/);
+			var nothingLeftToParse = remaining.match(/^\s*$/);
 			if( nothingLeftToParse ){ break; }
 
-			var selAndBlock = remaining.match(/^(.+?)\{(.+?)\}/);
+			var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
 
 			if( !selAndBlock ){
-				$$.util.error("String stylesheet contains more to parse but no selector and block found: " + remaining);
+				$$.util.error("Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: " + remaining);
 				break;
 			}
 
-			var selectorStr = selAndBlock[0];
+			selAndBlockStr = selAndBlock[0];
+
+			// parse the selector
+			var selectorStr = selAndBlock[1];
 			var selector = new $$.Selector( selectorStr );
 			if( selector._private.invalid ){
-				$$.util.error("Invalid selector found in string stylesheet: " + selectorStr);
+				$$.util.error("Skipping parsing of block: Invalid selector found in string stylesheet: " + selectorStr);
+
+				// skip this selector and block
+				removeSelAndBlockFromRemaining();
+				continue; 
+			}
+
+			// parse the block of properties and values
+			var blockStr = selAndBlock[2];
+			var invalidBlock = false;
+			blockRem = blockStr;
+			var props = [];
+
+			while(true){
+				var nothingLeftToParse = blockRem.match(/^\s*$/);
+				if( nothingLeftToParse ){ break; }
+
+				var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
+
+				if( !propAndVal ){
+					$$.util.error("Skipping parsing of block: Invalid formatting of style property and value definitions found in:" + blockStr);
+					invalidBlock = true;
+					break;
+				}
+
+				propAndValStr = propAndVal[0];
+				var propStr = propAndVal[1];
+				var valStr = propAndVal[2];
+
+				var prop = $$.style.properties[ propStr ];
+				if( !prop ){
+					$$.util.error("Skipping property: Invalid property name in: " + propAndValStr);
+
+					// skip this property in the block
+					removePropAndValFromRem();
+					continue;
+				}
+
+				var parsedProp = style.parse( propStr, valStr );
+
+				if( !parsedProp ){
+					$$.util.error("Skipping property: Invalid property definition in: " + propAndValStr);
+
+					// skip this property in the block
+					removePropAndValFromRem();
+					continue;
+				}
+
+				props.push({
+					name: propStr,
+					val: valStr
+				});
+				removePropAndValFromRem();
+			}
+
+			if( invalidBlock ){
+				removeSelAndBlockFromRemaining();
 				break;
 			}
 
-			// TODO finish parsing
+			// put the parsed block in the style
+			style.selector( selectorStr );
+			for( var i = 0; i < props.length; i++ ){
+				var prop = props[i];
+				style.css( prop.name, prop.val );
+			}
+
+			removeSelAndBlockFromRemaining();
+		}
+
+		return style;
+	};
+
+	$$.style.fromString = function( cy, string ){
+		var style = new $$.Style(cy);
+		
+		$$.style.applyFromString( style, string );
+
+		return style;
+	};
+
+	$$.styfn.fromString = function( string ){
+		var style = this;
+
+		style.resetToDefault();
+
+		$$.style.applyFromString( style, string );
+
+		return style;
+	};
+
+	$$.style.applyFromJson = function( style, json ){
+		for( var i = 0; i < json.length; i++ ){
+			var context = json[i];
+			var selector = context.selector;
+			var props = context.css;
+
+			style.selector(selector); // apply selector
+
+			for( var name in props ){
+				var value = props[name];
+
+				style.css( name, value ); // apply property
+			}
 		}
 
 		return style;
@@ -123,19 +248,7 @@
 	$$.style.fromJson = function( cy, json ){
 		var style = new $$.Style(cy);
 
-		for( var i = 0; i < json.length; i++ ){
-			var context = json[i];
-			var selector = context.selector;
-			var props = context.css;
-
-			style.selector(selector); // apply selector
-
-			for( var name in props ){
-				var value = props[name];
-
-				style.css( name, value ); // apply property
-			}
-		}
+		$$.style.applyFromJson( style, json );
 
 		return style;
 	};
@@ -145,19 +258,7 @@
 
 		style.resetToDefault();
 
-		for( var i = 0; i < json.length; i++ ){
-			var context = json[i];
-			var selector = context.selector;
-			var props = context.css;
-
-			style.selector(selector); // apply selector
-
-			for( var name in props ){
-				var value = props[name];
-
-				style.css( name, value ); // apply property
-			}
-		}
+		$$.style.applyFromJson( style, json );
 
 		return style;
 	};
@@ -647,7 +748,7 @@
 		// TODO check if value is inherited (i.e. "inherit")
 
 		// check the type and return the appropriate object
-		if( type.number ){
+		if( type.number ){ 
 			var units;
 			var implicitUnit = "px"; // not set => px
 
@@ -661,18 +762,22 @@
 					if( units ){ unitsRegex = units; } // only allow explicit units if so set 
 					var match = value.match( "^(" + $$.util.regex.number + ")(" + unitsRegex + ")?" + "$" );
 					
-					if( !type.enums ){
-						if( !match ){ return null; } // no match => not a number
-
+					if( match ){
 						value = match[1];
 						units = match[2] || implicitUnit;
 					}
+					
 				} else if( !units ) {
 					units = implicitUnit; // implicitly px if unspecified
 				}
 			}
 
 			value = parseFloat( value );
+
+			// if not a number and enums not allowed, then the value is invalid
+			if( isNaN(value) && type.enums === undefined ){
+				return null;
+			}
 
 			// check if this number type also accepts special keywords in place of numbers
 			// (i.e. `left`, `auto`, etc)

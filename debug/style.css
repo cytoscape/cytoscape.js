@@ -5,3 +5,4 @@ body { font: 14pt arial; }
 label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left: 0.5em; background: #fff; }
 #nodes-number, #edges-number, #parent-node { width: 5em; }
 .ui-tooltip { font-size: 0.75em; max-width: 400px; }
+#string-stylesheet { display: block; min-height: 7em; }

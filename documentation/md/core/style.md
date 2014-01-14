@@ -11,12 +11,6 @@ cy.style()
   // and then define new styles
   .selector('node')
   	.css('background-color', 'blue')
-  .selector('node:selected')
-    .css({
-      'background-color': 'red'
-
-      // , ...
-    })
 
   // ...
 
@@ -33,19 +27,19 @@ cy.style()
       css: {
         'background-color': 'blue'
       }
-    },
-
-    {
-      selector: 'node:selected',
-      css: {
-        'background-color': 'red'
-
-        // , ...
-      }
     }
 
     // , ...
   ])
+
+  .update() // update the elements in the graph with the new style
+  ```
+
+You can also set the style from a style string (that you would probably pull from a file on your server):
+
+```js
+cy.style()
+  .fromString('node { background-color: blue; }')
 
   .update() // update the elements in the graph with the new style
   ```

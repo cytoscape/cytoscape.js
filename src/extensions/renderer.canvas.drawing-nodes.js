@@ -107,7 +107,7 @@
 			this.drawPie(context, node);
 
 			// Border width, draw border
-			if (node._private.style["border-width"].value > 0) {
+			if (node._private.style["border-width"].pxValue > 0) {
 				CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
 					context,
 					node._private.position.x,
@@ -122,7 +122,7 @@
 		// draw the overlay
 		} else {
 
-			var overlayPadding = node._private.style["overlay-padding"].value;
+			var overlayPadding = node._private.style["overlay-padding"].pxValue;
 			var overlayOpacity = node._private.style["overlay-opacity"].value;
 			var overlayColor = node._private.style["overlay-color"].value;
 			if( overlayOpacity > 0 ){
@@ -160,8 +160,8 @@
 
 		if( !this.hasPie(node) ){ return; } // exit early if not needed
 
-		var nodeW = node._private.style['width'].value;
-		var nodeH = node._private.style['height'].value;
+		var nodeW = this.getNodeWidth( node );
+		var nodeH = this.getNodeHeight( node );
 		var x = node._private.position.x;
 		var y = node._private.position.y;
 		var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node

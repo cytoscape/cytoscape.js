@@ -560,7 +560,7 @@
 		}
 		else
 		{
-			return node._private.style["width"].value;
+			return node._private.style["width"].pxValue;
 		}
 	};
 
@@ -580,7 +580,7 @@
 		}
 		else
 		{
-			return node._private.style["height"].value;
+			return node._private.style["height"].pxValue;
 		}
 	};
 
@@ -646,10 +646,10 @@
 
 	CanvasRenderer.prototype.getNodePadding = function(node)
 	{
-		var left = node._private.style["padding-left"].value;
-		var right = node._private.style["padding-right"].value;
-		var top = node._private.style["padding-top"].value;
-		var bottom = node._private.style["padding-bottom"].value;
+		var left = node._private.style["padding-left"].pxValue;
+		var right = node._private.style["padding-right"].pxValue;
+		var top = node._private.style["padding-top"].pxValue;
+		var bottom = node._private.style["padding-bottom"].pxValue;
 
 		if (isNaN(left))
 		{

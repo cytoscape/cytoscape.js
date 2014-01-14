@@ -27,10 +27,7 @@
 			var style = cy.style();
 			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
-			for( var i = 0; i < this.length; i++ ){
-				var ele = this[i];
-				style.apply( ele );
-			}
+			style.updateMappers( this );
 
 			if( notifyRenderer ){
 				this.rtrigger("style"); // let renderer know we changed style

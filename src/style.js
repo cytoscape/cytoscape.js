@@ -1340,7 +1340,7 @@
 
 	// just update the functional properties (i.e. mappings) in the elements'
 	// styles (less expensive than recalculation)
-	$$.styfn.updateFunctionalProperties = function( eles ){
+	$$.styfn.updateMappers = function( eles ){
 		for( var i = 0; i < eles.length; i++ ){ // for each ele
 			var ele = eles[i];
 			var style = ele._private.style;

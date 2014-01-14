@@ -27,7 +27,7 @@
 			return;
 		}
 		
-		var overlayPadding = edge._private.style["overlay-padding"].value;
+		var overlayPadding = edge._private.style["overlay-padding"].pxValue;
 		var overlayOpacity = edge._private.style["overlay-opacity"].value;
 		var overlayColor = edge._private.style["overlay-color"].value;
 
@@ -49,11 +49,11 @@
 		}
 
 		// Edge line width
-		if (edge._private.style["width"].value <= 0) {
+		if (edge._private.style["width"].pxValue <= 0) {
 			return;
 		}
 		
-		var edgeWidth = edge._private.style["width"].value + (drawOverlayInstead ? 2 * overlayPadding : 0);
+		var edgeWidth = edge._private.style["width"].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
 		var lineStyle = drawOverlayInstead ? "solid" : edge._private.style["line-style"].value;
 		context.lineWidth = edgeWidth;
 		
@@ -424,7 +424,7 @@
 			+ edge._private.style["source-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
 		
-		context.lineWidth = edge._private.style["width"].value;
+		context.lineWidth = edge._private.style["width"].pxValue;
 		
 		this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
 			startX, startY, dispX, dispY);
@@ -442,7 +442,7 @@
 			+ edge._private.style["target-arrow-color"].value[2] + ","
 			+ edge._private.style.opacity.value + ")";
 		
-		context.lineWidth = edge._private.style["width"].value;
+		context.lineWidth = edge._private.style["width"].pxValue;
 		
 		this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
 			endX, endY, dispX, dispY);

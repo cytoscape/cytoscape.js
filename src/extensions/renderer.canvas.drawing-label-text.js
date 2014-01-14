@@ -131,7 +131,7 @@
 
 		// Font style
 		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].value + "px";
+		var labelSize = element._private.style["font-size"].pxValue + "px";
 		var labelFamily = element._private.style["font-family"].strValue;
 		var labelVariant = element._private.style["font-variant"].strValue;
 		var labelWeight = element._private.style["font-weight"].strValue;

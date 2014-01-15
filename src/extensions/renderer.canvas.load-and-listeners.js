@@ -381,6 +381,7 @@
 				// deactivate bg on box selection
 				if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
 					clearTimeout( r.bgActiveTimeout );
+					r.data.bgActivePosistion = undefined;
 				}
 				
 				if( down && down.isEdge() && down.active() ){ down.unactivate(); }

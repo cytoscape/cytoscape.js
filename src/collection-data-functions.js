@@ -603,18 +603,6 @@
 				}
 			} // for
 
-			// testing on debug page
-			// $('#bb').remove();
-			// $('#cytoscape').css('position', 'relative').append('<div id="bb"></div>');
-			// $('#bb').css({
-			// 	'position': 'absolute',
-			// 	'left': x1,
-			// 	'top': y1,
-			// 	'width': x2 - x1,
-			// 	'height': y2 - y1,
-			// 	'background': 'rgba(255, 0, 0, 0.5)'
-			// })
-
 			return {
 				x1: x1,
 				x2: x2,

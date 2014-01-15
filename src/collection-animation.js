@@ -52,12 +52,23 @@
 				break;
 			}
 			
-			if( properties == null || (properties.position == null && properties.css == null && properties.delay == null) ){
+			if( properties == null || (properties.position == null && properties.renderedPosition == null && properties.css == null && properties.delay == null) ){
 				return this; // nothing to animate
 			}
 
 			if( properties.css ){
 				properties.css = style.getValueStyle( properties.css );
+			}
+
+			if( properties.renderedPosition ){
+				var rpos = properties.renderedPosition;
+				var pan = cy.pan();
+				var zoom = cy.zoom();
+
+				properties.position = {
+					x: ( rpos.x - pan.x ) /zoom,
+					y: ( rpos.y - pan.y ) /zoom
+				};
 			}
 
 			for( var i = 0; i < this.length; i++ ){

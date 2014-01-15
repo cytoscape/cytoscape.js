@@ -1,3 +1,7 @@
+## Details
+
+Note that you can specify only one of `position` and `renderedPosition`:  You can not animate to two positions at once.
+
 ## Examples
 
 ```js

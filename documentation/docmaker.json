@@ -1116,6 +1116,7 @@
                       "descr": "An object containing the properties to animate.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
+                        { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
                         { "name": "css", "descr": "An object containing name-value pairs of style properties to animate." }
                       ]
                     },

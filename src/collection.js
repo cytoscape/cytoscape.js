@@ -128,6 +128,10 @@
 				self._private.classes[cls] = true;
 			}
 		}
+
+		if( params.css ){
+			cy.style().applyBypass( this, params.css );
+		}
 		
 		if( restore === undefined || restore ){
 			this.restore();

@@ -181,7 +181,7 @@
 
 		// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
 		if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
-			// console.log("redrawing node layer", data.canvasRedrawReason[CanvasRenderer.NODE]);
+			// console.log("redrawing node layer");
 		  
 		  	if( !elesInDragLayer || !elesNotInDragLayer ){
 				elesInDragLayer = [];
@@ -243,7 +243,7 @@
 			}
 			
 			if( !drawAllLayers ){
-				data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; data.canvasRedrawReason[CanvasRenderer.NODE] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; 
 			}
 		}
 		
@@ -310,12 +310,12 @@
 			}
 			
 			if( !drawAllLayers ){
-				data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false; data.canvasRedrawReason[CanvasRenderer.DRAG] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false;
 			}
 		}
 		
 		if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX]) {
-			// console.log("redrawing selection box", data.canvasRedrawReason[CanvasRenderer.SELECT_BOX]);
+			// console.log("redrawing selection box");
 		  
 			var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
 			
@@ -383,7 +383,7 @@
 			}
 			
 			if( !drawAllLayers ){
-				data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; data.canvasRedrawReason[CanvasRenderer.SELECT_BOX] = [];
+				data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; 
 			}
 		}
 

@@ -62,9 +62,7 @@
 							
 //							console.log(e);
 							r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-							r.data.canvasRedrawReason[CanvasRenderer.NODE].push("image finished load");
 							r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-							r.data.canvasRedrawReason[CanvasRenderer.DRAG].push("image finished load");
 							
 							// Replace Image object with Canvas to solve zooming too far
 							// into image graphical errors (Jan 10 2013)

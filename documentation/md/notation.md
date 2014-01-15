@@ -67,6 +67,9 @@ $('#cy').cytoscape({
       grabbable: true, // whether the node can be grabbed and moved by the user
 
       classes: 'foo bar' // a space separated list of class names that the element has
+
+      // NB: you should only use `css` for very special cases; use classes instead
+      css: { backgroundColor: red } // overriden style properties
     },
 
     { // node n2

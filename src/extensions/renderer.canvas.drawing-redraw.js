@@ -35,6 +35,10 @@
 		canvasWidth *= pixelRatio;
 		canvasHeight *= pixelRatio;
 
+		var canvasContainer = data.canvasContainer;
+		canvasContainer.style.width = width + 'px';
+		canvasContainer.style.height = height + 'px';
+
 		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
 
 			canvas = data.canvases[i];

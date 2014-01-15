@@ -58,12 +58,19 @@
 
 		this.bindings = [];
 		
+		this.data.canvasContainer = document.createElement("div");
+		var containerStyle = this.data.canvasContainer.style;
+		containerStyle.position = "absolute";
+		containerStyle.zIndex = "0";
+
+		this.data.container.appendChild( this.data.canvasContainer );
+
 		for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
 			this.data.canvases[i] = document.createElement("canvas");
 			this.data.canvases[i].style.position = "absolute";
 			this.data.canvases[i].setAttribute("data-id", "layer" + i);
 			this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
-			this.data.container.appendChild(this.data.canvases[i]);
+			this.data.canvasContainer.appendChild(this.data.canvases[i]);
 			
 			this.data.canvasRedrawReason[i] = new Array();
 			this.data.canvasNeedsRedraw[i] = false;
@@ -79,7 +86,7 @@
 			this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
 			this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
 			this.data.bufferCanvases[i].style.visibility = "hidden";
-			this.data.container.appendChild(this.data.bufferCanvases[i]);
+			this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
 		}
 
 		this.hideEdgesOnViewport = options.hideEdgesOnViewport;

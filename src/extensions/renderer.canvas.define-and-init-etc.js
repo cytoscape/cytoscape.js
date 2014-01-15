@@ -22,7 +22,6 @@
 			renderer: this, cy: options.cy, container: options.cy.container(),
 			
 			canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
-			canvasRedrawReason: new Array(CanvasRenderer.CANVAS_LAYERS),
 			canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
 			
 			bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT)
@@ -72,7 +71,6 @@
 			this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
 			this.data.canvasContainer.appendChild(this.data.canvases[i]);
 			
-			this.data.canvasRedrawReason[i] = new Array();
 			this.data.canvasNeedsRedraw[i] = false;
 		}
 
@@ -113,13 +111,11 @@
 
 		if (params.type == "viewport") {
 			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-			this.data.canvasRedrawReason[CanvasRenderer.SELECT_BOX].push("viewchange");
 		}
 		
-		this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; this.data.canvasRedrawReason[CanvasRenderer.DRAG].push("notify");
-		this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; this.data.canvasRedrawReason[CanvasRenderer.NODE].push("notify");
+		this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
+		this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
 
-		this.redraws++;
 		this.redraw();
 	};
 

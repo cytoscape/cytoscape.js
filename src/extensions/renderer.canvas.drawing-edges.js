@@ -417,17 +417,20 @@
 		dispX = startX - edge.source().position().x;
 		dispY = startY - edge.source().position().y;
 		
-		//this.context.strokeStyle = "rgba("
-		context.fillStyle = "rgba("
-			+ edge._private.style["source-arrow-color"].value[0] + ","
-			+ edge._private.style["source-arrow-color"].value[1] + ","
-			+ edge._private.style["source-arrow-color"].value[2] + ","
-			+ edge._private.style.opacity.value + ")";
-		
-		context.lineWidth = edge._private.style["width"].pxValue;
-		
-		this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
-			startX, startY, dispX, dispY);
+		if( !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
+
+			//this.context.strokeStyle = "rgba("
+			context.fillStyle = "rgba("
+				+ edge._private.style["source-arrow-color"].value[0] + ","
+				+ edge._private.style["source-arrow-color"].value[1] + ","
+				+ edge._private.style["source-arrow-color"].value[2] + ","
+				+ edge._private.style.opacity.value + ")";
+			
+			context.lineWidth = edge._private.style["width"].pxValue;
+			
+			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+				startX, startY, dispX, dispY);
+		}
 		
 		var endX = edge._private.rscratch.arrowEndX;
 		var endY = edge._private.rscratch.arrowEndY;
@@ -435,17 +438,20 @@
 		dispX = endX - edge.target().position().x;
 		dispY = endY - edge.target().position().y;
 		
-		//this.context.strokeStyle = "rgba("
-		context.fillStyle = "rgba("
-			+ edge._private.style["target-arrow-color"].value[0] + ","
-			+ edge._private.style["target-arrow-color"].value[1] + ","
-			+ edge._private.style["target-arrow-color"].value[2] + ","
-			+ edge._private.style.opacity.value + ")";
-		
-		context.lineWidth = edge._private.style["width"].pxValue;
-		
-		this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
-			endX, endY, dispX, dispY);
+		if( !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
+
+			//this.context.strokeStyle = "rgba("
+			context.fillStyle = "rgba("
+				+ edge._private.style["target-arrow-color"].value[0] + ","
+				+ edge._private.style["target-arrow-color"].value[1] + ","
+				+ edge._private.style["target-arrow-color"].value[2] + ","
+				+ edge._private.style.opacity.value + ")";
+			
+			context.lineWidth = edge._private.style["width"].pxValue;
+
+			this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+				endX, endY, dispX, dispY);
+		}
 	}
 	
 	// Draw arrowshape

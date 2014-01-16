@@ -119,8 +119,49 @@
 				cellUsed['c-' + row + '-' + col] = true;
 			}
 
+			// to keep track of current cell position
 			var row = 0;
 			var col = 0;
+			function moveToNextCell(){
+				col++;
+				if( col >= cols ){
+					col = 0;
+					row++;
+				}
+			}
+
+			// get a cache of all the manual positions
+			var id2manPos = {};
+			for( var i = 0; i < nodes.length; i++ ){
+				var node = nodes[i];
+				var rcPos = options.position( node );
+
+				if( rcPos && (rcPos.row !== undefined || rcPos.col !== undefined) ){ // must have at least row or col def'd
+					var pos = {
+						row: rcPos.row,
+						col: rcPos.col
+					};
+
+					if( pos.col === undefined ){ // find unused col
+						pos.col = 0;
+
+						while( used(pos.row, pos.col) ){
+							pos.col++;
+						}
+					} else if( pos.row === undefined ){ // find unused row
+						pos.row = 0;
+
+						while( used(pos.row, pos.col) ){
+							pos.row++;
+						}
+					}
+
+					id2manPos[ node.id() ] = pos;
+					use( pos.row, pos.col );
+				}
+			}
+
+
 			var atLeastOneManSet = false;
 			nodes.positions(function(i, element){
 				var x, y;
@@ -130,40 +171,22 @@
 				}
 
 				// see if we have a manual position set
-				var manPos = false;
-				var rcPos = options.position( element );
+				var rcPos = id2manPos[ element.id() ];
 				if( rcPos ){
-					if( rcPos.row !== undefined || rcPos.col !== undefined ){
-						if( rcPos.row === undefined ){
-							rcPos.row = row; // put in current row if undef
-						}
-
-						if( rcPos.col === undefined ){
-							rcPos.col = col; // put in current col if undef
-						}
-					}
-
-					if( !used(rcPos.row, rcPos.col) ){
-						use( rcPos.row, rcPos.col );
-						manPos = true;
-						atLeastOneManSet = true;
-
-						x = rcPos.col * cellWidth + cellWidth/2;
-						y = rcPos.row * cellHeight + cellHeight/2;
-					}
-				}
+					x = rcPos.col * cellWidth + cellWidth/2;
+					y = rcPos.row * cellHeight + cellHeight/2;
 				
-				// otherwise set automatically
-				if( !manPos ){
+				} else { // otherwise set automatically
+				
+					while( used(row, col) ){
+						moveToNextCell();
+					}
+
 					x = col * cellWidth + cellWidth/2;
 					y = row * cellHeight + cellHeight/2;
 					use( row, col );
 					
-					col++;
-					if( col >= cols ){
-						col = 0;
-						row++;
-					}
+					moveToNextCell();
 				}
 				
 				return { x: x, y: y };

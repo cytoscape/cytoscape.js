@@ -32,8 +32,8 @@
 		while (n != null) {
 			var style = window.getComputedStyle(n); 
 			if( style.getPropertyValue('position').toLowerCase() === 'fixed' ){
-				offsetLeft = n.offsetLeft + window.scrollX;
-				offsetTop = n.offsetTop + window.scrollY;
+				offsetLeft += n.offsetLeft + window.scrollX;
+				offsetTop += n.offsetTop + window.scrollY;
 				n = null; // don't want to check any more parents after position:fixed
 			
 

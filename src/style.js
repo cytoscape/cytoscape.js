@@ -335,6 +335,8 @@
 		var hsla = $$.util.regex.hslaNoBackRefs;
 		var hex3 = $$.util.regex.hex3;
 		var hex6 = $$.util.regex.hex6;
+		var data = function( prefix ){ return "^" + prefix + "\\s*\\(\\s*([\\w\\.]+)\\s*\\)$" };
+		var mapData = function( prefix ){ return "^" + prefix + "\\s*\\(([\\w\\.]+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" };
 
 		// each visual style property has a type and needs to be validated according to it
 		$$.style.types = {
@@ -364,8 +366,10 @@
 			bgRepeat: { enums: ["repeat", "repeat-x", "repeat-y", "no-repeat"] },
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
-			data: { mapping: true, regex: "^data\\s*\\(\\s*([\\w\\.]+)\\s*\\)$" },
-			mapData: { mapping: true, regex: "^mapData\\(([\\w\\.]+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" },
+			data: { mapping: true, regex: data("data") },
+			layoutData: { mapping: true, regex: data("layoutData") },
+			mapData: { mapping: true, regex: mapData("mapData") },
+			mapLayoutData: { mapping: true, regex: mapData("mapLayoutData") },
 			url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
 		};
 
@@ -683,21 +687,33 @@
 		}
 
 		// check if value is mapped
-		var data, mapData;
+		var data, mapData, layoutData, mapLayoutData;
 		if( !valueIsString ){
 			// then don't bother to do the expensive regex checks
 
-		} else if( data = new RegExp( $$.style.types.data.regex ).exec( value ) ){
+		} else if(
+			( data = new RegExp( $$.style.types.data.regex ).exec( value ) ) ||
+			( layoutData = new RegExp( $$.style.types.layoutData.regex ).exec( value ) )
+		){
+			var isLayout = layoutData !== undefined;
+			data = data || layoutData;
+
 			return {
 				name: name,
 				value: data,
 				strValue: value,
-				mapped: $$.style.types.data,
+				mapped: isLayout ? $$.style.types.layoutData : $$.style.types.data,
 				field: data[1],
 				bypass: propIsBypass
 			};
 
-		} else if( mapData = new RegExp( $$.style.types.mapData.regex ).exec( value ) ){
+		} else if(
+			( mapData = new RegExp( $$.style.types.mapData.regex ).exec( value ) ) ||
+			( mapLayoutData = new RegExp( $$.style.types.mapLayoutData.regex ).exec( value ) )
+		){
+			var isLayout = mapLayoutData !== undefined;
+			mapData = mapData || mapLayoutData;
+
 			// we can map only if the type is a colour or a number
 			if( !(type.color || type.number) ){ return false; }
 
@@ -735,7 +751,7 @@
 				name: name,
 				value: mapData,
 				strValue: value,
-				mapped: $$.style.types.mapData,
+				mapped: isLayout ? $$.style.types.mapLayoutData : $$.style.types.mapData,
 				field: mapData[1],
 				fieldMin: parseFloat( mapData[2] ), // min & max are numeric
 				fieldMax: parseFloat( mapData[3] ),
@@ -744,8 +760,6 @@
 				bypass: propIsBypass
 			};
 		}
-
-		// TODO check if value is inherited (i.e. "inherit")
 
 		// check the type and return the appropriate object
 		if( type.number ){ 
@@ -1040,10 +1054,13 @@
 		// put the property in the style objects
 		switch( prop.mapped ){ // flatten the property if mapped
 		case $$.style.types.mapData:
+		case $$.style.types.mapLayoutData:
 			
+			var isLayout = prop.mapped === $$.style.types.mapLayoutData;
+
 			// flatten the field (e.g. data.foo.bar)
 			var fields = prop.field.split(".");
-			var fieldVal = ele._private.data;
+			var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
 			for( var i = 0; i < fields.length && fieldVal; i++ ){
 				var field = fields[i];
 				fieldVal = fieldVal[ field ];
@@ -1094,11 +1111,15 @@
 
 			break;
 
-		case $$.style.types.data: // direct mapping
+		// direct mapping	
+		case $$.style.types.data: 
+		case $$.style.types.layoutData: 
+
+			var isLayout = prop.mapped === $$.style.types.layoutData;
 
 			// flatten the field (e.g. data.foo.bar)
 			var fields = prop.field.split(".");
-			var fieldVal = ele._private.data;
+			var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
 			for( var i = 0; i < fields.length && fieldVal; i++ ){
 				var field = fields[i];
 				fieldVal = fieldVal[ field ];
@@ -1117,7 +1138,7 @@
 			break; // just set the property
 
 		default: 
-			return false; // danger, will robinson
+			return false; // not a valid mapping
 		}
 
 		// if the property is a bypass property, then link the resultant property to the original one

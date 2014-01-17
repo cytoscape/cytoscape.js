@@ -1304,6 +1304,7 @@
 
 			if (e.touches[2]) {
 				r.data.bgActivePosistion = undefined;
+				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 			} else if (e.touches[1]) {
 				
 			} else if (e.touches[0]) {
@@ -1312,6 +1313,7 @@
 			} else if (!e.touches[0]) {
 				
 				r.data.bgActivePosistion = undefined;
+				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
 				if (start != null ) {
 

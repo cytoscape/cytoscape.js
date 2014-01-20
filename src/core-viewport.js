@@ -240,10 +240,6 @@
 
 			} else if( $$.is.number(params) ){ // then set the zoom
 				zoom = params;
-				pos = {
-					x: 0,
-					y: 0
-				};
 
 			} else if( $$.is.plainObject(params) ){ // then zoom about a point
 				zoom = params.level;
@@ -270,7 +266,7 @@
 				return this; // zooming disabled
 			}
 
-			if( !$$.is.number(zoom) || !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
+			if( !$$.is.number(zoom) || ( pos && (!$$.is.number(pos.x) || !$$.is.number(pos.y)) ) ){
 				return this; // can't zoom with invalid params
 			}
 
@@ -278,20 +274,26 @@
 			zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
 			zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
 
-			var pan1 = this._private.pan;
-			var zoom1 = this._private.zoom;
-			var zoom2 = zoom;
+			if( pos ){ // set zoom about position
+				var pan1 = this._private.pan;
+				var zoom1 = this._private.zoom;
+				var zoom2 = zoom;
+				
+				var pan2 = {
+					x: -zoom2/zoom1 * (pos.x - pan1.x) + pos.x,
+					y: -zoom2/zoom1 * (pos.y - pan1.y) + pos.y
+				};
+
+				this._private.zoom = zoom;
+				this._private.pan = pan2;
+
+				var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
+				this.trigger("zoom" + (posChanged ? " pan" : "") );
 			
-			var pan2 = {
-				x: -zoom2/zoom1 * (pos.x - pan1.x) + pos.x,
-				y: -zoom2/zoom1 * (pos.y - pan1.y) + pos.y
-			};
-
-			this._private.zoom = zoom;
-			this._private.pan = pan2;
-
-			var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-			this.trigger("zoom" + (posChanged ? " pan" : "") );
+			} else { // just set the zoom
+				this._private.zoom = zoom;
+				this.trigger("zoom");
+			}
 
 			this.notify({ // notify the renderer that the viewport changed
 				type: "viewport"

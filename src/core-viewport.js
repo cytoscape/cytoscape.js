@@ -232,7 +232,7 @@
 		},
 
 		zoom: function( params ){
-			var pos;
+			var pos; // in rendered px
 			var zoom;
 
 			if( params === undefined ){ // then get the zoom
@@ -244,17 +244,17 @@
 			} else if( $$.is.plainObject(params) ){ // then zoom about a point
 				zoom = params.level;
 
-				if( params.renderedPosition ){
-					var rpos = params.renderedPosition;
-					var p = this._private.pan;
+				if( params.position ){
+					var p = params.position;
+					var pan = this._private.pan;
 					var z = this._private.zoom;
 
-					pos = {
-						x: (rpos.x - p.x)/z,
-						y: (rpos.y - p.y)/z
+					pos = { // convert to rendered px
+						x: p.x * z + pan.x,
+						y: p.y * z + pan.y
 					};
-				} else if( params.position ){
-					pos = params.position;
+				} else if( params.renderedPosition ){
+					pos = params.renderedPosition;
 				}
 
 				if( pos && !this._private.panningEnabled ){

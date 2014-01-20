@@ -678,7 +678,7 @@
 		var wheelHandler = function(e) { 
 			var cy = r.data.cy;
 			var pos = r.projectIntoViewport(e.pageX, e.pageY);
-			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
+			var rpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
 			if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
@@ -686,7 +686,7 @@
 			
 				var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
 
-				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
+				cy.zoom({level: cy.zoom() * Math.pow(10, diff), renderedPosition: {x: rpos[0], y: rpos[1]}});
 			}
 
 		}

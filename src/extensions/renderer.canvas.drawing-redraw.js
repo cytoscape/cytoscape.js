@@ -66,6 +66,15 @@
 
 	}
 
+	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+		this.redraw({
+			forcedContext: cxt,
+			forcedZoom: zoom,
+			forcedPan: pan,
+			drawAllLayers: true
+		});
+	};
+
 	// Redraw frame
 	CanvasRenderer.prototype.redraw = function( options ) {
 		options = options || {};
@@ -117,7 +126,10 @@
 		
 		var cy = r.data.cy; var data = r.data; 
 		var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
-		r.matchCanvasSize(data.container);
+
+		if( !forcedContext ){
+			r.matchCanvasSize(data.container);
+		}
 
 		var zoom = cy.zoom();
 		var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
@@ -147,6 +159,21 @@
 		// } console.timeEnd('init')
 
 		function drawToContext(){
+			function setContextTransform(context){
+				context.setTransform(1, 0, 0, 1, 0, 0);
+				!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+				
+				if( !drawAllLayers ){
+					context.translate(effectivePan.x, effectivePan.y);
+					context.scale(effectiveZoom, effectiveZoom);
+				}
+				if( forcedPan ){
+					context.translate(forcedPan.x, forcedPan.y);
+				} 
+				if( forcedZoom ){
+					context.scale(forcedZoom, forcedZoom);
+				}
+			}
 
 			if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
 				//NB : VERY EXPENSIVE
@@ -200,19 +227,7 @@
 
 				var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
 
-				context.setTransform(1, 0, 0, 1, 0, 0);
-				!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-				
-				if( !drawAllLayers ){
-					context.translate(effectivePan.x, effectivePan.y);
-					context.scale(effectiveZoom, effectiveZoom);
-				}
-				if( forcedPan ){
-					context.translate(forcedPan.x, forcedPan.y);
-				} 
-				if( forcedZoom ){
-					context.scale(forcedZoom, forcedZoom);
-				}
+				setContextTransform( context );
 				
 				for (var index = 0; index < elesNotInDragLayer.length; index++) {
 					element = elesNotInDragLayer[index];
@@ -266,19 +281,7 @@
 
 				var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
 				
-				if( !drawAllLayers ){
-					context.setTransform(1, 0, 0, 1, 0, 0);
-					!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-					
-					context.translate(effectivePan.x, effectivePan.y);
-					context.scale(effectiveZoom, effectiveZoom);
-				} 
-				if( forcedPan ){
-					context.translate(forcedPan.x, forcedPan.y);
-				} 
-				if( forcedZoom ){
-					context.scale(forcedZoom, forcedZoom);
-				}
+				setContextTransform( context );
 				
 				var element;
 
@@ -314,24 +317,12 @@
 				}
 			}
 			
-			if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX]) {
+			if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
 				// console.log("redrawing selection box");
 			  
 				var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
 				
-				if( !drawAllLayers ){
-					context.setTransform(1, 0, 0, 1, 0, 0);
-					!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-				
-					context.translate(effectivePan.x, effectivePan.y);
-					context.scale(effectiveZoom, effectiveZoom);		
-				} 
-				if( forcedPan ){
-					context.translate(forcedPan.x, forcedPan.y);
-				} 
-				if( forcedZoom ){
-					context.scale(forcedZoom, forcedZoom);
-				}
+				setContextTransform( context );
 				
 				var coreStyle = cy.style()._private.coreStyle;
 

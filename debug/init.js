@@ -148,6 +148,17 @@ $(function(){
 		height = $container.height();
 		width = $container.width();
 		
+		// test renderTo
+		var $d = $('#dummy-canvas');
+		if( $d.length > 0 ){
+			var dc = $d[0].getContext('2d');
+			setInterval(function(){
+				dc.setTransform(1, 0, 0, 1, 0, 0);
+				dc.clearRect(0, 0, 600, 600);
+				cy.renderTo( dc, 0.5, { x: 0, y: 0 } );
+			}, 1000/30);
+		}
+
 		$container.cytoscapePanzoom();
 		
 		$container.cytoscapeEdgehandles({

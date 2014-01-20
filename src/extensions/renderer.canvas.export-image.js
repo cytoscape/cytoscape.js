@@ -57,13 +57,4 @@
 		return buffCanvas.toDataURL("image/png");
 	};
 
-	CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
-		this.redraw({
-			forcedContext: cxt,
-			forcedZoom: zoom,
-			forcedPan: pan,
-			drawAllLayers: true
-		});
-	};
-
 })( cytoscape );

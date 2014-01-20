@@ -6,10 +6,7 @@
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
 		n = this.data.container;
-		
-		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
-		var stopCheckingScroll = false;
-		
+			
 		var offsets = this.findContainerPageCoords();
 		var offsetLeft = offsets[0];
 		var offsetTop = offsets[1];
@@ -24,25 +21,39 @@
 	}
 
 	CanvasRenderer.prototype.findContainerPageCoords = function() {
-		var x, y; var offsetLeft = 0; var offsetTop = 0; var n; n = this.data.container;
-		
-		// Stop checking scroll past the level of the DOM tree containing document.body. At this point, scroll values do not have the same impact on pageX/pageY.
-		var stopCheckingScroll = false;
-		
+		var offsetLeft = 0;
+		var offsetTop = 0;
+		var container = this.data.container;
+		var n = container;
+				
 		while (n != null) {
 			var style = window.getComputedStyle(n); 
-			if( style.getPropertyValue('position').toLowerCase() === 'fixed' ){
-				offsetLeft += n.offsetLeft + window.scrollX;
-				offsetTop += n.offsetTop + window.scrollY;
-				n = null; // don't want to check any more parents after position:fixed
-			
+			if (typeof(n.offsetLeft) === "number") {
+				var position = style.getPropertyValue("position").toLowerCase();
+				var borderLeft = parseFloat( style.getPropertyValue("border-left-width") );
+				var borderTop = parseFloat( style.getPropertyValue("border-top-width") );
 
-			} else if (typeof(n.offsetLeft) == "number") {
-				// The idea is to add offsetLeft/offsetTop, subtract scrollLeft/scrollTop, ignoring scroll values for elements in DOM tree levels 2 and higher.
-				offsetLeft += n.offsetLeft; offsetTop += n.offsetTop;
+				offsetLeft += n.offsetLeft;
+				offsetTop += n.offsetTop;
+
+				if( position !== "static" || n === container ){
+					offsetLeft += borderLeft;
+					offsetTop += borderTop;
+				}
+
+				if( position === "fixed" ){
+					offsetLeft += window.scrollX;
+					offsetTop += window.scrollY;
+					
+					break; // don't want to check any more parents after position:fixed
+				}
 				
-				if (n == document.body || n == document.header) { stopCheckingScroll = true; }
-				if (!stopCheckingScroll) { offsetLeft -= n.scrollLeft; offsetTop -= n.scrollTop; }
+				if (n === document.body || n === document.header) {
+					offsetLeft -= n.scrollLeft;
+					offsetTop -= n.scrollTop;
+
+					break;
+				}
 			}
 
 			if( n ){ n = n.offsetParent };

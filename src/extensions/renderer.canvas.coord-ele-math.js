@@ -48,9 +48,9 @@
 					break; // don't want to check any more parents after position:fixed
 				}
 				
-				if (n === document.body || n === document.header) {
-					offsetLeft -= n.scrollLeft;
-					offsetTop -= n.scrollTop;
+				if (n == document.body || n == document.header) {
+					// offsetLeft -= n.scrollLeft;
+					// offsetTop -= n.scrollTop;
 
 					break;
 				}

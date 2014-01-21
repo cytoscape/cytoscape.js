@@ -277,6 +277,19 @@
 		return json;
 	};
 
+	$$.elesfn.jsons = function(){
+		var jsons = [];
+
+		for( var i = 0; i < this.length; i++ ){
+			var ele = this[i];
+			var json = ele.json();
+
+			jsons.push( json );
+		}
+
+		return jsons;
+	};
+
 	$$.elesfn.restore = function( notifyRenderer ){
 		var self = this;
 		var restored = [];

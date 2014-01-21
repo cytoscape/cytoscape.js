@@ -597,6 +597,12 @@
             },
 
             {
+              "name": "ele.jsons",
+              "descr": "Get an array of the plain JavaScript object representation of all elements in the collection.",
+              "md": "collection/jsons"
+            },
+
+            {
               "name": "ele.group",
               "descr": "Get the group string that defines the type of the element.",
               "md": "collection/group"

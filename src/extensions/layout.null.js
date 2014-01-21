@@ -2,8 +2,8 @@
 
 	// default layout options
 	var defaults = {
-		ready: function(){},
-		stop: function(){}
+		ready: function(){}, // on layoutready
+		stop: function(){} // on layoutstop
 	};
 
 	// constructor

@@ -83,6 +83,13 @@
 				
 					<div class="section lvl2">
 						
+						<a href="#downloads/2.1.x"><span class="icon-bookmark"></span> 2.1.x</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
 						<a href="#downloads/2.0.x"><span class="icon-bookmark"></span> 2.0.x</a>
 					</div>
 
@@ -215,6 +222,72 @@
 						<span class="icon-caret-down expanded-icon"></span>
 						<span class="icon-caret-right collapsed-icon"></span>
 					</span>
+					<a href="#layouts"><span class="icon-bookmark"></span> Layouts</a>
+				</div>
+
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/null"><span class="icon-bookmark"></span> Null</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/random"><span class="icon-bookmark"></span> Random</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/preset"><span class="icon-bookmark"></span> Preset</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/grid"><span class="icon-bookmark"></span> Grid</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/circle"><span class="icon-bookmark"></span> Circle</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/breadthfirst"><span class="icon-bookmark"></span> Breadthfirst</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/arbor"><span class="icon-bookmark"></span> Arbor</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#layouts/cose"><span class="icon-bookmark"></span> CoSE</a>
+					</div>
+
+					
+				
+			
+				<div class="section lvl1">
+					<span class="expander">
+						<span class="icon-caret-down expanded-icon"></span>
+						<span class="icon-caret-right collapsed-icon"></span>
+					</span>
 					<a href="#events"><span class="icon-bookmark"></span> Events</a>
 				</div>
 
@@ -314,9 +387,13 @@
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.panningEnabled"><span class="icon-bookmark"></span> cy.panningEnabled() </a></div>
 					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.userPanningEnabled"><span class="icon-bookmark"></span> cy.userPanningEnabled() </a></div>
+					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span> cy.zoom() </a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoomingEnabled"><span class="icon-bookmark"></span> cy.zoomingEnabled() </a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.userZoomingEnabled"><span class="icon-bookmark"></span> cy.userZoomingEnabled() </a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span> cy.minZoom() </a></div>
 					
@@ -884,9 +961,14 @@
 <p>If there&#39;s a bug or other issue preventing you from using the latest version of Cytoscape.js, we would love your feedback so we could support your use case.  Please <a href="https://github.com/cytoscape/cytoscape.js/issues/new">make a ticket</a> in the issue tracker. 
 
 </p>
+<h2 id="downloads/2.1.x">2.1.x <a href="#downloads/2.1.x"><span class="icon-bookmark"></span></a></h2>
+<ul>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip">2.1.0</a> (latest)</li>
+</ul>
 <h2 id="downloads/2.0.x">2.0.x <a href="#downloads/2.0.x"><span class="icon-bookmark"></span></a></h2>
 <ul>
-<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.3.zip">2.0.3</a> (latest)</li>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.4.zip">2.0.4</a></li>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.3.zip">2.0.3</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.2.zip">2.0.2</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.1.zip">2.0.1</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.0.zip">2.0.0</a> </li>
@@ -897,6 +979,9 @@
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -986,6 +1071,9 @@ edge ......... a collection of a single edge</code></pre>
       grabbable: true, // whether the node can be grabbed and moved by the user
 
       classes: &#39;foo bar&#39; // a space separated list of class names that the element has
+
+      // NB: you should only use `css` for very special cases; use classes instead
+      css: { backgroundColor: red } // overriden style properties
     },
 
     { // node n2
@@ -1122,7 +1210,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <p><strong><code>@</code> (data attribute operator modifier)</strong><br>Prepended to an operator so that is case insensitive (e.g. <code>[foo @$= &#39;ar&#39;]</code>, <code>[foo @&gt;= &#39;a&#39;]</code>, <code>[foo @= &#39;bar&#39;]</code>)
 
 </p>
-<p><strong><code>{}</code> (metadata brackets)</strong><br>Use curly brackets in place of square ones to match against metadata instead of data (e.g. <code>{degree &gt; 2}</code> matches elements of degree greater than 2).  The properties that are supported include <code>degree</code>, <code>indegree</code>, and <code>outdegree</code>.
+<p><strong><code>[[]]</code> (metadata brackets)</strong><br>Use double square brackets in place of square ones to match against metadata instead of data (e.g. <code>[[degree &gt; 2]]</code> matches elements of degree greater than 2).  The properties that are supported include <code>degree</code>, <code>indegree</code>, and <code>outdegree</code>.
 
 
 </p>
@@ -1227,10 +1315,32 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 </p>
 <h2 id="style/format">Format <a href="#style/format"><span class="icon-bookmark"></span></a></h2>
-<p>The style specified at <a href="#core/initialisation">initialisation</a> can be in a functional format or in a plain JSON format, the plain JSON format being more useful if you want to pull down the style from the server.
+<p>The style specified at <a href="#core/initialisation">initialisation</a> can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string format being more useful if you want to pull down the style from the server.  If you pull the style from the server, you must initialise Cytoscape.js after the style has been loaded.
+
 
 
 </p>
+<h3>String format</h3>
+<p>Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.
+
+</p>
+<p>An example style file:
+
+</p>
+<pre><code>/* comments may be entered like this */
+node {
+  background-color: green;
+}</code></pre>
+<p>At initialisation:
+
+</p>
+<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
+  // ...
+
+  style: aStyleString // probably previously loaded via ajax
+
+  // , ...
+});</code></pre>
 <h3>Plain JSON format</h3>
 <pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
   // ...
@@ -1398,6 +1508,234 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 				
 				
 			
+				<h1 id="layouts">Layouts <a href="#layouts"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<p>The function of a layout is to set the positions on the nodes in the graph.  Layouts are <a href="#extensions/layouts">extensions</a> of Cytoscape.js such that it is possible for anyone to write a layout without modifying the library itself.
+
+</p>
+<p>Several layouts are included with Cytoscape.js by default, and their options are described in the sections that follow with the default values specified.  Note that you must set <code>options.name</code> to the name of the layout to specify which one you want to run.
+
+
+
+</p>
+<h2 id="layouts/null">Null <a href="#layouts/null"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>null</code> layout puts all nodes at (0, 0).  It&#39;s useful for debugging purposes.
+
+</p>
+<pre><code class="lang-js">options = {
+    ready: function(){}, // on layoutready
+    stop: function(){} // on layoutstop
+}
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/random">Random <a href="#layouts/random"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>random</code> layout puts nodes in random positions within the viewport.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;random&#39;,
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    fit: true // whether to fit to viewport
+};
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/preset">Preset <a href="#layouts/preset"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>preset</code> layout puts nodes in the positions you specify manually.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;preset&#39;,
+    fit: true, // whether to fit to viewport
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    positions: undefined, // map of (node id) =&gt; (position obj)
+    zoom: undefined, // the zoom level to set (prob want fit = false if set)
+    pan: undefined // the pan level to set (prob want fit = false if set)
+};
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/grid">Grid <a href="#layouts/grid"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>grid</code> layout puts nodes in a well-spaced grid.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;grid&#39;,
+    fit: true, // whether to fit the viewport to the graph
+    rows: undefined, // force num of rows in the grid
+    columns: undefined, // force num of cols in the grid
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
+};
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/circle">Circle <a href="#layouts/circle"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>circle</code> layout puts nodes in a circle.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;circle&#39;,
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    rStepSize: 10, // the step size for increasing the radius if the nodes don&#39;t fit on screen
+    padding: 30, // the padding on fit
+    startAngle: 3/2 * Math.PI, // the position of the first node
+    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+};
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/breadthfirst">Breadthfirst <a href="#layouts/breadthfirst"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;breadthfirst&#39;,
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
+    padding: 30, // padding on fit
+    circle: false, // put depths in concentric circles if true, put depths top down if false
+    roots: undefined, // the roots of the trees
+    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+};
+
+cy.layout( options );</code></pre>
+<h2 id="layouts/arbor">Arbor <a href="#layouts/arbor"><span class="icon-bookmark"></span></a></h2>
+<p>*The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;arbor&#39;,
+    liveUpdate: true, // whether to show the layout as it&#39;s running
+    ready: undefined, // callback on layoutready 
+    stop: undefined, // callback on layoutstop
+    maxSimulationTime: 4000, // max length in ms to run the layout
+    fit: true, // reset viewport to fit default simulationBounds
+    padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
+    ungrabifyWhileSimulating: true, // so you can&#39;t drag nodes during layout
+
+    // forces used by arbor (use arbor default on undefined)
+    repulsion: undefined,
+    stiffness: undefined,
+    friction: undefined,
+    gravity: true,
+    fps: undefined,
+    precision: undefined,
+
+    // static numbers or functions that dynamically return what these
+    // values should be for each element
+    nodeMass: undefined, 
+    edgeLength: undefined,
+
+    stepSize: 1, // size of timestep in simulation
+
+    // function that returns true if the system is stable to indicate
+    // that the layout can be stopped
+    stableEnergy: function( energy ){
+        var e = energy; 
+        return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
+    }
+};
+
+
+cy.layout( options );</code></pre>
+<p>Notes about arbor:
+
+</p>
+<ul>
+<li>For webworkers to work properly, you need to point your browser to a server URL (e.g. <code>http://</code>) rather than a local address (e.g. <code>file://</code>).</li>
+<li>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
+<li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:</li>
+</ul>
+<pre><code class="lang-html">&lt;head&gt;
+    ...
+
+    &lt;script src=&quot;arbor.js&quot;&gt;&lt;/script&gt;
+
+    ...
+&lt;/head&gt;</code></pre>
+<p>Arbor does some automatic path finding because it uses web workers, and so it must be included this way.  Therefore, you can not combine <code>arbor.js</code> with your other JavaScript files &mdash; as you probably would as a part of the minification of the scripts in your webapp.
+
+
+
+</p>
+<h2 id="layouts/cose">CoSE <a href="#layouts/cose"><span class="icon-bookmark"></span></a></h2>
+<p>The <code>cose</code> (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.
+It was implemented by Gerardo Huck as part of Google Summer of Code 2013 (Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz).
+
+</p>
+<p>Based on the article &quot;A layout algorithm for undirected compound graphs&quot; by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.
+
+</p>
+<pre><code class="lang-js">options = {
+    name: &#39;cose&#39;,
+
+    // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
+    refresh             : 0,
+    // Whether to fit the network view after when done
+    fit                 : true, 
+    // Whether to randomize node positions on the beginning
+    randomize           : true,
+    // Whether to use the JS console to print debug messages
+    debug               : false,
+
+    // Node repulsion (non overlapping) multiplier
+    nodeRepulsion       : 10000,
+    // Node repulsion (overlapping) multiplier
+    nodeOverlap         : 10,
+    // Ideal edge (non nested) length
+    idealEdgeLength     : 10,
+    // Divisor to compute edge forces
+    edgeElasticity      : 100,
+    // Nesting factor (multiplier) to compute ideal edge length for nested edges
+    nestingFactor       : 5, 
+    // Gravity force (constant)
+    gravity             : 250, 
+
+    // Maximum number of iterations to perform
+    numIter             : 100,
+    // Initial temperature (maximum node displacement)
+    initialTemp         : 200,
+    // Cooling factor (how the temperature is reduced between consecutive iterations)
+    coolingFactor       : 0.95, 
+    // Lower temperature threshold (below this point the layout will end)
+    minTemp             : 1
+};
+
+cy.layout( options );</code></pre>
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			
 				<h1 id="events">Events <a href="#events"><span class="icon-bookmark"></span></a></h1>
 
 				
@@ -1519,7 +1857,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
   container: document.getElementById(&#39;cy&#39;),
   ready: function(){ console.log(&#39;ready&#39;) }
 });</code></pre>
-<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.
+<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&quot;null&quot;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.
 
 </p>
 <p>If you&#39;ve included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: 
@@ -1578,17 +1916,19 @@ $(function(){ // on jquery ready
   $(&quot;#cy&quot;).cytoscape(options);
 });</code></pre>
 <h3>Initialisation options</h3>
-<p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below.
+<p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.
 
 </p>
 <pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
   selectionType: (isTouchDevice ? &#39;additive&#39; : &#39;single&#39;),
-  showOverlay: false,
-  layout: { /* ... */ },
+  layout: { name: &#39;grid&#39; /* , ... */ },
   zoom: 1,
   minZoom: 1e-50,
   maxZoom: 1e50,
+  zoomingEnabled: true,
+  userZoomingEnabled: true,
   pan: { x: 0, y: 0 },
+  panningEnabled: true,
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
@@ -1607,7 +1947,19 @@ $(function(){ // on jquery ready
 <p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.
 
 </p>
+<p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.
+
+</p>
+<p><strong><code>userZoomingEnabled</code></strong> : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.
+
+</p>
 <p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. 
+
+</p>
+<p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.
+
+</p>
+<p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
 </p>
 <p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:
@@ -2529,6 +2881,48 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 						</div>
 					
 						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.userPanningEnabled"><span class="fn-name">cy.userPanningEnabled()</span>  <a href="#core/viewport-manipulation/cy.userPanningEnabled"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.userPanningEnabled">Get or set whether panning by user events (e.g. dragging the graph background) is enabled.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.userPanningEnabled()</div>
+										
+										<div class="descr">Get whether user panning is enabled.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.userPanningEnabled( <span class="comma">, </span>bool )</div>
+										
+										<div class="descr">Set whether user panning is enabled.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">bool</span>
+													<span class="descr">A truthy value enables user panning; a falsey value disables it.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.zoom"><span class="fn-name">cy.zoom()</span>  <a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="core/viewport-manipulation/cy.zoom">Get or set the zoom level of the graph.</div>
 
@@ -2694,6 +3088,48 @@ cy.zoom({
 						</div>
 					
 						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.userZoomingEnabled"><span class="fn-name">cy.userZoomingEnabled()</span>  <a href="#core/viewport-manipulation/cy.userZoomingEnabled"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.userZoomingEnabled">Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.userZoomingEnabled()</div>
+										
+										<div class="descr">Get whether user zooming is enabled.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.userZoomingEnabled( <span class="comma">, </span>bool )</div>
+										
+										<div class="descr">Set whether user zooming is enabled.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">bool</span>
+													<span class="descr">A truthy value enables user zooming; a falsey value disables it.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.minZoom"><span class="fn-name">cy.minZoom()</span>  <a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="core/viewport-manipulation/cy.minZoom">Get or set the minimum zoom level.</div>
 
@@ -2821,7 +3257,7 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.forceRender"><span class="fn-name">cy.forceRender()</span>  <a href="#core/viewport-manipulation/cy.forceRender"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.forceRender">Force the renderer to redraw a new frame.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.forceRender">Force the renderer to redraw (i.e. draw a new frame).</div>
 
 							
 
@@ -3245,175 +3681,15 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 
 							<div class="details">
 								
-									<h3>Options for included layouts</h3>
-<p>Several layouts are included with Cytoscape.js by default, and their options are described here with the default values specified.  Note that you must set <code>options.name</code> to the name of the layout to specify which one you want to run.
+									<h3>Details</h3>
+<p>For layouts included with Cytoscape.js, you can find their options documented in the <a href="#layouts">Layouts section</a>.  For external layouts, please refer to their accompanying documentation.
 
 </p>
-<p><em>The <code>random</code> layout:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;random&#39;,
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    fit: true // whether to fit to viewport
-};
-
-cy.layout( options );</code></pre>
-<p><em>The <code>preset</code> layout puts nodes in the positions you specify manually:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;preset&#39;,
-    fit: true, // whether to fit to viewport
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    positions: undefined, // map of (node id) =&gt; (position obj)
-    zoom: undefined, // the zoom level to set (prob want fit = false if set)
-    pan: undefined // the pan level to set (prob want fit = false if set)
-};
-
-cy.layout( options );</code></pre>
-<p><em>The <code>grid</code> layout puts nodes in a well-spaced grid:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;grid&#39;,
-    fit: true, // whether to fit the viewport to the graph
-    rows: undefined, // force num of rows in the grid
-    columns: undefined, // force num of cols in the grid
-    ready: undefined, // callback on layoutready
-    stop: undefined // callback on layoutstop
-};
-
-cy.layout( options );</code></pre>
-<p><em>The <code>breadthfirst</code> layout puts nodes in a hierarchy:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;breadthfirst&#39;,
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
-    padding: 30, // padding on fit
-    circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined, // the roots of the trees
-    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
-};
-
-cy.layout( options );</code></pre>
-<p><em>The <code>circle</code> layout puts nodes in a circle:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;circle&#39;,
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    rStepSize: 10, // the step size for increasing the radius if the nodes don&#39;t fit on screen
-    padding: 30, // the padding on fit
-    startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
-};
-
-cy.layout( options );</code></pre>
-<p><em>The <code>arbor</code> layout uses a force-directed simulation:</em>
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;arbor&#39;,
-    liveUpdate: true, // whether to show the layout as it&#39;s running
-    ready: undefined, // callback on layoutready 
-    stop: undefined, // callback on layoutstop
-    maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // reset viewport to fit default simulationBounds
-    padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
-    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
-    ungrabifyWhileSimulating: true, // so you can&#39;t drag nodes during layout
-
-    // forces used by arbor (use arbor default on undefined)
-    repulsion: undefined,
-    stiffness: undefined,
-    friction: undefined,
-    gravity: true,
-    fps: undefined,
-    precision: undefined,
-
-    // static numbers or functions that dynamically return what these
-    // values should be for each element
-    nodeMass: undefined, 
-    edgeLength: undefined,
-
-    stepSize: 1, // size of timestep in simulation
-
-    // function that returns true if the system is stable to indicate
-    // that the layout can be stopped
-    stableEnergy: function( energy ){
-        var e = energy; 
-        return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
-    }
-};
+<p>You must specify <code>options.name</code> with the name of the layout you wish to run.
 
 
-cy.layout( options );</code></pre>
-<p>Notes about arbor:
 
 </p>
-<ul>
-<li>For webworkers to work properly, you need to point your browser to a server URL (e.g. <code>http://</code>) rather than a local address (e.g. <code>file://</code>).</li>
-<li>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
-<li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:</li>
-</ul>
-<pre><code class="lang-html">&lt;head&gt;
-    ...
-
-    &lt;script src=&quot;arbor.js&quot;&gt;&lt;/script&gt;
-
-    ...
-&lt;/head&gt;</code></pre>
-<p>Arbor does some automatic path finding because it uses web workers, and so it must be included this way.  Therefore, you can not combine <code>arbor.js</code> with your other JavaScript files &mdash; as you probably would as a part of the minification of the scripts in your webapp.
-
-</p>
-<p><em>The <code>null</code> layout puts all nodes at (0, 0):</em>
-</p>
-<pre><code class="lang-js">// The null layout has no options.</code></pre>
-<p><em>The <code>cose</code> (Compound Spring Embedder) layout uses a force-directed simulation to lay out compound graphs.</em><br>
-It was implemented by Gerardo Huck as part of Google Summer of Code 2013.<br>
-Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz.<br>
-Based on the article &quot;A layout algorithm for undirected compound graphs&quot; by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.<br>
-
-</p>
-<pre><code class="lang-js">options = {
-    name: &#39;cose&#39;,
-
-    // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
-    refresh             : 0,
-    // Whether to fit the network view after when done
-    fit                 : true, 
-    // Whether to randomize node positions on the beginning
-    randomize           : true,
-    // Whether to use the JS console to print debug messages
-    debug               : false,
-
-    // Node repulsion (non overlapping) multiplier
-    nodeRepulsion       : 10000,
-    // Node repulsion (overlapping) multiplier
-    nodeOverlap         : 10,
-    // Ideal edge (non nested) length
-    idealEdgeLength     : 10,
-    // Divisor to compute edge forces
-    edgeElasticity      : 100,
-    // Nesting factor (multiplier) to compute ideal edge length for nested edges
-    nestingFactor       : 5, 
-    // Gravity force (constant)
-    gravity             : 250, 
-
-    // Maximum number of iterations to perform
-    numIter             : 100,
-    // Initial temperature (maximum node displacement)
-    initialTemp         : 200,
-    // Cooling factor (how the temperature is reduced between consecutive iterations)
-    coolingFactor       : 0.95, 
-    // Lower temperature threshold (below this point the layout will end)
-    minTemp             : 1
-};
-
-cy.layout( options );</code></pre>
 <h3>Examples</h3>
 <p>Run the grid layout:
 
@@ -3445,12 +3721,6 @@ cy.layout( options );</code></pre>
   // and then define new styles
   .selector(&#39;node&#39;)
       .css(&#39;background-color&#39;, &#39;blue&#39;)
-  .selector(&#39;node:selected&#39;)
-    .css({
-      &#39;background-color&#39;: &#39;red&#39;
-
-      // , ...
-    })
 
   // ...
 
@@ -3465,19 +3735,17 @@ cy.layout( options );</code></pre>
       css: {
         &#39;background-color&#39;: &#39;blue&#39;
       }
-    },
-
-    {
-      selector: &#39;node:selected&#39;,
-      css: {
-        &#39;background-color&#39;: &#39;red&#39;
-
-        // , ...
-      }
     }
 
     // , ...
   ])
+
+  .update() // update the elements in the graph with the new style</code></pre>
+<p>You can also set the style from a style string (that you would probably pull from a file on your server):
+
+</p>
+<pre><code class="lang-js">cy.style()
+  .fromString(&#39;node { background-color: blue; }&#39;)
 
   .update() // update the elements in the graph with the new style</code></pre>
 
@@ -5364,6 +5632,11 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 														</li>
 														
 														<li>&ndash;
+															<span class="name">renderedPosition</span>
+															<span class="descr">A rendered position to which the elements will be animated.</span>
+														</li>
+														
+														<li>&ndash;
 															<span class="name">css</span>
 															<span class="descr">An object containing name-value pairs of style properties to animate.</span>
 														</li>
@@ -5411,7 +5684,11 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 
 							<div class="details">
 								
-									<h3>Examples</h3>
+									<h3>Details</h3>
+<p>Note that you can specify only one of <code>position</code> and <code>renderedPosition</code>:  You can not animate to two positions at once.
+
+</p>
+<h3>Examples</h3>
 <pre><code class="lang-js">cy.nodes().animate({
   position: { x: 100, y: 100 },
   css: { backgroundColor: &#39;red&#39; }
@@ -6580,13 +6857,13 @@ cy.elements().forEach(function(){
 <li><p><code>layoutstop</code> : This is triggered on the core (via <code>cy.trigger(&#39;layoutstop&#39;)</code>) when the layout has finished.  It should be triggered after <code>layoutready</code>.  The layout should not change node positions after triggering <code>layoutstop</code>.</p>
 </li>
 </ul>
-<p>For an example layout, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.null.js">null layout source code</a>.  The layout just sets each node to position (0, 0), and it is well documented.  The <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.layout.arbor.js">Arbor layout</a> is a good example of a continuous layout.
+<p>For an example layout, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js">null layout source code</a>.  The layout just sets each node to position (0, 0), and it is well documented.  The <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.arbor.js">Arbor layout</a> is a good example of a continuous layout.
 
 
 
 </p>
 <h2 id="extensions/renderers">Renderers <a href="#extensions/renderers"><span class="icon-bookmark"></span></a></h2>
-<p>For an example renderer, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/cytoscape.renderer.canvas.js">canvas renderer</a>.
+<p>For an example renderer, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/tree/master/src/extensions">canvas renderer</a>.
 
 </p>
 <p>The API of the renderer follows the actor model, and so it has a single main entry point, the <code>notify()</code> function.  The core uses the <code>notify()</code> function to send event objects to the renderer.  The format of the event object is as follows:

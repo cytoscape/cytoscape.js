@@ -20,6 +20,8 @@
 
     { "name": "Style", "md": "style" },
 
+    { "name": "Layouts", "md": "layouts" },
+
     { "name": "Events", "md": "events" },
 
     {

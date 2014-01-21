@@ -85,7 +85,10 @@
 		var forcedPan = options.forcedPan;
 		var r = this;
 		var pixelRatio = this.getPixelRatio();
+		var cy = r.data.cy; var data = r.data; 
 		
+		clearTimeout( this.redrawTimeout );
+
 		if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
 		var minRedrawLimit = 1000/60; // people can't see much better than 60fps
@@ -109,7 +112,6 @@
 				this.redrawTimeout = setTimeout(function(){
 					r.redraw();
 				}, redrawLimit);
-
 				return;
 			}
 
@@ -123,42 +125,42 @@
 		//console.log('-- redraw --')
 
 		// console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
-		
-		var cy = r.data.cy; var data = r.data; 
-		var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
-
-		if( !forcedContext ){
-			r.matchCanvasSize(data.container);
-		}
-
-		var zoom = cy.zoom();
-		var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
-		var pan = cy.pan();
-		var effectivePan = {
-			x: pan.x,
-			y: pan.y
-		};
-
-		if( forcedPan ){
-			effectivePan = forcedPan;
-		}
-
-		// apply pixel ratio
-		effectiveZoom *= pixelRatio;
-		effectivePan.x *= pixelRatio;
-		effectivePan.y *= pixelRatio;
-		
-		var elements = [];
-		for( var i = 0; i < nodes.length; i++ ){
-			elements.push( nodes[i] );
-		}
-		for( var i = 0; i < edges.length; i++ ){
-			elements.push( edges[i] );
-		}
+	
 
 		// } console.timeEnd('init')
 
 		function drawToContext(){
+			var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+
+			if( !forcedContext ){
+				r.matchCanvasSize(data.container);
+			}
+
+			var zoom = cy.zoom();
+			var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
+			var pan = cy.pan();
+			var effectivePan = {
+				x: pan.x,
+				y: pan.y
+			};
+
+			if( forcedPan ){
+				effectivePan = forcedPan;
+			}
+
+			// apply pixel ratio
+			effectiveZoom *= pixelRatio;
+			effectivePan.x *= pixelRatio;
+			effectivePan.y *= pixelRatio;
+			
+			var elements = [];
+			for( var i = 0; i < nodes.length; i++ ){
+				elements.push( nodes[i] );
+			}
+			for( var i = 0; i < edges.length; i++ ){
+				elements.push( edges[i] );
+			}
+
 			function setContextTransform(context){
 				context.setTransform(1, 0, 0, 1, 0, 0);
 				!forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);

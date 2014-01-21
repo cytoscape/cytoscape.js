@@ -259,7 +259,7 @@
 				json.elements[group].push( ele.json() );
 			});
 
-			json.style = cy.style();
+			json.style = cy.style().json();
 			json.scratch = cy.scratch();
 			json.zoomingEnabled = cy._private.zoomingEnabled;
 			json.userZoomingEnabled = cy._private.userZoomingEnabled;

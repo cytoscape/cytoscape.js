@@ -273,12 +273,13 @@
 			var props = cxt.properties;
 			var css = {};
 
-			for( var i = 0; i < props.length; i++ ){
+			for( var j = 0; j < props.length; j++ ){
+				var prop = props[j];
 				css[ prop.name ] = prop.strValue;
 			}
 
 			json.push({
-				selector: selector.toString(),
+				selector: !selector ? "core" : selector.toString(),
 				css: css
 			});
 		}

@@ -185,9 +185,12 @@
 				cy
 					.on('cxttapstart', options.selector, function(e){
 						var ele = this;
-						var rp = ele.renderedPosition();
-						var rw = ele.renderedWidth();
-						var rh = ele.renderedHeight();
+						if (options.selector === 'node') {
+    							var rp = ele.renderedPosition();
+						} else if (options.selector === 'edge') {
+				                        var rp = {x: e.originalEvent.pageX - $container.offset().left, y: e.originalEvent.pageY - $container.offset().top}
+
+						}
 						var scrollLeft = $(window).scrollLeft();
 						var scrollTop = $(window).scrollTop();
 
@@ -199,7 +202,6 @@
 							'top': rp.y - r - scrollTop
 						});
 
-						rs = Math.max(rw, rh);
 						rs = 32;
 
 						drawBg();

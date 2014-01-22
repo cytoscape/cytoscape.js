@@ -488,13 +488,18 @@
 								cy: cy,
 								namespace: evtObj.namespace
 							} );
+						}
 
-							// copy properties like jQuery does
-							var props = $$.define.event.props;
-							for( var k = 0; k < props.length; k++ ){
-								var prop = props[k];
-								evt[ prop ] = evtObj[ prop ];
-							}
+						// Create a rendered position based on the passed position
+						if( evt.cyPosition ){
+							var pos = evt.cyPosition;
+							var zoom = cy.zoom();
+							var pan = cy.pan();
+
+							evt.cyRenderedPosition = {
+								x: pos.x * zoom + pan.x,
+								y: pos.y * zoom + pan.y
+							};
 						}
 
 						if( fnToTrigger ){ // then override the listeners list with just the one we specified

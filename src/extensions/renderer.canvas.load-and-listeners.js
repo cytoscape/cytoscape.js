@@ -160,14 +160,19 @@
 			var near = r.findNearestElement(pos[0], pos[1], true);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
-			var grabEvent = new $$.Event(e, {type: "grab"});
+			var grabEvent = new $$.Event(e, {
+				type: "grab"
+			});
 
 			// Right click button
 			if( e.which == 3 ){
 
 				if( near ){
 					near.activate();
-					near.trigger( new $$.Event(e, {type: "cxttapstart"}) );
+					near.trigger( new $$.Event(e, {
+						type: "cxttapstart", 
+						cyPosition: { x: pos[0], y: pos[1] } 
+					}) );
 
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
@@ -238,9 +243,18 @@
 						}
 						
 						near
-							.trigger(new $$.Event(e, {type: "mousedown"}))
-							.trigger(new $$.Event(e, {type: "tapstart"}))
-							.trigger(new $$.Event(e, {type: "vmousedown"}))
+							.trigger(new $$.Event(e, {
+								type: "mousedown",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapstart",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmousedown",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
 						;
 						
 						// r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
@@ -248,9 +262,18 @@
 						
 					} else if (near == null) {
 						cy
-							.trigger(new $$.Event(e, {type: "mousedown"}))
-							.trigger(new $$.Event(e, {type: "tapstart"}))
-							.trigger(new $$.Event(e, {type: "vmousedown"}))
+							.trigger(new $$.Event(e, {
+								type: "mousedown",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapstart",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmousedown",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
 						;
 					}
 					
@@ -331,13 +354,37 @@
 
 			// Mousemove event
 			{
-				var event = new $$.Event(e, {type: "mousemove"});
-				
 				if (near != null) {
-					near.trigger(event);
+					near
+						.trigger(new $$.Event(e, {
+							type: "mousemove",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "vmousemove",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "tapdrag",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+					;
 					
 				} else if (near == null) {
-					cy.trigger(event);
+					cy
+						.trigger(new $$.Event(e, {
+							type: "mousemove",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "vmousemove",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "tapdrag",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}))
+					;
 				}
 
 			}
@@ -345,7 +392,10 @@
 			
 			// trigger context drag if rmouse down
 			if( r.hoverData.which === 3 ){
-				var cxtEvt = new $$.Event(e, {type: "cxtdrag"});
+				var cxtEvt = new $$.Event(e, {
+					type: "cxtdrag",
+					cyPosition: { x: pos[0], y: pos[1] }
+				});
 
 				if( down ){
 					down.trigger( cxtEvt );
@@ -388,8 +438,19 @@
 
 				if (near != last) {
 					
-					if (last) { last.trigger(new $$.Event(e, {type: "mouseout"})); }
-					if (near) { near.trigger(new $$.Event(e, {type: "mouseover"})); }
+					if (last) {
+						last.trigger( new $$.Event(e, {
+							type: "mouseout",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}) ); 
+					}
+					
+					if (near) {
+						near.trigger( new $$.Event(e, {
+							type: "mouseover",
+							cyPosition: { x: pos[0], y: pos[1] }
+						}) ); 
+					}
 					
 					r.hoverData.last = near;
 				}
@@ -412,8 +473,8 @@
 					}
 					
 					(new $$.Collection(cy, toTrigger))
-						.trigger( new $$.Event(e, {type: "drag"}) )
-						.trigger( new $$.Event(e, {type: "position"}) )
+						.trigger("drag")
+						.trigger("position")
 					;
 
 					if (select[2] == select[0] && select[3] == select[1]) {
@@ -461,7 +522,10 @@
 			}
 
 			if( r.hoverData.which === 3 ){
-				var cxtEvt = new $$.Event(e, {type: "cxttapend"});
+				var cxtEvt = new $$.Event(e, {
+					type: "cxttapend",
+					cyPosition: { x: pos[0], y: pos[1] }
+				});
 
 				if( down ){
 					down.trigger( cxtEvt );
@@ -470,7 +534,10 @@
 				}
 
 				if( !r.hoverData.cxtDragged ){
-					var cxtTap = new $$.Event(e, {type: "cxttap"});
+					var cxtTap = new $$.Event(e, {
+						type: "cxttap",
+						cyPosition: { x: pos[0], y: pos[1] }
+					});
 
 					if( down ){
 						down.trigger( cxtTap );
@@ -507,6 +574,44 @@
 					
 					r.dragData.possibleDragElements = draggedElements = [];
 				}
+			
+				
+				// Mouseup event
+				{
+					// console.log('trigger mouseup et al');
+
+					if (near != null) {
+						near
+							.trigger(new $$.Event(e, {
+								type: "mouseup",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapend",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmouseup",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+						;
+					} else if (near == null) {
+						cy
+							.trigger(new $$.Event(e, {
+								type: "mouseup",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapend",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmouseup",
+								cyPosition: { x: pos[0], y: pos[1] }
+							}))
+						;
+					}
+				}
 				
 				// Click event
 				{
@@ -515,39 +620,38 @@
 					if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
 						if (near != null) {
 							near
-								.trigger( new $$.Event(e, {type: "click"}) )
-								.trigger( new $$.Event(e, {type: "tap"}) )
-								.trigger( new $$.Event(e, {type: "vclick"}) )
+								.trigger( new $$.Event(e, {
+									type: "click",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
+								.trigger( new $$.Event(e, {
+									type: "tap",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
+								.trigger( new $$.Event(e, {
+									type: "vclick",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
 							;
 						} else if (near == null) {
 							cy
-								.trigger( new $$.Event(e, {type: "click"}) )
-								.trigger( new $$.Event(e, {type: "tap"}) )
-								.trigger( new $$.Event(e, {type: "vclick"}) )
+								.trigger( new $$.Event(e, {
+									type: "click",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
+								.trigger( new $$.Event(e, {
+									type: "tap",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
+								.trigger( new $$.Event(e, {
+									type: "vclick",
+									cyPosition: { x: pos[0], y: pos[1] }
+								}) )
 							;
 						}
 					}
 				}
-				
-				// Mouseup event
-				{
-					// console.log('trigger mouseup et al');
 
-					if (near != null) {
-						near
-							.trigger(new $$.Event(e, {type: "mouseup"}))
-							.trigger(new $$.Event(e, {type: "tapend"}))
-							.trigger(new $$.Event(e, {type: "vmouseup"}))
-						;
-					} else if (near == null) {
-						cy
-							.trigger(new $$.Event(e, {type: "mouseup"}))
-							.trigger(new $$.Event(e, {type: "tapend"}))
-							.trigger(new $$.Event(e, {type: "vmouseup"}))
-						;
-					}
-				}
-				
 				// Single selection
 				if (near == down && !r.dragData.didDrag) {
 					if (near != null && near._private.selectable) {
@@ -593,8 +697,7 @@
 							updateAncestorsInDragLayer(ele, false);
 						}
 
-						var freeEvent = new $$.Event(e, {type: "free"});
-						grabbedEles.trigger(freeEvent);
+						grabbedEles.trigger("free");
 					}
 				}
 				
@@ -634,7 +737,6 @@
 				
 				if (!select[4]) {
 					// console.log('free at end', draggedElements)
-					var freeEvent = new $$.Event(e, {type: "free"}); 
 					
 					for (var i=0;i<draggedElements.length;i++) {
 						
@@ -653,7 +755,7 @@
 						
 					}
 
-					if( down){ down.trigger(freeEvent); }
+					if( down){ down.trigger("free"); }
 
 	//				draggedElements = r.dragData.possibleDragElements = [];
 					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
@@ -705,11 +807,21 @@
 		// Functions to help with handling mouseout/mouseover on the Cytoscape container
 					// Handle mouseout on Cytoscape container
 		r.registerBinding(r.data.container, "mouseout", function(e) { 
-			r.data.cy.trigger(new $$.Event(e, {type: "mouseout"}));
+			var pos = r.projectIntoViewport(e.pageX, e.pageY);
+
+			r.data.cy.trigger(new $$.Event(e, {
+				type: "mouseout",
+				cyPosition: { x: pos[0], y: pos[1] }
+			}));
 		}, false);
 		
 		r.registerBinding(r.data.container, "mouseover", function(e) { 
-			r.data.cy.trigger(new $$.Event(e, {type: "mouseover"}));
+			var pos = r.projectIntoViewport(e.pageX, e.pageY);
+
+			r.data.cy.trigger(new $$.Event(e, {
+				type: "mouseover",
+				cyPosition: { x: pos[0], y: pos[1] }
+			}));
 		}, false);
 		
 		var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
@@ -788,20 +900,28 @@
 
 					var near1 = r.findNearestElement(now[0], now[1], true);
 					var near2 = r.findNearestElement(now[2], now[3], true);
-					var cxtEvt = new $$.Event(e, {type: "cxttapstart"});
 
 					//console.log(distance1)
 
 					if( near1 && near1.isNode() ){
-						near1.activate().trigger( cxtEvt );
+						near1.activate().trigger( new $$.Event(e, {
+							type: "cxttapstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}) );
 						r.touchData.start = near1;
 					
 					} else if( near2 && near2.isNode() ){
-						near2.activate().trigger( cxtEvt );
+						near2.activate().trigger( new $$.Event(e, {
+							type: "cxttapstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}) );
 						r.touchData.start = near2;
 					
 					} else {
-						cy.trigger( cxtEvt );
+						cy.trigger( new $$.Event(e, {
+							type: "cxttapstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}) );
 						r.touchData.start = null;
 					} 
 
@@ -846,7 +966,7 @@
 
 						var draggedEles = r.dragData.touchDragEles = [];
 						addNodeToDrag(near, draggedEles);
-						near.trigger(new $$.Event(e, {type: "grab"}));
+						near.trigger("grab");
 
 						if( near.selected() ){
 							// reset drag elements, since near will be added again
@@ -896,15 +1016,33 @@
 					}
 					
 					near
-						.trigger(new $$.Event(e, {type: "touchstart"}))
-						.trigger(new $$.Event(e, {type: "tapstart"}))
-						.trigger(new $$.Event(e, {type: "vmousdown"}))
+						.trigger(new $$.Event(e, {
+							type: "touchstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "tapstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "vmousdown",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
 					;
 				} if (near == null) {
 					cy
-						.trigger(new $$.Event(e, {type: "touchstart"}))
-						.trigger(new $$.Event(e, {type: "tapstart"}))
-						.trigger(new $$.Event(e, {type: "vmousedown"}))
+						.trigger(new $$.Event(e, {
+							type: "touchstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "tapstart",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "vmousedown",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
 					;
 
 					r.data.bgActivePosistion = {
@@ -934,9 +1072,15 @@
 							// followed by a taphold triggering multiple taphold events
 							&& (+new Date) - r.touchData.singleTouchStartTime > 250) {
 						if (r.touchData.start) {
-							r.touchData.start.trigger(new $$.Event(e, {type: "taphold"}));
+							r.touchData.start.trigger( new $$.Event(e, {
+								type: "taphold",
+								cyPosition: { x: now[0], y: now[1] }
+							}) );
 						} else {
-							r.data.cy.trigger(new $$.Event(e, {type: "taphold"}));
+							r.data.cy.trigger( new $$.Event(e, {
+								type: "taphold",
+								cyPosition: { x: now[0], y: now[1] }
+							}) );
 
 							cy.$(':selected').unselect();
 						}
@@ -983,7 +1127,10 @@
 					r.data.bgActivePosistion = undefined;
 					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
-					var cxtEvt = new $$.Event(e, {type: "cxttapend"});
+					var cxtEvt = new $$.Event(e, {
+						type: "cxttapend",
+						cyPosition: { x: now[0], y: now[1] }
+					});
 					if( r.touchData.start ){
 						r.touchData.start.trigger( cxtEvt );
 					} else {
@@ -994,7 +1141,10 @@
 			}  
 
 			if( capture && r.touchData.cxt ){
-				var cxtEvt = new $$.Event(e, {type: "cxtdrag"});
+				var cxtEvt = new $$.Event(e, {
+					type: "cxtdrag",
+					cyPosition: { x: now[0], y: now[1] }
+				});
 				r.data.bgActivePosistion = undefined;
 				r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
@@ -1132,8 +1282,8 @@
 					}
 
 					( new $$.Collection(cy, draggedEles) )
-						.trigger( new $$.Event(e, {type: "drag"}) )
-						.trigger( new $$.Event(e, {type: "position"}) )
+						.trigger("drag")
+						.trigger("position")
 					;
 					
 					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
@@ -1148,18 +1298,65 @@
 				
 				// Touchmove event
 				{
-					if (start != null) { start.trigger(new $$.Event(e, {type: "touchmove"})); }
+					if (start != null) {
+						start.trigger( new $$.Event(e, {
+							type: "touchmove",
+							cyPosition: { x: now[0], y: now[1] }
+						}) ); 
+
+						start.trigger( new $$.Event(e, {
+							type: "tapdrag",
+							cyPosition: { x: now[0], y: now[1] }
+						}) ); 
+
+						start.trigger( new $$.Event(e, {
+							type: "vmousemove",
+							cyPosition: { x: now[0], y: now[1] }
+						}) ); 
+					}
 					
 					if (start == null) { 
 						var near = r.findNearestElement(now[0], now[1], true);
-						if (near != null) { near.trigger(new $$.Event(e, {type: "touchmove"})); }
-						if (near == null) {   cy.trigger(new $$.Event(e, {type: "touchmove"})); }
+
+						if (near != null) { 
+							near.trigger( new $$.Event(e, {
+								type: "touchmove",
+								cyPosition: { x: now[0], y: now[1] }
+							}) ); 
+
+							near.trigger( new $$.Event(e, {
+								type: "tapdrag",
+								cyPosition: { x: now[0], y: now[1] }
+							}) );
+
+							near.trigger( new $$.Event(e, {
+								type: "vmousemove",
+								cyPosition: { x: now[0], y: now[1] }
+							}) );
+						}
+
+						if (near == null) { 
+							cy.trigger( new $$.Event(e, {
+								type: "touchmove",
+								cyPosition: { x: now[0], y: now[1] }
+							}) ); 
+
+							cy.trigger( new $$.Event(e, {
+								type: "tapdrag",
+								cyPosition: { x: now[0], y: now[1] }
+							}) ); 
+
+							cy.trigger( new $$.Event(e, {
+								type: "vmousemove",
+								cyPosition: { x: now[0], y: now[1] }
+							}) ); 
+						}
 					}
 
-					if (near != last) {
-						if (last) { last.trigger(new $$.Event(e, {type: "touchout"})); }
-						if (near) { near.trigger(new $$.Event(e, {type: "touchover"})); }
-					}
+					// if (near != last) {
+					// 	if (last) { last.trigger(new $$.Event(e, {type: "touchout"})); }
+					// 	if (near) { near.trigger(new $$.Event(e, {type: "touchover"})); }
+					// }
 
 					r.touchData.last = near;
 				}
@@ -1220,7 +1417,10 @@
 			if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
 			
 			if( r.touchData.cxt ){
-				ctxTapend = new $$.Event(e, { type: 'cxttapend' });
+				ctxTapend = new $$.Event(e, {
+					type: 'cxttapend',
+					cyPosition: { x: now[0], y: now[1] }
+				});
 
 				if( start ){
 					start.unactivate();
@@ -1232,7 +1432,10 @@
 				//console.log('cxttapend')
 
 				if( !r.touchData.cxtDragged ){
-					var ctxTap = new $$.Event(e, { type: 'cxttap' });
+					var ctxTap = new $$.Event(e, {
+						type: 'cxttap',
+						cyPosition: { x: now[0], y: now[1] }
+					});
 
 					if( start ){
 						start.trigger( ctxTap );
@@ -1268,7 +1471,7 @@
 					r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
 					// console.log(box);
-					var event = new $$.Event(e, {type: "select"});
+					var event = new $$.Event("select");
 					for (var i=0;i<box.length;i++) { 
 						if (box[i]._private.selectable) {
 							newlySelected.push( box[i] );
@@ -1299,7 +1502,7 @@
 			if( start != null ){
 				start._private.active = false;
 				updateStartStyle = true;
-				start.trigger( new $$.Event(e, {type: "unactivate"}) );
+				start.trigger("unactivate");
 			}
 
 			if (e.touches[2]) {
@@ -1319,7 +1522,7 @@
 
 					if (start._private.grabbed == true) {
 						start._private.grabbed = false;
-						start.trigger(new $$.Event(e, {type: "free"}));
+						start.trigger("free");
 						start._private.rscratch.inDragLayer = false;
 					}
 					
@@ -1348,9 +1551,18 @@
 					r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
 					
 					start
-						.trigger(new $$.Event(e, {type: "touchend"}))
-						.trigger(new $$.Event(e, {type: "tapend"}))
-						.trigger(new $$.Event(e, {type: "vmouseup"}))
+						.trigger(new $$.Event(e, {
+							type: "touchend",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "tapend",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
+						.trigger(new $$.Event(e, {
+							type: "vmouseup",
+							cyPosition: { x: now[0], y: now[1] }
+						}))
 					;
 					
 					r.touchData.start = null;
@@ -1360,17 +1572,35 @@
 				
 					if (near != null) { 
 						near
-							.trigger(new $$.Event(e, {type: "touchend"}))
-							.trigger(new $$.Event(e, {type: "tapend"}))
-							.trigger(new $$.Event(e, {type: "vmouseup"}))
+							.trigger(new $$.Event(e, {
+								type: "touchend",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapend",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmouseup",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
 						;
 					}
 
 					if (near == null) { 
 						cy
-							.trigger(new $$.Event(e, {type: "touchend"}))
-							.trigger(new $$.Event(e, {type: "tapend"}))
-							.trigger(new $$.Event(e, {type: "vmouseup"}))
+							.trigger(new $$.Event(e, {
+								type: "touchend",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "tapend",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vmouseup",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
 						;
 					}
 				}
@@ -1403,13 +1633,25 @@
 
 					if (start) {
 						start
-							.trigger(new $$.Event(e, {type: "tap"}))
-							.trigger(new $$.Event(e, {type: "vclick"}))
+							.trigger(new $$.Event(e, {
+								type: "tap",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vclick",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
 						;
 					} else {
 						cy
-							.trigger(new $$.Event(e, {type: "tap"}))
-							.trigger(new $$.Event(e, {type: "vclick"}))
+							.trigger(new $$.Event(e, {
+								type: "tap",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
+							.trigger(new $$.Event(e, {
+								type: "vclick",
+								cyPosition: { x: now[0], y: now[1] }
+							}))
 						;
 					}
 					

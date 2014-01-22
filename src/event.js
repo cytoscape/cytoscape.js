@@ -31,9 +31,6 @@
 
 		// Create a timestamp if incoming event doesn't have one
 		this.timeStamp = src && src.timeStamp || +new Date;
-
-		// Mark it as fixed
-		//this[ jQuery.expando ] = true;
 	};
 
 	function returnFalse() {

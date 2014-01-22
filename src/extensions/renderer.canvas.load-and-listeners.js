@@ -149,6 +149,10 @@
 			e.preventDefault();
 		});
 
+		function inBoxSelection(){
+			return r.data.select[4] !== 0;
+		}
+
 		// Primary key
 		r.registerBinding(r.data.container, "mousedown", function(e) { 
 			e.preventDefault();
@@ -167,6 +171,8 @@
 			// Right click button
 			if( e.which == 3 ){
 
+				r.hoverData.cxtStarted = true;
+
 				if( near ){
 					near.activate();
 					near.trigger( new $$.Event(e, {
@@ -175,9 +181,15 @@
 					}) );
 
 					r.hoverData.down = near;
-					r.hoverData.downTime = (new Date()).getTime();
-					r.hoverData.cxtDragged = false;
 				}
+
+				cy.trigger( new $$.Event(e, {
+					type: "cxttapstart", 
+					cyPosition: { x: pos[0], y: pos[1] } 
+				}) );
+
+				r.hoverData.downTime = (new Date()).getTime();
+				r.hoverData.cxtDragged = false;
 
 			// Primary button
 			} else if (e.which == 1) {
@@ -517,6 +529,8 @@
 			r.data.bgActivePosistion = undefined; // not active bg now
 			clearTimeout( r.bgActiveTimeout );
 
+			r.hoverData.cxtStarted = false;
+
 			if( down ){
 				down.unactivate();
 			}
@@ -783,6 +797,11 @@
 			var rpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
+			if( r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
+				e.preventDefault();
+				return;
+			}
+
 			if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
 				e.preventDefault();
 			

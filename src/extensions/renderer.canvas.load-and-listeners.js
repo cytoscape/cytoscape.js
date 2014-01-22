@@ -672,18 +672,17 @@
 						
 						// console.log('single selection')
 
-						if( cy.selectionType() === 'additive' ){
+						if( cy.selectionType() === 'additive' || shiftDown ){
 							if( near.selected() ){
-							near.unselect();
+								near.unselect();
 							} else {
 								near.select();
 							}
 						} else {
 							if( !shiftDown ){
 								cy.$(':selected').unselect();
-							}
-
-							near.select();
+								near.select();
+							} 							
 						}
 
 

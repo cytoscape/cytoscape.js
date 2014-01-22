@@ -20,9 +20,11 @@
 
     { "name": "Style", "md": "style" },
 
+    { "name": "Events", "md": "events" },
+
     { "name": "Layouts", "md": "layouts" },
 
-    { "name": "Events", "md": "events" },
+    { "name": "Plugins", "md": "plugins" },
 
     {
       "name": "Core",

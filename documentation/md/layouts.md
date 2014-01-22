@@ -118,7 +118,7 @@ cy.layout( options );
 
 ## Arbor
 
-*The `arbor` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation.
+The `arbor` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation.
 
 ```js
 options = {

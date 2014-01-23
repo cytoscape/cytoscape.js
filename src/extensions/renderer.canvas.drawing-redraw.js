@@ -153,13 +153,10 @@
 			effectivePan.x *= pixelRatio;
 			effectivePan.y *= pixelRatio;
 			
-			var elements = [];
-			for( var i = 0; i < nodes.length; i++ ){
-				elements.push( nodes[i] );
-			}
-			for( var i = 0; i < edges.length; i++ ){
-				elements.push( edges[i] );
-			}
+			var elements;
+			var elesInDragLayer;
+			var elesNotInDragLayer;
+			var element;
 
 			function setContextTransform(context){
 				context.setTransform(1, 0, 0, 1, 0, 0);
@@ -191,8 +188,21 @@
 			
 
 				// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-				var elements = r.getCachedZSortedEles();
+				elements = r.getCachedZSortedEles();
 				// } console.timeEnd('sort')
+
+				elesInDragLayer = [];
+				elesNotInDragLayer = [];
+
+				for (var index = 0; index < elements.length; index++) {
+					element = elements[index];
+
+					if ( element._private.rscratch.inDragLayer ) {
+						elesInDragLayer.push( element );
+					} else {
+						elesNotInDragLayer.push( element );
+					}
+				}
 
 				// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 				// no need to update graph if there is no compound node
@@ -203,36 +213,10 @@
 				// } console.timeEnd('updatecompounds')
 			}
 			
-			var elesInDragLayer;
-			var elesNotInDragLayer;
-			var element;
-
-
-			// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-			if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
-				// console.log("redrawing node layer");
-			  
-			  	if( !elesInDragLayer || !elesNotInDragLayer ){
-					elesInDragLayer = [];
-					elesNotInDragLayer = [];
-
-					for (var index = 0; index < elements.length; index++) {
-						element = elements[index];
-
-						if ( element._private.rscratch.inDragLayer ) {
-							elesInDragLayer.push( element );
-						} else {
-							elesNotInDragLayer.push( element );
-						}
-					}
-				}	
-
-				var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
-
-				setContextTransform( context );
-				
-				for (var index = 0; index < elesNotInDragLayer.length; index++) {
-					element = elesNotInDragLayer[index];
+			
+			function drawElements( eleList, context ){
+				for (var i = 0; i < eleList.length; i++) {
+					element = eleList[i];
 					
 					if (element._private.group == "nodes") {
 						r.drawNode(context, element);
@@ -242,8 +226,8 @@
 					}
 				}
 				
-				for (var index = 0; index < elesNotInDragLayer.length; index++) {
-					element = elesNotInDragLayer[index];
+				for (var i = 0; i < eleList.length; i++) {
+					element = eleList[i];
 					
 					if (element._private.group == "nodes") {
 						r.drawNodeText(context, element);
@@ -258,6 +242,17 @@
 						r.drawEdge(context, element, true);
 					}
 				}
+			}
+
+
+			// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
+			if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+				// console.log("redrawing node layer");
+			  
+				var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
+
+				setContextTransform( context );
+				drawElements(elesNotInDragLayer, context);
 				
 				if( !drawAllLayers ){
 					data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; 
@@ -266,53 +261,10 @@
 			
 			if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
 			  
-				if( !elesInDragLayer || !elesNotInDragLayer ){
-					elesInDragLayer = [];
-					elesNotInDragLayer = [];
-
-					for (var index = 0; index < elements.length; index++) {
-						element = elements[index];
-
-						if ( element._private.rscratch.inDragLayer ) {
-							elesInDragLayer.push( element );
-						} else {
-							elesNotInDragLayer.push( element );
-						}
-					}
-				}
-
 				var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
 				
 				setContextTransform( context );
-				
-				var element;
-
-				for (var index = 0; index < elesInDragLayer.length; index++) {
-					element = elesInDragLayer[index];
-					
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element);
-					}
-				}
-				
-				for (var index = 0; index < elesInDragLayer.length; index++) {
-					element = elesInDragLayer[index];
-					
-					if (element._private.group == "nodes") {
-						r.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdgeText(context, element);
-					}
-
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element, true);
-					}
-				}
+				drawElements(elesInDragLayer, context);
 				
 				if( !drawAllLayers ){
 					data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false;

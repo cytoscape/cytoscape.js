@@ -164,9 +164,7 @@
 			var near = r.findNearestElement(pos[0], pos[1], true);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
-			var grabEvent = new $$.Event(e, {
-				type: "grab"
-			});
+			var grabEvent = new $$.Event("grab");
 
 			// Right click button
 			if( e.which == 3 ){
@@ -470,6 +468,8 @@
 				if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
 					r.dragData.didDrag = true; // indicate that we actually did drag the node
 
+					r.hoverData.draggingEles = true;
+
 					var toTrigger = [];
 					for (var i=0; i<draggedElements.length; i++) {
 
@@ -530,6 +530,7 @@
 			clearTimeout( r.bgActiveTimeout );
 
 			r.hoverData.cxtStarted = false;
+			r.hoverData.draggingEles = false;
 
 			if( down ){
 				down.unactivate();
@@ -796,7 +797,7 @@
 			var rpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			if( r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
+			if( r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
 				e.preventDefault();
 				return;
 			}

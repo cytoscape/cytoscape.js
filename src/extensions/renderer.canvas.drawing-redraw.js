@@ -216,26 +216,33 @@
 			
 			function drawElements( eleList, context ){
 				var edges = [];
+				var nodes = [];
 
 				for (var i = 0; i < eleList.length; i++) {
-					element = eleList[i];
+					ele = eleList[i];
 					
-					if ( element.isNode() ) {
-						r.drawNode(context, element);
-						r.drawNodeText(context, element);
-						r.drawNode(context, element, true);
+					if ( ele.isNode() ) {
+						nodes.push( ele );
 						
-					} else if ( element.isEdge() ) {
-						r.drawEdge(context, element);
-						edges.push( element );
+					} else if ( ele.isEdge() ) {
+						r.drawEdge(context, ele);
+						edges.push( ele );
 					}
 				}
 
 				for (var i = 0; i < edges.length; i++) {
-					element = edges[i];
+					ele = edges[i];
 					
-					r.drawEdgeText(context, element);
-					r.drawEdge(context, element, true);
+					r.drawEdgeText(context, ele);
+					r.drawEdge(context, ele, true);
+				}
+
+				for( var i = 0; i < nodes.length; i++ ){
+					var ele = nodes[i];
+
+					r.drawNode(context, ele);
+					r.drawNodeText(context, ele);
+					r.drawNode(context, ele, true);
 				}
 			}
 

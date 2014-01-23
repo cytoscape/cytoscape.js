@@ -96,22 +96,28 @@
 	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 
 	CanvasRenderer.prototype.notify = function(params) {
-		if ( params.type == "destroy" ){
+		switch( params.type ){
+
+		case "destroy":
 			this.destroy();
 			return;
 
-		} else if (params.type == "add"
-			|| params.type == "remove"
-			|| params.type == "load"
-		) {
-			
+		case "add":
+		case "remove":
+		case "load":
 			this.updateNodesCache();
 			this.updateEdgesCache();
+			break;
+
+		case "viewport":
+			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+			break;
+
+		case "style":
+			this.updateCachedZSortedEles();
+			break;
 		}
 
-		if (params.type == "viewport") {
-			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-		}
 		
 		this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
 		this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;

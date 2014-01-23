@@ -705,8 +705,7 @@
 			}
 		};
 
-		var result = a._private.style["z-index"].value
-			- b._private.style["z-index"].value;
+		var result = a._private.style["z-index"].value - b._private.style["z-index"].value;
 
 		var depthA = 0;
 		var depthB = 0;
@@ -758,14 +757,18 @@
 		return 0;
 	};
 
-	CanvasRenderer.prototype.getCachedZSortedEles = function(){
+	CanvasRenderer.prototype.updateCachedZSortedEles = function(){
+		this.getCachedZSortedEles( true );
+	};
+
+	CanvasRenderer.prototype.getCachedZSortedEles = function( forceRecalc ){
 		var lastNodes = this.lastZOrderCachedNodes;
 		var lastEdges = this.lastZOrderCachedEdges;
 		var nodes = this.getCachedNodes();
 		var edges = this.getCachedEdges();
 		var eles = [];
 
-		if( !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
+		if( forceRecalc || !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
 			//console.time('cachezorder')
 			
 			for( var i = 0; i < nodes.length; i++ ){

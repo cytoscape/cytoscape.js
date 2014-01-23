@@ -14,6 +14,8 @@ var cytoscape = require('cytoscape');
 
 ### Getting started
 
+**Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.**
+
 An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
 
 ```js

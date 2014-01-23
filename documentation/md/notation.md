@@ -48,6 +48,7 @@ $('#cy').cytoscape({
     { // node n1
       group: 'nodes', // 'nodes' for a node, 'edges' for an edge
 
+      // NB: id fields must be strings
       data: { // element data (put dev data here)
       	id: 'n1', // mandatory for each element, assigned automatically on undefined
       	parent: 'nparent', // indicates the compound node parent id; not defined => no parent

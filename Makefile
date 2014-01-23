@@ -138,6 +138,8 @@ zip : $(ZIP_CONTENTS) $(ZIP_FILE)
 
 minify : $(MIN_JS_FILE) $(MIN_BUILD_EXTENSIONS)
 
+concat : $(JS_FILE)
+
 docs : minify
 	$(MAKE) -C $(DOC_DIR)
 

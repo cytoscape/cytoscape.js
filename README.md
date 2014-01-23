@@ -62,6 +62,7 @@ Run `make` in the console.  The targets are:
 
  * `all` : build everything (default)
  * `minify` : build the production minified JS
+ * `concat` : build the production (non-minified) JS
  * `zip` : minify and make a ZIP file for release
  * `clean` : deletes built files
  * `publish` : make a release and publish it; follow the terminal prompts, which contains individually (e.g. in case you'd like to skip something)

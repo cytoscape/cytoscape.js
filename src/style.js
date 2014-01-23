@@ -1234,11 +1234,15 @@
 				ele._private.style = {};
 			}
 
+			// console.log('APPLYING STYLESHEET\n--\n');
+
 			// apply the styles
 			for( var i = 0; i < this.length; i++ ){
 				var context = this[i];
 				var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for "core"
 				var props = context.properties;
+
+				// console.log(i + ' : looking at selector: ' + context.selector);
 
 				if( contextSelectorMatches ){ // then apply its properties
 
@@ -1246,10 +1250,15 @@
 					
 					for( var j = 0; j < props.length; j++ ){ // for each prop
 						var prop = props[j];
+						var newCxt = !ele._private.styleCxts[i];
+						var currentEleProp = ele._private.style[prop.name];
+						var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
+						var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
 
 						//if(prop.mapped) debugger;
 
-						if( !ele._private.styleCxts[i] || prop.mapped ){
+						if( newCxt || needToUpdateCxtMapping ){
+							// console.log(i + ' + MATCH: applying property: ' + prop.name);
 							this.applyParsedProperty( ele, prop, context );
 						}
 					}
@@ -1260,6 +1269,7 @@
 
 					// roll back style cxts that don't match now
 					if( ele._private.styleCxts[i] ){
+						// console.log(i + ' x MISS: rolling back context');
 						this.rollBackContext( ele, context );
 					}
 

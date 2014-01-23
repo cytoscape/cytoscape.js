@@ -215,32 +215,27 @@
 			
 			
 			function drawElements( eleList, context ){
+				var edges = [];
+
 				for (var i = 0; i < eleList.length; i++) {
 					element = eleList[i];
 					
-					if (element._private.group == "nodes") {
+					if ( element.isNode() ) {
 						r.drawNode(context, element);
+						r.drawNodeText(context, element);
+						r.drawNode(context, element, true);
 						
-					} else if (element._private.group == "edges") {
+					} else if ( element.isEdge() ) {
 						r.drawEdge(context, element);
+						edges.push( element );
 					}
 				}
-				
-				for (var i = 0; i < eleList.length; i++) {
-					element = eleList[i];
-					
-					if (element._private.group == "nodes") {
-						r.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdgeText(context, element);
-					}
 
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element, true);
-					}
+				for (var i = 0; i < edges.length; i++) {
+					element = edges[i];
+					
+					r.drawEdgeText(context, element);
+					r.drawEdge(context, element, true);
 				}
 			}
 

@@ -97,6 +97,15 @@
 		} else {
 			
 			var details = edge._private.rscratch;
+
+			// context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+			// context.fillRect(details.startX, details.startY, 2, 2);
+			// context.fillRect(details.endX, details.endY, 2, 2);
+
+			// context.fillStyle = 'rgba(0, 255, 0, 0.5)';
+			// context.fillRect(details.cp2x, details.cp2y, 2, 2);
+
+			
 			this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				details.cp2x, details.cp2y, details.endX, details.endY],
 				lineStyle,
@@ -430,6 +439,9 @@
 			
 			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
 				startX, startY, dispX, dispY);
+		} else {
+			// window.badArrow = true;
+			// debugger;
 		}
 		
 		var endX = edge._private.rscratch.arrowEndX;

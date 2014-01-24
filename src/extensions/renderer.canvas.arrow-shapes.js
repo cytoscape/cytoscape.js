@@ -51,7 +51,7 @@
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -113,11 +113,11 @@
 			context.arc(0, 0, arrowShapes["circle"]._baseRadius, 0, Math.PI * 2, false);
 		},
 		spacing: function(edge) {
-			return rendFunc.getArrowWidth(edge._private.style["width"].value)
+			return rendFunc.getArrowWidth(edge._private.style["width"].pxValue)
 				* arrowShapes["circle"]._baseRadius;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -193,7 +193,7 @@
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -231,7 +231,7 @@
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	

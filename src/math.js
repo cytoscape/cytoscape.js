@@ -1548,10 +1548,10 @@
 		var lenRatio = (length - amount) / length;
 		
 		if (lenRatio < 0) {
-			return [];
-		} else {
-			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+			lenRatio = 0.00001;
 		}
+
+		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
 	};
 
 	$$.math.generateUnitNgonPoints = function(sides, rotationRadians) {

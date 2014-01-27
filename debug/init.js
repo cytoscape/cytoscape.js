@@ -42,7 +42,8 @@ $(function(){
 				.css({
 					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "triangle",
-					"source-arrow-shape": "circle"
+					"source-arrow-shape": "circle",
+					"opacity": 0.5
 				})
 			.selector(":selected")
 				.css({
@@ -71,7 +72,15 @@ $(function(){
 					"shape": "rectangle",
 					"width": 15,
 					"height": 15
-				});
+				})
+			.selector('#n0').css({ height: 200, width: 200, shape: 'triangle' })
+			.selector('#e0').css({ 'line-color': 'cyan' })
+			.selector('#e1').css({ 'line-color': 'magenta' })
+			.selector('#e2').css({ 'line-color': 'yellow' })
+			.selector('#e3').css({ 'line-color': 'black' })
+
+
+	;
 	
 	window.options = {
 		renderer: {
@@ -101,9 +110,9 @@ $(function(){
 		}
 	};
 	
-	var cliques = 2;
-	var numNodes = 32;
-	var numEdges = 64;
+	var cliques = 1;
+	var numNodes = 2;
+	var numEdges = 7;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;
@@ -132,8 +141,8 @@ $(function(){
 			options.elements.edges.push({
 				data: {
 					id: "e" + (j++),
-					source: srcId,
-					target: tgtId,
+					source: 'n0',
+					target: 'n1',
 					weight: Math.round( Math.random() * 100 )
 				}
 			});

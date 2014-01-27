@@ -75,14 +75,12 @@
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
 			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
-					nodes[i]._private.style["border-width"].value / 2,
-					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+					nodes[i]._private.style["border-width"].pxValue / 2,
 					this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
 				CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
-					nodes[i]._private.style["border-width"].value / 2,
-					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
+					nodes[i]._private.style["border-width"].pxValue / 2,
 					(this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
@@ -115,9 +113,9 @@
 						rs.cp2ay,
 						rs.selfEdgeMidX,
 						rs.selfEdgeMidY,
-						Math.pow(edge._private.style["width"].value/2, 2))
+						Math.pow(edge._private.style["width"].pxValue/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
+					(Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
@@ -133,9 +131,9 @@
 						rs.cp2cy,
 						rs.endX,
 						rs.endY,
-						Math.pow(edges[i]._private.style["width"].value/2, 2))
+						Math.pow(edges[i]._private.style["width"].pxValue/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
+					(Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.selfEdgeMidX,
 							rs.selfEdgeMidY,
@@ -146,9 +144,9 @@
 					 { addCurrentEdge = true; }
 			
 			} else if (rs.edgeType == "straight") {
-				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].value * 2)
+				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].pxValue * 2)
 						&&
-					Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
+					Math.pow(edges[i]._private.style["width"].pxValue / 2, 2) + edgeThreshold >
 					$$.math.sqDistanceToFiniteLine(x, y,
 						rs.startX,
 						rs.startY,
@@ -164,9 +162,9 @@
 					rs.cp2y,
 					rs.endX,
 					rs.endY,
-					Math.pow(edges[i]._private.style["width"].value / 2, 2))
+					Math.pow(edges[i]._private.style["width"].pxValue / 2, 2))
 						&&
-					(Math.pow(edges[i]._private.style["width"].value / 2 , 2) + edgeThreshold >
+					(Math.pow(edges[i]._private.style["width"].pxValue / 2 , 2) + edgeThreshold >
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
@@ -180,29 +178,29 @@
 			if (!near.length || near[near.length - 1] != edges[i]) {
 				if ((CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].roughCollide(x, y,
 						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
 						&&
 					CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].collide(x, y,
 						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
 					||
 					(CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].roughCollide(x, y,
 						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
 						&&
 					CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].collide(x, y,
 						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
 					{ addCurrentEdge = true; }
@@ -247,9 +245,8 @@
 		
 		for (var i=0;i<nodes.length;i++) {
 			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
-				//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 				this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
-				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
+				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].pxValue / 2))
 			{ box.push(nodes[i]); }
 		}
 		
@@ -258,22 +255,22 @@
 				if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
 								||
 					(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
 					)
 				{ box.push(edges[i]); }
 			}
@@ -282,12 +279,12 @@
 				(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
 				{ box.push(edges[i]); }
 		
 			if (edges[i]._private.rscratch.edgeType == "straight" &&
@@ -295,11 +292,11 @@
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
 						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&& /* console.log("test", heur) == undefined && */
 						(heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
 				{ box.push(edges[i]); }
 			
 		}
@@ -1024,8 +1021,6 @@
 			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				//source._private.style["width"].value,
-				//source._private.style["height"].value,
 				this.getNodeWidth(source),
 				this.getNodeHeight(source),
 				cp[0], //halfPointX,
@@ -1117,8 +1112,6 @@
 				this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				//target._private.style["width"].value,
-				//target._private.style["height"].value,
 				this.getNodeWidth(target),
 				this.getNodeHeight(target),
 				cp[0], //halfPointX,
@@ -1146,8 +1139,6 @@
 				this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				//source._private.style["width"].value,
-				//source._private.style["height"].value,
 				this.getNodeWidth(source),
 				this.getNodeHeight(source),
 				cp[0], //halfPointX,

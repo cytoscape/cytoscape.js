@@ -313,7 +313,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				return !this.visible();
+				return !ele.visible();
 			}
 		},
 
@@ -321,7 +321,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				return parseFloat( this.css("opacity") ) === 0;
+				return parseFloat( ele.css("opacity") ) === 0;
 			}
 		},
 
@@ -330,7 +330,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var w = this._private.style.width;
+				var w = ele._private.style.width;
 				return w.strValue === "auto" ? ele._private.autoWidth : w.pxValue;
 			}
 		},
@@ -339,7 +339,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var style = this._private.style;
+				var style = ele._private.style;
 				var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
 				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
@@ -351,7 +351,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var width = this.width();
+				var width = ele.width();
 				return width * this.cy().zoom();
 			}
 		},
@@ -360,17 +360,17 @@
 			var ele = this[0];
 
 			if( ele ){
-				var owidth = this.outerWidth();
+				var owidth = ele.outerWidth();
 				return owidth * this.cy().zoom();
 			}
 		},
 
 		// convenience function to get a numerical value for the height of the node
-		height: function(){
+		height: function(){ debugger;
 			var ele = this[0];
 
 			if( ele && ele.isNode() ){
-				var h = this._private.style.height;
+				var h = ele._private.style.height;
 				return h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
 			}
 		},
@@ -379,7 +379,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var style = this._private.style;
+				var style = ele._private.style;
 				var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
 				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
@@ -391,7 +391,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var height = this.height();
+				var height = ele.height();
 				return height * this.cy().zoom();
 			}
 		},
@@ -400,7 +400,7 @@
 			var ele = this[0];
 
 			if( ele ){
-				var oheight = this.outerHeight();
+				var oheight = ele.outerHeight();
 				return oheight * this.cy().zoom();
 			}
 		},
@@ -442,6 +442,27 @@
 					y: offset.y * zoom + pan.y
 				};
 			}
+		},
+
+		renderedBoundingBox: function( selector ){
+			var bb = this.boundingBox( selector );
+			var cy = this.cy();
+			var zoom = cy.zoom();
+			var pan = cy.pan();
+
+			var x1 = bb.x1 * zoom + pan.x;
+			var x2 = bb.x2 * zoom + pan.x;
+			var y1 = bb.y1 * zoom + pan.y;
+			var y2 = bb.y2 * zoom + pan.y;
+
+			return {
+				x1: x1,
+				x2: x2,
+				y1: y1,
+				y2: y2,
+				w: x2 - x1,
+				h: y2 - y1
+			};
 		},
 
 		// get the bounding box of the elements (in raw model position)
@@ -525,7 +546,7 @@
 					//////////////////////////////////////////
 
 					var bpts = rstyle.bezierPts || [];
-					var w = ele._private.style['width'].value;
+					var w = ele._private.style['width'].pxValue;
 					for( var j = 0; j < bpts.length; j++ ){
 						var bpt = bpts[j];
 
@@ -548,7 +569,7 @@
 				var labelWidth = ele._private.rstyle.labelWidth;
 
 				if( label && fontSize && labelWidth != undefined && halign && valign ){
-					var lh = fontSize.value;
+					var lh = fontSize.pxValue;
 					var lw = labelWidth;
 					var lx1, lx2, ly1, ly2;
 

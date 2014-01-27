@@ -2,6 +2,16 @@
 	
 	$$.math = {};
 	
+	$$.math.signum = function(x){
+		if( x > 0 ){
+			return 1;
+		} else if( x < 0 ){
+			return -1;
+		} else {
+			return 0;
+		}
+	};
+
 	$$.math.roundRectangleIntersectLine = function(
 		x, y, nodeX, nodeY, width, height, padding) {
 		

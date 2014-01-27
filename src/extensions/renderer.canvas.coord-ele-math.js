@@ -842,10 +842,11 @@
 
 			tgtW = this.getNodeWidth(tgt);
 			tgtH = this.getNodeHeight(tgt);
+		
+			var vectorNormInverse;
 
-			var displacementX, displacementY;
-			
 			if (hashTable[pairId].length > 1) {
+
 				// pt outside src shape to calc distance/displacement from src to tgt
 				var srcOutside = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ].intersectLine(
 					srcPos.x,
@@ -873,15 +874,26 @@
 					y: ( srcOutside[1] + tgtOutside[1] )/2
 				};
 
-				displacementX = Math.abs( tgtOutside[1] - srcOutside[1] );
-				displacementY = Math.abs( tgtOutside[0] - srcOutside[0] );
+				var dy = ( tgtOutside[1] - srcOutside[1] );
+				var dx = ( tgtOutside[0] - srcOutside[0] );
+				var l = Math.sqrt( dx*dx + dy*dy );
 
+				console.log(l, dx, dy)
 				
-				var displacementLength = Math.sqrt(displacementX * displacementX
-					+ displacementY * displacementY);
+				var vector = {
+					x: dx,
+					y: dy
+				};
 				
-				displacementX /= displacementLength;
-				displacementY /= displacementLength;
+				var vectorNorm = {
+					x: vector.x/l,
+					y: vector.y/l
+				};
+				vectorNormInverse = {
+					x: -vectorNorm.y,
+					y: vectorNorm.x
+				};
+				
 			}
 			
 			var edge;
@@ -963,8 +975,8 @@
 					
 					rs.edgeType = "bezier";
 					
-					rs.cp2x = midpt.x + displacementX * distanceFromMidpoint;
-					rs.cp2y = midpt.y + displacementY * distanceFromMidpoint;
+					rs.cp2x = midpt.x + vectorNormInverse.x * distanceFromMidpoint;
+					rs.cp2y = midpt.y + vectorNormInverse.y * distanceFromMidpoint;
 					
 					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
 				}

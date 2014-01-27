@@ -629,6 +629,27 @@
 
 	$$.math.inBezierVicinity = function(
 		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
+
+		// unfortunately yue's function makes several assumptions about the beziers
+		// and is not generic enough to be used properly
+		// a rough bounding box of the bezier curve
+		var bb = {
+			x1: Math.min( x1, x3, x2 ),
+			x2: Math.max( x1, x3, x2 ),
+			y1: Math.min( y1, y3, y2 ),
+			y2: Math.max( y1, y3, y2 )
+		};
+
+		// if outside the rough bounding box for the bezier, then it can't be a hit
+		if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
+			// console.log('bezier out of rough bb')
+			return false;
+		} else {
+			// console.log('do more expensive check');
+			return true;
+		}
+
+		/// END STOP USING YUE'S IMPL
 		
 		// Middle point occurs when t = 0.5, this is when the Bezier
 		// is closest to (x2, y2)
@@ -649,6 +670,7 @@
 			return false;
 		} else {
 			// console.log('do more expensive check');
+			return true;
 		}
 		
 		var displacementX, displacementY, offsetX, offsetY;

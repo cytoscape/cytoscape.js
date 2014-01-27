@@ -102,6 +102,7 @@ Labels:
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
+ * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
 
 Size & visibility:
 

@@ -366,7 +366,7 @@
 		},
 
 		// convenience function to get a numerical value for the height of the node
-		height: function(){ debugger;
+		height: function(){ 
 			var ele = this[0];
 
 			if( ele && ele.isNode() ){

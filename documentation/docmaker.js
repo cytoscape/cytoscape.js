@@ -108,6 +108,7 @@ function compileConfig( config ){
 
         fn.id = section.id + '/' + fn.name;
         fn.bookmark = makeBookmark( fn.id );
+        fn.descr = fn.descr ? marked( fn.descr ) : undefined;
 
         if( fn.md ){
           fn.html = md2html( fn.md );

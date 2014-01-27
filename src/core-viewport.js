@@ -309,6 +309,12 @@
 			return eles.boundingBox();
 		},
 
+		renderedBoundingBox: function( selector ){
+			var eles = this.$( selector );
+
+			return eles.renderedBoundingBox();
+		},
+
 		center: function(elements){
 			if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
 				return this;

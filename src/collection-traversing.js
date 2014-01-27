@@ -583,97 +583,46 @@
 	
 	$$.fn.eles({
 		connectedEdges: function( selector ){
-			var elements = [];
+			var retEles = [];
 			var cy = this._private.cy;
 			
-			var nodes = this.nodes();
-			for( var i = 0; i < nodes.length; i++ ){
-				var node = nodes[i];
+			var eles = this;
+			for( var i = 0; i < eles.length; i++ ){
+				var node = eles[i];
+				if( !node.isNode() ){ continue; }
+
 				var edges = node._private.edges;
 
 				for( var j = 0; j < edges.length; j++ ){
 					var edge = edges[j];					
-					elements.push( edge );
+					retEles.push( edge );
 				}
 			}
 			
-			return new $$.Collection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, retEles ).filter( selector );
 		},
 
 		connectedNodes: function( selector ){
-			var elements = [];
+			var retEles = [];
 			var cy = this._private.cy;
 
-			var edges = this.edges();
-			for( var i = 0; i < edges.length; i++ ){
-				var edge = edges[i];
+			var eles = this;
+			for( var i = 0; i < eles.length; i++ ){
+				var edge = eles[i];
+				if( !edge.isEdge() ){ continue; }
 
-				elements.push( edge.source()[0] );
-				elements.push( edge.target()[0] );
+				retEles.push( edge.source()[0] );
+				retEles.push( edge.target()[0] );
 			}
 
-			return new $$.Collection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, retEles ).filter( selector );
 		},
 
 		parallelEdges: defineParallelEdgesFunction(),
 
 		codirectedEdges: defineParallelEdgesFunction({
 			codirected: true
-		}),
-
-		parallelIndex: function(){
-			var edge = this[0];
-
-			if( edge.isEdge() ){
-				var src = edge.source()[0];
-				var srcEdges = src._private.edges;
-				var index = 0;
-
-				for( var i = 0; i < srcEdges.length; i++ ){
-					var srcEdge = srcEdges[i];
-					var thisIsTheIndex = srcEdge === edge;
-
-					if( thisIsTheIndex ){
-						return index;
-					}
-
-					var codirected = edge._private.data.source === srcEdge._private.data.source
-						&& edge._private.data.target === srcEdge._private.data.target;
-					var opdirected = edge._private.data.source === srcEdge._private.data.target
-						&& edge._private.data.target === srcEdge._private.data.source;
-					var parallel = codirected || opdirected;
-
-					if( parallel ){ // then increase the count
-						index++;
-					}
-				}
-			}
-		},
-
-		parallelSize: function(){
-			var edge = this[0];
-
-			if( edge.isEdge() ){
-				var src = edge.source()[0];
-				var srcEdges = src._private.edges;
-				var numEdges = 0;
-
-				for( var i = 0; i < srcEdges.length; i++ ){
-					var srcEdge = srcEdges[i];
-					var codirected = edge._private.data.source === srcEdge._private.data.source
-						&& edge._private.data.target === srcEdge._private.data.target;
-					var opdirected = edge._private.data.source === srcEdge._private.data.target
-						&& edge._private.data.target === srcEdge._private.data.source;
-					var parallel = codirected || opdirected;
-
-					if( parallel ){ // then increase the count
-						numEdges++;
-					}
-				}
-
-				return numEdges;
-			}
-		}
+		})
 	});
 	
 	function defineParallelEdgesFunction(params){
@@ -807,6 +756,9 @@
 			return new $$.Collection( this.cy(), elements ).filter( selector );
 		}
 	});
+
+	// aliases
+	$$.fn.eles.ancestors = $$.fn.eles.parents;
 
 	
 })( cytoscape );

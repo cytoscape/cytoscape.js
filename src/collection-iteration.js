@@ -33,6 +33,10 @@
 			if( end == null ){
 				end = thisSize;
 			}
+
+			if( start == null ){
+				start = 0;
+			}
 			
 			if( start < 0 ){
 				start = thisSize + start;

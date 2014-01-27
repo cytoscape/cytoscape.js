@@ -36,6 +36,8 @@ A rendered position is an on-screen location relative to the viewport.  For exam
 
 In this documentation, "position" refers to model position unless otherwise stated.
 
+A node's position is relative to its parent node if it has one.  Otherwise, its position is relative to the graph origin (0, 0).  A node's offset defines the node's position relative to the graph origin such that position and offset are the same for a node which has no parent.
+
 
 ## Elements JSON
 

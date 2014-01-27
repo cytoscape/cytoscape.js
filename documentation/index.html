@@ -534,6 +534,8 @@
 					
 						<div class="section lvl3"><a href="#collection/data/ele.isEdge"><span class="icon-bookmark"></span> ele.isEdge() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/data/edge.isLoop"><span class="icon-bookmark"></span> edge.isLoop() </a></div>
+					
 				
 					<div class="section lvl2">
 						<span class="expander">
@@ -562,9 +564,15 @@
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/node.renderedPosition"><span class="icon-bookmark"></span> node.renderedPosition() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/position--dimensions/node.offset"><span class="icon-bookmark"></span> node.offset() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/position--dimensions/node.renderedOffset"><span class="icon-bookmark"></span> node.renderedOffset() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/position--dimensions/ele.width"><span class="icon-bookmark"></span> ele.width() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/ele.height"><span class="icon-bookmark"></span> ele.height() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark"></span> eles.boundingBox() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/node.grabbed"><span class="icon-bookmark"></span> node.grabbed() </a></div>
 					
@@ -734,6 +742,8 @@
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.connectedNodes"><span class="icon-bookmark"></span> edges.connectedNodes() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/traversing/edges.connectedEdges"><span class="icon-bookmark"></span> edges.connectedEdges() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span> edges.source() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.target"><span class="icon-bookmark"></span> edges.target() </a></div>
@@ -761,6 +771,30 @@
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span> eles.intersect() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span> eles.filter() et al</a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a href="#collection/compound-nodes"><span class="icon-bookmark"></span> Compound nodes</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/node.isParent"><span class="icon-bookmark"></span> node.isParent() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/node.isChild"><span class="icon-bookmark"></span> node.isChild() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.parent"><span class="icon-bookmark"></span> nodes.parent() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.parents"><span class="icon-bookmark"></span> nodes.parents() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.children"><span class="icon-bookmark"></span> nodes.children() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.descendants"><span class="icon-bookmark"></span> nodes.descendants() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.siblings"><span class="icon-bookmark"></span> nodes.siblings() </a></div>
 					
 				
 			
@@ -818,14 +852,14 @@
 			<div id="top" class="title">Cytoscape.js <span class="version">2.0.3</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span>&nbsp;GitHub</a> |
-				<a href="#downloads"><span class="icon-download-alt"></span>&nbsp;Downloads</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span>&nbsp;Live code examples</a> |
-				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span>&nbsp;Twitter</a> |
-				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span>&nbsp;Previous questions</a> |
-				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span>&nbsp;Ask a question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span>&nbsp;File an issue</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span>&nbsp;Future version milestones</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
+				<a href="#downloads"><span class="icon-download-alt"></span> Downloads</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
+				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a>
 			</div>
 
 			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
@@ -1073,6 +1107,9 @@ edge ......... a collection of a single edge</code></pre>
 </p>
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.
 
+</p>
+<p>A node&#39;s position is relative to its parent node if it has one.  Otherwise, its position is relative to the graph origin (0, 0).  A node&#39;s offset defines the node&#39;s position relative to the graph origin such that position and offset are the same for a node which has no parent.
+
 
 </p>
 <h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
@@ -1085,6 +1122,7 @@ edge ......... a collection of a single edge</code></pre>
     { // node n1
       group: &#39;nodes&#39;, // &#39;nodes&#39; for a node, &#39;edges&#39; for an edge
 
+      // NB: id fields must be strings
       data: { // element data (put dev data here)
           id: &#39;n1&#39;, // mandatory for each element, assigned automatically on undefined
           parent: &#39;nparent&#39;, // indicates the compound node parent id; not defined =&gt; no parent
@@ -1471,10 +1509,11 @@ node {
 <li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
 <li><strong><code>border-width</code></strong> : The size of the node&#39;s border.</li>
 <li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
-<li><p><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</p>
-<p>Pie chart background:</p>
-</li>
+<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</li>
 </ul>
+<p>Pie chart background:
+
+</p>
 <p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o&#39;clock position and working clockwise.
 
 </p>
@@ -1943,6 +1982,9 @@ $container.cytoscape(function(){
 
 </p>
 <pre><code class="lang-html">&lt;script src=&quot;cytoscape.js&quot;&gt;&lt;/script&gt;</code></pre>
+<p><strong>Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</strong>
+
+</p>
 <p>To use Cytoscape.js in a CommonJS environment like Node.js:
 
 </p>
@@ -2186,7 +2228,8 @@ $(function(){ // on jquery ready
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.add"><span class="fn-name">cy.add()</span>  <a href="#core/graph-manipulation/cy.add"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.add">Add elements to the graph and return them.</div>
+							<div class="descr" id="core/graph-manipulation/cy.add"><p>Add elements to the graph and return them.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2282,7 +2325,8 @@ var eles = cy.add([
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.remove"><span class="fn-name">cy.remove()</span>  <a href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.remove">Remove elements from the graph and return them.</div>
+							<div class="descr" id="core/graph-manipulation/cy.remove"><p>Remove elements from the graph and return them.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2352,7 +2396,8 @@ cy.remove( collection );</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.load"><span class="fn-name">cy.load()</span>  <a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.load">Load a graph.</div>
+							<div class="descr" id="core/graph-manipulation/cy.load"><p>Load a graph.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2440,7 +2485,8 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code><
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.batchData"><span class="fn-name">cy.batchData()</span>  <a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.batchData">Update several data fields for several elements all at once (in batch).</div>
+							<div class="descr" id="core/graph-manipulation/cy.batchData"><p>Update several data fields for several elements all at once (in batch).</p>
+</div>
 
 							
 							<div class="formats">
@@ -2489,7 +2535,8 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);</code><
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.collection"><span class="fn-name">cy.collection()</span>  <a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.collection">Return a new, empty collection.</div>
+							<div class="descr" id="core/graph-manipulation/cy.collection"><p>Return a new, empty collection.</p>
+</div>
 
 							
 
@@ -2513,7 +2560,8 @@ cy.nodes().live(&quot;click&quot;, function(){
 					
 						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.$"><span class="fn-name">cy.$()</span> et al <a href="#core/graph-manipulation/cy.$"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/graph-manipulation/cy.$">Get elements in the graph matching a selector or a filter function.</div>
+							<div class="descr" id="core/graph-manipulation/cy.$"><p>Get elements in the graph matching a selector or a filter function.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2681,7 +2729,8 @@ cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line</code
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.center"><span class="fn-name">cy.center()</span>  <a href="#core/viewport-manipulation/cy.center"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.center">Pan the graph to the centre of a collection.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.center"><p>Pan the graph to the centre of a collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2734,7 +2783,8 @@ cy.center( j );</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.fit"><span class="fn-name">cy.fit()</span>  <a href="#core/viewport-manipulation/cy.fit"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.fit">Pan and zooms the graph to fit to a collection.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.fit"><p>Pan and zooms the graph to fit to a collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2793,7 +2843,8 @@ cy.center( j );</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.reset"><span class="fn-name">cy.reset()</span>  <a href="#core/viewport-manipulation/cy.reset"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.reset">Reset the graph to the default zoom level and panning position.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.reset"><p>Reset the graph to the default zoom level and panning position.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2836,7 +2887,8 @@ setTimeout( function(){
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.pan"><span class="fn-name">cy.pan()</span>  <a href="#core/viewport-manipulation/cy.pan"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.pan">Get or set the panning position of the graph.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.pan"><p>Get or set the panning position of the graph.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2893,7 +2945,8 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.panBy"><span class="fn-name">cy.panBy()</span>  <a href="#core/viewport-manipulation/cy.panBy"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.panBy">Relatively pan the graph by a specified rendered position vector.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.panBy"><p>Relatively pan the graph by a specified rendered position vector.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2938,7 +2991,8 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.panningEnabled"><span class="fn-name">cy.panningEnabled()</span>  <a href="#core/viewport-manipulation/cy.panningEnabled"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.panningEnabled">Get or set whether panning is enabled.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.panningEnabled"><p>Get or set whether panning is enabled.</p>
+</div>
 
 							
 							<div class="formats">
@@ -2980,7 +3034,8 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.userPanningEnabled"><span class="fn-name">cy.userPanningEnabled()</span>  <a href="#core/viewport-manipulation/cy.userPanningEnabled"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.userPanningEnabled">Get or set whether panning by user events (e.g. dragging the graph background) is enabled.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.userPanningEnabled"><p>Get or set whether panning by user events (e.g. dragging the graph background) is enabled.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3022,7 +3077,8 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.zoom"><span class="fn-name">cy.zoom()</span>  <a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.zoom">Get or set the zoom level of the graph.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.zoom"><p>Get or set the zoom level of the graph.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3145,7 +3201,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.zoomingEnabled"><span class="fn-name">cy.zoomingEnabled()</span>  <a href="#core/viewport-manipulation/cy.zoomingEnabled"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.zoomingEnabled">Get or set whether zooming is enabled.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.zoomingEnabled"><p>Get or set whether zooming is enabled.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3187,7 +3244,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.userZoomingEnabled"><span class="fn-name">cy.userZoomingEnabled()</span>  <a href="#core/viewport-manipulation/cy.userZoomingEnabled"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.userZoomingEnabled">Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.userZoomingEnabled"><p>Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3229,7 +3287,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.minZoom"><span class="fn-name">cy.minZoom()</span>  <a href="#core/viewport-manipulation/cy.minZoom"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.minZoom">Get or set the minimum zoom level.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.minZoom"><p>Get or set the minimum zoom level.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3271,7 +3330,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.maxZoom"><span class="fn-name">cy.maxZoom()</span>  <a href="#core/viewport-manipulation/cy.maxZoom"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.maxZoom">Get or set the maximum zoom level.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.maxZoom"><p>Get or set the maximum zoom level.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3313,7 +3373,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.boxSelectionEnabled"><span class="fn-name">cy.boxSelectionEnabled()</span>  <a href="#core/viewport-manipulation/cy.boxSelectionEnabled"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.boxSelectionEnabled">Get or set whether box selection is enabled.</div>
+							<div class="descr" id="core/viewport-manipulation/cy.boxSelectionEnabled"><p>Get or set whether box selection is enabled.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3355,7 +3416,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.forceRender"><span class="fn-name">cy.forceRender()</span>  <a href="#core/viewport-manipulation/cy.forceRender"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.forceRender">Force the renderer to redraw (i.e. draw a new frame).</div>
+							<div class="descr" id="core/viewport-manipulation/cy.forceRender"><p>Force the renderer to redraw (i.e. draw a new frame).</p>
+</div>
 
 							
 
@@ -3379,7 +3441,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/events/cy.on"><span class="fn-name">cy.on()</span>  <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/events/cy.on">Bind to events that occur in the graph.</div>
+							<div class="descr" id="core/events/cy.on"><p>Bind to events that occur in the graph.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3498,7 +3561,8 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/events/cy.one"><span class="fn-name">cy.one()</span>  <a href="#core/events/cy.one"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/events/cy.one">Bind to events that occur in the graph, and trigger the handler only once.</div>
+							<div class="descr" id="core/events/cy.one"><p>Bind to events that occur in the graph, and trigger the handler only once.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3586,7 +3650,8 @@ cy.$(&#39;node&#39;).eq(1).trigger(&#39;tap&#39;); // nothing b/c already tapped
 					
 						<div class="function">
 							<div class="name" id="core/events/cy.off"><span class="fn-name">cy.off()</span>  <a href="#core/events/cy.off"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/events/cy.off">Remove event handlers.</div>
+							<div class="descr" id="core/events/cy.off"><p>Remove event handlers.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3681,7 +3746,8 @@ cy.off(&quot;tap&quot;, handler);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/events/cy.trigger"><span class="fn-name">cy.trigger()</span>  <a href="#core/events/cy.trigger"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/events/cy.trigger">Trigger one or more events.</div>
+							<div class="descr" id="core/events/cy.trigger"><p>Trigger one or more events.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3728,7 +3794,8 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/events/cy.initrender">Get whether the initial render event has occurred (useful for plugins etc).</div>
+							<div class="descr" id="core/events/cy.initrender"><p>Get whether the initial render event has occurred (useful for plugins etc).</p>
+</div>
 
 							
 
@@ -3752,7 +3819,8 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/visuals/cy.layout"><span class="fn-name">cy.layout()</span>  <a href="#core/visuals/cy.layout"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/visuals/cy.layout">Position elements in the graph with a layout.</div>
+							<div class="descr" id="core/visuals/cy.layout"><p>Position elements in the graph with a layout.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3800,7 +3868,8 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/visuals/cy.style"><span class="fn-name">cy.style()</span>  <a href="#core/visuals/cy.style"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/visuals/cy.style">Get the entry point to modify the visual style of the graph after initialisation.</div>
+							<div class="descr" id="core/visuals/cy.style"><p>Get the entry point to modify the visual style of the graph after initialisation.</p>
+</div>
 
 							
 
@@ -3862,7 +3931,8 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/export/cy.png"><span class="fn-name">cy.png()</span>  <a href="#core/export/cy.png"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/export/cy.png">Export the current graph view as a PNG image in Base64 representation.</div>
+							<div class="descr" id="core/export/cy.png"><p>Export the current graph view as a PNG image in Base64 representation.</p>
+</div>
 
 							
 							<div class="formats">
@@ -3908,7 +3978,8 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="core/export/cy.json"><span class="fn-name">cy.json()</span>  <a href="#core/export/cy.json"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/export/cy.json">Export the graph as JSON, the same format used at initialisation.</div>
+							<div class="descr" id="core/export/cy.json"><p>Export the graph as JSON, the same format used at initialisation.</p>
+</div>
 
 							
 
@@ -3947,7 +4018,8 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 					
 						<div class="function">
 							<div class="name" id="collection/graph-manipulation/eles.remove"><span class="fn-name">eles.remove()</span>  <a href="#collection/graph-manipulation/eles.remove"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/graph-manipulation/eles.remove">Remove the elements from the graph.</div>
+							<div class="descr" id="collection/graph-manipulation/eles.remove"><p>Remove the elements from the graph.</p>
+</div>
 
 							
 
@@ -3972,7 +4044,8 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 					
 						<div class="function">
 							<div class="name" id="collection/graph-manipulation/ele.removed"><span class="fn-name">ele.removed()</span>  <a href="#collection/graph-manipulation/ele.removed"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/graph-manipulation/ele.removed">Get whether the element has been removed from the graph.</div>
+							<div class="descr" id="collection/graph-manipulation/ele.removed"><p>Get whether the element has been removed from the graph.</p>
+</div>
 
 							
 
@@ -3983,7 +4056,8 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 					
 						<div class="function">
 							<div class="name" id="collection/graph-manipulation/eles.restore"><span class="fn-name">eles.restore()</span>  <a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/graph-manipulation/eles.restore">Put removed elements back into the graph.</div>
+							<div class="descr" id="collection/graph-manipulation/eles.restore"><p>Put removed elements back into the graph.</p>
+</div>
 
 							
 
@@ -4018,7 +4092,8 @@ eles.restore();</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/eles.data"><span class="fn-name">eles.data()</span>  <a href="#collection/data/eles.data"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/eles.data">Read and write developer-defined data associated with the elements.</div>
+							<div class="descr" id="collection/data/eles.data"><p>Read and write developer-defined data associated with the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4125,7 +4200,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/eles.removeData"><span class="fn-name">eles.removeData()</span>  <a href="#collection/data/eles.removeData"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/eles.removeData">Remove developer-defined data associated with the elements.</div>
+							<div class="descr" id="collection/data/eles.removeData"><p>Remove developer-defined data associated with the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4178,7 +4254,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/ele.id"><span class="fn-name">ele.id()</span>  <a href="#collection/data/ele.id"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/ele.id">A shortcut to get the ID of an element.</div>
+							<div class="descr" id="collection/data/ele.id"><p>A shortcut to get the ID of an element.</p>
+</div>
 
 							
 
@@ -4189,7 +4266,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/ele.json"><span class="fn-name">ele.json()</span>  <a href="#collection/data/ele.json"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/ele.json">Get the element's plain JavaScript object representation.</div>
+							<div class="descr" id="collection/data/ele.json"><p>Get the element&#39;s plain JavaScript object representation.</p>
+</div>
 
 							
 
@@ -4204,7 +4282,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/eles.jsons"><span class="fn-name">eles.jsons()</span>  <a href="#collection/data/eles.jsons"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/eles.jsons">Get an array of the plain JavaScript object representation of all elements in the collection.</div>
+							<div class="descr" id="collection/data/eles.jsons"><p>Get an array of the plain JavaScript object representation of all elements in the collection.</p>
+</div>
 
 							
 
@@ -4219,7 +4298,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/ele.group"><span class="fn-name">ele.group()</span>  <a href="#collection/data/ele.group"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/ele.group">Get the group string that defines the type of the element.</div>
+							<div class="descr" id="collection/data/ele.group"><p>Get the group string that defines the type of the element.</p>
+</div>
 
 							
 
@@ -4234,7 +4314,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/ele.isNode"><span class="fn-name">ele.isNode()</span>  <a href="#collection/data/ele.isNode"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/ele.isNode">Get whether the element is a node.</div>
+							<div class="descr" id="collection/data/ele.isNode"><p>Get whether the element is a node.</p>
+</div>
 
 							
 
@@ -4245,7 +4326,20 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/data/ele.isEdge"><span class="fn-name">ele.isEdge()</span>  <a href="#collection/data/ele.isEdge"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/data/ele.isEdge">Get whether the element is an edge.</div>
+							<div class="descr" id="collection/data/ele.isEdge"><p>Get whether the element is an edge.</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/data/edge.isLoop"><span class="fn-name">edge.isLoop()</span>  <a href="#collection/data/edge.isLoop"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/data/edge.isLoop"><p>Get whether the edge is a loop (i.e. source same as target).</p>
+</div>
 
 							
 
@@ -4402,7 +4496,8 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/node.position"><span class="fn-name">node.position()</span>  <a href="#collection/position--dimensions/node.position"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.position">Get or set the position of a node.</div>
+							<div class="descr" id="collection/position--dimensions/node.position"><p>Get or set the position of a node.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4481,7 +4576,10 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 							<div class="details">
 								
 									<h3>Details</h3>
-<p>A position has two fields, <code>x</code> and <code>y</code>, that can take on numerical values.  Non-numerical values are ignored.
+<p>A position has two fields, <code>x</code> and <code>y</code>, that can take on numerical values.
+
+</p>
+<p>It is important to note that position is relative to the parent node.  If you would like the position relative to the graph origin, then use <code>node.offset()</code>.
 
 </p>
 <h3>Examples</h3>
@@ -4506,7 +4604,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.positions"><span class="fn-name">nodes.positions()</span>  <a href="#collection/position--dimensions/nodes.positions"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/nodes.positions">Set the positions of several nodes with a function.</div>
+							<div class="descr" id="collection/position--dimensions/nodes.positions"><p>Set the positions of several nodes with a function.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4552,7 +4651,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/node.renderedPosition"><span class="fn-name">node.renderedPosition()</span>  <a href="#collection/position--dimensions/node.renderedPosition"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.renderedPosition">Get or set the rendered position of a node.</div>
+							<div class="descr" id="collection/position--dimensions/node.renderedPosition"><p>Get or set the rendered (on-screen) position of a node.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4634,8 +4734,61 @@ cy.$(&#39;#e&#39;).position({
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/position--dimensions/node.offset"><span class="fn-name">node.offset()</span>  <a href="#collection/position--dimensions/node.offset"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/position--dimensions/node.offset"><p>Get the position of a node relative to the model origin, rather than relative to its parent node.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">node.offset()</div>
+										
+										<div class="descr">Get the offset object.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/position--dimensions/node.renderedOffset"><span class="fn-name">node.renderedOffset()</span>  <a href="#collection/position--dimensions/node.renderedOffset"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/position--dimensions/node.renderedOffset"><p>Get the rendered (on-screen) position of a node relative to the model origin, rather than relative to its parent node.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">node.renderedOffset()</div>
+										
+										<div class="descr">Get the rendered offset object.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/position--dimensions/ele.width"><span class="fn-name">ele.width()</span> et al <a href="#collection/position--dimensions/ele.width"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/ele.width">Get the width of the element.</div>
+							<div class="descr" id="collection/position--dimensions/ele.width"><p>Get the width of the element.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4654,7 +4807,7 @@ cy.$(&#39;#e&#39;).position({
 										
 											<div class="name">ele.outerWidth()</div>
 										
-										<div class="descr">Get the outer width of the element (width &amp; border).</div>
+										<div class="descr">Get the outer width of the element (includes width &amp; border).</div>
 										<ul class="args">
 											
 										</ul>
@@ -4674,7 +4827,7 @@ cy.$(&#39;#e&#39;).position({
 										
 											<div class="name">ele.renderedOuterWidth()</div>
 										
-										<div class="descr">Get the outer width of the element (width &amp; border) in rendered dimensions.</div>
+										<div class="descr">Get the outer width of the element (includes width &amp; border) in rendered dimensions.</div>
 										<ul class="args">
 											
 										</ul>
@@ -4690,7 +4843,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/ele.height"><span class="fn-name">ele.height()</span> et al <a href="#collection/position--dimensions/ele.height"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/ele.height">Get the height of the element.</div>
+							<div class="descr" id="collection/position--dimensions/ele.height"><p>Get the height of the element.</p>
+</div>
 
 							
 							<div class="formats">
@@ -4709,7 +4863,7 @@ cy.$(&#39;#e&#39;).position({
 										
 											<div class="name">ele.outerHeight()</div>
 										
-										<div class="descr">Get the outer height of the element (height &amp; border).</div>
+										<div class="descr">Get the outer height of the element (includes height &amp; border).</div>
 										<ul class="args">
 											
 										</ul>
@@ -4729,7 +4883,7 @@ cy.$(&#39;#e&#39;).position({
 										
 											<div class="name">ele.renderedOuterHeight()</div>
 										
-										<div class="descr">Get the outer height of the element (height &amp; border) in rendered dimensions.</div>
+										<div class="descr">Get the outer height of the element (includes height &amp; border) in rendered dimensions.</div>
 										<ul class="args">
 											
 										</ul>
@@ -4744,8 +4898,49 @@ cy.$(&#39;#e&#39;).position({
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/position--dimensions/eles.boundingBox"><span class="fn-name">eles.boundingBox()</span> et al <a href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/position--dimensions/eles.boundingBox"><p>Get the bounding box of the elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.boundingBox()</div>
+										
+										<div class="descr">Get the bounding box of the elements in model coordinates.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">ele.renderedBoundingBox()</div>
+										
+										<div class="descr">Get the bounding box of the elements in rendered coordinates.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/position--dimensions/node.grabbed"><span class="fn-name">node.grabbed()</span>  <a href="#collection/position--dimensions/node.grabbed"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.grabbed">Get whether a node is currently grabbed, meaning the user has hold of the node.</div>
+							<div class="descr" id="collection/position--dimensions/node.grabbed"><p>Get whether a node is currently grabbed, meaning the user has hold of the node.</p>
+</div>
 
 							
 
@@ -4756,7 +4951,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/node.grabbable"><span class="fn-name">node.grabbable()</span>  <a href="#collection/position--dimensions/node.grabbable"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.grabbable">Get whether the user can grab a node.</div>
+							<div class="descr" id="collection/position--dimensions/node.grabbable"><p>Get whether the user can grab a node.</p>
+</div>
 
 							
 
@@ -4767,7 +4963,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.grabify"><span class="fn-name">nodes.grabify()</span>  <a href="#collection/position--dimensions/nodes.grabify"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/nodes.grabify">Allow the user to grab the nodes.</div>
+							<div class="descr" id="collection/position--dimensions/nodes.grabify"><p>Allow the user to grab the nodes.</p>
+</div>
 
 							
 
@@ -4778,7 +4975,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.ungrabify"><span class="fn-name">nodes.ungrabify()</span>  <a href="#collection/position--dimensions/nodes.ungrabify"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/nodes.ungrabify">Disallow the user to grab the nodes.</div>
+							<div class="descr" id="collection/position--dimensions/nodes.ungrabify"><p>Disallow the user to grab the nodes.</p>
+</div>
 
 							
 
@@ -4789,7 +4987,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/node.locked"><span class="fn-name">node.locked()</span>  <a href="#collection/position--dimensions/node.locked"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.locked">Get whether a node is locked, meaning that its position can not be changed.</div>
+							<div class="descr" id="collection/position--dimensions/node.locked"><p>Get whether a node is locked, meaning that its position can not be changed.</p>
+</div>
 
 							
 
@@ -4800,7 +4999,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.lock"><span class="fn-name">nodes.lock()</span>  <a href="#collection/position--dimensions/nodes.lock"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/nodes.lock">Lock the nodes such that their positions can not be changed.</div>
+							<div class="descr" id="collection/position--dimensions/nodes.lock"><p>Lock the nodes such that their positions can not be changed.</p>
+</div>
 
 							
 
@@ -4811,7 +5011,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/nodes.unlock"><span class="fn-name">nodes.unlock()</span>  <a href="#collection/position--dimensions/nodes.unlock"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/nodes.unlock">Unlock the nodes such that their positions can be changed.</div>
+							<div class="descr" id="collection/position--dimensions/nodes.unlock"><p>Unlock the nodes such that their positions can be changed.</p>
+</div>
 
 							
 
@@ -4822,7 +5023,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/position--dimensions/ele.active"><span class="fn-name">ele.active()</span>  <a href="#collection/position--dimensions/ele.active"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/ele.active">Gets whether the element is active (e.g. on user tap, grab, etc).</div>
+							<div class="descr" id="collection/position--dimensions/ele.active"><p>Gets whether the element is active (e.g. on user tap, grab, etc).</p>
+</div>
 
 							
 
@@ -4842,7 +5044,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/ele.selected"><span class="fn-name">ele.selected()</span>  <a href="#collection/selection/ele.selected"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/ele.selected">Get whether the element is selected.</div>
+							<div class="descr" id="collection/selection/ele.selected"><p>Get whether the element is selected.</p>
+</div>
 
 							
 
@@ -4853,7 +5056,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.select"><span class="fn-name">eles.select()</span>  <a href="#collection/selection/eles.select"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.select">Make the elements selected (NB other elements outside the collection are not affected).</div>
+							<div class="descr" id="collection/selection/eles.select"><p>Make the elements selected (NB other elements outside the collection are not affected).</p>
+</div>
 
 							
 
@@ -4864,7 +5068,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.unselect"><span class="fn-name">eles.unselect()</span>  <a href="#collection/selection/eles.unselect"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.unselect">Make the elements not selected (NB other elements outside the collection are not affected).</div>
+							<div class="descr" id="collection/selection/eles.unselect"><p>Make the elements not selected (NB other elements outside the collection are not affected).</p>
+</div>
 
 							
 
@@ -4875,7 +5080,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/ele.selectable"><span class="fn-name">ele.selectable()</span>  <a href="#collection/selection/ele.selectable"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/ele.selectable">Get whether the element's selection state is mutable.</div>
+							<div class="descr" id="collection/selection/ele.selectable"><p>Get whether the element&#39;s selection state is mutable.</p>
+</div>
 
 							
 
@@ -4886,7 +5092,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.selectify"><span class="fn-name">eles.selectify()</span>  <a href="#collection/selection/eles.selectify"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.selectify">Make the selection states of the elements mutable.</div>
+							<div class="descr" id="collection/selection/eles.selectify"><p>Make the selection states of the elements mutable.</p>
+</div>
 
 							
 
@@ -4897,7 +5104,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/selection/eles.unselectify"><span class="fn-name">eles.unselectify()</span>  <a href="#collection/selection/eles.unselectify"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/selection/eles.unselectify">Make the selection states of the elements immutable.</div>
+							<div class="descr" id="collection/selection/eles.unselectify"><p>Make the selection states of the elements immutable.</p>
+</div>
 
 							
 
@@ -4917,7 +5125,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.on"><span class="fn-name">eles.on()</span>  <a href="#collection/events/eles.on"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.on">Bind to events that occur on the elements.</div>
+							<div class="descr" id="collection/events/eles.on"><p>Bind to events that occur on the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5013,7 +5222,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.one"><span class="fn-name">eles.one()</span>  <a href="#collection/events/eles.one"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.one">Bind a callback function that is triggered once per event per element.</div>
+							<div class="descr" id="collection/events/eles.one"><p>Bind a callback function that is triggered once per event per element.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5103,7 +5313,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.once"><span class="fn-name">eles.once()</span>  <a href="#collection/events/eles.once"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.once">Bind a callback function that is triggered once per event per collection.</div>
+							<div class="descr" id="collection/events/eles.once"><p>Bind a callback function that is triggered once per event per collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5193,7 +5404,8 @@ cy.$(&#39;#e&#39;).position({
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.off"><span class="fn-name">eles.off()</span>  <a href="#collection/events/eles.off"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.off">Unbind one or more callback functions on the elements.</div>
+							<div class="descr" id="collection/events/eles.off"><p>Unbind one or more callback functions on the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5279,7 +5491,8 @@ j.off(&#39;tap&#39;);</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/events/eles.trigger"><span class="fn-name">eles.trigger()</span>  <a href="#collection/events/eles.trigger"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/events/eles.trigger">Trigger events on the elements.</div>
+							<div class="descr" id="collection/events/eles.trigger"><p>Trigger events on the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5337,7 +5550,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.css"><span class="fn-name">eles.css()</span>  <a href="#collection/style/eles.css"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.css">Get the style of the element, or override the style of the elements.</div>
+							<div class="descr" id="collection/style/eles.css"><p>Get the style of the element, or override the style of the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5430,7 +5644,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.removeCss"><span class="fn-name">eles.removeCss()</span>  <a href="#collection/style/eles.removeCss"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.removeCss">Removes all overridden style of the elements.</div>
+							<div class="descr" id="collection/style/eles.removeCss"><p>Removes all overridden style of the elements.</p>
+</div>
 
 							
 
@@ -5441,7 +5656,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/ele.renderedCss"><span class="fn-name">ele.renderedCss()</span>  <a href="#collection/style/ele.renderedCss"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.renderedCss">Get the style of the element in rendered dimensions.</div>
+							<div class="descr" id="collection/style/ele.renderedCss"><p>Get the style of the element in rendered dimensions.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5483,7 +5699,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.show"><span class="fn-name">eles.show()</span>  <a href="#collection/style/eles.show"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.show">Override the style of the elements such that they are visible (i.e. `display: element`).</div>
+							<div class="descr" id="collection/style/eles.show"><p>Override the style of the elements such that they are visible (i.e. <code>display: element</code>).</p>
+</div>
 
 							
 
@@ -5494,7 +5711,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.hide"><span class="fn-name">eles.hide()</span>  <a href="#collection/style/eles.hide"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.hide">Override the style of the elements such that they are hidden (i.e. `display: none`).</div>
+							<div class="descr" id="collection/style/eles.hide"><p>Override the style of the elements such that they are hidden (i.e. <code>display: none</code>).</p>
+</div>
 
 							
 
@@ -5505,7 +5723,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/ele.visible"><span class="fn-name">ele.visible()</span> et al <a href="#collection/style/ele.visible"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.visible">Get whether the element is visible (i.e. `display: element` and `visibility: visible`).</div>
+							<div class="descr" id="collection/style/ele.visible"><p>Get whether the element is visible (i.e. <code>display: element</code> and <code>visibility: visible</code>).</p>
+</div>
 
 							
 							<div class="formats">
@@ -5540,7 +5759,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/ele.transparent"><span class="fn-name">ele.transparent()</span>  <a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.transparent">Get whether the element is completely transparent (i.e. `opacity: 0`)</div>
+							<div class="descr" id="collection/style/ele.transparent"><p>Get whether the element is completely transparent (i.e. <code>opacity: 0</code>)</p>
+</div>
 
 							
 							<div class="formats">
@@ -5565,7 +5785,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.addClass"><span class="fn-name">eles.addClass()</span>  <a href="#collection/style/eles.addClass"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.addClass">Add classes to elements.</div>
+							<div class="descr" id="collection/style/eles.addClass"><p>Add classes to elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5597,7 +5818,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.removeClass"><span class="fn-name">eles.removeClass()</span>  <a href="#collection/style/eles.removeClass"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.removeClass">Remove classes from elements.</div>
+							<div class="descr" id="collection/style/eles.removeClass"><p>Remove classes from elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5629,7 +5851,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.toggleClass"><span class="fn-name">eles.toggleClass()</span>  <a href="#collection/style/eles.toggleClass"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/eles.toggleClass">Toggle whether the elements have the specified classes.</div>
+							<div class="descr" id="collection/style/eles.toggleClass"><p>Toggle whether the elements have the specified classes.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5668,7 +5891,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/style/ele.hasClass"><span class="fn-name">ele.hasClass()</span>  <a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.hasClass">Get whether an element has a particular class.</div>
+							<div class="descr" id="collection/style/ele.hasClass"><p>Get whether an element has a particular class.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5709,7 +5933,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/animation/ele.animated"><span class="fn-name">ele.animated()</span>  <a href="#collection/animation/ele.animated"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/ele.animated">Get whether the element is currently being animated.</div>
+							<div class="descr" id="collection/animation/ele.animated"><p>Get whether the element is currently being animated.</p>
+</div>
 
 							
 
@@ -5720,7 +5945,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/animation/eles.animate"><span class="fn-name">eles.animate()</span>  <a href="#collection/animation/eles.animate"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/eles.animate">Animate the elements.</div>
+							<div class="descr" id="collection/animation/eles.animate"><p>Animate the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5815,7 +6041,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/animation/eles.delay"><span class="fn-name">eles.delay()</span>  <a href="#collection/animation/eles.delay"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/eles.delay">Add a delay between animations for the elements.</div>
+							<div class="descr" id="collection/animation/eles.delay"><p>Add a delay between animations for the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5854,7 +6081,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/animation/eles.stop"><span class="fn-name">eles.stop()</span>  <a href="#collection/animation/eles.stop"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/eles.stop">Stop all animations that are currently running.</div>
+							<div class="descr" id="collection/animation/eles.stop"><p>Stop all animations that are currently running.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5893,7 +6121,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/animation/eles.clearQueue"><span class="fn-name">eles.clearQueue()</span>  <a href="#collection/animation/eles.clearQueue"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/animation/eles.clearQueue">Remove all queued animations for the elements.</div>
+							<div class="descr" id="collection/animation/eles.clearQueue"><p>Remove all queued animations for the elements.</p>
+</div>
 
 							
 
@@ -5913,7 +6142,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/comparison/eles.same"><span class="fn-name">eles.same()</span>  <a href="#collection/comparison/eles.same"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.same">Determine whether this collection contains exactly the same elements as another collection.</div>
+							<div class="descr" id="collection/comparison/eles.same"><p>Determine whether this collection contains exactly the same elements as another collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5945,7 +6175,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/comparison/eles.anySame"><span class="fn-name">eles.anySame()</span>  <a href="#collection/comparison/eles.anySame"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.anySame">Determine whether this collection contains any of the same elements as another collection.</div>
+							<div class="descr" id="collection/comparison/eles.anySame"><p>Determine whether this collection contains any of the same elements as another collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -5977,7 +6208,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/comparison/eles.allAreNeighbors"><span class="fn-name">eles.allAreNeighbors()</span>  <a href="#collection/comparison/eles.allAreNeighbors"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.allAreNeighbors">Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.</div>
+							<div class="descr" id="collection/comparison/eles.allAreNeighbors"><p>Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6009,7 +6241,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/comparison/eles.is"><span class="fn-name">eles.is()</span>  <a href="#collection/comparison/eles.is"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.is">Determine whether any element in this collection matches a selector.</div>
+							<div class="descr" id="collection/comparison/eles.is"><p>Determine whether any element in this collection matches a selector.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6041,7 +6274,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/comparison/eles.allAre"><span class="fn-name">eles.allAre()</span>  <a href="#collection/comparison/eles.allAre"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/comparison/eles.allAre">Determine whether all elements in the collection match a selector.</div>
+							<div class="descr" id="collection/comparison/eles.allAre"><p>Determine whether all elements in the collection match a selector.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6082,7 +6316,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.size"><span class="fn-name">eles.size()</span>  <a href="#collection/iteration/eles.size"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.size">Get the number of elements in the collection.</div>
+							<div class="descr" id="collection/iteration/eles.size"><p>Get the number of elements in the collection.</p>
+</div>
 
 							
 
@@ -6097,7 +6332,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.empty"><span class="fn-name">eles.empty()</span> et al <a href="#collection/iteration/eles.empty"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.empty">Get whether the collection is empty, meaning it has no elements.</div>
+							<div class="descr" id="collection/iteration/eles.empty"><p>Get whether the collection is empty, meaning it has no elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6132,7 +6368,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.each"><span class="fn-name">eles.each()</span>  <a href="#collection/iteration/eles.each"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.each">Iterate over the elements in the collection.</div>
+							<div class="descr" id="collection/iteration/eles.each"><p>Iterate over the elements in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6184,7 +6421,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.eq"><span class="fn-name">eles.eq()</span>  <a href="#collection/iteration/eles.eq"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.eq">Get an element at a particular index in the collection.</div>
+							<div class="descr" id="collection/iteration/eles.eq"><p>Get an element at a particular index in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6216,14 +6454,15 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/iteration/eles.slice"><span class="fn-name">eles.slice()</span>  <a href="#collection/iteration/eles.slice"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/iteration/eles.slice">Get a subset of the elements in the collection based on specified indices.</div>
+							<div class="descr" id="collection/iteration/eles.slice"><p>Get a subset of the elements in the collection based on specified indices.</p>
+</div>
 
 							
 							<div class="formats">
 								
 									<div class="format">
 										
-											<div class="name">eles.slice( <span class="comma">, </span>start [<span class="comma">, </span>end] )</div>
+											<div class="name">eles.slice(  [<span class="comma">, </span>start] [<span class="comma">, </span>end] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -6264,7 +6503,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/eles.neighborhood"><span class="fn-name">eles.neighborhood()</span> et al <a href="#collection/traversing/eles.neighborhood"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/eles.neighborhood">Get the neighbourhood of the elements.</div>
+							<div class="descr" id="collection/traversing/eles.neighborhood"><p>Get the neighbourhood of the elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6340,7 +6580,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/nodes.edgesWith"><span class="fn-name">nodes.edgesWith()</span>  <a href="#collection/traversing/nodes.edgesWith"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/nodes.edgesWith">Get the edges connecting the collection to another collection.  Direction of the edges does not matter.</div>
+							<div class="descr" id="collection/traversing/nodes.edgesWith"><p>Get the edges connecting the collection to another collection.  Direction of the edges does not matter.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6389,7 +6630,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/nodes.edgesTo"><span class="fn-name">nodes.edgesTo()</span>  <a href="#collection/traversing/nodes.edgesTo"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/nodes.edgesTo">Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).</div>
+							<div class="descr" id="collection/traversing/nodes.edgesTo"><p>Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).</p>
+</div>
 
 							
 							<div class="formats">
@@ -6438,7 +6680,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.connectedNodes"><span class="fn-name">edges.connectedNodes()</span>  <a href="#collection/traversing/edges.connectedNodes"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.connectedNodes">Get the nodes connected to the edges in the collection.</div>
+							<div class="descr" id="collection/traversing/edges.connectedNodes"><p>Get the nodes connected to the edges in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6469,8 +6712,42 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/traversing/edges.connectedEdges"><span class="fn-name">edges.connectedEdges()</span>  <a href="#collection/traversing/edges.connectedEdges"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/edges.connectedEdges"><p>Get the edges connected to the nodes in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.connectedEdges(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/traversing/edges.source"><span class="fn-name">edges.source()</span>  <a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.source">Get source nodes connected to the edges in the collection.</div>
+							<div class="descr" id="collection/traversing/edges.source"><p>Get source nodes connected to the edges in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6502,7 +6779,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.target"><span class="fn-name">edges.target()</span>  <a href="#collection/traversing/edges.target"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.target">Get target nodes connected to the edges in the collection.</div>
+							<div class="descr" id="collection/traversing/edges.target"><p>Get target nodes connected to the edges in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6534,7 +6812,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.parallelEdges"><span class="fn-name">edges.parallelEdges()</span>  <a href="#collection/traversing/edges.parallelEdges"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.parallelEdges">Get edges parallel to those in the collection.</div>
+							<div class="descr" id="collection/traversing/edges.parallelEdges"><p>Get edges parallel to those in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6576,7 +6855,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.codirectedEdges"><span class="fn-name">edges.codirectedEdges()</span>  <a href="#collection/traversing/edges.codirectedEdges"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.codirectedEdges">Get edges codirected to those in the collection.</div>
+							<div class="descr" id="collection/traversing/edges.codirectedEdges"><p>Get edges codirected to those in the collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6612,7 +6892,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/eles.breadthFirstSearch"><span class="fn-name">eles.breadthFirstSearch()</span>  <a href="#collection/traversing/eles.breadthFirstSearch"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/eles.breadthFirstSearch">Perform a breadth-first search, with this collection as the root nodes of the search.</div>
+							<div class="descr" id="collection/traversing/eles.breadthFirstSearch"><p>Perform a breadth-first search, with this collection as the root nodes of the search.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6684,7 +6965,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.add"><span class="fn-name">eles.add()</span>  <a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.add">Get a new collection, resulting from adding the collection with another one</div>
+							<div class="descr" id="collection/building--filtering/eles.add"><p>Get a new collection, resulting from adding the collection with another one</p>
+</div>
 
 							
 							<div class="formats">
@@ -6716,7 +6998,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.not"><span class="fn-name">eles.not()</span>  <a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.not">Get a new collection, resulting from the collection without some specified elements.</div>
+							<div class="descr" id="collection/building--filtering/eles.not"><p>Get a new collection, resulting from the collection without some specified elements.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6765,7 +7048,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.intersect"><span class="fn-name">eles.intersect()</span>  <a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.intersect">Get the elements in both this collection and another specified collection.</div>
+							<div class="descr" id="collection/building--filtering/eles.intersect"><p>Get the elements in both this collection and another specified collection.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6797,7 +7081,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/building--filtering/eles.filter"><span class="fn-name">eles.filter()</span> et al <a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.filter">Get a new collection containing elements that are accepted by the specified filter.</div>
+							<div class="descr" id="collection/building--filtering/eles.filter"><p>Get a new collection containing elements that are accepted by the specified filter.</p>
+</div>
 
 							
 							<div class="formats">
@@ -6877,6 +7162,221 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 												<li>
 													<span class="name">selector</span>
 													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="collection/compound-nodes">Compound nodes <a href="#collection/compound-nodes"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/node.isParent"><span class="fn-name">node.isParent()</span>  <a href="#collection/compound-nodes/node.isParent"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/node.isParent"><p>Get whether the node is a parent (i.e. a node containing one or more child nodes)</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/node.isChild"><span class="fn-name">node.isChild()</span>  <a href="#collection/compound-nodes/node.isChild"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/node.isChild"><p>Get whether the node is a child (i.e. contained within a node)</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.parent"><span class="fn-name">nodes.parent()</span>  <a href="#collection/compound-nodes/nodes.parent"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.parent"><p>Get the parent node of each node in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.parent(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.parents"><span class="fn-name">nodes.parents()</span> et al <a href="#collection/compound-nodes/nodes.parents"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.parents"><p>Get all ancestor nodes of each node in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.parents(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">nodes.ancestors(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.children"><span class="fn-name">nodes.children()</span>  <a href="#collection/compound-nodes/nodes.children"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.children"><p>Get all child (direct descendant) nodes of each node in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.children(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.descendants"><span class="fn-name">nodes.descendants()</span>  <a href="#collection/compound-nodes/nodes.descendants"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.descendants"><p>Get all descendant (children, children&#39;s children, etc.) nodes of each node in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.descendants(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.siblings"><span class="fn-name">nodes.siblings()</span>  <a href="#collection/compound-nodes/nodes.siblings"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.siblings"><p>Get all sibling (same parent) nodes of each node in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.siblings(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector used to filter the resultant collection.</span>
 
 													
 												</li>

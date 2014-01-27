@@ -526,6 +526,11 @@
             },
 
             {
+              "name": "ele.inside",
+              "descr": "Get whether the element is inside the graph (i.e. not removed)."
+            },
+
+            {
               "name": "eles.restore",
               "descr": "Put removed elements back into the graph.",
               "md": "collection/restore"
@@ -618,6 +623,11 @@
             {
               "name": "ele.isEdge",
               "descr": "Get whether the element is an edge."
+            },
+
+            {
+              "name": "edge.isLoop",
+              "descr": "Get whether the edge is a loop (i.e. source same as target)."
             }
 
           ]
@@ -741,7 +751,7 @@
 
             {
               "name": "node.renderedPosition",
-              "descr": "Get or set the rendered position of a node.",
+              "descr": "Get or set the rendered (on-screen) position of a node.",
               "formats": [
                 {
                   "descr": "Get the entire rendered position object."
@@ -772,13 +782,33 @@
             },
 
             {
+              "name": "node.offset",
+              "descr": "Get the position of a node relative to the model origin, rather than relative to its parent node.",
+              "formats": [
+                {
+                  "descr": "Get the offset object."
+                }
+              ]
+            },
+
+            {
+              "name": "node.renderedOffset",
+              "descr": "Get the rendered (on-screen) position of a node relative to the model origin, rather than relative to its parent node.",
+              "formats": [
+                {
+                  "descr": "Get the rendered offset object."
+                }
+              ]
+            },
+
+            {
               "name": "ele.width",
               "descr": "Get the width of the element.",
               "formats": [
                 { "name": "ele.width", "descr": "Get the width of the element." },
-                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (width & border)." },
+                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (includes width & border)." },
                 { "name": "ele.renderedWidth", "descr": "Get the width of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (width & border) in rendered dimensions." }
+                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (includes width & border) in rendered dimensions." }
               ]
             },
 
@@ -787,10 +817,20 @@
               "descr": "Get the height of the element.",
               "formats": [
                 { "name": "ele.height", "descr": "Get the height of the element." },
-                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (height & border)." },
+                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (includes height & border)." },
                 { "name": "ele.renderedHeight", "descr": "Get the height of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (height & border) in rendered dimensions." }
+                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (includes height & border) in rendered dimensions." }
               ]
+            },
+
+            {
+              "name": "eles.boundingBox",
+              "descr": "Get the bounding box of the elements.",
+              "formats": [
+                { "name": "ele.boundingBox", "descr": "Get the bounding box of the elements in model coordinates." },
+                { "name": "ele.renderedBoundingBox", "descr": "Get the bounding box of the elements in rendered coordinates." }
+              ],
+              "md": "collection/boundingBox"
             },
 
             {
@@ -1302,7 +1342,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "start", "descr": "An integer that specifies where to start the selection.  The first element has an index of 0.  Use negative numbers to select from the end of an array." },
+                    { "name": "start", "descr": "An integer that specifies where to start the selection.  The first element has an index of 0.  Use negative numbers to select from the end of an array.", "optional": true },
                     { "name": "end", "descr": "An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.", "optional": true }
                   ]
                 }
@@ -1384,6 +1424,18 @@
             {
               "name": "edges.connectedNodes",
               "descr": "Get the nodes connected to the edges in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "edges.connectedEdges",
+              "descr": "Get the edges connected to the nodes in the collection.",
               "formats": [
                 {
                   "args": [
@@ -1553,7 +1605,91 @@
             }
             
           ]
+        },
+
+        {
+          "name": "Compound nodes",
+          "fns": [
+            {
+              "name": "node.isParent",
+              "descr": "Get whether the node is a parent (i.e. a node containing one or more child nodes)"
+            },
+
+            {
+              "name": "node.isChild",
+              "descr": "Get whether the node is a child (i.e. contained within a node)"
+            },
+
+            {
+              "name": "nodes.parent",
+              "descr": "Get the parent node of each node in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.parents",
+              "descr": "Get all ancestor nodes of each node in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                },
+
+                {
+                  "name": "nodes.ancestors",
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.children",
+              "descr": "Get all child (direct descendant) nodes of each node in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.descendants",
+              "descr": "Get all descendant (children, children's children, etc.) nodes of each node in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.siblings",
+              "descr": "Get all sibling (same parent) nodes of each node in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            }
+            
+          ]
         }
+
       ]
     },
 

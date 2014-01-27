@@ -823,8 +823,10 @@
 			pairIds.push( pairId );
 		}
 
-		var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH;
+		var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
 		var midpt;
+		var vectorNormInverse;
+		var badBezier;
 		
 		// for each pair (src, tgt), create the ctrl pts
 		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
@@ -842,31 +844,36 @@
 
 			tgtW = this.getNodeWidth(tgt);
 			tgtH = this.getNodeHeight(tgt);
-		
-			var vectorNormInverse;
+
+			srcShape = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ];
+			tgtShape = CanvasRenderer.nodeShapes[ this.getNodeShape(tgt) ];
+
+			srcBorder = src._private.style["border-width"].pxValue;
+			tgtBorder = tgt._private.style["border-width"].pxValue;
+			
 
 			if (hashTable[pairId].length > 1) {
 
 				// pt outside src shape to calc distance/displacement from src to tgt
-				var srcOutside = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ].intersectLine(
+				var srcOutside = srcShape.intersectLine(
 					srcPos.x,
 					srcPos.y,
 					srcW,
 					srcH,
 					tgtPos.x,
 					tgtPos.y,
-					tgt._private.style["border-width"].pxValue / 2
+					srcBorder / 2
 				);
 
 				// pt outside tgt shape to calc distance/displacement from src to tgt
-				var tgtOutside = CanvasRenderer.nodeShapes[ this.getNodeShape(tgt) ].intersectLine(
+				var tgtOutside = tgtShape.intersectLine(
 					tgtPos.x,
 					tgtPos.y,
 					tgtW,
 					tgtH,
 					srcPos.x,
 					srcPos.y,
-					src._private.style["border-width"].pxValue / 2
+					tgtBorder / 2
 				);
 
 				var midpt = {
@@ -878,8 +885,6 @@
 				var dx = ( tgtOutside[0] - srcOutside[0] );
 				var l = Math.sqrt( dx*dx + dy*dy );
 
-				console.log(l, dx, dy)
-				
 				var vector = {
 					x: dx,
 					y: dy
@@ -893,6 +898,15 @@
 					x: -vectorNorm.y,
 					y: vectorNorm.x
 				};
+
+				// if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
+				if( 
+					tgtShape.checkPoint( srcOutside[0], srcOutside[1], tgtBorder/2, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
+					srcShape.checkPoint( tgtOutside[0], tgtOutside[1], srcBorder/2, srcW, srcH, srcPos.x, srcPos.y ) 
+				){
+					vectorNormInverse = {};
+					badBezier = true;
+				}
 				
 			}
 			
@@ -926,6 +940,12 @@
 				var tgtW2 = tgt.outerWidth();
 				var tgtH1 = rs.lastTgtCtlPtH;
 				var tgtH2 = tgt.outerHeight();
+
+				if( badBezier ){
+					rs.badBezier = true;
+				} else {
+					rs.badBezier = false;
+				}
 
 				if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
 				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2

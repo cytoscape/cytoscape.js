@@ -11,6 +11,13 @@
 
 		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
+		var rs = edge._private.rscratch;
+
+		// if bezier ctrl pts can not be calculated, then die
+		if( rs.badBezier ){
+			return;
+		}
+
 		var startNode, endNode;
 
 		startNode = edge.source()[0];
@@ -98,12 +105,12 @@
 			
 			var details = edge._private.rscratch;
 
-			// context.fillStyle = 'rgba(255, 0, 0, 1)';
-			// context.fillRect(details.startX, details.startY, 2, 2);
-			// context.fillRect(details.endX, details.endY, 2, 2);
+			context.fillStyle = 'rgba(255, 0, 0, 1)';
+			context.fillRect(details.startX, details.startY, 2, 2);
+			context.fillRect(details.endX, details.endY, 2, 2);
 
-			// context.fillStyle = edge._private.style['line-color'].strValue;
-			// context.fillRect(details.cp2x, details.cp2y, 2, 2);
+			context.fillStyle = edge._private.style['line-color'].strValue;
+			context.fillRect(details.cp2x, details.cp2y, 2, 2);
 
 			
 			this.drawStyledEdge(edge, context, [details.startX, details.startY,

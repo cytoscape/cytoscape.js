@@ -98,11 +98,11 @@
 			
 			var details = edge._private.rscratch;
 
-			// context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+			// context.fillStyle = 'rgba(255, 0, 0, 1)';
 			// context.fillRect(details.startX, details.startY, 2, 2);
 			// context.fillRect(details.endX, details.endY, 2, 2);
 
-			// context.fillStyle = 'rgba(0, 255, 0, 0.5)';
+			// context.fillStyle = edge._private.style['line-color'].strValue;
 			// context.fillRect(details.cp2x, details.cp2y, 2, 2);
 
 			
@@ -423,22 +423,34 @@
 		var startX = edge._private.rscratch.arrowStartX;
 		var startY = edge._private.rscratch.arrowStartY;
 		
-		dispX = startX - edge.source().position().x;
-		dispY = startY - edge.source().position().y;
+		var srcPos = edge.source().position();
+		dispX = startX - srcPos.x;
+		dispY = startY - srcPos.y;
 		
 		if( !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
 
-			//this.context.strokeStyle = "rgba("
+			var gco = context.globalCompositeOperation;
+
+			context.globalCompositeOperation = "destination-out";
+		
+			context.lineWidth = edge._private.style["width"].pxValue;
+			
+			context.fillStyle = 'white';
+
+			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+				startX, startY, dispX, dispY);
+
+			context.globalCompositeOperation = gco;
+
 			context.fillStyle = "rgba("
 				+ edge._private.style["source-arrow-color"].value[0] + ","
 				+ edge._private.style["source-arrow-color"].value[1] + ","
 				+ edge._private.style["source-arrow-color"].value[2] + ","
 				+ edge._private.style.opacity.value + ")";
-			
-			context.lineWidth = edge._private.style["width"].pxValue;
-			
+
 			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
 				startX, startY, dispX, dispY);
+
 		} else {
 			// window.badArrow = true;
 			// debugger;
@@ -447,20 +459,32 @@
 		var endX = edge._private.rscratch.arrowEndX;
 		var endY = edge._private.rscratch.arrowEndY;
 		
-		dispX = endX - edge.target().position().x;
-		dispY = endY - edge.target().position().y;
+		var tgtPos = edge.target().position();
+		dispX = endX - tgtPos.x;
+		dispY = endY - tgtPos.y;
 		
 		if( !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
+
+			var gco = context.globalCompositeOperation;
+
+			context.globalCompositeOperation = "destination-out";
+
+			context.lineWidth = edge._private.style["width"].pxValue;
+
+			context.fillStyle = 'white';
+
+			this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+				endX, endY, dispX, dispY);
+
+			context.globalCompositeOperation = gco;
 
 			//this.context.strokeStyle = "rgba("
 			context.fillStyle = "rgba("
 				+ edge._private.style["target-arrow-color"].value[0] + ","
 				+ edge._private.style["target-arrow-color"].value[1] + ","
 				+ edge._private.style["target-arrow-color"].value[2] + ","
-				+ edge._private.style.opacity.value + ")";
-			
-			context.lineWidth = edge._private.style["width"].pxValue;
-
+				+ edge._private.style.opacity.value + ")";	
+		
 			this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
 				endX, endY, dispX, dispY);
 		}

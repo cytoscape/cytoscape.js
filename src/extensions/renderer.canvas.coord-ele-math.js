@@ -873,8 +873,8 @@
 					y: ( srcOutside[1] + tgtOutside[1] )/2
 				};
 
-				displacementX = tgtOutside[1] - srcOutside[1];
-				displacementY = srcOutside[0] - tgtOutside[0];
+				displacementX = Math.abs( tgtOutside[1] - srcOutside[1] );
+				displacementY = Math.abs( tgtOutside[0] - srcOutside[0] );
 
 				
 				var displacementLength = Math.sqrt(displacementX * displacementX

@@ -116,6 +116,11 @@
 		case "style":
 			this.updateCachedZSortedEles();
 			break;
+
+		case "recalcrstyle":
+			this.recalculateEdgeProjections();
+			this.recalculateLabelProjections();
+			return;
 		}
 
 		

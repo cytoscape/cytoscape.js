@@ -965,7 +965,7 @@
 					rs.cp2cy = srcPos.y;
 					
 					rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
-					sr.selfEdgeMidY = (sr.cp2ay + rs.cp2cy) / 2.0;
+					rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
 					
 				// Straight edge
 				} else if (hashTable[pairId].length % 2 == 1

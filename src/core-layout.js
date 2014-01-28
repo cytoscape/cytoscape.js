@@ -20,7 +20,7 @@
 			
 			this._private.layoutRunning = true;
 			this.one('layoutstop', function(){
-				this._private.layoutRunning = false;
+				cy._private.layoutRunning = false;
 			});
 
 			this._private.layout.run();

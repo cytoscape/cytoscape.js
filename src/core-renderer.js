@@ -40,8 +40,10 @@
 			
 		},
 
-		recalculateEdgeControlPoints: function(){
-			
+		recalculateRenderedStyle: function(){
+			this.notify({
+				type: "recalcrstyle"
+			});
 		}
 		
 	});	

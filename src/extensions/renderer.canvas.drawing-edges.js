@@ -193,60 +193,6 @@
 //		width = Math.max(width * 1.6, 3.4) * zoom;
 
 		//		console.log("w", width);
-		
-		// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
-		if( edge._private.rstyle.bezierPts === undefined ){
-			edge._private.rstyle.bezierPts = [];
-		}
-
-		var nBpts = edge._private.rstyle.bezierPts.length;
-		if( edge.isLoop() ){
-			if( nBpts >= 12 ){
-				edge._private.rstyle.bezierPts = [];
-			} else {
-				// append to current array
-			}
-		} else {
-			edge._private.rstyle.bezierPts = [];
-		}
-
-		var bpts = edge._private.rstyle.bezierPts;
-
-		if( pts.length === 6 ){
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
-			});
-		}
 
 		if (type == "solid") {
 			

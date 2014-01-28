@@ -709,6 +709,65 @@
 		return eles;
 	};
 
+	CanvasRenderer.prototype.projectBezier = function(edge){
+		// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
+		function qbezierAt(p0, p1, p2, t){
+			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+		}
+
+		var rs = edge._private.rscratch;
+		var bpts = edge._private.rstyle.bezierPts = [];
+
+		function pushBezierPts(pts){
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
+			});
+		}
+
+		if( rs.edgeType === "self" ){
+			pushBezierPts( [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
+			pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, sr.endY] );
+		} else if( rs.edgeType === "bezier" ){
+			pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, sr.endY] );
+		}
+	};
+
+	CanvasRenderer.prototype.recalculateLabelProjections = function(){
+		
+	};
+
+	CanvasRenderer.prototype.recalculateEdgeProjections = function(){
+		var edges = this.getCachedEdges();
+
+		this.findEdgeControlPoints( edges );
+	};
+
 	// Find edge control points
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
 		var hashTable = {}; var cy = this.data.cy;
@@ -917,6 +976,9 @@
 					
 					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
 				}
+
+				// project the edge into rstyle
+				this.projectBezier( edge );
 			}
 		}
 		

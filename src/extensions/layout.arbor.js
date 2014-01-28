@@ -66,8 +66,8 @@
 		simBB.x2 = simBB[2];
 		simBB.y2 = simBB[3];
 
-		// arbor doesn't work with just 1 node
-		if( cy.nodes().size() <= 1 ){
+		// arbor doesn't work with just 1 node 
+		if( cy.nodes().size() <= 1 ){ debugger;
 			if( options.fit ){
 				cy.reset();
 			}
@@ -77,8 +77,8 @@
 				y: Math.round( (simBB.y1 + simBB.y2)/2 )
 			});
 
-			cy.one("layoutstop", options.stop);
-			cy.trigger("layoutstop");
+			cy.one("layoutready", options.ready);
+			cy.trigger("layoutready");
 
 			cy.one("layoutstop", options.stop);
 			cy.trigger("layoutstop");

@@ -23,6 +23,9 @@
 				return;
 			}
 		}
+
+		// context.fillStyle = "orange";
+		// context.fillRect(node.position().x, node.position().y, 2, 2);
 		
 		nodeWidth = this.getNodeWidth(node);
 		nodeHeight = this.getNodeHeight(node);

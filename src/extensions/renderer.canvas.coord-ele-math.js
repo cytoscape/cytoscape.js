@@ -561,15 +561,7 @@
 	 */
 	CanvasRenderer.prototype.getNodeWidth = function(node)
 	{
-		if (node._private.style["width"].value == "auto" ||
-		    node._private.style["height"].value == "auto")
-		{
-			return node._private.autoWidth;
-		}
-		else
-		{
-			return node._private.style["width"].pxValue;
-		}
+		return node.width();
 	};
 
 	/**
@@ -581,15 +573,7 @@
 	 */
 	CanvasRenderer.prototype.getNodeHeight = function(node)
 	{
-		if (node._private.style["width"].value == "auto" ||
-		    node._private.style["height"].value == "auto")
-		{
-			return node._private.autoHeight;
-		}
-		else
-		{
-			return node._private.style["height"].pxValue;
-		}
+		return node.height();
 	};
 
 	/**
@@ -1067,7 +1051,8 @@
 			
 			rs.startX = edgeStart[0];
 			rs.startY = edgeStart[1];
-			
+
+
 			rs.arrowStartX = arrowStart[0];
 			rs.arrowStartY = arrowStart[1];
 			
@@ -1195,6 +1180,10 @@
 			rs.arrowStartX = arrowStart[0];
 			rs.arrowStartY = arrowStart[1];
 			
+			// if( isNaN(rs.startX) || isNaN(rs.startY) ){
+			// 	debugger;
+			// }
+
 		} else if (rs.isArcEdge) {
 			return;
 		}

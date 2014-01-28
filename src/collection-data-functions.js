@@ -516,7 +516,7 @@
 					// handle edge dimensions (rough box estimate)
 					//////////////////////////////////////////////
 
-					var rstyle = ele._private.rstyle;
+					var rstyle = ele._private.rstyle || {};
 					x = rstyle.labelX;
 					y = rstyle.labelY;
 

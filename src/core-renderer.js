@@ -38,6 +38,10 @@
 			);
 			
 			
+		},
+
+		recalculateEdgeControlPoints: function(){
+			
 		}
 		
 	});	

@@ -73,7 +73,7 @@ $(function(){
 					"width": 15,
 					"height": 15
 				})
-			.selector('#n0').css({ height: 200, width: 200, shape: 'triangle' })
+			.selector('#n0').css({ height: 200, width: 200, shape: 'ellipse' })
 			.selector('#e0').css({ 'line-color': 'cyan' })
 			.selector('#e1').css({ 'line-color': 'magenta' })
 			.selector('#e2').css({ 'line-color': 'yellow' })
@@ -111,8 +111,8 @@ $(function(){
 	};
 	
 	var cliques = 1;
-	var numNodes = 2;
-	var numEdges = 7;
+	var numNodes = 1;
+	var numEdges = 1;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;
@@ -142,7 +142,7 @@ $(function(){
 				data: {
 					id: "e" + (j++),
 					source: 'n0',
-					target: 'n1',
+					target: 'n0',
 					weight: Math.round( Math.random() * 100 )
 				}
 			});

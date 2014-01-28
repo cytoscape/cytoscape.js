@@ -87,8 +87,6 @@
 
 			cy.notifications(false);
 			
-			var processedElements = [];
-
 			if( elements != null ){
 				if( $$.is.plainObject(elements) || $$.is.array(elements) ){
 					cy.add( elements );
@@ -102,8 +100,7 @@
 
 					cy.notify({
 						type: "load",
-						collection: cy.elements(),
-						style: cy._private.style
+						collection: cy.elements()
 					});
 
 					cy.one("load", onload);

@@ -110,9 +110,6 @@
 			textY = node._private.position.y;
 		}
 		
-		// context.fillStyle = 'orange';
-		// context.fillRect( textX, textY, 2, 2 );
-
 		this.drawText(context, node, textX, textY);
 	};
 	

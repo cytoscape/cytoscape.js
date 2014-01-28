@@ -67,7 +67,7 @@
 		simBB.y2 = simBB[3];
 
 		// arbor doesn't work with just 1 node 
-		if( cy.nodes().size() <= 1 ){ debugger;
+		if( cy.nodes().size() <= 1 ){
 			if( options.fit ){
 				cy.reset();
 			}

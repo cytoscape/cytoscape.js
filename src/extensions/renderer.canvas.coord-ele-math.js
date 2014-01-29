@@ -710,11 +710,7 @@
 	};
 
 	CanvasRenderer.prototype.projectBezier = function(edge){
-		// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
+		var qbezierAt = $$.math.qbezierAt;
 		var rs = edge._private.rscratch;
 		var bpts = edge._private.rstyle.bezierPts = [];
 
@@ -730,13 +726,18 @@
 			});
 
 			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.4 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
 			});
 
 			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.6 )
 			});
 
 			bpts.push({
@@ -752,20 +753,124 @@
 
 		if( rs.edgeType === "self" ){
 			pushBezierPts( [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
-			pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, sr.endY] );
+			pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
 		} else if( rs.edgeType === "bezier" ){
-			pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, sr.endY] );
+			pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
 		}
 	};
 
-	CanvasRenderer.prototype.recalculateLabelProjections = function(){
+	CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
+		var textX, textY;
+		var nodeWidth = node.outerWidth();
+		var nodeHeight = node.outerHeight();
+		var nodePos = node._private.position;
+		var textHalign = node._private.style["text-halign"].strValue;
+		var textValign = node._private.style["text-valign"].strValue;
+		var rs = node._private.rscratch;
+		var rstyle = node._private.rstyle;
+
+		switch( textHalign ){
+			case "left":
+				textX = nodePos.x - nodeWidth / 2;
+				break;
+
+			case "right":
+				textX = nodePos.x + nodeWidth / 2;
+				break;
+
+			case "center":
+			default:
+				textX = nodePos.x;
+		}
+
+		switch( textValign ){
+			case "top":
+				textY = nodePos.y - nodeHeight / 2;
+				break;
+
+			case "bottom":
+				textY = nodePos.y + nodeHeight / 2;
+				break;
+
+			case "middle":
+			default:
+				textY = nodePos.y;
+		}
+	
+		rs.labelX = textX;
+		rs.labelY = textY;
+		rstyle.labelX = textX;
+		rstyle.labelY = textY;
+
+		var context = this.data.bufferCanvases[0].getContext("2d");
+		var text = this.setupTextStyle( context, node );
+		var labelWidth = context.measureText( text ).width;
+
+		rstyle.labelWidth = labelWidth;
+		rs.labelWidth = labelWidth;
+	};
+
+	CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
+		var textX, textY;	
+		var edgeCenterX, edgeCenterY;
+		var rs = edge._private.rscratch;
+		var rstyle = edge._private.rstyle;
 		
+		if (rs.edgeType == "self") {
+			edgeCenterX = rs.selfEdgeMidX;
+			edgeCenterY = rs.selfEdgeMidY;
+		} else if (rs.edgeType == "straight") {
+			edgeCenterX = (rs.startX + rs.endX) / 2;
+			edgeCenterY = (rs.startY + rs.endY) / 2;
+		} else if (rs.edgeType == "bezier") {
+			edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
+			edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
+		}
+		
+		textX = edgeCenterX;
+		textY = edgeCenterY;
+
+		// add center point to style so bounding box calculations can use it
+		rs.labelX = textX;
+		rs.labelY = textY;
+		rstyle.labelX = textX;
+		rstyle.labelY = textY;
+
+		var context = this.data.bufferCanvases[0].getContext("2d");
+		var text = this.setupTextStyle( context, edge );
+		var labelWidth = context.measureText( text ).width;
+
+		rstyle.labelWidth = labelWidth;
+		rs.labelWidth = labelWidth;
+	};
+
+
+	CanvasRenderer.prototype.recalculateRenderedStyle = function(){
+		this.recalculateEdgeProjections();
+		this.recalculateLabelProjections();
+		this.recalculateCompoundProjections();
+	};
+
+	CanvasRenderer.prototype.recalculateLabelProjections = function(){
+		var nodes = this.getCachedNodes();
+		for( var i = 0; i < nodes.length; i++ ){
+			this.recalculateNodeLabelProjection( nodes[i] );
+		}
+
+		var edges = this.getCachedEdges();
+		for( var i = 0; i < edges.length; i++ ){
+			this.recalculateEdgeLabelProjection( edges[i] );
+		}
 	};
 
 	CanvasRenderer.prototype.recalculateEdgeProjections = function(){
 		var edges = this.getCachedEdges();
 
 		this.findEdgeControlPoints( edges );
+	};
+
+	CanvasRenderer.prototype.recalculateCompoundProjections = function(){
+
 	};
 
 	// Find edge control points
@@ -977,8 +1082,12 @@
 					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
 				}
 
+				// find endpts for edge
+				this.findEndpoints( edge );
+
 				// project the edge into rstyle
 				this.projectBezier( edge );
+
 			}
 		}
 		

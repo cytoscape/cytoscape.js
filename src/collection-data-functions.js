@@ -1,7 +1,7 @@
 ;(function($$){
 	
-	var borderWidthMultiplier = 1.4;
-	var borderWidthAdjustment = 1;
+	var borderWidthMultiplier = 2 * 0.5;
+	var borderWidthAdjustment = 0;
 
 	$$.fn.eles({
 
@@ -191,6 +191,8 @@
 						return rpos[ dim ];
 					}
 				}
+			} else if( !setting ){
+				return undefined; // for empty collection case
 			}
 
 			return this; // chaining
@@ -317,11 +319,29 @@
 			}
 		},
 
+		effectiveOpacity: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var parentOpacity = ele._private.style.opacity.value;
+				var parents = ele.parents();
+				
+				for( var i = 0; i < parents.length; i++ ){
+					var parent = parents[i];
+					var opacity = parent._private.style.opacity.value;
+
+					parentOpacity = opacity * parentOpacity;
+				}
+
+				return parentOpacity;
+			}
+		},
+
 		transparent: function(){
 			var ele = this[0];
 
 			if( ele ){
-				return parseFloat( ele.css("opacity") ) === 0;
+				return ele.effectiveOpacity() === 0;
 			}
 		},
 
@@ -477,6 +497,9 @@
 				eles = selector;
 			}
 
+			// recalculate projections etc
+			this.cy().recalculateRenderedStyle();
+
 			var x1 = Infinity;
 			var x2 = -Infinity;
 			var y1 = Infinity;
@@ -485,7 +508,9 @@
 			// find bounds of elements
 			for( var i = 0; i < eles.length; i++ ){
 				var ele = eles[i];
-				var ex1, ex2, ey1, ey2, x, y;				
+				var ex1, ex2, ey1, ey2, x, y;	
+
+				if( ele.css("display") === "none" ){ continue; } // then ele doesn't take up space			
 
 				if( ele.isNode() ){
 					var pos = ele._private.position;
@@ -517,8 +542,6 @@
 					//////////////////////////////////////////////
 
 					var rstyle = ele._private.rstyle || {};
-					x = rstyle.labelX;
-					y = rstyle.labelY;
 
 					ex1 = n1pos.x;
 					ex2 = n2pos.x;
@@ -562,59 +585,60 @@
 				//////////////////////////
 
 				var style = ele._private.style;
+				var rstyle = ele._private.rstyle;
 				var label = style['content'].value;
 				var fontSize = style['font-size'];
 				var halign = style['text-halign'];
 				var valign = style['text-valign'];
-				var labelWidth = ele._private.rstyle.labelWidth;
+				var labelWidth = rstyle.labelWidth;
+				var labelHeight = rstyle.labelWidth;
+				var labelX = rstyle.labelX;
+				var labelY = rstyle.labelY;
 
-				if( label && fontSize && labelWidth != undefined && halign && valign ){
-					var lh = fontSize.pxValue;
+				if( label && fontSize && labelHeight != undefined && labelWidth != undefined && labelX != undefined && labelY != undefined && halign && valign ){
+					var lh = labelHeight;
 					var lw = labelWidth;
 					var lx1, lx2, ly1, ly2;
 
-					switch( halign.value ){
-						case "left":
-							lx1 = ex1 - lw;
-							lx2 = ex1;
-							break;
+					if( ele.isEdge ){
+						lx1 = labelX - lw/2;
+						lx2 = labelX + lw/2;
+						ly1 = labelY - lh/2;
+						ly2 = labelY + lh/2;
+					} else {
+						switch( halign.value ){
+							case "left":
+								lx1 = labelX - lw;
+								lx2 = labelX;
+								break;
 
-						case "center":
-							lx1 = x - lw/2;
-							lx2 = x + lw/2;
-							break;
+							case "center":
+								lx1 = labelX - lw/2;
+								lx2 = labelY + lw/2;
+								break;
 
-						case "right":
-							lx1 = ex2;
-							lx2 = ex2 + lw;
-							break;
-					}
+							case "right":
+								lx1 = labelX;
+								lx2 = labelX + lw;
+								break;
+						}
 
-					if( ele.isEdge() ){ // force center case
-						lx1 = x - lw/2;
-						lx2 = x + lw/2;
-					}
+						switch( valign.value ){
+							case "top":
+								ly1 = labelY - lh;
+								ly2 = labelY;
+								break;
 
-					switch( valign.value ){
-						case "top":
-							ly1 = ey1 - lh;
-							ly2 = ey1;
-							break;
+							case "center":
+								ly1 = labelY - lh/2;
+								ly2 = labelY + lh/2;
+								break;
 
-						case "center":
-							ly1 = y - lh/2;
-							ly2 = y + lh/2;
-							break;
-
-						case "bottom":
-							ly1 = ey2;
-							ly2 = ey2 + lh;
-							break;
-					}
-
-					if( ele.isEdge() ){ // force center case
-						ly1 = y - lh/2;
-						ly2 = y + lh/2;
+							case "bottom":
+								ly1 = labelY;
+								ly2 = labelY + lh;
+								break;
+						}
 					}
 
 					x1 = lx1 < x1 ? lx1 : x1;

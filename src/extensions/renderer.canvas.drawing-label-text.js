@@ -23,35 +23,10 @@
 		context.textAlign = "center";
 		context.textBaseline = "middle";
 		
-		var textX, textY;	
-		var edgeCenterX, edgeCenterY;
+		this.recalculateEdgeLabelProjection( edge );
 		
-		if (edge._private.rscratch.edgeType == "self") {
-			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
-			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
-		} else if (edge._private.rscratch.edgeType == "straight") {
-			edgeCenterX = (edge._private.rscratch.startX
-				+ edge._private.rscratch.endX) / 2;
-			edgeCenterY = (edge._private.rscratch.startY
-				+ edge._private.rscratch.endY) / 2;
-		} else if (edge._private.rscratch.edgeType == "bezier") {
-			edgeCenterX = 0.25 * edge._private.rscratch.startX
-				+ 2 * 0.5 * 0.5 * edge._private.rscratch.cp2x
-				+ (0.5 * 0.5) * edge._private.rscratch.endX;
-			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
-				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
-				+ (0.5 * 0.5) * edge._private.rscratch.endY;
-		}
-		
-		textX = edgeCenterX;
-		textY = edgeCenterY;
-
-		// add center point to style so bounding box calculations can use it
-		var rstyle = edge._private.rstyle;
-		rstyle.labelX = textX;
-		rstyle.labelY = textY;
-		
-		this.drawText(context, edge, textX, textY);
+		var rs = edge._private.rscratch;
+		this.drawText(context, edge, rs.labelX, rs.labelY);
 	};
 
 	// Draw node text
@@ -67,83 +42,61 @@
 		if( computedSize < minSize ){
 			return;
 		}
-	
-		var textX, textY;
+			
+		this.recalculateNodeLabelProjection( node );
 
-		//var nodeWidth = node._private.style["width"].value;
-		//var nodeHeight = node._private.style["height"].value;
-		var nodeWidth = this.getNodeWidth(node);
-		var nodeHeight = this.getNodeHeight(node);
-	
-		// Find text position
 		var textHalign = node._private.style["text-halign"].strValue;
-		if (textHalign == "left") {
-			// Align right boundary of text with left boundary of node
-			context.textAlign = "right";
-			textX = node._private.position.x - nodeWidth / 2;
-		} else if (textHalign == "right") {
-			// Align left boundary of text with right boundary of node
-			context.textAlign = "left";
-			textX = node._private.position.x + nodeWidth / 2;
-		} else if (textHalign == "center") {
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		} else {
-			// Same as center
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		}
-		
 		var textValign = node._private.style["text-valign"].strValue;
-		if (textValign == "top") {
-			context.textBaseline = "bottom";
-			textY = node._private.position.y - nodeHeight / 2;
-		} else if (textValign == "bottom") {
-			context.textBaseline = "top";
-			textY = node._private.position.y + nodeHeight / 2;
-		} else if (textValign == "middle" || textValign == "center") {
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
-		} else {
-			// same as center
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
-		}
-		
-		// context.fillStyle = 'orange';
-		// context.fillRect( textX, textY, 2, 2 );
+		var rs = node._private.rscratch;
 
-		this.drawText(context, node, textX, textY);
+		switch( textHalign ){
+			case "left":
+				context.textAlign = "right";
+				break;
+
+			case "right":
+				context.textAlign = "left";
+				break;
+
+			case "center":
+			default:
+				context.textAlign = "center";
+		}
+
+		switch( textValign ){
+			case "top":
+				context.textBaseline = "bottom";
+				break;
+
+			case "bottom":
+				context.textBaseline = "top";
+				break;
+
+			case "center":
+			default:
+				context.textBaseline = "middle";
+		}
+
+		this.drawText(context, node, rs.labelX, rs.labelY);
 	};
 	
-	// Draw text
-	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
-	
-		var parentOpacity = 1;
-		var parents = element.parents();
-		for( var i = 0; i < parents.length; i++ ){
-			var parent = parents[i];
-			var opacity = parent._private.style.opacity.value;
-
-			parentOpacity = opacity * parentOpacity;
-
-			if( opacity === 0 ){
-				return;
-			}
-		}
-
+	// set up canvas context with font
+	// returns transformed text string
+	CanvasRenderer.prototype.setupTextStyle = function( context, element ){
 		// Font style
-		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].pxValue + "px";
-		var labelFamily = element._private.style["font-family"].strValue;
-		var labelVariant = element._private.style["font-variant"].strValue;
-		var labelWeight = element._private.style["font-weight"].strValue;
+		var parentOpacity = element.effectiveOpacity();
+		var style = element._private.style;
+		var labelStyle = style["font-style"].strValue;
+		var labelSize = style["font-size"].pxValue + "px";
+		var labelFamily = style["font-family"].strValue;
+		var labelVariant = style["font-variant"].strValue;
+		var labelWeight = style["font-weight"].strValue;
 		
 		context.font = labelStyle + " " + labelWeight + " "
 			+ labelSize + " " + labelFamily;
 		
-		var text = String(element._private.style["content"].value);
-		var textTransform = element._private.style["text-transform"].value;
+		var text = String(style["content"].value);
+		var textTransform = style["text-transform"].value;
 		
 		if (textTransform == "none") {
 		} else if (textTransform == "uppercase") {
@@ -158,34 +111,38 @@
 		context.lineJoin = 'round';
 
 		context.fillStyle = "rgba(" 
-			+ element._private.style["color"].value[0] + ","
-			+ element._private.style["color"].value[1] + ","
-			+ element._private.style["color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value * parentOpacity) + ")";
+			+ style["color"].value[0] + ","
+			+ style["color"].value[1] + ","
+			+ style["color"].value[2] + ","
+			+ (style["text-opacity"].value
+			* style["opacity"].value * parentOpacity) + ")";
 		
 		context.strokeStyle = "rgba(" 
-			+ element._private.style["text-outline-color"].value[0] + ","
-			+ element._private.style["text-outline-color"].value[1] + ","
-			+ element._private.style["text-outline-color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value * parentOpacity) + ")";
-		
-		if (text != undefined) {
-			var lineWidth = 2  * element._private.style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
+			+ style["text-outline-color"].value[0] + ","
+			+ style["text-outline-color"].value[1] + ","
+			+ style["text-outline-color"].value[2] + ","
+			+ (style["text-opacity"].value
+			* style["opacity"].value * parentOpacity) + ")";
+
+		return text;
+	}
+
+	// Draw text
+	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
+		var style = element._private.style;
+		var parentOpacity = element.effectiveOpacity();
+		if( parentOpacity === 0 ){ return; }
+
+		var text = this.setupTextStyle( context, element );
+
+		if ( text != undefined && !isNaN(textX) && !isNaN(textY) ) {
+			var lineWidth = 2  * style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
 			if (lineWidth > 0) {
 				context.lineWidth = lineWidth;
 				context.strokeText(text, textX, textY);
 			}
 
-			// Thanks sysord@github for the isNaN checks!
-			if (isNaN(textX)) { textX = 0; }
-			if (isNaN(textY)) { textY = 0; }
-
 			context.fillText("" + text, textX, textY);
-
-			// record the text's width for use in bounding box calc
-			element._private.rstyle.labelWidth = context.measureText( text ).width;
 		}
 	};
 

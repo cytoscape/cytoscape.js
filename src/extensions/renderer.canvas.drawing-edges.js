@@ -78,6 +78,15 @@
 				details.cp2cx, details.cp2cy, details.endX, details.endY],
 				lineStyle,
 				edgeWidth);
+
+			// DEBUG: draw projected bezier pts
+			// context.fillStyle = 'red';
+			// var bpts = edge._private.rstyle.bezierPts;
+			// for( var i = 0; i < bpts.length; i++ ){
+			// 	var pt = bpts[i];
+
+			// 	context.fillRect(pt.x, pt.y, 2, 2);
+			// }
 			
 		} else if (edge._private.rscratch.edgeType == "straight") {
 			
@@ -117,6 +126,15 @@
 				details.cp2x, details.cp2y, details.endX, details.endY],
 				lineStyle,
 				edgeWidth);
+
+			// DEBUG: draw projected bezier pts
+			// context.fillStyle = 'red';
+			// var bpts = edge._private.rstyle.bezierPts;
+			// for( var i = 0; i < bpts.length; i++ ){
+			// 	var pt = bpts[i];
+
+			// 	context.fillRect(pt.x, pt.y, 2, 2);
+			// }
 			
 		}
 		

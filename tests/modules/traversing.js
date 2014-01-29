@@ -159,51 +159,6 @@ $v(function(jQuery, $, version){
 		});
 	});
 
-	test('ele.parallelIndex() & eles.parallelSize()', function(){
-		var foo = cy.add({
-			group: 'nodes',
-			data: { id: 'foo' }
-		});
-
-		var bar = cy.add({
-			group: 'nodes',
-			data: { id: 'bar' }
-		});
-
-		var edge1 = cy.add({
-			group: 'edges',
-			data: { id: 'edge1', source: 'foo', target: 'bar' }
-		});
-
-		equal( edge1.parallelIndex(), 0, 'only edge index' );
-		equal( edge1.parallelSize(), 1, 'number of || edges' );
-
-		var edge2 = cy.add({
-			group: 'edges',
-			data: { id: 'edge2', source: 'foo', target: 'bar' }
-		});
-
-		equal( edge1.parallelIndex(), 0, '1st edge index unchanged' );
-		equal( edge2.parallelIndex(), 1, '2nd edge with same direction index' );
-		equal( edge1.parallelSize(), 2, '|| size for 1st edge' );
-		equal( edge2.parallelSize(), 2, '|| size for 2nd edge' );
-
-		var edge3 = cy.add({
-			group: 'edges',
-			data: { id: 'edge3', source: 'bar', target: 'foo' }
-		});
-
-		equal( edge1.parallelIndex(), 0, '1st edge index unchanged' );
-		equal( edge2.parallelIndex(), 1, '2nd edge index unchanged' );
-		equal( edge3.parallelIndex(), 2, '3rd edge with diff directed index' );
-		equal( edge1.parallelSize(), 3, '|| size for 1st edge' );
-		equal( edge2.parallelSize(), 3, '|| size for 2nd edge' );
-		equal( edge3.parallelSize(), 3, '|| size for 3rd edge' );
-
-		equal( edge1.parallelEdges()[ edge1.parallelIndex() ].id(), edge1.id(), '|| index works on ||edges for edge1' );
-		equal( edge2.parallelEdges()[ edge2.parallelIndex() ].id(), edge2.id(), '|| index works on ||edges for edge2' );
-		equal( edge3.parallelEdges()[ edge3.parallelIndex() ].id(), edge3.id(), '|| index works on ||edges for edge3' );
-	});
 	
 	
 });

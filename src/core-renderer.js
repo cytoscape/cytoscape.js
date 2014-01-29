@@ -41,9 +41,11 @@
 		},
 
 		recalculateRenderedStyle: function(){
-			this.notify({
-				type: "recalcrstyle"
-			});
+			var renderer = this.renderer();
+
+			if( renderer.recalculateRenderedStyle ){
+				renderer.recalculateRenderedStyle();
+			}
 		}
 		
 	});	

@@ -10,6 +10,8 @@ $(function(){
 					"background-color": "#DDD",
 					"border-color": "#555",
 					"shape": "ellipse",
+					"text-halign": "center",
+					"text-valign": "bottom"
 					//"border-style": "dashed"
 					//"background-size-x": '5',
 					//"background-image": "images/test-bg.png",
@@ -43,7 +45,8 @@ $(function(){
 					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "triangle",
 					"source-arrow-shape": "circle",
-					"opacity": 0.5
+					"opacity": 0.5,
+					"content": "data(id)"
 				})
 			.selector(":selected")
 				.css({
@@ -112,7 +115,7 @@ $(function(){
 	
 	var cliques = 1;
 	var numNodes = 1;
-	var numEdges = 1;
+	var numEdges = 0;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;
@@ -142,7 +145,7 @@ $(function(){
 				data: {
 					id: "e" + (j++),
 					source: 'n0',
-					target: 'n0',
+					target: 'n1',
 					weight: Math.round( Math.random() * 100 )
 				}
 			});

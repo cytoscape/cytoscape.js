@@ -12,6 +12,18 @@
 		}
 	};
 
+	// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
+	$$.math.qbezierAt = function(p0, p1, p2, t){
+		return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+	}
+
+	$$.math.qbezierPtAt = function(p0, p1, p2, t){
+		return {
+			x: $$.math.qbezierAt( p0.x, p1.x, p2.x, t ),
+			y: $$.math.qbezierAt( p0.y, p1.y, p2.y, t )
+		};
+	}
+
 	$$.math.roundRectangleIntersectLine = function(
 		x, y, nodeX, nodeY, width, height, padding) {
 		
@@ -413,14 +425,9 @@
 	$$.math.checkBezierInBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 
-
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
 		function sampleInBox(t){
-			var x = qbezierAt(x1, x2, x3, t);
-			var y = qbezierAt(y1, y2, y3, t);
+			var x = $$.math.qbezierAt(x1, x2, x3, t);
+			var y = $$.math.qbezierAt(y1, y2, y3, t);
 
 			return x1box <= x && x <= x2box
 				&& y1box <= y && y <= y2box

@@ -11,18 +11,8 @@
 			return;
 		}
 
-		var parentOpacity = 1;
-		var parents = node.parents();
-		for( var i = 0; i < parents.length; i++ ){
-			var parent = parents[i];
-			var opacity = parent._private.style.opacity.value;
-
-			parentOpacity = opacity * parentOpacity;
-
-			if( opacity === 0 ){
-				return;
-			}
-		}
+		var parentOpacity = node.effectiveOpacity();
+		if( parentOpacity === 0 ){ return; }
 
 		// context.fillStyle = "orange";
 		// context.fillRect(node.position().x, node.position().y, 2, 2);

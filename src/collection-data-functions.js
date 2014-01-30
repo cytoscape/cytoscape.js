@@ -285,8 +285,8 @@
 			}
 		},
 
-		renderedBoundingBox: function( selector ){
-			var bb = this.boundingBox( selector );
+		renderedBoundingBox: function( options ){
+			var bb = this.boundingBox( options );
 			var cy = this.cy();
 			var zoom = cy.zoom();
 			var pan = cy.pan();
@@ -307,16 +307,14 @@
 		},
 
 		// get the bounding box of the elements (in raw model position)
-		boundingBox: function( selector ){
+		boundingBox: function( options ){
 			var eles = this;
 
-			if( !selector || ( $$.is.elementOrCollection(selector) && selector.length === 0 ) ){
-				eles = this;
-			} else if( $$.is.string(selector) ){
-				eles = this.filter( selector );
-			} else if( $$.is.elementOrCollection(selector) ){
-				eles = selector;
-			}
+			options = $$.util.extend({
+				includeNodes: true,
+				includeEdges: true,
+				includeLabels: true
+			}, options);
 
 			// recalculate projections etc
 			this.cy().recalculateRenderedStyle();
@@ -329,11 +327,14 @@
 			// find bounds of elements
 			for( var i = 0; i < eles.length; i++ ){
 				var ele = eles[i];
-				var ex1, ex2, ey1, ey2, x, y;	
+				var ex1, ex2, ey1, ey2, x, y;
+				var includedEle = false;
 
 				if( ele.css("display") === "none" ){ continue; } // then ele doesn't take up space			
 
-				if( ele.isNode() ){
+				if( ele.isNode() && options.includeNodes ){
+					includedEle = true;
+
 					var pos = ele._private.position;
 					x = pos.x;
 					y = pos.y;
@@ -355,7 +356,9 @@
 					y1 = ey1 < y1 ? ey1 : y1;
 					y2 = ey2 > y2 ? ey2 : y2;
 
-				} else { // is edge
+				} else if( ele.isEdge() && options.includeEdges ){ 
+					includedEle = true;
+
 					var n1pos = ele.source()[0]._private.position;
 					var n2pos = ele.target()[0]._private.position;
 
@@ -416,7 +419,7 @@
 				var labelX = rstyle.labelX;
 				var labelY = rstyle.labelY;
 
-				if( label && fontSize && labelHeight != undefined && labelWidth != undefined && labelX != undefined && labelY != undefined && halign && valign ){
+				if( includedEle && options.includeLabels && label && fontSize && labelHeight != undefined && labelWidth != undefined && labelX != undefined && labelY != undefined && halign && valign ){
 					var lh = labelHeight;
 					var lw = labelWidth;
 					var lx1, lx2, ly1, ly2;

@@ -506,6 +506,8 @@
 					
 						<div class="section lvl3"><a href="#collection/graph-manipulation/ele.removed"><span class="icon-bookmark"></span> ele.removed() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/graph-manipulation/ele.inside"><span class="icon-bookmark"></span> ele.inside() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark"></span> eles.restore() </a></div>
 					
 				
@@ -653,6 +655,8 @@
 						<div class="section lvl3"><a href="#collection/style/eles.hide"><span class="icon-bookmark"></span> eles.hide() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.visible"><span class="icon-bookmark"></span> ele.visible() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span> ele.effectiveOpacity() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span> ele.transparent() </a></div>
 					
@@ -1469,6 +1473,7 @@ node {
 <li><strong><code>text-outline-color</code></strong> : The colour of the outline around the element&#39;s label text.</li>
 <li><strong><code>text-outline-opacity</code></strong> : The opacity of the outline on label text.</li>
 <li><strong><code>text-outline-width</code></strong> : The size of the outline on label text.</li>
+<li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</li>
 </ul>
 <p>Size &amp; visibility:
 
@@ -4055,6 +4060,18 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/graph-manipulation/ele.inside"><span class="fn-name">ele.inside()</span>  <a href="#collection/graph-manipulation/ele.inside"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/graph-manipulation/ele.inside"><p>Get whether the element is inside the graph (i.e. not removed).</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/graph-manipulation/eles.restore"><span class="fn-name">eles.restore()</span>  <a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/graph-manipulation/eles.restore"><p>Put removed elements back into the graph.</p>
 </div>
@@ -4907,20 +4924,72 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">ele.boundingBox()</div>
+											<div class="name">ele.boundingBox( <span class="comma">, </span>options )</div>
 										
 										<div class="descr">Get the bounding box of the elements in model coordinates.</div>
 										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">An object containing options for the function.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">includeNodes</span>
+															<span class="descr">A boolean indicating whether to include nodes in the bounding box.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">includeEdges</span>
+															<span class="descr">A boolean indicating whether to include edges in the bounding box.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">includeLabels</span>
+															<span class="descr">A boolean indicating whether to include labels in the bounding box.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
 											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">ele.renderedBoundingBox()</div>
+											<div class="name">ele.renderedBoundingBox( <span class="comma">, </span>options )</div>
 										
 										<div class="descr">Get the bounding box of the elements in rendered coordinates.</div>
 										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">An object containing options for the function.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">includeNodes</span>
+															<span class="descr">A boolean indicating whether to include nodes in the bounding box.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">includeEdges</span>
+															<span class="descr">A boolean indicating whether to include edges in the bounding box.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">includeLabels</span>
+															<span class="descr">A boolean indicating whether to include labels in the bounding box.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
 											
 										</ul>
 									</div>
@@ -5758,8 +5827,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/ele.transparent"><span class="fn-name">ele.transparent()</span>  <a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/style/ele.transparent"><p>Get whether the element is completely transparent (i.e. <code>opacity: 0</code>)</p>
+							<div class="name" id="collection/style/ele.effectiveOpacity"><span class="fn-name">ele.effectiveOpacity()</span> et al <a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/ele.effectiveOpacity"><p>Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.</p>
 </div>
 
 							
@@ -5769,7 +5838,33 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 										
 											<div class="name">ele.transparent()</div>
 										
-										<div class="descr">Get whether the element is completely transparent.</div>
+										<div class="descr">Get whether the element is transparent.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/ele.transparent"><span class="fn-name">ele.transparent()</span>  <a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/ele.transparent"><p>Get whether the element&#39;s effective opacity is completely transparent, which takes into consideration parent node opacity.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.transparent()</div>
+										
+										<div class="descr">Get whether the element is transparent.</div>
 										<ul class="args">
 											
 										</ul>

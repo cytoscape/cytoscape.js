@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js github-snapshot-2014.01.22-15.22.56.
+ * This file is part of cytoscape.js github-snapshot-2014.01.23-15.16.08.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -9763,22 +9763,28 @@ var cytoscape;
 	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
 
 	CanvasRenderer.prototype.notify = function(params) {
-		if ( params.type == "destroy" ){
+		switch( params.type ){
+
+		case "destroy":
 			this.destroy();
 			return;
 
-		} else if (params.type == "add"
-			|| params.type == "remove"
-			|| params.type == "load"
-		) {
-			
+		case "add":
+		case "remove":
+		case "load":
 			this.updateNodesCache();
 			this.updateEdgesCache();
+			break;
+
+		case "viewport":
+			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+			break;
+
+		case "style":
+			this.updateCachedZSortedEles();
+			break;
 		}
 
-		if (params.type == "viewport") {
-			this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-		}
 		
 		this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
 		this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -10815,8 +10821,7 @@ var cytoscape;
 			}
 		};
 
-		var result = a._private.style["z-index"].value
-			- b._private.style["z-index"].value;
+		var result = a._private.style["z-index"].value - b._private.style["z-index"].value;
 
 		var depthA = 0;
 		var depthB = 0;
@@ -10868,14 +10873,18 @@ var cytoscape;
 		return 0;
 	};
 
-	CanvasRenderer.prototype.getCachedZSortedEles = function(){
+	CanvasRenderer.prototype.updateCachedZSortedEles = function(){
+		this.getCachedZSortedEles( true );
+	};
+
+	CanvasRenderer.prototype.getCachedZSortedEles = function( forceRecalc ){
 		var lastNodes = this.lastZOrderCachedNodes;
 		var lastEdges = this.lastZOrderCachedEdges;
 		var nodes = this.getCachedNodes();
 		var edges = this.getCachedEdges();
 		var eles = [];
 
-		if( !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
+		if( forceRecalc || !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){ 
 			//console.time('cachezorder')
 			
 			for( var i = 0; i < nodes.length; i++ ){
@@ -12491,13 +12500,10 @@ var cytoscape;
 			effectivePan.x *= pixelRatio;
 			effectivePan.y *= pixelRatio;
 			
-			var elements = [];
-			for( var i = 0; i < nodes.length; i++ ){
-				elements.push( nodes[i] );
-			}
-			for( var i = 0; i < edges.length; i++ ){
-				elements.push( edges[i] );
-			}
+			var elements;
+			var elesInDragLayer;
+			var elesNotInDragLayer;
+			var element;
 
 			function setContextTransform(context){
 				context.setTransform(1, 0, 0, 1, 0, 0);
@@ -12529,8 +12535,21 @@ var cytoscape;
 			
 
 				// console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-				var elements = r.getCachedZSortedEles();
+				elements = r.getCachedZSortedEles();
 				// } console.timeEnd('sort')
+
+				elesInDragLayer = [];
+				elesNotInDragLayer = [];
+
+				for (var index = 0; index < elements.length; index++) {
+					element = elements[index];
+
+					if ( element._private.rscratch.inDragLayer ) {
+						elesInDragLayer.push( element );
+					} else {
+						elesNotInDragLayer.push( element );
+					}
+				}
 
 				// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 				// no need to update graph if there is no compound node
@@ -12541,36 +12560,10 @@ var cytoscape;
 				// } console.timeEnd('updatecompounds')
 			}
 			
-			var elesInDragLayer;
-			var elesNotInDragLayer;
-			var element;
-
-
-			// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-			if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
-				// console.log("redrawing node layer");
-			  
-			  	if( !elesInDragLayer || !elesNotInDragLayer ){
-					elesInDragLayer = [];
-					elesNotInDragLayer = [];
-
-					for (var index = 0; index < elements.length; index++) {
-						element = elements[index];
-
-						if ( element._private.rscratch.inDragLayer ) {
-							elesInDragLayer.push( element );
-						} else {
-							elesNotInDragLayer.push( element );
-						}
-					}
-				}	
-
-				var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
-
-				setContextTransform( context );
-				
-				for (var index = 0; index < elesNotInDragLayer.length; index++) {
-					element = elesNotInDragLayer[index];
+			
+			function drawElements( eleList, context ){
+				for (var i = 0; i < eleList.length; i++) {
+					element = eleList[i];
 					
 					if (element._private.group == "nodes") {
 						r.drawNode(context, element);
@@ -12580,8 +12573,8 @@ var cytoscape;
 					}
 				}
 				
-				for (var index = 0; index < elesNotInDragLayer.length; index++) {
-					element = elesNotInDragLayer[index];
+				for (var i = 0; i < eleList.length; i++) {
+					element = eleList[i];
 					
 					if (element._private.group == "nodes") {
 						r.drawNodeText(context, element);
@@ -12596,6 +12589,17 @@ var cytoscape;
 						r.drawEdge(context, element, true);
 					}
 				}
+			}
+
+
+			// console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
+			if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+				// console.log("redrawing node layer");
+			  
+				var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
+
+				setContextTransform( context );
+				drawElements(elesNotInDragLayer, context);
 				
 				if( !drawAllLayers ){
 					data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; 
@@ -12604,53 +12608,10 @@ var cytoscape;
 			
 			if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
 			  
-				if( !elesInDragLayer || !elesNotInDragLayer ){
-					elesInDragLayer = [];
-					elesNotInDragLayer = [];
-
-					for (var index = 0; index < elements.length; index++) {
-						element = elements[index];
-
-						if ( element._private.rscratch.inDragLayer ) {
-							elesInDragLayer.push( element );
-						} else {
-							elesNotInDragLayer.push( element );
-						}
-					}
-				}
-
 				var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
 				
 				setContextTransform( context );
-				
-				var element;
-
-				for (var index = 0; index < elesInDragLayer.length; index++) {
-					element = elesInDragLayer[index];
-					
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element);
-					}
-				}
-				
-				for (var index = 0; index < elesInDragLayer.length; index++) {
-					element = elesInDragLayer[index];
-					
-					if (element._private.group == "nodes") {
-						r.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdgeText(context, element);
-					}
-
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element, true);
-					}
-				}
+				drawElements(elesInDragLayer, context);
 				
 				if( !drawAllLayers ){
 					data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false;
@@ -13053,6 +13014,10 @@ var cytoscape;
 			e.preventDefault();
 		});
 
+		function inBoxSelection(){
+			return r.data.select[4] !== 0;
+		}
+
 		// Primary key
 		r.registerBinding(r.data.container, "mousedown", function(e) { 
 			e.preventDefault();
@@ -13071,6 +13036,8 @@ var cytoscape;
 			// Right click button
 			if( e.which == 3 ){
 
+				r.hoverData.cxtStarted = true;
+
 				if( near ){
 					near.activate();
 					near.trigger( new $$.Event(e, {
@@ -13079,9 +13046,15 @@ var cytoscape;
 					}) );
 
 					r.hoverData.down = near;
-					r.hoverData.downTime = (new Date()).getTime();
-					r.hoverData.cxtDragged = false;
 				}
+
+				cy.trigger( new $$.Event(e, {
+					type: "cxttapstart", 
+					cyPosition: { x: pos[0], y: pos[1] } 
+				}) );
+
+				r.hoverData.downTime = (new Date()).getTime();
+				r.hoverData.cxtDragged = false;
 
 			// Primary button
 			} else if (e.which == 1) {
@@ -13421,6 +13394,8 @@ var cytoscape;
 			r.data.bgActivePosistion = undefined; // not active bg now
 			clearTimeout( r.bgActiveTimeout );
 
+			r.hoverData.cxtStarted = false;
+
 			if( down ){
 				down.unactivate();
 			}
@@ -13562,18 +13537,17 @@ var cytoscape;
 						
 						// console.log('single selection')
 
-						if( cy.selectionType() === 'additive' ){
+						if( cy.selectionType() === 'additive' || shiftDown ){
 							if( near.selected() ){
-							near.unselect();
+								near.unselect();
 							} else {
 								near.select();
 							}
 						} else {
 							if( !shiftDown ){
 								cy.$(':selected').unselect();
-							}
-
-							near.select();
+								near.select();
+							} 							
 						}
 
 
@@ -13687,6 +13661,11 @@ var cytoscape;
 			var rpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
+			if( r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
+				e.preventDefault();
+				return;
+			}
+
 			if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
 				e.preventDefault();
 			

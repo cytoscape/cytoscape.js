@@ -133,7 +133,7 @@
 
 		// Fit the graph if necessary
 		if (true == options.fit) {
-			cy.fit();
+			cy.fit( options.padding );
 		}
 		
 		// Get end time

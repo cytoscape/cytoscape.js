@@ -622,7 +622,6 @@
 	CanvasRenderer.prototype.recalculateRenderedStyle = function(){
 		this.recalculateEdgeProjections();
 		this.recalculateLabelProjections();
-		this.recalculateCompoundProjections();
 	};
 
 	CanvasRenderer.prototype.recalculateLabelProjections = function(){
@@ -643,9 +642,6 @@
 		this.findEdgeControlPoints( edges );
 	};
 
-	CanvasRenderer.prototype.recalculateCompoundProjections = function(){
-
-	};
 
 	// Find edge control points
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {

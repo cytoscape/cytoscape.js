@@ -24,7 +24,9 @@
 				settingTriggersEvent: false,
 				triggerFnName: "trigger",
 				immutableKeys: {}, // key => true if immutable
-				updateMappers: false
+				updateMappers: false,
+				onSet: function( self ){},
+				canSet: function( self ){ return true }
 			};
 			params = $$.util.extend({}, defaults, params);
 
@@ -51,13 +53,17 @@
 					} else if( p.allowSetting && value !== undefined ) { // set
 						var valid = !p.immutableKeys[name];
 						if( valid ){
-
 							for( var i = 0, l = all.length; i < l; i++ ){
-								all[i]._private[ p.field ][ name ] = value;
+								if( p.canSet( all[i] ) ){
+									all[i]._private[ p.field ][ name ] = value;
+								}
 							}
 
 							// update mappers if asked
 							if( p.updateMappers ){ self.updateMappers(); }
+
+							// call onSet callback
+							p.onSet( self );
 
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );
@@ -76,13 +82,18 @@
 						var valid = !p.immutableKeys[k];
 						if( valid ){
 							for( var i = 0, l = all.length; i < l; i++ ){
-								all[i]._private[ p.field ][ k ] = v;
+								if( p.canSet( all[i] ) ){
+									all[i]._private[ p.field ][ k ] = v;
+								}
 							}
 						}
 					}
 					
 					// update mappers if asked
 					if( p.updateMappers ){ self.updateMappers(); }
+
+					// call onSet callback
+					p.onSet( self );
 
 					if( p.settingTriggersEvent ){
 						self[ p.triggerFnName ]( p.settingEvent );

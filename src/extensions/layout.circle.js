@@ -19,7 +19,9 @@
         var options = params;
         
         var cy = params.cy;
-        var nodes = cy.nodes();
+        var nodes = cy.nodes().filter(function(){
+            return !this.isFullAutoParent();
+        });
         var edges = cy.edges();
         var container = cy.container();
         

@@ -190,36 +190,57 @@ Based on the article "A layout algorithm for undirected compound graphs" by Ugur
 options = {
 	name: 'cose',
 
-	// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-	refresh             : 0,
-	// Whether to fit the network view after when done
-	fit                 : true, 
-	// Whether to randomize node positions on the beginning
-	randomize           : true,
-	// Whether to use the JS console to print debug messages
-	debug               : false,
+		// Called on `layoutready`
+		ready               : function() {},
 
-	// Node repulsion (non overlapping) multiplier
-	nodeRepulsion       : 10000,
-	// Node repulsion (overlapping) multiplier
-	nodeOverlap         : 10,
-	// Ideal edge (non nested) length
-	idealEdgeLength     : 10,
-	// Divisor to compute edge forces
-	edgeElasticity      : 100,
-	// Nesting factor (multiplier) to compute ideal edge length for nested edges
-	nestingFactor       : 5, 
-	// Gravity force (constant)
-	gravity             : 250, 
-	
-	// Maximum number of iterations to perform
-	numIter             : 100,
-	// Initial temperature (maximum node displacement)
-	initialTemp         : 200,
-	// Cooling factor (how the temperature is reduced between consecutive iterations)
-	coolingFactor       : 0.95, 
-	// Lower temperature threshold (below this point the layout will end)
-	minTemp             : 1
+		// Called on `layoutstop`
+		stop                : function() {},
+
+		// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
+		refresh             : 0,
+		
+		// Whether to fit the network view after when done
+		fit                 : true, 
+
+		// Padding on fit
+		padding             : 30, 
+
+
+		// Whether to randomize node positions on the beginning
+		randomize           : true,
+		
+		// Whether to use the JS console to print debug messages
+		debug               : false,
+
+		// Node repulsion (non overlapping) multiplier
+		nodeRepulsion       : 10000,
+		
+		// Node repulsion (overlapping) multiplier
+		nodeOverlap         : 10,
+		
+		// Ideal edge (non nested) length
+		idealEdgeLength     : 10,
+		
+		// Divisor to compute edge forces
+		edgeElasticity      : 100,
+		
+		// Nesting factor (multiplier) to compute ideal edge length for nested edges
+		nestingFactor       : 5, 
+		
+		// Gravity force (constant)
+		gravity             : 250, 
+		
+		// Maximum number of iterations to perform
+		numIter             : 100,
+		
+		// Initial temperature (maximum node displacement)
+		initialTemp         : 200,
+		
+		// Cooling factor (how the temperature is reduced between consecutive iterations
+		coolingFactor       : 0.95, 
+		
+		// Lower temperature threshold (below this point the layout will end)
+		minTemp             : 1
 };
 
 cy.layout( options );

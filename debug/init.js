@@ -270,8 +270,6 @@ $(function(){
 		},
 		style: defaultSty,
 
-		layout: { name: 'grid', fit: false },
-
 		ready: function(){
 		   window.cy2 = this;
 		   cy2.on("click", "node", function(evt){

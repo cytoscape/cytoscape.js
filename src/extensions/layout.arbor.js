@@ -211,6 +211,10 @@
 			var id = this._private.data.id;
 			var mass = calculateValueForElement(this, options.nodeMass);
 			var locked = this._private.locked;
+
+			if( node.isFullAutoParent() ){
+				return;
+			}
 			
 			var pos = fromScreen({
 				x: node.position().x,

@@ -202,9 +202,10 @@ release : version all
 	$(CP) $(MIN_JS_FILE) $(RELEASE_DIR)/$(VERSION)
 
 # publish to npm
-npm : 
+
+confirmnpm : 
 	@echo $(LINE_SEP)
-	@echo -- Publishing to npm...
+	@echo -- Confirming package info for npm...
 	@echo $(LINE_SEP)
 	@echo -- package.json
 	@echo $(LINE_SEP)
@@ -213,12 +214,18 @@ npm :
 	@echo Confirm that package.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read 
+
+npm : 
+	@echo $(LINE_SEP)
+	@echo -- Publishing to npm...
+	@echo $(LINE_SEP)
 	npm publish .
 
 # publish to bower
-bower : 
+
+confirmbower : 
 	@echo $(LINE_SEP)
-	@echo -- Publishing to bower...
+	@echo -- Confirming package info for bower...
 	@echo $(LINE_SEP)
 	@echo -- bower.json
 	@echo $(LINE_SEP)
@@ -227,7 +234,12 @@ bower :
 	@echo Confirm that bower.json is set properly for release, with matching VERSION etc.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.
 	@read 
-	bower 
+
+bower : 
+	@echo $(LINE_SEP)
+	@echo -- Publishing to bower...
+	@echo $(LINE_SEP)
+	bower register cytoscape https://github.com/cytoscape/cytoscape.js.git
 
 # refresh the documentation
 docsrefresh : 
@@ -303,7 +315,7 @@ docspublish : docsrefresh
 
 
 # publish a new version of cy.js
-publish : test version release docspublish tag npm
+publish : test version release docspublish confirmnpm confirmbower tag npm bower
 
 clean : 
 	$(RM) $(BUILD_DIR)

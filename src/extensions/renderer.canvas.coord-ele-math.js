@@ -804,10 +804,15 @@
 
 		var context = this.data.bufferCanvases[0].getContext("2d");
 		var text = this.setupTextStyle( context, node );
-		var labelWidth = context.measureText( text ).width;
+		//var labelWidth = context.measureText( text ).width;
 
-		rstyle.labelWidth = labelWidth;
-		rs.labelWidth = labelWidth;
+		var labelDims = this.calculateLabelDimensions( node, text );
+
+		rstyle.labelWidth = labelDims.width;
+		rs.labelWidth = labelDims.width;
+
+		rstyle.labelHeight = labelDims.height;
+		rs.labelHeight = labelDims.height;
 	};
 
 	CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
@@ -838,12 +843,58 @@
 
 		var context = this.data.bufferCanvases[0].getContext("2d");
 		var text = this.setupTextStyle( context, edge );
-		var labelWidth = context.measureText( text ).width;
+		//var labelWidth = context.measureText( text ).width;
 
-		rstyle.labelWidth = labelWidth;
-		rs.labelWidth = labelWidth;
+		var labelDims = this.calculateLabelDimensions( edge, text );
+
+		rstyle.labelWidth = labelDims.width;
+		rs.labelWidth = labelDims.width;
+
+		rstyle.labelHeight = labelDims.height;
+		rs.labelHeight = labelDims.height;
 	};
 
+	CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+		var style = ele._private.style;
+		var fStyle = style["font-style"].strValue;
+		var size = style["font-size"].pxValue + "px";
+		var family = style["font-family"].strValue;
+		var variant = style["font-variant"].strValue;
+		var weight = style["font-weight"].strValue;
+
+		var div = this.labelCalcDiv;
+
+		if( !div ){
+			div = this.labelCalcDiv = document.createElement("div");
+			document.body.appendChild( div );
+		}
+
+		var ds = div.style;
+
+		// from ele style
+		ds.fontFamily = family;
+		ds.fontStyle = fStyle;
+		ds.fontSize = size;
+		ds.fontVariant = variant;
+		ds.fontWeight = weight;
+
+		// forced style
+		ds.position = "absolute";
+		ds.left = "-9999px";
+		ds.top = "-9999px";
+		ds.zIndex = "-1";
+		ds.visibility = "hidden";
+		ds.padding = "0";
+		ds.lineHeight = "1";
+
+		// put label content in div
+		div.innerText = text;
+
+		return {
+			width: div.clientWidth,
+			height: div.clientHeight
+		};
+	};	
 
 	CanvasRenderer.prototype.recalculateRenderedStyle = function(){
 		this.recalculateEdgeProjections();

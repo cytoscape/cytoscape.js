@@ -10,8 +10,6 @@ $(function(){
 					"background-color": "#DDD",
 					"border-color": "#555",
 					"shape": "ellipse",
-					"text-halign": "center",
-					"text-valign": "bottom"
 					//"border-style": "dashed"
 					//"background-size-x": '5',
 					//"background-image": "images/test-bg.png",
@@ -45,8 +43,7 @@ $(function(){
 					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "triangle",
 					"source-arrow-shape": "circle",
-					"opacity": 0.5,
-					"content": "data(id)"
+					"opacity": 0.5
 				})
 			.selector(":selected")
 				.css({
@@ -114,8 +111,8 @@ $(function(){
 	};
 	
 	var cliques = 1;
-	var numNodes = 1;
-	var numEdges = 0;
+	var numNodes = 2;
+	var numEdges = 8;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;

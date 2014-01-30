@@ -586,12 +586,12 @@
 
 				var style = ele._private.style;
 				var rstyle = ele._private.rstyle;
-				var label = style['content'].value;
+				var label = style['content'].strValue;
 				var fontSize = style['font-size'];
 				var halign = style['text-halign'];
 				var valign = style['text-valign'];
 				var labelWidth = rstyle.labelWidth;
-				var labelHeight = rstyle.labelWidth;
+				var labelHeight = rstyle.labelHeight || fontSize.pxValue;
 				var labelX = rstyle.labelX;
 				var labelY = rstyle.labelY;
 
@@ -600,7 +600,7 @@
 					var lw = labelWidth;
 					var lx1, lx2, ly1, ly2;
 
-					if( ele.isEdge ){
+					if( ele.isEdge() ){
 						lx1 = labelX - lw/2;
 						lx2 = labelX + lw/2;
 						ly1 = labelY - lh/2;
@@ -614,7 +614,7 @@
 
 							case "center":
 								lx1 = labelX - lw/2;
-								lx2 = labelY + lw/2;
+								lx2 = labelX + lw/2;
 								break;
 
 							case "right":

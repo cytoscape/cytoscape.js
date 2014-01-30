@@ -206,10 +206,10 @@
 
 				// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 				// no need to update graph if there is no compound node
-				if ( cy.hasCompoundNodes() )
-				{
-					r.updateAllCompounds(elements);
-				}
+				// if ( cy.hasCompoundNodes() )
+				// {
+				// 	r.updateAllCompounds(elements);
+				// }
 				// } console.timeEnd('updatecompounds')
 			}
 			

@@ -93,7 +93,33 @@
 			settingTriggersEvent: true,
 			triggerFnName: "rtrigger",
 			allowGetting: true,
-			validKeys: ["x", "y"]
+			validKeys: ["x", "y"],
+			onSet: function( eles ){
+				var updatedEles = eles.updateCompoundBounds();
+				updatedEles.rtrigger("position");
+			},
+			canSet: function( ele ){
+				return !ele.locked();
+			}
+		}),
+
+		// position but no notification to renderer
+		silentPosition: $$.define.data({
+			field: "position",
+			bindingEvent: "position",
+			allowBinding: false,
+			allowSetting: true,
+			settingEvent: "position",
+			settingTriggersEvent: false,
+			triggerFnName: "trigger",
+			allowGetting: true,
+			validKeys: ["x", "y"],
+			onSet: function( eles ){
+				eles.updateCompoundBounds();
+			},
+			canSet: function( ele ){
+				return !ele.locked();
+			}
 		}),
 
 		positions: function( pos ){
@@ -114,11 +140,69 @@
 						elePos.y = pos.y;
 					}
 				}
+
+				var updatedEles = this.updateCompoundBounds();
 				
-				this.rtrigger("position");
+				this.add( updatedEles ).rtrigger("position");
 			}
 
 			return this; // chaining
+		},
+
+		updateCompoundBounds: function(){
+			var cy = this.cy();
+
+			if( !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs
+
+			var updated = [];
+
+			function update( parent ){
+				var children = parent.children();
+				var style = parent._private.style;
+				var bb = children.boundingBox({ includeLabels: false, includeEdges: false });
+				var padding = {
+					top: style["padding-top"].pxValue,
+					bottom: style["padding-bottom"].pxValue,
+					left: style["padding-left"].pxValue,
+					right: style["padding-right"].pxValue
+				};
+				var pos = parent._private.position;
+				var didUpdate = false;
+
+				if( style["width"].value === "auto" ){
+					parent._private.autoWidth = bb.w + padding.left + padding.right;
+					pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
+					didUpdate = true;
+				}
+
+				if( style["height"].value === "auto" ){
+					parent._private.autoHeight = bb.h + padding.top + padding.bottom;
+					pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
+					didUpdate = true;
+				}
+
+				if( didUpdate ){
+					updated.push( parent );
+				}
+			}
+
+			// go up, level by level
+			var eles = this.parent();
+			while( eles.nonempty() ){
+
+				// update each parent node in this level
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
+
+					update( ele );
+				}
+
+				// next level
+				eles = eles.parent();
+			}
+
+			// return changed
+			return new $$.Collection( cy, updated );
 		},
 
 		// get/set the rendered (i.e. on screen) positon of the element
@@ -243,45 +327,6 @@
 			if( ele ){
 				var oheight = ele.outerHeight();
 				return oheight * this.cy().zoom();
-			}
-		},
-
-		// get the position of the element relative to the container (i.e. not relative to parent node)
-		offset: function(){
-			var ele = this[0];
-
-			if( ele && ele.isNode() ){
-				var offset = {
-					x: ele._private.position.x,
-					y: ele._private.position.y
-				};
-
-				var parents = ele.parents();
-				for( var i = 0; i < parents.length; i++ ){
-					var parent = parents[i];
-					var parentPos = parent._private.position;
-
-					offset.x += parentPos.x;
-					offset.y += parentPos.y;
-				}
-
-				return offset;
-			}
-		},
-
-		renderedOffset: function(){
-			var ele = this[0];
-
-			if( ele && ele.isNode() ){
-				var offset = this.offset();
-				var cy = this.cy();
-				var zoom = cy.zoom();
-				var pan = cy.pan();
-
-				return {
-					x: offset.x * zoom + pan.x,
-					y: offset.y * zoom + pan.y
-				};
 			}
 		},
 

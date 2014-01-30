@@ -11,6 +11,8 @@
 		trigger: $$.define.trigger(), // .trigger( events [, extraParams] )
 
 		rtrigger: function(event, extraParams){ // for internal use only
+			if( this.length === 0 ){ return; } // empty collections don't need to notify anything
+
 			// notify renderer unless removed
 			this.cy().notify({
 				type: event,

@@ -124,12 +124,13 @@
 					if( node == null ){
 						return;
 					}
-					var pos = node._private.position;
 					
 					if( !node.locked() && !node.grabbed() ){
-						pos.x = simBB.x1 + point.x;
-						pos.y = simBB.y1 + point.y;
-						
+						node.silentPosition({
+							x: simBB.x1 + point.x,
+							y: simBB.y1 + point.y
+						});
+
 						movedNodes.push( node );
 					}
 				});
@@ -208,6 +209,8 @@
 		nodes.bind("grab drag dragstop", grabHandler);
 			  	
 		nodes.each(function(i, node){
+			if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
+
 			var id = this._private.data.id;
 			var mass = calculateValueForElement(this, options.nodeMass);
 			var locked = this._private.locked;

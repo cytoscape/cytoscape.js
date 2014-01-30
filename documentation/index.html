@@ -566,10 +566,6 @@
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/node.renderedPosition"><span class="icon-bookmark"></span> node.renderedPosition() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/position--dimensions/node.offset"><span class="icon-bookmark"></span> node.offset() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/position--dimensions/node.renderedOffset"><span class="icon-bookmark"></span> node.renderedOffset() </a></div>
-					
 						<div class="section lvl3"><a href="#collection/position--dimensions/ele.width"><span class="icon-bookmark"></span> ele.width() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/position--dimensions/ele.height"><span class="icon-bookmark"></span> ele.height() et al</a></div>
@@ -656,7 +652,7 @@
 					
 						<div class="section lvl3"><a href="#collection/style/ele.visible"><span class="icon-bookmark"></span> ele.visible() et al</a></div>
 					
-						<div class="section lvl3"><a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span> ele.effectiveOpacity() et al</a></div>
+						<div class="section lvl3"><a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span> ele.effectiveOpacity() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.transparent"><span class="icon-bookmark"></span> ele.transparent() </a></div>
 					
@@ -1110,10 +1106,6 @@ edge ......... a collection of a single edge</code></pre>
 
 </p>
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.
-
-</p>
-<p>A node&#39;s position is relative to its parent node if it has one.  Otherwise, its position is relative to the graph origin (0, 0).  A node&#39;s offset defines the node&#39;s position relative to the graph origin such that position and offset are the same for a node which has no parent.
-
 
 </p>
 <h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
@@ -4596,9 +4588,6 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 <p>A position has two fields, <code>x</code> and <code>y</code>, that can take on numerical values.
 
 </p>
-<p>It is important to note that position is relative to the parent node.  If you would like the position relative to the graph origin, then use <code>node.offset()</code>.
-
-</p>
 <h3>Examples</h3>
 <pre><code class="lang-js">// get x for j
 var x = cy.$(&#39;#j&#39;).position(&#39;x&#39;);
@@ -4738,58 +4727,6 @@ cy.$(&#39;#e&#39;).position({
 
 													
 												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/position--dimensions/node.offset"><span class="fn-name">node.offset()</span>  <a href="#collection/position--dimensions/node.offset"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.offset"><p>Get the position of a node relative to the model origin, rather than relative to its parent node.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">node.offset()</div>
-										
-										<div class="descr">Get the offset object.</div>
-										<ul class="args">
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/position--dimensions/node.renderedOffset"><span class="fn-name">node.renderedOffset()</span>  <a href="#collection/position--dimensions/node.renderedOffset"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/position--dimensions/node.renderedOffset"><p>Get the rendered (on-screen) position of a node relative to the model origin, rather than relative to its parent node.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">node.renderedOffset()</div>
-										
-										<div class="descr">Get the rendered offset object.</div>
-										<ul class="args">
 											
 										</ul>
 									</div>
@@ -5827,7 +5764,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/ele.effectiveOpacity"><span class="fn-name">ele.effectiveOpacity()</span> et al <a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/style/ele.effectiveOpacity"><span class="fn-name">ele.effectiveOpacity()</span>  <a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/style/ele.effectiveOpacity"><p>Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.</p>
 </div>
 
@@ -5836,9 +5773,9 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">ele.transparent()</div>
+											<div class="name">ele.effectiveOpacity()</div>
 										
-										<div class="descr">Get whether the element is transparent.</div>
+										<div class="descr">Get the effective opacity of the element, which takes into consideration parent node opacity.</div>
 										<ul class="args">
 											
 										</ul>

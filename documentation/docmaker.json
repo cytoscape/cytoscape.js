@@ -782,26 +782,6 @@
             },
 
             {
-              "name": "node.offset",
-              "descr": "Get the position of a node relative to the model origin, rather than relative to its parent node.",
-              "formats": [
-                {
-                  "descr": "Get the offset object."
-                }
-              ]
-            },
-
-            {
-              "name": "node.renderedOffset",
-              "descr": "Get the rendered (on-screen) position of a node relative to the model origin, rather than relative to its parent node.",
-              "formats": [
-                {
-                  "descr": "Get the rendered offset object."
-                }
-              ]
-            },
-
-            {
               "name": "ele.width",
               "descr": "Get the width of the element.",
               "formats": [
@@ -1126,7 +1106,7 @@
               "name": "ele.effectiveOpacity",
               "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.",
               "formats": [
-                { "name": "ele.transparent", "descr": "Get whether the element is transparent." }
+                { "descr": "Get the effective opacity of the element, which takes into consideration parent node opacity." }
               ]
             },
 

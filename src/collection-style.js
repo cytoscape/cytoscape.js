@@ -13,10 +13,12 @@
 
 			style.apply( this );
 
+			var updatedCompounds = this.updateCompoundBounds();
+
 			if( notifyRenderer ){
-				this.rtrigger("style"); // let renderer know we changed style
+				this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
 			} else {
-				this.trigger("style"); // just fire the event
+				this.add( updatedCompounds ).trigger("style"); // just fire the event
 			}
 			return this; // chaining
 		},
@@ -29,10 +31,12 @@
 
 			style.updateMappers( this );
 
+			var updatedCompounds = this.updateCompoundBounds();
+
 			if( notifyRenderer ){
-				this.rtrigger("style"); // let renderer know we changed style
+				this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
 			} else {
-				this.trigger("style"); // just fire the event
+				this.add( updatedCompounds ).trigger("style"); // just fire the event
 			}
 			return this; // chaining
 		},

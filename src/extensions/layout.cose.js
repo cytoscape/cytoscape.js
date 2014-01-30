@@ -10,37 +10,55 @@
 	 * @brief :  default layout options
 	 */
 	var defaults = {
+		// Called on `layoutready`
 		ready               : function() {},
+
+		// Called on `layoutstop`
 		stop                : function() {},
 
 		// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
 		refresh             : 0,
+		
 		// Whether to fit the network view after when done
 		fit                 : true, 
+
+		// Padding on fit
+		padding             : 30, 
+
+
 		// Whether to randomize node positions on the beginning
 		randomize           : true,
+		
 		// Whether to use the JS console to print debug messages
 		debug               : false,
 
 		// Node repulsion (non overlapping) multiplier
 		nodeRepulsion       : 10000,
+		
 		// Node repulsion (overlapping) multiplier
 		nodeOverlap         : 10,
+		
 		// Ideal edge (non nested) length
 		idealEdgeLength     : 10,
+		
 		// Divisor to compute edge forces
 		edgeElasticity      : 100,
+		
 		// Nesting factor (multiplier) to compute ideal edge length for nested edges
 		nestingFactor       : 5, 
+		
 		// Gravity force (constant)
 		gravity             : 250, 
 		
 		// Maximum number of iterations to perform
 		numIter             : 100,
+		
 		// Initial temperature (maximum node displacement)
 		initialTemp         : 200,
+		
 		// Cooling factor (how the temperature is reduced between consecutive iterations
 		coolingFactor       : 0.95, 
+		
 		// Lower temperature threshold (below this point the layout will end)
 		minTemp             : 1
 	};
@@ -83,10 +101,13 @@
 		// If required, randomize node positions
 		if (true == options.randomize) {
 			randomizePositions(layoutInfo, cy);
+
 			if (0 < options.refresh) {
 				refreshPositions(layoutInfo, cy, options);
 			}
 		}
+
+		updatePositions(layoutInfo, cy, options);
 
 		// Main loop
 		for (var i = 0; i < options.numIter; i++) {
@@ -450,9 +471,9 @@
 		for (var i = 0; i < layoutInfo.nodeSize; i++) {
 			var n = layoutInfo.layoutNodes[i];
 			// No need to randomize compound nodes
-			if (0 == n.children.length) {
-			n.positionX = Math.random() * width;
-			n.positionY = Math.random() * height;
+			if (true || 0 == n.children.length) {
+				n.positionX = Math.random() * width;
+				n.positionY = Math.random() * height;
 			}
 		}
 	}

@@ -166,7 +166,7 @@
 			nodes.positions(function(i, element){
 				var x, y;
 
-				if( element.locked() ){
+				if( element.locked() || element.isFullAutoParent() ){
 					return false;
 				}
 

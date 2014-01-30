@@ -471,22 +471,23 @@
 					r.hoverData.draggingEles = true;
 
 					var toTrigger = [];
-					for (var i=0; i<draggedElements.length; i++) {
-
+					new $$.Collection(cy, draggedElements).positions(function(i, ele){
 						// Locked nodes not draggable, as well as non-visible nodes
-						if (draggedElements[i]._private.group == "nodes"
-							&& r.nodeIsDraggable(draggedElements[i])) {
+						if (ele.isNode() && r.nodeIsDraggable(ele)) {
+							var pos = ele.position();
 							
-							draggedElements[i]._private.position.x += disp[0];
-							draggedElements[i]._private.position.y += disp[1];
+							return {
+								x: pos.x + disp[0],
+								y: pos.y + disp[1]
+							};
 
-							toTrigger.push( draggedElements[i] );
+							toTrigger.push( ele );
 						}
-					}
+					});
+					
 					
 					(new $$.Collection(cy, toTrigger))
 						.trigger("drag")
-						.trigger("position")
 					;
 
 					if (select[2] == select[0] && select[3] == select[1]) {
@@ -1288,21 +1289,20 @@
 				if ( start != null && start._private.group == "nodes" && r.nodeIsDraggable(start)) {
 					var draggedEles = r.dragData.touchDragEles;
 
-					for( var k = 0; k < draggedEles.length; k++ ){
-						var draggedEle = draggedEles[k];
-
+					var dEleCol = new $$.Collection(cy, draggedEles).positions(function(i, draggedEle){
 						if( r.nodeIsDraggable(draggedEle) ){
 							r.dragData.didDrag = true;
+							var pos = draggedEle.position();
 
-							draggedEle._private.position.x += disp[0];
-							draggedEle._private.position.y += disp[1];
-			
+							return {
+								x: pos.x + disp[0],
+								y: pos.y + disp[1]
+							};
 						}
-					}
+					});
 
-					( new $$.Collection(cy, draggedEles) )
+					dEleCol
 						.trigger("drag")
-						.trigger("position")
 					;
 					
 					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;

@@ -82,6 +82,7 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/collection-events.js\
 	$(SRC_DIR)/collection-group.js\
 	$(SRC_DIR)/collection-iteration.js\
+	$(SRC_DIR)/collection-style.js\
 	$(SRC_DIR)/collection-switch-functions.js\
 	$(SRC_DIR)/collection-traversing.js\
 	$(SRC_DIR)/selector.js

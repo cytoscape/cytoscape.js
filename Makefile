@@ -21,6 +21,7 @@ OPEN = open
 AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 MAKE = make
+GIT = git
 
 # misc
 LINE_SEP = --------------------------------------------------------------------------------
@@ -188,8 +189,8 @@ tag : version
 	@echo $(LINE_SEP)
 	@echo -- Tagging repo...
 	@echo $(LINE_SEP)
-	git tag -a v$(VERSION) -m "v$(VERSION)"
-	git push origin v$(VERSION)
+	$(GIT) tag -a v$(VERSION) -m "v$(VERSION)"
+	$(GIT) push origin v$(VERSION)
 
 # makes the release files but doesn't publish them
 release : version all
@@ -200,8 +201,9 @@ release : version all
 	$(MKDIR) $(RELEASE_DIR)/$(VERSION)
 	$(CP) $(JS_FILE) $(RELEASE_DIR)/$(VERSION)
 	$(CP) $(MIN_JS_FILE) $(RELEASE_DIR)/$(VERSION)
-	git add -A
-	git commit -m "adding release files"
+	$(GIT) add -A
+	$(GIT) commit -a -m "adding release files"
+	$(GIT) push origin
 
 # publish to npm
 
@@ -309,7 +311,7 @@ docspublish : docsrefresh
 	@echo -- Publishing docs to gh-pages...
 	@echo $(LINE_SEP)
 	$(RM) $(TEMP_DIR)/cytoscape.js
-	git clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $(TEMP_DIR)/cytoscape.js
+	$(GIT) clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $(TEMP_DIR)/cytoscape.js
 	$(CP) $(DOC_DIR)/* $(TEMP_DIR)/cytoscape.js
 	$(MAKE) -C $(TEMP_DIR)/cytoscape.js publish
 	@echo

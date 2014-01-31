@@ -2,7 +2,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(){
+(function(window){
 
 	// the object iteself is a function that init's an instance of cytoscape
 	var $$ = cytoscape = function(){
@@ -43,6 +43,8 @@ var cytoscape;
 	}
 
 	// make sure we always register in the window just in case (e.g. w/ derbyjs)
-	window.cytoscape = cytoscape;
+	if( window ){
+		window.cytoscape = cytoscape;
+	}
 	
-})();
+})( typeof window === 'undefined' ? null : window );

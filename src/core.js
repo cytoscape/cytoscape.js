@@ -1,6 +1,6 @@
-;(function($$){
+;(function($$, window){
 
-	var isTouch = window && ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	var isTouch = $$.is.touch();
 
 	var defaults = {
 		hideEdgesOnViewport: false
@@ -40,8 +40,8 @@
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "grid" }, options.layout );
-		options.renderer = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "canvas" }, options.renderer );
+		options.layout = $$.util.extend( { name: window ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: window ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 
@@ -273,4 +273,4 @@
 		
 	});	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );

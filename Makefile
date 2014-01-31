@@ -200,6 +200,8 @@ release : version all
 	$(MKDIR) $(RELEASE_DIR)/$(VERSION)
 	$(CP) $(JS_FILE) $(RELEASE_DIR)/$(VERSION)
 	$(CP) $(MIN_JS_FILE) $(RELEASE_DIR)/$(VERSION)
+	git add -A
+	git commit -m "adding release files"
 
 # publish to npm
 

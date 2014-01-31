@@ -6,6 +6,7 @@ If there's a bug or other issue preventing you from using the latest version of 
  * [2.1.0](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip) (latest)
 
 ## 2.0.x
+ * [2.0.5](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.5.zip)
  * [2.0.4](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.4.zip)
  * [2.0.3](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.3.zip)
  * [2.0.2](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.2.zip)

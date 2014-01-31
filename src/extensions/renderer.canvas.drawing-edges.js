@@ -53,6 +53,9 @@
 				+ edge._private.style["line-color"].value[1] + ","
 				+ edge._private.style["line-color"].value[2] + ","
 				+ edge._private.style.opacity.value + ")";
+
+			
+			context.lineCap = "butt"; 
 		}
 
 		// Edge line width
@@ -207,6 +210,7 @@
 		var cy = this.data.cy;
 		var zoom = cy.zoom();
 		
+
 		// Adjusted edge width for dotted
 //		width = Math.max(width * 1.6, 3.4) * zoom;
 

@@ -23,7 +23,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(){
+(function(window){
 
 	// the object iteself is a function that init's an instance of cytoscape
 	var $$ = cytoscape = function(){
@@ -64,13 +64,15 @@ var cytoscape;
 	}
 
 	// make sure we always register in the window just in case (e.g. w/ derbyjs)
-	window.cytoscape = cytoscape;
+	if( window ){
+		window.cytoscape = cytoscape;
+	}
 	
-})();
+})( typeof window === 'undefined' ? null : window );
 
 // type testing utility functions
 
-;(function($$){
+;(function($$, window){
 	
 	$$.is = {
 		string: function(obj){
@@ -161,10 +163,14 @@ var cytoscape;
 			}
 
 			
+		},
+
+		touch: function(){
+			return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
 		}
 	};	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
 ;(function($$){
 	
@@ -3412,7 +3418,7 @@ var cytoscape;
 
 ;(function($$, window){
 	
-	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	var isTouch = $$.is.touch();
 
 	$$.Style = function( cy ){
 
@@ -4888,9 +4894,9 @@ var cytoscape;
 
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$, window){
 
-	var isTouch = window && ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	var isTouch = $$.is.touch();
 
 	var defaults = {
 		hideEdgesOnViewport: false
@@ -4930,8 +4936,8 @@ var cytoscape;
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "grid" }, options.layout );
-		options.renderer = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "canvas" }, options.renderer );
+		options.layout = $$.util.extend( { name: window ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: window ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 
@@ -5163,7 +5169,7 @@ var cytoscape;
 		
 	});	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
 (function($$, window){
 
@@ -9996,7 +10002,7 @@ var cytoscape;
 	}
 
 	CanvasRenderer.panOrBoxSelectDelay = 400;
-	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	CanvasRenderer.isTouch = $$.is.touch();
 
 	CanvasRenderer.prototype.notify = function(params) {
 		switch( params.type ){

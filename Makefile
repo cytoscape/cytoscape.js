@@ -22,6 +22,7 @@ AWK_NEWLINE = awk 'FNR==1{print ""}{print}'
 PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@ && $(PRINTF) "\n/* $(@F) */\n\n" | $(CAT) - $@ > $(TEMPFILE) && $(MV) $(TEMPFILE) $@
 MAKE = make
 GIT = git
+NODE = node
 
 # misc
 LINE_SEP = --------------------------------------------------------------------------------
@@ -329,6 +330,7 @@ debug :
 
 test : 
 	$(OPEN) $(TEST_PAGE)
+	$(NODE) tests/node-test.js
 	@echo --
 	@echo Confirm that the tests are passing.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.

@@ -1,11 +1,11 @@
-(function($){
-	
+(function($, window, navigator){
+
 	// set up testing params
 	
 	window.cy = null;
 	window.$$ = null;
 
-	var isIE = navigator.userAgent.indexOf(' MSIE ') > -1;
+	var isIE = navigator && navigator.userAgent.indexOf(' MSIE ') > -1;
 	
 	if( isIE ){
 		window.console = {
@@ -71,7 +71,7 @@
 	});
 	
 	window.defaultModule = function(name){
-		module(name, {
+		QUnit.module(name, {
 			setup: function(){
 				stop();
 
@@ -109,4 +109,4 @@
 		});
 	}
 	
-})(jQuery);
+})( window.jQuery, window, typeof navigator === 'object' ? navigator : null );

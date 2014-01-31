@@ -1,6 +1,6 @@
 ;(function($$, window){
 	
-	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	var isTouch = $$.is.touch();
 
 	$$.Style = function( cy ){
 

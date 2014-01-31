@@ -93,7 +93,7 @@
 	}
 
 	CanvasRenderer.panOrBoxSelectDelay = 400;
-	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	CanvasRenderer.isTouch = $$.is.touch();
 
 	CanvasRenderer.prototype.notify = function(params) {
 		switch( params.type ){

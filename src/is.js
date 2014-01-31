@@ -1,6 +1,6 @@
 // type testing utility functions
 
-;(function($$){
+;(function($$, window){
 	
 	$$.is = {
 		string: function(obj){
@@ -91,7 +91,11 @@
 			}
 
 			
+		},
+
+		touch: function(){
+			return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
 		}
 	};	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );

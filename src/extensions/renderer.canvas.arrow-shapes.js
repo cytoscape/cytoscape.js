@@ -4,6 +4,8 @@
 	var rendFunc = CanvasRenderer.prototype;
 	var arrowShapes = CanvasRenderer.arrowShapes = {};
 
+	CanvasRenderer.arrowShapeHeight = 0.3;
+
 	// Contract for arrow shapes:
 	// 0, 0 is arrow tip
 	// (0, 1) is direction towards node

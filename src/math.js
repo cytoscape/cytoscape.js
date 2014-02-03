@@ -12,6 +12,13 @@
 		}
 	};
 
+	$$.math.distance = function( p1, p2 ){
+		var dx = p2.x - p1.x;
+		var dy = p2.y - p1.y;
+
+		return Math.sqrt( dx*dx + dy*dy );
+	};
+
 	// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
 	$$.math.qbezierAt = function(p0, p1, p2, t){
 		return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;

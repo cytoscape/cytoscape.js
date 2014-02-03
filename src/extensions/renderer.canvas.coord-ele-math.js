@@ -860,10 +860,18 @@
 				var badEnd = !$$.is.number( rs.endX ) || !$$.is.number( rs.endY );
 				var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
 
+				var minCpADistFactor = 3;
+				var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CanvasRenderer.arrowShapeHeight;
+				var minCpADist = minCpADistFactor * arrowW;
+				var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
+				var closeStartACp = startACpDist < minCpADist;
+				var endACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
+				var closeEndACp = endACpDist < minCpADist;
+
 				if( rs.edgeType === "bezier" ){
 					var overlapping = false;
 
-					if( badStart || badAStart ){
+					if( badStart || badAStart || closeStartACp ){
 						overlapping = true;
 
 						// project control point along line from src centre to outside the src shape
@@ -893,11 +901,16 @@
 							srcBorder / 2
 						);
 
-						rs.cp2x = srcCtrlPtIntn[0] + cpM.x; // NB: +cpM to guarantee just a little bit outside shape
-						rs.cp2y = srcCtrlPtIntn[1] + cpM.y;
+						if( closeStartACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist)
+						} else {
+							rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
 					}
 
-					if( badEnd || badAEnd ){
+					if( badEnd || badAEnd || closeEndACp ){
 						overlapping = true;
 
 						// project control point along line from tgt centre to outside the tgt shape
@@ -927,8 +940,14 @@
 							tgtBorder / 2
 						);
 
-						rs.cp2x = tgtCtrlPtIntn[0] + cpM.x; // NB: +cpM to guarantee just a little bit outside shape
-						rs.cp2y = tgtCtrlPtIntn[1] + cpM.y;
+						if( closeEndACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - endACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - endACpDist);
+						} else {
+							rs.cp2x = tgtCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
+						
 					}
 
 					if( overlapping ){

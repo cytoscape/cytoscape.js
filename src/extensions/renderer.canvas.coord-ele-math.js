@@ -855,6 +855,88 @@
 				// find endpts for edge
 				this.findEndpoints( edge );
 
+				var badStart = !$$.is.number( rs.startX ) || !$$.is.number( rs.startY );
+				var badAStart = !$$.is.number( rs.arrowStartX ) || !$$.is.number( rs.arrowStartY );
+				var badEnd = !$$.is.number( rs.endX ) || !$$.is.number( rs.endY );
+				var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
+
+				if( rs.edgeType === "bezier" ){
+					var overlapping = false;
+
+					if( badStart || badAStart ){
+						overlapping = true;
+
+						// project control point along line from src centre to outside the src shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - srcPos.x,
+							y: rs.cp2y - srcPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var srcCtrlPtIntn = srcShape.intersectLine(
+							srcPos.x,
+							srcPos.y,
+							srcW,
+							srcH,
+							cpProj.x,
+							cpProj.y,
+							srcBorder / 2
+						);
+
+						rs.cp2x = srcCtrlPtIntn[0] + cpM.x; // NB: +cpM to guarantee just a little bit outside shape
+						rs.cp2y = srcCtrlPtIntn[1] + cpM.y;
+					}
+
+					if( badEnd || badAEnd ){
+						overlapping = true;
+
+						// project control point along line from tgt centre to outside the tgt shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - tgtPos.x,
+							y: rs.cp2y - tgtPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var tgtCtrlPtIntn = tgtShape.intersectLine(
+							tgtPos.x,
+							tgtPos.y,
+							tgtW,
+							tgtH,
+							cpProj.x,
+							cpProj.y,
+							tgtBorder / 2
+						);
+
+						rs.cp2x = tgtCtrlPtIntn[0] + cpM.x; // NB: +cpM to guarantee just a little bit outside shape
+						rs.cp2y = tgtCtrlPtIntn[1] + cpM.y;
+					}
+
+					if( overlapping ){
+						// recalc endpts
+						this.findEndpoints( edge );
+					}
+				}
+
 				// project the edge into rstyle
 				this.projectBezier( edge );
 

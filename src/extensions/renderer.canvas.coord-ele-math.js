@@ -701,6 +701,8 @@
 
 			srcBorder = src._private.style["border-width"].pxValue;
 			tgtBorder = tgt._private.style["border-width"].pxValue;
+
+			badBezier = false;
 			
 
 			if (hashTable[pairId].length > 1) {

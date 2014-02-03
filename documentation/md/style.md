@@ -136,7 +136,7 @@ Body:
  * **`border-opacity`** : The opacity of the node's border.
  * **`border-width`** : The size of the node's border.
  * **`height`** : The height of the node's body.
- * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`.
+ * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits with the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
 
 Pie chart background:
 

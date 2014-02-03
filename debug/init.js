@@ -9,7 +9,9 @@ $(function(){
 					"border-width": 3,
 					"background-color": "#DDD",
 					"border-color": "#555",
-					"shape": "ellipse",
+					"shape": "data(shape)",
+					"width": "mapData(weight, 0, 100, 10, 100)",
+					"height": "mapData(weight, 0, 100, 10, 100)",
 					//"border-style": "dashed"
 					//"background-size-x": '5',
 					//"background-image": "images/test-bg.png",
@@ -41,9 +43,8 @@ $(function(){
 			.selector("edge")
 				.css({
 					"width": "mapData(weight, 0, 100, 1, 4)",
-					"target-arrow-shape": "triangle",
-					"source-arrow-shape": "circle",
-					"opacity": 0.5
+					"target-arrow-shape": "data(tgtShape)",
+					"source-arrow-shape": "data(srcShape)"
 				})
 			.selector(":selected")
 				.css({
@@ -73,11 +74,6 @@ $(function(){
 					"width": 15,
 					"height": 15
 				})
-			.selector('#n0').css({ height: 200, width: 200, shape: 'ellipse' })
-			.selector('#e0').css({ 'line-color': 'cyan' })
-			.selector('#e1').css({ 'line-color': 'magenta' })
-			.selector('#e2').css({ 'line-color': 'yellow' })
-			.selector('#e3').css({ 'line-color': 'black' })
 
 
 	;
@@ -110,9 +106,9 @@ $(function(){
 		}
 	};
 	
-	var cliques = 1;
-	var numNodes = 2;
-	var numEdges = 8;
+	var cliques = 3;
+	var numNodes = 30;
+	var numEdges = 100;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;
@@ -123,11 +119,37 @@ $(function(){
 		return id;
 	}
 	
+	function randShape(){
+		var r = Math.random();
+		var shapes = ["ellipse", "triangle", "rectangle", "roundrectangle", "pentagon", "hexagon", "heptagon", "octagon", "star"];
+		var index = Math.round( (shapes.length - 1) * r );
+
+		return shapes[index];
+	}
+
+	function randSrcArrow(){
+		var r = Math.random();
+		var shapes = ["tee", "square", "circle", "roundrectangle", "none"];
+		var index = Math.round( (shapes.length - 1) * r );
+
+		return shapes[index];
+	}
+
+	function randTgtArrow(){
+		var r = Math.random();
+		var shapes = ["triangle", "diamond", "none"];
+		var index = Math.round( (shapes.length - 1) * r );
+
+		return shapes[index];
+	}
+
 	for(var i = 0; i < numNodes; i++){
+
 		options.elements.nodes.push({
 			data: {
 				id: "n" + i,
-				weight: Math.round( Math.random() * 100 )
+				weight: Math.round( Math.random() * 100 ),
+				shape: randShape()
 			}
 		});
 	}
@@ -141,9 +163,11 @@ $(function(){
 			options.elements.edges.push({
 				data: {
 					id: "e" + (j++),
-					source: 'n0',
-					target: 'n1',
-					weight: Math.round( Math.random() * 100 )
+					source: randNodeId(clique),
+					target: randNodeId(clique),
+					weight: Math.round( Math.random() * 100 ),
+					tgtShape: randTgtArrow(),
+					srcShape: randSrcArrow()
 				}
 			});
 		}

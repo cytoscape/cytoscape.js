@@ -81,7 +81,7 @@
 	}
 	
 	nodeShapes["triangle"] = {
-		points: $$.math.generateUnitNgonPoints(3, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(3, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -148,7 +148,7 @@
 	}
 	
 	nodeShapes["square"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -209,7 +209,7 @@
 	nodeShapes["octogon"] = {};
 	
 	nodeShapes["roundrectangle"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawRoundRectangle(context,
@@ -378,7 +378,7 @@
 	*/
 	
 	nodeShapes["pentagon"] = {
-		points: $$.math.generateUnitNgonPoints(5, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(5, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -429,7 +429,7 @@
 	}
 	
 	nodeShapes["hexagon"] = {
-		points: $$.math.generateUnitNgonPoints(6, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(6, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -482,7 +482,7 @@
 	}
 	
 	nodeShapes["heptagon"] = {
-		points: $$.math.generateUnitNgonPoints(7, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(7, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -535,7 +535,7 @@
 	}
 	
 	nodeShapes["octagon"] = {
-		points: $$.math.generateUnitNgonPoints(8, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(8, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -614,6 +614,8 @@
 		
 //		console.log(star5Points);
 	}
+
+	star5Points = $$.math.fitPolygonToSquare( star5Points );
 	
 	nodeShapes["star5"] = nodeShapes["star"] = {
 		points: star5Points,

@@ -1600,6 +1600,51 @@
 		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
 	};
 
+	$$.math.generateUnitNgonPointsFitToSquare = function(sides, rotationRadians) {
+		var points = $$.math.generateUnitNgonPoints(sides, rotationRadians);
+		points = $$.math.fitPolygonToSquare(points);
+
+		return points;
+	};
+
+	$$.math.fitPolygonToSquare = function(points){
+		var x, y;
+		var sides = points.length/2;
+		var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+		for (var i = 0; i < sides; i++) {
+			x = points[2 * i];
+			y = points[2 * i + 1];
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+		
+		// stretch factors
+		var sx = 2 / (maxX - minX);
+		var sy = 2 / (maxY - minY);
+
+		for (var i = 0; i < sides; i++){
+			x = points[2 * i] = points[2 * i] * sx;
+			y = points[2 * i + 1] = points[2 * i + 1] * sy;
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+
+		if( minY < -1 ){
+			for (var i = 0; i < sides; i++){
+				y = points[2 * i + 1] = points[2 * i + 1] + (-1 -minY);
+			}
+		}
+		
+		return points;
+	};
+
 	$$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
 		
 		var increment = 1.0 / sides * 2 * Math.PI;
@@ -1609,45 +1654,13 @@
 		startAngle += rotationRadians;
 		
 		var points = new Array(sides * 2);
-		
-		var currentAngle;
+
+		var currentAngle, x, y;
 		for (var i = 0; i < sides; i++) {
 			currentAngle = i * increment + startAngle;
 			
-			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
-			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
-		}
-		
-		// The above generates points for a polygon inscribed in a radius 1 circle.
-		// Stretch so that the maximum of the height and width becomes 2 so the resulting
-		// scaled shape appears to be inscribed inside a rectangle with the given
-		// width and height. The maximum of the width and height is used to preserve
-		// the shape's aspect ratio.
-		
-		// Stretch width
-		var maxAbsX = 0
-		var maxAbsY = 0;
-		for (var i = 0; i < points.length / 2; i++) {
-			if (Math.abs(points[2 * i] > maxAbsX)) {
-				maxAbsX = Math.abs(points[2 * i]);
-			}
-			
-			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
-				maxAbsY = Math.abs(points[2 * i + 1]);
-			}
-		}
-		
-		var minScaleLimit = 0.0005;
-		
-		// Use the larger dimension to do the scale, in order to preserve the shape's
-		// aspect ratio
-		var maxDimension = Math.max(maxAbsX, maxAbsY);
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			if (maxDimension > minScaleLimit) {
-				points[2 * i] *= (1 / maxDimension);
-				points[2 * i + 1] *= (1 / maxDimension);
-			}
+			x = points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
+			y = points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
 		}
 		
 		return points;

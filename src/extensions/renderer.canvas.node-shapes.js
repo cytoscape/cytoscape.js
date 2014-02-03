@@ -615,7 +615,7 @@
 //		console.log(star5Points);
 	}
 	
-	nodeShapes["star5"] = {
+	nodeShapes["star5"] = nodeShapes["star"] = {
 		points: star5Points,
 		
 		draw: function(context, centerX, centerY, width, height) {

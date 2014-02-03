@@ -356,7 +356,7 @@
 			textDecoration: { enums: ["none", "underline", "overline", "line-through"] },
 			textTransform: { enums: ["none", "capitalize", "uppercase", "lowercase"] },
 			nodeShape: { enums: ["rectangle", "roundrectangle", "ellipse", "triangle",
-			                     "square", "pentagon", "hexagon", "heptagon", "octagon"] },
+			                     "square", "pentagon", "hexagon", "heptagon", "octagon", "star"] },
 			arrowShape: { enums: ["tee", "triangle", "square", "circle", "diamond", "none"] },
 			display: { enums: ["element", "none"] },
 			visibility: { enums: ["hidden", "visible"] },

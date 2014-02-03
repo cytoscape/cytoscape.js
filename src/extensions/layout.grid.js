@@ -108,6 +108,15 @@
 			
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
+
+			for( var i = 0; i < nodes.length; i++ ){
+				var node = nodes[i];
+				var w = node.outerWidth();
+				var h = node.outerHeight();
+
+				cellWidth = Math.max( cellWidth, w );
+				cellHeight = Math.max( cellHeight, h );
+			}
 			
 			var cellUsed = {}; // e.g. 'c-0-2' => true
 			

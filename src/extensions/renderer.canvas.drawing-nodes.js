@@ -39,7 +39,7 @@
 				+ node._private.style["border-color"].value[2] + ","
 				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value * parentOpacity) + ")";
 			
-			
+			context.lineJoin = 'miter'; // so borders are square with the node shape
 			
 			//var image = this.getCachedImage("url");
 			
@@ -119,7 +119,7 @@
 			if( overlayOpacity > 0 ){
 				context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
-				CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+				CanvasRenderer.nodeShapes['roundrectangle'].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,

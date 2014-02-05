@@ -23,7 +23,7 @@ PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(T
 MAKE = make
 GIT = git
 NODE = node
-MOCHA = mocha
+MOCHA = ./node_modules/.bin/mocha
 NPM = npm
 
 # misc

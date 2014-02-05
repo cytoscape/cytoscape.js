@@ -23,6 +23,8 @@ PREAMBLIFY = $(SED) "s/\#(VERSION)/${VERSION}/g" $(PREAMBLE) | $(CAT) - $@ > $(T
 MAKE = make
 GIT = git
 NODE = node
+MOCHA = mocha
+NPM = npm
 
 # misc
 LINE_SEP = --------------------------------------------------------------------------------
@@ -45,7 +47,7 @@ DOC_API_LATEST = documentation/api/cytoscape.js-latest
 DOC_API_NEW = documentation/api/cytoscape.js-$(VERSION)
 DOC_DL_DIR = documentation/download
 DEBUG_PAGE = debug/index.html
-TEST_PAGE = tests/index.html
+TEST_PAGE = test/index.html
 TEMP_DIR = /tmp
 TEMP_DOC_DIR_NAME = cy-docs-temp
 
@@ -325,12 +327,15 @@ publish : test version release docspublish confirmnpm confirmbower tag npm bower
 clean : 
 	$(RM) $(BUILD_DIR)
 
+.PHONY: debug
 debug : 
 	$(OPEN) $(DEBUG_PAGE)
 
+.PHONY: test
 test : 
 	$(OPEN) $(TEST_PAGE)
-	$(NODE) tests/node-test.js
+	$(NPM) install
+	$(MOCHA) -R spec --check-leaks --inline-diffs
 	@echo --
 	@echo Confirm that the tests are passing.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.

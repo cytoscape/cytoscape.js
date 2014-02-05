@@ -181,7 +181,7 @@
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
 				} else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
-					continue; // can't create element
+					continue; // can't create element if prior id already exists
 				}
 
 				var ele = new $$.Element( cy, json, false );
@@ -336,9 +336,13 @@
 			if( data.id === undefined ){
 				data.id = idFactory.generate( cy, ele );
 			} else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
+				$$.util.error("Can not create element with invalid string ID `" + data.id + "`");
+				
 				// can't create element if it has empty string as id or non-string id
 				continue;
 			} else if( cy.getElementById( data.id ).length != 0 ){
+				$$.util.error("Can not create second element with ID `" + data.id + "`");
+				
 				// can't create element if one already has that id
 				continue;
 			}
@@ -350,6 +354,7 @@
 				var edge = ele;
 				var fields = ["source", "target"];
 				var fieldsLength = fields.length;
+				var badSourceOrTarget = false;
 				for(var j = 0; j < fieldsLength; j++){
 					
 					var field = fields[j];
@@ -357,12 +362,16 @@
 					
 					if( val == null || val === "" ){
 						// can't create if source or target is not defined properly
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with unspecified " + field);
+						badSourceOrTarget = true;
 					} else if( cy.getElementById(val).empty() ){ 
 						// can't create edge if one of its nodes doesn't exist
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with nonexistant " + field + " `" + val + "`");
+						badSourceOrTarget = true;
 					}
 				}
+
+				if( badSourceOrTarget ){ continue; } // can't create this
 				
 				var src = cy.getElementById( data.source );
 				var tgt = cy.getElementById( data.target );

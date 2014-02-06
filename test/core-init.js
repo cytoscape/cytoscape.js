@@ -1,9 +1,9 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-describe('Initialisation', function(){
+describe('Core initialisation', function(){
 
-  it('A node with the same ID as an earlier one is not added', function(done){
+  it('does not add a node with the same ID as an earlier one', function(done){
     cytoscape({
       elements: {
         nodes: [
@@ -23,7 +23,7 @@ describe('Initialisation', function(){
     });
   });
 
-  it('An edge with bad source and target does not get created', function(done){
+  it('does not create an edge with bad source and target', function(done){
     cytoscape({
       elements: {
         edges: [ { data: { source: "n1", target: "n2" } } ]
@@ -38,7 +38,7 @@ describe('Initialisation', function(){
     });
   });
 
-  it('An edge with bad target does not get created', function(done){
+  it('does not create an edge with bad target', function(done){
     cytoscape({
       elements: {
         nodes: [ { data: { id: "n1" } } ],
@@ -55,7 +55,7 @@ describe('Initialisation', function(){
     });
   });
 
-  it('An edge that specifies good source and target gets created', function(done){
+  it('creates an edge that specifies good source and target', function(done){
     cytoscape({
       elements: {
         nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
@@ -72,7 +72,7 @@ describe('Initialisation', function(){
     });
   });
 
-  it('A node with self as parent is added but is parentless', function(done){
+  it('adds node with self as parent but as parentless node', function(done){
     cytoscape({
       elements: {
         nodes: [ { data: { id: "n1", parent: "n1" } } ]
@@ -87,7 +87,7 @@ describe('Initialisation', function(){
     });
   });
 
-  it('A parent cycle between two nodes is broken when added', function(done){
+  it('breaks a parent cycle between two nodes', function(done){
     cytoscape({
       elements: {
         nodes: [

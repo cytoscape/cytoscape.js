@@ -1,6 +1,6 @@
 ## Details
 
-For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the collection.
+For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the calling collection.
 
 ## Examples
 

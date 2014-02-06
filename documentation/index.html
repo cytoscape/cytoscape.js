@@ -3588,7 +3588,7 @@ cy.zoom({
 								
 									<div class="format">
 										
-											<div class="name">cy.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">cy.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3596,6 +3596,13 @@ cy.zoom({
 												<li>
 													<span class="name">events</span>
 													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -3628,7 +3635,7 @@ cy.zoom({
 								
 									<div class="format">
 										
-											<div class="name">cy.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+											<div class="name">cy.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3636,6 +3643,13 @@ cy.zoom({
 												<li>
 													<span class="name">eventsMap</span>
 													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5161,7 +5175,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5169,6 +5183,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">events</span>
 													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5215,7 +5236,7 @@ cy.$(&#39;#e&#39;).position({
 											
 												<li>
 													<span class="name">selector</span>
-													<span class="descr">A selector to specify elements for which the handler is triggered.</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5258,7 +5279,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5266,6 +5287,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">events</span>
 													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5298,7 +5326,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5306,6 +5334,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">eventsMap</span>
 													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5349,7 +5384,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5357,6 +5392,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">events</span>
 													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5389,7 +5431,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5397,6 +5439,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">eventsMap</span>
 													<span class="descr">A map of event names to handler functions.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">A delegate selector to specify child elements for which the handler is triggered.</span>
 
 													
 												</li>
@@ -5440,7 +5489,7 @@ cy.$(&#39;#e&#39;).position({
 								
 									<div class="format">
 										
-											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>handler] )</div>
+											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5448,6 +5497,13 @@ cy.$(&#39;#e&#39;).position({
 												<li>
 													<span class="name">events</span>
 													<span class="descr">A space separated list of event names.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The same delegate selector used to bind to the events.</span>
 
 													
 												</li>
@@ -5478,7 +5534,7 @@ cy.$(&#39;#e&#39;).position({
 											
 												<li>
 													<span class="name">selector</span>
-													<span class="descr">The same selector used to bind to the events.</span>
+													<span class="descr">The same delegate selector used to bind to the events.</span>
 
 													
 												</li>

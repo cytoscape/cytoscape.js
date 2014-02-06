@@ -322,7 +322,7 @@ docspublish : docsrefresh
 
 
 # publish a new version of cy.js
-publish : test version release docspublish confirmnpm confirmbower tag npm bower
+publish : zip test version release docspublish confirmnpm confirmbower tag npm bower
 
 clean : 
 	$(RM) $(BUILD_DIR)

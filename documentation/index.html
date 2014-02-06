@@ -1034,6 +1034,7 @@
 </ul>
 <h2 id="downloads/2.0.x">2.0.x <a href="#downloads/2.0.x"><span class="icon-bookmark"></span></a></h2>
 <ul>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.5.zip">2.0.5</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.4.zip">2.0.4</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.3.zip">2.0.3</a></li>
 <li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.2.zip">2.0.2</a></li>
@@ -1506,7 +1507,7 @@ node {
 <li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
 <li><strong><code>border-width</code></strong> : The size of the node&#39;s border.</li>
 <li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
-<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>.</li>
+<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>, <code>star</code>.  Note that each shape fits with the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).</li>
 </ul>
 <p>Pie chart background:
 
@@ -1856,36 +1857,57 @@ It was implemented by Gerardo Huck as part of Google Summer of Code 2013 (Mentor
 <pre><code class="lang-js">options = {
     name: &#39;cose&#39;,
 
-    // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
-    refresh             : 0,
-    // Whether to fit the network view after when done
-    fit                 : true, 
-    // Whether to randomize node positions on the beginning
-    randomize           : true,
-    // Whether to use the JS console to print debug messages
-    debug               : false,
+        // Called on `layoutready`
+        ready               : function() {},
 
-    // Node repulsion (non overlapping) multiplier
-    nodeRepulsion       : 10000,
-    // Node repulsion (overlapping) multiplier
-    nodeOverlap         : 10,
-    // Ideal edge (non nested) length
-    idealEdgeLength     : 10,
-    // Divisor to compute edge forces
-    edgeElasticity      : 100,
-    // Nesting factor (multiplier) to compute ideal edge length for nested edges
-    nestingFactor       : 5, 
-    // Gravity force (constant)
-    gravity             : 250, 
+        // Called on `layoutstop`
+        stop                : function() {},
 
-    // Maximum number of iterations to perform
-    numIter             : 100,
-    // Initial temperature (maximum node displacement)
-    initialTemp         : 200,
-    // Cooling factor (how the temperature is reduced between consecutive iterations)
-    coolingFactor       : 0.95, 
-    // Lower temperature threshold (below this point the layout will end)
-    minTemp             : 1
+        // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
+        refresh             : 0,
+
+        // Whether to fit the network view after when done
+        fit                 : true, 
+
+        // Padding on fit
+        padding             : 30, 
+
+
+        // Whether to randomize node positions on the beginning
+        randomize           : true,
+
+        // Whether to use the JS console to print debug messages
+        debug               : false,
+
+        // Node repulsion (non overlapping) multiplier
+        nodeRepulsion       : 10000,
+
+        // Node repulsion (overlapping) multiplier
+        nodeOverlap         : 10,
+
+        // Ideal edge (non nested) length
+        idealEdgeLength     : 10,
+
+        // Divisor to compute edge forces
+        edgeElasticity      : 100,
+
+        // Nesting factor (multiplier) to compute ideal edge length for nested edges
+        nestingFactor       : 5, 
+
+        // Gravity force (constant)
+        gravity             : 250, 
+
+        // Maximum number of iterations to perform
+        numIter             : 100,
+
+        // Initial temperature (maximum node displacement)
+        initialTemp         : 200,
+
+        // Cooling factor (how the temperature is reduced between consecutive iterations
+        coolingFactor       : 0.95, 
+
+        // Lower temperature threshold (below this point the layout will end)
+        minTemp             : 1
 };
 
 cy.layout( options );</code></pre>
@@ -5642,7 +5664,10 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 <p>Only <a href="#style">defined visual style properties</a> are supported.
 
 </p>
-<p>If you would like to remove a particular overridden style property, set <code>null</code> to it.</p>
+<p>If you would like to remove a particular overridden style property, set <code>null</code> to it.
+
+</p>
+<p>Note that this function has the alias <code>eles.style()</code>, which can be used interchangeably with <code>eles.css()</code>.</p>
 
 								
 							</div>		
@@ -5656,6 +5681,9 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 							
 
 							<div class="details">
+								
+									<p>Note that this function has the alias <code>eles.removeStyle()</code>, which can be used interchangeably with <code>eles.removeCss()</code>.</p>
+
 								
 							</div>		
 						</div>
@@ -5699,6 +5727,9 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 							
 
 							<div class="details">
+								
+									<p>Note that this function has the alias <code>ele.renderedStyle()</code>, which is interchangeable with <code>ele.renderedCss()</code>.</p>
+
 								
 							</div>		
 						</div>

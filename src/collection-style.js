@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	var borderWidthMultiplier = 2 * 0.5;
 	var borderWidthAdjustment = 0;

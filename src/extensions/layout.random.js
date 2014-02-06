@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		ready: undefined, // callback on layoutready

@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var rendFunc = CanvasRenderer.prototype;

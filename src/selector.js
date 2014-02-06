@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 		
 
 	$$.fn.selector = function(map, options){
@@ -28,7 +28,7 @@
 	
 		// storage for parsed queries
 		// when you add something here, also add to Selector.toString()
-		function newQuery(){
+		var newQuery = function(){
 			return {
 				classes: [], 
 				colonSelectors: [],
@@ -101,9 +101,11 @@
 			
 			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
 			// so that values get compared properly in Selector.filter()
-			function cleanMetaChars(str){
-				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), "\1");
-			}
+			var cleanMetaChars = function(str){
+				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), function(match, $1, offset, original){
+					return $1;
+				});
+			};
 			
 			// add @ variants to comparatorOp
 			var ops = comparatorOp.split("|");
@@ -265,7 +267,7 @@
 			var i = 0;
 			
 			// of all the expressions, find the first match in the remaining text
-			function consumeExpr( expectation ){
+			var consumeExpr = function( expectation ){
 				var expr;
 				var match;
 				var name;
@@ -296,17 +298,17 @@
 					match: match,
 					name: name
 				};
-			}
+			};
 			
 			// consume all leading whitespace
-			function consumeWhitespace(){
+			var consumeWhitespace = function(){
 				var match = remaining.match(/^\s+/);
 				
 				if( match ){
 					var consumed = match[0];
 					remaining = remaining.substring( consumed.length );
 				}
-			}
+			};
 			
 			self[0] = newQuery(); // get started
 
@@ -527,7 +529,7 @@
 			if( !allClassesMatch ) return false;
 			
 			// generic checking for data/metadata
-			function operandsMatch(params){
+			var operandsMatch = function(params){
 				var allDataMatches = true;
 				for(var k = 0; k < query[params.name].length; k++){
 					var data = query[params.name][k];
@@ -601,7 +603,7 @@
 				} // for
 				
 				return allDataMatches;
-			} // operandsMatch
+			}; // operandsMatch
 			
 			// check data matches
 			var allDataMatches = operandsMatch({
@@ -667,7 +669,7 @@
 			
 
 			// check parent/child relations
-			function confirmRelations( query, elements ){
+			var confirmRelations = function( query, elements ){
 				if( query != null ){
 					var matches = false;
 					elements = elements(); // make elements functional so we save cycles if query == null
@@ -684,7 +686,7 @@
 				} else {
 					return true;
 				}
-			}
+			};
 
 			if (! confirmRelations(query.parent, function(){
 				return element.parent()
@@ -732,14 +734,14 @@
 		
 		var str = "";
 		
-		function clean(obj){
+		var clean = function(obj){
 			if( $$.is.string(obj) ){
 				return obj;
 			} 
 			return "";
-		}
+		};
 		
-		function queryToString(query){
+		var queryToString = function(query){
 			var str = "";
 
 			var group = clean(query.group);
@@ -787,7 +789,7 @@
 			}
 
 			return str;
-		}
+		};
 
 		for(var i = 0; i < this.length; i++){
 			var query = this[i];

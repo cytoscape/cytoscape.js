@@ -64,6 +64,7 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/jquery-plugin.js\
 	$(SRC_DIR)/event.js\
 	$(SRC_DIR)/define.js\
+	$(SRC_DIR)/selector.js\
 	$(SRC_DIR)/style.js\
 	$(SRC_DIR)/core.js\
 	$(SRC_DIR)/core-add-remove.js\
@@ -88,8 +89,7 @@ CORE = $(SRC_DIR)/namespace.js\
 	$(SRC_DIR)/collection-iteration.js\
 	$(SRC_DIR)/collection-style.js\
 	$(SRC_DIR)/collection-switch-functions.js\
-	$(SRC_DIR)/collection-traversing.js\
-	$(SRC_DIR)/selector.js
+	$(SRC_DIR)/collection-traversing.js
 
 # extensions (list them manually if you don't want them all)	$(wildcard $(EXTENSIONS_DIR)/*)
 EXTENSIONS = $(EXTENSIONS_DIR)/renderer.null.js\
@@ -331,11 +331,14 @@ clean :
 debug : 
 	$(OPEN) $(DEBUG_PAGE)
 
-.PHONY: test
-test : 
-	$(OPEN) $(TEST_PAGE)
+.PHONY: mocha
+mocha : 
 	$(NPM) install
 	$(MOCHA) -R spec --check-leaks --inline-diffs
+
+.PHONY: test
+test : mocha
+	$(OPEN) $(TEST_PAGE)
 	@echo --
 	@echo Confirm that the tests are passing.
 	@echo Press ENTER to continue the build process, or CTRL+C to quit.

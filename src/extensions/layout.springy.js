@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		maxSimulationTime: 1000,

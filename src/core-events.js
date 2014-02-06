@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.core({
 		on: $$.define.on(), // .on( events [, selector] [, data], handler)

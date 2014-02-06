@@ -1,4 +1,4 @@
-;(function($, $$){
+;(function($, $$){ "use strict";
 	
 	if( !$ ){ return } // no jquery => don't need this
 

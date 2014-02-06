@@ -4,7 +4,7 @@
   Modifications tracked on Github.
 */
 
-;(function($$) {
+;(function($$) { "use strict";
 
 	/**
 	 * @brief :  default layout options

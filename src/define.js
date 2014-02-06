@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	// metaprogramming makes me happy
 

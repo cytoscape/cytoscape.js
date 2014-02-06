@@ -1,4 +1,4 @@
-;(function($$, window){
+;(function($$, window){ "use strict";
 
 	var isTouch = $$.is.touch();
 

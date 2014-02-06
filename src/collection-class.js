@@ -1,4 +1,4 @@
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 	
 	$$.fn.eles({
 		addClass: function(classes){

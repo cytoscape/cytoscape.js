@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph
@@ -125,7 +125,7 @@
         }
 
         // assign the nodes a depth and index
-        function assignDepthsToEles(){
+        var assignDepthsToEles = function(){
             for( var i = 0; i < depths.length; i++ ){
                 var eles = depths[i];
 
@@ -138,13 +138,13 @@
                     };
                 }
             }
-        }
+        };
         assignDepthsToEles();
 
          // make maximal if so set by adjusting depths
         for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
 
-            function intersectsDepth( node ){ // returns true if has edges pointing in from a higher depth
+            var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
                 var edges = node.connectedEdges('[target = "' + node.id() + '"]');
                 var thisInfo = node._private.scratch.BreadthFirstLayout;
                 var highestDepthOfOther = 0;
@@ -161,7 +161,7 @@
                 }
 
                 return highestOther;
-            }
+            };
 
             var nDepths = depths.length;
             var elesToMove = [];
@@ -215,7 +215,7 @@
 
         // get the weighted percent for an element based on its connectivity to other levels
         var cachedWeightedPercent = {};
-        function getWeightedPercent( ele ){
+        var getWeightedPercent = function( ele ){
             if( cachedWeightedPercent[ ele.id() ] ){
                 return cachedWeightedPercent[ ele.id() ];
             }
@@ -247,7 +247,7 @@
 
             cachedWeightedPercent[ ele.id() ] = percent;
             return percent;
-        }
+        };
 
         // rearrange the indices in each depth level based on connectivity
         for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result

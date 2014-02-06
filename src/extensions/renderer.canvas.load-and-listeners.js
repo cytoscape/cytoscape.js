@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -36,7 +36,7 @@
 
 			var innerNodes = node.descendants();
 
-			function hasNonAutoParent(ele){
+			var hasNonAutoParent = function(ele){
 				while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
 					parent = ele.parent()[0];
 					var pstyle = parent._private.style;
@@ -49,7 +49,7 @@
 				}
 
 				return false;
-			}
+			};
 
 			// TODO do not drag hidden children & children of hidden children?
 			for (var i=0; i < innerNodes.size(); i++)
@@ -149,9 +149,9 @@
 			e.preventDefault();
 		});
 
-		function inBoxSelection(){
+		var inBoxSelection = function(){
 			return r.data.select[4] !== 0;
-		}
+		};
 
 		// Primary key
 		r.registerBinding(r.data.container, "mousedown", function(e) { 
@@ -851,9 +851,9 @@
 		var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
 		var twoFingersStartInside;
 
-		function distance(x1, y1, x2, y2){
+		var distance = function(x1, y1, x2, y2){
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
-		}
+		};
 
 		r.registerBinding(r.data.container, "touchstart", function(e) {
 
@@ -878,7 +878,7 @@
 			if( e.touches[1] ){
 
 				// anything in the set of dragged eles should be released
-				function release( eles ){
+				var release = function( eles ){
 					for( var i = 0; i < eles.length; i++ ){
 						eles[i]._private.grabbed = false;
 						eles[i]._private.rscratch.inDragLayer = false;

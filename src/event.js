@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	// shamelessly taken from jQuery
 	// https://github.com/jquery/jquery/blob/master/src/event.js

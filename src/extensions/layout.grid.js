@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		fit: true, // whether to fit the viewport to the graph
@@ -39,7 +39,7 @@
 			var rows = Math.round( splits );
 			var cols = Math.round( width/height * splits );
 
-			function small(val){
+			var small = function(val){
 				if( val == undefined ){
 					return Math.min(rows, cols);
 				} else {
@@ -50,9 +50,9 @@
 						cols = val;
 					}
 				}
-			}
+			};
 			
-			function large(val){
+			var large = function(val){
 				if( val == undefined ){
 					return Math.max(rows, cols);
 				} else {
@@ -63,7 +63,7 @@
 						cols = val;
 					}
 				}
-			}
+			};
 			
 			// if rows or columns were set in options, use those values
 			if( options.rows != null && options.columns != null ){
@@ -120,24 +120,24 @@
 			
 			var cellUsed = {}; // e.g. 'c-0-2' => true
 			
-			function used(row, col){
+			var used = function(row, col){
 				return cellUsed['c-' + row + '-' + col] ? true : false;
-			}
+			};
 			
-			function use(row, col){
+			var use = function(row, col){
 				cellUsed['c-' + row + '-' + col] = true;
-			}
+			};
 
 			// to keep track of current cell position
 			var row = 0;
 			var col = 0;
-			function moveToNextCell(){
+			var moveToNextCell = function(){
 				col++;
 				if( col >= cols ){
 					col = 0;
 					row++;
 				}
-			}
+			};
 
 			// get a cache of all the manual positions
 			var id2manPos = {};

@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		liveUpdate: true, // whether to show the layout as it's running

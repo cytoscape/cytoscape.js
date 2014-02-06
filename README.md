@@ -37,7 +37,7 @@ When adding source (.js) files to the repository, there are several files that s
 
  * `src/debug/index.html` : Update the `<script>` tag list with the file so that the debug page can continue to be used to visually test the library.
 
- * `tests/index.html` : Update the list of JavaScript files that the testing framework considers to consistute the library.  Otherwise, the tests will almost certainly fail.
+ * `test/index.html` : Update the list of JavaScript files that the testing framework considers to consistute the library.  Otherwise, the tests will almost certainly fail when run via HTML.
 
 
 
@@ -65,6 +65,7 @@ Run `make` in the console.  The targets are:
  * `concat` : build the production (non-minified) JS
  * `zip` : minify and make a ZIP file for release
  * `clean` : deletes built files
+ * `test` : run the Node.js tests in the terminal and open the tests in the browser
  * `publish` : make a release and publish it; follow the terminal prompts, which contains individually (e.g. in case you'd like to skip something)
   * `test`
   * `version` 
@@ -89,8 +90,7 @@ Run `make publish`.  Follow the prompts and a full release should be made for yo
 
 ## Tests
 
-QUnit tests are found in the [tests directory](https://github.com/cytoscape/cytoscape.js/tree/master/tests).  The tests are automatically
-run against different versions of jQuery.
+Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`make test`).
 
 
 

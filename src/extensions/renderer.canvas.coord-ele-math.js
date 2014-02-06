@@ -1,11 +1,11 @@
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
 	// Project mouse
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
-		n = this.data.container;
+		var n = this.data.container;
 			
 		var offsets = this.findContainerPageCoords();
 		var offsetLeft = offsets[0];
@@ -14,7 +14,8 @@
 //		console.log("calce");
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-		x = pageX - offsetLeft; y = pageY - offsetTop;
+		var x = pageX - offsetLeft; 
+		var y = pageY - offsetTop;
 		
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];

@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -232,11 +232,11 @@
 					var c1 = start;
 					var c2 = end;
 
-					function ch(ch1, ch2){
+					var ch = function(ch1, ch2){
 						var diff = ch2 - ch1;
 						var min = ch1;
 						return Math.round( percent * diff + min );
-					}
+					};
 					
 					var r = ch( c1[0], c2[0] );
 					var g = ch( c1[1], c2[1] );

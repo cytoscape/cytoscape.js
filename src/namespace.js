@@ -2,7 +2,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(window){
+(function(window){ "use strict";
 
 	// the object iteself is a function that init's an instance of cytoscape
 	var $$ = cytoscape = function(){

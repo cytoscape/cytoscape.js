@@ -1,4 +1,10 @@
-(function($$, window){
+(function($$, window){ "use strict";
+
+	function ready(f) {
+		var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
+
+		setTimeout(fn, 9, f);
+	}
 
 	$$.fn.core({
 		add: function(opts){
@@ -115,12 +121,6 @@
 			}
 
 			if( window ){
-				function ready(f) {
-					var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
-
-					setTimeout(fn, 9, f);
-				}
-
 				ready( callback );
 			} else {
 				callback();

@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	// registered extensions to cytoscape, indexed by name
 	var extensions = {};

@@ -1,4 +1,4 @@
-;(function($$, window){
+;(function($$, window){ "use strict";
 	
 	var isTouch = $$.is.touch();
 
@@ -66,7 +66,7 @@
 				value: value
 			});
 		} else if( $$.is.plainObject(name) ){
-			map = name;
+			var map = name;
 
 			for( var j = 0; j < $$.style.properties.length; j++ ){
 				var prop = $$.style.properties[j];
@@ -515,7 +515,6 @@
 					"text-valign": "top",
 					"text-halign": "center",
 					"color": color,
-					"content": undefined, // => no label
 					"text-outline-color": "#000",
 					"text-outline-width": 0,
 					"text-outline-opacity": 1,

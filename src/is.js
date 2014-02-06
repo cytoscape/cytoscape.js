@@ -1,6 +1,6 @@
 // type testing utility functions
 
-;(function($$, window){
+;(function($$, window){ "use strict";
 	
 	$$.is = {
 		string: function(obj){

@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph

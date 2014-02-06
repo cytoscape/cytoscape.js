@@ -1,4 +1,4 @@
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.math = {};
 	
@@ -1148,8 +1148,8 @@
 			return [];
 		}
 		
-		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
-		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+		var t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+		var t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
 		
 		var tMin = Math.min(t1, t2);
 		var tMax = Math.max(t1, t2);

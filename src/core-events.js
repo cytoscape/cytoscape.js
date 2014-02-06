@@ -12,7 +12,4 @@
 	$$.corefn.bind = $$.corefn.on;
 	$$.corefn.unbind = $$.corefn.off;
 
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.corefn );
-		
 })( cytoscape );

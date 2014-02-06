@@ -29,8 +29,5 @@
 	// aliases for those folks who like old stuff:
 	$$.elesfn.bind = $$.elesfn.on;
 	$$.elesfn.unbind = $$.elesfn.off;
-
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.elesfn );
 	
 })( cytoscape );

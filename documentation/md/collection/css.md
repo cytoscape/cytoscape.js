@@ -5,3 +5,5 @@ You should use this function very sparingly, because it *overrides* the style of
 Only [defined visual style properties](#style) are supported.
 
 If you would like to remove a particular overridden style property, set `null` to it.
+
+Note that this function has the alias `eles.style()`, which can be used interchangeably with `eles.css()`.

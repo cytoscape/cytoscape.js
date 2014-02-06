@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js github-snapshot-2014.01.23-15.16.08.
+ * This file is part of cytoscape.js github-snapshot-2014.02.06-16.19.03.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -23,7 +23,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(){
+(function(window){ "use strict";
 
 	// the object iteself is a function that init's an instance of cytoscape
 	var $$ = cytoscape = function(){
@@ -64,13 +64,15 @@ var cytoscape;
 	}
 
 	// make sure we always register in the window just in case (e.g. w/ derbyjs)
-	window.cytoscape = cytoscape;
+	if( window ){
+		window.cytoscape = cytoscape;
+	}
 	
-})();
+})( typeof window === 'undefined' ? null : window );
 
 // type testing utility functions
 
-;(function($$){
+;(function($$, window){ "use strict";
 	
 	$$.is = {
 		string: function(obj){
@@ -161,12 +163,16 @@ var cytoscape;
 			}
 
 			
+		},
+
+		touch: function(){
+			return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
 		}
 	};	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// utility functions only for internal use
 
@@ -480,6 +486,14 @@ var cytoscape;
 			var ret;
 			var number = $$.util.regex.number;
 			var h, s, l, a, r, g, b;
+			function hue2rgb(p, q, t){
+				if(t < 0) t += 1;
+				if(t > 1) t -= 1;
+				if(t < 1/6) return p + (q - p) * 6 * t;
+				if(t < 1/2) return q;
+				if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			}
 
 			var m = new RegExp("^" + $$.util.regex.hsla + "$").exec(hsl);
 			if( m ){
@@ -513,15 +527,6 @@ var cytoscape;
 				if( s === 0 ){
 					r = g = b = Math.round(l * 255); // achromatic
 				} else {
-					function hue2rgb(p, q, t){
-						if(t < 0) t += 1;
-						if(t > 1) t -= 1;
-						if(t < 1/6) return p + (q - p) * 6 * t;
-						if(t < 1/2) return q;
-						if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-						return p;
-					}
-
 					var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
 					var p = 2 * l - q;
 					r = Math.round( 255 * hue2rgb(p, q, h + 1/3) );
@@ -779,10 +784,39 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.math = {};
 	
+	$$.math.signum = function(x){
+		if( x > 0 ){
+			return 1;
+		} else if( x < 0 ){
+			return -1;
+		} else {
+			return 0;
+		}
+	};
+
+	$$.math.distance = function( p1, p2 ){
+		var dx = p2.x - p1.x;
+		var dy = p2.y - p1.y;
+
+		return Math.sqrt( dx*dx + dy*dy );
+	};
+
+	// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
+	$$.math.qbezierAt = function(p0, p1, p2, t){
+		return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
+	}
+
+	$$.math.qbezierPtAt = function(p0, p1, p2, t){
+		return {
+			x: $$.math.qbezierAt( p0.x, p1.x, p2.x, t ),
+			y: $$.math.qbezierAt( p0.y, p1.y, p2.y, t )
+		};
+	}
+
 	$$.math.roundRectangleIntersectLine = function(
 		x, y, nodeX, nodeY, width, height, padding) {
 		
@@ -1184,14 +1218,9 @@ var cytoscape;
 	$$.math.checkBezierInBox = function(
 		x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 
-
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
 		function sampleInBox(t){
-			var x = qbezierAt(x1, x2, x3, t);
-			var y = qbezierAt(y1, y2, y3, t);
+			var x = $$.math.qbezierAt(x1, x2, x3, t);
+			var y = $$.math.qbezierAt(y1, y2, y3, t);
 
 			return x1box <= x && x <= x2box
 				&& y1box <= y && y <= y2box
@@ -1400,6 +1429,27 @@ var cytoscape;
 
 	$$.math.inBezierVicinity = function(
 		x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
+
+		// unfortunately yue's function makes several assumptions about the beziers
+		// and is not generic enough to be used properly
+		// a rough bounding box of the bezier curve
+		var bb = {
+			x1: Math.min( x1, x3, x2 ),
+			x2: Math.max( x1, x3, x2 ),
+			y1: Math.min( y1, y3, y2 ),
+			y2: Math.max( y1, y3, y2 )
+		};
+
+		// if outside the rough bounding box for the bezier, then it can't be a hit
+		if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
+			// console.log('bezier out of rough bb')
+			return false;
+		} else {
+			// console.log('do more expensive check');
+			return true;
+		}
+
+		/// END STOP USING YUE'S IMPL
 		
 		// Middle point occurs when t = 0.5, this is when the Bezier
 		// is closest to (x2, y2)
@@ -1420,6 +1470,7 @@ var cytoscape;
 			return false;
 		} else {
 			// console.log('do more expensive check');
+			return true;
 		}
 		
 		var displacementX, displacementY, offsetX, offsetY;
@@ -1883,8 +1934,8 @@ var cytoscape;
 			return [];
 		}
 		
-		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
-		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+		var t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+		var t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
 		
 		var tMin = Math.min(t1, t2);
 		var tMax = Math.max(t1, t2);
@@ -2329,10 +2380,55 @@ var cytoscape;
 		var lenRatio = (length - amount) / length;
 		
 		if (lenRatio < 0) {
-			return [];
-		} else {
-			return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+			lenRatio = 0.00001;
 		}
+
+		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
+	};
+
+	$$.math.generateUnitNgonPointsFitToSquare = function(sides, rotationRadians) {
+		var points = $$.math.generateUnitNgonPoints(sides, rotationRadians);
+		points = $$.math.fitPolygonToSquare(points);
+
+		return points;
+	};
+
+	$$.math.fitPolygonToSquare = function(points){
+		var x, y;
+		var sides = points.length/2;
+		var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+		for (var i = 0; i < sides; i++) {
+			x = points[2 * i];
+			y = points[2 * i + 1];
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+		
+		// stretch factors
+		var sx = 2 / (maxX - minX);
+		var sy = 2 / (maxY - minY);
+
+		for (var i = 0; i < sides; i++){
+			x = points[2 * i] = points[2 * i] * sx;
+			y = points[2 * i + 1] = points[2 * i + 1] * sy;
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+
+		if( minY < -1 ){
+			for (var i = 0; i < sides; i++){
+				y = points[2 * i + 1] = points[2 * i + 1] + (-1 -minY);
+			}
+		}
+		
+		return points;
 	};
 
 	$$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
@@ -2344,45 +2440,13 @@ var cytoscape;
 		startAngle += rotationRadians;
 		
 		var points = new Array(sides * 2);
-		
-		var currentAngle;
+
+		var currentAngle, x, y;
 		for (var i = 0; i < sides; i++) {
 			currentAngle = i * increment + startAngle;
 			
-			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
-			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
-		}
-		
-		// The above generates points for a polygon inscribed in a radius 1 circle.
-		// Stretch so that the maximum of the height and width becomes 2 so the resulting
-		// scaled shape appears to be inscribed inside a rectangle with the given
-		// width and height. The maximum of the width and height is used to preserve
-		// the shape's aspect ratio.
-		
-		// Stretch width
-		var maxAbsX = 0
-		var maxAbsY = 0;
-		for (var i = 0; i < points.length / 2; i++) {
-			if (Math.abs(points[2 * i] > maxAbsX)) {
-				maxAbsX = Math.abs(points[2 * i]);
-			}
-			
-			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
-				maxAbsY = Math.abs(points[2 * i + 1]);
-			}
-		}
-		
-		var minScaleLimit = 0.0005;
-		
-		// Use the larger dimension to do the scale, in order to preserve the shape's
-		// aspect ratio
-		var maxDimension = Math.max(maxAbsX, maxAbsY);
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			if (maxDimension > minScaleLimit) {
-				points[2 * i] *= (1 / maxDimension);
-				points[2 * i + 1] *= (1 / maxDimension);
-			}
+			x = points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
+			y = points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
 		}
 		
 		return points;
@@ -2398,7 +2462,7 @@ var cytoscape;
 
 // type testing utility functions
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// list of ids with other metadata assoc'd with it
 	$$.instances = [];
@@ -2513,7 +2577,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// registered extensions to cytoscape, indexed by name
 	var extensions = {};
@@ -2591,7 +2655,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($, $$){
+;(function($, $$){ "use strict";
 	
 	if( !$ ){ return } // no jquery => don't need this
 
@@ -2684,7 +2748,7 @@ var cytoscape;
 	
 })(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// shamelessly taken from jQuery
 	// https://github.com/jquery/jquery/blob/master/src/event.js
@@ -2766,7 +2830,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// metaprogramming makes me happy
 
@@ -2792,7 +2856,9 @@ var cytoscape;
 				settingTriggersEvent: false,
 				triggerFnName: "trigger",
 				immutableKeys: {}, // key => true if immutable
-				updateMappers: false
+				updateMappers: false,
+				onSet: function( self ){},
+				canSet: function( self ){ return true }
 			};
 			params = $$.util.extend({}, defaults, params);
 
@@ -2819,13 +2885,17 @@ var cytoscape;
 					} else if( p.allowSetting && value !== undefined ) { // set
 						var valid = !p.immutableKeys[name];
 						if( valid ){
-
 							for( var i = 0, l = all.length; i < l; i++ ){
-								all[i]._private[ p.field ][ name ] = value;
+								if( p.canSet( all[i] ) ){
+									all[i]._private[ p.field ][ name ] = value;
+								}
 							}
 
 							// update mappers if asked
 							if( p.updateMappers ){ self.updateMappers(); }
+
+							// call onSet callback
+							p.onSet( self );
 
 							if( p.settingTriggersEvent ){
 								self[ p.triggerFnName ]( p.settingEvent );
@@ -2844,13 +2914,18 @@ var cytoscape;
 						var valid = !p.immutableKeys[k];
 						if( valid ){
 							for( var i = 0, l = all.length; i < l; i++ ){
-								all[i]._private[ p.field ][ k ] = v;
+								if( p.canSet( all[i] ) ){
+									all[i]._private[ p.field ][ k ] = v;
+								}
 							}
 						}
 					}
 					
 					// update mappers if asked
 					if( p.updateMappers ){ self.updateMappers(); }
+
+					// call onSet callback
+					p.onSet( self );
 
 					if( p.settingTriggersEvent ){
 						self[ p.triggerFnName ]( p.settingEvent );
@@ -2990,37 +3065,6 @@ var cytoscape;
 		event: {
 			regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
 			optionalTypeRegex: /(\w+)?(\.\w+)?/,
-
-			// properties to copy to the event obj
-			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
-
-			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
-
-			aliasesOn: function( thisPrototype ){
-
-				var aliases = $$.define.event.aliases;
-				for( var i = 0; i < aliases.length; i++ ){
-					var eventType = aliases[i];
-
-					(function(eventType){
-						thisPrototype[ eventType ] = function(data, callback){
-							if( $$.is.fn(callback) ){
-								this.on(eventType, data, callback);
-
-							} else if( $$.is.fn(data) ){
-								callback = data;
-								this.on(eventType, callback);
-
-							} else {
-								this.trigger(eventType);
-							}
-
-							return this; // maintain chaining
-						};
-					})( eventType );
-				}
-			},
-
 			falseCallback: function(){ return false; }
 		},
 
@@ -3360,9 +3404,817 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$, window){
+;(function($$){ "use strict";
+		
+
+	$$.fn.selector = function(map, options){
+		for( var name in map ){
+			var fn = map[name];
+			$$.Selector.prototype[ name ] = fn;
+		}
+	};
+
+	$$.Selector = function(onlyThisGroup, selector){
+		
+		if( !(this instanceof $$.Selector) ){
+			return new $$.Selector(onlyThisGroup, selector);
+		}
 	
-	var isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+		if( selector === undefined && onlyThisGroup !== undefined ){
+			selector = onlyThisGroup;
+			onlyThisGroup = undefined;
+		}
+		
+		var self = this;
+		
+		self._private = {
+			selectorText: null,
+			invalid: true
+		}
+	
+		// storage for parsed queries
+		// when you add something here, also add to Selector.toString()
+		var newQuery = function(){
+			return {
+				classes: [], 
+				colonSelectors: [],
+				data: [],
+				group: null,
+				ids: [],
+				meta: [],
+
+				// fake selectors
+				collection: null, // a collection to match against
+				filter: null, // filter function
+
+				// these are defined in the upward direction rather than down (e.g. child)
+				// because we need to go up in Selector.filter()
+				parent: null, // parent query obj
+				ancestor: null, // ancestor query obj
+				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+				// use these only when subject has been defined
+				child: null,
+				descendant: null
+			};
+		}
+		
+		if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
+			
+			if( onlyThisGroup == null ){
+				// ignore
+				self.length = 0;
+			} else {
+				self[0] = newQuery();
+				self[0].group = onlyThisGroup;
+				self.length = 1;
+			}
+							
+		} else if( $$.is.element( selector ) ){
+			var collection = new $$.Collection(self.cy(), [ selector ]);
+			
+			self[0] = newQuery();
+			self[0].collection = collection;
+			self.length = 1;
+			
+		} else if( $$.is.collection( selector ) ){
+			self[0] = newQuery();
+			self[0].collection = selector;
+			self.length = 1;
+			
+		} else if( $$.is.fn( selector ) ) {
+			self[0] = newQuery();
+			self[0].filter = selector;
+			self.length = 1;
+			
+		} else if( $$.is.string( selector ) ){
+		
+			// these are the actual tokens in the query language
+			var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
+			var variable = "(?:[\\w-]|(?:\\\\"+ metaChar +"))+"; // a variable name
+			var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
+			var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
+			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
+			var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+			var value = string + "|" + number; // a value literal, either a string or number
+			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
+			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
+			var className = variable; // a class name (follows variable conventions)
+			var descendant = "\\s+";
+			var child = "\\s+>\\s+";
+			var subject = "\\$";
+			var id = variable; // an element id (follows variable conventions)
+			
+			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
+			// so that values get compared properly in Selector.filter()
+			var cleanMetaChars = function(str){
+				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), function(match, $1, offset, original){
+					return $1;
+				});
+			};
+			
+			// add @ variants to comparatorOp
+			var ops = comparatorOp.split("|");
+			for( var i = 0; i < ops.length; i++ ){
+				var op = ops[i];
+				comparatorOp += "|@" + op;
+			}
+
+			// the current subject in the query
+			var currentSubject = null;
+			
+			// NOTE: add new expression syntax here to have it recognised by the parser;
+			// a query contains all adjacent (i.e. no separator in between) expressions;
+			// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
+			// you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+			var exprs = {
+				group: {
+					query: true,
+					regex: "(node|edge|\\*)",
+					populate: function( group ){
+						this.group = group == "*" ? group : group + "s";
+					}
+				},
+				
+				state: {
+					query: true,
+					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
+					populate: function( state ){
+						this.colonSelectors.push( state );
+					}
+				},
+				
+				id: {
+					query: true,
+					regex: "\\#("+ id +")",
+					populate: function( id ){
+						this.ids.push( cleanMetaChars(id) );
+					}
+				},
+				
+				className: {
+					query: true,
+					regex: "\\.("+ className +")",
+					populate: function( className ){
+						this.classes.push( cleanMetaChars(className) );
+					}
+				},
+				
+				dataExists: {
+					query: true,
+					regex: "\\[\\s*("+ variable +")\\s*\\]",
+					populate: function( variable ){
+						this.data.push({
+							field: cleanMetaChars(variable)
+						});
+					}
+				},
+				
+				dataCompare: {
+					query: true,
+					regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
+					populate: function( variable, comparatorOp, value ){
+						this.data.push({
+							field: cleanMetaChars(variable),
+							operator: comparatorOp,
+							value: value
+						});
+					}
+				},
+				
+				dataBool: {
+					query: true,
+					regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
+					populate: function( boolOp, variable ){
+						this.data.push({
+							field: cleanMetaChars(variable),
+							operator: boolOp
+						});
+					}
+				},
+				
+				metaCompare: {
+					query: true,
+					regex: "\\[\\[\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\]\\]",
+					populate: function( meta, comparatorOp, number ){
+						this.meta.push({
+							field: cleanMetaChars(meta),
+							operator: comparatorOp,
+							value: number
+						});
+					}
+				},
+
+				nextQuery: {
+					separator: true,
+					regex: separator,
+					populate: function(){
+						// go on to next query
+						self[++i] = newQuery();
+						currentSubject = null;
+					}
+				},
+
+				child: {
+					separator: true,
+					regex: child,
+					populate: function(){
+						// this query is the parent of the following query
+						var childQuery = newQuery();
+						childQuery.parent = this;
+						childQuery.subject = currentSubject;
+
+						// we're now populating the child query with expressions that follow
+						self[i] = childQuery;
+					}
+				},
+
+				descendant: {
+					separator: true,
+					regex: descendant,
+					populate: function(){
+						// this query is the ancestor of the following query
+						var descendantQuery = newQuery();
+						descendantQuery.ancestor = this;
+						descendantQuery.subject = currentSubject;
+
+						// we're now populating the descendant query with expressions that follow
+						self[i] = descendantQuery;
+					}
+				},
+
+				subject: {
+					modifier: true,
+					regex: subject,
+					populate: function(){
+						if( currentSubject != null && this.subject != this ){
+							$$.util.error("Redefinition of subject in selector `" + selector + "`");
+							return false;
+						}
+
+						currentSubject = this;
+						this.subject = this;
+					},
+
+				}
+			};
+
+			var j = 0;
+			for( var name in exprs ){
+				exprs[j] = exprs[name];
+				exprs[j].name = name;
+
+				j++;
+			}
+			exprs.length = j;
+
+			self._private.selectorText = selector;
+			var remaining = selector;
+			var i = 0;
+			
+			// of all the expressions, find the first match in the remaining text
+			var consumeExpr = function( expectation ){
+				var expr;
+				var match;
+				var name;
+				
+				for( var j = 0; j < exprs.length; j++ ){
+					var e = exprs[j];
+					var n = e.name;
+
+					// ignore this expression if it doesn't meet the expectation function
+					if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
+
+					var m = remaining.match(new RegExp( "^" + e.regex ));
+					
+					if( m != null ){
+						match = m;
+						expr = e;
+						name = n;
+						
+						var consumed = m[0];
+						remaining = remaining.substring( consumed.length );								
+						
+						break; // we've consumed one expr, so we can return now
+					}
+				}
+				
+				return {
+					expr: expr,
+					match: match,
+					name: name
+				};
+			};
+			
+			// consume all leading whitespace
+			var consumeWhitespace = function(){
+				var match = remaining.match(/^\s+/);
+				
+				if( match ){
+					var consumed = match[0];
+					remaining = remaining.substring( consumed.length );
+				}
+			};
+			
+			self[0] = newQuery(); // get started
+
+			consumeWhitespace(); // get rid of leading whitespace
+			for(;;){				
+				var check = consumeExpr();
+				
+				if( check.expr == null ){
+					$$.util.error("The selector `"+ selector +"`is invalid");
+					return;
+				} else {
+					var args = [];
+					for(var j = 1; j < check.match.length; j++){
+						args.push( check.match[j] );
+					}
+					
+					// let the token populate the selector object (i.e. in self[i])
+					var ret = check.expr.populate.apply( self[i], args );
+
+					if( ret === false ){ return } // exit if population failed
+				}
+				
+				// we're done when there's nothing left to parse
+				if( remaining.match(/^\s*$/) ){
+					break;
+				}
+			}
+			
+			self.length = i + 1;
+
+			// adjust references for subject
+			for(j = 0; j < self.length; j++){
+				var query = self[j];
+
+				if( query.subject != null ){
+					// go up the tree until we reach the subject
+					for(;;){
+						if( query.subject == query ){ break } // done if subject is self
+
+						if( query.parent != null ){ // swap parent/child reference
+							var parent = query.parent;
+							var child = query;
+
+							child.parent = null;
+							parent.child = child;
+
+							query = parent; // go up the tree
+						} else if( query.ancestor != null ){ // swap ancestor/descendant
+							var ancestor = query.ancestor;
+							var descendant = query;
+
+							descendant.ancestor = null;
+							ancestor.descendant = descendant;
+
+							query = ancestor; // go up the tree
+						} else {
+							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
+							break;
+						}
+					} // for
+
+					self[j] = query.subject; // subject should be the root query
+				} // if
+			} // for
+
+			// make sure for each query that the subject group matches the implicit group if any
+			if( onlyThisGroup != null ){
+				for(var j = 0; j < self.length; j++){
+					if( self[j].group != null && self[j].group != onlyThisGroup ){
+						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
+						return;
+					}
+
+					self[j].group = onlyThisGroup; // set to implicit group
+				}
+			}
+			
+		} else {
+			$$.util.error("A selector must be created from a string; found " + selector);
+			return;
+		}
+
+		self._private.invalid = false;
+		
+	};
+
+	$$.selfn = $$.Selector.prototype;
+	
+	$$.selfn.size = function(){
+		return this.length;
+	};
+	
+	$$.selfn.eq = function(i){
+		return this[i];
+	};
+	
+	// get elements from the core and then filter them
+	$$.selfn.find = function(){
+		// TODO impl if we decide to use a DB for storing elements
+	};
+	
+	// filter an existing collection
+	$$.selfn.filter = function(collection, addLiveFunction){
+		var self = this;
+		var cy = collection.cy();
+		
+		// don't bother trying if it's invalid
+		if( self._private.invalid ){
+			return new $$.Collection( cy );
+		}
+		
+		var queryMatches = function(query, element){
+			// check group
+			if( query.group != null && query.group != "*" && query.group != element._private.group ){
+				return false;
+			}
+			
+			// check colon selectors
+			var allColonSelectorsMatch = true;
+			for(var k = 0; k < query.colonSelectors.length; k++){
+				var sel = query.colonSelectors[k];
+				var renderer = cy.renderer(); // TODO remove reference after refactoring
+				
+				switch(sel){
+				case ":selected":
+					allColonSelectorsMatch = element.selected();
+					break;
+				case ":unselected":
+					allColonSelectorsMatch = !element.selected();
+					break;
+				case ":selectable":
+					allColonSelectorsMatch = element.selectable();
+					break;
+				case ":unselectable":
+					allColonSelectorsMatch = !element.selectable();
+					break;
+				case ":locked":
+					allColonSelectorsMatch = element.locked();
+					break;
+				case ":unlocked":
+					allColonSelectorsMatch = !element.locked();
+					break;
+				case ":visible":
+					allColonSelectorsMatch = element.visible();
+					break;
+				case ":hidden":
+					allColonSelectorsMatch = !element.visible();
+					break;
+				case ":transparent":
+					allColonSelectorsMatch = !element.transparent();
+					break;
+				case ":grabbed":
+					allColonSelectorsMatch = element.grabbed();
+					break;
+				case ":free":
+					allColonSelectorsMatch = !element.grabbed();
+					break;
+				case ":removed":
+					allColonSelectorsMatch = element.removed();
+					break;
+				case ":inside":
+					allColonSelectorsMatch = !element.removed();
+					break;
+				case ":grabbable":
+					allColonSelectorsMatch = element.grabbable();
+					break;
+				case ":ungrabbable":
+					allColonSelectorsMatch = !element.grabbable();
+					break;
+				case ":animated":
+					allColonSelectorsMatch = element.animated();
+					break;
+				case ":unanimated":
+					allColonSelectorsMatch = !element.animated();
+					break;
+				case ":parent":
+					allColonSelectorsMatch = element.children().nonempty();
+					break;
+				case ":child":
+					allColonSelectorsMatch = element.parent().nonempty();
+					break;
+				case ":active":
+					allColonSelectorsMatch = element.active();
+					break;
+				case ":inactive":
+					allColonSelectorsMatch = !element.active();
+					break;
+				case ":touch":
+					allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
+					break;
+				}
+				
+				if( !allColonSelectorsMatch ) break;
+			}
+			if( !allColonSelectorsMatch ) return false;
+			
+			// check id
+			var allIdsMatch = true;
+			for(var k = 0; k < query.ids.length; k++){
+				var id = query.ids[k];
+				var actualId = element._private.data.id;
+				
+				allIdsMatch = allIdsMatch && (id == actualId);
+				
+				if( !allIdsMatch ) break;
+			}
+			if( !allIdsMatch ) return false;
+			
+			// check classes
+			var allClassesMatch = true;
+			for(var k = 0; k < query.classes.length; k++){
+				var cls = query.classes[k];
+				
+				allClassesMatch = allClassesMatch && element.hasClass(cls);
+				
+				if( !allClassesMatch ) break;
+			}
+			if( !allClassesMatch ) return false;
+			
+			// generic checking for data/metadata
+			var operandsMatch = function(params){
+				var allDataMatches = true;
+				for(var k = 0; k < query[params.name].length; k++){
+					var data = query[params.name][k];
+					var operator = data.operator;
+					var value = data.value;
+					var field = data.field;
+					var matches;
+					
+					if( operator != null && value != null ){
+						
+						var fieldStr = "" + params.fieldValue(field);
+						var valStr = "" + eval(value);
+						
+						var caseInsensitive = false;
+						if( operator.charAt(0) == "@" ){
+							fieldStr = fieldStr.toLowerCase();
+							valStr = valStr.toLowerCase();
+							
+							operator = operator.substring(1);
+							caseInsensitive = true;
+						}
+						
+						if( operator == "=" ){
+							operator = "==";
+						}
+						
+						switch(operator){
+						case "*=":
+							matches = fieldStr.search(valStr) >= 0;
+							break;
+						case "$=":
+							matches = new RegExp(valStr + "$").exec(fieldStr) != null;
+							break;
+						case "^=":
+							matches = new RegExp("^" + valStr).exec(fieldStr) != null;
+							break;
+						default:
+							// if we're doing a case insensitive comparison, then we're using a STRING comparison
+							// even if we're comparing numbers
+							if( caseInsensitive ){
+								// eval with lower case strings
+								var expr = "fieldStr " + operator + " valStr";
+								matches = eval(expr);
+							} else {
+								// just eval as normal
+								var expr = params.fieldRef(field) + " " + operator + " " + value;
+								matches = eval(expr);
+							}
+							
+						}
+					} else if( operator != null ){
+						switch(operator){
+						case "?":
+							matches = params.fieldTruthy(field);
+							break;
+						case "!":
+							matches = !params.fieldTruthy(field);
+							break;
+						case "^":
+							matches = params.fieldUndefined(field);
+							break;
+						}
+					} else { 	
+						matches = !params.fieldUndefined(field);
+					}
+					
+					if( !matches ){
+						allDataMatches = false;
+						break;
+					}
+				} // for
+				
+				return allDataMatches;
+			}; // operandsMatch
+			
+			// check data matches
+			var allDataMatches = operandsMatch({
+				name: "data",
+				fieldValue: function(field){
+					return element._private.data[field];
+				},
+				fieldRef: function(field){
+					return "element._private.data." + field;
+				},
+				fieldUndefined: function(field){
+					return element._private.data[field] === undefined;
+				},
+				fieldTruthy: function(field){
+					if( element._private.data[field] ){
+						return true;
+					}
+					return false;
+				}
+			});
+			
+			if( !allDataMatches ){
+				return false;
+			}
+			
+			// check metadata matches
+			var allMetaMatches = operandsMatch({
+				name: "meta",
+				fieldValue: function(field){
+					return element[field]();
+				},
+				fieldRef: function(field){
+					return "element." + field + "()";
+				},
+				fieldUndefined: function(field){
+					return element[field]() == undefined;
+				},
+				fieldTruthy: function(field){
+					if( element[field]() ){
+						return true;
+					}
+					return false;
+				}
+			});
+			
+			if( !allMetaMatches ){
+				return false;
+			}
+			
+			// check collection
+			if( query.collection != null ){
+				var matchesAny = query.collection._private.ids[ element.id() ] != null;
+				
+				if( !matchesAny ){
+					return false;
+				}
+			}
+			
+			// check filter function
+			if( query.filter != null && element.collection().filter( query.filter ).size() == 0 ){
+				return false;
+			}
+			
+
+			// check parent/child relations
+			var confirmRelations = function( query, elements ){
+				if( query != null ){
+					var matches = false;
+					elements = elements(); // make elements functional so we save cycles if query == null
+
+					// query must match for at least one element (may be recursive)
+					for(var i = 0; i < elements.size(); i++){
+						if( queryMatches( query, elements.eq(i) ) ){
+							matches = true;
+							break;
+						}
+					}
+
+					return matches;
+				} else {
+					return true;
+				}
+			};
+
+			if (! confirmRelations(query.parent, function(){
+				return element.parent()
+			}) ){ return false }
+
+			if (! confirmRelations(query.ancestor, function(){
+				return element.parents()
+			}) ){ return false }
+
+			if (! confirmRelations(query.child, function(){
+				return element.children()
+			}) ){ return false }
+
+			if (! confirmRelations(query.descendant, function(){
+				return element.descendants()
+			}) ){ return false }
+
+			// we've reached the end, so we've matched everything for this query
+			return true;
+		}; // queryMatches
+
+		var selectorFunction = function(i, element){
+			for(var j = 0; j < self.length; j++){
+				var query = self[j];
+				
+				if( queryMatches(query, element) ){
+					return true;
+				}
+			}
+			
+			return false;
+		};
+		
+		if( self._private.selectorText == null ){
+			selectorFunction = function(){ return true; };
+		}
+		
+		var filteredCollection = collection.filter( selectorFunction );
+		
+		return filteredCollection;
+	}; // filter
+	
+	// ith query to string
+	$$.selfn.toString = $$.selfn.selector = function(){
+		
+		var str = "";
+		
+		var clean = function(obj){
+			if( $$.is.string(obj) ){
+				return obj;
+			} 
+			return "";
+		};
+		
+		var queryToString = function(query){
+			var str = "";
+
+			var group = clean(query.group);
+			str += group.substring(0, group.length - 1);
+			
+			for(var j = 0; j < query.data.length; j++){
+				var data = query.data[j];
+				str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
+			}
+
+			for(var j = 0; j < query.meta.length; j++){
+				var meta = query.meta[j];
+				str += "{" + meta.field + clean(meta.operator) + clean(meta.value) + "}"
+			}
+			
+			for(var j = 0; j < query.colonSelectors.length; j++){
+				var sel = query.colonSelectors[i];
+				str += sel;
+			}
+			
+			for(var j = 0; j < query.ids.length; j++){
+				var sel = "#" + query.ids[i];
+				str += sel;
+			}
+			
+			for(var j = 0; j < query.classes.length; j++){
+				var sel = "." + query.classes[i];
+				str += sel;
+			}
+
+			if( query.parent != null ){
+				str = queryToString( query.parent ) + " > " + str; 
+			}
+
+			if( query.ancestor != null ){
+				str = queryToString( query.ancestor ) + " " + str; 
+			}
+
+			if( query.child != null ){
+				str += " > " + queryToString( query.child ); 
+			}
+
+			if( query.descendant != null ){
+				str += " " + queryToString( query.descendant ); 
+			}
+
+			return str;
+		};
+
+		for(var i = 0; i < this.length; i++){
+			var query = this[i];
+			
+			str += queryToString( query );
+			
+			if( this.length > 1 && i < this.length - 1 ){
+				str += ", ";
+			}
+		}
+		
+		return str;
+	};
+	
+})( cytoscape );
+
+;(function($$, window){ "use strict";
+	
+	var isTouch = $$.is.touch();
 
 	$$.Style = function( cy ){
 
@@ -3428,7 +4280,7 @@ var cytoscape;
 				value: value
 			});
 		} else if( $$.is.plainObject(name) ){
-			map = name;
+			var map = name;
 
 			for( var j = 0; j < $$.style.properties.length; j++ ){
 				var prop = $$.style.properties[j];
@@ -3718,7 +4570,7 @@ var cytoscape;
 			textDecoration: { enums: ["none", "underline", "overline", "line-through"] },
 			textTransform: { enums: ["none", "capitalize", "uppercase", "lowercase"] },
 			nodeShape: { enums: ["rectangle", "roundrectangle", "ellipse", "triangle",
-			                     "square", "pentagon", "hexagon", "heptagon", "octagon"] },
+			                     "square", "pentagon", "hexagon", "heptagon", "octagon", "star"] },
 			arrowShape: { enums: ["tee", "triangle", "square", "circle", "diamond", "none"] },
 			display: { enums: ["element", "none"] },
 			visibility: { enums: ["hidden", "visible"] },
@@ -3877,7 +4729,6 @@ var cytoscape;
 					"text-valign": "top",
 					"text-halign": "center",
 					"color": color,
-					"content": undefined, // => no label
 					"text-outline-color": "#000",
 					"text-outline-width": 0,
 					"text-outline-opacity": 1,
@@ -4596,11 +5447,15 @@ var cytoscape;
 				ele._private.style = {};
 			}
 
+			// console.log('APPLYING STYLESHEET\n--\n');
+
 			// apply the styles
 			for( var i = 0; i < this.length; i++ ){
 				var context = this[i];
 				var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for "core"
 				var props = context.properties;
+
+				// console.log(i + ' : looking at selector: ' + context.selector);
 
 				if( contextSelectorMatches ){ // then apply its properties
 
@@ -4608,10 +5463,15 @@ var cytoscape;
 					
 					for( var j = 0; j < props.length; j++ ){ // for each prop
 						var prop = props[j];
+						var newCxt = !ele._private.styleCxts[i];
+						var currentEleProp = ele._private.style[prop.name];
+						var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
+						var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
 
 						//if(prop.mapped) debugger;
 
-						if( !ele._private.styleCxts[i] || prop.mapped ){
+						if( newCxt || needToUpdateCxtMapping ){
+							// console.log(i + ' + MATCH: applying property: ' + prop.name);
 							this.applyParsedProperty( ele, prop, context );
 						}
 					}
@@ -4622,6 +5482,7 @@ var cytoscape;
 
 					// roll back style cxts that don't match now
 					if( ele._private.styleCxts[i] ){
+						// console.log(i + ' x MISS: rolling back context');
 						this.rollBackContext( ele, context );
 					}
 
@@ -4828,9 +5689,9 @@ var cytoscape;
 
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$, window){ "use strict";
 
-	var isTouch = window && ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	var isTouch = $$.is.touch();
 
 	var defaults = {
 		hideEdgesOnViewport: false
@@ -4870,8 +5731,8 @@ var cytoscape;
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "grid" }, options.layout );
-		options.renderer = $$.util.extend( { name: typeof window === 'undefined' ? "null" : "canvas" }, options.renderer );
+		options.layout = $$.util.extend( { name: window && container ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: window && container ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 
@@ -5103,9 +5964,15 @@ var cytoscape;
 		
 	});	
 	
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
-(function($$, window){
+(function($$, window){ "use strict";
+
+	function ready(f) {
+		var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
+
+		setTimeout(fn, 9, f);
+	}
 
 	$$.fn.core({
 		add: function(opts){
@@ -5194,8 +6061,6 @@ var cytoscape;
 
 			cy.notifications(false);
 			
-			var processedElements = [];
-
 			if( elements != null ){
 				if( $$.is.plainObject(elements) || $$.is.array(elements) ){
 					cy.add( elements );
@@ -5209,8 +6074,7 @@ var cytoscape;
 
 					cy.notify({
 						type: "load",
-						collection: cy.elements(),
-						style: cy._private.style
+						collection: cy.elements()
 					});
 
 					cy.one("load", onload);
@@ -5225,12 +6089,6 @@ var cytoscape;
 			}
 
 			if( window ){
-				function ready(f) {
-					var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
-
-					setTimeout(fn, 9, f);
-				}
-
 				ready( callback );
 			} else {
 				callback();
@@ -5242,7 +6100,7 @@ var cytoscape;
 	
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5476,11 +6334,11 @@ var cytoscape;
 					var c1 = start;
 					var c2 = end;
 
-					function ch(ch1, ch2){
+					var ch = function(ch1, ch2){
 						var diff = ch2 - ch1;
 						var min = ch1;
 						return Math.round( percent * diff + min );
-					}
+					};
 					
 					var r = ch( c1[0], c2[0] );
 					var g = ch( c1[1], c2[1] );
@@ -5502,7 +6360,7 @@ var cytoscape;
 	
 		
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		data: $$.define.data({
@@ -5552,7 +6410,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.core({
 		on: $$.define.on(), // .on( events [, selector] [, data], handler)
@@ -5566,12 +6424,9 @@ var cytoscape;
 	$$.corefn.bind = $$.corefn.on;
 	$$.corefn.unbind = $$.corefn.off;
 
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.corefn );
-		
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5587,7 +6442,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5609,7 +6464,7 @@ var cytoscape;
 			
 			this._private.layoutRunning = true;
 			this.one('layoutstop', function(){
-				this._private.layoutRunning = false;
+				cy._private.layoutRunning = false;
 			});
 
 			this._private.layout.run();
@@ -5648,7 +6503,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-(function($$){
+(function($$){ "use strict";
 	
 	$$.fn.core({
 		notify: function( params ){
@@ -5689,7 +6544,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5729,13 +6584,21 @@ var cytoscape;
 			);
 			
 			
+		},
+
+		recalculateRenderedStyle: function(){
+			var renderer = this.renderer();
+
+			if( renderer.recalculateRenderedStyle ){
+				renderer.recalculateRenderedStyle();
+			}
 		}
 		
 	});	
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 
@@ -5792,7 +6655,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5804,7 +6667,7 @@ var cytoscape;
 })( cytoscape );
 
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -6115,6 +6978,12 @@ var cytoscape;
 			return eles.boundingBox();
 		},
 
+		renderedBoundingBox: function( selector ){
+			var eles = this.$( selector );
+
+			return eles.renderedBoundingBox();
+		},
+
 		center: function(elements){
 			if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
 				return this;
@@ -6168,7 +7037,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Use this interface to define functions for collections/elements.
 	// This interface is good, because it forces you to think in terms
@@ -6351,7 +7220,7 @@ var cytoscape;
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
 				} else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
-					continue; // can't create element
+					continue; // can't create element if prior id already exists
 				}
 
 				var ele = new $$.Element( cy, json, false );
@@ -6506,9 +7375,13 @@ var cytoscape;
 			if( data.id === undefined ){
 				data.id = idFactory.generate( cy, ele );
 			} else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
+				$$.util.error("Can not create element with invalid string ID `" + data.id + "`");
+				
 				// can't create element if it has empty string as id or non-string id
 				continue;
 			} else if( cy.getElementById( data.id ).length != 0 ){
+				$$.util.error("Can not create second element with ID `" + data.id + "`");
+				
 				// can't create element if one already has that id
 				continue;
 			}
@@ -6520,6 +7393,7 @@ var cytoscape;
 				var edge = ele;
 				var fields = ["source", "target"];
 				var fieldsLength = fields.length;
+				var badSourceOrTarget = false;
 				for(var j = 0; j < fieldsLength; j++){
 					
 					var field = fields[j];
@@ -6527,12 +7401,16 @@ var cytoscape;
 					
 					if( val == null || val === "" ){
 						// can't create if source or target is not defined properly
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with unspecified " + field);
+						badSourceOrTarget = true;
 					} else if( cy.getElementById(val).empty() ){ 
 						// can't create edge if one of its nodes doesn't exist
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with nonexistant " + field + " `" + val + "`");
+						badSourceOrTarget = true;
 					}
 				}
+
+				if( badSourceOrTarget ){ continue; } // can't create this
 				
 				var src = cy.getElementById( data.source );
 				var tgt = cy.getElementById( data.target );
@@ -6778,7 +7656,7 @@ var cytoscape;
 })( cytoscape );
 
 
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 
 	$$.fn.eles({
 		animated: function(){
@@ -6914,7 +7792,7 @@ var cytoscape;
 	
 })( cytoscape );	
 
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 	
 	$$.fn.eles({
 		addClass: function(classes){
@@ -7022,7 +7900,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.eles({
 		allAre: function(selector){
@@ -7059,44 +7937,12 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
-	var borderWidthMultiplier = 1.4;
-	var borderWidthAdjustment = 1;
+	var borderWidthMultiplier = 2 * 0.5;
+	var borderWidthAdjustment = 0;
 
 	$$.fn.eles({
-
-		// fully updates (recalculates) the style for the elements
-		updateStyle: function( notifyRenderer ){
-			var cy = this._private.cy;
-			var style = cy.style();
-			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
-
-			style.apply( this );
-
-			if( notifyRenderer ){
-				this.rtrigger("style"); // let renderer know we changed style
-			} else {
-				this.trigger("style"); // just fire the event
-			}
-			return this; // chaining
-		},
-
-		// just update the mappers in the elements' styles; cheaper than eles.updateStyle()
-		updateMappers: function( notifyRenderer ){
-			var cy = this._private.cy;
-			var style = cy.style();
-			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
-
-			style.updateMappers( this );
-
-			if( notifyRenderer ){
-				this.rtrigger("style"); // let renderer know we changed style
-			} else {
-				this.trigger("style"); // just fire the event
-			}
-			return this; // chaining
-		},
 
 		data: $$.define.data({
 			field: "data",
@@ -7186,7 +8032,33 @@ var cytoscape;
 			settingTriggersEvent: true,
 			triggerFnName: "rtrigger",
 			allowGetting: true,
-			validKeys: ["x", "y"]
+			validKeys: ["x", "y"],
+			onSet: function( eles ){
+				var updatedEles = eles.updateCompoundBounds();
+				updatedEles.rtrigger("position");
+			},
+			canSet: function( ele ){
+				return !ele.locked();
+			}
+		}),
+
+		// position but no notification to renderer
+		silentPosition: $$.define.data({
+			field: "position",
+			bindingEvent: "position",
+			allowBinding: false,
+			allowSetting: true,
+			settingEvent: "position",
+			settingTriggersEvent: false,
+			triggerFnName: "trigger",
+			allowGetting: true,
+			validKeys: ["x", "y"],
+			onSet: function( eles ){
+				eles.updateCompoundBounds();
+			},
+			canSet: function( ele ){
+				return !ele.locked();
+			}
 		}),
 
 		positions: function( pos ){
@@ -7207,11 +8079,69 @@ var cytoscape;
 						elePos.y = pos.y;
 					}
 				}
+
+				var updatedEles = this.updateCompoundBounds();
 				
-				this.rtrigger("position");
+				this.add( updatedEles ).rtrigger("position");
 			}
 
 			return this; // chaining
+		},
+
+		updateCompoundBounds: function(){
+			var cy = this.cy();
+
+			if( !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs
+
+			var updated = [];
+
+			function update( parent ){
+				var children = parent.children();
+				var style = parent._private.style;
+				var bb = children.boundingBox({ includeLabels: false, includeEdges: false });
+				var padding = {
+					top: style["padding-top"].pxValue,
+					bottom: style["padding-bottom"].pxValue,
+					left: style["padding-left"].pxValue,
+					right: style["padding-right"].pxValue
+				};
+				var pos = parent._private.position;
+				var didUpdate = false;
+
+				if( style["width"].value === "auto" ){
+					parent._private.autoWidth = bb.w + padding.left + padding.right;
+					pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
+					didUpdate = true;
+				}
+
+				if( style["height"].value === "auto" ){
+					parent._private.autoHeight = bb.h + padding.top + padding.bottom;
+					pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
+					didUpdate = true;
+				}
+
+				if( didUpdate ){
+					updated.push( parent );
+				}
+			}
+
+			// go up, level by level
+			var eles = this.parent();
+			while( eles.nonempty() ){
+
+				// update each parent node in this level
+				for( var i = 0; i < eles.length; i++ ){
+					var ele = eles[i];
+
+					update( ele );
+				}
+
+				// next level
+				eles = eles.parent();
+			}
+
+			// return changed
+			return new $$.Collection( cy, updated );
 		},
 
 		// get/set the rendered (i.e. on screen) positon of the element
@@ -7252,8 +8182,670 @@ var cytoscape;
 						return rpos[ dim ];
 					}
 				}
+			} else if( !setting ){
+				return undefined; // for empty collection case
 			}
 
+			return this; // chaining
+		},
+
+		// convenience function to get a numerical value for the width of the node/edge
+		width: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var w = ele._private.style.width;
+				return w.strValue === "auto" ? ele._private.autoWidth : w.pxValue;
+			}
+		},
+
+		outerWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var style = ele._private.style;
+				var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
+				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+
+				return width + border;
+			}
+		},
+
+		renderedWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var width = ele.width();
+				return width * this.cy().zoom();
+			}
+		},
+
+		renderedOuterWidth: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var owidth = ele.outerWidth();
+				return owidth * this.cy().zoom();
+			}
+		},
+
+		// convenience function to get a numerical value for the height of the node
+		height: function(){ 
+			var ele = this[0];
+
+			if( ele && ele.isNode() ){
+				var h = ele._private.style.height;
+				return h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
+			}
+		},
+
+		outerHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var style = ele._private.style;
+				var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
+				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+
+				return height + border;
+			}
+		},
+
+		renderedHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var height = ele.height();
+				return height * this.cy().zoom();
+			}
+		},
+
+		renderedOuterHeight: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var oheight = ele.outerHeight();
+				return oheight * this.cy().zoom();
+			}
+		},
+
+		renderedBoundingBox: function( options ){
+			var bb = this.boundingBox( options );
+			var cy = this.cy();
+			var zoom = cy.zoom();
+			var pan = cy.pan();
+
+			var x1 = bb.x1 * zoom + pan.x;
+			var x2 = bb.x2 * zoom + pan.x;
+			var y1 = bb.y1 * zoom + pan.y;
+			var y2 = bb.y2 * zoom + pan.y;
+
+			return {
+				x1: x1,
+				x2: x2,
+				y1: y1,
+				y2: y2,
+				w: x2 - x1,
+				h: y2 - y1
+			};
+		},
+
+		// get the bounding box of the elements (in raw model position)
+		boundingBox: function( options ){
+			var eles = this;
+
+			options = $$.util.extend({
+				includeNodes: true,
+				includeEdges: true,
+				includeLabels: true
+			}, options);
+
+			// recalculate projections etc
+			this.cy().recalculateRenderedStyle();
+
+			var x1 = Infinity;
+			var x2 = -Infinity;
+			var y1 = Infinity;
+			var y2 = -Infinity;
+
+			// find bounds of elements
+			for( var i = 0; i < eles.length; i++ ){
+				var ele = eles[i];
+				var ex1, ex2, ey1, ey2, x, y;
+				var includedEle = false;
+
+				if( ele.css("display") === "none" ){ continue; } // then ele doesn't take up space			
+
+				if( ele.isNode() && options.includeNodes ){
+					includedEle = true;
+
+					var pos = ele._private.position;
+					x = pos.x;
+					y = pos.y;
+					var w = ele.outerWidth();
+					var halfW = w/2;
+					var h = ele.outerHeight();
+					var halfH = h/2;
+
+					// handle node dimensions
+					/////////////////////////
+
+					ex1 = x - halfW;
+					ex2 = x + halfW;
+					ey1 = y - halfH;
+					ey2 = y + halfH;
+
+					x1 = ex1 < x1 ? ex1 : x1;
+					x2 = ex2 > x2 ? ex2 : x2;
+					y1 = ey1 < y1 ? ey1 : y1;
+					y2 = ey2 > y2 ? ey2 : y2;
+
+				} else if( ele.isEdge() && options.includeEdges ){ 
+					includedEle = true;
+
+					var n1pos = ele.source()[0]._private.position;
+					var n2pos = ele.target()[0]._private.position;
+
+					// handle edge dimensions (rough box estimate)
+					//////////////////////////////////////////////
+
+					var rstyle = ele._private.rstyle || {};
+
+					ex1 = n1pos.x;
+					ex2 = n2pos.x;
+					ey1 = n1pos.y;
+					ey2 = n2pos.y;
+
+					if( ex1 > ex2 ){
+						var temp = ex1;
+						ex1 = ex2;
+						ex2 = temp;
+					}
+
+					if( ey1 > ey2 ){
+						var temp = ey1;
+						ey1 = ey2;
+						ey2 = temp;
+					}
+
+					x1 = ex1 < x1 ? ex1 : x1;
+					x2 = ex2 > x2 ? ex2 : x2;
+					y1 = ey1 < y1 ? ey1 : y1;
+					y2 = ey2 > y2 ? ey2 : y2;
+
+					// handle points along edge (sanity check)
+					//////////////////////////////////////////
+
+					var bpts = rstyle.bezierPts || [];
+					var w = ele._private.style['width'].pxValue;
+					for( var j = 0; j < bpts.length; j++ ){
+						var bpt = bpts[j];
+
+						x1 = bpt.x - w < x1 ? bpt.x - w : x1;
+						x2 = bpt.x + w > x2 ? bpt.x + w : x2;
+						y1 = bpt.y - w < y1 ? bpt.y - w : y1;
+						y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+					}
+
+				}
+
+				// handle label dimensions
+				//////////////////////////
+
+				var style = ele._private.style;
+				var rstyle = ele._private.rstyle;
+				var label = style['content'].strValue;
+				var fontSize = style['font-size'];
+				var halign = style['text-halign'];
+				var valign = style['text-valign'];
+				var labelWidth = rstyle.labelWidth;
+				var labelHeight = rstyle.labelHeight || fontSize.pxValue;
+				var labelX = rstyle.labelX;
+				var labelY = rstyle.labelY;
+
+				if( includedEle && options.includeLabels && label && fontSize && labelHeight != undefined && labelWidth != undefined && labelX != undefined && labelY != undefined && halign && valign ){
+					var lh = labelHeight;
+					var lw = labelWidth;
+					var lx1, lx2, ly1, ly2;
+
+					if( ele.isEdge() ){
+						lx1 = labelX - lw/2;
+						lx2 = labelX + lw/2;
+						ly1 = labelY - lh/2;
+						ly2 = labelY + lh/2;
+					} else {
+						switch( halign.value ){
+							case "left":
+								lx1 = labelX - lw;
+								lx2 = labelX;
+								break;
+
+							case "center":
+								lx1 = labelX - lw/2;
+								lx2 = labelX + lw/2;
+								break;
+
+							case "right":
+								lx1 = labelX;
+								lx2 = labelX + lw;
+								break;
+						}
+
+						switch( valign.value ){
+							case "top":
+								ly1 = labelY - lh;
+								ly2 = labelY;
+								break;
+
+							case "center":
+								ly1 = labelY - lh/2;
+								ly2 = labelY + lh/2;
+								break;
+
+							case "bottom":
+								ly1 = labelY;
+								ly2 = labelY + lh;
+								break;
+						}
+					}
+
+					x1 = lx1 < x1 ? lx1 : x1;
+					x2 = lx2 > x2 ? lx2 : x2;
+					y1 = ly1 < y1 ? ly1 : y1;
+					y2 = ly2 > y2 ? ly2 : y2;
+				}
+			} // for
+
+			return {
+				x1: x1,
+				x2: x2,
+				y1: y1,
+				y2: y2,
+				w: x2 - x1,
+				h: y2 - y1
+			};
+		}
+	});
+
+	
+})( cytoscape );
+
+;(function( $$ ){ "use strict";
+	
+	// Regular degree functions (works on single element)
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	function defineDegreeFunction(callback){
+		return function(){
+			var self = this;
+			
+			if( self.length === 0 ){ return; }
+
+			if( self.isNode() && !self.removed() ){
+				var degree = 0;
+				var node = self[0];
+				var connectedEdges = node._private.edges;
+
+				for( var i = 0; i < connectedEdges.length; i++ ){
+					var edge = connectedEdges[i];
+					degree += callback( node, edge );
+				}
+				
+				return degree;
+			} else {
+				return;
+			}
+		};
+	}
+	
+	$$.fn.eles({
+		degree: defineDegreeFunction(function(node, edge){
+			if( edge.source().same( edge.target() ) ){
+				return 2;
+			} else {
+				return 1;
+			}
+		}),
+
+		indegree: defineDegreeFunction(function(node, edge){
+			if( edge.target().same(node) ){
+				return 1;
+			} else {
+				return 0;
+			}
+		}),
+
+		outdegree: defineDegreeFunction(function(node, edge){
+			if( edge.source().same(node) ){
+				return 1;
+			} else {
+				return 0;
+			}
+		})
+	});
+	
+	
+	// Collection degree stats
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	function defineDegreeBoundsFunction(degreeFn, callback){
+		return function(){
+			var ret = undefined;
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){
+				var ele = nodes[i];
+				var degree = ele[degreeFn]();
+				if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
+					ret = degree;
+				}
+			}
+			
+			return ret;
+		};
+	}
+	
+	$$.fn.eles({
+		minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
+			return degree < min;
+		}),
+
+		maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
+			return degree > max;
+		}),
+
+		minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
+			return degree < min;
+		}),
+
+		maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
+			return degree > max;
+		}),
+
+		minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
+			return degree < min;
+		}),
+
+		maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
+			return degree > max;
+		})
+	});
+	
+	$$.fn.eles({
+		totalDegree: function(){
+			var total = 0;
+			var nodes = this.nodes();
+
+			for( var i = 0; i < nodes.length; i++ ){
+				total += nodes[i].degree();
+			}
+
+			return total;
+		}
+	});
+	
+})( cytoscape );
+
+	
+
+;(function($$){ "use strict";
+	
+	// Functions for binding & triggering events
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	$$.fn.eles({
+		on: $$.define.on(), // .on( events [, selector] [, data], handler)
+		one: $$.define.on({ unbindSelfOnTrigger: true }),
+		once: $$.define.on({ unbindAllBindersOnTrigger: true }),
+		off: $$.define.off(), // .off( events [, selector] [, handler] )
+		trigger: $$.define.trigger(), // .trigger( events [, extraParams] )
+
+		rtrigger: function(event, extraParams){ // for internal use only
+			if( this.length === 0 ){ return; } // empty collections don't need to notify anything
+
+			// notify renderer unless removed
+			this.cy().notify({
+				type: event,
+				collection: this.filter(function(){
+					return !this.removed();
+				})
+			});
+			
+			this.trigger(event, extraParams);
+			return this;
+		}
+	});
+
+	// aliases for those folks who like old stuff:
+	$$.elesfn.bind = $$.elesfn.on;
+	$$.elesfn.unbind = $$.elesfn.off;
+	
+})( cytoscape );
+
+;(function($$){ "use strict";
+
+	$$.fn.eles({
+		isNode: function(){
+			return this.group() === "nodes";
+		},
+
+		isEdge: function(){
+			return this.group() === "edges";
+		},
+
+		isLoop: function(){
+			return this.isEdge() && this.source().id() === this.target().id();
+		},
+
+		group: function(){
+			var ele = this[0];
+
+			if( ele ){
+				return ele._private.group;
+			}
+		}
+	});
+
+	
+})( cytoscape );
+
+;(function($$){ "use strict";
+	
+	// Functions for iterating over collections
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	$$.fn.eles({
+		each: function(fn){
+			if( $$.is.fn(fn) ){
+				for(var i = 0; i < this.length; i++){
+					var ele = this[i];
+					var ret = fn.apply( ele, [ i, ele ] );
+
+					if( ret === false ){ break; } // exit each early on return false
+				}
+			}
+			return this;
+		},
+
+		toArray: function(){
+			var array = [];
+			
+			for(var i = 0; i < this.length; i++){
+				array.push( this[i] );
+			}
+			
+			return array;
+		},
+
+		slice: function(start, end){
+			var array = [];
+			var thisSize = this.length;
+			
+			if( end == null ){
+				end = thisSize;
+			}
+
+			if( start == null ){
+				start = 0;
+			}
+			
+			if( start < 0 ){
+				start = thisSize + start;
+			}
+			
+			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
+				array.push( this[i] );
+			}
+			
+			return new $$.Collection(this.cy(), array);
+		},
+
+		size: function(){
+			return this.length;
+		},
+
+		eq: function(i){
+			return this[i];
+		},
+
+		empty: function(){
+			return this.length === 0;
+		},
+
+		nonempty: function(){
+			return !this.empty();
+		},
+
+		sort: function( sortFn ){
+			if( !$$.is.fn( sortFn ) ){
+				return this;
+			}
+
+			var cy = this.cy();
+			var coln = new $$.Collection( cy );
+			
+			var sorted = this.toArray().sort( sortFn );
+
+			return new $$.Collection(cy, sorted);
+		},
+
+		sortByZIndex: function(){
+			return this.sort( $$.Collection.zIndexSort );
+		}
+	});
+
+
+	$$.Collection.zIndexSort = function(a, b) {
+		var elementDepth = function(ele) {
+			if (ele._private.group == "nodes")
+			{
+				return ele.parents().size();
+			}
+			else if (ele._private.group == "edges")
+			{
+				return Math.max(ele.source()[0].parents().size(),
+				                ele.target()[0].parents().size());
+			}
+			else
+			{
+				return 0;
+			}
+		};
+
+		var result = a._private.style["z-index"].value - b._private.style["z-index"].value;
+
+		var depthA = 0;
+		var depthB = 0;
+
+		// no need to calculate element depth if there is no compound node
+		if ( a.cy().hasCompoundNodes() )
+		{
+			depthA = elementDepth(a);
+			depthB = elementDepth(b);
+		}
+
+		// if both elements has same depth,
+		// then edges should be drawn first
+		if (depthA - depthB === 0)
+		{
+			// "a" is a node, it should be drawn later
+			if (a._private.group === "nodes"
+				&& b._private.group === "edges")
+			{
+				return 1;
+			}
+			
+			// "a" is an edge, it should be drawn first
+			else if (a._private.group === "edges"
+				&& b._private.group === "nodes")
+			{
+				return -1;
+			}
+
+			// both nodes or both edges
+			else
+			{
+				if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
+					return a._private.index - b._private.index;
+				} else {
+					return result;
+				}
+			}
+		}
+
+		// elements on different level
+		else
+		{
+			// deeper element should be drawn later
+			return depthA - depthB;
+		}
+
+		// return zero if z-index values are not the same
+		return 0;
+	};
+	
+})( cytoscape );
+
+;(function($$){ "use strict";
+	
+	var borderWidthMultiplier = 2 * 0.5;
+	var borderWidthAdjustment = 0;
+
+	$$.fn.eles({
+
+		// fully updates (recalculates) the style for the elements
+		updateStyle: function( notifyRenderer ){
+			var cy = this._private.cy;
+			var style = cy.style();
+			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
+
+			style.apply( this );
+
+			var updatedCompounds = this.updateCompoundBounds();
+
+			if( notifyRenderer ){
+				this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
+			} else {
+				this.add( updatedCompounds ).trigger("style"); // just fire the event
+			}
+			return this; // chaining
+		},
+
+		// just update the mappers in the elements' styles; cheaper than eles.updateStyle()
+		updateMappers: function( notifyRenderer ){
+			var cy = this._private.cy;
+			var style = cy.style();
+			notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
+
+			style.updateMappers( this );
+
+			var updatedCompounds = this.updateCompoundBounds();
+
+			if( notifyRenderer ){
+				this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
+			} else {
+				this.add( updatedCompounds ).trigger("style"); // just fire the event
+			}
 			return this; // chaining
 		},
 
@@ -7374,7 +8966,25 @@ var cytoscape;
 			var ele = this[0];
 
 			if( ele ){
-				return !this.visible();
+				return !ele.visible();
+			}
+		},
+
+		effectiveOpacity: function(){
+			var ele = this[0];
+
+			if( ele ){
+				var parentOpacity = ele._private.style.opacity.value;
+				var parents = ele.parents();
+				
+				for( var i = 0; i < parents.length; i++ ){
+					var parent = parents[i];
+					var opacity = parent._private.style.opacity.value;
+
+					parentOpacity = opacity * parentOpacity;
+				}
+
+				return parentOpacity;
 			}
 		},
 
@@ -7382,549 +8992,31 @@ var cytoscape;
 			var ele = this[0];
 
 			if( ele ){
-				return parseFloat( this.css("opacity") ) === 0;
+				return ele.effectiveOpacity() === 0;
 			}
 		},
 
-		// convenience function to get a numerical value for the width of the node/edge
-		width: function(){
+		isFullAutoParent: function(){
 			var ele = this[0];
 
 			if( ele ){
-				var w = this._private.style.width;
-				return w.strValue === "auto" ? ele._private.autoWidth : w.pxValue;
+				var autoW = ele._private.style["width"].value === "auto";
+				var autoH = ele._private.style["height"].value === "auto";
+
+				return ele.isParent() && autoW && autoH;
 			}
-		},
-
-		outerWidth: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var style = this._private.style;
-				var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
-				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
-
-				return width + border;
-			}
-		},
-
-		renderedWidth: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var width = this.width();
-				return width * this.cy().zoom();
-			}
-		},
-
-		renderedOuterWidth: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var owidth = this.outerWidth();
-				return owidth * this.cy().zoom();
-			}
-		},
-
-		// convenience function to get a numerical value for the height of the node
-		height: function(){
-			var ele = this[0];
-
-			if( ele && ele.isNode() ){
-				var h = this._private.style.height;
-				return h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
-			}
-		},
-
-		outerHeight: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var style = this._private.style;
-				var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
-				var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
-
-				return height + border;
-			}
-		},
-
-		renderedHeight: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var height = this.height();
-				return height * this.cy().zoom();
-			}
-		},
-
-		renderedOuterHeight: function(){
-			var ele = this[0];
-
-			if( ele ){
-				var oheight = this.outerHeight();
-				return oheight * this.cy().zoom();
-			}
-		},
-
-		// get the position of the element relative to the container (i.e. not relative to parent node)
-		offset: function(){
-			var ele = this[0];
-
-			if( ele && ele.isNode() ){
-				var offset = {
-					x: ele._private.position.x,
-					y: ele._private.position.y
-				};
-
-				var parents = ele.parents();
-				for( var i = 0; i < parents.length; i++ ){
-					var parent = parents[i];
-					var parentPos = parent._private.position;
-
-					offset.x += parentPos.x;
-					offset.y += parentPos.y;
-				}
-
-				return offset;
-			}
-		},
-
-		renderedOffset: function(){
-			var ele = this[0];
-
-			if( ele && ele.isNode() ){
-				var offset = this.offset();
-				var cy = this.cy();
-				var zoom = cy.zoom();
-				var pan = cy.pan();
-
-				return {
-					x: offset.x * zoom + pan.x,
-					y: offset.y * zoom + pan.y
-				};
-			}
-		},
-
-		// get the bounding box of the elements (in raw model position)
-		boundingBox: function( selector ){
-			var eles = this;
-
-			if( !selector || ( $$.is.elementOrCollection(selector) && selector.length === 0 ) ){
-				eles = this;
-			} else if( $$.is.string(selector) ){
-				eles = this.filter( selector );
-			} else if( $$.is.elementOrCollection(selector) ){
-				eles = selector;
-			}
-
-			var x1 = Infinity;
-			var x2 = -Infinity;
-			var y1 = Infinity;
-			var y2 = -Infinity;
-
-			// find bounds of elements
-			for( var i = 0; i < eles.length; i++ ){
-				var ele = eles[i];
-				var ex1, ex2, ey1, ey2, x, y;				
-
-				if( ele.isNode() ){
-					var pos = ele._private.position;
-					x = pos.x;
-					y = pos.y;
-					var w = ele.outerWidth();
-					var halfW = w/2;
-					var h = ele.outerHeight();
-					var halfH = h/2;
-
-					// handle node dimensions
-					/////////////////////////
-
-					ex1 = x - halfW;
-					ex2 = x + halfW;
-					ey1 = y - halfH;
-					ey2 = y + halfH;
-
-					x1 = ex1 < x1 ? ex1 : x1;
-					x2 = ex2 > x2 ? ex2 : x2;
-					y1 = ey1 < y1 ? ey1 : y1;
-					y2 = ey2 > y2 ? ey2 : y2;
-
-				} else { // is edge
-					var n1pos = ele.source()[0]._private.position;
-					var n2pos = ele.target()[0]._private.position;
-
-					// handle edge dimensions (rough box estimate)
-					//////////////////////////////////////////////
-
-					var rstyle = ele._private.rstyle;
-					x = rstyle.labelX;
-					y = rstyle.labelY;
-
-					ex1 = n1pos.x;
-					ex2 = n2pos.x;
-					ey1 = n1pos.y;
-					ey2 = n2pos.y;
-
-					if( ex1 > ex2 ){
-						var temp = ex1;
-						ex1 = ex2;
-						ex2 = temp;
-					}
-
-					if( ey1 > ey2 ){
-						var temp = ey1;
-						ey1 = ey2;
-						ey2 = temp;
-					}
-
-					x1 = ex1 < x1 ? ex1 : x1;
-					x2 = ex2 > x2 ? ex2 : x2;
-					y1 = ey1 < y1 ? ey1 : y1;
-					y2 = ey2 > y2 ? ey2 : y2;
-
-					// handle points along edge (sanity check)
-					//////////////////////////////////////////
-
-					var bpts = rstyle.bezierPts || [];
-					var w = ele._private.style['width'].value;
-					for( var j = 0; j < bpts.length; j++ ){
-						var bpt = bpts[j];
-
-						x1 = bpt.x - w < x1 ? bpt.x - w : x1;
-						x2 = bpt.x + w > x2 ? bpt.x + w : x2;
-						y1 = bpt.y - w < y1 ? bpt.y - w : y1;
-						y2 = bpt.y + w > y2 ? bpt.y + w : y2;
-					}
-
-				}
-
-				// handle label dimensions
-				//////////////////////////
-
-				var style = ele._private.style;
-				var label = style['content'].value;
-				var fontSize = style['font-size'];
-				var halign = style['text-halign'];
-				var valign = style['text-valign'];
-				var labelWidth = ele._private.rstyle.labelWidth;
-
-				if( label && fontSize && labelWidth != undefined && halign && valign ){
-					var lh = fontSize.value;
-					var lw = labelWidth;
-					var lx1, lx2, ly1, ly2;
-
-					switch( halign.value ){
-						case "left":
-							lx1 = ex1 - lw;
-							lx2 = ex1;
-							break;
-
-						case "center":
-							lx1 = x - lw/2;
-							lx2 = x + lw/2;
-							break;
-
-						case "right":
-							lx1 = ex2;
-							lx2 = ex2 + lw;
-							break;
-					}
-
-					if( ele.isEdge() ){ // force center case
-						lx1 = x - lw/2;
-						lx2 = x + lw/2;
-					}
-
-					switch( valign.value ){
-						case "top":
-							ly1 = ey1 - lh;
-							ly2 = ey1;
-							break;
-
-						case "center":
-							ly1 = y - lh/2;
-							ly2 = y + lh/2;
-							break;
-
-						case "bottom":
-							ly1 = ey2;
-							ly2 = ey2 + lh;
-							break;
-					}
-
-					if( ele.isEdge() ){ // force center case
-						ly1 = y - lh/2;
-						ly2 = y + lh/2;
-					}
-
-					x1 = lx1 < x1 ? lx1 : x1;
-					x2 = lx2 > x2 ? lx2 : x2;
-					y1 = ly1 < y1 ? ly1 : y1;
-					y2 = ly2 > y2 ? ly2 : y2;
-				}
-			} // for
-
-			return {
-				x1: x1,
-				x2: x2,
-				y1: y1,
-				y2: y2,
-				w: x2 - x1,
-				h: y2 - y1
-			};
 		}
+
 	});
 
+
+	$$.elesfn.style = $$.elesfn.css;
+	$$.elesfn.renderedStyle = $$.elesfn.renderedCss;
+	$$.elesfn.removeStyle = $$.elesfn.removeCss;
 	
 })( cytoscape );
 
-;(function( $$ ){
-	
-	// Regular degree functions (works on single element)
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	function defineDegreeFunction(callback){
-		return function(){
-			var self = this;
-			
-			if( self.length === 0 ){ return; }
-
-			if( self.isNode() && !self.removed() ){
-				var degree = 0;
-				var node = self[0];
-				var connectedEdges = node._private.edges;
-
-				for( var i = 0; i < connectedEdges.length; i++ ){
-					var edge = connectedEdges[i];
-					degree += callback( node, edge );
-				}
-				
-				return degree;
-			} else {
-				return;
-			}
-		};
-	}
-	
-	$$.fn.eles({
-		degree: defineDegreeFunction(function(node, edge){
-			if( edge.source().same( edge.target() ) ){
-				return 2;
-			} else {
-				return 1;
-			}
-		}),
-
-		indegree: defineDegreeFunction(function(node, edge){
-			if( edge.target().same(node) ){
-				return 1;
-			} else {
-				return 0;
-			}
-		}),
-
-		outdegree: defineDegreeFunction(function(node, edge){
-			if( edge.source().same(node) ){
-				return 1;
-			} else {
-				return 0;
-			}
-		})
-	});
-	
-	
-	// Collection degree stats
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	function defineDegreeBoundsFunction(degreeFn, callback){
-		return function(){
-			var ret = undefined;
-			var nodes = this.nodes();
-
-			for( var i = 0; i < nodes.length; i++ ){
-				var ele = nodes[i];
-				var degree = ele[degreeFn]();
-				if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
-					ret = degree;
-				}
-			}
-			
-			return ret;
-		};
-	}
-	
-	$$.fn.eles({
-		minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
-			return degree < min;
-		}),
-
-		maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
-			return degree > max;
-		}),
-
-		minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
-			return degree < min;
-		}),
-
-		maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
-			return degree > max;
-		}),
-
-		minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
-			return degree < min;
-		}),
-
-		maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
-			return degree > max;
-		})
-	});
-	
-	$$.fn.eles({
-		totalDegree: function(){
-			var total = 0;
-			var nodes = this.nodes();
-
-			for( var i = 0; i < nodes.length; i++ ){
-				total += nodes[i].degree();
-			}
-
-			return total;
-		}
-	});
-	
-})( cytoscape );
-
-	
-
-;(function($$){
-	
-	// Functions for binding & triggering events
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	$$.fn.eles({
-		on: $$.define.on(), // .on( events [, selector] [, data], handler)
-		one: $$.define.on({ unbindSelfOnTrigger: true }),
-		once: $$.define.on({ unbindAllBindersOnTrigger: true }),
-		off: $$.define.off(), // .off( events [, selector] [, handler] )
-		trigger: $$.define.trigger(), // .trigger( events [, extraParams] )
-
-		rtrigger: function(event, extraParams){ // for internal use only
-			// notify renderer unless removed
-			this.cy().notify({
-				type: event,
-				collection: this.filter(function(){
-					return !this.removed();
-				})
-			});
-			
-			this.trigger(event, extraParams);
-			return this;
-		}
-	});
-
-	// aliases for those folks who like old stuff:
-	$$.elesfn.bind = $$.elesfn.on;
-	$$.elesfn.unbind = $$.elesfn.off;
-
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.elesfn );
-	
-})( cytoscape );
-
-;(function($$){
-
-	$$.fn.eles({
-		isNode: function(){
-			return this.group() === "nodes";
-		},
-
-		isEdge: function(){
-			return this.group() === "edges";
-		},
-
-		isLoop: function(){
-			return this.isEdge() && this.source().id() === this.target().id();
-		},
-
-		group: function(){
-			var ele = this[0];
-
-			if( ele ){
-				return ele._private.group;
-			}
-		}
-	});
-
-	
-})( cytoscape );
-
-;(function($$){
-	
-	// Functions for iterating over collections
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	$$.fn.eles({
-		each: function(fn){
-			if( $$.is.fn(fn) ){
-				for(var i = 0; i < this.length; i++){
-					var ele = this[i];
-					var ret = fn.apply( ele, [ i, ele ] );
-
-					if( ret === false ){ break; } // exit each early on return false
-				}
-			}
-			return this;
-		},
-
-		toArray: function(){
-			var array = [];
-			
-			for(var i = 0; i < this.length; i++){
-				array.push( this[i] );
-			}
-			
-			return array;
-		},
-
-		slice: function(start, end){
-			var array = [];
-			var thisSize = this.length;
-			
-			if( end == null ){
-				end = thisSize;
-			}
-			
-			if( start < 0 ){
-				start = thisSize + start;
-			}
-			
-			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
-				array.push( this[i] );
-			}
-			
-			return new $$.Collection(this.cy(), array);
-		},
-
-		size: function(){
-			return this.length;
-		},
-
-		eq: function(i){
-			return this[i];
-		},
-
-		empty: function(){
-			return this.length === 0;
-		},
-
-		nonempty: function(){
-			return !this.empty();
-		}
-	});
-	
-})( cytoscape );
-
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Collection functions that toggle a boolean value
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -8034,7 +9126,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.eles({
 		nodes: function(selector){
@@ -8619,97 +9711,46 @@ var cytoscape;
 	
 	$$.fn.eles({
 		connectedEdges: function( selector ){
-			var elements = [];
+			var retEles = [];
 			var cy = this._private.cy;
 			
-			var nodes = this.nodes();
-			for( var i = 0; i < nodes.length; i++ ){
-				var node = nodes[i];
+			var eles = this;
+			for( var i = 0; i < eles.length; i++ ){
+				var node = eles[i];
+				if( !node.isNode() ){ continue; }
+
 				var edges = node._private.edges;
 
 				for( var j = 0; j < edges.length; j++ ){
 					var edge = edges[j];					
-					elements.push( edge );
+					retEles.push( edge );
 				}
 			}
 			
-			return new $$.Collection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, retEles ).filter( selector );
 		},
 
 		connectedNodes: function( selector ){
-			var elements = [];
+			var retEles = [];
 			var cy = this._private.cy;
 
-			var edges = this.edges();
-			for( var i = 0; i < edges.length; i++ ){
-				var edge = edges[i];
+			var eles = this;
+			for( var i = 0; i < eles.length; i++ ){
+				var edge = eles[i];
+				if( !edge.isEdge() ){ continue; }
 
-				elements.push( edge.source()[0] );
-				elements.push( edge.target()[0] );
+				retEles.push( edge.source()[0] );
+				retEles.push( edge.target()[0] );
 			}
 
-			return new $$.Collection( cy, elements ).filter( selector );
+			return new $$.Collection( cy, retEles ).filter( selector );
 		},
 
 		parallelEdges: defineParallelEdgesFunction(),
 
 		codirectedEdges: defineParallelEdgesFunction({
 			codirected: true
-		}),
-
-		parallelIndex: function(){
-			var edge = this[0];
-
-			if( edge.isEdge() ){
-				var src = edge.source()[0];
-				var srcEdges = src._private.edges;
-				var index = 0;
-
-				for( var i = 0; i < srcEdges.length; i++ ){
-					var srcEdge = srcEdges[i];
-					var thisIsTheIndex = srcEdge === edge;
-
-					if( thisIsTheIndex ){
-						return index;
-					}
-
-					var codirected = edge._private.data.source === srcEdge._private.data.source
-						&& edge._private.data.target === srcEdge._private.data.target;
-					var opdirected = edge._private.data.source === srcEdge._private.data.target
-						&& edge._private.data.target === srcEdge._private.data.source;
-					var parallel = codirected || opdirected;
-
-					if( parallel ){ // then increase the count
-						index++;
-					}
-				}
-			}
-		},
-
-		parallelSize: function(){
-			var edge = this[0];
-
-			if( edge.isEdge() ){
-				var src = edge.source()[0];
-				var srcEdges = src._private.edges;
-				var numEdges = 0;
-
-				for( var i = 0; i < srcEdges.length; i++ ){
-					var srcEdge = srcEdges[i];
-					var codirected = edge._private.data.source === srcEdge._private.data.source
-						&& edge._private.data.target === srcEdge._private.data.target;
-					var opdirected = edge._private.data.source === srcEdge._private.data.target
-						&& edge._private.data.target === srcEdge._private.data.source;
-					var parallel = codirected || opdirected;
-
-					if( parallel ){ // then increase the count
-						numEdges++;
-					}
-				}
-
-				return numEdges;
-			}
-		}
+		})
 	});
 	
 	function defineParallelEdgesFunction(params){
@@ -8844,816 +9885,13 @@ var cytoscape;
 		}
 	});
 
+	// aliases
+	$$.fn.eles.ancestors = $$.fn.eles.parents;
+
 	
 })( cytoscape );
 
-;(function($$){
-		
-
-	$$.fn.selector = function(map, options){
-		for( var name in map ){
-			var fn = map[name];
-			$$.Selector.prototype[ name ] = fn;
-		}
-	};
-
-	$$.Selector = function(onlyThisGroup, selector){
-		
-		if( !(this instanceof $$.Selector) ){
-			return new $$.Selector(onlyThisGroup, selector);
-		}
-	
-		if( selector === undefined && onlyThisGroup !== undefined ){
-			selector = onlyThisGroup;
-			onlyThisGroup = undefined;
-		}
-		
-		var self = this;
-		
-		self._private = {
-			selectorText: null,
-			invalid: true
-		}
-	
-		// storage for parsed queries
-		// when you add something here, also add to Selector.toString()
-		function newQuery(){
-			return {
-				classes: [], 
-				colonSelectors: [],
-				data: [],
-				group: null,
-				ids: [],
-				meta: [],
-
-				// fake selectors
-				collection: null, // a collection to match against
-				filter: null, // filter function
-
-				// these are defined in the upward direction rather than down (e.g. child)
-				// because we need to go up in Selector.filter()
-				parent: null, // parent query obj
-				ancestor: null, // ancestor query obj
-				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-				// use these only when subject has been defined
-				child: null,
-				descendant: null
-			};
-		}
-		
-		if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
-			
-			if( onlyThisGroup == null ){
-				// ignore
-				self.length = 0;
-			} else {
-				self[0] = newQuery();
-				self[0].group = onlyThisGroup;
-				self.length = 1;
-			}
-							
-		} else if( $$.is.element( selector ) ){
-			var collection = new $$.Collection(self.cy(), [ selector ]);
-			
-			self[0] = newQuery();
-			self[0].collection = collection;
-			self.length = 1;
-			
-		} else if( $$.is.collection( selector ) ){
-			self[0] = newQuery();
-			self[0].collection = selector;
-			self.length = 1;
-			
-		} else if( $$.is.fn( selector ) ) {
-			self[0] = newQuery();
-			self[0].filter = selector;
-			self.length = 1;
-			
-		} else if( $$.is.string( selector ) ){
-		
-			// these are the actual tokens in the query language
-			var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
-			var variable = "(?:[\\w-]|(?:\\\\"+ metaChar +"))+"; // a variable name
-			var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
-			var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
-			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
-			var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
-			var value = string + "|" + number; // a value literal, either a string or number
-			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
-			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
-			var className = variable; // a class name (follows variable conventions)
-			var descendant = "\\s+";
-			var child = "\\s+>\\s+";
-			var subject = "\\$";
-			var id = variable; // an element id (follows variable conventions)
-			
-			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
-			// so that values get compared properly in Selector.filter()
-			function cleanMetaChars(str){
-				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), "\1");
-			}
-			
-			// add @ variants to comparatorOp
-			var ops = comparatorOp.split("|");
-			for( var i = 0; i < ops.length; i++ ){
-				var op = ops[i];
-				comparatorOp += "|@" + op;
-			}
-
-			// the current subject in the query
-			var currentSubject = null;
-			
-			// NOTE: add new expression syntax here to have it recognised by the parser;
-			// a query contains all adjacent (i.e. no separator in between) expressions;
-			// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
-			// you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
-			var exprs = {
-				group: {
-					query: true,
-					regex: "(node|edge|\\*)",
-					populate: function( group ){
-						this.group = group == "*" ? group : group + "s";
-					}
-				},
-				
-				state: {
-					query: true,
-					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
-					populate: function( state ){
-						this.colonSelectors.push( state );
-					}
-				},
-				
-				id: {
-					query: true,
-					regex: "\\#("+ id +")",
-					populate: function( id ){
-						this.ids.push( cleanMetaChars(id) );
-					}
-				},
-				
-				className: {
-					query: true,
-					regex: "\\.("+ className +")",
-					populate: function( className ){
-						this.classes.push( cleanMetaChars(className) );
-					}
-				},
-				
-				dataExists: {
-					query: true,
-					regex: "\\[\\s*("+ variable +")\\s*\\]",
-					populate: function( variable ){
-						this.data.push({
-							field: cleanMetaChars(variable)
-						});
-					}
-				},
-				
-				dataCompare: {
-					query: true,
-					regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
-					populate: function( variable, comparatorOp, value ){
-						this.data.push({
-							field: cleanMetaChars(variable),
-							operator: comparatorOp,
-							value: value
-						});
-					}
-				},
-				
-				dataBool: {
-					query: true,
-					regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
-					populate: function( boolOp, variable ){
-						this.data.push({
-							field: cleanMetaChars(variable),
-							operator: boolOp
-						});
-					}
-				},
-				
-				metaCompare: {
-					query: true,
-					regex: "\\[\\[\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\]\\]",
-					populate: function( meta, comparatorOp, number ){
-						this.meta.push({
-							field: cleanMetaChars(meta),
-							operator: comparatorOp,
-							value: number
-						});
-					}
-				},
-
-				nextQuery: {
-					separator: true,
-					regex: separator,
-					populate: function(){
-						// go on to next query
-						self[++i] = newQuery();
-						currentSubject = null;
-					}
-				},
-
-				child: {
-					separator: true,
-					regex: child,
-					populate: function(){
-						// this query is the parent of the following query
-						var childQuery = newQuery();
-						childQuery.parent = this;
-						childQuery.subject = currentSubject;
-
-						// we're now populating the child query with expressions that follow
-						self[i] = childQuery;
-					}
-				},
-
-				descendant: {
-					separator: true,
-					regex: descendant,
-					populate: function(){
-						// this query is the ancestor of the following query
-						var descendantQuery = newQuery();
-						descendantQuery.ancestor = this;
-						descendantQuery.subject = currentSubject;
-
-						// we're now populating the descendant query with expressions that follow
-						self[i] = descendantQuery;
-					}
-				},
-
-				subject: {
-					modifier: true,
-					regex: subject,
-					populate: function(){
-						if( currentSubject != null && this.subject != this ){
-							$$.util.error("Redefinition of subject in selector `" + selector + "`");
-							return false;
-						}
-
-						currentSubject = this;
-						this.subject = this;
-					},
-
-				}
-			};
-
-			var j = 0;
-			for( var name in exprs ){
-				exprs[j] = exprs[name];
-				exprs[j].name = name;
-
-				j++;
-			}
-			exprs.length = j;
-
-			self._private.selectorText = selector;
-			var remaining = selector;
-			var i = 0;
-			
-			// of all the expressions, find the first match in the remaining text
-			function consumeExpr( expectation ){
-				var expr;
-				var match;
-				var name;
-				
-				for( var j = 0; j < exprs.length; j++ ){
-					var e = exprs[j];
-					var n = e.name;
-
-					// ignore this expression if it doesn't meet the expectation function
-					if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
-
-					var m = remaining.match(new RegExp( "^" + e.regex ));
-					
-					if( m != null ){
-						match = m;
-						expr = e;
-						name = n;
-						
-						var consumed = m[0];
-						remaining = remaining.substring( consumed.length );								
-						
-						break; // we've consumed one expr, so we can return now
-					}
-				}
-				
-				return {
-					expr: expr,
-					match: match,
-					name: name
-				};
-			}
-			
-			// consume all leading whitespace
-			function consumeWhitespace(){
-				var match = remaining.match(/^\s+/);
-				
-				if( match ){
-					var consumed = match[0];
-					remaining = remaining.substring( consumed.length );
-				}
-			}
-			
-			self[0] = newQuery(); // get started
-
-			consumeWhitespace(); // get rid of leading whitespace
-			for(;;){				
-				var check = consumeExpr();
-				
-				if( check.expr == null ){
-					$$.util.error("The selector `"+ selector +"`is invalid");
-					return;
-				} else {
-					var args = [];
-					for(var j = 1; j < check.match.length; j++){
-						args.push( check.match[j] );
-					}
-					
-					// let the token populate the selector object (i.e. in self[i])
-					var ret = check.expr.populate.apply( self[i], args );
-
-					if( ret === false ){ return } // exit if population failed
-				}
-				
-				// we're done when there's nothing left to parse
-				if( remaining.match(/^\s*$/) ){
-					break;
-				}
-			}
-			
-			self.length = i + 1;
-
-			// adjust references for subject
-			for(j = 0; j < self.length; j++){
-				var query = self[j];
-
-				if( query.subject != null ){
-					// go up the tree until we reach the subject
-					for(;;){
-						if( query.subject == query ){ break } // done if subject is self
-
-						if( query.parent != null ){ // swap parent/child reference
-							var parent = query.parent;
-							var child = query;
-
-							child.parent = null;
-							parent.child = child;
-
-							query = parent; // go up the tree
-						} else if( query.ancestor != null ){ // swap ancestor/descendant
-							var ancestor = query.ancestor;
-							var descendant = query;
-
-							descendant.ancestor = null;
-							ancestor.descendant = descendant;
-
-							query = ancestor; // go up the tree
-						} else {
-							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
-							break;
-						}
-					} // for
-
-					self[j] = query.subject; // subject should be the root query
-				} // if
-			} // for
-
-			// make sure for each query that the subject group matches the implicit group if any
-			if( onlyThisGroup != null ){
-				for(var j = 0; j < self.length; j++){
-					if( self[j].group != null && self[j].group != onlyThisGroup ){
-						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
-						return;
-					}
-
-					self[j].group = onlyThisGroup; // set to implicit group
-				}
-			}
-			
-		} else {
-			$$.util.error("A selector must be created from a string; found " + selector);
-			return;
-		}
-
-		self._private.invalid = false;
-		
-	};
-
-	$$.selfn = $$.Selector.prototype;
-	
-	$$.selfn.size = function(){
-		return this.length;
-	};
-	
-	$$.selfn.eq = function(i){
-		return this[i];
-	};
-	
-	// get elements from the core and then filter them
-	$$.selfn.find = function(){
-		// TODO impl if we decide to use a DB for storing elements
-	};
-	
-	// filter an existing collection
-	$$.selfn.filter = function(collection, addLiveFunction){
-		var self = this;
-		var cy = collection.cy();
-		
-		// don't bother trying if it's invalid
-		if( self._private.invalid ){
-			return new $$.Collection( cy );
-		}
-		
-		var queryMatches = function(query, element){
-			// check group
-			if( query.group != null && query.group != "*" && query.group != element._private.group ){
-				return false;
-			}
-			
-			// check colon selectors
-			var allColonSelectorsMatch = true;
-			for(var k = 0; k < query.colonSelectors.length; k++){
-				var sel = query.colonSelectors[k];
-				var renderer = cy.renderer(); // TODO remove reference after refactoring
-				
-				switch(sel){
-				case ":selected":
-					allColonSelectorsMatch = element.selected();
-					break;
-				case ":unselected":
-					allColonSelectorsMatch = !element.selected();
-					break;
-				case ":selectable":
-					allColonSelectorsMatch = element.selectable();
-					break;
-				case ":unselectable":
-					allColonSelectorsMatch = !element.selectable();
-					break;
-				case ":locked":
-					allColonSelectorsMatch = element.locked();
-					break;
-				case ":unlocked":
-					allColonSelectorsMatch = !element.locked();
-					break;
-				case ":visible":
-					allColonSelectorsMatch = element.visible();
-					break;
-				case ":hidden":
-					allColonSelectorsMatch = !element.visible();
-					break;
-				case ":transparent":
-					allColonSelectorsMatch = !element.transparent();
-					break;
-				case ":grabbed":
-					allColonSelectorsMatch = element.grabbed();
-					break;
-				case ":free":
-					allColonSelectorsMatch = !element.grabbed();
-					break;
-				case ":removed":
-					allColonSelectorsMatch = element.removed();
-					break;
-				case ":inside":
-					allColonSelectorsMatch = !element.removed();
-					break;
-				case ":grabbable":
-					allColonSelectorsMatch = element.grabbable();
-					break;
-				case ":ungrabbable":
-					allColonSelectorsMatch = !element.grabbable();
-					break;
-				case ":animated":
-					allColonSelectorsMatch = element.animated();
-					break;
-				case ":unanimated":
-					allColonSelectorsMatch = !element.animated();
-					break;
-				case ":parent":
-					allColonSelectorsMatch = element.children().nonempty();
-					break;
-				case ":child":
-					allColonSelectorsMatch = element.parent().nonempty();
-					break;
-				case ":active":
-					allColonSelectorsMatch = element.active();
-					break;
-				case ":inactive":
-					allColonSelectorsMatch = !element.active();
-					break;
-				case ":touch":
-					allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
-					break;
-				}
-				
-				if( !allColonSelectorsMatch ) break;
-			}
-			if( !allColonSelectorsMatch ) return false;
-			
-			// check id
-			var allIdsMatch = true;
-			for(var k = 0; k < query.ids.length; k++){
-				var id = query.ids[k];
-				var actualId = element._private.data.id;
-				
-				allIdsMatch = allIdsMatch && (id == actualId);
-				
-				if( !allIdsMatch ) break;
-			}
-			if( !allIdsMatch ) return false;
-			
-			// check classes
-			var allClassesMatch = true;
-			for(var k = 0; k < query.classes.length; k++){
-				var cls = query.classes[k];
-				
-				allClassesMatch = allClassesMatch && element.hasClass(cls);
-				
-				if( !allClassesMatch ) break;
-			}
-			if( !allClassesMatch ) return false;
-			
-			// generic checking for data/metadata
-			function operandsMatch(params){
-				var allDataMatches = true;
-				for(var k = 0; k < query[params.name].length; k++){
-					var data = query[params.name][k];
-					var operator = data.operator;
-					var value = data.value;
-					var field = data.field;
-					var matches;
-					
-					if( operator != null && value != null ){
-						
-						var fieldStr = "" + params.fieldValue(field);
-						var valStr = "" + eval(value);
-						
-						var caseInsensitive = false;
-						if( operator.charAt(0) == "@" ){
-							fieldStr = fieldStr.toLowerCase();
-							valStr = valStr.toLowerCase();
-							
-							operator = operator.substring(1);
-							caseInsensitive = true;
-						}
-						
-						if( operator == "=" ){
-							operator = "==";
-						}
-						
-						switch(operator){
-						case "*=":
-							matches = fieldStr.search(valStr) >= 0;
-							break;
-						case "$=":
-							matches = new RegExp(valStr + "$").exec(fieldStr) != null;
-							break;
-						case "^=":
-							matches = new RegExp("^" + valStr).exec(fieldStr) != null;
-							break;
-						default:
-							// if we're doing a case insensitive comparison, then we're using a STRING comparison
-							// even if we're comparing numbers
-							if( caseInsensitive ){
-								// eval with lower case strings
-								var expr = "fieldStr " + operator + " valStr";
-								matches = eval(expr);
-							} else {
-								// just eval as normal
-								var expr = params.fieldRef(field) + " " + operator + " " + value;
-								matches = eval(expr);
-							}
-							
-						}
-					} else if( operator != null ){
-						switch(operator){
-						case "?":
-							matches = params.fieldTruthy(field);
-							break;
-						case "!":
-							matches = !params.fieldTruthy(field);
-							break;
-						case "^":
-							matches = params.fieldUndefined(field);
-							break;
-						}
-					} else { 	
-						matches = !params.fieldUndefined(field);
-					}
-					
-					if( !matches ){
-						allDataMatches = false;
-						break;
-					}
-				} // for
-				
-				return allDataMatches;
-			} // operandsMatch
-			
-			// check data matches
-			var allDataMatches = operandsMatch({
-				name: "data",
-				fieldValue: function(field){
-					return element._private.data[field];
-				},
-				fieldRef: function(field){
-					return "element._private.data." + field;
-				},
-				fieldUndefined: function(field){
-					return element._private.data[field] === undefined;
-				},
-				fieldTruthy: function(field){
-					if( element._private.data[field] ){
-						return true;
-					}
-					return false;
-				}
-			});
-			
-			if( !allDataMatches ){
-				return false;
-			}
-			
-			// check metadata matches
-			var allMetaMatches = operandsMatch({
-				name: "meta",
-				fieldValue: function(field){
-					return element[field]();
-				},
-				fieldRef: function(field){
-					return "element." + field + "()";
-				},
-				fieldUndefined: function(field){
-					return element[field]() == undefined;
-				},
-				fieldTruthy: function(field){
-					if( element[field]() ){
-						return true;
-					}
-					return false;
-				}
-			});
-			
-			if( !allMetaMatches ){
-				return false;
-			}
-			
-			// check collection
-			if( query.collection != null ){
-				var matchesAny = query.collection._private.ids[ element.id() ] != null;
-				
-				if( !matchesAny ){
-					return false;
-				}
-			}
-			
-			// check filter function
-			if( query.filter != null && element.collection().filter( query.filter ).size() == 0 ){
-				return false;
-			}
-			
-
-			// check parent/child relations
-			function confirmRelations( query, elements ){
-				if( query != null ){
-					var matches = false;
-					elements = elements(); // make elements functional so we save cycles if query == null
-
-					// query must match for at least one element (may be recursive)
-					for(var i = 0; i < elements.size(); i++){
-						if( queryMatches( query, elements.eq(i) ) ){
-							matches = true;
-							break;
-						}
-					}
-
-					return matches;
-				} else {
-					return true;
-				}
-			}
-
-			if (! confirmRelations(query.parent, function(){
-				return element.parent()
-			}) ){ return false }
-
-			if (! confirmRelations(query.ancestor, function(){
-				return element.parents()
-			}) ){ return false }
-
-			if (! confirmRelations(query.child, function(){
-				return element.children()
-			}) ){ return false }
-
-			if (! confirmRelations(query.descendant, function(){
-				return element.descendants()
-			}) ){ return false }
-
-			// we've reached the end, so we've matched everything for this query
-			return true;
-		}; // queryMatches
-
-		var selectorFunction = function(i, element){
-			for(var j = 0; j < self.length; j++){
-				var query = self[j];
-				
-				if( queryMatches(query, element) ){
-					return true;
-				}
-			}
-			
-			return false;
-		};
-		
-		if( self._private.selectorText == null ){
-			selectorFunction = function(){ return true; };
-		}
-		
-		var filteredCollection = collection.filter( selectorFunction );
-		
-		return filteredCollection;
-	}; // filter
-	
-	// ith query to string
-	$$.selfn.toString = $$.selfn.selector = function(){
-		
-		var str = "";
-		
-		function clean(obj){
-			if( $$.is.string(obj) ){
-				return obj;
-			} 
-			return "";
-		}
-		
-		function queryToString(query){
-			var str = "";
-
-			var group = clean(query.group);
-			str += group.substring(0, group.length - 1);
-			
-			for(var j = 0; j < query.data.length; j++){
-				var data = query.data[j];
-				str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
-			}
-
-			for(var j = 0; j < query.meta.length; j++){
-				var meta = query.meta[j];
-				str += "{" + meta.field + clean(meta.operator) + clean(meta.value) + "}"
-			}
-			
-			for(var j = 0; j < query.colonSelectors.length; j++){
-				var sel = query.colonSelectors[i];
-				str += sel;
-			}
-			
-			for(var j = 0; j < query.ids.length; j++){
-				var sel = "#" + query.ids[i];
-				str += sel;
-			}
-			
-			for(var j = 0; j < query.classes.length; j++){
-				var sel = "." + query.classes[i];
-				str += sel;
-			}
-
-			if( query.parent != null ){
-				str = queryToString( query.parent ) + " > " + str; 
-			}
-
-			if( query.ancestor != null ){
-				str = queryToString( query.ancestor ) + " " + str; 
-			}
-
-			if( query.child != null ){
-				str += " > " + queryToString( query.child ); 
-			}
-
-			if( query.descendant != null ){
-				str += " " + queryToString( query.descendant ); 
-			}
-
-			return str;
-		}
-
-		for(var i = 0; i < this.length; i++){
-			var query = this[i];
-			
-			str += queryToString( query );
-			
-			if( this.length > 1 && i < this.length - 1 ){
-				str += ", ";
-			}
-		}
-		
-		return str;
-	};
-	
-})( cytoscape );
-
-;(function($$){
+;(function($$){ "use strict";
 		
 	function NullRenderer(options){
 	}
@@ -9671,7 +9909,7 @@ var cytoscape;
   Modifications tracked on Github.
 */
 
-(function($$) {
+(function($$) { "use strict";
 
 	function CanvasRenderer(options) {
 		
@@ -9760,7 +9998,7 @@ var cytoscape;
 	}
 
 	CanvasRenderer.panOrBoxSelectDelay = 400;
-	CanvasRenderer.isTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;
+	CanvasRenderer.isTouch = $$.is.touch();
 
 	CanvasRenderer.prototype.notify = function(params) {
 		switch( params.type ){
@@ -9819,11 +10057,13 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var rendFunc = CanvasRenderer.prototype;
 	var arrowShapes = CanvasRenderer.arrowShapes = {};
+
+	CanvasRenderer.arrowShapeHeight = 0.3;
 
 	// Contract for arrow shapes:
 	// 0, 0 is arrow tip
@@ -9872,7 +10112,7 @@ var cytoscape;
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -9934,11 +10174,11 @@ var cytoscape;
 			context.arc(0, 0, arrowShapes["circle"]._baseRadius, 0, Math.PI * 2, false);
 		},
 		spacing: function(edge) {
-			return rendFunc.getArrowWidth(edge._private.style["width"].value)
+			return rendFunc.getArrowWidth(edge._private.style["width"].pxValue)
 				* arrowShapes["circle"]._baseRadius;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -10014,7 +10254,7 @@ var cytoscape;
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -10052,7 +10292,7 @@ var cytoscape;
 			return 0;
 		},
 		gap: function(edge) {
-			return edge._private.style["width"].value * 2;
+			return edge._private.style["width"].pxValue * 2;
 		}
 	}
 	
@@ -10060,7 +10300,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -10114,14 +10354,14 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
 	// Project mouse
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
-		n = this.data.container;
+		var n = this.data.container;
 			
 		var offsets = this.findContainerPageCoords();
 		var offsetLeft = offsets[0];
@@ -10130,7 +10370,8 @@ var cytoscape;
 //		console.log("calce");
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-		x = pageX - offsetLeft; y = pageY - offsetTop;
+		var x = pageX - offsetLeft; 
+		var y = pageY - offsetTop;
 		
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
@@ -10191,14 +10432,12 @@ var cytoscape;
 		// Check nodes
 		for (var i = 0; i < nodes.length; i++) {
 			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
-					nodes[i]._private.style["border-width"].value / 2,
-					//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
+					nodes[i]._private.style["border-width"].pxValue / 2,
 					this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
 					nodes[i]._private.position.x, nodes[i]._private.position.y)
 				&&
 				CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
-					nodes[i]._private.style["border-width"].value / 2,
-					//nodes[i]._private.style["width"].value / 2, nodes[i]._private.style["height"].value / 2,
+					nodes[i]._private.style["border-width"].pxValue / 2,
 					(this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
 					nodes[i]._private.position.x, nodes[i]._private.position.y)) {
 				
@@ -10231,9 +10470,9 @@ var cytoscape;
 						rs.cp2ay,
 						rs.selfEdgeMidX,
 						rs.selfEdgeMidY,
-						Math.pow(edge._private.style["width"].value/2, 2))
+						Math.pow(edge._private.style["width"].pxValue/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
+					(Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
@@ -10249,9 +10488,9 @@ var cytoscape;
 						rs.cp2cy,
 						rs.endX,
 						rs.endY,
-						Math.pow(edges[i]._private.style["width"].value/2, 2))
+						Math.pow(edges[i]._private.style["width"].pxValue/2, 2))
 							&&
-					(Math.pow(edges[i]._private.style["width"].value/2, 2) + edgeThreshold > 
+					(Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.selfEdgeMidX,
 							rs.selfEdgeMidY,
@@ -10262,9 +10501,9 @@ var cytoscape;
 					 { addCurrentEdge = true; }
 			
 			} else if (rs.edgeType == "straight") {
-				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].value * 2)
+				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].pxValue * 2)
 						&&
-					Math.pow(edges[i]._private.style["width"].value / 2, 2) + edgeThreshold >
+					Math.pow(edges[i]._private.style["width"].pxValue / 2, 2) + edgeThreshold >
 					$$.math.sqDistanceToFiniteLine(x, y,
 						rs.startX,
 						rs.startY,
@@ -10280,9 +10519,9 @@ var cytoscape;
 					rs.cp2y,
 					rs.endX,
 					rs.endY,
-					Math.pow(edges[i]._private.style["width"].value / 2, 2))
+					Math.pow(edges[i]._private.style["width"].pxValue / 2, 2))
 						&&
-					(Math.pow(edges[i]._private.style["width"].value / 2 , 2) + edgeThreshold >
+					(Math.pow(edges[i]._private.style["width"].pxValue / 2 , 2) + edgeThreshold >
 						$$.math.sqDistanceToQuadraticBezier(x, y,
 							rs.startX,
 							rs.startY,
@@ -10296,29 +10535,29 @@ var cytoscape;
 			if (!near.length || near[near.length - 1] != edges[i]) {
 				if ((CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].roughCollide(x, y,
 						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
 						&&
 					CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].collide(x, y,
 						edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
 					||
 					(CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].roughCollide(x, y,
 						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
 						&&
 					CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].collide(x, y,
 						edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-						this.getArrowWidth(edges[i]._private.style["width"].value),
-						this.getArrowHeight(edges[i]._private.style["width"].value),
+						this.getArrowWidth(edges[i]._private.style["width"].pxValue),
+						this.getArrowHeight(edges[i]._private.style["width"].pxValue),
 						[edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
 							edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
 					{ addCurrentEdge = true; }
@@ -10363,9 +10602,8 @@ var cytoscape;
 		
 		for (var i=0;i<nodes.length;i++) {
 			if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
-				//nodes[i]._private.style["width"].value, nodes[i]._private.style["height"].value,
 				this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
-				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].value / 2))
+				nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].pxValue / 2))
 			{ box.push(nodes[i]); }
 		}
 		
@@ -10374,22 +10612,22 @@ var cytoscape;
 				if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
 								||
 					(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value)))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
 					)
 				{ box.push(edges[i]); }
 			}
@@ -10398,12 +10636,12 @@ var cytoscape;
 				(heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&&
 						(heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 							edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
 				{ box.push(edges[i]); }
 		
 			if (edges[i]._private.rscratch.edgeType == "straight" &&
@@ -10411,11 +10649,11 @@ var cytoscape;
 						edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
 						edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
 						edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
-						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))
+						edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
 							&& /* console.log("test", heur) == undefined && */
 						(heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
 							edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].value))))
+							edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
 				{ box.push(edges[i]); }
 			
 		}
@@ -10423,253 +10661,6 @@ var cytoscape;
 		return box;
 	}
 
-	/**
-	 * Calculates rectangular bounds of a given compound node.
-	 * If the node is hidden, or none of its children is visible,
-	 * then instead of calculating the bounds, returns the last
-	 * calculated value.
-	 *
-	 * @param node  a node with children (compound node)
-	 * @return {{x: number, y: number, width: number, height: number}}
-	 */
-	CanvasRenderer.prototype.calcCompoundBounds = function(node)
-	{
-		// TODO assuming rectangular compounds, we may add support for other shapes in the future
-
-		// this selection doesn't work if parent is invisible
-		//var children = node.children(":visible").not(":removed");
-
-		// consider only not removed children
-		var children = node.descendants().not(":removed");
-
-		// TODO instead of last calculated width & height define a default compound node size?
-		// last calculated bounds
-		var bounds = {x: node._private.position.x,
-			y: node._private.position.y,
-			width: node._private.autoWidth,
-			height: node._private.autoHeight};
-
-		// check node visibility
-		if (node._private.style["visibility"].value != "visible" || node._private.style["display"].value != "element")
-		{
-			// do not calculate bounds for invisible compounds,
-			// just return last calculated values
-			return bounds;
-		}
-
-		var visibleChildren = [];
-
-		// find out visible children
-		for (var i=0; i < children.size(); i++)
-		{
-			if (children[i]._private.style["visibility"].value == "visible" && children[i]._private.style["display"].value == "element")
-			{
-				visibleChildren.push(children[i]);
-			}
-		}
-
-		if (visibleChildren.length == 0)
-		{
-			// no visible children, just return last calculated values
-			return bounds;
-		}
-
-		// process only visible children
-		children = visibleChildren;
-
-		// find the leftmost, rightmost, topmost, and bottommost child node positions
-		var leftBorder = this.borderValue(children, "left");
-		var rightBorder = this.borderValue(children, "right");
-		var topBorder = this.borderValue(children, "top");
-		var bottomBorder = this.borderValue(children, "bottom");
-
-		// take padding values into account in addition to border values
-		var padding = this.getNodePadding(node);
-		var x = (leftBorder - padding.left + rightBorder + padding.right) / 2;
-		var y = (topBorder - padding.top + bottomBorder + padding.bottom) / 2;
-		var width = (rightBorder - leftBorder) + padding.left + padding.right;
-		var height = (bottomBorder - topBorder) + padding.top + padding.bottom;
-
-		// it is not possible to use the function boundingBox() before
-		// actually rendering the graph
-//		var bBox = children.boundingBox();
-//
-//		var x = (bBox.x1 + bBox.x2) / 2;
-//		var y = (bBox.y1 + bBox.y2) / 2;
-//		var width = bBox.width;
-//		var height = bBox.height;
-
-		bounds = {x: x,
-			y: y,
-			width: width,
-			height: height};
-
-		return bounds;
-	};
-
-	/**
-	 * Calculates the leftmost, rightmost, topmost or bottommost point for the given
-	 * set of nodes. If the type parameter is "left" (or "right"), then the min (or
-	 * the max) x-coordinate value will be returned. If the type is "top" (or "bottom")
-	 * then the min (or the max) y-coordinate value will be returned.
-	 *
-	 * This function is designed to help determining the bounds (bounding box) of
-	 * compound nodes.
-	 *
-	 * @param nodes         set of nodes
-	 * @param type          "left", "right", "top", "bottom"
-	 * @return {number}     border value for the specified type
-	 */
-	CanvasRenderer.prototype.borderValue = function(nodes, type)
-	{
-		var nodeVals, labelVals;
-		var minValue = 1/0, maxValue = -1/0;
-		var r = this;
-
-		// helper function to determine node position and dimensions
-		var calcNodePosAndDim = function(node) {
-			var values = {};
-
-			values.x = node._private.position.x;
-			values.y = node._private.position.y;
-			//values.width = r.getNodeWidth(node);
-			//values.height = r.getNodeHeight(node);
-			values.width = node.outerWidth();
-			values.height = node.outerHeight();
-
-			return values;
-		};
-
-		// helper function to determine label width
-		var getLabelWidth = function(node)
-		{
-			var text = String(node._private.style["content"].value);
-			var textTransform = node._private.style["text-transform"].value;
-
-			if (textTransform == "none") {
-			} else if (textTransform == "uppercase") {
-				text = text.toUpperCase();
-			} else if (textTransform == "lowercase") {
-				text = text.toLowerCase();
-			}
-
-			// TODO width doesn't measure correctly without actually rendering
-			var context = r.data.canvases[4].getContext("2d");
-			return context.measureText(text).width;
-		};
-
-		// helper function to determine label position and dimensions
-		var calcLabelPosAndDim = function(node) {
-
-			var values = {};
-			var nodeWidth = r.getNodeWidth(node);
-			var nodeHeight = r.getNodeHeight(node);
-
-
-			values.height = node._private.style["font-size"].value;
-
-			// TODO ignoring label width for now, it may be a good idea to do so,
-			// since longer label texts may increase the node size unnecessarily
-			//values.width = getLabelWidth(node);
-			values.width = values.height;
-
-			var textHalign = node._private.style["text-halign"].strValue;
-
-			if (textHalign == "left") {
-				values.x = node._private.position.x - nodeWidth / 2;
-				values.left = values.x - values.width;
-				values.right = values.x;
-			} else if (textHalign == "right") {
-				values.x = node._private.position.x + nodeWidth / 2;
-				values.left = values.x;
-				values.right = values.x + values.width;
-			} else { //if (textHalign == "center")
-				values.x = node._private.position.x;
-				values.left = values.x - values.width / 2;
-				values.right = values.x + values.width / 2;
-			}
-
-			var textValign = node._private.style["text-valign"].strValue;
-
-			if (textValign == "top") {
-				values.y = node._private.position.y - nodeHeight / 2;
-				values.top = values.y - values.height;
-				values.bottom = values.y;
-			} else if (textValign == "bottom") {
-				values.y = node._private.position.y + nodeHeight / 2;
-				values.top = values.y;
-				values.bottom = values.y + values.height;
-			} else { // if (textValign == "middle" || textValign == "center")
-				values.y = node._private.position.y;
-				values.top = values.y - values.height / 2;
-				values.bottom = values.y + values.height / 2;
-			}
-
-			return values;
-		};
-
-
-
-		// find out border values by iterating given nodes
-
-		for (i = 0; i < nodes.length; i++)
-		{
-			nodeVals = calcNodePosAndDim(nodes[i]);
-			labelVals = calcLabelPosAndDim(nodes[i]);
-
-			if (type == "left")
-			{
-				var leftBorder = Math.min(nodeVals.x - nodeVals.width / 2,
-					labelVals.left);
-
-				if (leftBorder < minValue)
-				{
-					minValue = leftBorder;
-				}
-			}
-			else if (type == "right")
-			{
-				var rightBorder = Math.max(nodeVals.x + nodeVals.width / 2,
-					labelVals.right);
-
-				if (rightBorder > maxValue)
-				{
-					maxValue = rightBorder;
-				}
-			}
-			else if (type == "top")
-			{
-				var topBorder = Math.min(nodeVals.y - nodeVals.height / 2,
-					labelVals.top);
-
-				if (topBorder < minValue)
-				{
-					minValue = topBorder;
-				}
-			}
-			else if (type == "bottom")
-			{
-				var bottomBorder = Math.max(nodeVals.y + nodeVals.height / 2,
-					labelVals.bottom);
-
-				if (bottomBorder > maxValue)
-				{
-					maxValue = bottomBorder;
-				}
-			}
-		}
-
-		// return the border value according to the type
-
-		if ((type == "left") || (type == "top"))
-		{
-			return minValue;
-		}
-		else
-		{
-			return maxValue;
-		}
-	};
 
 	/**
 	 * Returns the width of the given node. If the width is set to auto,
@@ -10680,15 +10671,7 @@ var cytoscape;
 	 */
 	CanvasRenderer.prototype.getNodeWidth = function(node)
 	{
-		if (node._private.style["width"].value == "auto" ||
-		    node._private.style["height"].value == "auto")
-		{
-			return node._private.autoWidth;
-		}
-		else
-		{
-			return node._private.style["width"].pxValue;
-		}
+		return node.width();
 	};
 
 	/**
@@ -10700,15 +10683,7 @@ var cytoscape;
 	 */
 	CanvasRenderer.prototype.getNodeHeight = function(node)
 	{
-		if (node._private.style["width"].value == "auto" ||
-		    node._private.style["height"].value == "auto")
-		{
-			return node._private.autoHeight;
-		}
-		else
-		{
-			return node._private.style["height"].pxValue;
-		}
+		return node.height();
 	};
 
 	/**
@@ -10740,36 +10715,6 @@ var cytoscape;
 		return shape;
 	};
 
-	/**
-	 * Updates bounds of all compounds in the given element list.
-	 * Assuming the nodes are sorted top down, i.e. a parent node
-	 * always has a lower index than its all children.
-	 *
-	 * @param elements  set of elements containing both nodes and edges
-	 */
-	CanvasRenderer.prototype.updateAllCompounds = function(elements)
-	{
-		// traverse in reverse order, since rendering is top-down,
-		// but we need to calculate bounds bottom-up
-		for(var i = elements.length - 1; i >= 0; i--)
-		{
-			if (elements[i].isNode() &&
-			    (elements[i]._private.style["width"].value == "auto" ||
-			     elements[i]._private.style["height"].value == "auto") &&
-			    elements[i].children().length > 0)
-			{
-				var node = elements[i];
-				var bounds = this.calcCompoundBounds(node);
-
-				//console.log("%s : %o", node._private.data.id, bounds);
-				node._private.position.x = bounds.x;
-				node._private.position.y = bounds.y;
-				node._private.autoWidth = bounds.width;
-				node._private.autoHeight = bounds.height;
-			}
-		}
-
-	};
 
 	CanvasRenderer.prototype.getNodePadding = function(node)
 	{
@@ -10804,74 +10749,7 @@ var cytoscape;
 			bottom : bottom};
 	};
 
-	CanvasRenderer.prototype.zOrderSort = function(a, b) {
-		var elementDepth = function(ele) {
-			if (ele._private.group == "nodes")
-			{
-				return ele.parents().size();
-			}
-			else if (ele._private.group == "edges")
-			{
-				return Math.max(ele.source()[0].parents().size(),
-				                ele.target()[0].parents().size());
-			}
-			else
-			{
-				return 0;
-			}
-		};
-
-		var result = a._private.style["z-index"].value - b._private.style["z-index"].value;
-
-		var depthA = 0;
-		var depthB = 0;
-
-		// no need to calculate element depth if there is no compound node
-		if ( a.cy().hasCompoundNodes() )
-		{
-			depthA = elementDepth(a);
-			depthB = elementDepth(b);
-		}
-
-		// if both elements has same depth,
-		// then edges should be drawn first
-		if (depthA - depthB === 0)
-		{
-			// "a" is a node, it should be drawn later
-			if (a._private.group === "nodes"
-				&& b._private.group === "edges")
-			{
-				return 1;
-			}
-			
-			// "a" is an edge, it should be drawn first
-			else if (a._private.group === "edges"
-				&& b._private.group === "nodes")
-			{
-				return -1;
-			}
-
-			// both nodes or both edges
-			else
-			{
-				if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
-					return a._private.index - b._private.index;
-				} else {
-					return result;
-				}
-			}
-		}
-
-		// elements on different level
-		else
-		{
-			// deeper element should be drawn later
-			return depthA - depthB;
-		}
-
-		// return zero if z-index values are not the same
-		return 0;
-	};
+	CanvasRenderer.prototype.zOrderSort = $$.Collection.zIndexSort;
 
 	CanvasRenderer.prototype.updateCachedZSortedEles = function(){
 		this.getCachedZSortedEles( true );
@@ -10911,33 +10789,254 @@ var cytoscape;
 		return eles;
 	};
 
+	CanvasRenderer.prototype.projectBezier = function(edge){
+		var qbezierAt = $$.math.qbezierAt;
+		var rs = edge._private.rscratch;
+		var bpts = edge._private.rstyle.bezierPts = [];
+
+		function pushBezierPts(pts){
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.4 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.6 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
+			});
+
+			bpts.push({
+				x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
+				y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
+			});
+		}
+
+		if( rs.edgeType === "self" ){
+			pushBezierPts( [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
+			pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
+		} else if( rs.edgeType === "bezier" ){
+			pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
+		}
+	};
+
+	CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
+		var textX, textY;
+		var nodeWidth = node.outerWidth();
+		var nodeHeight = node.outerHeight();
+		var nodePos = node._private.position;
+		var textHalign = node._private.style["text-halign"].strValue;
+		var textValign = node._private.style["text-valign"].strValue;
+		var rs = node._private.rscratch;
+		var rstyle = node._private.rstyle;
+
+		switch( textHalign ){
+			case "left":
+				textX = nodePos.x - nodeWidth / 2;
+				break;
+
+			case "right":
+				textX = nodePos.x + nodeWidth / 2;
+				break;
+
+			case "center":
+			default:
+				textX = nodePos.x;
+		}
+
+		switch( textValign ){
+			case "top":
+				textY = nodePos.y - nodeHeight / 2;
+				break;
+
+			case "bottom":
+				textY = nodePos.y + nodeHeight / 2;
+				break;
+
+			case "middle":
+			default:
+				textY = nodePos.y;
+		}
+	
+		rs.labelX = textX;
+		rs.labelY = textY;
+		rstyle.labelX = textX;
+		rstyle.labelY = textY;
+
+		var context = this.data.bufferCanvases[0].getContext("2d");
+		var text = this.setupTextStyle( context, node );
+		//var labelWidth = context.measureText( text ).width;
+
+		var labelDims = this.calculateLabelDimensions( node, text );
+
+		rstyle.labelWidth = labelDims.width;
+		rs.labelWidth = labelDims.width;
+
+		rstyle.labelHeight = labelDims.height;
+		rs.labelHeight = labelDims.height;
+	};
+
+	CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
+		var textX, textY;	
+		var edgeCenterX, edgeCenterY;
+		var rs = edge._private.rscratch;
+		var rstyle = edge._private.rstyle;
+		
+		if (rs.edgeType == "self") {
+			edgeCenterX = rs.selfEdgeMidX;
+			edgeCenterY = rs.selfEdgeMidY;
+		} else if (rs.edgeType == "straight") {
+			edgeCenterX = (rs.startX + rs.endX) / 2;
+			edgeCenterY = (rs.startY + rs.endY) / 2;
+		} else if (rs.edgeType == "bezier") {
+			edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
+			edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
+		}
+		
+		textX = edgeCenterX;
+		textY = edgeCenterY;
+
+		// add center point to style so bounding box calculations can use it
+		rs.labelX = textX;
+		rs.labelY = textY;
+		rstyle.labelX = textX;
+		rstyle.labelY = textY;
+
+		var context = this.data.bufferCanvases[0].getContext("2d");
+		var text = this.setupTextStyle( context, edge );
+		//var labelWidth = context.measureText( text ).width;
+
+		var labelDims = this.calculateLabelDimensions( edge, text );
+
+		rstyle.labelWidth = labelDims.width;
+		rs.labelWidth = labelDims.width;
+
+		rstyle.labelHeight = labelDims.height;
+		rs.labelHeight = labelDims.height;
+	};
+
+	CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+		var style = ele._private.style;
+		var fStyle = style["font-style"].strValue;
+		var size = style["font-size"].pxValue + "px";
+		var family = style["font-family"].strValue;
+		var variant = style["font-variant"].strValue;
+		var weight = style["font-weight"].strValue;
+
+		var div = this.labelCalcDiv;
+
+		if( !div ){
+			div = this.labelCalcDiv = document.createElement("div");
+			document.body.appendChild( div );
+		}
+
+		var ds = div.style;
+
+		// from ele style
+		ds.fontFamily = family;
+		ds.fontStyle = fStyle;
+		ds.fontSize = size;
+		ds.fontVariant = variant;
+		ds.fontWeight = weight;
+
+		// forced style
+		ds.position = "absolute";
+		ds.left = "-9999px";
+		ds.top = "-9999px";
+		ds.zIndex = "-1";
+		ds.visibility = "hidden";
+		ds.padding = "0";
+		ds.lineHeight = "1";
+
+		// put label content in div
+		div.innerText = text;
+
+		return {
+			width: div.clientWidth,
+			height: div.clientHeight
+		};
+	};	
+
+	CanvasRenderer.prototype.recalculateRenderedStyle = function(){
+		this.recalculateEdgeProjections();
+		this.recalculateLabelProjections();
+	};
+
+	CanvasRenderer.prototype.recalculateLabelProjections = function(){
+		var nodes = this.getCachedNodes();
+		for( var i = 0; i < nodes.length; i++ ){
+			this.recalculateNodeLabelProjection( nodes[i] );
+		}
+
+		var edges = this.getCachedEdges();
+		for( var i = 0; i < edges.length; i++ ){
+			this.recalculateEdgeLabelProjection( edges[i] );
+		}
+	};
+
+	CanvasRenderer.prototype.recalculateEdgeProjections = function(){
+		var edges = this.getCachedEdges();
+
+		this.findEdgeControlPoints( edges );
+	};
+
+
 	// Find edge control points
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
 		var hashTable = {}; var cy = this.data.cy;
 		var pairIds = [];
 		
+		// create a table of edge (src, tgt) => list of edges between them
 		var pairId;
 		for (var i = 0; i < edges.length; i++){
+			var edge = edges[i];
 
 			// ignore edges who are not to be displayed
 			// they shouldn't take up space
-			if( edges[i]._private.style.display.value === 'none' ){
+			if( edge._private.style.display.value === 'none' ){
 				continue;
 			}
 
-			pairId = edges[i]._private.data.source > edges[i]._private.data.target ?
-				edges[i]._private.data.target + '-' + edges[i]._private.data.source :
-				edges[i]._private.data.source + '-' + edges[i]._private.data.target ;
+			var srcId = edge._private.data.source;
+			var tgtId = edge._private.data.target;
+
+			pairId = srcId > tgtId ?
+				tgtId + '-' + srcId :
+				srcId + '-' + tgtId ;
 
 			if (hashTable[pairId] == undefined) {
 				hashTable[pairId] = [];
 			}
 			
-			hashTable[pairId].push( edges[i] );
+			hashTable[pairId].push( edge );
 			pairIds.push( pairId );
 		}
-		var src, tgt;
+
+		var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
+		var midpt;
+		var vectorNormInverse;
+		var badBezier;
 		
+		// for each pair (src, tgt), create the ctrl pts
 		// Nested for loop is OK; total number of iterations for both loops = edgeCount	
 		for (var p = 0; p < pairIds.length; p++) {
 			pairId = pairIds[p];
@@ -10945,50 +11044,118 @@ var cytoscape;
 			src = cy.getElementById( hashTable[pairId][0]._private.data.source );
 			tgt = cy.getElementById( hashTable[pairId][0]._private.data.target );
 
-			var midPointX = (src._private.position.x + tgt._private.position.x) / 2;
-			var midPointY = (src._private.position.y + tgt._private.position.y) / 2;
+			srcPos = src._private.position;
+			tgtPos = tgt._private.position;
+
+			srcW = this.getNodeWidth(src);
+			srcH = this.getNodeHeight(src);
+
+			tgtW = this.getNodeWidth(tgt);
+			tgtH = this.getNodeHeight(tgt);
+
+			srcShape = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ];
+			tgtShape = CanvasRenderer.nodeShapes[ this.getNodeShape(tgt) ];
+
+			srcBorder = src._private.style["border-width"].pxValue;
+			tgtBorder = tgt._private.style["border-width"].pxValue;
+
+			badBezier = false;
 			
-			var displacementX, displacementY;
-			
+
 			if (hashTable[pairId].length > 1) {
-				displacementX = tgt._private.position.y - src._private.position.y;
-				displacementY = src._private.position.x - tgt._private.position.x;
+
+				// pt outside src shape to calc distance/displacement from src to tgt
+				var srcOutside = srcShape.intersectLine(
+					srcPos.x,
+					srcPos.y,
+					srcW,
+					srcH,
+					tgtPos.x,
+					tgtPos.y,
+					srcBorder / 2
+				);
+
+				// pt outside tgt shape to calc distance/displacement from src to tgt
+				var tgtOutside = tgtShape.intersectLine(
+					tgtPos.x,
+					tgtPos.y,
+					tgtW,
+					tgtH,
+					srcPos.x,
+					srcPos.y,
+					tgtBorder / 2
+				);
+
+				var midpt = {
+					x: ( srcOutside[0] + tgtOutside[0] )/2,
+					y: ( srcOutside[1] + tgtOutside[1] )/2
+				};
+
+				var dy = ( tgtOutside[1] - srcOutside[1] );
+				var dx = ( tgtOutside[0] - srcOutside[0] );
+				var l = Math.sqrt( dx*dx + dy*dy );
+
+				var vector = {
+					x: dx,
+					y: dy
+				};
 				
-				var displacementLength = Math.sqrt(displacementX * displacementX
-					+ displacementY * displacementY);
+				var vectorNorm = {
+					x: vector.x/l,
+					y: vector.y/l
+				};
+				vectorNormInverse = {
+					x: -vectorNorm.y,
+					y: vectorNorm.x
+				};
+
+				// if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
+				if( 
+					tgtShape.checkPoint( srcOutside[0], srcOutside[1], tgtBorder/2, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
+					srcShape.checkPoint( tgtOutside[0], tgtOutside[1], srcBorder/2, srcW, srcH, srcPos.x, srcPos.y ) 
+				){
+					vectorNormInverse = {};
+					badBezier = true;
+				}
 				
-				displacementX /= displacementLength;
-				displacementY /= displacementLength;
 			}
 			
 			var edge;
+			var rs;
 			
 			for (var i = 0; i < hashTable[pairId].length; i++) {
 				edge = hashTable[pairId][i];
+				rs = edge._private.rscratch;
 				
-				var edgeIndex1 = edge._private.rscratch.lastEdgeIndex;
+				var edgeIndex1 = rs.lastEdgeIndex;
 				var edgeIndex2 = i;
 
-				var numEdges1 = edge._private.rscratch.lastNumEdges;
+				var numEdges1 = rs.lastNumEdges;
 				var numEdges2 = hashTable[pairId].length;
 
-				var srcX1 = edge._private.rscratch.lastSrcCtlPtX;
-				var srcX2 = src._private.position.x;
-				var srcY1 = edge._private.rscratch.lastSrcCtlPtY;
-				var srcY2 = src._private.position.y;
-				var srcW1 = edge._private.rscratch.lastSrcCtlPtW;
+				var srcX1 = rs.lastSrcCtlPtX;
+				var srcX2 = srcPos.x;
+				var srcY1 = rs.lastSrcCtlPtY;
+				var srcY2 = srcPos.y;
+				var srcW1 = rs.lastSrcCtlPtW;
 				var srcW2 = src.outerWidth();
-				var srcH1 = edge._private.rscratch.lastSrcCtlPtH;
+				var srcH1 = rs.lastSrcCtlPtH;
 				var srcH2 = src.outerHeight();
 
-				var tgtX1 = edge._private.rscratch.lastTgtCtlPtX;
-				var tgtX2 = tgt._private.position.x;
-				var tgtY1 = edge._private.rscratch.lastTgtCtlPtY;
-				var tgtY2 = tgt._private.position.y;
-				var tgtW1 = edge._private.rscratch.lastTgtCtlPtW;
+				var tgtX1 = rs.lastTgtCtlPtX;
+				var tgtX2 = tgtPos.x;
+				var tgtY1 = rs.lastTgtCtlPtY;
+				var tgtY2 = tgtPos.y;
+				var tgtW1 = rs.lastTgtCtlPtW;
 				var tgtW2 = tgt.outerWidth();
-				var tgtH1 = edge._private.rscratch.lastTgtCtlPtH;
+				var tgtH1 = rs.lastTgtCtlPtH;
 				var tgtH2 = tgt.outerHeight();
+
+				if( badBezier ){
+					rs.badBezier = true;
+				} else {
+					rs.badBezier = false;
+				}
 
 				if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
 				&&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
@@ -10996,8 +11163,6 @@ var cytoscape;
 					// console.log('edge ctrl pt cache HIT')
 					continue; // then the control points haven't changed and we can skip calculating them
 				} else {
-					var rs = edge._private.rscratch;
-
 					rs.lastSrcCtlPtX = srcX2;
 					rs.lastSrcCtlPtY = srcY2;
 					rs.lastSrcCtlPtW = srcW2;
@@ -11011,47 +11176,148 @@ var cytoscape;
 					// console.log('edge ctrl pt cache MISS')
 				}
 
+				var stepSize = edge._private.style["control-point-step-size"].value;
+
 				// Self-edge
-				if (src._private.data.id == tgt._private.data.id) {
-					var stepSize = edge._private.style["control-point-step-size"].pxValue;
+				if ( src.id() == tgt.id() ) {
 						
-					edge._private.rscratch.edgeType = "self";
+					rs.edgeType = "self";
 					
 					// New -- fix for large nodes
-					edge._private.rscratch.cp2ax = src._private.position.x;
-					edge._private.rscratch.cp2ay = src._private.position.y
-						- (1 + Math.pow(this.getNodeHeight(src), 1.12) / 100) * stepSize * (i / 3 + 1);
+					rs.cp2ax = srcPos.x;
+					rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * stepSize * (i / 3 + 1);
 					
-					edge._private.rscratch.cp2cx = src._private.position.x
-						- (1 + Math.pow(this.getNodeWidth(src), 1.12) / 100) * stepSize * (i / 3 + 1);
-					edge._private.rscratch.cp2cy = src._private.position.y;
+					rs.cp2cx = src._private.position.x - (1 + Math.pow(srcW, 1.12) / 100) * stepSize * (i / 3 + 1);
+					rs.cp2cy = srcPos.y;
 					
-					edge._private.rscratch.selfEdgeMidX =
-						(edge._private.rscratch.cp2ax + edge._private.rscratch.cp2cx) / 2.0;
-				
-					edge._private.rscratch.selfEdgeMidY =
-						(edge._private.rscratch.cp2ay + edge._private.rscratch.cp2cy) / 2.0;
+					rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
+					rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
 					
 				// Straight edge
 				} else if (hashTable[pairId].length % 2 == 1
 					&& i == Math.floor(hashTable[pairId].length / 2)) {
 					
-					edge._private.rscratch.edgeType = "straight";
+					rs.edgeType = "straight";
 					
 				// Bezier edge
 				} else {
-					var stepSize = edge._private.style["control-point-step-size"].value;
 					var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
 					
-					edge._private.rscratch.edgeType = "bezier";
+					rs.edgeType = "bezier";
 					
-					edge._private.rscratch.cp2x = midPointX
-						+ displacementX * distanceFromMidpoint;
-					edge._private.rscratch.cp2y = midPointY
-						+ displacementY * distanceFromMidpoint;
+					rs.cp2x = midpt.x + vectorNormInverse.x * distanceFromMidpoint;
+					rs.cp2y = midpt.y + vectorNormInverse.y * distanceFromMidpoint;
 					
 					// console.log(edge, midPointX, displacementX, distanceFromMidpoint);
 				}
+
+				// find endpts for edge
+				this.findEndpoints( edge );
+
+				var badStart = !$$.is.number( rs.startX ) || !$$.is.number( rs.startY );
+				var badAStart = !$$.is.number( rs.arrowStartX ) || !$$.is.number( rs.arrowStartY );
+				var badEnd = !$$.is.number( rs.endX ) || !$$.is.number( rs.endY );
+				var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
+
+				var minCpADistFactor = 3;
+				var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CanvasRenderer.arrowShapeHeight;
+				var minCpADist = minCpADistFactor * arrowW;
+				var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
+				var closeStartACp = startACpDist < minCpADist;
+				var endACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
+				var closeEndACp = endACpDist < minCpADist;
+
+				if( rs.edgeType === "bezier" ){
+					var overlapping = false;
+
+					if( badStart || badAStart || closeStartACp ){
+						overlapping = true;
+
+						// project control point along line from src centre to outside the src shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - srcPos.x,
+							y: rs.cp2y - srcPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var srcCtrlPtIntn = srcShape.intersectLine(
+							srcPos.x,
+							srcPos.y,
+							srcW,
+							srcH,
+							cpProj.x,
+							cpProj.y,
+							srcBorder / 2
+						);
+
+						if( closeStartACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist)
+						} else {
+							rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
+					}
+
+					if( badEnd || badAEnd || closeEndACp ){
+						overlapping = true;
+
+						// project control point along line from tgt centre to outside the tgt shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - tgtPos.x,
+							y: rs.cp2y - tgtPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var tgtCtrlPtIntn = tgtShape.intersectLine(
+							tgtPos.x,
+							tgtPos.y,
+							tgtW,
+							tgtH,
+							cpProj.x,
+							cpProj.y,
+							tgtBorder / 2
+						);
+
+						if( closeEndACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - endACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - endACpDist);
+						} else {
+							rs.cp2x = tgtCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
+						
+					}
+
+					if( overlapping ){
+						// recalc endpts
+						this.findEndpoints( edge );
+					}
+				}
+
+				// project the edge into rstyle
+				this.projectBezier( edge );
+
 			}
 		}
 		
@@ -11064,207 +11330,195 @@ var cytoscape;
 		var source = edge.source()[0];
 		var target = edge.target()[0];
 		
-//		var sourceRadius = Math.max(edge.source()[0]._private.style["width"].value,
-//			edge.source()[0]._private.style["height"].value);
+		var srcPos = source._private.position;
+		var tgtPos = target._private.position;
 
-		var sourceRadius = Math.max(this.getNodeWidth(source),
-			this.getNodeHeight(source));
-		
-//		var targetRadius = Math.max(edge.target()[0]._private.style["width"].value,
-//			edge.target()[0]._private.style["height"].value);
+		var tgtArShape = edge._private.style["target-arrow-shape"].value;
+		var srcArShape = edge._private.style["source-arrow-shape"].value;
 
-		var targetRadius = Math.max(this.getNodeWidth(target),
-			this.getNodeHeight(target));
+		var tgtBorderW = target._private.style["border-width"].pxValue;
+		var srcBorderW = source._private.style["border-width"].pxValue;
 
-		sourceRadius = 0;
-		targetRadius /= 2;
-		
-		var start = [edge.source().position().x, edge.source().position().y];
-		var end = [edge.target().position().x, edge.target().position().y];
+		var rs = edge._private.rscratch;
 		
 		if (edge._private.rscratch.edgeType == "self") {
 			
-			var cp = [edge._private.rscratch.cp2cx, edge._private.rscratch.cp2cy];
+			var cp = [rs.cp2cx, rs.cp2cy];
 			
 			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				//target._private.style["width"].value,
-				//target._private.style["height"].value,
 				this.getNodeWidth(target),
 				this.getNodeHeight(target),
-				cp[0], //halfPointX,
-				cp[1], //halfPointY
-				target._private.style["border-width"].value / 2
+				cp[0],
+				cp[1], 
+				tgtBorderW / 2
 			);
 			
 			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
 			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
 			
-			edge._private.rscratch.endX = edgeEnd[0];
-			edge._private.rscratch.endY = edgeEnd[1];
+			rs.endX = edgeEnd[0];
+			rs.endY = edgeEnd[1];
 			
-			edge._private.rscratch.arrowEndX = arrowEnd[0];
-			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			rs.arrowEndX = arrowEnd[0];
+			rs.arrowEndY = arrowEnd[1];
 			
-			var cp = [edge._private.rscratch.cp2ax, edge._private.rscratch.cp2ay];
+			var cp = [rs.cp2ax, rs.cp2ay];
 
 			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				//source._private.style["width"].value,
-				//source._private.style["height"].value,
 				this.getNodeWidth(source),
 				this.getNodeHeight(source),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
-				source._private.style["border-width"].value / 2
+				srcBorderW / 2
 			);
 			
 			var arrowStart = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
+				CanvasRenderer.arrowShapes[srcArShape].spacing(edge));
 			var edgeStart = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+				CanvasRenderer.arrowShapes[srcArShape].gap(edge));
 			
-			edge._private.rscratch.startX = edgeStart[0];
-			edge._private.rscratch.startY = edgeStart[1];
+			rs.startX = edgeStart[0];
+			rs.startY = edgeStart[1];
+
+
+			rs.arrowStartX = arrowStart[0];
+			rs.arrowStartY = arrowStart[1];
 			
-			edge._private.rscratch.arrowStartX = arrowStart[0];
-			edge._private.rscratch.arrowStartY = arrowStart[1];
-			
-		} else if (edge._private.rscratch.edgeType == "straight") {
+		} else if (rs.edgeType == "straight") {
 		
 			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				//target._private.style["width"].value,
-				//target._private.style["height"].value,
 				this.getNodeWidth(target),
 				this.getNodeHeight(target),
 				source.position().x,
 				source.position().y,
-				target._private.style["border-width"].value / 2);
+				tgtBorderW / 2);
 				
 			if (intersect.length == 0) {
-				edge._private.rscratch.noArrowPlacement = true;
+				rs.noArrowPlacement = true;
 	//			return;
 			} else {
-				edge._private.rscratch.noArrowPlacement = false;
+				rs.noArrowPlacement = false;
 			}
 			
 			var arrowEnd = $$.math.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
 			var edgeEnd = $$.math.shortenIntersection(intersect,
 				[source.position().x, source.position().y],
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
 
-			edge._private.rscratch.endX = edgeEnd[0];
-			edge._private.rscratch.endY = edgeEnd[1];
+			rs.endX = edgeEnd[0];
+			rs.endY = edgeEnd[1];
 			
-			edge._private.rscratch.arrowEndX = arrowEnd[0];
-			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			rs.arrowEndX = arrowEnd[0];
+			rs.arrowEndY = arrowEnd[1];
 		
 			intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				//source._private.style["width"].value,
-				//source._private.style["height"].value,
 				this.getNodeWidth(source),
 				this.getNodeHeight(source),
 				target.position().x,
 				target.position().y,
-				source._private.style["border-width"].value / 2);
+				srcBorderW / 2);
 			
 			if (intersect.length == 0) {
-				edge._private.rscratch.noArrowPlacement = true;
+				rs.noArrowPlacement = true;
 	//			return;
 			} else {
-				edge._private.rscratch.noArrowPlacement = false;
+				rs.noArrowPlacement = false;
 			}
 			
 			/*
 			console.log("1: "
-				+ CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value],
-					edge._private.style["source-arrow-shape"].value);
+				+ CanvasRenderer.arrowShapes[srcArShape],
+					srcArShape);
 			*/
 			var arrowStart = $$.math.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
+				CanvasRenderer.arrowShapes[srcArShape].spacing(edge));
 			var edgeStart = $$.math.shortenIntersection(intersect,
 				[target.position().x, target.position().y],
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+				CanvasRenderer.arrowShapes[srcArShape].gap(edge));
 
-			edge._private.rscratch.startX = edgeStart[0];
-			edge._private.rscratch.startY = edgeStart[1];
+			rs.startX = edgeStart[0];
+			rs.startY = edgeStart[1];
 			
-			edge._private.rscratch.arrowStartX = arrowStart[0];
-			edge._private.rscratch.arrowStartY = arrowStart[1];
+			rs.arrowStartX = arrowStart[0];
+			rs.arrowStartY = arrowStart[1];
 						
-		} else if (edge._private.rscratch.edgeType == "bezier") {
-			
-			var cp = [edge._private.rscratch.cp2x, edge._private.rscratch.cp2y];
-			
-			// Point at middle of Bezier
-			var halfPointX = start[0] * 0.25 + end[0] * 0.25 + cp[0] * 0.5;
-			var halfPointY = start[1] * 0.25 + end[1] * 0.25 + cp[1] * 0.5;
+		} else if (rs.edgeType == "bezier") {
+			// if( window.badArrow) debugger;
+			var cp = [rs.cp2x, rs.cp2y];
 			
 			intersect = CanvasRenderer.nodeShapes[
 				this.getNodeShape(target)].intersectLine(
 				target._private.position.x,
 				target._private.position.y,
-				//target._private.style["width"].value,
-				//target._private.style["height"].value,
 				this.getNodeWidth(target),
 				this.getNodeHeight(target),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
-				target._private.style["border-width"].value / 2
+				tgtBorderW / 2
 			);
 			
 			/*
 			console.log("2: "
-				+ CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value],
-					edge._private.style["source-arrow-shape"].value);
+				+ CanvasRenderer.arrowShapes[srcArShape],
+					srcArShape);
 			*/
 			var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].spacing(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
 			var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["target-arrow-shape"].value].gap(edge));
+				CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
 			
-			edge._private.rscratch.endX = edgeEnd[0];
-			edge._private.rscratch.endY = edgeEnd[1];
+			rs.endX = edgeEnd[0];
+			rs.endY = edgeEnd[1];
 			
-			edge._private.rscratch.arrowEndX = arrowEnd[0];
-			edge._private.rscratch.arrowEndY = arrowEnd[1];
+			rs.arrowEndX = arrowEnd[0];
+			rs.arrowEndY = arrowEnd[1];
 			
 			intersect = CanvasRenderer.nodeShapes[
 				this.getNodeShape(source)].intersectLine(
 				source._private.position.x,
 				source._private.position.y,
-				//source._private.style["width"].value,
-				//source._private.style["height"].value,
 				this.getNodeWidth(source),
 				this.getNodeHeight(source),
 				cp[0], //halfPointX,
 				cp[1], //halfPointY
-				source._private.style["border-width"].value / 2
+				srcBorderW / 2
 			);
 			
-			var arrowStart = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].spacing(edge));
-			var edgeStart = $$.math.shortenIntersection(intersect, cp,
-				CanvasRenderer.arrowShapes[edge._private.style["source-arrow-shape"].value].gap(edge));
+			var arrowStart = $$.math.shortenIntersection(
+				intersect, 
+				cp,
+				CanvasRenderer.arrowShapes[srcArShape].spacing(edge)
+			);
+			var edgeStart = $$.math.shortenIntersection(
+				intersect, 
+				cp,
+				CanvasRenderer.arrowShapes[srcArShape].gap(edge)
+			);
+		
+			rs.startX = edgeStart[0];
+			rs.startY = edgeStart[1];
 			
-			edge._private.rscratch.startX = edgeStart[0];
-			edge._private.rscratch.startY = edgeStart[1];
+			rs.arrowStartX = arrowStart[0];
+			rs.arrowStartY = arrowStart[1];
 			
-			edge._private.rscratch.arrowStartX = arrowStart[0];
-			edge._private.rscratch.arrowStartY = arrowStart[1];
-			
-		} else if (edge._private.rscratch.isArcEdge) {
+			// if( isNaN(rs.startX) || isNaN(rs.startY) ){
+			// 	debugger;
+			// }
+
+		} else if (rs.isArcEdge) {
 			return;
 		}
 	}
@@ -11303,7 +11557,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -11315,6 +11569,13 @@ var cytoscape;
 		}
 
 		if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
+
+		var rs = edge._private.rscratch;
+
+		// if bezier ctrl pts can not be calculated, then die
+		if( rs.badBezier ){
+			return;
+		}
 
 		var startNode, endNode;
 
@@ -11351,6 +11612,9 @@ var cytoscape;
 				+ edge._private.style["line-color"].value[1] + ","
 				+ edge._private.style["line-color"].value[2] + ","
 				+ edge._private.style.opacity.value + ")";
+
+			
+			context.lineCap = "butt"; 
 		}
 
 		// Edge line width
@@ -11376,6 +11640,15 @@ var cytoscape;
 				details.cp2cx, details.cp2cy, details.endX, details.endY],
 				lineStyle,
 				edgeWidth);
+
+			// DEBUG: draw projected bezier pts
+			// context.fillStyle = 'red';
+			// var bpts = edge._private.rstyle.bezierPts;
+			// for( var i = 0; i < bpts.length; i++ ){
+			// 	var pt = bpts[i];
+
+			// 	context.fillRect(pt.x, pt.y, 2, 2);
+			// }
 			
 		} else if (edge._private.rscratch.edgeType == "straight") {
 			
@@ -11402,10 +11675,28 @@ var cytoscape;
 		} else {
 			
 			var details = edge._private.rscratch;
+
+			// context.fillStyle = 'rgba(255, 0, 0, 1)';
+			// context.fillRect(details.startX, details.startY, 2, 2);
+			// context.fillRect(details.endX, details.endY, 2, 2);
+
+			// context.fillStyle = edge._private.style['line-color'].strValue;
+			// context.fillRect(details.cp2x, details.cp2y, 2, 2);
+
+			
 			this.drawStyledEdge(edge, context, [details.startX, details.startY,
 				details.cp2x, details.cp2y, details.endX, details.endY],
 				lineStyle,
 				edgeWidth);
+
+			// DEBUG: draw projected bezier pts
+			// context.fillStyle = 'red';
+			// var bpts = edge._private.rstyle.bezierPts;
+			// for( var i = 0; i < bpts.length; i++ ){
+			// 	var pt = bpts[i];
+
+			// 	context.fillRect(pt.x, pt.y, 2, 2);
+			// }
 			
 		}
 		
@@ -11478,64 +11769,11 @@ var cytoscape;
 		var cy = this.data.cy;
 		var zoom = cy.zoom();
 		
+
 		// Adjusted edge width for dotted
 //		width = Math.max(width * 1.6, 3.4) * zoom;
 
 		//		console.log("w", width);
-		
-		// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-		function qbezierAt(p0, p1, p2, t){
-			return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-		}
-
-		if( edge._private.rstyle.bezierPts === undefined ){
-			edge._private.rstyle.bezierPts = [];
-		}
-
-		var nBpts = edge._private.rstyle.bezierPts.length;
-		if( edge.isLoop() ){
-			if( nBpts >= 12 ){
-				edge._private.rstyle.bezierPts = [];
-			} else {
-				// append to current array
-			}
-		} else {
-			edge._private.rstyle.bezierPts = [];
-		}
-
-		var bpts = edge._private.rstyle.bezierPts;
-
-		if( pts.length === 6 ){
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.35 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.35 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.65 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.65 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
-			});
-
-			bpts.push({
-				x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
-				y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
-			});
-		}
 
 		if (type == "solid") {
 			
@@ -11719,41 +11957,68 @@ var cytoscape;
 		var startX = edge._private.rscratch.arrowStartX;
 		var startY = edge._private.rscratch.arrowStartY;
 		
-		dispX = startX - edge.source().position().x;
-		dispY = startY - edge.source().position().y;
+		var srcPos = edge.source().position();
+		dispX = startX - srcPos.x;
+		dispY = startY - srcPos.y;
 		
 		if( !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
 
-			//this.context.strokeStyle = "rgba("
+			var gco = context.globalCompositeOperation;
+
+			context.globalCompositeOperation = "destination-out";
+		
+			context.lineWidth = edge._private.style["width"].pxValue;
+			
+			context.fillStyle = 'white';
+
+			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+				startX, startY, dispX, dispY);
+
+			context.globalCompositeOperation = gco;
+
 			context.fillStyle = "rgba("
 				+ edge._private.style["source-arrow-color"].value[0] + ","
 				+ edge._private.style["source-arrow-color"].value[1] + ","
 				+ edge._private.style["source-arrow-color"].value[2] + ","
 				+ edge._private.style.opacity.value + ")";
-			
-			context.lineWidth = edge._private.style["width"].pxValue;
-			
+
 			this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
 				startX, startY, dispX, dispY);
+
+		} else {
+			// window.badArrow = true;
+			// debugger;
 		}
 		
 		var endX = edge._private.rscratch.arrowEndX;
 		var endY = edge._private.rscratch.arrowEndY;
 		
-		dispX = endX - edge.target().position().x;
-		dispY = endY - edge.target().position().y;
+		var tgtPos = edge.target().position();
+		dispX = endX - tgtPos.x;
+		dispY = endY - tgtPos.y;
 		
 		if( !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
+
+			var gco = context.globalCompositeOperation;
+
+			context.globalCompositeOperation = "destination-out";
+
+			context.lineWidth = edge._private.style["width"].pxValue;
+
+			context.fillStyle = 'white';
+
+			this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+				endX, endY, dispX, dispY);
+
+			context.globalCompositeOperation = gco;
 
 			//this.context.strokeStyle = "rgba("
 			context.fillStyle = "rgba("
 				+ edge._private.style["target-arrow-color"].value[0] + ","
 				+ edge._private.style["target-arrow-color"].value[1] + ","
 				+ edge._private.style["target-arrow-color"].value[2] + ","
-				+ edge._private.style.opacity.value + ")";
-			
-			context.lineWidth = edge._private.style["width"].pxValue;
-
+				+ edge._private.style.opacity.value + ")";	
+		
 			this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
 				endX, endY, dispX, dispY);
 		}
@@ -11800,7 +12065,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -11937,7 +12202,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -11962,35 +12227,10 @@ var cytoscape;
 		context.textAlign = "center";
 		context.textBaseline = "middle";
 		
-		var textX, textY;	
-		var edgeCenterX, edgeCenterY;
+		this.recalculateEdgeLabelProjection( edge );
 		
-		if (edge._private.rscratch.edgeType == "self") {
-			edgeCenterX = edge._private.rscratch.selfEdgeMidX;
-			edgeCenterY = edge._private.rscratch.selfEdgeMidY;
-		} else if (edge._private.rscratch.edgeType == "straight") {
-			edgeCenterX = (edge._private.rscratch.startX
-				+ edge._private.rscratch.endX) / 2;
-			edgeCenterY = (edge._private.rscratch.startY
-				+ edge._private.rscratch.endY) / 2;
-		} else if (edge._private.rscratch.edgeType == "bezier") {
-			edgeCenterX = 0.25 * edge._private.rscratch.startX
-				+ 2 * 0.5 * 0.5 * edge._private.rscratch.cp2x
-				+ (0.5 * 0.5) * edge._private.rscratch.endX;
-			edgeCenterY = Math.pow(1 - 0.5, 2) * edge._private.rscratch.startY
-				+ 2 * (1 - 0.5) * 0.5 * edge._private.rscratch.cp2y
-				+ (0.5 * 0.5) * edge._private.rscratch.endY;
-		}
-		
-		textX = edgeCenterX;
-		textY = edgeCenterY;
-
-		// add center point to style so bounding box calculations can use it
-		var rstyle = edge._private.rstyle;
-		rstyle.labelX = textX;
-		rstyle.labelY = textY;
-		
-		this.drawText(context, edge, textX, textY);
+		var rs = edge._private.rscratch;
+		this.drawText(context, edge, rs.labelX, rs.labelY);
 	};
 
 	// Draw node text
@@ -12006,80 +12246,61 @@ var cytoscape;
 		if( computedSize < minSize ){
 			return;
 		}
-	
-		var textX, textY;
+			
+		this.recalculateNodeLabelProjection( node );
 
-		//var nodeWidth = node._private.style["width"].value;
-		//var nodeHeight = node._private.style["height"].value;
-		var nodeWidth = this.getNodeWidth(node);
-		var nodeHeight = this.getNodeHeight(node);
-	
-		// Find text position
 		var textHalign = node._private.style["text-halign"].strValue;
-		if (textHalign == "left") {
-			// Align right boundary of text with left boundary of node
-			context.textAlign = "right";
-			textX = node._private.position.x - nodeWidth / 2;
-		} else if (textHalign == "right") {
-			// Align left boundary of text with right boundary of node
-			context.textAlign = "left";
-			textX = node._private.position.x + nodeWidth / 2;
-		} else if (textHalign == "center") {
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		} else {
-			// Same as center
-			context.textAlign = "center";
-			textX = node._private.position.x;
-		}
-		
 		var textValign = node._private.style["text-valign"].strValue;
-		if (textValign == "top") {
-			context.textBaseline = "bottom";
-			textY = node._private.position.y - nodeHeight / 2;
-		} else if (textValign == "bottom") {
-			context.textBaseline = "top";
-			textY = node._private.position.y + nodeHeight / 2;
-		} else if (textValign == "middle" || textValign == "center") {
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
-		} else {
-			// same as center
-			context.textBaseline = "middle";
-			textY = node._private.position.y;
+		var rs = node._private.rscratch;
+
+		switch( textHalign ){
+			case "left":
+				context.textAlign = "right";
+				break;
+
+			case "right":
+				context.textAlign = "left";
+				break;
+
+			case "center":
+			default:
+				context.textAlign = "center";
 		}
-		
-		this.drawText(context, node, textX, textY);
+
+		switch( textValign ){
+			case "top":
+				context.textBaseline = "bottom";
+				break;
+
+			case "bottom":
+				context.textBaseline = "top";
+				break;
+
+			case "center":
+			default:
+				context.textBaseline = "middle";
+		}
+
+		this.drawText(context, node, rs.labelX, rs.labelY);
 	};
 	
-	// Draw text
-	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
-	
-		var parentOpacity = 1;
-		var parents = element.parents();
-		for( var i = 0; i < parents.length; i++ ){
-			var parent = parents[i];
-			var opacity = parent._private.style.opacity.value;
-
-			parentOpacity = opacity * parentOpacity;
-
-			if( opacity === 0 ){
-				return;
-			}
-		}
-
+	// set up canvas context with font
+	// returns transformed text string
+	CanvasRenderer.prototype.setupTextStyle = function( context, element ){
 		// Font style
-		var labelStyle = element._private.style["font-style"].strValue;
-		var labelSize = element._private.style["font-size"].pxValue + "px";
-		var labelFamily = element._private.style["font-family"].strValue;
-		var labelVariant = element._private.style["font-variant"].strValue;
-		var labelWeight = element._private.style["font-weight"].strValue;
+		var parentOpacity = element.effectiveOpacity();
+		var style = element._private.style;
+		var labelStyle = style["font-style"].strValue;
+		var labelSize = style["font-size"].pxValue + "px";
+		var labelFamily = style["font-family"].strValue;
+		var labelVariant = style["font-variant"].strValue;
+		var labelWeight = style["font-weight"].strValue;
 		
 		context.font = labelStyle + " " + labelWeight + " "
 			+ labelSize + " " + labelFamily;
 		
-		var text = String(element._private.style["content"].value);
-		var textTransform = element._private.style["text-transform"].value;
+		var text = String(style["content"].value);
+		var textTransform = style["text-transform"].value;
 		
 		if (textTransform == "none") {
 		} else if (textTransform == "uppercase") {
@@ -12094,41 +12315,45 @@ var cytoscape;
 		context.lineJoin = 'round';
 
 		context.fillStyle = "rgba(" 
-			+ element._private.style["color"].value[0] + ","
-			+ element._private.style["color"].value[1] + ","
-			+ element._private.style["color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value * parentOpacity) + ")";
+			+ style["color"].value[0] + ","
+			+ style["color"].value[1] + ","
+			+ style["color"].value[2] + ","
+			+ (style["text-opacity"].value
+			* style["opacity"].value * parentOpacity) + ")";
 		
 		context.strokeStyle = "rgba(" 
-			+ element._private.style["text-outline-color"].value[0] + ","
-			+ element._private.style["text-outline-color"].value[1] + ","
-			+ element._private.style["text-outline-color"].value[2] + ","
-			+ (element._private.style["text-opacity"].value
-			* element._private.style["opacity"].value * parentOpacity) + ")";
-		
-		if (text != undefined) {
-			var lineWidth = 2  * element._private.style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
+			+ style["text-outline-color"].value[0] + ","
+			+ style["text-outline-color"].value[1] + ","
+			+ style["text-outline-color"].value[2] + ","
+			+ (style["text-opacity"].value
+			* style["opacity"].value * parentOpacity) + ")";
+
+		return text;
+	}
+
+	// Draw text
+	CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
+		var style = element._private.style;
+		var parentOpacity = element.effectiveOpacity();
+		if( parentOpacity === 0 ){ return; }
+
+		var text = this.setupTextStyle( context, element );
+
+		if ( text != undefined && !isNaN(textX) && !isNaN(textY) ) {
+			var lineWidth = 2  * style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
 			if (lineWidth > 0) {
 				context.lineWidth = lineWidth;
 				context.strokeText(text, textX, textY);
 			}
 
-			// Thanks sysord@github for the isNaN checks!
-			if (isNaN(textX)) { textX = 0; }
-			if (isNaN(textY)) { textY = 0; }
-
 			context.fillText("" + text, textX, textY);
-
-			// record the text's width for use in bounding box calc
-			element._private.rstyle.labelWidth = context.measureText( text ).width;
 		}
 	};
 
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12141,18 +12366,11 @@ var cytoscape;
 			return;
 		}
 
-		var parentOpacity = 1;
-		var parents = node.parents();
-		for( var i = 0; i < parents.length; i++ ){
-			var parent = parents[i];
-			var opacity = parent._private.style.opacity.value;
+		var parentOpacity = node.effectiveOpacity();
+		if( parentOpacity === 0 ){ return; }
 
-			parentOpacity = opacity * parentOpacity;
-
-			if( opacity === 0 ){
-				return;
-			}
-		}
+		// context.fillStyle = "orange";
+		// context.fillRect(node.position().x, node.position().y, 2, 2);
 		
 		nodeWidth = this.getNodeWidth(node);
 		nodeHeight = this.getNodeHeight(node);
@@ -12176,7 +12394,7 @@ var cytoscape;
 				+ node._private.style["border-color"].value[2] + ","
 				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value * parentOpacity) + ")";
 			
-			
+			context.lineJoin = 'miter'; // so borders are square with the node shape
 			
 			//var image = this.getCachedImage("url");
 			
@@ -12256,7 +12474,7 @@ var cytoscape;
 			if( overlayOpacity > 0 ){
 				context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
-				CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+				CanvasRenderer.nodeShapes['roundrectangle'].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,
@@ -12345,7 +12563,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12553,41 +12771,43 @@ var cytoscape;
 
 				// console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
 				// no need to update graph if there is no compound node
-				if ( cy.hasCompoundNodes() )
-				{
-					r.updateAllCompounds(elements);
-				}
+				// if ( cy.hasCompoundNodes() )
+				// {
+				// 	r.updateAllCompounds(elements);
+				// }
 				// } console.timeEnd('updatecompounds')
 			}
 			
 			
 			function drawElements( eleList, context ){
+				var edges = [];
+				var nodes = [];
+
 				for (var i = 0; i < eleList.length; i++) {
-					element = eleList[i];
+					ele = eleList[i];
 					
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element);
+					if ( ele.isNode() ) {
+						nodes.push( ele );
 						
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element);
+					} else if ( ele.isEdge() ) {
+						r.drawEdge(context, ele);
+						edges.push( ele );
 					}
 				}
-				
-				for (var i = 0; i < eleList.length; i++) {
-					element = eleList[i];
-					
-					if (element._private.group == "nodes") {
-						r.drawNodeText(context, element);
-					} else if (element._private.group == "edges") {
-						r.drawEdgeText(context, element);
-					}
 
-					// draw the overlay
-					if (element._private.group == "nodes") {
-						r.drawNode(context, element, true);
-					} else if (element._private.group == "edges") {
-						r.drawEdge(context, element, true);
-					}
+				for (var i = 0; i < edges.length; i++) {
+					ele = edges[i];
+					
+					r.drawEdgeText(context, ele);
+					r.drawEdge(context, ele, true);
+				}
+
+				for( var i = 0; i < nodes.length; i++ ){
+					var ele = nodes[i];
+
+					r.drawNode(context, ele);
+					r.drawNodeText(context, ele);
+					r.drawNode(context, ele, true);
 				}
 			}
 
@@ -12707,7 +12927,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12802,7 +13022,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12863,7 +13083,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12901,7 +13121,7 @@ var cytoscape;
 
 			var innerNodes = node.descendants();
 
-			function hasNonAutoParent(ele){
+			var hasNonAutoParent = function(ele){
 				while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
 					parent = ele.parent()[0];
 					var pstyle = parent._private.style;
@@ -12914,7 +13134,7 @@ var cytoscape;
 				}
 
 				return false;
-			}
+			};
 
 			// TODO do not drag hidden children & children of hidden children?
 			for (var i=0; i < innerNodes.size(); i++)
@@ -13014,9 +13234,9 @@ var cytoscape;
 			e.preventDefault();
 		});
 
-		function inBoxSelection(){
+		var inBoxSelection = function(){
 			return r.data.select[4] !== 0;
-		}
+		};
 
 		// Primary key
 		r.registerBinding(r.data.container, "mousedown", function(e) { 
@@ -13029,9 +13249,7 @@ var cytoscape;
 			var near = r.findNearestElement(pos[0], pos[1], true);
 			var down = r.hoverData.down;
 			var draggedElements = r.dragData.possibleDragElements;
-			var grabEvent = new $$.Event(e, {
-				type: "grab"
-			});
+			var grabEvent = new $$.Event("grab");
 
 			// Right click button
 			if( e.which == 3 ){
@@ -13335,23 +13553,26 @@ var cytoscape;
 				if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
 					r.dragData.didDrag = true; // indicate that we actually did drag the node
 
+					r.hoverData.draggingEles = true;
+
 					var toTrigger = [];
-					for (var i=0; i<draggedElements.length; i++) {
-
+					new $$.Collection(cy, draggedElements).positions(function(i, ele){
 						// Locked nodes not draggable, as well as non-visible nodes
-						if (draggedElements[i]._private.group == "nodes"
-							&& r.nodeIsDraggable(draggedElements[i])) {
+						if (ele.isNode() && r.nodeIsDraggable(ele)) {
+							var pos = ele.position();
 							
-							draggedElements[i]._private.position.x += disp[0];
-							draggedElements[i]._private.position.y += disp[1];
+							return {
+								x: pos.x + disp[0],
+								y: pos.y + disp[1]
+							};
 
-							toTrigger.push( draggedElements[i] );
+							toTrigger.push( ele );
 						}
-					}
+					});
+					
 					
 					(new $$.Collection(cy, toTrigger))
 						.trigger("drag")
-						.trigger("position")
 					;
 
 					if (select[2] == select[0] && select[3] == select[1]) {
@@ -13395,6 +13616,7 @@ var cytoscape;
 			clearTimeout( r.bgActiveTimeout );
 
 			r.hoverData.cxtStarted = false;
+			r.hoverData.draggingEles = false;
 
 			if( down ){
 				down.unactivate();
@@ -13661,7 +13883,7 @@ var cytoscape;
 			var rpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-			if( r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
+			if( r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
 				e.preventDefault();
 				return;
 			}
@@ -13714,9 +13936,9 @@ var cytoscape;
 		var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
 		var twoFingersStartInside;
 
-		function distance(x1, y1, x2, y2){
+		var distance = function(x1, y1, x2, y2){
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
-		}
+		};
 
 		r.registerBinding(r.data.container, "touchstart", function(e) {
 
@@ -13741,7 +13963,7 @@ var cytoscape;
 			if( e.touches[1] ){
 
 				// anything in the set of dragged eles should be released
-				function release( eles ){
+				var release = function( eles ){
 					for( var i = 0; i < eles.length; i++ ){
 						eles[i]._private.grabbed = false;
 						eles[i]._private.rscratch.inDragLayer = false;
@@ -14152,21 +14374,20 @@ var cytoscape;
 				if ( start != null && start._private.group == "nodes" && r.nodeIsDraggable(start)) {
 					var draggedEles = r.dragData.touchDragEles;
 
-					for( var k = 0; k < draggedEles.length; k++ ){
-						var draggedEle = draggedEles[k];
-
+					var dEleCol = new $$.Collection(cy, draggedEles).positions(function(i, draggedEle){
 						if( r.nodeIsDraggable(draggedEle) ){
 							r.dragData.didDrag = true;
+							var pos = draggedEle.position();
 
-							draggedEle._private.position.x += disp[0];
-							draggedEle._private.position.y += disp[1];
-			
+							return {
+								x: pos.x + disp[0],
+								y: pos.y + disp[1]
+							};
 						}
-					}
+					});
 
-					( new $$.Collection(cy, draggedEles) )
+					dEleCol
 						.trigger("drag")
-						.trigger("position")
 					;
 					
 					r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
@@ -14559,7 +14780,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var renderer = CanvasRenderer.prototype;
@@ -14642,7 +14863,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["triangle"] = {
-		points: $$.math.generateUnitNgonPoints(3, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(3, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -14709,7 +14930,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["square"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -14770,7 +14991,7 @@ var cytoscape;
 	nodeShapes["octogon"] = {};
 	
 	nodeShapes["roundrectangle"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawRoundRectangle(context,
@@ -14939,7 +15160,7 @@ var cytoscape;
 	*/
 	
 	nodeShapes["pentagon"] = {
-		points: $$.math.generateUnitNgonPoints(5, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(5, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -14990,7 +15211,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["hexagon"] = {
-		points: $$.math.generateUnitNgonPoints(6, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(6, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15043,7 +15264,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["heptagon"] = {
-		points: $$.math.generateUnitNgonPoints(7, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(7, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15096,7 +15317,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["octagon"] = {
-		points: $$.math.generateUnitNgonPoints(8, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(8, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15175,8 +15396,10 @@ var cytoscape;
 		
 //		console.log(star5Points);
 	}
+
+	star5Points = $$.math.fitPolygonToSquare( star5Points );
 	
-	nodeShapes["star5"] = {
+	nodeShapes["star5"] = nodeShapes["star"] = {
 		points: star5Points,
 		
 		draw: function(context, centerX, centerY, width, height) {
@@ -15231,7 +15454,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	// default layout options
 	var defaults = {
@@ -15280,7 +15503,7 @@ var cytoscape;
 
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		ready: undefined, // callback on layoutready
@@ -15343,7 +15566,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		fit: true, // whether to fit the viewport to the graph
@@ -15384,7 +15607,7 @@ var cytoscape;
 			var rows = Math.round( splits );
 			var cols = Math.round( width/height * splits );
 
-			function small(val){
+			var small = function(val){
 				if( val == undefined ){
 					return Math.min(rows, cols);
 				} else {
@@ -15395,9 +15618,9 @@ var cytoscape;
 						cols = val;
 					}
 				}
-			}
+			};
 			
-			function large(val){
+			var large = function(val){
 				if( val == undefined ){
 					return Math.max(rows, cols);
 				} else {
@@ -15408,7 +15631,7 @@ var cytoscape;
 						cols = val;
 					}
 				}
-			}
+			};
 			
 			// if rows or columns were set in options, use those values
 			if( options.rows != null && options.columns != null ){
@@ -15453,27 +15676,36 @@ var cytoscape;
 			
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
+
+			for( var i = 0; i < nodes.length; i++ ){
+				var node = nodes[i];
+				var w = node.outerWidth();
+				var h = node.outerHeight();
+
+				cellWidth = Math.max( cellWidth, w );
+				cellHeight = Math.max( cellHeight, h );
+			}
 			
 			var cellUsed = {}; // e.g. 'c-0-2' => true
 			
-			function used(row, col){
+			var used = function(row, col){
 				return cellUsed['c-' + row + '-' + col] ? true : false;
-			}
+			};
 			
-			function use(row, col){
+			var use = function(row, col){
 				cellUsed['c-' + row + '-' + col] = true;
-			}
+			};
 
 			// to keep track of current cell position
 			var row = 0;
 			var col = 0;
-			function moveToNextCell(){
+			var moveToNextCell = function(){
 				col++;
 				if( col >= cols ){
 					col = 0;
 					row++;
 				}
-			}
+			};
 
 			// get a cache of all the manual positions
 			var id2manPos = {};
@@ -15511,7 +15743,7 @@ var cytoscape;
 			nodes.positions(function(i, element){
 				var x, y;
 
-				if( element.locked() ){
+				if( element.locked() || element.isFullAutoParent() ){
 					return false;
 				}
 
@@ -15558,7 +15790,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		fit: true, // whether to fit to viewport
@@ -15643,7 +15875,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		liveUpdate: true, // whether to show the layout as it's running
@@ -15711,7 +15943,7 @@ var cytoscape;
 		simBB.x2 = simBB[2];
 		simBB.y2 = simBB[3];
 
-		// arbor doesn't work with just 1 node
+		// arbor doesn't work with just 1 node 
 		if( cy.nodes().size() <= 1 ){
 			if( options.fit ){
 				cy.reset();
@@ -15722,8 +15954,8 @@ var cytoscape;
 				y: Math.round( (simBB.y1 + simBB.y2)/2 )
 			});
 
-			cy.one("layoutstop", options.stop);
-			cy.trigger("layoutstop");
+			cy.one("layoutready", options.ready);
+			cy.trigger("layoutready");
 
 			cy.one("layoutstop", options.stop);
 			cy.trigger("layoutstop");
@@ -15769,12 +16001,13 @@ var cytoscape;
 					if( node == null ){
 						return;
 					}
-					var pos = node._private.position;
 					
 					if( !node.locked() && !node.grabbed() ){
-						pos.x = simBB.x1 + point.x;
-						pos.y = simBB.y1 + point.y;
-						
+						node.silentPosition({
+							x: simBB.x1 + point.x,
+							y: simBB.y1 + point.y
+						});
+
 						movedNodes.push( node );
 					}
 				});
@@ -15853,9 +16086,15 @@ var cytoscape;
 		nodes.bind("grab drag dragstop", grabHandler);
 			  	
 		nodes.each(function(i, node){
+			if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
+
 			var id = this._private.data.id;
 			var mass = calculateValueForElement(this, options.nodeMass);
 			var locked = this._private.locked;
+
+			if( node.isFullAutoParent() ){
+				return;
+			}
 			
 			var pos = fromScreen({
 				x: node.position().x,
@@ -15950,7 +16189,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph
@@ -15971,7 +16210,9 @@ var cytoscape;
         var options = params;
         
         var cy = params.cy;
-        var nodes = cy.nodes();
+        var nodes = cy.nodes().filter(function(){
+            return !this.isFullAutoParent();
+        });
         var edges = cy.edges();
         var container = cy.container();
         
@@ -16055,7 +16296,7 @@ var cytoscape;
     
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph
@@ -16182,7 +16423,7 @@ var cytoscape;
         }
 
         // assign the nodes a depth and index
-        function assignDepthsToEles(){
+        var assignDepthsToEles = function(){
             for( var i = 0; i < depths.length; i++ ){
                 var eles = depths[i];
 
@@ -16195,13 +16436,13 @@ var cytoscape;
                     };
                 }
             }
-        }
+        };
         assignDepthsToEles();
 
          // make maximal if so set by adjusting depths
         for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
 
-            function intersectsDepth( node ){ // returns true if has edges pointing in from a higher depth
+            var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
                 var edges = node.connectedEdges('[target = "' + node.id() + '"]');
                 var thisInfo = node._private.scratch.BreadthFirstLayout;
                 var highestDepthOfOther = 0;
@@ -16218,7 +16459,7 @@ var cytoscape;
                 }
 
                 return highestOther;
-            }
+            };
 
             var nDepths = depths.length;
             var elesToMove = [];
@@ -16272,7 +16513,7 @@ var cytoscape;
 
         // get the weighted percent for an element based on its connectivity to other levels
         var cachedWeightedPercent = {};
-        function getWeightedPercent( ele ){
+        var getWeightedPercent = function( ele ){
             if( cachedWeightedPercent[ ele.id() ] ){
                 return cachedWeightedPercent[ ele.id() ];
             }
@@ -16304,7 +16545,7 @@ var cytoscape;
 
             cachedWeightedPercent[ ele.id() ] = percent;
             return percent;
-        }
+        };
 
         // rearrange the indices in each depth level based on connectivity
         for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
@@ -16387,43 +16628,61 @@ var cytoscape;
   Modifications tracked on Github.
 */
 
-;(function($$) {
+;(function($$) { "use strict";
 
 	/**
 	 * @brief :  default layout options
 	 */
 	var defaults = {
+		// Called on `layoutready`
 		ready               : function() {},
+
+		// Called on `layoutstop`
 		stop                : function() {},
 
 		// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
 		refresh             : 0,
+		
 		// Whether to fit the network view after when done
 		fit                 : true, 
+
+		// Padding on fit
+		padding             : 30, 
+
+
 		// Whether to randomize node positions on the beginning
 		randomize           : true,
+		
 		// Whether to use the JS console to print debug messages
 		debug               : false,
 
 		// Node repulsion (non overlapping) multiplier
 		nodeRepulsion       : 10000,
+		
 		// Node repulsion (overlapping) multiplier
 		nodeOverlap         : 10,
+		
 		// Ideal edge (non nested) length
 		idealEdgeLength     : 10,
+		
 		// Divisor to compute edge forces
 		edgeElasticity      : 100,
+		
 		// Nesting factor (multiplier) to compute ideal edge length for nested edges
 		nestingFactor       : 5, 
+		
 		// Gravity force (constant)
 		gravity             : 250, 
 		
 		// Maximum number of iterations to perform
 		numIter             : 100,
+		
 		// Initial temperature (maximum node displacement)
 		initialTemp         : 200,
+		
 		// Cooling factor (how the temperature is reduced between consecutive iterations
 		coolingFactor       : 0.95, 
+		
 		// Lower temperature threshold (below this point the layout will end)
 		minTemp             : 1
 	};
@@ -16466,10 +16725,13 @@ var cytoscape;
 		// If required, randomize node positions
 		if (true == options.randomize) {
 			randomizePositions(layoutInfo, cy);
+
 			if (0 < options.refresh) {
 				refreshPositions(layoutInfo, cy, options);
 			}
 		}
+
+		updatePositions(layoutInfo, cy, options);
 
 		// Main loop
 		for (var i = 0; i < options.numIter; i++) {
@@ -16495,7 +16757,7 @@ var cytoscape;
 
 		// Fit the graph if necessary
 		if (true == options.fit) {
-			cy.fit();
+			cy.fit( options.padding );
 		}
 		
 		// Get end time
@@ -16833,9 +17095,9 @@ var cytoscape;
 		for (var i = 0; i < layoutInfo.nodeSize; i++) {
 			var n = layoutInfo.layoutNodes[i];
 			// No need to randomize compound nodes
-			if (0 == n.children.length) {
-			n.positionX = Math.random() * width;
-			n.positionY = Math.random() * height;
+			if (true || 0 == n.children.length) {
+				n.positionX = Math.random() * width;
+				n.positionY = Math.random() * height;
 			}
 		}
 	}

@@ -201,5 +201,9 @@
 
 	});
 
+
+	$$.elesfn.style = $$.elesfn.css;
+	$$.elesfn.renderedStyle = $$.elesfn.renderedCss;
+	$$.elesfn.removeStyle = $$.elesfn.removeCss;
 	
 })( cytoscape );

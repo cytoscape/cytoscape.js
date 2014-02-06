@@ -233,37 +233,6 @@
 		event: {
 			regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
 			optionalTypeRegex: /(\w+)?(\.\w+)?/,
-
-			// properties to copy to the event obj
-			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
-
-			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
-
-			aliasesOn: function( thisPrototype ){
-
-				var aliases = $$.define.event.aliases;
-				for( var i = 0; i < aliases.length; i++ ){
-					var eventType = aliases[i];
-
-					(function(eventType){
-						thisPrototype[ eventType ] = function(data, callback){
-							if( $$.is.fn(callback) ){
-								this.on(eventType, data, callback);
-
-							} else if( $$.is.fn(data) ){
-								callback = data;
-								this.on(eventType, callback);
-
-							} else {
-								this.trigger(eventType);
-							}
-
-							return this; // maintain chaining
-						};
-					})( eventType );
-				}
-			},
-
 			falseCallback: function(){ return false; }
 		},
 

@@ -263,7 +263,13 @@
 			json.scratch = cy.scratch();
 			json.zoomingEnabled = cy._private.zoomingEnabled;
 			json.userZoomingEnabled = cy._private.userZoomingEnabled;
+			json.zoom = cy._private.zoom;
+			json.minZoom = cy._private.minZoom;
+			json.maxZoom = cy._private.maxZoom;
 			json.panningEnabled = cy._private.panningEnabled;
+			json.userPanningEnabled = cy._private.userPanningEnabled;
+			json.pan = cy._private.pan;
+			json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;
 			json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;

@@ -5361,7 +5361,10 @@ cy.$(&#39;#e&#39;).position({
 							<div class="details">
 								
 									<h3>Details</h3>
-<p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element once.
+<p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element in the calling collection once.  
+
+</p>
+<p>The semantics is a bit more complicated for compound nodes where a delegate selector has been specified:  Note that the handler is called once per element in the <em>calling collection</em>, and the handler is triggered by matching descendant elements.
 
 </p>
 <h3>Examples</h3>
@@ -5466,7 +5469,7 @@ cy.$(&#39;#e&#39;).position({
 							<div class="details">
 								
 									<h3>Details</h3>
-<p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the collection.
+<p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the calling collection.
 
 </p>
 <h3>Examples</h3>

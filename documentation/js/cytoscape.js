@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js github-snapshot-2014.02.06-16.47.40.
+ * This file is part of cytoscape.js github-snapshot-2014.02.07-12.41.40.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free

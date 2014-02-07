@@ -28,7 +28,7 @@ describe('Core graph manipulation', function(){
     });
   });
 
-  describe('eles.add()', function(){
+  describe('cy.add()', function(){
 
     it('adds via single object', function(){
 
@@ -78,52 +78,6 @@ describe('Core graph manipulation', function(){
 
   });
 
-  describe('eles.remove()', function(){
-
-    it('removes a single node', function(){
-      var n1 = cy.$('#n1').remove();
-      
-      expect( cy.nodes() ).to.have.length(2);
-      expect( cy.$('#n2') ).to.have.length(1);
-      expect( cy.$('#n3') ).to.have.length(1);
-      expect( n1.removed() ).to.be.true;
-      expect( cy.$('#n1') ).to.have.length(0);
-
-    });
-
-    it('correctly removes an edge repeatedly', function(){
-      var n1n2 = cy.$('#n1n2');
-      
-      for( var i = 0; i < 10; i++ ){
-        n1n2.remove();
-
-        expect( cy.edges() ).to.have.length(1);
-        expect( cy.$('#n1') ).to.have.length(1);
-        expect( cy.$('#n2') ).to.have.length(1);
-        expect( cy.$('#n3') ).to.have.length(1);
-        expect( cy.$('#n2n3') ).to.have.length(1);
-        expect( n1n2.removed() ).to.be.true;
-        expect( cy.$("#n1").degree() ).to.equal(0);
-        expect( cy.$("#n2").degree() ).to.equal(1);
-
-        n1n2.restore();
-
-        expect( cy.$("#n1").degree() ).to.equal(1);
-        expect( cy.$("#n2").degree() ).to.equal(2);
-        expect( cy.$('#n1n2') ).to.have.length(1);
-        expect( n1n2.removed() ).to.be.false;
-      }
-
-    });
-
-    it('removes via selector', function(){
-      cy.remove('edge');
-
-      expect( cy.edges() ).to.have.length(0);
-    }); 
-
-  });
-
   describe('eles.restore()', function(){
 
     it('restores a node', function(){
@@ -143,16 +97,49 @@ describe('Core graph manipulation', function(){
 
   describe('cy.remove()', function(){
 
-    it('removes a node', function(){
+    it('removes a single node', function(){
       var n1 = cy.$('#n1');
-      
-      cy.remove( n1 );
 
+      cy.remove(n1);
+      
       expect( cy.nodes() ).to.have.length(2);
       expect( cy.$('#n2') ).to.have.length(1);
       expect( cy.$('#n3') ).to.have.length(1);
       expect( n1.removed() ).to.be.true;
+      expect( cy.$('#n1') ).to.have.length(0);
+
     });
+
+    it('correctly removes an edge repeatedly', function(){
+      var n1n2 = cy.$('#n1n2');
+      
+      for( var i = 0; i < 10; i++ ){
+        cy.remove( n1n2 );
+
+        expect( cy.edges() ).to.have.length(1);
+        expect( cy.$('#n1') ).to.have.length(1);
+        expect( cy.$('#n2') ).to.have.length(1);
+        expect( cy.$('#n3') ).to.have.length(1);
+        expect( cy.$('#n2n3') ).to.have.length(1);
+        expect( n1n2.removed() ).to.be.true;
+        expect( cy.$("#n1").degree() ).to.equal(0);
+        expect( cy.$("#n2").degree() ).to.equal(1);
+
+        cy.add( n1n2 );
+
+        expect( cy.$("#n1").degree() ).to.equal(1);
+        expect( cy.$("#n2").degree() ).to.equal(2);
+        expect( cy.$('#n1n2') ).to.have.length(1);
+        expect( n1n2.removed() ).to.be.false;
+      }
+
+    });
+
+    it('removes via selector', function(){
+      cy.remove('edge');
+
+      expect( cy.edges() ).to.have.length(0);
+    }); 
 
   });
   

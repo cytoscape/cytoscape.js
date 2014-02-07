@@ -23,6 +23,18 @@ describe('Core initialisation', function(){
     });
   });
 
+  it('loads ok with empty graph', function(done){
+    cytoscape({
+      ready: function(){
+        var cy = this;
+
+        expect( cy.elements().length ).to.equal(0);
+        
+        done();
+      }
+    });
+  });
+
   it('does not create an edge with bad source and target', function(done){
     cytoscape({
       elements: {

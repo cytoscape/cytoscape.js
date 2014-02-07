@@ -609,8 +609,8 @@ describe('Events', function(){
     });
 
     it('should get triggered with matching event and delegate selector', function(){
-      $('#n4').on('foo', 'node' handler);
-      $('#n5').trigger('foo');
+      cy.$('#n4').on('foo', 'node', handler);
+      cy.$('#n5').trigger('foo');
       expect( triggers ).to.equal(1);
     });
 
@@ -627,17 +627,175 @@ describe('Events', function(){
 
   describe('eles.one()', function(){
 
+    var triggers = 0;
+    var n1;
+    var handler = function(){ triggers++; }
+
+    beforeEach(function(){
+      triggers = 0;
+      n1 = cy.$('#n1');
+    });
+
+    it('triggers only one time', function(){
+      n1.one('foo', handler);
+      n1.trigger('foo');
+      expect( triggers ).to.equal(1);
+      n1.trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('triggers once per element', function(){
+      cy.nodes().one('foo', handler);
+      cy.nodes().trigger('foo');
+      expect( triggers ).to.equal(5);
+      cy.nodes().trigger('foo');
+      expect( triggers ).to.equal(5);
+    });
+
+    it('triggers only one time with delegate', function(){
+      cy.$('#n4').one('foo', 'node', handler);
+      cy.$('#n5').trigger('foo');
+      expect( triggers ).to.equal(1);
+      cy.$('#n5').trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('passes data correctly', function(){
+      var evt;
+
+      n1.one('foo', { bar: 'baz' }, function(e){
+        evt = e;
+      });
+      n1.trigger('foo');
+
+      expect( evt.data ).to.exist;
+      expect( evt.data.bar ).to.exist;
+      expect( evt.data.bar ).to.equal('baz');
+    });
+
   });
 
   describe('eles.once()', function(){
+
+    var triggers = 0;
+    var n1;
+    var handler = function(){ triggers++; }
+
+    beforeEach(function(){
+      triggers = 0;
+      n1 = cy.$('#n1');
+    });
+
+    it('triggers only one time', function(){
+      n1.once('foo', handler);
+      n1.trigger('foo');
+      expect( triggers ).to.equal(1);
+      n1.trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('triggers only one time for all elements', function(){
+      cy.nodes().once('foo', handler);
+      cy.nodes().trigger('foo');
+      expect( triggers ).to.equal(1);
+      cy.nodes().trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('triggers only one time with delegate', function(){
+      cy.$('#n4').once('foo', 'node', handler);
+      cy.$('#n5').trigger('foo');
+      expect( triggers ).to.equal(1);
+      cy.$('#n5').trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('passes data correctly', function(){
+      var evt;
+
+      n1.once('foo', { bar: 'baz' }, function(e){
+        evt = e;
+      });
+      n1.trigger('foo');
+
+      expect( evt.data ).to.exist;
+      expect( evt.data.bar ).to.exist;
+      expect( evt.data.bar ).to.equal('baz');
+    });
 
   });
 
   describe('eles.off()', function(){
 
+    var triggers = 0;
+    var n1;
+    var handler = function(){ triggers++; }
+
+    beforeEach(function(){
+      triggers = 0;
+      n1 = cy.$('#n1');
+    });
+
+    it('should remove all handlers for same event type', function(){
+      cy.nodes().on('foo', handler);
+      cy.nodes()
+        .off('foo')
+        .trigger('foo')
+      ;
+      expect( triggers ).to.equal(0);
+    });
+
+    it('should remove all handlers for matching event and delegate selector', function(){
+      cy.nodes().on('foo', 'node', handler);
+      cy.nodes()
+        .off('foo', 'node')
+        .trigger('foo')
+      ;
+      expect( triggers ).to.equal(0);
+    });
+
+    it('should remove all matching handlers', function(){
+      cy.nodes().on('foo', handler);
+      cy.nodes()
+        .off('foo', handler)
+        .trigger('foo')
+      ;
+      expect( triggers ).to.equal(0);
+    });
+
   });
 
   describe('eles.trigger()', function(){
+
+    var triggers = 0;
+    var n1;
+    var handler = function(){ triggers++; }
+
+    beforeEach(function(){
+      triggers = 0;
+      n1 = cy.$('#n1');
+    });
+
+    it('should trigger for one element', function(){
+      n1.on('foo', handler);
+      n1.trigger('foo');
+      expect( triggers ).to.equal(1);
+    });
+
+    it('should trigger for multiple elements', function(){
+      cy.nodes().on('foo', handler);
+      cy.nodes().trigger('foo');
+      expect( triggers ).to.equal(6); // NB 2x for parent
+    });
+
+    it('should trigger with extra parameters', function(done){
+      n1.on('foo', function(e, bar, baz){
+        expect( bar ).to.equal('bar');
+        expect( baz ).to.equal('baz');
+        done();
+      });
+      n1.trigger('foo', ['bar', 'baz']);
+    });
 
   });
 

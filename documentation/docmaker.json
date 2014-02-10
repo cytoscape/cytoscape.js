@@ -1460,7 +1460,7 @@
             },
 
             {
-              "name": "edges.connectedEdges",
+              "name": "nodes.connectedEdges",
               "descr": "Get the edges connected to the nodes in the collection.",
               "formats": [
                 {

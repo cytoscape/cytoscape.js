@@ -41,6 +41,10 @@
 			if( start < 0 ){
 				start = thisSize + start;
 			}
+
+			if( end < 0 ){
+				end = thisSize + end;
+			}
 			
 			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
 				array.push( this[i] );

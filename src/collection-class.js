@@ -32,7 +32,7 @@
 
 		hasClass: function(className){
 			var ele = this[0];
-			return ele != null && ele._private.classes[className];
+			return ( ele != null && ele._private.classes[className] ) ? true : false;
 		},
 
 		toggleClass: function(classesStr, toggle){

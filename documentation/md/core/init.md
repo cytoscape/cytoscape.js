@@ -108,6 +108,7 @@ $("#cy").cytoscape({
   userZoomingEnabled: true,
   pan: { x: 0, y: 0 },
   panningEnabled: true,
+  hideEdgesOnViewport: false,
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
@@ -117,6 +118,8 @@ $("#cy").cytoscape({
 ```
 
 **`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `"additive"` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `"single"` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
+
+* `renderer.hideEdgesOnViewport` : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
 
 **`showOverlay`** : A boolean, indicating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
 
@@ -134,10 +137,11 @@ $("#cy").cytoscape({
 
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
+* `hideEdgesOnViewport` : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
+
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 
 * `renderer.name` : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
-* `renderer.hideEdgesOnViewport` : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
 
 **`style`** : The stylesheet used to style the document.
 

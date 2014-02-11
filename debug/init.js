@@ -9,7 +9,7 @@ $(function(){
 					"border-width": 3,
 					"background-color": "#DDD",
 					"border-color": "#555",
-					"shape": "data(shape)",
+					"shape": "ellipse",
 					"width": "mapData(weight, 0, 100, 10, 100)",
 					"height": "mapData(weight, 0, 100, 10, 100)",
 					//"border-style": "dashed"
@@ -44,7 +44,8 @@ $(function(){
 				.css({
 					"width": "mapData(weight, 0, 100, 1, 4)",
 					"target-arrow-shape": "data(tgtShape)",
-					"source-arrow-shape": "data(srcShape)"
+					"source-arrow-shape": "data(srcShape)",
+					"curve-style": "bundled"
 				})
 			.selector(":selected")
 				.css({
@@ -107,8 +108,8 @@ $(function(){
 	};
 	
 	var cliques = 3;
-	var numNodes = 30;
-	var numEdges = 100;
+	var numNodes = 200;
+	var numEdges = 1000;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;
@@ -163,8 +164,8 @@ $(function(){
 			options.elements.edges.push({
 				data: {
 					id: "e" + (j++),
-					source: randNodeId(clique),
-					target: randNodeId(clique),
+					source: srcId,
+					target: tgtId,
 					weight: Math.round( Math.random() * 100 ),
 					tgtShape: randTgtArrow(),
 					srcShape: randSrcArrow()

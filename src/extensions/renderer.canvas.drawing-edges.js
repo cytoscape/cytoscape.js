@@ -18,10 +18,13 @@
 			return;
 		}
 
-		var startNode, endNode;
+		var startNode, endNode, source, target;
 
-		startNode = edge.source()[0];
-		endNode = edge.target()[0];
+		source = startNode = edge.source()[0];
+		target = endNode = edge.target()[0];
+
+		var targetPos = target.position();
+		var sourcePos = source.position();
 		
 		if ( 
 			   edge._private.style["visibility"].value != "visible"
@@ -69,7 +72,15 @@
 		
 		this.findEndpoints(edge);
 		
-		if (edge._private.rscratch.edgeType == "self") {
+		if( rs.edgeType == "bundled" ){
+			this.drawStyledEdge(
+				edge, 
+				context, 
+				[rs.source.x + sourcePos.x, rs.source.y + sourcePos.y, rs.target.x + targetPos.x, rs.target.y + targetPos.y],
+				lineStyle,
+				edgeWidth
+			);
+		} else if (rs.edgeType == "self") {
 					
 			var details = edge._private.rscratch;
 			this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
@@ -91,7 +102,7 @@
 			// 	context.fillRect(pt.x, pt.y, 2, 2);
 			// }
 			
-		} else if (edge._private.rscratch.edgeType == "straight") {
+		} else if (rs.edgeType == "straight") {
 			
 			var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
 			var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;

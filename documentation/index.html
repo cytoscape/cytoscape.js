@@ -742,7 +742,7 @@
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.connectedNodes"><span class="icon-bookmark"></span> edges.connectedNodes() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/traversing/edges.connectedEdges"><span class="icon-bookmark"></span> edges.connectedEdges() </a></div>
+						<div class="section lvl3"><a href="#collection/traversing/nodes.connectedEdges"><span class="icon-bookmark"></span> nodes.connectedEdges() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span> edges.source() </a></div>
 					
@@ -849,7 +849,7 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">2.0.3</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.1.0</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -2088,6 +2088,7 @@ $(function(){ // on jquery ready
   userZoomingEnabled: true,
   pan: { x: 0, y: 0 },
   panningEnabled: true,
+  hideEdgesOnViewport: false,
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
@@ -2097,6 +2098,9 @@ $(function(){ // on jquery ready
 <p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&quot;additive&quot;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&quot;single&quot;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
 
 </p>
+<ul>
+<li><code>renderer.hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
+</ul>
 <p><strong><code>showOverlay</code></strong> : A boolean, indicating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).
 
 </p>
@@ -2121,12 +2125,14 @@ $(function(){ // on jquery ready
 <p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
 </p>
+<ul>
+<li><code>hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
+</ul>
 <p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:
 
 </p>
 <ul>
 <li><code>renderer.name</code> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
-<li><code>renderer.hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
 </ul>
 <p><strong><code>style</code></strong> : The stylesheet used to style the document.
 
@@ -6834,8 +6840,8 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/traversing/edges.connectedEdges"><span class="fn-name">edges.connectedEdges()</span>  <a href="#collection/traversing/edges.connectedEdges"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.connectedEdges"><p>Get the edges connected to the nodes in the collection.</p>
+							<div class="name" id="collection/traversing/nodes.connectedEdges"><span class="fn-name">nodes.connectedEdges()</span>  <a href="#collection/traversing/nodes.connectedEdges"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/nodes.connectedEdges"><p>Get the edges connected to the nodes in the collection.</p>
 </div>
 
 							
@@ -6843,7 +6849,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">edges.connectedEdges(  [<span class="comma">, </span>selector] )</div>
+											<div class="name">nodes.connectedEdges(  [<span class="comma">, </span>selector] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">

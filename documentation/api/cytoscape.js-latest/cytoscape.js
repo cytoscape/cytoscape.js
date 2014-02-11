@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.5.
+ * This file is part of cytoscape.js 2.1.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -23,7 +23,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(window){
+(function(window){ "use strict";
 
 	// the object iteself is a function that init's an instance of cytoscape
 	var $$ = cytoscape = function(){
@@ -72,7 +72,7 @@ var cytoscape;
 
 // type testing utility functions
 
-;(function($$, window){
+;(function($$, window){ "use strict";
 	
 	$$.is = {
 		string: function(obj){
@@ -172,7 +172,7 @@ var cytoscape;
 	
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// utility functions only for internal use
 
@@ -486,6 +486,14 @@ var cytoscape;
 			var ret;
 			var number = $$.util.regex.number;
 			var h, s, l, a, r, g, b;
+			function hue2rgb(p, q, t){
+				if(t < 0) t += 1;
+				if(t > 1) t -= 1;
+				if(t < 1/6) return p + (q - p) * 6 * t;
+				if(t < 1/2) return q;
+				if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			}
 
 			var m = new RegExp("^" + $$.util.regex.hsla + "$").exec(hsl);
 			if( m ){
@@ -519,15 +527,6 @@ var cytoscape;
 				if( s === 0 ){
 					r = g = b = Math.round(l * 255); // achromatic
 				} else {
-					function hue2rgb(p, q, t){
-						if(t < 0) t += 1;
-						if(t > 1) t -= 1;
-						if(t < 1/6) return p + (q - p) * 6 * t;
-						if(t < 1/2) return q;
-						if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-						return p;
-					}
-
 					var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
 					var p = 2 * l - q;
 					r = Math.round( 255 * hue2rgb(p, q, h + 1/3) );
@@ -785,7 +784,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.math = {};
 	
@@ -797,6 +796,13 @@ var cytoscape;
 		} else {
 			return 0;
 		}
+	};
+
+	$$.math.distance = function( p1, p2 ){
+		var dx = p2.x - p1.x;
+		var dy = p2.y - p1.y;
+
+		return Math.sqrt( dx*dx + dy*dy );
 	};
 
 	// from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
@@ -1928,8 +1934,8 @@ var cytoscape;
 			return [];
 		}
 		
-		t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
-		t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+		var t1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+		var t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
 		
 		var tMin = Math.min(t1, t2);
 		var tMax = Math.max(t1, t2);
@@ -2380,6 +2386,51 @@ var cytoscape;
 		return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
 	};
 
+	$$.math.generateUnitNgonPointsFitToSquare = function(sides, rotationRadians) {
+		var points = $$.math.generateUnitNgonPoints(sides, rotationRadians);
+		points = $$.math.fitPolygonToSquare(points);
+
+		return points;
+	};
+
+	$$.math.fitPolygonToSquare = function(points){
+		var x, y;
+		var sides = points.length/2;
+		var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+		for (var i = 0; i < sides; i++) {
+			x = points[2 * i];
+			y = points[2 * i + 1];
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+		
+		// stretch factors
+		var sx = 2 / (maxX - minX);
+		var sy = 2 / (maxY - minY);
+
+		for (var i = 0; i < sides; i++){
+			x = points[2 * i] = points[2 * i] * sx;
+			y = points[2 * i + 1] = points[2 * i + 1] * sy;
+
+			minX = Math.min( minX, x );
+			maxX = Math.max( maxX, x );
+			minY = Math.min( minY, y );
+			maxY = Math.max( maxY, y );
+		}
+
+		if( minY < -1 ){
+			for (var i = 0; i < sides; i++){
+				y = points[2 * i + 1] = points[2 * i + 1] + (-1 -minY);
+			}
+		}
+		
+		return points;
+	};
+
 	$$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
 		
 		var increment = 1.0 / sides * 2 * Math.PI;
@@ -2389,45 +2440,13 @@ var cytoscape;
 		startAngle += rotationRadians;
 		
 		var points = new Array(sides * 2);
-		
-		var currentAngle;
+
+		var currentAngle, x, y;
 		for (var i = 0; i < sides; i++) {
 			currentAngle = i * increment + startAngle;
 			
-			points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
-			points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
-		}
-		
-		// The above generates points for a polygon inscribed in a radius 1 circle.
-		// Stretch so that the maximum of the height and width becomes 2 so the resulting
-		// scaled shape appears to be inscribed inside a rectangle with the given
-		// width and height. The maximum of the width and height is used to preserve
-		// the shape's aspect ratio.
-		
-		// Stretch width
-		var maxAbsX = 0
-		var maxAbsY = 0;
-		for (var i = 0; i < points.length / 2; i++) {
-			if (Math.abs(points[2 * i] > maxAbsX)) {
-				maxAbsX = Math.abs(points[2 * i]);
-			}
-			
-			if (Math.abs(points[2 * i + 1] > maxAbsY)) {
-				maxAbsY = Math.abs(points[2 * i + 1]);
-			}
-		}
-		
-		var minScaleLimit = 0.0005;
-		
-		// Use the larger dimension to do the scale, in order to preserve the shape's
-		// aspect ratio
-		var maxDimension = Math.max(maxAbsX, maxAbsY);
-		
-		for (var i = 0; i < points.length / 2; i++) {
-			if (maxDimension > minScaleLimit) {
-				points[2 * i] *= (1 / maxDimension);
-				points[2 * i + 1] *= (1 / maxDimension);
-			}
+			x = points[2 * i] = Math.cos(currentAngle);// * (1 + i/2);
+			y = points[2 * i + 1] = Math.sin(-currentAngle);//  * (1 + i/2);
 		}
 		
 		return points;
@@ -2443,7 +2462,7 @@ var cytoscape;
 
 // type testing utility functions
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// list of ids with other metadata assoc'd with it
 	$$.instances = [];
@@ -2558,7 +2577,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// registered extensions to cytoscape, indexed by name
 	var extensions = {};
@@ -2636,7 +2655,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($, $$){
+;(function($, $$){ "use strict";
 	
 	if( !$ ){ return } // no jquery => don't need this
 
@@ -2729,7 +2748,7 @@ var cytoscape;
 	
 })(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// shamelessly taken from jQuery
 	// https://github.com/jquery/jquery/blob/master/src/event.js
@@ -2811,7 +2830,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// metaprogramming makes me happy
 
@@ -3046,37 +3065,6 @@ var cytoscape;
 		event: {
 			regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
 			optionalTypeRegex: /(\w+)?(\.\w+)?/,
-
-			// properties to copy to the event obj
-			props: "altKey bubbles button cancelable charCode clientX clientY ctrlKey currentTarget data detail eventPhase metaKey offsetX offsetY originalTarget pageX pageY prevValue relatedTarget screenX screenY shiftKey target view which".split(/\s+/),
-
-			aliases: "mousedown mouseup click mouseover mouseout mousemove touchstart touchmove touchend grab drag free".split(/\s+/),
-
-			aliasesOn: function( thisPrototype ){
-
-				var aliases = $$.define.event.aliases;
-				for( var i = 0; i < aliases.length; i++ ){
-					var eventType = aliases[i];
-
-					(function(eventType){
-						thisPrototype[ eventType ] = function(data, callback){
-							if( $$.is.fn(callback) ){
-								this.on(eventType, data, callback);
-
-							} else if( $$.is.fn(data) ){
-								callback = data;
-								this.on(eventType, callback);
-
-							} else {
-								this.trigger(eventType);
-							}
-
-							return this; // maintain chaining
-						};
-					})( eventType );
-				}
-			},
-
 			falseCallback: function(){ return false; }
 		},
 
@@ -3416,7 +3404,815 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$, window){
+;(function($$){ "use strict";
+		
+
+	$$.fn.selector = function(map, options){
+		for( var name in map ){
+			var fn = map[name];
+			$$.Selector.prototype[ name ] = fn;
+		}
+	};
+
+	$$.Selector = function(onlyThisGroup, selector){
+		
+		if( !(this instanceof $$.Selector) ){
+			return new $$.Selector(onlyThisGroup, selector);
+		}
+	
+		if( selector === undefined && onlyThisGroup !== undefined ){
+			selector = onlyThisGroup;
+			onlyThisGroup = undefined;
+		}
+		
+		var self = this;
+		
+		self._private = {
+			selectorText: null,
+			invalid: true
+		}
+	
+		// storage for parsed queries
+		// when you add something here, also add to Selector.toString()
+		var newQuery = function(){
+			return {
+				classes: [], 
+				colonSelectors: [],
+				data: [],
+				group: null,
+				ids: [],
+				meta: [],
+
+				// fake selectors
+				collection: null, // a collection to match against
+				filter: null, // filter function
+
+				// these are defined in the upward direction rather than down (e.g. child)
+				// because we need to go up in Selector.filter()
+				parent: null, // parent query obj
+				ancestor: null, // ancestor query obj
+				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+				// use these only when subject has been defined
+				child: null,
+				descendant: null
+			};
+		}
+		
+		if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
+			
+			if( onlyThisGroup == null ){
+				// ignore
+				self.length = 0;
+			} else {
+				self[0] = newQuery();
+				self[0].group = onlyThisGroup;
+				self.length = 1;
+			}
+							
+		} else if( $$.is.element( selector ) ){
+			var collection = new $$.Collection(self.cy(), [ selector ]);
+			
+			self[0] = newQuery();
+			self[0].collection = collection;
+			self.length = 1;
+			
+		} else if( $$.is.collection( selector ) ){
+			self[0] = newQuery();
+			self[0].collection = selector;
+			self.length = 1;
+			
+		} else if( $$.is.fn( selector ) ) {
+			self[0] = newQuery();
+			self[0].filter = selector;
+			self.length = 1;
+			
+		} else if( $$.is.string( selector ) ){
+		
+			// these are the actual tokens in the query language
+			var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
+			var variable = "(?:[\\w-]|(?:\\\\"+ metaChar +"))+"; // a variable name
+			var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
+			var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
+			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
+			var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+			var value = string + "|" + number; // a value literal, either a string or number
+			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
+			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
+			var className = variable; // a class name (follows variable conventions)
+			var descendant = "\\s+";
+			var child = "\\s+>\\s+";
+			var subject = "\\$";
+			var id = variable; // an element id (follows variable conventions)
+			
+			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
+			// so that values get compared properly in Selector.filter()
+			var cleanMetaChars = function(str){
+				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), function(match, $1, offset, original){
+					return $1;
+				});
+			};
+			
+			// add @ variants to comparatorOp
+			var ops = comparatorOp.split("|");
+			for( var i = 0; i < ops.length; i++ ){
+				var op = ops[i];
+				comparatorOp += "|@" + op;
+			}
+
+			// the current subject in the query
+			var currentSubject = null;
+			
+			// NOTE: add new expression syntax here to have it recognised by the parser;
+			// a query contains all adjacent (i.e. no separator in between) expressions;
+			// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
+			// you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+			var exprs = {
+				group: {
+					query: true,
+					regex: "(node|edge|\\*)",
+					populate: function( group ){
+						this.group = group == "*" ? group : group + "s";
+					}
+				},
+				
+				state: {
+					query: true,
+					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
+					populate: function( state ){
+						this.colonSelectors.push( state );
+					}
+				},
+				
+				id: {
+					query: true,
+					regex: "\\#("+ id +")",
+					populate: function( id ){
+						this.ids.push( cleanMetaChars(id) );
+					}
+				},
+				
+				className: {
+					query: true,
+					regex: "\\.("+ className +")",
+					populate: function( className ){
+						this.classes.push( cleanMetaChars(className) );
+					}
+				},
+				
+				dataExists: {
+					query: true,
+					regex: "\\[\\s*("+ variable +")\\s*\\]",
+					populate: function( variable ){
+						this.data.push({
+							field: cleanMetaChars(variable)
+						});
+					}
+				},
+				
+				dataCompare: {
+					query: true,
+					regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
+					populate: function( variable, comparatorOp, value ){
+						this.data.push({
+							field: cleanMetaChars(variable),
+							operator: comparatorOp,
+							value: value
+						});
+					}
+				},
+				
+				dataBool: {
+					query: true,
+					regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
+					populate: function( boolOp, variable ){
+						this.data.push({
+							field: cleanMetaChars(variable),
+							operator: boolOp
+						});
+					}
+				},
+				
+				metaCompare: {
+					query: true,
+					regex: "\\[\\[\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\]\\]",
+					populate: function( meta, comparatorOp, number ){
+						this.meta.push({
+							field: cleanMetaChars(meta),
+							operator: comparatorOp,
+							value: number
+						});
+					}
+				},
+
+				nextQuery: {
+					separator: true,
+					regex: separator,
+					populate: function(){
+						// go on to next query
+						self[++i] = newQuery();
+						currentSubject = null;
+					}
+				},
+
+				child: {
+					separator: true,
+					regex: child,
+					populate: function(){
+						// this query is the parent of the following query
+						var childQuery = newQuery();
+						childQuery.parent = this;
+						childQuery.subject = currentSubject;
+
+						// we're now populating the child query with expressions that follow
+						self[i] = childQuery;
+					}
+				},
+
+				descendant: {
+					separator: true,
+					regex: descendant,
+					populate: function(){
+						// this query is the ancestor of the following query
+						var descendantQuery = newQuery();
+						descendantQuery.ancestor = this;
+						descendantQuery.subject = currentSubject;
+
+						// we're now populating the descendant query with expressions that follow
+						self[i] = descendantQuery;
+					}
+				},
+
+				subject: {
+					modifier: true,
+					regex: subject,
+					populate: function(){
+						if( currentSubject != null && this.subject != this ){
+							$$.util.error("Redefinition of subject in selector `" + selector + "`");
+							return false;
+						}
+
+						currentSubject = this;
+						this.subject = this;
+					},
+
+				}
+			};
+
+			var j = 0;
+			for( var name in exprs ){
+				exprs[j] = exprs[name];
+				exprs[j].name = name;
+
+				j++;
+			}
+			exprs.length = j;
+
+			self._private.selectorText = selector;
+			var remaining = selector;
+			var i = 0;
+			
+			// of all the expressions, find the first match in the remaining text
+			var consumeExpr = function( expectation ){
+				var expr;
+				var match;
+				var name;
+				
+				for( var j = 0; j < exprs.length; j++ ){
+					var e = exprs[j];
+					var n = e.name;
+
+					// ignore this expression if it doesn't meet the expectation function
+					if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
+
+					var m = remaining.match(new RegExp( "^" + e.regex ));
+					
+					if( m != null ){
+						match = m;
+						expr = e;
+						name = n;
+						
+						var consumed = m[0];
+						remaining = remaining.substring( consumed.length );								
+						
+						break; // we've consumed one expr, so we can return now
+					}
+				}
+				
+				return {
+					expr: expr,
+					match: match,
+					name: name
+				};
+			};
+			
+			// consume all leading whitespace
+			var consumeWhitespace = function(){
+				var match = remaining.match(/^\s+/);
+				
+				if( match ){
+					var consumed = match[0];
+					remaining = remaining.substring( consumed.length );
+				}
+			};
+			
+			self[0] = newQuery(); // get started
+
+			consumeWhitespace(); // get rid of leading whitespace
+			for(;;){				
+				var check = consumeExpr();
+				
+				if( check.expr == null ){
+					$$.util.error("The selector `"+ selector +"`is invalid");
+					return;
+				} else {
+					var args = [];
+					for(var j = 1; j < check.match.length; j++){
+						args.push( check.match[j] );
+					}
+					
+					// let the token populate the selector object (i.e. in self[i])
+					var ret = check.expr.populate.apply( self[i], args );
+
+					if( ret === false ){ return } // exit if population failed
+				}
+				
+				// we're done when there's nothing left to parse
+				if( remaining.match(/^\s*$/) ){
+					break;
+				}
+			}
+			
+			self.length = i + 1;
+
+			// adjust references for subject
+			for(j = 0; j < self.length; j++){
+				var query = self[j];
+
+				if( query.subject != null ){
+					// go up the tree until we reach the subject
+					for(;;){
+						if( query.subject == query ){ break } // done if subject is self
+
+						if( query.parent != null ){ // swap parent/child reference
+							var parent = query.parent;
+							var child = query;
+
+							child.parent = null;
+							parent.child = child;
+
+							query = parent; // go up the tree
+						} else if( query.ancestor != null ){ // swap ancestor/descendant
+							var ancestor = query.ancestor;
+							var descendant = query;
+
+							descendant.ancestor = null;
+							ancestor.descendant = descendant;
+
+							query = ancestor; // go up the tree
+						} else {
+							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
+							break;
+						}
+					} // for
+
+					self[j] = query.subject; // subject should be the root query
+				} // if
+			} // for
+
+			// make sure for each query that the subject group matches the implicit group if any
+			if( onlyThisGroup != null ){
+				for(var j = 0; j < self.length; j++){
+					if( self[j].group != null && self[j].group != onlyThisGroup ){
+						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
+						return;
+					}
+
+					self[j].group = onlyThisGroup; // set to implicit group
+				}
+			}
+			
+		} else {
+			$$.util.error("A selector must be created from a string; found " + selector);
+			return;
+		}
+
+		self._private.invalid = false;
+		
+	};
+
+	$$.selfn = $$.Selector.prototype;
+	
+	$$.selfn.size = function(){
+		return this.length;
+	};
+	
+	$$.selfn.eq = function(i){
+		return this[i];
+	};
+	
+	// get elements from the core and then filter them
+	$$.selfn.find = function(){
+		// TODO impl if we decide to use a DB for storing elements
+	};
+	
+	// filter an existing collection
+	$$.selfn.filter = function(collection, addLiveFunction){
+		var self = this;
+		var cy = collection.cy();
+		
+		// don't bother trying if it's invalid
+		if( self._private.invalid ){
+			return new $$.Collection( cy );
+		}
+		
+		var queryMatches = function(query, element){
+			// check group
+			if( query.group != null && query.group != "*" && query.group != element._private.group ){
+				return false;
+			}
+			
+			// check colon selectors
+			var allColonSelectorsMatch = true;
+			for(var k = 0; k < query.colonSelectors.length; k++){
+				var sel = query.colonSelectors[k];
+				var renderer = cy.renderer(); // TODO remove reference after refactoring
+				
+				switch(sel){
+				case ":selected":
+					allColonSelectorsMatch = element.selected();
+					break;
+				case ":unselected":
+					allColonSelectorsMatch = !element.selected();
+					break;
+				case ":selectable":
+					allColonSelectorsMatch = element.selectable();
+					break;
+				case ":unselectable":
+					allColonSelectorsMatch = !element.selectable();
+					break;
+				case ":locked":
+					allColonSelectorsMatch = element.locked();
+					break;
+				case ":unlocked":
+					allColonSelectorsMatch = !element.locked();
+					break;
+				case ":visible":
+					allColonSelectorsMatch = element.visible();
+					break;
+				case ":hidden":
+					allColonSelectorsMatch = !element.visible();
+					break;
+				case ":transparent":
+					allColonSelectorsMatch = !element.transparent();
+					break;
+				case ":grabbed":
+					allColonSelectorsMatch = element.grabbed();
+					break;
+				case ":free":
+					allColonSelectorsMatch = !element.grabbed();
+					break;
+				case ":removed":
+					allColonSelectorsMatch = element.removed();
+					break;
+				case ":inside":
+					allColonSelectorsMatch = !element.removed();
+					break;
+				case ":grabbable":
+					allColonSelectorsMatch = element.grabbable();
+					break;
+				case ":ungrabbable":
+					allColonSelectorsMatch = !element.grabbable();
+					break;
+				case ":animated":
+					allColonSelectorsMatch = element.animated();
+					break;
+				case ":unanimated":
+					allColonSelectorsMatch = !element.animated();
+					break;
+				case ":parent":
+					allColonSelectorsMatch = element.children().nonempty();
+					break;
+				case ":child":
+					allColonSelectorsMatch = element.parent().nonempty();
+					break;
+				case ":active":
+					allColonSelectorsMatch = element.active();
+					break;
+				case ":inactive":
+					allColonSelectorsMatch = !element.active();
+					break;
+				case ":touch":
+					allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
+					break;
+				}
+				
+				if( !allColonSelectorsMatch ) break;
+			}
+			if( !allColonSelectorsMatch ) return false;
+			
+			// check id
+			var allIdsMatch = true;
+			for(var k = 0; k < query.ids.length; k++){
+				var id = query.ids[k];
+				var actualId = element._private.data.id;
+				
+				allIdsMatch = allIdsMatch && (id == actualId);
+				
+				if( !allIdsMatch ) break;
+			}
+			if( !allIdsMatch ) return false;
+			
+			// check classes
+			var allClassesMatch = true;
+			for(var k = 0; k < query.classes.length; k++){
+				var cls = query.classes[k];
+				
+				allClassesMatch = allClassesMatch && element.hasClass(cls);
+				
+				if( !allClassesMatch ) break;
+			}
+			if( !allClassesMatch ) return false;
+			
+			// generic checking for data/metadata
+			var operandsMatch = function(params){
+				var allDataMatches = true;
+				for(var k = 0; k < query[params.name].length; k++){
+					var data = query[params.name][k];
+					var operator = data.operator;
+					var value = data.value;
+					var field = data.field;
+					var matches;
+					
+					if( operator != null && value != null ){
+						
+						var fieldStr = "" + params.fieldValue(field);
+						var valStr = "" + eval(value);
+						
+						var caseInsensitive = false;
+						if( operator.charAt(0) == "@" ){
+							fieldStr = fieldStr.toLowerCase();
+							valStr = valStr.toLowerCase();
+							
+							operator = operator.substring(1);
+							caseInsensitive = true;
+						}
+						
+						if( operator == "=" ){
+							operator = "==";
+						}
+						
+						switch(operator){
+						case "*=":
+							matches = fieldStr.search(valStr) >= 0;
+							break;
+						case "$=":
+							matches = new RegExp(valStr + "$").exec(fieldStr) != null;
+							break;
+						case "^=":
+							matches = new RegExp("^" + valStr).exec(fieldStr) != null;
+							break;
+						default:
+							// if we're doing a case insensitive comparison, then we're using a STRING comparison
+							// even if we're comparing numbers
+							if( caseInsensitive ){
+								// eval with lower case strings
+								var expr = "fieldStr " + operator + " valStr";
+								matches = eval(expr);
+							} else {
+								// just eval as normal
+								var expr = params.fieldRef(field) + " " + operator + " " + value;
+								matches = eval(expr);
+							}
+							
+						}
+					} else if( operator != null ){
+						switch(operator){
+						case "?":
+							matches = params.fieldTruthy(field);
+							break;
+						case "!":
+							matches = !params.fieldTruthy(field);
+							break;
+						case "^":
+							matches = params.fieldUndefined(field);
+							break;
+						}
+					} else { 	
+						matches = !params.fieldUndefined(field);
+					}
+					
+					if( !matches ){
+						allDataMatches = false;
+						break;
+					}
+				} // for
+				
+				return allDataMatches;
+			}; // operandsMatch
+			
+			// check data matches
+			var allDataMatches = operandsMatch({
+				name: "data",
+				fieldValue: function(field){
+					return element._private.data[field];
+				},
+				fieldRef: function(field){
+					return "element._private.data." + field;
+				},
+				fieldUndefined: function(field){
+					return element._private.data[field] === undefined;
+				},
+				fieldTruthy: function(field){
+					if( element._private.data[field] ){
+						return true;
+					}
+					return false;
+				}
+			});
+			
+			if( !allDataMatches ){
+				return false;
+			}
+			
+			// check metadata matches
+			var allMetaMatches = operandsMatch({
+				name: "meta",
+				fieldValue: function(field){
+					return element[field]();
+				},
+				fieldRef: function(field){
+					return "element." + field + "()";
+				},
+				fieldUndefined: function(field){
+					return element[field]() == undefined;
+				},
+				fieldTruthy: function(field){
+					if( element[field]() ){
+						return true;
+					}
+					return false;
+				}
+			});
+			
+			if( !allMetaMatches ){
+				return false;
+			}
+			
+			// check collection
+			if( query.collection != null ){
+				var matchesAny = query.collection._private.ids[ element.id() ] != null;
+				
+				if( !matchesAny ){
+					return false;
+				}
+			}
+			
+			// check filter function
+			if( query.filter != null && element.collection().filter( query.filter ).size() == 0 ){
+				return false;
+			}
+			
+
+			// check parent/child relations
+			var confirmRelations = function( query, elements ){
+				if( query != null ){
+					var matches = false;
+					elements = elements(); // make elements functional so we save cycles if query == null
+
+					// query must match for at least one element (may be recursive)
+					for(var i = 0; i < elements.size(); i++){
+						if( queryMatches( query, elements.eq(i) ) ){
+							matches = true;
+							break;
+						}
+					}
+
+					return matches;
+				} else {
+					return true;
+				}
+			};
+
+			if (! confirmRelations(query.parent, function(){
+				return element.parent()
+			}) ){ return false }
+
+			if (! confirmRelations(query.ancestor, function(){
+				return element.parents()
+			}) ){ return false }
+
+			if (! confirmRelations(query.child, function(){
+				return element.children()
+			}) ){ return false }
+
+			if (! confirmRelations(query.descendant, function(){
+				return element.descendants()
+			}) ){ return false }
+
+			// we've reached the end, so we've matched everything for this query
+			return true;
+		}; // queryMatches
+
+		var selectorFunction = function(i, element){
+			for(var j = 0; j < self.length; j++){
+				var query = self[j];
+				
+				if( queryMatches(query, element) ){
+					return true;
+				}
+			}
+			
+			return false;
+		};
+		
+		if( self._private.selectorText == null ){
+			selectorFunction = function(){ return true; };
+		}
+		
+		var filteredCollection = collection.filter( selectorFunction );
+		
+		return filteredCollection;
+	}; // filter
+	
+	// ith query to string
+	$$.selfn.toString = $$.selfn.selector = function(){
+		
+		var str = "";
+		
+		var clean = function(obj){
+			if( $$.is.string(obj) ){
+				return obj;
+			} 
+			return "";
+		};
+		
+		var queryToString = function(query){
+			var str = "";
+
+			var group = clean(query.group);
+			str += group.substring(0, group.length - 1);
+			
+			for(var j = 0; j < query.data.length; j++){
+				var data = query.data[j];
+				str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
+			}
+
+			for(var j = 0; j < query.meta.length; j++){
+				var meta = query.meta[j];
+				str += "{" + meta.field + clean(meta.operator) + clean(meta.value) + "}"
+			}
+			
+			for(var j = 0; j < query.colonSelectors.length; j++){
+				var sel = query.colonSelectors[i];
+				str += sel;
+			}
+			
+			for(var j = 0; j < query.ids.length; j++){
+				var sel = "#" + query.ids[i];
+				str += sel;
+			}
+			
+			for(var j = 0; j < query.classes.length; j++){
+				var sel = "." + query.classes[i];
+				str += sel;
+			}
+
+			if( query.parent != null ){
+				str = queryToString( query.parent ) + " > " + str; 
+			}
+
+			if( query.ancestor != null ){
+				str = queryToString( query.ancestor ) + " " + str; 
+			}
+
+			if( query.child != null ){
+				str += " > " + queryToString( query.child ); 
+			}
+
+			if( query.descendant != null ){
+				str += " " + queryToString( query.descendant ); 
+			}
+
+			return str;
+		};
+
+		for(var i = 0; i < this.length; i++){
+			var query = this[i];
+			
+			str += queryToString( query );
+			
+			if( this.length > 1 && i < this.length - 1 ){
+				str += ", ";
+			}
+		}
+		
+		return str;
+	};
+	
+})( cytoscape );
+
+;(function($$, window){ "use strict";
 	
 	var isTouch = $$.is.touch();
 
@@ -3484,7 +4280,7 @@ var cytoscape;
 				value: value
 			});
 		} else if( $$.is.plainObject(name) ){
-			map = name;
+			var map = name;
 
 			for( var j = 0; j < $$.style.properties.length; j++ ){
 				var prop = $$.style.properties[j];
@@ -3774,7 +4570,7 @@ var cytoscape;
 			textDecoration: { enums: ["none", "underline", "overline", "line-through"] },
 			textTransform: { enums: ["none", "capitalize", "uppercase", "lowercase"] },
 			nodeShape: { enums: ["rectangle", "roundrectangle", "ellipse", "triangle",
-			                     "square", "pentagon", "hexagon", "heptagon", "octagon"] },
+			                     "square", "pentagon", "hexagon", "heptagon", "octagon", "star"] },
 			arrowShape: { enums: ["tee", "triangle", "square", "circle", "diamond", "none"] },
 			display: { enums: ["element", "none"] },
 			visibility: { enums: ["hidden", "visible"] },
@@ -3933,7 +4729,6 @@ var cytoscape;
 					"text-valign": "top",
 					"text-halign": "center",
 					"color": color,
-					"content": undefined, // => no label
 					"text-outline-color": "#000",
 					"text-outline-width": 0,
 					"text-outline-opacity": 1,
@@ -4894,7 +5689,7 @@ var cytoscape;
 
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$, window){
+;(function($$, window){ "use strict";
 
 	var isTouch = $$.is.touch();
 
@@ -4936,8 +5731,8 @@ var cytoscape;
 		var readies = reg.readies;
 
 		var options = opts;
-		options.layout = $$.util.extend( { name: window ? "grid" : "null" }, options.layout );
-		options.renderer = $$.util.extend( { name: window ? "canvas" : "null" }, options.renderer );
+		options.layout = $$.util.extend( { name: window && container ? "grid" : "null" }, options.layout );
+		options.renderer = $$.util.extend( { name: window && container ? "canvas" : "null" }, options.renderer );
 		
 		// TODO determine whether we need a check like this even though we allow running headless now
 		// 
@@ -5159,7 +5954,13 @@ var cytoscape;
 			json.scratch = cy.scratch();
 			json.zoomingEnabled = cy._private.zoomingEnabled;
 			json.userZoomingEnabled = cy._private.userZoomingEnabled;
+			json.zoom = cy._private.zoom;
+			json.minZoom = cy._private.minZoom;
+			json.maxZoom = cy._private.maxZoom;
 			json.panningEnabled = cy._private.panningEnabled;
+			json.userPanningEnabled = cy._private.userPanningEnabled;
+			json.pan = cy._private.pan;
+			json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;
 			json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
@@ -5171,7 +5972,13 @@ var cytoscape;
 	
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-(function($$, window){
+(function($$, window){ "use strict";
+
+	function ready(f) {
+		var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
+
+		setTimeout(fn, 9, f);
+	}
 
 	$$.fn.core({
 		add: function(opts){
@@ -5288,12 +6095,6 @@ var cytoscape;
 			}
 
 			if( window ){
-				function ready(f) {
-					var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
-
-					setTimeout(fn, 9, f);
-				}
-
 				ready( callback );
 			} else {
 				callback();
@@ -5305,7 +6106,7 @@ var cytoscape;
 	
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5539,11 +6340,11 @@ var cytoscape;
 					var c1 = start;
 					var c2 = end;
 
-					function ch(ch1, ch2){
+					var ch = function(ch1, ch2){
 						var diff = ch2 - ch1;
 						var min = ch1;
 						return Math.round( percent * diff + min );
-					}
+					};
 					
 					var r = ch( c1[0], c2[0] );
 					var g = ch( c1[1], c2[1] );
@@ -5565,7 +6366,7 @@ var cytoscape;
 	
 		
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		data: $$.define.data({
@@ -5615,7 +6416,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.core({
 		on: $$.define.on(), // .on( events [, selector] [, data], handler)
@@ -5629,12 +6430,9 @@ var cytoscape;
 	$$.corefn.bind = $$.corefn.on;
 	$$.corefn.unbind = $$.corefn.off;
 
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.corefn );
-		
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5650,7 +6448,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5711,7 +6509,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-(function($$){
+(function($$){ "use strict";
 	
 	$$.fn.core({
 		notify: function( params ){
@@ -5752,7 +6550,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5806,7 +6604,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 
@@ -5863,7 +6661,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -5875,7 +6673,7 @@ var cytoscape;
 })( cytoscape );
 
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.core({
 		
@@ -6245,7 +7043,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Use this interface to define functions for collections/elements.
 	// This interface is good, because it forces you to think in terms
@@ -6428,7 +7226,7 @@ var cytoscape;
 				if( data.id == null ){
 					data.id = idFactory.generate( cy, json );
 				} else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
-					continue; // can't create element
+					continue; // can't create element if prior id already exists
 				}
 
 				var ele = new $$.Element( cy, json, false );
@@ -6583,9 +7381,13 @@ var cytoscape;
 			if( data.id === undefined ){
 				data.id = idFactory.generate( cy, ele );
 			} else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
+				$$.util.error("Can not create element with invalid string ID `" + data.id + "`");
+				
 				// can't create element if it has empty string as id or non-string id
 				continue;
 			} else if( cy.getElementById( data.id ).length != 0 ){
+				$$.util.error("Can not create second element with ID `" + data.id + "`");
+				
 				// can't create element if one already has that id
 				continue;
 			}
@@ -6597,6 +7399,7 @@ var cytoscape;
 				var edge = ele;
 				var fields = ["source", "target"];
 				var fieldsLength = fields.length;
+				var badSourceOrTarget = false;
 				for(var j = 0; j < fieldsLength; j++){
 					
 					var field = fields[j];
@@ -6604,12 +7407,16 @@ var cytoscape;
 					
 					if( val == null || val === "" ){
 						// can't create if source or target is not defined properly
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with unspecified " + field);
+						badSourceOrTarget = true;
 					} else if( cy.getElementById(val).empty() ){ 
 						// can't create edge if one of its nodes doesn't exist
-						continue;
+						$$.util.error("Can not create edge `" + data.id + "` with nonexistant " + field + " `" + val + "`");
+						badSourceOrTarget = true;
 					}
 				}
+
+				if( badSourceOrTarget ){ continue; } // can't create this
 				
 				var src = cy.getElementById( data.source );
 				var tgt = cy.getElementById( data.target );
@@ -6855,7 +7662,7 @@ var cytoscape;
 })( cytoscape );
 
 
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 
 	$$.fn.eles({
 		animated: function(){
@@ -6991,7 +7798,7 @@ var cytoscape;
 	
 })( cytoscape );	
 
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 	
 	$$.fn.eles({
 		addClass: function(classes){
@@ -7025,7 +7832,7 @@ var cytoscape;
 
 		hasClass: function(className){
 			var ele = this[0];
-			return ele != null && ele._private.classes[className];
+			return ( ele != null && ele._private.classes[className] ) ? true : false;
 		},
 
 		toggleClass: function(classesStr, toggle){
@@ -7099,7 +7906,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.eles({
 		allAre: function(selector){
@@ -7136,7 +7943,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var borderWidthMultiplier = 2 * 0.5;
 	var borderWidthAdjustment = 0;
@@ -7669,7 +8476,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function( $$ ){
+;(function( $$ ){ "use strict";
 	
 	// Regular degree functions (works on single element)
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7787,7 +8594,7 @@ var cytoscape;
 
 	
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Functions for binding & triggering events
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7818,13 +8625,10 @@ var cytoscape;
 	// aliases for those folks who like old stuff:
 	$$.elesfn.bind = $$.elesfn.on;
 	$$.elesfn.unbind = $$.elesfn.off;
-
-	// add event aliases like .click()
-	$$.define.event.aliasesOn( $$.elesfn );
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	$$.fn.eles({
 		isNode: function(){
@@ -7851,7 +8655,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Functions for iterating over collections
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7893,6 +8697,10 @@ var cytoscape;
 			
 			if( start < 0 ){
 				start = thisSize + start;
+			}
+
+			if( end < 0 ){
+				end = thisSize + end;
 			}
 			
 			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
@@ -8008,7 +8816,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var borderWidthMultiplier = 2 * 0.5;
 	var borderWidthAdjustment = 0;
@@ -8211,10 +9019,14 @@ var cytoscape;
 
 	});
 
+
+	$$.elesfn.style = $$.elesfn.css;
+	$$.elesfn.renderedStyle = $$.elesfn.renderedCss;
+	$$.elesfn.removeStyle = $$.elesfn.removeCss;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	// Collection functions that toggle a boolean value
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -8324,7 +9136,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	$$.fn.eles({
 		nodes: function(selector){
@@ -9089,813 +9901,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
-		
-
-	$$.fn.selector = function(map, options){
-		for( var name in map ){
-			var fn = map[name];
-			$$.Selector.prototype[ name ] = fn;
-		}
-	};
-
-	$$.Selector = function(onlyThisGroup, selector){
-		
-		if( !(this instanceof $$.Selector) ){
-			return new $$.Selector(onlyThisGroup, selector);
-		}
-	
-		if( selector === undefined && onlyThisGroup !== undefined ){
-			selector = onlyThisGroup;
-			onlyThisGroup = undefined;
-		}
-		
-		var self = this;
-		
-		self._private = {
-			selectorText: null,
-			invalid: true
-		}
-	
-		// storage for parsed queries
-		// when you add something here, also add to Selector.toString()
-		function newQuery(){
-			return {
-				classes: [], 
-				colonSelectors: [],
-				data: [],
-				group: null,
-				ids: [],
-				meta: [],
-
-				// fake selectors
-				collection: null, // a collection to match against
-				filter: null, // filter function
-
-				// these are defined in the upward direction rather than down (e.g. child)
-				// because we need to go up in Selector.filter()
-				parent: null, // parent query obj
-				ancestor: null, // ancestor query obj
-				subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-				// use these only when subject has been defined
-				child: null,
-				descendant: null
-			};
-		}
-		
-		if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
-			
-			if( onlyThisGroup == null ){
-				// ignore
-				self.length = 0;
-			} else {
-				self[0] = newQuery();
-				self[0].group = onlyThisGroup;
-				self.length = 1;
-			}
-							
-		} else if( $$.is.element( selector ) ){
-			var collection = new $$.Collection(self.cy(), [ selector ]);
-			
-			self[0] = newQuery();
-			self[0].collection = collection;
-			self.length = 1;
-			
-		} else if( $$.is.collection( selector ) ){
-			self[0] = newQuery();
-			self[0].collection = selector;
-			self.length = 1;
-			
-		} else if( $$.is.fn( selector ) ) {
-			self[0] = newQuery();
-			self[0].filter = selector;
-			self.length = 1;
-			
-		} else if( $$.is.string( selector ) ){
-		
-			// these are the actual tokens in the query language
-			var metaChar = "[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]"; // chars we need to escape in var names, etc
-			var variable = "(?:[\\w-]|(?:\\\\"+ metaChar +"))+"; // a variable name
-			var comparatorOp = "=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*="; // binary comparison op (used in data selectors)
-			var boolOp = "\\?|\\!|\\^"; // boolean (unary) operators (used in data selectors)
-			var string = '"(?:\\\\"|[^"])+"' + "|" + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
-			var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
-			var value = string + "|" + number; // a value literal, either a string or number
-			var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
-			var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
-			var className = variable; // a class name (follows variable conventions)
-			var descendant = "\\s+";
-			var child = "\\s+>\\s+";
-			var subject = "\\$";
-			var id = variable; // an element id (follows variable conventions)
-			
-			// when a token like a variable has escaped meta characters, we need to clean the backslashes out
-			// so that values get compared properly in Selector.filter()
-			function cleanMetaChars(str){
-				return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), "\1");
-			}
-			
-			// add @ variants to comparatorOp
-			var ops = comparatorOp.split("|");
-			for( var i = 0; i < ops.length; i++ ){
-				var op = ops[i];
-				comparatorOp += "|@" + op;
-			}
-
-			// the current subject in the query
-			var currentSubject = null;
-			
-			// NOTE: add new expression syntax here to have it recognised by the parser;
-			// a query contains all adjacent (i.e. no separator in between) expressions;
-			// the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
-			// you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
-			var exprs = {
-				group: {
-					query: true,
-					regex: "(node|edge|\\*)",
-					populate: function( group ){
-						this.group = group == "*" ? group : group + "s";
-					}
-				},
-				
-				state: {
-					query: true,
-					regex: "(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)",
-					populate: function( state ){
-						this.colonSelectors.push( state );
-					}
-				},
-				
-				id: {
-					query: true,
-					regex: "\\#("+ id +")",
-					populate: function( id ){
-						this.ids.push( cleanMetaChars(id) );
-					}
-				},
-				
-				className: {
-					query: true,
-					regex: "\\.("+ className +")",
-					populate: function( className ){
-						this.classes.push( cleanMetaChars(className) );
-					}
-				},
-				
-				dataExists: {
-					query: true,
-					regex: "\\[\\s*("+ variable +")\\s*\\]",
-					populate: function( variable ){
-						this.data.push({
-							field: cleanMetaChars(variable)
-						});
-					}
-				},
-				
-				dataCompare: {
-					query: true,
-					regex: "\\[\\s*("+ variable +")\\s*("+ comparatorOp +")\\s*("+ value +")\\s*\\]",
-					populate: function( variable, comparatorOp, value ){
-						this.data.push({
-							field: cleanMetaChars(variable),
-							operator: comparatorOp,
-							value: value
-						});
-					}
-				},
-				
-				dataBool: {
-					query: true,
-					regex: "\\[\\s*("+ boolOp +")\\s*("+ variable +")\\s*\\]",
-					populate: function( boolOp, variable ){
-						this.data.push({
-							field: cleanMetaChars(variable),
-							operator: boolOp
-						});
-					}
-				},
-				
-				metaCompare: {
-					query: true,
-					regex: "\\[\\[\\s*("+ meta +")\\s*("+ comparatorOp +")\\s*("+ number +")\\s*\\]\\]",
-					populate: function( meta, comparatorOp, number ){
-						this.meta.push({
-							field: cleanMetaChars(meta),
-							operator: comparatorOp,
-							value: number
-						});
-					}
-				},
-
-				nextQuery: {
-					separator: true,
-					regex: separator,
-					populate: function(){
-						// go on to next query
-						self[++i] = newQuery();
-						currentSubject = null;
-					}
-				},
-
-				child: {
-					separator: true,
-					regex: child,
-					populate: function(){
-						// this query is the parent of the following query
-						var childQuery = newQuery();
-						childQuery.parent = this;
-						childQuery.subject = currentSubject;
-
-						// we're now populating the child query with expressions that follow
-						self[i] = childQuery;
-					}
-				},
-
-				descendant: {
-					separator: true,
-					regex: descendant,
-					populate: function(){
-						// this query is the ancestor of the following query
-						var descendantQuery = newQuery();
-						descendantQuery.ancestor = this;
-						descendantQuery.subject = currentSubject;
-
-						// we're now populating the descendant query with expressions that follow
-						self[i] = descendantQuery;
-					}
-				},
-
-				subject: {
-					modifier: true,
-					regex: subject,
-					populate: function(){
-						if( currentSubject != null && this.subject != this ){
-							$$.util.error("Redefinition of subject in selector `" + selector + "`");
-							return false;
-						}
-
-						currentSubject = this;
-						this.subject = this;
-					},
-
-				}
-			};
-
-			var j = 0;
-			for( var name in exprs ){
-				exprs[j] = exprs[name];
-				exprs[j].name = name;
-
-				j++;
-			}
-			exprs.length = j;
-
-			self._private.selectorText = selector;
-			var remaining = selector;
-			var i = 0;
-			
-			// of all the expressions, find the first match in the remaining text
-			function consumeExpr( expectation ){
-				var expr;
-				var match;
-				var name;
-				
-				for( var j = 0; j < exprs.length; j++ ){
-					var e = exprs[j];
-					var n = e.name;
-
-					// ignore this expression if it doesn't meet the expectation function
-					if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
-
-					var m = remaining.match(new RegExp( "^" + e.regex ));
-					
-					if( m != null ){
-						match = m;
-						expr = e;
-						name = n;
-						
-						var consumed = m[0];
-						remaining = remaining.substring( consumed.length );								
-						
-						break; // we've consumed one expr, so we can return now
-					}
-				}
-				
-				return {
-					expr: expr,
-					match: match,
-					name: name
-				};
-			}
-			
-			// consume all leading whitespace
-			function consumeWhitespace(){
-				var match = remaining.match(/^\s+/);
-				
-				if( match ){
-					var consumed = match[0];
-					remaining = remaining.substring( consumed.length );
-				}
-			}
-			
-			self[0] = newQuery(); // get started
-
-			consumeWhitespace(); // get rid of leading whitespace
-			for(;;){				
-				var check = consumeExpr();
-				
-				if( check.expr == null ){
-					$$.util.error("The selector `"+ selector +"`is invalid");
-					return;
-				} else {
-					var args = [];
-					for(var j = 1; j < check.match.length; j++){
-						args.push( check.match[j] );
-					}
-					
-					// let the token populate the selector object (i.e. in self[i])
-					var ret = check.expr.populate.apply( self[i], args );
-
-					if( ret === false ){ return } // exit if population failed
-				}
-				
-				// we're done when there's nothing left to parse
-				if( remaining.match(/^\s*$/) ){
-					break;
-				}
-			}
-			
-			self.length = i + 1;
-
-			// adjust references for subject
-			for(j = 0; j < self.length; j++){
-				var query = self[j];
-
-				if( query.subject != null ){
-					// go up the tree until we reach the subject
-					for(;;){
-						if( query.subject == query ){ break } // done if subject is self
-
-						if( query.parent != null ){ // swap parent/child reference
-							var parent = query.parent;
-							var child = query;
-
-							child.parent = null;
-							parent.child = child;
-
-							query = parent; // go up the tree
-						} else if( query.ancestor != null ){ // swap ancestor/descendant
-							var ancestor = query.ancestor;
-							var descendant = query;
-
-							descendant.ancestor = null;
-							ancestor.descendant = descendant;
-
-							query = ancestor; // go up the tree
-						} else {
-							$$.util.error("When adjusting references for the selector `"+ query +"`, neither parent nor ancestor was found");
-							break;
-						}
-					} // for
-
-					self[j] = query.subject; // subject should be the root query
-				} // if
-			} // for
-
-			// make sure for each query that the subject group matches the implicit group if any
-			if( onlyThisGroup != null ){
-				for(var j = 0; j < self.length; j++){
-					if( self[j].group != null && self[j].group != onlyThisGroup ){
-						$$.util.error("Group `"+ self[j].group +"` conflicts with implicit group `"+ onlyThisGroup +"` in selector `"+ selector +"`");
-						return;
-					}
-
-					self[j].group = onlyThisGroup; // set to implicit group
-				}
-			}
-			
-		} else {
-			$$.util.error("A selector must be created from a string; found " + selector);
-			return;
-		}
-
-		self._private.invalid = false;
-		
-	};
-
-	$$.selfn = $$.Selector.prototype;
-	
-	$$.selfn.size = function(){
-		return this.length;
-	};
-	
-	$$.selfn.eq = function(i){
-		return this[i];
-	};
-	
-	// get elements from the core and then filter them
-	$$.selfn.find = function(){
-		// TODO impl if we decide to use a DB for storing elements
-	};
-	
-	// filter an existing collection
-	$$.selfn.filter = function(collection, addLiveFunction){
-		var self = this;
-		var cy = collection.cy();
-		
-		// don't bother trying if it's invalid
-		if( self._private.invalid ){
-			return new $$.Collection( cy );
-		}
-		
-		var queryMatches = function(query, element){
-			// check group
-			if( query.group != null && query.group != "*" && query.group != element._private.group ){
-				return false;
-			}
-			
-			// check colon selectors
-			var allColonSelectorsMatch = true;
-			for(var k = 0; k < query.colonSelectors.length; k++){
-				var sel = query.colonSelectors[k];
-				var renderer = cy.renderer(); // TODO remove reference after refactoring
-				
-				switch(sel){
-				case ":selected":
-					allColonSelectorsMatch = element.selected();
-					break;
-				case ":unselected":
-					allColonSelectorsMatch = !element.selected();
-					break;
-				case ":selectable":
-					allColonSelectorsMatch = element.selectable();
-					break;
-				case ":unselectable":
-					allColonSelectorsMatch = !element.selectable();
-					break;
-				case ":locked":
-					allColonSelectorsMatch = element.locked();
-					break;
-				case ":unlocked":
-					allColonSelectorsMatch = !element.locked();
-					break;
-				case ":visible":
-					allColonSelectorsMatch = element.visible();
-					break;
-				case ":hidden":
-					allColonSelectorsMatch = !element.visible();
-					break;
-				case ":transparent":
-					allColonSelectorsMatch = !element.transparent();
-					break;
-				case ":grabbed":
-					allColonSelectorsMatch = element.grabbed();
-					break;
-				case ":free":
-					allColonSelectorsMatch = !element.grabbed();
-					break;
-				case ":removed":
-					allColonSelectorsMatch = element.removed();
-					break;
-				case ":inside":
-					allColonSelectorsMatch = !element.removed();
-					break;
-				case ":grabbable":
-					allColonSelectorsMatch = element.grabbable();
-					break;
-				case ":ungrabbable":
-					allColonSelectorsMatch = !element.grabbable();
-					break;
-				case ":animated":
-					allColonSelectorsMatch = element.animated();
-					break;
-				case ":unanimated":
-					allColonSelectorsMatch = !element.animated();
-					break;
-				case ":parent":
-					allColonSelectorsMatch = element.children().nonempty();
-					break;
-				case ":child":
-					allColonSelectorsMatch = element.parent().nonempty();
-					break;
-				case ":active":
-					allColonSelectorsMatch = element.active();
-					break;
-				case ":inactive":
-					allColonSelectorsMatch = !element.active();
-					break;
-				case ":touch":
-					allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
-					break;
-				}
-				
-				if( !allColonSelectorsMatch ) break;
-			}
-			if( !allColonSelectorsMatch ) return false;
-			
-			// check id
-			var allIdsMatch = true;
-			for(var k = 0; k < query.ids.length; k++){
-				var id = query.ids[k];
-				var actualId = element._private.data.id;
-				
-				allIdsMatch = allIdsMatch && (id == actualId);
-				
-				if( !allIdsMatch ) break;
-			}
-			if( !allIdsMatch ) return false;
-			
-			// check classes
-			var allClassesMatch = true;
-			for(var k = 0; k < query.classes.length; k++){
-				var cls = query.classes[k];
-				
-				allClassesMatch = allClassesMatch && element.hasClass(cls);
-				
-				if( !allClassesMatch ) break;
-			}
-			if( !allClassesMatch ) return false;
-			
-			// generic checking for data/metadata
-			function operandsMatch(params){
-				var allDataMatches = true;
-				for(var k = 0; k < query[params.name].length; k++){
-					var data = query[params.name][k];
-					var operator = data.operator;
-					var value = data.value;
-					var field = data.field;
-					var matches;
-					
-					if( operator != null && value != null ){
-						
-						var fieldStr = "" + params.fieldValue(field);
-						var valStr = "" + eval(value);
-						
-						var caseInsensitive = false;
-						if( operator.charAt(0) == "@" ){
-							fieldStr = fieldStr.toLowerCase();
-							valStr = valStr.toLowerCase();
-							
-							operator = operator.substring(1);
-							caseInsensitive = true;
-						}
-						
-						if( operator == "=" ){
-							operator = "==";
-						}
-						
-						switch(operator){
-						case "*=":
-							matches = fieldStr.search(valStr) >= 0;
-							break;
-						case "$=":
-							matches = new RegExp(valStr + "$").exec(fieldStr) != null;
-							break;
-						case "^=":
-							matches = new RegExp("^" + valStr).exec(fieldStr) != null;
-							break;
-						default:
-							// if we're doing a case insensitive comparison, then we're using a STRING comparison
-							// even if we're comparing numbers
-							if( caseInsensitive ){
-								// eval with lower case strings
-								var expr = "fieldStr " + operator + " valStr";
-								matches = eval(expr);
-							} else {
-								// just eval as normal
-								var expr = params.fieldRef(field) + " " + operator + " " + value;
-								matches = eval(expr);
-							}
-							
-						}
-					} else if( operator != null ){
-						switch(operator){
-						case "?":
-							matches = params.fieldTruthy(field);
-							break;
-						case "!":
-							matches = !params.fieldTruthy(field);
-							break;
-						case "^":
-							matches = params.fieldUndefined(field);
-							break;
-						}
-					} else { 	
-						matches = !params.fieldUndefined(field);
-					}
-					
-					if( !matches ){
-						allDataMatches = false;
-						break;
-					}
-				} // for
-				
-				return allDataMatches;
-			} // operandsMatch
-			
-			// check data matches
-			var allDataMatches = operandsMatch({
-				name: "data",
-				fieldValue: function(field){
-					return element._private.data[field];
-				},
-				fieldRef: function(field){
-					return "element._private.data." + field;
-				},
-				fieldUndefined: function(field){
-					return element._private.data[field] === undefined;
-				},
-				fieldTruthy: function(field){
-					if( element._private.data[field] ){
-						return true;
-					}
-					return false;
-				}
-			});
-			
-			if( !allDataMatches ){
-				return false;
-			}
-			
-			// check metadata matches
-			var allMetaMatches = operandsMatch({
-				name: "meta",
-				fieldValue: function(field){
-					return element[field]();
-				},
-				fieldRef: function(field){
-					return "element." + field + "()";
-				},
-				fieldUndefined: function(field){
-					return element[field]() == undefined;
-				},
-				fieldTruthy: function(field){
-					if( element[field]() ){
-						return true;
-					}
-					return false;
-				}
-			});
-			
-			if( !allMetaMatches ){
-				return false;
-			}
-			
-			// check collection
-			if( query.collection != null ){
-				var matchesAny = query.collection._private.ids[ element.id() ] != null;
-				
-				if( !matchesAny ){
-					return false;
-				}
-			}
-			
-			// check filter function
-			if( query.filter != null && element.collection().filter( query.filter ).size() == 0 ){
-				return false;
-			}
-			
-
-			// check parent/child relations
-			function confirmRelations( query, elements ){
-				if( query != null ){
-					var matches = false;
-					elements = elements(); // make elements functional so we save cycles if query == null
-
-					// query must match for at least one element (may be recursive)
-					for(var i = 0; i < elements.size(); i++){
-						if( queryMatches( query, elements.eq(i) ) ){
-							matches = true;
-							break;
-						}
-					}
-
-					return matches;
-				} else {
-					return true;
-				}
-			}
-
-			if (! confirmRelations(query.parent, function(){
-				return element.parent()
-			}) ){ return false }
-
-			if (! confirmRelations(query.ancestor, function(){
-				return element.parents()
-			}) ){ return false }
-
-			if (! confirmRelations(query.child, function(){
-				return element.children()
-			}) ){ return false }
-
-			if (! confirmRelations(query.descendant, function(){
-				return element.descendants()
-			}) ){ return false }
-
-			// we've reached the end, so we've matched everything for this query
-			return true;
-		}; // queryMatches
-
-		var selectorFunction = function(i, element){
-			for(var j = 0; j < self.length; j++){
-				var query = self[j];
-				
-				if( queryMatches(query, element) ){
-					return true;
-				}
-			}
-			
-			return false;
-		};
-		
-		if( self._private.selectorText == null ){
-			selectorFunction = function(){ return true; };
-		}
-		
-		var filteredCollection = collection.filter( selectorFunction );
-		
-		return filteredCollection;
-	}; // filter
-	
-	// ith query to string
-	$$.selfn.toString = $$.selfn.selector = function(){
-		
-		var str = "";
-		
-		function clean(obj){
-			if( $$.is.string(obj) ){
-				return obj;
-			} 
-			return "";
-		}
-		
-		function queryToString(query){
-			var str = "";
-
-			var group = clean(query.group);
-			str += group.substring(0, group.length - 1);
-			
-			for(var j = 0; j < query.data.length; j++){
-				var data = query.data[j];
-				str += "[" + data.field + clean(data.operator) + clean(data.value) + "]"
-			}
-
-			for(var j = 0; j < query.meta.length; j++){
-				var meta = query.meta[j];
-				str += "{" + meta.field + clean(meta.operator) + clean(meta.value) + "}"
-			}
-			
-			for(var j = 0; j < query.colonSelectors.length; j++){
-				var sel = query.colonSelectors[i];
-				str += sel;
-			}
-			
-			for(var j = 0; j < query.ids.length; j++){
-				var sel = "#" + query.ids[i];
-				str += sel;
-			}
-			
-			for(var j = 0; j < query.classes.length; j++){
-				var sel = "." + query.classes[i];
-				str += sel;
-			}
-
-			if( query.parent != null ){
-				str = queryToString( query.parent ) + " > " + str; 
-			}
-
-			if( query.ancestor != null ){
-				str = queryToString( query.ancestor ) + " " + str; 
-			}
-
-			if( query.child != null ){
-				str += " > " + queryToString( query.child ); 
-			}
-
-			if( query.descendant != null ){
-				str += " " + queryToString( query.descendant ); 
-			}
-
-			return str;
-		}
-
-		for(var i = 0; i < this.length; i++){
-			var query = this[i];
-			
-			str += queryToString( query );
-			
-			if( this.length > 1 && i < this.length - 1 ){
-				str += ", ";
-			}
-		}
-		
-		return str;
-	};
-	
-})( cytoscape );
-
-;(function($$){
+;(function($$){ "use strict";
 		
 	function NullRenderer(options){
 	}
@@ -9913,7 +9919,7 @@ var cytoscape;
   Modifications tracked on Github.
 */
 
-(function($$) {
+(function($$) { "use strict";
 
 	function CanvasRenderer(options) {
 		
@@ -10061,11 +10067,13 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var rendFunc = CanvasRenderer.prototype;
 	var arrowShapes = CanvasRenderer.arrowShapes = {};
+
+	CanvasRenderer.arrowShapeHeight = 0.3;
 
 	// Contract for arrow shapes:
 	// 0, 0 is arrow tip
@@ -10302,7 +10310,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -10356,14 +10364,14 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
 	// Project mouse
 	CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
 		
-		n = this.data.container;
+		var n = this.data.container;
 			
 		var offsets = this.findContainerPageCoords();
 		var offsetLeft = offsets[0];
@@ -10372,7 +10380,8 @@ var cytoscape;
 //		console.log("calce");
 		
 		// By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-		x = pageX - offsetLeft; y = pageY - offsetTop;
+		var x = pageX - offsetLeft; 
+		var y = pageY - offsetTop;
 		
 		x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
 		return [x, y];
@@ -11059,6 +11068,8 @@ var cytoscape;
 
 			srcBorder = src._private.style["border-width"].pxValue;
 			tgtBorder = tgt._private.style["border-width"].pxValue;
+
+			badBezier = false;
 			
 
 			if (hashTable[pairId].length > 1) {
@@ -11212,6 +11223,107 @@ var cytoscape;
 
 				// find endpts for edge
 				this.findEndpoints( edge );
+
+				var badStart = !$$.is.number( rs.startX ) || !$$.is.number( rs.startY );
+				var badAStart = !$$.is.number( rs.arrowStartX ) || !$$.is.number( rs.arrowStartY );
+				var badEnd = !$$.is.number( rs.endX ) || !$$.is.number( rs.endY );
+				var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
+
+				var minCpADistFactor = 3;
+				var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CanvasRenderer.arrowShapeHeight;
+				var minCpADist = minCpADistFactor * arrowW;
+				var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
+				var closeStartACp = startACpDist < minCpADist;
+				var endACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
+				var closeEndACp = endACpDist < minCpADist;
+
+				if( rs.edgeType === "bezier" ){
+					var overlapping = false;
+
+					if( badStart || badAStart || closeStartACp ){
+						overlapping = true;
+
+						// project control point along line from src centre to outside the src shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - srcPos.x,
+							y: rs.cp2y - srcPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var srcCtrlPtIntn = srcShape.intersectLine(
+							srcPos.x,
+							srcPos.y,
+							srcW,
+							srcH,
+							cpProj.x,
+							cpProj.y,
+							srcBorder / 2
+						);
+
+						if( closeStartACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist)
+						} else {
+							rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
+					}
+
+					if( badEnd || badAEnd || closeEndACp ){
+						overlapping = true;
+
+						// project control point along line from tgt centre to outside the tgt shape
+						// (otherwise intersection will yield nothing)
+						var cpD = { // delta
+							x: rs.cp2x - tgtPos.x,
+							y: rs.cp2y - tgtPos.y
+						};
+						var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
+						var cpM = { // normalised delta
+							x: cpD.x / cpL,
+							y: cpD.y / cpL
+						};
+						var radius = Math.max(srcW, srcH);
+						var cpProj = { // *2 radius guarantees outside shape
+							x: rs.cp2x + cpM.x * 2 * radius,
+							y: rs.cp2y + cpM.y * 2 * radius
+						};
+
+						var tgtCtrlPtIntn = tgtShape.intersectLine(
+							tgtPos.x,
+							tgtPos.y,
+							tgtW,
+							tgtH,
+							cpProj.x,
+							cpProj.y,
+							tgtBorder / 2
+						);
+
+						if( closeEndACp ){
+							rs.cp2x = rs.cp2x + cpM.x * (minCpADist - endACpDist); 
+							rs.cp2y = rs.cp2y + cpM.y * (minCpADist - endACpDist);
+						} else {
+							rs.cp2x = tgtCtrlPtIntn[0] + cpM.x * minCpADist; 
+							rs.cp2y = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+						}
+						
+					}
+
+					if( overlapping ){
+						// recalc endpts
+						this.findEndpoints( edge );
+					}
+				}
 
 				// project the edge into rstyle
 				this.projectBezier( edge );
@@ -11455,7 +11567,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -11963,7 +12075,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12100,7 +12212,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12251,7 +12363,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12292,7 +12404,7 @@ var cytoscape;
 				+ node._private.style["border-color"].value[2] + ","
 				+ (node._private.style["border-opacity"].value * node._private.style["opacity"].value * parentOpacity) + ")";
 			
-			
+			context.lineJoin = 'miter'; // so borders are square with the node shape
 			
 			//var image = this.getCachedImage("url");
 			
@@ -12372,7 +12484,7 @@ var cytoscape;
 			if( overlayOpacity > 0 ){
 				context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
-				CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+				CanvasRenderer.nodeShapes['roundrectangle'].draw(
 					context,
 					node._private.position.x,
 					node._private.position.y,
@@ -12461,7 +12573,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12825,7 +12937,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12920,7 +13032,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -12981,7 +13093,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -13019,7 +13131,7 @@ var cytoscape;
 
 			var innerNodes = node.descendants();
 
-			function hasNonAutoParent(ele){
+			var hasNonAutoParent = function(ele){
 				while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
 					parent = ele.parent()[0];
 					var pstyle = parent._private.style;
@@ -13032,7 +13144,7 @@ var cytoscape;
 				}
 
 				return false;
-			}
+			};
 
 			// TODO do not drag hidden children & children of hidden children?
 			for (var i=0; i < innerNodes.size(); i++)
@@ -13132,9 +13244,9 @@ var cytoscape;
 			e.preventDefault();
 		});
 
-		function inBoxSelection(){
+		var inBoxSelection = function(){
 			return r.data.select[4] !== 0;
-		}
+		};
 
 		// Primary key
 		r.registerBinding(r.data.container, "mousedown", function(e) { 
@@ -13834,9 +13946,9 @@ var cytoscape;
 		var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
 		var twoFingersStartInside;
 
-		function distance(x1, y1, x2, y2){
+		var distance = function(x1, y1, x2, y2){
 			return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
-		}
+		};
 
 		r.registerBinding(r.data.container, "touchstart", function(e) {
 
@@ -13861,7 +13973,7 @@ var cytoscape;
 			if( e.touches[1] ){
 
 				// anything in the set of dragged eles should be released
-				function release( eles ){
+				var release = function( eles ){
 					for( var i = 0; i < eles.length; i++ ){
 						eles[i]._private.grabbed = false;
 						eles[i]._private.rscratch.inDragLayer = false;
@@ -14678,7 +14790,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	var CanvasRenderer = $$('renderer', 'canvas');
 	var renderer = CanvasRenderer.prototype;
@@ -14761,7 +14873,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["triangle"] = {
-		points: $$.math.generateUnitNgonPoints(3, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(3, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -14828,7 +14940,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["square"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -14889,7 +15001,7 @@ var cytoscape;
 	nodeShapes["octogon"] = {};
 	
 	nodeShapes["roundrectangle"] = {
-		points: $$.math.generateUnitNgonPoints(4, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawRoundRectangle(context,
@@ -15058,7 +15170,7 @@ var cytoscape;
 	*/
 	
 	nodeShapes["pentagon"] = {
-		points: $$.math.generateUnitNgonPoints(5, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(5, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15109,7 +15221,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["hexagon"] = {
-		points: $$.math.generateUnitNgonPoints(6, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(6, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15162,7 +15274,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["heptagon"] = {
-		points: $$.math.generateUnitNgonPoints(7, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(7, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15215,7 +15327,7 @@ var cytoscape;
 	}
 	
 	nodeShapes["octagon"] = {
-		points: $$.math.generateUnitNgonPoints(8, 0),
+		points: $$.math.generateUnitNgonPointsFitToSquare(8, 0),
 		
 		draw: function(context, centerX, centerY, width, height) {
 			renderer.drawPolygon(context,
@@ -15294,8 +15406,10 @@ var cytoscape;
 		
 //		console.log(star5Points);
 	}
+
+	star5Points = $$.math.fitPolygonToSquare( star5Points );
 	
-	nodeShapes["star5"] = {
+	nodeShapes["star5"] = nodeShapes["star"] = {
 		points: star5Points,
 		
 		draw: function(context, centerX, centerY, width, height) {
@@ -15350,7 +15464,7 @@ var cytoscape;
 
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 
 	// default layout options
 	var defaults = {
@@ -15399,7 +15513,7 @@ var cytoscape;
 
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		ready: undefined, // callback on layoutready
@@ -15462,7 +15576,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		fit: true, // whether to fit the viewport to the graph
@@ -15503,7 +15617,7 @@ var cytoscape;
 			var rows = Math.round( splits );
 			var cols = Math.round( width/height * splits );
 
-			function small(val){
+			var small = function(val){
 				if( val == undefined ){
 					return Math.min(rows, cols);
 				} else {
@@ -15514,9 +15628,9 @@ var cytoscape;
 						cols = val;
 					}
 				}
-			}
+			};
 			
-			function large(val){
+			var large = function(val){
 				if( val == undefined ){
 					return Math.max(rows, cols);
 				} else {
@@ -15527,7 +15641,7 @@ var cytoscape;
 						cols = val;
 					}
 				}
-			}
+			};
 			
 			// if rows or columns were set in options, use those values
 			if( options.rows != null && options.columns != null ){
@@ -15572,27 +15686,36 @@ var cytoscape;
 			
 			var cellWidth = width / cols;
 			var cellHeight = height / rows;
+
+			for( var i = 0; i < nodes.length; i++ ){
+				var node = nodes[i];
+				var w = node.outerWidth();
+				var h = node.outerHeight();
+
+				cellWidth = Math.max( cellWidth, w );
+				cellHeight = Math.max( cellHeight, h );
+			}
 			
 			var cellUsed = {}; // e.g. 'c-0-2' => true
 			
-			function used(row, col){
+			var used = function(row, col){
 				return cellUsed['c-' + row + '-' + col] ? true : false;
-			}
+			};
 			
-			function use(row, col){
+			var use = function(row, col){
 				cellUsed['c-' + row + '-' + col] = true;
-			}
+			};
 
 			// to keep track of current cell position
 			var row = 0;
 			var col = 0;
-			function moveToNextCell(){
+			var moveToNextCell = function(){
 				col++;
 				if( col >= cols ){
 					col = 0;
 					row++;
 				}
-			}
+			};
 
 			// get a cache of all the manual positions
 			var id2manPos = {};
@@ -15677,7 +15800,7 @@ var cytoscape;
 	
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		fit: true, // whether to fit to viewport
@@ -15762,7 +15885,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
 	
 	var defaults = {
 		liveUpdate: true, // whether to show the layout as it's running
@@ -16076,7 +16199,7 @@ var cytoscape;
 	
 })(cytoscape);
 
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph
@@ -16183,7 +16306,7 @@ var cytoscape;
     
 })( cytoscape );
 
-;(function($$){
+;(function($$){ "use strict";
     
     var defaults = {
         fit: true, // whether to fit the viewport to the graph
@@ -16310,7 +16433,7 @@ var cytoscape;
         }
 
         // assign the nodes a depth and index
-        function assignDepthsToEles(){
+        var assignDepthsToEles = function(){
             for( var i = 0; i < depths.length; i++ ){
                 var eles = depths[i];
 
@@ -16323,13 +16446,13 @@ var cytoscape;
                     };
                 }
             }
-        }
+        };
         assignDepthsToEles();
 
          // make maximal if so set by adjusting depths
         for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
 
-            function intersectsDepth( node ){ // returns true if has edges pointing in from a higher depth
+            var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
                 var edges = node.connectedEdges('[target = "' + node.id() + '"]');
                 var thisInfo = node._private.scratch.BreadthFirstLayout;
                 var highestDepthOfOther = 0;
@@ -16346,7 +16469,7 @@ var cytoscape;
                 }
 
                 return highestOther;
-            }
+            };
 
             var nDepths = depths.length;
             var elesToMove = [];
@@ -16400,7 +16523,7 @@ var cytoscape;
 
         // get the weighted percent for an element based on its connectivity to other levels
         var cachedWeightedPercent = {};
-        function getWeightedPercent( ele ){
+        var getWeightedPercent = function( ele ){
             if( cachedWeightedPercent[ ele.id() ] ){
                 return cachedWeightedPercent[ ele.id() ];
             }
@@ -16432,7 +16555,7 @@ var cytoscape;
 
             cachedWeightedPercent[ ele.id() ] = percent;
             return percent;
-        }
+        };
 
         // rearrange the indices in each depth level based on connectivity
         for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
@@ -16515,7 +16638,9 @@ var cytoscape;
   Modifications tracked on Github.
 */
 
-;(function($$) {
+;(function($$) { "use strict";
+
+	var DEBUG;
 
 	/**
 	 * @brief :  default layout options
@@ -16675,7 +16800,7 @@ var cytoscape;
 	 * @arg cy    : cytoscape.js object
 	 * @return    : layoutInfo object initialized
 	 */
-	function createLayoutInfo(cy, options) {
+	var createLayoutInfo = function(cy, options) {
 		var layoutInfo   = {
 			layoutNodes  : [], 
 			idToIndex    : {},
@@ -16826,7 +16951,7 @@ var cytoscape;
 
 		// Finally, return layoutInfo object
 		return layoutInfo;
-	}
+	};
 
 	
 	/**
@@ -16840,7 +16965,7 @@ var cytoscape;
 	 * @arg layoutInfo: layoutInfo object
 	 *
 	 */
-	function findLCA(node1, node2, layoutInfo) {
+	var findLCA = function(node1, node2, layoutInfo) {
 		// Find their common ancester, starting from the root graph
 		var res = findLCA_aux(node1, node2, 0, layoutInfo);
 		if (2 > res.count) {
@@ -16850,7 +16975,7 @@ var cytoscape;
 		} else {
 			return res.graph;
 		}
-	}
+	};
 
 
 	/**
@@ -16867,7 +16992,7 @@ var cytoscape;
 	 *                   Y is the graph index of the lowest graph containing 
 	 *                   all X nodes
 	 */
-	function findLCA_aux(node1, node2, graphIx, layoutInfo) {
+	var findLCA_aux = function(node1, node2, graphIx, layoutInfo) {
 		var graph = layoutInfo.graphSet[graphIx];
 		// If both nodes belongs to graphIx
 		if (-1 < $.inArray(node1, graph) && -1 < $.inArray(node2, graph)) {
@@ -16905,14 +17030,14 @@ var cytoscape;
 		}
 		
 		return {count:c, graph:graphIx};
-	}
+	};
 
 
 	/**
 	 * @brief: printsLayoutInfo into js console
 	 *         Only used for debbuging 
 	 */
-	function printLayoutInfo(layoutInfo) {
+	var printLayoutInfo = function(layoutInfo) {
 		if (!DEBUG) {
 			return;
 		}
@@ -16968,13 +17093,13 @@ var cytoscape;
 		console.debug(s);
 
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Randomizes the position of all nodes
 	 */
-	function randomizePositions(layoutInfo, cy) {
+	var randomizePositions = function(layoutInfo, cy) {
 		var container = cy.container();
 		var width     = container.clientWidth;
 		var height    = container.clientHeight;
@@ -16996,7 +17121,7 @@ var cytoscape;
 	 * @arg cy         : Cytoscape object
 	 * @arg options    : Layout options
 	 */
-	function refreshPositions(layoutInfo, cy, options) {
+	var refreshPositions = function(layoutInfo, cy, options) {
 		var container = cy.container();
 		var width     = container.clientWidth;
 		var height    = container.clientHeight;
@@ -17005,7 +17130,7 @@ var cytoscape;
 		logDebug(s);
 
 		cy.nodes().positions(function(i, ele) {
-			lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
+			var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 			s = "Node: " + lnode.id + ". Refreshed position: (" + 
 			lnode.positionX + ", " + lnode.positionY + ").";
 			logDebug(s);
@@ -17023,7 +17148,7 @@ var cytoscape;
 			cy.one("layoutready", options.ready);
 			cy.trigger("layoutready");
 		}
-	}
+	};
 
 
 	/**
@@ -17032,7 +17157,7 @@ var cytoscape;
 	 * @arg cy         : Cytoscape object
 	 * @arg options    : Layout options
 	 */
-	function step(layoutInfo, cy, options, step) {	
+	var step = function(layoutInfo, cy, options, step) {	
 		var s = "\n\n###############################";
 		s += "\nSTEP: " + step;
 		s += "\n###############################\n";
@@ -17048,13 +17173,13 @@ var cytoscape;
 		propagateForces(layoutInfo, cy, options);
 		// Update positions based on calculated forces
 		updatePositions(layoutInfo, cy, options);
-	}
+	};
 
 	
 	/**
 	 * @brief : Computes the node repulsion forces
 	 */
-	function calculateNodeForces(layoutInfo, cy, options) {
+	var calculateNodeForces = function(layoutInfo, cy, options) {
 		// Go through each of the graphs in graphSet
 		// Nodes only repel each other if they belong to the same graph
 		var s = "calculateNodeForces";
@@ -17076,13 +17201,13 @@ var cytoscape;
 			} 
 			}
 		} 
-	}
+	};
 
 
 	/**
 	 * @brief : Compute the node repulsion forces between a pair of nodes
 	 */
-	function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
+	var nodeRepulsion = function(node1, node2, layoutInfo, cy, options) {
 		var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
 
 		// Get direction of line connecting both node centers
@@ -17096,7 +17221,7 @@ var cytoscape;
 			return; // TODO
 		}
 
-		overlap = nodesOverlap(node1, node2, directionX, directionY);
+		var overlap = nodesOverlap(node1, node2, directionX, directionY);
 		
 		if (overlap > 0) {
 			s += "\nNodes DO overlap.";
@@ -17143,14 +17268,14 @@ var cytoscape;
 		logDebug(s);
 
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Finds the point in which an edge (direction dX, dY) intersects 
 	 *          the rectangular bounding box of it's source/target node 
 	 */
-	function findClippingPoint(node, dX, dY) {
+	var findClippingPoint = function(node, dX, dY) {
 
 		// Shorcuts
 		var X = node.positionX;
@@ -17229,14 +17354,14 @@ var cytoscape;
 		s += "\nClipping point found at " + res.x + ", " + res.y;
 		logDebug(s);
 		return res;
-	}
+	};
 
 
 	/**
 	 * @brief  : Determines whether two nodes overlap or not
 	 * @return : Amount of overlapping (0 => no overlap)
 	 */
-	function nodesOverlap(node1, node2, dX, dY) {
+	var nodesOverlap = function(node1, node2, dX, dY) {
 
 		if (dX > 0) {
 			var overlapX = node1.maxX - node2.minX;
@@ -17255,13 +17380,13 @@ var cytoscape;
 		} else {
 			return 0;
 		}
-	}
+	};
 		
 	
 	/**
 	 * @brief : Calculates all edge forces
 	 */
-	function calculateEdgeForces(layoutInfo, cy, options) {
+	var calculateEdgeForces = function(layoutInfo, cy, options) {
 		// Iterate over all edges
 		for (var i = 0; i < layoutInfo.edgeSize; i++) {
 			// Get edge, source & target nodes
@@ -17310,13 +17435,13 @@ var cytoscape;
 			s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
 			logDebug(s);
 		}
-	}
+	};
 
 
 	/**
 	 * @brief : Computes gravity forces for all nodes
 	 */
-	function calculateGravityForces(layoutInfo, cy, options) {
+	var calculateGravityForces = function(layoutInfo, cy, options) {
 		var s = "calculateGravityForces";
 		logDebug(s);
 		for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
@@ -17360,7 +17485,7 @@ var cytoscape;
 			logDebug(s);
 			}
 		}
-	}
+	};
 
 
 	/**
@@ -17370,7 +17495,7 @@ var cytoscape;
 	 * @arg cy         : cytoscape Object
 	 * @arg options    : Layout options
 	 */
-	function propagateForces(layoutInfo, cy, options) {	
+	var propagateForces = function(layoutInfo, cy, options) {	
 		// Inline implementation of a queue, used for traversing the graph in BFS order
 		var queue = [];
 		var start = 0;   // Points to the start the queue
@@ -17415,14 +17540,14 @@ var cytoscape;
 			}
 			
 		}
-	}
+	};
 
 
 	/**
 	 * @brief : Updates the layout model positions, based on 
 	 *          the accumulated forces
 	 */
-	function updatePositions(layoutInfo, cy, options) {
+	var updatePositions = function(layoutInfo, cy, options) {
 		var s = "Updating positions";
 		logDebug(s);
 
@@ -17479,7 +17604,7 @@ var cytoscape;
 			logDebug(s);
 			}
 		}	
-	}
+	};
 
 
 	/**
@@ -17487,7 +17612,7 @@ var cytoscape;
 	 *          greater (in modulo) than max. 
 	 8          Preserves force direction. 
 	 */
-	function limitForce(forceX, forceY, max) {
+	var limitForce = function(forceX, forceY, max) {
 		var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
 		var force = Math.sqrt(forceX * forceX + forceY * forceY);
 
@@ -17508,14 +17633,14 @@ var cytoscape;
 		logDebug(s);
 
 		return res;
-	}
+	};
 
 
 	/**
 	 * @brief : Function used for keeping track of compound node 
 	 *          sizes, since they should bound all their subnodes.
 	 */
-	function updateAncestryBoundaries(node, layoutInfo) {
+	var updateAncestryBoundaries = function(node, layoutInfo) {
 		var s = "Propagating new position/size of node " + node.id;
 		var parentId = node.parentId;
 		if (undefined == parentId) {
@@ -17566,17 +17691,17 @@ var cytoscape;
 		s += ". No changes in boundaries/position of parent node " + p.id;  
 		logDebug(s);
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Logs a debug message in JS console, if DEBUG is ON
 	 */
-	function logDebug(text) {
+	var logDebug = function(text) {
 		if (DEBUG) {
 			console.debug(text);
 		}
-	}
+	};
 
 
 	// register the layout

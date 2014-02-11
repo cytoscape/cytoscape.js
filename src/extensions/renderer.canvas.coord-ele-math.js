@@ -484,6 +484,9 @@
 	};
 
 	CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
+		var content = node._private.style["content"].strValue;
+		if( !content || content.match(/\s+/) ){ return; }
+
 		var textX, textY;
 		var nodeWidth = node.outerWidth();
 		var nodeHeight = node.outerHeight();
@@ -540,6 +543,9 @@
 	};
 
 	CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
+		var content = edge._private.style["content"].strValue;
+		if( !content || content.match(/\s+/) ){ return; }
+
 		var textX, textY;	
 		var edgeCenterX, edgeCenterY;
 		var rs = edge._private.rscratch;
@@ -648,15 +654,22 @@
 	CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
 		var hashTable = {}; var cy = this.data.cy;
 		var pairIds = [];
+		var bundledEdges = [];
 		
 		// create a table of edge (src, tgt) => list of edges between them
 		var pairId;
 		for (var i = 0; i < edges.length; i++){
 			var edge = edges[i];
+			var style = edge._private.style;
 
 			// ignore edges who are not to be displayed
 			// they shouldn't take up space
-			if( edge._private.style.display.value === 'none' ){
+			if( style.display.value === "none" ){
+				continue;
+			}
+
+			if( style["curve-style"].value === "bundled" ){
+				bundledEdges.push( edge );
 				continue;
 			}
 
@@ -964,7 +977,41 @@
 
 			}
 		}
-		
+			
+		for( var i = 0; i < bundledEdges.length; i++ ){
+			var edge = bundledEdges[i];
+			var rscratch = edge._private.rscratch;
+
+			if( !rscratch.bundled ){
+				var src = edge.source()[0];
+				var srcPos = src.position();
+				var srcW = src.width();
+				var srcH = src.height();
+				var srcR = Math.min( srcW, srcH ) * 0.4;
+				var angle = Math.random() * 2 * Math.PI;
+
+				rscratch.source = {
+					x: Math.round( srcR * Math.cos(angle) ),
+					y: Math.round( srcR * Math.sin(angle) )
+				};
+
+				var tgt = edge.target()[0];
+				var tgtPos = tgt.position();
+				var tgtW = tgt.width();
+				var tgtH = tgt.height();
+				var tgtR = Math.min( tgtW, tgtH ) * 0.4;
+				var angle = Math.random() * 2 * Math.PI;
+
+				rscratch.target = {
+					x: Math.round( tgtR * Math.cos(angle) ),
+					y: Math.round( tgtR * Math.sin(angle) )
+				};
+
+				rscratch.edgeType = "bundled";
+				rscratch.bundled = true;
+			}	
+		}
+
 		return hashTable;
 	}
 

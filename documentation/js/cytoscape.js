@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js github-snapshot-2014.02.07-12.41.40.
+ * This file is part of cytoscape.js 2.1.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -5954,7 +5954,13 @@ var cytoscape;
 			json.scratch = cy.scratch();
 			json.zoomingEnabled = cy._private.zoomingEnabled;
 			json.userZoomingEnabled = cy._private.userZoomingEnabled;
+			json.zoom = cy._private.zoom;
+			json.minZoom = cy._private.minZoom;
+			json.maxZoom = cy._private.maxZoom;
 			json.panningEnabled = cy._private.panningEnabled;
+			json.userPanningEnabled = cy._private.userPanningEnabled;
+			json.pan = cy._private.pan;
+			json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;
 			json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
@@ -7826,7 +7832,7 @@ var cytoscape;
 
 		hasClass: function(className){
 			var ele = this[0];
-			return ele != null && ele._private.classes[className];
+			return ( ele != null && ele._private.classes[className] ) ? true : false;
 		},
 
 		toggleClass: function(classesStr, toggle){
@@ -8691,6 +8697,10 @@ var cytoscape;
 			
 			if( start < 0 ){
 				start = thisSize + start;
+			}
+
+			if( end < 0 ){
+				end = thisSize + end;
 			}
 			
 			for(var i = start; i >= 0 && i < end && i < thisSize; i++){
@@ -16630,6 +16640,8 @@ var cytoscape;
 
 ;(function($$) { "use strict";
 
+	var DEBUG;
+
 	/**
 	 * @brief :  default layout options
 	 */
@@ -16788,7 +16800,7 @@ var cytoscape;
 	 * @arg cy    : cytoscape.js object
 	 * @return    : layoutInfo object initialized
 	 */
-	function createLayoutInfo(cy, options) {
+	var createLayoutInfo = function(cy, options) {
 		var layoutInfo   = {
 			layoutNodes  : [], 
 			idToIndex    : {},
@@ -16939,7 +16951,7 @@ var cytoscape;
 
 		// Finally, return layoutInfo object
 		return layoutInfo;
-	}
+	};
 
 	
 	/**
@@ -16953,7 +16965,7 @@ var cytoscape;
 	 * @arg layoutInfo: layoutInfo object
 	 *
 	 */
-	function findLCA(node1, node2, layoutInfo) {
+	var findLCA = function(node1, node2, layoutInfo) {
 		// Find their common ancester, starting from the root graph
 		var res = findLCA_aux(node1, node2, 0, layoutInfo);
 		if (2 > res.count) {
@@ -16963,7 +16975,7 @@ var cytoscape;
 		} else {
 			return res.graph;
 		}
-	}
+	};
 
 
 	/**
@@ -16980,7 +16992,7 @@ var cytoscape;
 	 *                   Y is the graph index of the lowest graph containing 
 	 *                   all X nodes
 	 */
-	function findLCA_aux(node1, node2, graphIx, layoutInfo) {
+	var findLCA_aux = function(node1, node2, graphIx, layoutInfo) {
 		var graph = layoutInfo.graphSet[graphIx];
 		// If both nodes belongs to graphIx
 		if (-1 < $.inArray(node1, graph) && -1 < $.inArray(node2, graph)) {
@@ -17018,14 +17030,14 @@ var cytoscape;
 		}
 		
 		return {count:c, graph:graphIx};
-	}
+	};
 
 
 	/**
 	 * @brief: printsLayoutInfo into js console
 	 *         Only used for debbuging 
 	 */
-	function printLayoutInfo(layoutInfo) {
+	var printLayoutInfo = function(layoutInfo) {
 		if (!DEBUG) {
 			return;
 		}
@@ -17081,13 +17093,13 @@ var cytoscape;
 		console.debug(s);
 
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Randomizes the position of all nodes
 	 */
-	function randomizePositions(layoutInfo, cy) {
+	var randomizePositions = function(layoutInfo, cy) {
 		var container = cy.container();
 		var width     = container.clientWidth;
 		var height    = container.clientHeight;
@@ -17109,7 +17121,7 @@ var cytoscape;
 	 * @arg cy         : Cytoscape object
 	 * @arg options    : Layout options
 	 */
-	function refreshPositions(layoutInfo, cy, options) {
+	var refreshPositions = function(layoutInfo, cy, options) {
 		var container = cy.container();
 		var width     = container.clientWidth;
 		var height    = container.clientHeight;
@@ -17118,7 +17130,7 @@ var cytoscape;
 		logDebug(s);
 
 		cy.nodes().positions(function(i, ele) {
-			lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
+			var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 			s = "Node: " + lnode.id + ". Refreshed position: (" + 
 			lnode.positionX + ", " + lnode.positionY + ").";
 			logDebug(s);
@@ -17136,7 +17148,7 @@ var cytoscape;
 			cy.one("layoutready", options.ready);
 			cy.trigger("layoutready");
 		}
-	}
+	};
 
 
 	/**
@@ -17145,7 +17157,7 @@ var cytoscape;
 	 * @arg cy         : Cytoscape object
 	 * @arg options    : Layout options
 	 */
-	function step(layoutInfo, cy, options, step) {	
+	var step = function(layoutInfo, cy, options, step) {	
 		var s = "\n\n###############################";
 		s += "\nSTEP: " + step;
 		s += "\n###############################\n";
@@ -17161,13 +17173,13 @@ var cytoscape;
 		propagateForces(layoutInfo, cy, options);
 		// Update positions based on calculated forces
 		updatePositions(layoutInfo, cy, options);
-	}
+	};
 
 	
 	/**
 	 * @brief : Computes the node repulsion forces
 	 */
-	function calculateNodeForces(layoutInfo, cy, options) {
+	var calculateNodeForces = function(layoutInfo, cy, options) {
 		// Go through each of the graphs in graphSet
 		// Nodes only repel each other if they belong to the same graph
 		var s = "calculateNodeForces";
@@ -17189,13 +17201,13 @@ var cytoscape;
 			} 
 			}
 		} 
-	}
+	};
 
 
 	/**
 	 * @brief : Compute the node repulsion forces between a pair of nodes
 	 */
-	function nodeRepulsion(node1, node2, layoutInfo, cy, options) {
+	var nodeRepulsion = function(node1, node2, layoutInfo, cy, options) {
 		var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
 
 		// Get direction of line connecting both node centers
@@ -17209,7 +17221,7 @@ var cytoscape;
 			return; // TODO
 		}
 
-		overlap = nodesOverlap(node1, node2, directionX, directionY);
+		var overlap = nodesOverlap(node1, node2, directionX, directionY);
 		
 		if (overlap > 0) {
 			s += "\nNodes DO overlap.";
@@ -17256,14 +17268,14 @@ var cytoscape;
 		logDebug(s);
 
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Finds the point in which an edge (direction dX, dY) intersects 
 	 *          the rectangular bounding box of it's source/target node 
 	 */
-	function findClippingPoint(node, dX, dY) {
+	var findClippingPoint = function(node, dX, dY) {
 
 		// Shorcuts
 		var X = node.positionX;
@@ -17342,14 +17354,14 @@ var cytoscape;
 		s += "\nClipping point found at " + res.x + ", " + res.y;
 		logDebug(s);
 		return res;
-	}
+	};
 
 
 	/**
 	 * @brief  : Determines whether two nodes overlap or not
 	 * @return : Amount of overlapping (0 => no overlap)
 	 */
-	function nodesOverlap(node1, node2, dX, dY) {
+	var nodesOverlap = function(node1, node2, dX, dY) {
 
 		if (dX > 0) {
 			var overlapX = node1.maxX - node2.minX;
@@ -17368,13 +17380,13 @@ var cytoscape;
 		} else {
 			return 0;
 		}
-	}
+	};
 		
 	
 	/**
 	 * @brief : Calculates all edge forces
 	 */
-	function calculateEdgeForces(layoutInfo, cy, options) {
+	var calculateEdgeForces = function(layoutInfo, cy, options) {
 		// Iterate over all edges
 		for (var i = 0; i < layoutInfo.edgeSize; i++) {
 			// Get edge, source & target nodes
@@ -17423,13 +17435,13 @@ var cytoscape;
 			s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
 			logDebug(s);
 		}
-	}
+	};
 
 
 	/**
 	 * @brief : Computes gravity forces for all nodes
 	 */
-	function calculateGravityForces(layoutInfo, cy, options) {
+	var calculateGravityForces = function(layoutInfo, cy, options) {
 		var s = "calculateGravityForces";
 		logDebug(s);
 		for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
@@ -17473,7 +17485,7 @@ var cytoscape;
 			logDebug(s);
 			}
 		}
-	}
+	};
 
 
 	/**
@@ -17483,7 +17495,7 @@ var cytoscape;
 	 * @arg cy         : cytoscape Object
 	 * @arg options    : Layout options
 	 */
-	function propagateForces(layoutInfo, cy, options) {	
+	var propagateForces = function(layoutInfo, cy, options) {	
 		// Inline implementation of a queue, used for traversing the graph in BFS order
 		var queue = [];
 		var start = 0;   // Points to the start the queue
@@ -17528,14 +17540,14 @@ var cytoscape;
 			}
 			
 		}
-	}
+	};
 
 
 	/**
 	 * @brief : Updates the layout model positions, based on 
 	 *          the accumulated forces
 	 */
-	function updatePositions(layoutInfo, cy, options) {
+	var updatePositions = function(layoutInfo, cy, options) {
 		var s = "Updating positions";
 		logDebug(s);
 
@@ -17592,7 +17604,7 @@ var cytoscape;
 			logDebug(s);
 			}
 		}	
-	}
+	};
 
 
 	/**
@@ -17600,7 +17612,7 @@ var cytoscape;
 	 *          greater (in modulo) than max. 
 	 8          Preserves force direction. 
 	 */
-	function limitForce(forceX, forceY, max) {
+	var limitForce = function(forceX, forceY, max) {
 		var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
 		var force = Math.sqrt(forceX * forceX + forceY * forceY);
 
@@ -17621,14 +17633,14 @@ var cytoscape;
 		logDebug(s);
 
 		return res;
-	}
+	};
 
 
 	/**
 	 * @brief : Function used for keeping track of compound node 
 	 *          sizes, since they should bound all their subnodes.
 	 */
-	function updateAncestryBoundaries(node, layoutInfo) {
+	var updateAncestryBoundaries = function(node, layoutInfo) {
 		var s = "Propagating new position/size of node " + node.id;
 		var parentId = node.parentId;
 		if (undefined == parentId) {
@@ -17679,17 +17691,17 @@ var cytoscape;
 		s += ". No changes in boundaries/position of parent node " + p.id;  
 		logDebug(s);
 		return;
-	}
+	};
 
 
 	/**
 	 * @brief : Logs a debug message in JS console, if DEBUG is ON
 	 */
-	function logDebug(text) {
+	var logDebug = function(text) {
 		if (DEBUG) {
 			console.debug(text);
 		}
-	}
+	};
 
 
 	// register the layout

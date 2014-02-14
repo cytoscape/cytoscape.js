@@ -203,7 +203,7 @@
 
 				if( !alreadyInPool ){
 					index = elements.length;
-					elements.push( ele )
+					elements.push( ele );
 					id2index[ id ] = index;
 					ele._private.index = index;
 				}

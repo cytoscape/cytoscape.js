@@ -161,11 +161,7 @@
 		},
 
 		registered: function(){
-			if( this._private ){
-				return true;
-			} else {
-				return false;
-			}
+			return !! this._private;
 		},
 
 		registeredId: function(){

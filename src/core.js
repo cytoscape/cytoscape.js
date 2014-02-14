@@ -5,7 +5,7 @@
 	var defaults = {
 		hideEdgesOnViewport: false
 	};
-	
+
 	var origDefaults = $$.util.copy( defaults );
 
 	$$.defaults = function( opts ){
@@ -18,7 +18,7 @@
 			$$.Core.prototype[ name ] = fn;
 		}
 	};
-	
+
 	$$.Core = function( opts ){
 		if( !(this instanceof $$.Core) ){
 			return new $$.Core(opts);
@@ -29,12 +29,12 @@
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg && reg.cy ){ 
+		if( reg && reg.cy ){
 			reg.domElement.innerHTML = '';
 			reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
-		} 
+		}
 
 		reg = $$.registerInstance( cy, container );
 		var readies = reg.readies;
@@ -42,14 +42,14 @@
 		var options = opts;
 		options.layout = $$.util.extend( { name: window && container ? "grid" : "null" }, options.layout );
 		options.renderer = $$.util.extend( { name: window && container ? "canvas" : "null" }, options.renderer );
-		
+
 		// TODO determine whether we need a check like this even though we allow running headless now
-		// 
+		//
 		// if( !$$.is.domElement(options.container) ){
-		// 	$$.util.error("Cytoscape.js must be called on an element");
-		// 	return;
+		//	$$.util.error("Cytoscape.js must be called on an element");
+		//	return;
 		// }
-		
+
 		var _p = this._private = {
 			ready: false, // whether ready has been triggered
 			initrender: false, // has initrender has been triggered
@@ -143,13 +143,13 @@
 				cy.bind("ready", fn);
 			}
 			reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
-			
+
 			cy.trigger("ready");
 		}, options.done);
 	};
 
 	$$.corefn = $$.Core.prototype; // short alias
-	
+
 
 	$$.fn.core({
 		ready: function(){
@@ -243,19 +243,19 @@
 		options: function(){
 			return $$.util.copy( this._private.options );
 		},
-		
+
 		json: function(params){
 			var json = {};
 			var cy = this;
-			
+
 			json.elements = {};
 			cy.elements().each(function(i, ele){
 				var group = ele.group();
-				
+
 				if( !json.elements[group] ){
 					json.elements[group] = [];
 				}
-				
+
 				json.elements[group].push( ele.json() );
 			});
 
@@ -273,10 +273,10 @@
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;
 			json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
-			
+
 			return json;
 		}
-		
-	});	
-	
+
+	});
+
 })( cytoscape, typeof window === 'undefined' ? null : window );

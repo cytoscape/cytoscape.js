@@ -383,6 +383,8 @@
 			{ name: "text-halign", type: t.halign },
 			{ name: "color", type: t.color },
 			{ name: "content", type: t.text },
+			{ name: "max-content-width", type: t.size },
+			{ name: "max-content-height", type: t.size },
 			{ name: "text-outline-color", type: t.color },
 			{ name: "text-outline-width", type: t.size },
 			{ name: "text-outline-opacity", type: t.zeroOneNumber },

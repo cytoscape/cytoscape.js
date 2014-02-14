@@ -108,8 +108,8 @@ $(function(){
 	};
 	
 	var cliques = 3;
-	var numNodes = 200;
-	var numEdges = 1000;
+	var numNodes = 20;
+	var numEdges = 100;
 	
 	function randNodeId( clique ){
 		var min = numNodes * clique / cliques;

@@ -144,6 +144,26 @@
 							rs.endY))))
 					 { addCurrentEdge = true; }
 			
+			} else if (rs.edgeType == "bundled") {
+				var tgt = edges[i].target()[0];
+				var tgtPos = tgt.position();
+				var src = edges[i].source()[0];
+				var srcPos = src.position();
+
+				var startX = srcPos.x + rs.source.x;
+				var startY = srcPos.y + rs.source.y;
+				var endX = tgtPos.x + rs.target.x;
+				var endY = tgtPos.y + rs.target.y;
+				if ($$.math.inLineVicinity(x, y, startX, startY, endX, endY, edges[i]._private.style["width"].pxValue * 2)
+						&&
+					Math.pow(edges[i]._private.style["width"].pxValue / 2, 2) + edgeThreshold >
+					$$.math.sqDistanceToFiniteLine(x, y,
+						startX,
+						startY,
+						endX,
+						endY))
+					{ addCurrentEdge = true; }
+			
 			} else if (rs.edgeType == "straight") {
 				if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].pxValue * 2)
 						&&
@@ -528,18 +548,6 @@
 		rs.labelY = textY;
 		rstyle.labelX = textX;
 		rstyle.labelY = textY;
-
-		var context = this.data.bufferCanvases[0].getContext("2d");
-		var text = this.setupTextStyle( context, node );
-		//var labelWidth = context.measureText( text ).width;
-
-		var labelDims = this.calculateLabelDimensions( node, text );
-
-		rstyle.labelWidth = labelDims.width;
-		rs.labelWidth = labelDims.width;
-
-		rstyle.labelHeight = labelDims.height;
-		rs.labelHeight = labelDims.height;
 	};
 
 	CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
@@ -571,17 +579,6 @@
 		rstyle.labelX = textX;
 		rstyle.labelY = textY;
 
-		var context = this.data.bufferCanvases[0].getContext("2d");
-		var text = this.setupTextStyle( context, edge );
-		//var labelWidth = context.measureText( text ).width;
-
-		var labelDims = this.calculateLabelDimensions( edge, text );
-
-		rstyle.labelWidth = labelDims.width;
-		rs.labelWidth = labelDims.width;
-
-		rstyle.labelHeight = labelDims.height;
-		rs.labelHeight = labelDims.height;
 	};
 
 	CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){

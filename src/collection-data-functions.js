@@ -454,13 +454,12 @@
 				//////////////////////////
 
 				var style = ele._private.style;
-				var rstyle = ele._private.rstyle;
 				var label = style['content'].strValue;
 				var fontSize = style['font-size'];
 				var halign = style['text-halign'];
 				var valign = style['text-valign'];
-				var labelWidth = rstyle.labelWidth;
-				var labelHeight = rstyle.labelHeight || fontSize.pxValue;
+				var labelWidth = style['max-content-width'].pxValue;
+				var labelHeight = style['max-content-height'].pxValue;
 				var labelX = rstyle.labelX;
 				var labelY = rstyle.labelY;
 

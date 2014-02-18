@@ -1,4 +1,4 @@
-(function($$){ "use strict";
+(function($$){ 'use strict';
   
   $$.fn.core({
     notify: function( params ){

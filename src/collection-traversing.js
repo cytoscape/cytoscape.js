@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.eles({
     nodes: function(selector){
@@ -509,11 +509,11 @@
 
   $$.fn.eles({
     source: defineSourceFunction({
-      attr: "source"
+      attr: 'source'
     }),
 
     target: defineSourceFunction({
-      attr: "target"
+      attr: 'target'
     })
   });
   
@@ -541,7 +541,7 @@
     edgesWith: defineEdgesWithFunction(),
 
     edgesTo: defineEdgesWithFunction({
-      thisIs: "source"
+      thisIs: 'source'
     })
   });
   

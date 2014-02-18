@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // Collection functions that toggle a boolean value
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,28 +62,28 @@
   }
   
   defineSwitchSet({
-    field: "locked",
-    on: "lock",
-    off: "unlock"
+    field: 'locked',
+    on: 'lock',
+    off: 'unlock'
   });
   
   defineSwitchSet({
-    field: "grabbable",
-    on: "grabify",
-    off: "ungrabify"
+    field: 'grabbable',
+    on: 'grabify',
+    off: 'ungrabify'
   });
   
   defineSwitchSet({
-    field: "selected",
-    ableField: "selectable",
-    on: "select",
-    off: "unselect"
+    field: 'selected',
+    ableField: 'selectable',
+    on: 'select',
+    off: 'unselect'
   });
   
   defineSwitchSet({
-    field: "selectable",
-    on: "selectify",
-    off: "unselectify"
+    field: 'selectable',
+    on: 'selectify',
+    off: 'unselectify'
   });
   
   $$.elesfn.grabbed = function(){
@@ -94,9 +94,9 @@
   };
 
   defineSwitchSet({
-    field: "active",
-    on: "activate",
-    off: "unactivate"
+    field: 'active',
+    on: 'activate',
+    off: 'unactivate'
   });
 
   $$.elesfn.inactive = function(){

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // registered extensions to cytoscape, indexed by name
   var extensions = {};
@@ -13,8 +13,8 @@
     impl[name] = registrant;
     
     switch( type ){
-    case "core":
-    case "collection":
+    case 'core':
+    case 'collection':
       $$.fn[type]( impl );
     }
     
@@ -48,28 +48,28 @@
   }
   
   $$.extension = function(){
-    // e.g. $$.extension("renderer", "svg")
+    // e.g. $$.extension('renderer', 'svg')
     if( arguments.length == 2 ){
       return getExtension.apply(this, arguments);
     }
     
-    // e.g. $$.extension("renderer", "svg", { ... })
+    // e.g. $$.extension('renderer', 'svg', { ... })
     else if( arguments.length == 3 ){
       return setExtension.apply(this, arguments);
     }
     
-    // e.g. $$.extension("renderer", "svg", "nodeShape", "ellipse")
+    // e.g. $$.extension('renderer', 'svg', 'nodeShape', 'ellipse')
     else if( arguments.length == 4 ){
       return getModule.apply(this, arguments);
     }
     
-    // e.g. $$.extension("renderer", "svg", "nodeShape", "ellipse", { ... })
+    // e.g. $$.extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
     else if( arguments.length == 5 ){
       return setModule.apply(this, arguments);
     }
     
     else {
-      $.error("Invalid extension access syntax");
+      $.error('Invalid extension access syntax');
     }
   
   };

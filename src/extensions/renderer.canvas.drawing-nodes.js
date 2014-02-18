@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -14,7 +14,7 @@
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
-    // context.fillStyle = "orange";
+    // context.fillStyle = 'orange';
     // context.fillRect(node.position().x, node.position().y, 2, 2);
     
     nodeWidth = this.getNodeWidth(node);
@@ -30,18 +30,18 @@
         + node._private.style["background-color"].value[1] + ","
         + node._private.style["background-color"].value[2] + ","
         + (node._private.style["background-opacity"].value 
-        * node._private.style["opacity"].value * parentOpacity) + ")";
+        * node._private.style['opacity'].value * parentOpacity) + ")";
       
       // Node border color & opacity
       context.strokeStyle = "rgba(" 
         + node._private.style["border-color"].value[0] + ","
         + node._private.style["border-color"].value[1] + ","
         + node._private.style["border-color"].value[2] + ","
-        + (node._private.style["border-opacity"].value * node._private.style["opacity"].value * parentOpacity) + ")";
+        + (node._private.style["border-opacity"].value * node._private.style['opacity'].value * parentOpacity) + ")";
       
       context.lineJoin = 'miter'; // so borders are square with the node shape
       
-      //var image = this.getCachedImage("url");
+      //var image = this.getCachedImage('url');
       
       var url = node._private.style["background-image"].value[2] ||
         node._private.style["background-image"].value[1];
@@ -72,8 +72,8 @@
             node._private.position.x,
             node._private.position.y,
               nodeWidth, nodeHeight);
-            //node._private.style["width"].value,
-            //node._private.style["height"].value);
+            //node._private.style['width'].value,
+            //node._private.style['height'].value);
           
           context.stroke();
           context.fillStyle = "#555555";

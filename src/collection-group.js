@@ -1,12 +1,12 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   $$.fn.eles({
     isNode: function(){
-      return this.group() === "nodes";
+      return this.group() === 'nodes';
     },
 
     isEdge: function(){
-      return this.group() === "edges";
+      return this.group() === 'edges';
     },
 
     isLoop: function(){

@@ -1,4 +1,4 @@
-;(function( $$ ){ "use strict";
+;(function( $$ ){ 'use strict';
 
   $$.fn.eles({
     animated: function(){
@@ -44,10 +44,10 @@
       }
       
       switch( params.duration ){
-      case "slow":
+      case 'slow':
         params.duration = 600;
         break;
-      case "fast":
+      case 'fast':
         params.duration = 200;
         break;
       }
@@ -125,7 +125,7 @@
       // we have to notify (the animation loop doesn't do it for us on `stop`)
       this.cy().notify({
         collection: this,
-        type: "draw"
+        type: 'draw'
       });
       
       return this;

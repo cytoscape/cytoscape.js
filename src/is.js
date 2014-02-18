@@ -1,10 +1,10 @@
 // type testing utility functions
 
-;(function($$, window){ "use strict";
+;(function($$, window){ 'use strict';
   
   $$.is = {
     string: function(obj){
-      return obj != null && typeof obj == typeof "";
+      return obj != null && typeof obj == typeof '';
     },
     
     fn: function(obj){
@@ -28,7 +28,7 @@
     },
     
     color: function(obj){
-      return obj != null && typeof obj === typeof "" && $.Color(obj).toString() !== "";
+      return obj != null && typeof obj === typeof '' && $.Color(obj).toString() !== '';
     },
     
     bool: function(obj){
@@ -67,7 +67,7 @@
       if( !obj ){ // null is empty
         return true; 
       } else if( $$.is.string(obj) ){
-        if( obj === "" || obj.match(/^\s+$/) ){
+        if( obj === '' || obj.match(/^\s+$/) ){
           return true; // empty string is empty
         }
       }
@@ -76,7 +76,7 @@
     },
     
     nonemptyString: function(obj){
-      if( obj && $$.is.string(obj) && obj !== "" && !obj.match(/^\s+$/) ){
+      if( obj && $$.is.string(obj) && obj !== '' && !obj.match(/^\s+$/) ){
         return true;
       }
 

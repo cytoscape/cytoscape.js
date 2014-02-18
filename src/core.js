@@ -1,4 +1,4 @@
-;(function($$, window){ "use strict";
+;(function($$, window){ 'use strict';
 
   var isTouch = $$.is.touch();
 
@@ -40,8 +40,8 @@
     var readies = reg.readies;
 
     var options = opts;
-    options.layout = $$.util.extend( { name: window && container ? "grid" : "null" }, options.layout );
-    options.renderer = $$.util.extend( { name: window && container ? "canvas" : "null" }, options.renderer );
+    options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
+    options.renderer = $$.util.extend( { name: window && container ? 'canvas' : 'null' }, options.renderer );
     
     // TODO determine whether we need a check like this even though we allow running headless now
     // 
@@ -80,13 +80,13 @@
 
     // set selection type
     var selType = options.selectionType;
-    if( selType === undefined || (selType !== "additive" && selType !== "single") ){
+    if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
       // then set default
 
       if( isTouch ){
-        _p.selectionType = "additive";
+        _p.selectionType = 'additive';
       } else {
-        _p.selectionType = "single";
+        _p.selectionType = 'single';
       }
     } else {
       _p.selectionType = selType;
@@ -134,17 +134,17 @@
 
       // if a ready callback is specified as an option, the bind it
       if( $$.is.fn( options.ready ) ){
-        cy.bind("ready", options.ready);
+        cy.bind('ready', options.ready);
       }
 
       // bind all the ready handlers registered before creating this instance
       for( var i = 0; i < readies.length; i++ ){
         var fn = readies[i];
-        cy.bind("ready", fn);
+        cy.bind('ready', fn);
       }
       reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
-      cy.trigger("ready");
+      cy.trigger('ready');
     }, options.done);
   };
 

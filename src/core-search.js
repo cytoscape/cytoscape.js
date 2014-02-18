@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
 
@@ -18,7 +18,7 @@
     },
     
     nodes: function( selector ){
-      var nodes = this.$("node");
+      var nodes = this.$('node');
 
       if( selector ){
         return nodes.filter( selector );
@@ -28,7 +28,7 @@
     },
     
     edges: function( selector ){
-      var edges = this.$("edge");
+      var edges = this.$('edge');
 
       if( selector ){
         return edges.filter( selector );

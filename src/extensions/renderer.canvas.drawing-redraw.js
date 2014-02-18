@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -249,7 +249,7 @@
 
       // console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
       if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
-        // console.log("redrawing node layer");
+        // console.log('redrawing node layer');
         
         var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
 
@@ -274,7 +274,7 @@
       }
       
       if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
-        // console.log("redrawing selection box");
+        // console.log('redrawing selection box');
         
         var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
         

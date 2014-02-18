@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -27,12 +27,12 @@
     var sourcePos = source.position();
     
     if ( 
-         edge._private.style["visibility"].value != "visible"
-      || edge._private.style["display"].value != "element"
-      || startNode._private.style["visibility"].value != "visible"
-      || startNode._private.style["display"].value != "element"
-      || endNode._private.style["visibility"].value != "visible"
-      || endNode._private.style["display"].value != "element"
+         edge._private.style['visibility'].value != 'visible'
+      || edge._private.style['display'].value != 'element'
+      || startNode._private.style['visibility'].value != 'visible'
+      || startNode._private.style['display'].value != 'element'
+      || endNode._private.style['visibility'].value != 'visible'
+      || endNode._private.style['display'].value != 'element'
     ){
       return;
     }
@@ -44,10 +44,10 @@
     // Edge color & opacity
     if( drawOverlayInstead ){
       context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
-      context.lineCap = "round";
+      context.lineCap = 'round';
 
-      if( edge._private.rscratch.edgeType == "self"){
-        context.lineCap = "butt";
+      if( edge._private.rscratch.edgeType == 'self'){
+        context.lineCap = 'butt';
       }
 
     } else {
@@ -58,21 +58,21 @@
         + edge._private.style.opacity.value + ")";
 
       
-      context.lineCap = "butt"; 
+      context.lineCap = 'butt'; 
     }
 
     // Edge line width
-    if (edge._private.style["width"].pxValue <= 0) {
+    if (edge._private.style['width'].pxValue <= 0) {
       return;
     }
     
-    var edgeWidth = edge._private.style["width"].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-    var lineStyle = drawOverlayInstead ? "solid" : edge._private.style["line-style"].value;
+    var edgeWidth = edge._private.style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+    var lineStyle = drawOverlayInstead ? 'solid' : edge._private.style["line-style"].value;
     context.lineWidth = edgeWidth;
     
     this.findEndpoints(edge);
     
-    if( rs.edgeType == "bundled" ){
+    if( rs.edgeType == 'bundled' ){
       this.drawStyledEdge(
         edge, 
         context, 
@@ -80,7 +80,7 @@
         lineStyle,
         edgeWidth
       );
-    } else if (rs.edgeType == "self") {
+    } else if (rs.edgeType == 'self') {
           
       var details = edge._private.rscratch;
       this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
@@ -102,7 +102,7 @@
       //   context.fillRect(pt.x, pt.y, 2, 2);
       // }
       
-    } else if (rs.edgeType == "straight") {
+    } else if (rs.edgeType == 'straight') {
       
       var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
       var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
@@ -225,9 +225,9 @@
     // Adjusted edge width for dotted
 //    width = Math.max(width * 1.6, 3.4) * zoom;
 
-    //    console.log("w", width);
+    //    console.log('w', width);
 
-    if (type == "solid") {
+    if (type == 'solid') {
       
       context.beginPath();
       context.moveTo(pts[0], pts[1]);
@@ -239,7 +239,7 @@
 //      context.closePath();
       context.stroke();
       
-    } else if (type == "dotted") {
+    } else if (type == 'dotted') {
       
       var pt;
       if (pts.length == 3 * 2) {
@@ -290,7 +290,7 @@
       
       //context.restore();
       
-    } else if (type == "dashed") {
+    } else if (type == 'dashed') {
       var pt;
       if (pts.length == 3 * 2) {
         pt = _genPoints(pts, 14, true);
@@ -395,7 +395,7 @@
       
       //context.restore();
     } else {
-      this.drawStyledEdge(edge, context, pts, "solid", width);
+      this.drawStyledEdge(edge, context, pts, 'solid', width);
     }
     
   };
@@ -419,7 +419,7 @@
 
       context.globalCompositeOperation = "destination-out";
     
-      context.lineWidth = edge._private.style["width"].pxValue;
+      context.lineWidth = edge._private.style['width'].pxValue;
       
       context.fillStyle = 'white';
 
@@ -455,7 +455,7 @@
 
       context.globalCompositeOperation = "destination-out";
 
-      context.lineWidth = edge._private.style["width"].pxValue;
+      context.lineWidth = edge._private.style['width'].pxValue;
 
       context.fillStyle = 'white';
 

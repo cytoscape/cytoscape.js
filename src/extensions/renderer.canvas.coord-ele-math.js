@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -11,7 +11,7 @@
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
     
-//    console.log("calce");
+//    console.log('calce');
     
     // By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
     var x = pageX - offsetLeft; 
@@ -29,20 +29,20 @@
         
     while (n != null) {
       var style = window.getComputedStyle(n); 
-      if (typeof(n.offsetLeft) === "number") {
-        var position = style.getPropertyValue("position").toLowerCase();
+      if (typeof(n.offsetLeft) === 'number') {
+        var position = style.getPropertyValue('position').toLowerCase();
         var borderLeft = parseFloat( style.getPropertyValue("border-left-width") );
         var borderTop = parseFloat( style.getPropertyValue("border-top-width") );
 
         offsetLeft += n.offsetLeft;
         offsetTop += n.offsetTop;
 
-        if( position !== "static" || n === container ){
+        if( position !== 'static' || n === container ){
           offsetLeft += borderLeft;
           offsetTop += borderTop;
         }
 
-        if( position === "fixed" ){
+        if( position === 'fixed' ){
           offsetLeft += window.scrollX;
           offsetTop += window.scrollY;
           
@@ -86,9 +86,9 @@
           nodes[i]._private.position.x, nodes[i]._private.position.y)) {
         
         if (visibleElementsOnly) {
-          if (nodes[i]._private.style["opacity"].value != 0
-            && nodes[i]._private.style["visibility"].value == "visible"
-            && nodes[i]._private.style["display"].value == "element") {
+          if (nodes[i]._private.style['opacity'].value != 0
+            && nodes[i]._private.style['visibility'].value == 'visible'
+            && nodes[i]._private.style['display'].value == 'element') {
             
             near.push(nodes[i]);  
           }
@@ -106,7 +106,7 @@
 
       addCurrentEdge = false;
 
-      if (rs.edgeType == "self") {
+      if (rs.edgeType == 'self') {
         if (($$.math.inBezierVicinity(x, y,
             rs.startX,
             rs.startY,
@@ -114,9 +114,9 @@
             rs.cp2ay,
             rs.selfEdgeMidX,
             rs.selfEdgeMidY,
-            Math.pow(edge._private.style["width"].pxValue/2, 2))
+            Math.pow(edge._private.style['width'].pxValue/2, 2))
               &&
-          (Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
+          (Math.pow(edges[i]._private.style['width'].pxValue/2, 2) + edgeThreshold > 
             $$.math.sqDistanceToQuadraticBezier(x, y,
               rs.startX,
               rs.startY,
@@ -132,9 +132,9 @@
             rs.cp2cy,
             rs.endX,
             rs.endY,
-            Math.pow(edges[i]._private.style["width"].pxValue/2, 2))
+            Math.pow(edges[i]._private.style['width'].pxValue/2, 2))
               &&
-          (Math.pow(edges[i]._private.style["width"].pxValue/2, 2) + edgeThreshold > 
+          (Math.pow(edges[i]._private.style['width'].pxValue/2, 2) + edgeThreshold > 
             $$.math.sqDistanceToQuadraticBezier(x, y,
               rs.selfEdgeMidX,
               rs.selfEdgeMidY,
@@ -144,7 +144,7 @@
               rs.endY))))
            { addCurrentEdge = true; }
       
-      } else if (rs.edgeType == "bundled") {
+      } else if (rs.edgeType == 'bundled') {
         var tgt = edges[i].target()[0];
         var tgtPos = tgt.position();
         var src = edges[i].source()[0];
@@ -154,9 +154,9 @@
         var startY = srcPos.y + rs.source.y;
         var endX = tgtPos.x + rs.target.x;
         var endY = tgtPos.y + rs.target.y;
-        if ($$.math.inLineVicinity(x, y, startX, startY, endX, endY, edges[i]._private.style["width"].pxValue * 2)
+        if ($$.math.inLineVicinity(x, y, startX, startY, endX, endY, edges[i]._private.style['width'].pxValue * 2)
             &&
-          Math.pow(edges[i]._private.style["width"].pxValue / 2, 2) + edgeThreshold >
+          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2) + edgeThreshold >
           $$.math.sqDistanceToFiniteLine(x, y,
             startX,
             startY,
@@ -164,10 +164,10 @@
             endY))
           { addCurrentEdge = true; }
       
-      } else if (rs.edgeType == "straight") {
-        if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style["width"].pxValue * 2)
+      } else if (rs.edgeType == 'straight') {
+        if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style['width'].pxValue * 2)
             &&
-          Math.pow(edges[i]._private.style["width"].pxValue / 2, 2) + edgeThreshold >
+          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2) + edgeThreshold >
           $$.math.sqDistanceToFiniteLine(x, y,
             rs.startX,
             rs.startY,
@@ -175,7 +175,7 @@
             rs.endY))
           { addCurrentEdge = true; }
       
-      } else if (rs.edgeType == "bezier") {
+      } else if (rs.edgeType == 'bezier') {
         if ($$.math.inBezierVicinity(x, y,
           rs.startX,
           rs.startY,
@@ -183,9 +183,9 @@
           rs.cp2y,
           rs.endX,
           rs.endY,
-          Math.pow(edges[i]._private.style["width"].pxValue / 2, 2))
+          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2))
             &&
-          (Math.pow(edges[i]._private.style["width"].pxValue / 2 , 2) + edgeThreshold >
+          (Math.pow(edges[i]._private.style['width'].pxValue / 2 , 2) + edgeThreshold >
             $$.math.sqDistanceToQuadraticBezier(x, y,
               rs.startX,
               rs.startY,
@@ -199,29 +199,29 @@
       if (!near.length || near[near.length - 1] != edges[i]) {
         if ((CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].roughCollide(x, y,
             edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-            this.getArrowWidth(edges[i]._private.style["width"].pxValue),
-            this.getArrowHeight(edges[i]._private.style["width"].pxValue),
+            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
+            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
               edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
             &&
           CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].collide(x, y,
             edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-            this.getArrowWidth(edges[i]._private.style["width"].pxValue),
-            this.getArrowHeight(edges[i]._private.style["width"].pxValue),
+            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
+            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
               edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
           ||
           (CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].roughCollide(x, y,
             edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-            this.getArrowWidth(edges[i]._private.style["width"].pxValue),
-            this.getArrowHeight(edges[i]._private.style["width"].pxValue),
+            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
+            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
               edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
             &&
           CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].collide(x, y,
             edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-            this.getArrowWidth(edges[i]._private.style["width"].pxValue),
-            this.getArrowHeight(edges[i]._private.style["width"].pxValue),
+            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
+            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
               edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
           { addCurrentEdge = true; }
@@ -235,15 +235,15 @@
           var source = data.cy.getElementById(edges[i]._private.data.source)
           var target = data.cy.getElementById(edges[i]._private.data.target)
           
-          if (edges[i]._private.style["opacity"].value != 0
-            && edges[i]._private.style["visibility"].value == "visible"
-            && edges[i]._private.style["display"].value == "element"
-            && source._private.style["opacity"].value != 0
-            && source._private.style["visibility"].value == "visible"
-            && source._private.style["display"].value == "element"
-            && target._private.style["opacity"].value != 0
-            && target._private.style["visibility"].value == "visible"
-            && target._private.style["display"].value == "element") {
+          if (edges[i]._private.style['opacity'].value != 0
+            && edges[i]._private.style['visibility'].value == 'visible'
+            && edges[i]._private.style['display'].value == 'element'
+            && source._private.style['opacity'].value != 0
+            && source._private.style['visibility'].value == 'visible'
+            && source._private.style['display'].value == 'element'
+            && target._private.style['opacity'].value != 0
+            && target._private.style['visibility'].value == 'visible'
+            && target._private.style['display'].value == 'element') {
             
             near.push(edges[i]);  
           }
@@ -258,7 +258,7 @@
     if (near.length > 0) { return near[ near.length - 1 ]; } else { return null; }
   }
 
-  // "Give me everything from this box"
+  // 'Give me everything from this box'
   CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
     var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = [];
     
@@ -272,52 +272,52 @@
     }
     
     for (var i=0;i<edges.length;i++) {
-      if (edges[i]._private.rscratch.edgeType == "self") {
+      if (edges[i]._private.rscratch.edgeType == 'self') {
         if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
             edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
             edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
+            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
               edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
               edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
+              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
                 ||
           (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
             edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
             edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
+            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
               edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
               edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue)))
+              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
           )
         { box.push(edges[i]); }
       }
       
-      if (edges[i]._private.rscratch.edgeType == "bezier" &&
+      if (edges[i]._private.rscratch.edgeType == 'bezier' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
             edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
             edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
+            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
               edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
               edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
+              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
     
-      if (edges[i]._private.rscratch.edgeType == "straight" &&
+      if (edges[i]._private.rscratch.edgeType == 'straight' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
             edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
             edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
             edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))
-              && /* console.log("test", heur) == undefined && */
+            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+              && /* console.log('test', heur) == undefined && */
             (heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
               edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style["width"].pxValue))))
+              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
       
     }
@@ -360,13 +360,13 @@
   CanvasRenderer.prototype.getNodeShape = function(node)
   {
     // TODO only allow rectangle for a compound node?
-//    if (node._private.style["width"].value == "auto" ||
-//        node._private.style["height"].value == "auto")
+//    if (node._private.style['width'].value == 'auto' ||
+//        node._private.style['height'].value == 'auto')
 //    {
-//      return "rectangle";
+//      return 'rectangle';
 //    }
 
-    var shape = node._private.style["shape"].value;
+    var shape = node._private.style['shape'].value;
 
     if( node.isParent() ){
       if( shape === 'rectangle' || shape === 'roundrectangle' ){
@@ -495,16 +495,16 @@
       });
     }
 
-    if( rs.edgeType === "self" ){
+    if( rs.edgeType === 'self' ){
       pushBezierPts( [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
       pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
-    } else if( rs.edgeType === "bezier" ){
+    } else if( rs.edgeType === 'bezier' ){
       pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
     }
   };
 
   CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
-    var content = node._private.style["content"].strValue;
+    var content = node._private.style['content'].strValue;
     if( !content || content.match(/\s+/) ){ return; }
 
     var textX, textY;
@@ -517,29 +517,29 @@
     var rstyle = node._private.rstyle;
 
     switch( textHalign ){
-      case "left":
+      case 'left':
         textX = nodePos.x - nodeWidth / 2;
         break;
 
-      case "right":
+      case 'right':
         textX = nodePos.x + nodeWidth / 2;
         break;
 
-      case "center":
+      case 'center':
       default:
         textX = nodePos.x;
     }
 
     switch( textValign ){
-      case "top":
+      case 'top':
         textY = nodePos.y - nodeHeight / 2;
         break;
 
-      case "bottom":
+      case 'bottom':
         textY = nodePos.y + nodeHeight / 2;
         break;
 
-      case "middle":
+      case 'middle':
       default:
         textY = nodePos.y;
     }
@@ -551,7 +551,7 @@
   };
 
   CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
-    var content = edge._private.style["content"].strValue;
+    var content = edge._private.style['content'].strValue;
     if( !content || content.match(/\s+/) ){ return; }
 
     var textX, textY;  
@@ -559,13 +559,13 @@
     var rs = edge._private.rscratch;
     var rstyle = edge._private.rstyle;
     
-    if (rs.edgeType == "self") {
+    if (rs.edgeType == 'self') {
       edgeCenterX = rs.selfEdgeMidX;
       edgeCenterY = rs.selfEdgeMidY;
-    } else if (rs.edgeType == "straight") {
+    } else if (rs.edgeType == 'straight') {
       edgeCenterX = (rs.startX + rs.endX) / 2;
       edgeCenterY = (rs.startY + rs.endY) / 2;
-    } else if (rs.edgeType == "bezier") {
+    } else if (rs.edgeType == 'bezier') {
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     }
@@ -584,7 +584,7 @@
   CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
     var style = ele._private.style;
     var fStyle = style["font-style"].strValue;
-    var size = style["font-size"].pxValue + "px";
+    var size = style["font-size"].pxValue + 'px';
     var family = style["font-family"].strValue;
     var variant = style["font-variant"].strValue;
     var weight = style["font-weight"].strValue;
@@ -592,7 +592,7 @@
     var div = this.labelCalcDiv;
 
     if( !div ){
-      div = this.labelCalcDiv = document.createElement("div");
+      div = this.labelCalcDiv = document.createElement('div');
       document.body.appendChild( div );
     }
 
@@ -606,11 +606,11 @@
     ds.fontWeight = weight;
 
     // forced style
-    ds.position = "absolute";
+    ds.position = 'absolute';
     ds.left = "-9999px";
     ds.top = "-9999px";
     ds.zIndex = "-1";
-    ds.visibility = "hidden";
+    ds.visibility = 'hidden';
     ds.padding = "0";
     ds.lineHeight = "1";
 
@@ -661,11 +661,11 @@
 
       // ignore edges who are not to be displayed
       // they shouldn't take up space
-      if( style.display.value === "none" ){
+      if( style.display.value === 'none' ){
         continue;
       }
 
-      if( style["curve-style"].value === "bundled" ){
+      if( style["curve-style"].value === 'bundled' ){
         bundledEdges.push( edge );
         continue;
       }
@@ -835,7 +835,7 @@
         // Self-edge
         if ( src.id() == tgt.id() ) {
             
-          rs.edgeType = "self";
+          rs.edgeType = 'self';
           
           // New -- fix for large nodes
           rs.cp2ax = srcPos.x;
@@ -851,13 +851,13 @@
         } else if (hashTable[pairId].length % 2 == 1
           && i == Math.floor(hashTable[pairId].length / 2)) {
           
-          rs.edgeType = "straight";
+          rs.edgeType = 'straight';
           
         // Bezier edge
         } else {
           var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
           
-          rs.edgeType = "bezier";
+          rs.edgeType = 'bezier';
           
           rs.cp2x = midpt.x + vectorNormInverse.x * distanceFromMidpoint;
           rs.cp2y = midpt.y + vectorNormInverse.y * distanceFromMidpoint;
@@ -881,7 +881,7 @@
         var endACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
         var closeEndACp = endACpDist < minCpADist;
 
-        if( rs.edgeType === "bezier" ){
+        if( rs.edgeType === 'bezier' ){
           var overlapping = false;
 
           if( badStart || badAStart || closeStartACp ){
@@ -1004,7 +1004,7 @@
           y: Math.round( tgtR * Math.sin(angle) )
         };
 
-        rscratch.edgeType = "bundled";
+        rscratch.edgeType = 'bundled';
         rscratch.bundled = true;
       }  
     }
@@ -1029,7 +1029,7 @@
 
     var rs = edge._private.rscratch;
     
-    if (edge._private.rscratch.edgeType == "self") {
+    if (edge._private.rscratch.edgeType == 'self') {
       
       var cp = [rs.cp2cx, rs.cp2cy];
       
@@ -1078,7 +1078,7 @@
       rs.arrowStartX = arrowStart[0];
       rs.arrowStartY = arrowStart[1];
       
-    } else if (rs.edgeType == "straight") {
+    } else if (rs.edgeType == 'straight') {
     
       intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
         target._private.position.x,
@@ -1143,7 +1143,7 @@
       rs.arrowStartX = arrowStart[0];
       rs.arrowStartY = arrowStart[1];
             
-    } else if (rs.edgeType == "bezier") {
+    } else if (rs.edgeType == 'bezier') {
       // if( window.badArrow) debugger;
       var cp = [rs.cp2x, rs.cp2y];
       

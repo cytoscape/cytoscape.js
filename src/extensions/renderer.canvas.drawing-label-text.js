@@ -1,10 +1,10 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
   // Draw edge text
   CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
-    var text = edge._private.style["content"].strValue;
+    var text = edge._private.style['content'].strValue;
 
     if( !edge.visible() || !text || text.match(/\s+/) ){
       return;
@@ -21,8 +21,8 @@
   
     // Calculate text draw position
     
-    context.textAlign = "center";
-    context.textBaseline = "middle";
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
     
     this.recalculateEdgeLabelProjection( edge );
     
@@ -32,7 +32,7 @@
 
   // Draw node text
   CanvasRenderer.prototype.drawNodeText = function(context, node) {
-    var text = node._private.style["content"].strValue;
+    var text = node._private.style['content'].strValue;
 
     if ( !node.visible() || !text || text.match(/\s+/) ) {
       return;
@@ -52,31 +52,31 @@
     var rs = node._private.rscratch;
 
     switch( textHalign ){
-      case "left":
-        context.textAlign = "right";
+      case 'left':
+        context.textAlign = 'right';
         break;
 
-      case "right":
-        context.textAlign = "left";
+      case 'right':
+        context.textAlign = 'left';
         break;
 
-      case "center":
+      case 'center':
       default:
-        context.textAlign = "center";
+        context.textAlign = 'center';
     }
 
     switch( textValign ){
-      case "top":
-        context.textBaseline = "bottom";
+      case 'top':
+        context.textBaseline = 'bottom';
         break;
 
-      case "bottom":
-        context.textBaseline = "top";
+      case 'bottom':
+        context.textBaseline = 'top';
         break;
 
-      case "center":
+      case 'center':
       default:
-        context.textBaseline = "middle";
+        context.textBaseline = 'middle';
     }
 
     this.drawText(context, node, rs.labelX, rs.labelY);
@@ -89,21 +89,21 @@
     var parentOpacity = element.effectiveOpacity();
     var style = element._private.style;
     var labelStyle = style["font-style"].strValue;
-    var labelSize = style["font-size"].pxValue + "px";
+    var labelSize = style["font-size"].pxValue + 'px';
     var labelFamily = style["font-family"].strValue;
     var labelVariant = style["font-variant"].strValue;
     var labelWeight = style["font-weight"].strValue;
     
-    context.font = labelStyle + " " + labelWeight + " "
-      + labelSize + " " + labelFamily;
+    context.font = labelStyle + ' ' + labelWeight + ' '
+      + labelSize + ' ' + labelFamily;
     
-    var text = String(style["content"].value);
+    var text = String(style['content'].value);
     var textTransform = style["text-transform"].value;
     
-    if (textTransform == "none") {
-    } else if (textTransform == "uppercase") {
+    if (textTransform == 'none') {
+    } else if (textTransform == 'uppercase') {
       text = text.toUpperCase();
-    } else if (textTransform == "lowercase") {
+    } else if (textTransform == 'lowercase') {
       text = text.toLowerCase();
     }
     
@@ -113,18 +113,18 @@
     context.lineJoin = 'round';
 
     context.fillStyle = "rgba(" 
-      + style["color"].value[0] + ","
-      + style["color"].value[1] + ","
-      + style["color"].value[2] + ","
+      + style['color'].value[0] + ","
+      + style['color'].value[1] + ","
+      + style['color'].value[2] + ","
       + (style["text-opacity"].value
-      * style["opacity"].value * parentOpacity) + ")";
+      * style['opacity'].value * parentOpacity) + ")";
     
     context.strokeStyle = "rgba(" 
       + style["text-outline-color"].value[0] + ","
       + style["text-outline-color"].value[1] + ","
       + style["text-outline-color"].value[2] + ","
       + (style["text-opacity"].value
-      * style["opacity"].value * parentOpacity) + ")";
+      * style['opacity'].value * parentOpacity) + ")";
 
     return text;
   }
@@ -144,7 +144,7 @@
         context.strokeText(text, textX, textY);
       }
 
-      context.fillText("" + text, textX, textY);
+      context.fillText('' + text, textX, textY);
     }
   };
 

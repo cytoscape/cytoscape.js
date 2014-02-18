@@ -1,6 +1,6 @@
 // type testing utility functions
 
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // list of ids with other metadata assoc'd with it
   $$.instances = [];

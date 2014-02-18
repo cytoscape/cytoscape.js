@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var defaults = {
     liveUpdate: true, // whether to show the layout as it's running
@@ -77,11 +77,11 @@
         y: Math.round( (simBB.y1 + simBB.y2)/2 )
       });
 
-      cy.one("layoutready", options.ready);
-      cy.trigger("layoutready");
+      cy.one('layoutready', options.ready);
+      cy.trigger('layoutready');
 
-      cy.one("layoutstop", options.stop);
-      cy.trigger("layoutstop");
+      cy.one('layoutstop', options.stop);
+      cy.trigger('layoutstop');
 
       return;
     }
@@ -138,15 +138,15 @@
 
         var timeToDraw = (+new Date - lastDraw) >= 16;
         if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
-          new $$.Collection(cy, movedNodes).rtrigger("position");
+          new $$.Collection(cy, movedNodes).rtrigger('position');
           lastDraw = +new Date;
         }
 
         
         if( !ready ){
           ready = true;
-          cy.one("layoutready", options.ready);
-          cy.trigger("layoutready");
+          cy.one('layoutready', options.ready);
+          cy.trigger('layoutready');
         }
       }
       
@@ -197,16 +197,16 @@
       this.scratch().arbor.p = p;
       
       switch( e.type ){
-      case "grab":
+      case 'grab':
         this.scratch().arbor.fixed = true;
         break;
-      case "dragstop":
+      case 'dragstop':
         this.scratch().arbor.fixed = false;
         this.scratch().arbor.tempMass = 1000
         break;
       }
     };
-    nodes.bind("grab drag dragstop", grabHandler);
+    nodes.bind('grab drag dragstop', grabHandler);
           
     nodes.each(function(i, node){
       if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
@@ -278,19 +278,19 @@
             cy.reset();
           }
 
-          cy.nodes().rtrigger("position");
+          cy.nodes().rtrigger('position');
         }
 
         // unbind handlers
-        nodes.unbind("grab drag dragstop", grabHandler);
+        nodes.unbind('grab drag dragstop', grabHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
           grabbableNodes.grabify();
         }
 
-        cy.one("layoutstop", options.stop);
-        cy.trigger("layoutstop");
+        cy.one('layoutstop', options.stop);
+        cy.trigger('layoutstop');
       }
     };
     
@@ -307,7 +307,7 @@
     }
   };
   
-  $$("layout", "arbor", ArborLayout);
+  $$('layout', 'arbor', ArborLayout);
   
   
 })(cytoscape);

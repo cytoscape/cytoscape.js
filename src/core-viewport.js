@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
     
@@ -66,7 +66,7 @@
         if( !this._private.panningEnabled ){
           return this;
 
-        } else if( $$.is.string( args[0] ) ){ // .pan("x")
+        } else if( $$.is.string( args[0] ) ){ // .pan('x')
           dim = args[0];
           return pan[ dim ];
 
@@ -83,11 +83,11 @@
             pan.y = y;
           }
 
-          this.trigger("pan");
+          this.trigger('pan');
         }
         break;
 
-      case 2: // .pan("x", 100)
+      case 2: // .pan('x', 100)
         if( !this._private.panningEnabled ){
           return this;
         }
@@ -95,11 +95,11 @@
         dim = args[0];
         val = args[1];
 
-        if( (dim === "x" || dim === "y") && $$.is.number(val) ){
+        if( (dim === 'x' || dim === 'y') && $$.is.number(val) ){
           pan[dim] = val;
         }
 
-        this.trigger("pan");
+        this.trigger('pan');
         break;
 
       default:
@@ -107,7 +107,7 @@
       }
 
       this.notify({ // notify the renderer that the viewport changed
-        type: "viewport"
+        type: 'viewport'
       });
 
       return this; // chaining
@@ -138,19 +138,19 @@
             pan.y += y;
           }
 
-          this.trigger("pan");
+          this.trigger('pan');
         }
         break;
 
-      case 2: // .panBy("x", 100)
+      case 2: // .panBy('x', 100)
         dim = args[0];
         val = args[1];
 
-        if( (dim === "x" || dim === "y") && $$.is.number(val) ){
+        if( (dim === 'x' || dim === 'y') && $$.is.number(val) ){
           pan[dim] += val;
         }
 
-        this.trigger("pan");
+        this.trigger('pan');
         break;
 
       default:
@@ -158,7 +158,7 @@
       }
 
       this.notify({ // notify the renderer that the viewport changed
-        type: "viewport"
+        type: 'viewport'
       });
 
       return this; // chaining
@@ -184,8 +184,8 @@
       var bb = elements.boundingBox();
       var style = this.style();
 
-      var w = parseFloat( style.containerCss("width") );
-      var h = parseFloat( style.containerCss("height") );
+      var w = parseFloat( style.containerCss('width') );
+      var h = parseFloat( style.containerCss('height') );
       var zoom;
       padding = $$.is.number(padding) ? padding : 0;
 
@@ -201,10 +201,10 @@
           y: (h - zoom*( bb.y1 + bb.y2 ))/2
         };
 
-        this.trigger("pan zoom");
+        this.trigger('pan zoom');
 
         this.notify({ // notify the renderer that the viewport changed
-          type: "viewport"
+          type: 'viewport'
         });
       }
 
@@ -288,15 +288,15 @@
         this._private.pan = pan2;
 
         var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-        this.trigger("zoom" + (posChanged ? " pan" : "") );
+        this.trigger('zoom' + (posChanged ? ' pan' : '') );
       
       } else { // just set the zoom
         this._private.zoom = zoom;
-        this.trigger("zoom");
+        this.trigger('zoom');
       }
 
       this.notify({ // notify the renderer that the viewport changed
-        type: "viewport"
+        type: 'viewport'
       });
 
       return this; // chaining
@@ -329,8 +329,8 @@
 
       var bb = elements.boundingBox();
       var style = this.style();
-      var w = parseFloat( style.containerCss("width") );
-      var h = parseFloat( style.containerCss("height") );
+      var w = parseFloat( style.containerCss('width') );
+      var h = parseFloat( style.containerCss('height') );
       var zoom = this._private.zoom;
 
       this.pan({ // now pan to middle
@@ -338,10 +338,10 @@
         y: (h - zoom*( bb.y1 + bb.y2 ))/2
       });
       
-      this.trigger("pan");
+      this.trigger('pan');
 
       this.notify({ // notify the renderer that the viewport changed
-        type: "viewport"
+        type: 'viewport'
       });
 
       return this; // chaining
@@ -359,7 +359,7 @@
       }
 
       this.notify({ // notify the renderer that the viewport changed
-        type: "viewport"
+        type: 'viewport'
       });
       
       return this; // chaining

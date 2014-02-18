@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
     
 
   $$.fn.selector = function(map, options){
@@ -92,7 +92,7 @@
       var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
       var value = string + "|" + number; // a value literal, either a string or number
       var meta = "degree|indegree|outdegree"; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
-      var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = "bar"], node.someClass
+      var separator = "\\s*,\\s*"; // queries are separated by commas; e.g. edge[foo = 'bar'], node.someClass
       var className = variable; // a class name (follows variable conventions)
       var descendant = "\\s+";
       var child = "\\s+>\\s+";
@@ -102,7 +102,7 @@
       // when a token like a variable has escaped meta characters, we need to clean the backslashes out
       // so that values get compared properly in Selector.filter()
       var cleanMetaChars = function(str){
-        return str.replace(new RegExp("\\\\(" + metaChar + ")", "g"), function(match, $1, offset, original){
+        return str.replace(new RegExp("\\\\(" + metaChar + ")", 'g'), function(match, $1, offset, original){
           return $1;
         });
       };
@@ -126,7 +126,7 @@
           query: true,
           regex: "(node|edge|\\*)",
           populate: function( group ){
-            this.group = group == "*" ? group : group + "s";
+            this.group = group == "*" ? group : group + 's';
           }
         },
         
@@ -540,8 +540,8 @@
           
           if( operator != null && value != null ){
             
-            var fieldStr = "" + params.fieldValue(field);
-            var valStr = "" + eval(value);
+            var fieldStr = '' + params.fieldValue(field);
+            var valStr = '' + eval(value);
             
             var caseInsensitive = false;
             if( operator.charAt(0) == "@" ){
@@ -571,11 +571,11 @@
               // even if we're comparing numbers
               if( caseInsensitive ){
                 // eval with lower case strings
-                var expr = "fieldStr " + operator + " valStr";
+                var expr = 'fieldStr ' + operator + ' valStr';
                 matches = eval(expr);
               } else {
                 // just eval as normal
-                var expr = params.fieldRef(field) + " " + operator + " " + value;
+                var expr = params.fieldRef(field) + ' ' + operator + ' ' + value;
                 matches = eval(expr);
               }
               
@@ -607,7 +607,7 @@
       
       // check data matches
       var allDataMatches = operandsMatch({
-        name: "data",
+        name: 'data',
         fieldValue: function(field){
           return element._private.data[field];
         },
@@ -631,7 +631,7 @@
       
       // check metadata matches
       var allMetaMatches = operandsMatch({
-        name: "meta",
+        name: 'meta',
         fieldValue: function(field){
           return element[field]();
         },
@@ -732,17 +732,17 @@
   // ith query to string
   $$.selfn.toString = $$.selfn.selector = function(){
     
-    var str = "";
+    var str = '';
     
     var clean = function(obj){
       if( $$.is.string(obj) ){
         return obj;
       } 
-      return "";
+      return '';
     };
     
     var queryToString = function(query){
-      var str = "";
+      var str = '';
 
       var group = clean(query.group);
       str += group.substring(0, group.length - 1);
@@ -777,7 +777,7 @@
       }
 
       if( query.ancestor != null ){
-        str = queryToString( query.ancestor ) + " " + str; 
+        str = queryToString( query.ancestor ) + ' ' + str; 
       }
 
       if( query.child != null ){
@@ -785,7 +785,7 @@
       }
 
       if( query.descendant != null ){
-        str += " " + queryToString( query.descendant ); 
+        str += ' ' + queryToString( query.descendant ); 
       }
 
       return str;

@@ -1,39 +1,39 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
     data: $$.define.data({
-      field: "data",
-      bindingEvent: "data",
+      field: 'data',
+      bindingEvent: 'data',
       allowBinding: true,
       allowSetting: true,
-      settingEvent: "data",
+      settingEvent: 'data',
       settingTriggersEvent: true,
-      triggerFnName: "trigger",
+      triggerFnName: 'trigger',
       allowGetting: true
     }),
 
     removeData: $$.define.removeData({
-      field: "data",
-      event: "data",
-      triggerFnName: "trigger",
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
       triggerEvent: true
     }),
 
     batchData: $$.define.batchData({
-      field: "data",
-      event: "data",
-      triggerFnName: "trigger",
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
       immutableKeys: {
-        "id": true,
-        "source": true,
-        "target": true,
-        "parent": true
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
       },
       updateMappers: true
     }),
 
     scratch: $$.define.data({
-      field: "scratch",
+      field: 'scratch',
       allowBinding: false,
       allowSetting: true,
       settingTriggersEvent: false,
@@ -41,7 +41,7 @@
     }),
 
     removeScratch: $$.define.removeData({
-      field: "scratch",
+      field: 'scratch',
       triggerEvent: false
     }),
   });

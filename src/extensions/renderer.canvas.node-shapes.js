@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var renderer = CanvasRenderer.prototype;
@@ -12,12 +12,12 @@
 
   var nodeShapes = CanvasRenderer.nodeShapes = {};
 
-  nodeShapes["ellipse"] = {
+  nodeShapes['ellipse'] = {
     draw: function(context, centerX, centerY, width, height) {
-      nodeShapes["ellipse"].drawPath(context, centerX, centerY, width, height);
+      nodeShapes['ellipse'].drawPath(context, centerX, centerY, width, height);
       context.fill();
       
-//      console.log("drawing ellipse");
+//      console.log('drawing ellipse');
 //      console.log(arguments);
     },
     
@@ -36,7 +36,7 @@
       context.translate(-centerX, -centerY);
       //context.restore();
       
-//      console.log("drawing ellipse");
+//      console.log('drawing ellipse');
 //      console.log(arguments);
       
     },
@@ -80,27 +80,27 @@
     }
   }
   
-  nodeShapes["triangle"] = {
+  nodeShapes['triangle'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(3, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["triangle"].points);
+        nodeShapes['triangle'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["triangle"].points);
+        nodeShapes['triangle'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return $$.math.polygonIntersectLine(
         x, y,
-        nodeShapes["triangle"].points,
+        nodeShapes['triangle'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -115,14 +115,14 @@
       /*
       return renderer.polygonIntersectLine(
         node, width, height,
-        x, y, nodeShapes["triangle"].points);
+        x, y, nodeShapes['triangle'].points);
       */
     },
     
     intersectBox: function(
       x1, y1, x2, y2, width, height, centerX, centerY, padding) {
       
-      var points = nodeShapes["triangle"].points;
+      var points = nodeShapes['triangle'].points;
       
       return $$.math.boxIntersectPolygon(
         x1, y1, x2, y2,
@@ -133,7 +133,7 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["triangle"].points, // Triangle?
+        x, y, nodeShapes['triangle'].points, // Triangle?
           padding, width, height, centerX, centerY);
     },
     
@@ -141,33 +141,33 @@
       x, y, padding, width, height, centerX, centerY) {
       
       return $$.math.pointInsidePolygon(
-        x, y, nodeShapes["triangle"].points,
+        x, y, nodeShapes['triangle'].points,
         centerX, centerY, width, height,
         [0, -1], padding);
     }
   }
   
-  nodeShapes["square"] = {
+  nodeShapes['square'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["square"].points);
+        nodeShapes['square'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["square"].points);
+        nodeShapes['square'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return $$.math.polygonIntersectLine(
           x, y,
-          nodeShapes["square"].points,
+          nodeShapes['square'].points,
           nodeX,
           nodeY,
           width / 2, height / 2,
@@ -179,7 +179,7 @@
       width, height, centerX, 
       centerY, padding) {
       
-      var points = nodeShapes["square"].points;
+      var points = nodeShapes['square'].points;
       
       return $$.math.boxIntersectPolygon(
         x1, y1, x2, y2,
@@ -192,23 +192,23 @@
       centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["square"].points, 
+        x, y, nodeShapes['square'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["square"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['square'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   }
   
-  nodeShapes["rectangle"] = nodeShapes["square"];
+  nodeShapes['rectangle'] = nodeShapes['square'];
   
-  nodeShapes["octogon"] = {};
+  nodeShapes['octogon'] = {};
   
-  nodeShapes["roundrectangle"] = {
+  nodeShapes['roundrectangle'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
     
     draw: function(context, centerX, centerY, width, height) {
@@ -251,7 +251,7 @@
       // This check is OK because it assumes the round rectangle
       // has sharp edges for the rough check 
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["roundrectangle"].points, 
+        x, y, nodeShapes['roundrectangle'].points, 
           padding, width, height, centerX, centerY);
     },
     
@@ -262,13 +262,13 @@
       var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
       
       // Check hBox
-      if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+      if ($$.math.pointInsidePolygon(x, y, nodeShapes['roundrectangle'].points,
         centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
         return true;
       }
       
       // Check vBox
-      if ($$.math.pointInsidePolygon(x, y, nodeShapes["roundrectangle"].points,
+      if ($$.math.pointInsidePolygon(x, y, nodeShapes['roundrectangle'].points,
         centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
         return true;
       }
@@ -347,12 +347,12 @@
 
     intersectLine: function(node, width, height, x, y) {
       return $$.math.findPolygonIntersection(
-        node, width, height, x, y, nodeShapes["square"].points);
+        node, width, height, x, y, nodeShapes['square'].points);
     },
     
     // TODO: Treat rectangle as sharp-cornered for now. This is a not-large approximation.
     intersectBox: function(x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-      var points = nodeShapes["square"].points;
+      var points = nodeShapes['square'].points;
       
       /*
       return renderer.boxIntersectPolygon(
@@ -370,32 +370,32 @@
       renderer.drawPolygon(context,
           node._private.position.x,
           node._private.position.y,
-          width, height, nodeShapes["pentagon"].points);
+          width, height, nodeShapes['pentagon'].points);
     };
     
     this.drawPath = 
   }
   */
   
-  nodeShapes["pentagon"] = {
+  nodeShapes['pentagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(5, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
-        width, height, nodeShapes["pentagon"].points);
+        width, height, nodeShapes['pentagon'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
-        width, height, nodeShapes["pentagon"].points);
+        width, height, nodeShapes['pentagon'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return renderer.polygonIntersectLine(
         x, y,
-        nodeShapes["pentagon"].points,
+        nodeShapes['pentagon'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -405,7 +405,7 @@
     intersectBox: function(
       x1, y1, x2, y2, width, height, centerX, centerY, padding) {
       
-      var points = nodeShapes["pentagon"].points;
+      var points = nodeShapes['pentagon'].points;
       
       return $$.math.boxIntersectPolygon(
         x1, y1, x2, y2,
@@ -416,39 +416,39 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["pentagon"].points, 
+        x, y, nodeShapes['pentagon'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["pentagon"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['pentagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   }
   
-  nodeShapes["hexagon"] = {
+  nodeShapes['hexagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(6, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["hexagon"].points);
+        nodeShapes['hexagon'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["hexagon"].points);
+        nodeShapes['hexagon'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return $$.math.polygonIntersectLine(
         x, y,
-        nodeShapes["hexagon"].points,
+        nodeShapes['hexagon'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -458,7 +458,7 @@
     intersectBox: function(
         x1, y1, x2, y2, width, height, centerX, centerY, padding) {
         
-      var points = nodeShapes["hexagon"].points;
+      var points = nodeShapes['hexagon'].points;
       
       return $$.math.boxIntersectPolygon(
         x1, y1, x2, y2,
@@ -469,39 +469,39 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["hexagon"].points, 
+        x, y, nodeShapes['hexagon'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["hexagon"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['hexagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   }
   
-  nodeShapes["heptagon"] = {
+  nodeShapes['heptagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(7, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["heptagon"].points);
+        nodeShapes['heptagon'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["heptagon"].points);
+        nodeShapes['heptagon'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return renderer.polygonIntersectLine(
         x, y,
-        nodeShapes["heptagon"].points,
+        nodeShapes['heptagon'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -511,7 +511,7 @@
     intersectBox: function(
         x1, y1, x2, y2, width, height, centerX, centerY, padding) {
       
-      var points = nodeShapes["heptagon"].points;
+      var points = nodeShapes['heptagon'].points;
       
       return renderer.boxIntersectPolygon(
         x1, y1, x2, y2,
@@ -522,39 +522,39 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["heptagon"].points, 
+        x, y, nodeShapes['heptagon'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["heptagon"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['heptagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   }
   
-  nodeShapes["octagon"] = {
+  nodeShapes['octagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(8, 0),
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["octagon"].points);
+        nodeShapes['octagon'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["octagon"].points);
+        nodeShapes['octagon'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return renderer.polygonIntersectLine(
         x, y,
-        nodeShapes["octagon"].points,
+        nodeShapes['octagon'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -564,7 +564,7 @@
     intersectBox: function(
         x1, y1, x2, y2, width, height, centerX, centerY, padding) {
       
-      var points = nodeShapes["octagon"].points;
+      var points = nodeShapes['octagon'].points;
       
       return renderer.boxIntersectPolygon(
           x1, y1, x2, y2,
@@ -575,14 +575,14 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["octagon"].points, 
+        x, y, nodeShapes['octagon'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["octagon"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['octagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   };
@@ -617,7 +617,7 @@
 
   star5Points = $$.math.fitPolygonToSquare( star5Points );
   
-  nodeShapes["star5"] = nodeShapes["star"] = {
+  nodeShapes["star5"] = nodeShapes['star'] = {
     points: star5Points,
     
     draw: function(context, centerX, centerY, width, height) {

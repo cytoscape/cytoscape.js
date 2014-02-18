@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   $$.fn.eles({
     allAre: function(selector){

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
     
@@ -16,7 +16,7 @@
       
       this.initLayout( params );
       
-      cy.trigger("layoutstart");
+      cy.trigger('layoutstart');
       
       this._private.layoutRunning = true;
       this.one('layoutstop', function(){
@@ -31,7 +31,7 @@
     
     initLayout: function( options ){
       if( options == null ){
-        $$.util.error("Layout options must be specified to run a layout");
+        $$.util.error('Layout options must be specified to run a layout');
         return;
       }
       
@@ -41,7 +41,7 @@
       }
       
       var name = options.name;
-      var layoutProto = $$.extension("layout", name);
+      var layoutProto = $$.extension('layout', name);
       
       if( layoutProto == null ){
         $$.util.error("Can not apply layout: No such layout `%s` found; did you include its JS file?", name);

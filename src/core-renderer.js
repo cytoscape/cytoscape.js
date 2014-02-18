@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
     
@@ -15,7 +15,7 @@
 
     forceRender: function(){
       this.notify({
-        type: "draw"
+        type: 'draw'
       });
 
       return this;
@@ -24,7 +24,7 @@
     initRenderer: function( options ){
       var cy = this;
 
-      var rendererProto = $$.extension("renderer", options.name);
+      var rendererProto = $$.extension('renderer', options.name);
       if( rendererProto == null ){
         $$.util.error("Can not initialise: No such renderer `%s` found; did you include its JS file?", options.name);
         return;

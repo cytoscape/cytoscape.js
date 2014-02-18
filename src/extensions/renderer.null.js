@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
     
   function NullRenderer(options){
   }
@@ -6,6 +6,6 @@
   NullRenderer.prototype.notify = function(params){
   };
   
-  $$("renderer", "null", NullRenderer);
+  $$('renderer', 'null', NullRenderer);
   
 })( cytoscape );

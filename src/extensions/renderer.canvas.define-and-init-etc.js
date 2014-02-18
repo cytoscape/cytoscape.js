@@ -4,7 +4,7 @@
   Modifications tracked on Github.
 */
 
-(function($$) { "use strict";
+(function($$) { 'use strict';
 
   function CanvasRenderer(options) {
     
@@ -57,33 +57,33 @@
 
     this.bindings = [];
     
-    this.data.canvasContainer = document.createElement("div");
+    this.data.canvasContainer = document.createElement('div');
     var containerStyle = this.data.canvasContainer.style;
-    containerStyle.position = "absolute";
+    containerStyle.position = 'absolute';
     containerStyle.zIndex = "0";
 
     this.data.container.appendChild( this.data.canvasContainer );
 
     for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
-      this.data.canvases[i] = document.createElement("canvas");
-      this.data.canvases[i].style.position = "absolute";
-      this.data.canvases[i].setAttribute("data-id", "layer" + i);
+      this.data.canvases[i] = document.createElement('canvas');
+      this.data.canvases[i].style.position = 'absolute';
+      this.data.canvases[i].setAttribute("data-id", 'layer' + i);
       this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
       this.data.canvasContainer.appendChild(this.data.canvases[i]);
       
       this.data.canvasNeedsRedraw[i] = false;
     }
 
-    this.data.canvases[CanvasRenderer.NODE].setAttribute("data-id", "layer" + CanvasRenderer.NODE + '-node');
-    this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute("data-id", "layer" + CanvasRenderer.SELECT_BOX + '-selectbox');
-    this.data.canvases[CanvasRenderer.DRAG].setAttribute("data-id", "layer" + CanvasRenderer.DRAG + '-drag');
+    this.data.canvases[CanvasRenderer.NODE].setAttribute("data-id", 'layer' + CanvasRenderer.NODE + '-node');
+    this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute("data-id", 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
+    this.data.canvases[CanvasRenderer.DRAG].setAttribute("data-id", 'layer' + CanvasRenderer.DRAG + '-drag');
     
     for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
-      this.data.bufferCanvases[i] = document.createElement("canvas");
-      this.data.bufferCanvases[i].style.position = "absolute";
-      this.data.bufferCanvases[i].setAttribute("data-id", "buffer" + i);
+      this.data.bufferCanvases[i] = document.createElement('canvas');
+      this.data.bufferCanvases[i].style.position = 'absolute';
+      this.data.bufferCanvases[i].setAttribute("data-id", 'buffer' + i);
       this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-      this.data.bufferCanvases[i].style.visibility = "hidden";
+      this.data.bufferCanvases[i].style.visibility = 'hidden';
       this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
     }
 
@@ -98,22 +98,22 @@
   CanvasRenderer.prototype.notify = function(params) {
     switch( params.type ){
 
-    case "destroy":
+    case 'destroy':
       this.destroy();
       return;
 
-    case "add":
-    case "remove":
-    case "load":
+    case 'add':
+    case 'remove':
+    case 'load':
       this.updateNodesCache();
       this.updateEdgesCache();
       break;
 
-    case "viewport":
+    case 'viewport':
       this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
       break;
 
-    case "style":
+    case 'style':
       this.updateCachedZSortedEles();
       break;
     }
@@ -148,6 +148,6 @@
   
   
   var debug = function(){};
-  $$("renderer", "canvas", CanvasRenderer);
+  $$('renderer', 'canvas', CanvasRenderer);
   
 })( cytoscape );

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   // default layout options
   var defaults = {
@@ -26,23 +26,23 @@
     });
 
     // trigger layoutready when each node has had its position set at least once
-    cy.one("layoutready", options.ready);
-    cy.trigger("layoutready");
+    cy.one('layoutready', options.ready);
+    cy.trigger('layoutready');
 
     // trigger layoutstop when the layout stops (e.g. finishes)
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
 
   // called on continuous layouts to stop them before they finish
   NullLayout.prototype.stop = function(){
     var options = this.options;
 
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
 
   // register the layout
-  $$("layout", "null", NullLayout);
+  $$('layout', 'null', NullLayout);
 
 })(cytoscape);

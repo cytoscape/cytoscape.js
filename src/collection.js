@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // Use this interface to define functions for collections/elements.
   // This interface is good, because it forces you to think in terms
@@ -25,8 +25,8 @@
   // factory for generating edge ids when no id is specified for a new element
   var idFactory = {
     prefix: {
-      nodes: "n",
-      edges: "e"
+      nodes: 'n',
+      edges: 'e'
     },
     id: {
       nodes: 0,
@@ -62,12 +62,12 @@
     restore = (restore === undefined || restore ? true : false);
     
     if( cy === undefined || params === undefined || !$$.is.core(cy) ){
-      $$.util.error("An element must have a core reference and parameters set");
+      $$.util.error('An element must have a core reference and parameters set');
       return;
     }
     
     // validate group
-    if( params.group !== "nodes" && params.group !== "edges" ){
+    if( params.group !== 'nodes' && params.group !== 'edges' ){
       $$.util.error("An element must be of type `nodes` or `edges`; you specified `" + params.group + "`");
       return;
     }
@@ -83,10 +83,10 @@
       data: params.data || {}, // data object
       layoutData: {}, // place for layouts to put calculated stats etc for mappers
       position: params.position || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
-      autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special "auto" value
+      autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
       autoHeight: undefined, 
       listeners: [], // array of bound listeners
-      group: params.group, // string; "nodes" or "edges"
+      group: params.group, // string; 'nodes' or 'edges'
       style: {}, // properties as set by the style
       rstyle: {}, // properties for style sent from the renderer to the core
       styleCxts: [], // applied style contexts from the styler
@@ -124,7 +124,7 @@
       var classes = params.classes.split(/\s+/);
       for( var i = 0, l = classes.length; i < l; i++ ){
         var cls = classes[i];
-        if( !cls || cls === "" ){ continue; }
+        if( !cls || cls === '' ){ continue; }
 
         self._private.classes[cls] = true;
       }
@@ -151,7 +151,7 @@
     }
 
     if( cy === undefined || !$$.is.core(cy) ){
-      $$.util.error("A collection must have a reference to the core");
+      $$.util.error('A collection must have a reference to the core');
       return;
     }
     
@@ -261,7 +261,7 @@
       locked: p.locked,
       grabbed: p.grabbed,
       grabbable: p.grabbable,
-      classes: ""
+      classes: ''
     });
     
     var classes = [];
@@ -271,7 +271,7 @@
     
     for( var i = 0; i < classes.length; i++ ){
       var cls = classes[i];
-      json.classes += cls + ( i < classes.length - 1 ? " " : "" );
+      json.classes += cls + ( i < classes.length - 1 ? ' ' : '' );
     }
     
     return json;
@@ -352,7 +352,7 @@
       if( ele.isEdge() ){ // extra checks for edges
         
         var edge = ele;
-        var fields = ["source", "target"];
+        var fields = ['source', 'target'];
         var fieldsLength = fields.length;
         var badSourceOrTarget = false;
         for(var j = 0; j < fieldsLength; j++){
@@ -360,7 +360,7 @@
           var field = fields[j];
           var val = data[field];
           
-          if( val == null || val === "" ){
+          if( val == null || val === '' ){
             // can't create if source or target is not defined properly
             $$.util.error("Can not create edge `" + data.id + "` with unspecified " + field);
             badSourceOrTarget = true;
@@ -440,9 +440,9 @@
       toUpdateStyle.updateStyle( notifyRenderer );
 
       if( notifyRenderer ){
-        restored.rtrigger("add");
+        restored.rtrigger('add');
       } else {
-        restored.trigger("add");
+        restored.trigger('add');
       }
     }
     
@@ -586,19 +586,19 @@
       
       if( notifyRenderer ){
         this.cy().notify({
-          type: "remove",
+          type: 'remove',
           collection: removedElements
         });
       }
       
-      removedElements.trigger("remove");
+      removedElements.trigger('remove');
     }
 
     // check for empty remaining parent nodes
     var checkedParentId = {};
     for( var i = 0; i < elesToRemove.length; i++ ){
       var ele = elesToRemove[i];
-      var isNode = ele._private.group === "nodes";
+      var isNode = ele._private.group === 'nodes';
       var parentId = ele._private.data.parent;
 
       if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){

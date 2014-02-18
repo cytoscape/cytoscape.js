@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var borderWidthMultiplier = 2 * 0.5;
   var borderWidthAdjustment = 0;
@@ -16,9 +16,9 @@
       var updatedCompounds = this.updateCompoundBounds();
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
+        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger("style"); // just fire the event
+        this.add( updatedCompounds ).trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -34,9 +34,9 @@
       var updatedCompounds = this.updateCompoundBounds();
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger("style"); // let renderer know we changed style
+        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger("style"); // just fire the event
+        this.add( updatedCompounds ).trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -64,7 +64,7 @@
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
         style.applyBypass( this, props );
-        this.rtrigger("style"); // let the renderer know we've updated style
+        this.rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
   
@@ -79,7 +79,7 @@
 
         } else { // then set the bypass with the property value
           style.applyBypass( this, name, value );
-          this.rtrigger("style"); // let the renderer know we've updated style
+          this.rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -109,12 +109,12 @@
     },
 
     show: function(){
-      this.css("display", "element");
+      this.css('display', 'element');
       return this; // chaining
     },
 
     hide: function(){
-      this.css("display", "none");
+      this.css('display', 'none');
       return this; // chaining
     },
 
@@ -123,9 +123,9 @@
 
       if( ele ){
         if(
-          ele.css("visibility") !== "visible"
-        ||  ele.css("display") !== "element"
-        // ||  parseFloat( ele.css("opacity") ) === 0
+          ele.css('visibility') !== 'visible'
+        ||  ele.css('display') !== 'element'
+        // ||  parseFloat( ele.css('opacity') ) === 0
         ){
           return false;
         }
@@ -134,11 +134,11 @@
           var parents = ele.parents();
           for( var i = 0; i < parents.length; i++ ){
             var parent = parents[i];
-            var pVis = parent.css("visibility");
-            var pDis = parent.css("display");
-            var pOpac = parseFloat( parent.css("opacity") );
+            var pVis = parent.css('visibility');
+            var pDis = parent.css('display');
+            var pOpac = parseFloat( parent.css('opacity') );
 
-            if( pVis !== "visible" || pDis !== "element" ){
+            if( pVis !== 'visible' || pDis !== 'element' ){
               return false;
             }
           }
@@ -192,8 +192,8 @@
       var ele = this[0];
 
       if( ele ){
-        var autoW = ele._private.style["width"].value === "auto";
-        var autoH = ele._private.style["height"].value === "auto";
+        var autoW = ele._private.style['width'].value === 'auto';
+        var autoH = ele._private.style['height'].value === 'auto';
 
         return ele.isParent() && autoW && autoH;
       }

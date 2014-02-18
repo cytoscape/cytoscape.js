@@ -1,9 +1,9 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
   CanvasRenderer.prototype.createBuffer = function(w, h) {
-    var buffer = document.createElement("canvas");
+    var buffer = document.createElement('canvas');
     buffer.width = w;
     buffer.height = h;
     
@@ -16,7 +16,7 @@
     var bb = cy.boundingBox();
     var width = options.full ? Math.ceil(bb.w) : this.data.container.clientWidth;
     var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
-    var buffCanvas = document.createElement("canvas");
+    var buffCanvas = document.createElement('canvas');
 
     buffCanvas.width = width;
     buffCanvas.height = height;

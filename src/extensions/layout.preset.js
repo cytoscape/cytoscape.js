@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var defaults = {
     fit: true, // whether to fit to viewport
@@ -51,30 +51,30 @@
       cy.zoom( options.zoom );
     }
 
-    cy.one("layoutready", options.ready);
-    cy.trigger("layoutready");
+    cy.one('layoutready', options.ready);
+    cy.trigger('layoutready');
     
     if( options.fit ){
       cy.fit( options.padding );
     }
     
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
   
-  $$("layout", "preset", PresetLayout);
+  $$('layout', 'preset', PresetLayout);
   
-  $$("core", "presetLayout", function(){
+  $$('core', 'presetLayout', function(){
     var cy = this;
     var layout = {};
     var elements = {};
     
     cy.nodes().each(function(i, ele){
-      elements[ ele.data("id") ] = ele.position();
+      elements[ ele.data('id') ] = ele.position();
     });
     
     layout.positions = elements;
-    layout.name = "preset";
+    layout.name = 'preset';
     layout.zoom = cy.zoom();
     layout.pan = cy.pan();
 

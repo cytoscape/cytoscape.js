@@ -978,13 +978,14 @@
     for( var i = 0; i < haystackEdges.length; i++ ){
       var edge = haystackEdges[i];
       var rscratch = edge._private.rscratch;
+      var rFactor = 0.8;
 
       if( !rscratch.haystack ){
         var src = edge.source()[0];
         var srcPos = src.position();
         var srcW = src.width();
         var srcH = src.height();
-        var srcR = Math.min( srcW, srcH ) * 0.4;
+        var srcR = Math.min( srcW, srcH ) * rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.source = {
@@ -996,7 +997,7 @@
         var tgtPos = tgt.position();
         var tgtW = tgt.width();
         var tgtH = tgt.height();
-        var tgtR = Math.min( tgtW, tgtH ) * 0.4;
+        var tgtR = Math.min( tgtW, tgtH ) * rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.target = {

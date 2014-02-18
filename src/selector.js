@@ -132,7 +132,7 @@
         
         state: {
           query: true,
-          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:active|:inactive|:touch)',
+          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
           populate: function( state ){
             this.colonSelectors.push( state );
           }
@@ -430,7 +430,6 @@
       var allColonSelectorsMatch = true;
       for(var k = 0; k < query.colonSelectors.length; k++){
         var sel = query.colonSelectors[k];
-        var renderer = cy.renderer(); // TODO remove reference after refactoring
         
         switch(sel){
         case ':selected':
@@ -489,6 +488,12 @@
           break;
         case ':child':
           allColonSelectorsMatch = element.parent().nonempty();
+          break;
+        case ':loop':
+          allColonSelectorsMatch = element.isEdge() && element.data('source') === element.data('target');
+          break;
+        case ':simple':
+          allColonSelectorsMatch = element.isEdge() && element.data('source') !== element.data('target');
           break;
         case ':active':
           allColonSelectorsMatch = element.active();

@@ -125,7 +125,7 @@
       var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
 
       if( !selAndBlock ){
-        $$.util.error("Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: " + remaining);
+        $$.util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
         break;
       }
 
@@ -135,7 +135,7 @@
       var selectorStr = selAndBlock[1];
       var selector = new $$.Selector( selectorStr );
       if( selector._private.invalid ){
-        $$.util.error("Skipping parsing of block: Invalid selector found in string stylesheet: " + selectorStr);
+        $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
 
         // skip this selector and block
         removeSelAndBlockFromRemaining();
@@ -155,7 +155,7 @@
         var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
 
         if( !propAndVal ){
-          $$.util.error("Skipping parsing of block: Invalid formatting of style property and value definitions found in:" + blockStr);
+          $$.util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
           invalidBlock = true;
           break;
         }
@@ -166,7 +166,7 @@
 
         var prop = $$.style.properties[ propStr ];
         if( !prop ){
-          $$.util.error("Skipping property: Invalid property name in: " + propAndValStr);
+          $$.util.error('Skipping property: Invalid property name in: ' + propAndValStr);
 
           // skip this property in the block
           removePropAndValFromRem();
@@ -176,7 +176,7 @@
         var parsedProp = style.parse( propStr, valStr );
 
         if( !parsedProp ){
-          $$.util.error("Skipping property: Invalid property definition in: " + propAndValStr);
+          $$.util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
 
           // skip this property in the block
           removePropAndValFromRem();
@@ -336,12 +336,12 @@
     var hsla = $$.util.regex.hslaNoBackRefs;
     var hex3 = $$.util.regex.hex3;
     var hex6 = $$.util.regex.hex6;
-    var data = function( prefix ){ return "^" + prefix + "\\s*\\(\\s*([\\w\\.]+)\\s*\\)$" };
-    var mapData = function( prefix ){ return "^" + prefix + "\\s*\\(([\\w\\.]+)\\s*\\,\\s*(" + number + ")\\s*\\,\\s*(" + number + ")\\s*,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\s*\\,\\s*(" + number + "|\\w+|" + rgba + "|" + hsla + "|" + hex3 + "|" + hex6 + ")\\)$" };
+    var data = function( prefix ){ return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$' };
+    var mapData = function( prefix ){ return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6 + ')\\s*\\,\\s*(' + number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6 + ')\\)$' };
 
     // each visual style property has a type and needs to be validated according to it
     $$.style.types = {
-      percent: { number: true, min: 0, max: 100, units: "%" },
+      percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
       size: { number: true, min: 0, enums: ['auto'] },
@@ -349,7 +349,7 @@
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       curveStyle: { enums: ['bundled', 'bezier'] },
-      fontFamily: { regex: "^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$" },
+      fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
@@ -371,7 +371,7 @@
       layoutData: { mapping: true, regex: data('layoutData') },
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
-      url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
+      url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' }
     };
 
     // define visual style properties
@@ -503,19 +503,19 @@
     var fontStyle = 'normal' || this.containerPropertyAsString('font-style') || 'normal';
     var fontVariant = 'normal' || this.containerPropertyAsString('font-variant') || 'normal';
     var fontWeight = 'normal' || this.containerPropertyAsString('font-weight') || 'normal';
-    var color = "#000" || this.containerPropertyAsString('color') || "#000";
+    var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
     var textDecoration = 'none' || this.containerPropertyAsString('text-decoration') || 'none';
     var fontSize = 16 || this.containerPropertyAsString('font-size') || 16;
 
     // fill the style with the default stylesheet
     this
-      .selector("node, edge") // common properties
+      .selector('node, edge') // common properties
         .css({
           'text-valign': 'top',
           'text-halign': 'center',
           'color': color,
-          'text-outline-color': "#000",
+          'text-outline-color': '#000',
           'text-outline-width': 0,
           'text-outline-opacity': 1,
           'text-opacity': 1,
@@ -535,14 +535,14 @@
           'max-content-width': 50,
           'max-content-height': fontSize,
           'overlay-opacity': 0,
-          'overlay-color': "#000",
+          'overlay-color': '#000',
           'overlay-padding': 10,
 
           // node props
-          'background-color': "#888",
+          'background-color': '#888',
           'background-opacity': 1,
           'background-image': 'none',
-          'border-color': "#000",
+          'border-color': '#000',
           'border-opacity': 1,
           'border-width': 0,
           'border-style': 'solid',
@@ -554,49 +554,49 @@
           'padding-right': 0,
           'shape': 'ellipse',
           'pie-1-background-color': 'black',
-          'pie-1-background-size': "0%",
+          'pie-1-background-size': '0%',
           'pie-2-background-color': 'black',
-          'pie-2-background-size': "0%",
+          'pie-2-background-size': '0%',
           'pie-3-background-color': 'black',
-          'pie-3-background-size': "0%",
+          'pie-3-background-size': '0%',
           'pie-4-background-color': 'black',
-          'pie-4-background-size': "0%",
+          'pie-4-background-size': '0%',
           'pie-5-background-color': 'black',
-          'pie-5-background-size': "0%",
+          'pie-5-background-size': '0%',
           'pie-6-background-color': 'black',
-          'pie-6-background-size': "0%",
+          'pie-6-background-size': '0%',
           'pie-7-background-color': 'black',
-          'pie-7-background-size': "0%",
+          'pie-7-background-size': '0%',
           'pie-8-background-color': 'black',
-          'pie-8-background-size': "0%",
+          'pie-8-background-size': '0%',
           'pie-9-background-color': 'black',
-          'pie-9-background-size': "0%",
+          'pie-9-background-size': '0%',
           'pie-10-background-color': 'black',
-          'pie-10-background-size': "0%",
+          'pie-10-background-size': '0%',
           'pie-11-background-color': 'black',
-          'pie-11-background-size': "0%",
+          'pie-11-background-size': '0%',
           'pie-12-background-color': 'black',
-          'pie-12-background-size': "0%",
+          'pie-12-background-size': '0%',
           'pie-13-background-color': 'black',
-          'pie-13-background-size': "0%",
+          'pie-13-background-size': '0%',
           'pie-14-background-color': 'black',
-          'pie-14-background-size': "0%",
+          'pie-14-background-size': '0%',
           'pie-15-background-color': 'black',
-          'pie-15-background-size': "0%",
+          'pie-15-background-size': '0%',
           'pie-16-background-color': 'black',
-          'pie-16-background-size': "0%",
+          'pie-16-background-size': '0%',
 
           // edge props
           'source-arrow-shape': 'none',
           'target-arrow-shape': 'none',
-          'source-arrow-color': "#bbb",
-          'target-arrow-color': "#bbb",
+          'source-arrow-color': '#bbb',
+          'target-arrow-color': '#bbb',
           'line-style': 'solid',
-          'line-color': "#bbb",
+          'line-color': '#bbb',
           'control-point-step-size': 40,
           'curve-style': 'bezier'
         })
-      .selector("$node > node") // compound (parent) node properties
+      .selector('$node > node') // compound (parent) node properties
         .css({
           'width': 'auto',
           'height': 'auto',
@@ -611,7 +611,7 @@
         .css({
           'width': 1,
         })
-      .selector(":active")
+      .selector(':active')
         .css({
           'overlay-color': 'black',
           'overlay-padding': 10,
@@ -619,9 +619,9 @@
         })
       .selector('core') // just core properties
         .css({
-          'selection-box-color': "#ddd",
+          'selection-box-color': '#ddd',
           'selection-box-opacity': 0.65,
-          'selection-box-border-color': "#aaa",
+          'selection-box-border-color': '#aaa',
           'selection-box-border-width': 1,
           'panning-cursor': 'grabbing',
           'active-bg-color': 'black',
@@ -663,7 +663,7 @@
   // - bypass : true iff the property is a bypass property
   $$.styfn.parse = function( name, value, propIsBypass ){
     
-    name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name' not 'propertyName")
+    name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];
     var passedValue = value;
     

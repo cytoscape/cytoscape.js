@@ -26,7 +26,7 @@
 
       var rendererProto = $$.extension('renderer', options.name);
       if( rendererProto == null ){
-        $$.util.error("Can not initialise: No such renderer `%s` found; did you include its JS file?", options.name);
+        $$.util.error('Can not initialise: No such renderer `%s` found; did you include its JS file?', options.name);
         return;
       }
       

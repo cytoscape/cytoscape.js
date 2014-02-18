@@ -72,7 +72,7 @@
     
     this.findEndpoints(edge);
     
-    if( rs.edgeType == 'bundled' ){
+    if( rs.edgeType == 'haystack' ){
       this.drawStyledEdge(
         edge, 
         context, 

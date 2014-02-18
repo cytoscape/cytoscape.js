@@ -348,7 +348,7 @@
       bgSize: { number: true, min: 0, allowPercent: true },
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
-      curveStyle: { enums: ['bundled', 'bezier'] },
+      curveStyle: { enums: ['bezier', 'haystack'] },
       fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },

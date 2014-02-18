@@ -9,8 +9,6 @@
       return;
     }
 
-    if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
-
     var rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die

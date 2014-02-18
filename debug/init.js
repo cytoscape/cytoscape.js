@@ -80,7 +80,7 @@ $(function(){
   ;
   
   window.options = {
-    //hideEdgesOnViewport: true,
+    hideEdgesOnViewport: true,
     renderer: {
       name: "canvas"
     },
@@ -108,9 +108,9 @@ $(function(){
     }
   };
   
-  var cliques = 1;
-  var numNodes = 1;
-  var numEdges = 2;
+  var cliques = 3;
+  var numNodes = 20;
+  var numEdges = 100;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

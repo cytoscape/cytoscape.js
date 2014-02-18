@@ -805,6 +805,15 @@
 
       if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
         e.preventDefault();
+        
+        r.data.wheelZooming = true;
+        clearTimeout( r.data.wheelTimeout );
+        r.data.wheelTimeout = setTimeout(function(){
+          r.data.wheelZooming = false;
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          r.redraw();
+        }, 150);
       
         var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
 

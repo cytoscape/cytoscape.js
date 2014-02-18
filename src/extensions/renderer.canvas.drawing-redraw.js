@@ -178,7 +178,9 @@
         //NB : VERY EXPENSIVE
         //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
-        if( r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.data.wheel || r.swipePanning) ){ 
+        var hideEdges = r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+
+        if( hideEdges ){ 
         } else {
           r.findEdgeControlPoints(edges);
         }
@@ -224,13 +226,13 @@
           if ( ele.isNode() ) {
             nodes.push( ele );
             
-          } else if ( ele.isEdge() ) {
+          } else if ( ele.isEdge() && !hideEdges ) {
             r.drawEdge(context, ele);
             edges.push( ele );
           }
         }
 
-        for (var i = 0; i < edges.length; i++) {
+        for (var i = 0; i < edges.length && !hideEdges; i++) {
           ele = edges[i];
           
           r.drawEdgeText(context, ele);

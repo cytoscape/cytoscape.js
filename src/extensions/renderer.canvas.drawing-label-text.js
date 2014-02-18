@@ -12,8 +12,8 @@
 
     if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
-    var computedSize = edge._private.style["font-size"].pxValue * edge.cy().zoom();
-    var minSize = edge._private.style["min-zoomed-font-size"].pxValue;
+    var computedSize = edge._private.style['font-size'].pxValue * edge.cy().zoom();
+    var minSize = edge._private.style['min-zoomed-font-size'].pxValue;
 
     if( computedSize < minSize ){
       return;
@@ -38,8 +38,8 @@
       return;
     }
 
-    var computedSize = node._private.style["font-size"].pxValue * node.cy().zoom();
-    var minSize = node._private.style["min-zoomed-font-size"].pxValue;
+    var computedSize = node._private.style['font-size'].pxValue * node.cy().zoom();
+    var minSize = node._private.style['min-zoomed-font-size'].pxValue;
 
     if( computedSize < minSize ){
       return;
@@ -47,8 +47,8 @@
       
     this.recalculateNodeLabelProjection( node );
 
-    var textHalign = node._private.style["text-halign"].strValue;
-    var textValign = node._private.style["text-valign"].strValue;
+    var textHalign = node._private.style['text-halign'].strValue;
+    var textValign = node._private.style['text-valign'].strValue;
     var rs = node._private.rscratch;
 
     switch( textHalign ){
@@ -88,17 +88,17 @@
     // Font style
     var parentOpacity = element.effectiveOpacity();
     var style = element._private.style;
-    var labelStyle = style["font-style"].strValue;
-    var labelSize = style["font-size"].pxValue + 'px';
-    var labelFamily = style["font-family"].strValue;
-    var labelVariant = style["font-variant"].strValue;
-    var labelWeight = style["font-weight"].strValue;
+    var labelStyle = style['font-style'].strValue;
+    var labelSize = style['font-size'].pxValue + 'px';
+    var labelFamily = style['font-family'].strValue;
+    var labelVariant = style['font-variant'].strValue;
+    var labelWeight = style['font-weight'].strValue;
     
     context.font = labelStyle + ' ' + labelWeight + ' '
       + labelSize + ' ' + labelFamily;
     
     var text = String(style['content'].value);
-    var textTransform = style["text-transform"].value;
+    var textTransform = style['text-transform'].value;
     
     if (textTransform == 'none') {
     } else if (textTransform == 'uppercase') {
@@ -116,14 +116,14 @@
       + style['color'].value[0] + ","
       + style['color'].value[1] + ","
       + style['color'].value[2] + ","
-      + (style["text-opacity"].value
+      + (style['text-opacity'].value
       * style['opacity'].value * parentOpacity) + ")";
     
     context.strokeStyle = "rgba(" 
-      + style["text-outline-color"].value[0] + ","
-      + style["text-outline-color"].value[1] + ","
-      + style["text-outline-color"].value[2] + ","
-      + (style["text-opacity"].value
+      + style['text-outline-color'].value[0] + ","
+      + style['text-outline-color'].value[1] + ","
+      + style['text-outline-color'].value[2] + ","
+      + (style['text-opacity'].value
       * style['opacity'].value * parentOpacity) + ")";
 
     return text;
@@ -138,7 +138,7 @@
     var text = this.setupTextStyle( context, element );
 
     if ( text != undefined && !isNaN(textX) && !isNaN(textY) ) {
-      var lineWidth = 2  * style["text-outline-width"].value; // *2 b/c the stroke is drawn centred on the middle
+      var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;
         context.strokeText(text, textX, textY);

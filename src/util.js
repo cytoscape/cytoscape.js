@@ -236,7 +236,7 @@
         var isUpperCase = ch !== chLowerCase;
 
         if( isUpperCase ){
-          ret.push( "-" );
+          ret.push( '-' );
           ret.push( chLowerCase );
         } else {
           ret.push( ch );
@@ -255,7 +255,7 @@
 
       for( var i = 0; i < str.length; i++ ){
         var ch = str[i];
-        var isDash = ch === "-";
+        var isDash = ch === '-';
 
         if( isDash ){
           nextIsUpper = true;

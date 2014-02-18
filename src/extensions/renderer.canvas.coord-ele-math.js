@@ -31,8 +31,8 @@
       var style = window.getComputedStyle(n); 
       if (typeof(n.offsetLeft) === 'number') {
         var position = style.getPropertyValue('position').toLowerCase();
-        var borderLeft = parseFloat( style.getPropertyValue("border-left-width") );
-        var borderTop = parseFloat( style.getPropertyValue("border-top-width") );
+        var borderLeft = parseFloat( style.getPropertyValue('border-left-width') );
+        var borderTop = parseFloat( style.getPropertyValue('border-top-width') );
 
         offsetLeft += n.offsetLeft;
         offsetTop += n.offsetTop;
@@ -76,12 +76,12 @@
     // Check nodes
     for (var i = 0; i < nodes.length; i++) {
       if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
-          nodes[i]._private.style["border-width"].pxValue / 2,
+          nodes[i]._private.style['border-width'].pxValue / 2,
           this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
           nodes[i]._private.position.x, nodes[i]._private.position.y)
         &&
         CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
-          nodes[i]._private.style["border-width"].pxValue / 2,
+          nodes[i]._private.style['border-width'].pxValue / 2,
           (this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
           nodes[i]._private.position.x, nodes[i]._private.position.y)) {
         
@@ -197,28 +197,28 @@
       }
       
       if (!near.length || near[near.length - 1] != edges[i]) {
-        if ((CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].roughCollide(x, y,
+        if ((CanvasRenderer.arrowShapes[edges[i]._private.style['source-arrow-shape'].value].roughCollide(x, y,
             edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
             this.getArrowWidth(edges[i]._private.style['width'].pxValue),
             this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
               edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
             &&
-          CanvasRenderer.arrowShapes[edges[i]._private.style["source-arrow-shape"].value].collide(x, y,
+          CanvasRenderer.arrowShapes[edges[i]._private.style['source-arrow-shape'].value].collide(x, y,
             edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
             this.getArrowWidth(edges[i]._private.style['width'].pxValue),
             this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
               edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
           ||
-          (CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].roughCollide(x, y,
+          (CanvasRenderer.arrowShapes[edges[i]._private.style['target-arrow-shape'].value].roughCollide(x, y,
             edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
             this.getArrowWidth(edges[i]._private.style['width'].pxValue),
             this.getArrowHeight(edges[i]._private.style['width'].pxValue),
             [edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
               edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
             &&
-          CanvasRenderer.arrowShapes[edges[i]._private.style["target-arrow-shape"].value].collide(x, y,
+          CanvasRenderer.arrowShapes[edges[i]._private.style['target-arrow-shape'].value].collide(x, y,
             edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
             this.getArrowWidth(edges[i]._private.style['width'].pxValue),
             this.getArrowHeight(edges[i]._private.style['width'].pxValue),
@@ -267,7 +267,7 @@
     for (var i=0;i<nodes.length;i++) {
       if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
         this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
-        nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style["border-width"].pxValue / 2))
+        nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style['border-width'].pxValue / 2))
       { box.push(nodes[i]); }
     }
     
@@ -382,10 +382,10 @@
 
   CanvasRenderer.prototype.getNodePadding = function(node)
   {
-    var left = node._private.style["padding-left"].pxValue;
-    var right = node._private.style["padding-right"].pxValue;
-    var top = node._private.style["padding-top"].pxValue;
-    var bottom = node._private.style["padding-bottom"].pxValue;
+    var left = node._private.style['padding-left'].pxValue;
+    var right = node._private.style['padding-right'].pxValue;
+    var top = node._private.style['padding-top'].pxValue;
+    var bottom = node._private.style['padding-bottom'].pxValue;
 
     if (isNaN(left))
     {
@@ -511,8 +511,8 @@
     var nodeWidth = node.outerWidth();
     var nodeHeight = node.outerHeight();
     var nodePos = node._private.position;
-    var textHalign = node._private.style["text-halign"].strValue;
-    var textValign = node._private.style["text-valign"].strValue;
+    var textHalign = node._private.style['text-halign'].strValue;
+    var textValign = node._private.style['text-valign'].strValue;
     var rs = node._private.rscratch;
     var rstyle = node._private.rstyle;
 
@@ -583,11 +583,11 @@
 
   CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
     var style = ele._private.style;
-    var fStyle = style["font-style"].strValue;
-    var size = style["font-size"].pxValue + 'px';
-    var family = style["font-family"].strValue;
-    var variant = style["font-variant"].strValue;
-    var weight = style["font-weight"].strValue;
+    var fStyle = style['font-style'].strValue;
+    var size = style['font-size'].pxValue + 'px';
+    var family = style['font-family'].strValue;
+    var variant = style['font-variant'].strValue;
+    var weight = style['font-weight'].strValue;
 
     var div = this.labelCalcDiv;
 
@@ -607,12 +607,12 @@
 
     // forced style
     ds.position = 'absolute';
-    ds.left = "-9999px";
-    ds.top = "-9999px";
-    ds.zIndex = "-1";
+    ds.left = '-9999px';
+    ds.top = '-9999px';
+    ds.zIndex = '-1';
     ds.visibility = 'hidden';
-    ds.padding = "0";
-    ds.lineHeight = "1";
+    ds.padding = '0';
+    ds.lineHeight = '1';
 
     // put label content in div
     div.innerText = text;
@@ -665,7 +665,7 @@
         continue;
       }
 
-      if( style["curve-style"].value === 'bundled' ){
+      if( style['curve-style'].value === 'bundled' ){
         bundledEdges.push( edge );
         continue;
       }
@@ -710,8 +710,8 @@
       srcShape = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ];
       tgtShape = CanvasRenderer.nodeShapes[ this.getNodeShape(tgt) ];
 
-      srcBorder = src._private.style["border-width"].pxValue;
-      tgtBorder = tgt._private.style["border-width"].pxValue;
+      srcBorder = src._private.style['border-width'].pxValue;
+      tgtBorder = tgt._private.style['border-width'].pxValue;
 
       badBezier = false;
       
@@ -830,7 +830,7 @@
           // console.log('edge ctrl pt cache MISS')
         }
 
-        var stepSize = edge._private.style["control-point-step-size"].value;
+        var stepSize = edge._private.style['control-point-step-size'].value;
 
         // Self-edge
         if ( src.id() == tgt.id() ) {
@@ -1021,11 +1021,11 @@
     var srcPos = source._private.position;
     var tgtPos = target._private.position;
 
-    var tgtArShape = edge._private.style["target-arrow-shape"].value;
-    var srcArShape = edge._private.style["source-arrow-shape"].value;
+    var tgtArShape = edge._private.style['target-arrow-shape'].value;
+    var srcArShape = edge._private.style['source-arrow-shape'].value;
 
-    var tgtBorderW = target._private.style["border-width"].pxValue;
-    var srcBorderW = source._private.style["border-width"].pxValue;
+    var tgtBorderW = target._private.style['border-width'].pxValue;
+    var srcBorderW = source._private.style['border-width'].pxValue;
 
     var rs = edge._private.rscratch;
     

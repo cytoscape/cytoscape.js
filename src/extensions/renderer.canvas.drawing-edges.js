@@ -37,9 +37,9 @@
       return;
     }
     
-    var overlayPadding = edge._private.style["overlay-padding"].pxValue;
-    var overlayOpacity = edge._private.style["overlay-opacity"].value;
-    var overlayColor = edge._private.style["overlay-color"].value;
+    var overlayPadding = edge._private.style['overlay-padding'].pxValue;
+    var overlayOpacity = edge._private.style['overlay-opacity'].value;
+    var overlayColor = edge._private.style['overlay-color'].value;
 
     // Edge color & opacity
     if( drawOverlayInstead ){
@@ -52,9 +52,9 @@
 
     } else {
       context.strokeStyle = "rgba(" 
-        + edge._private.style["line-color"].value[0] + ","
-        + edge._private.style["line-color"].value[1] + ","
-        + edge._private.style["line-color"].value[2] + ","
+        + edge._private.style['line-color'].value[0] + ","
+        + edge._private.style['line-color'].value[1] + ","
+        + edge._private.style['line-color'].value[2] + ","
         + edge._private.style.opacity.value + ")";
 
       
@@ -67,7 +67,7 @@
     }
     
     var edgeWidth = edge._private.style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-    var lineStyle = drawOverlayInstead ? 'solid' : edge._private.style["line-style"].value;
+    var lineStyle = drawOverlayInstead ? 'solid' : edge._private.style['line-style'].value;
     context.lineWidth = edgeWidth;
     
     this.findEndpoints(edge);
@@ -417,24 +417,24 @@
 
       var gco = context.globalCompositeOperation;
 
-      context.globalCompositeOperation = "destination-out";
+      context.globalCompositeOperation = 'destination-out';
     
       context.lineWidth = edge._private.style['width'].pxValue;
       
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       context.fillStyle = "rgba("
-        + edge._private.style["source-arrow-color"].value[0] + ","
-        + edge._private.style["source-arrow-color"].value[1] + ","
-        + edge._private.style["source-arrow-color"].value[2] + ","
+        + edge._private.style['source-arrow-color'].value[0] + ","
+        + edge._private.style['source-arrow-color'].value[1] + ","
+        + edge._private.style['source-arrow-color'].value[2] + ","
         + edge._private.style.opacity.value + ")";
 
-      this.drawArrowShape(context, edge._private.style["source-arrow-shape"].value, 
+      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
     } else {
@@ -453,25 +453,25 @@
 
       var gco = context.globalCompositeOperation;
 
-      context.globalCompositeOperation = "destination-out";
+      context.globalCompositeOperation = 'destination-out';
 
       context.lineWidth = edge._private.style['width'].pxValue;
 
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       //this.context.strokeStyle = "rgba("
       context.fillStyle = "rgba("
-        + edge._private.style["target-arrow-color"].value[0] + ","
-        + edge._private.style["target-arrow-color"].value[1] + ","
-        + edge._private.style["target-arrow-color"].value[2] + ","
+        + edge._private.style['target-arrow-color'].value[0] + ","
+        + edge._private.style['target-arrow-color'].value[1] + ","
+        + edge._private.style['target-arrow-color'].value[2] + ","
         + edge._private.style.opacity.value + ")";  
     
-      this.drawArrowShape(context, edge._private.style["target-arrow-shape"].value,
+      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
     }
   }
@@ -483,10 +483,10 @@
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
   
     if (dispX < 0) {
-      //context.strokeStyle = "AA99AA";
+      //context.strokeStyle = 'AA99AA';
       angle = angle + Math.PI / 2;
     } else {
-      //context.strokeStyle = "AAAA99";
+      //context.strokeStyle = 'AAAA99';
       angle = - (Math.PI / 2 + angle);
     }
     

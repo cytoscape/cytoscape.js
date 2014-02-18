@@ -105,7 +105,7 @@
       }
     };
 
-    var result = a._private.style["z-index"].value - b._private.style["z-index"].value;
+    var result = a._private.style['z-index'].value - b._private.style['z-index'].value;
 
     var depthA = 0;
     var depthB = 0;

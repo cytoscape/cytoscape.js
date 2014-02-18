@@ -20,31 +20,31 @@
     nodeWidth = this.getNodeWidth(node);
     nodeHeight = this.getNodeHeight(node);
     
-    context.lineWidth = node._private.style["border-width"].pxValue;
+    context.lineWidth = node._private.style['border-width'].pxValue;
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
       // Node color & opacity
       context.fillStyle = "rgba(" 
-        + node._private.style["background-color"].value[0] + ","
-        + node._private.style["background-color"].value[1] + ","
-        + node._private.style["background-color"].value[2] + ","
-        + (node._private.style["background-opacity"].value 
+        + node._private.style['background-color'].value[0] + ","
+        + node._private.style['background-color'].value[1] + ","
+        + node._private.style['background-color'].value[2] + ","
+        + (node._private.style['background-opacity'].value 
         * node._private.style['opacity'].value * parentOpacity) + ")";
       
       // Node border color & opacity
       context.strokeStyle = "rgba(" 
-        + node._private.style["border-color"].value[0] + ","
-        + node._private.style["border-color"].value[1] + ","
-        + node._private.style["border-color"].value[2] + ","
-        + (node._private.style["border-opacity"].value * node._private.style['opacity'].value * parentOpacity) + ")";
+        + node._private.style['border-color'].value[0] + ","
+        + node._private.style['border-color'].value[1] + ","
+        + node._private.style['border-color'].value[2] + ","
+        + (node._private.style['border-opacity'].value * node._private.style['opacity'].value * parentOpacity) + ")";
       
       context.lineJoin = 'miter'; // so borders are square with the node shape
       
       //var image = this.getCachedImage('url');
       
-      var url = node._private.style["background-image"].value[2] ||
-        node._private.style["background-image"].value[1];
+      var url = node._private.style['background-image'].value[2] ||
+        node._private.style['background-image'].value[1];
       
       if (url != undefined) {
         
@@ -98,7 +98,7 @@
       this.drawPie(context, node);
 
       // Border width, draw border
-      if (node._private.style["border-width"].pxValue > 0) {
+      if (node._private.style['border-width'].pxValue > 0) {
         CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
           context,
           node._private.position.x,
@@ -113,9 +113,9 @@
     // draw the overlay
     } else {
 
-      var overlayPadding = node._private.style["overlay-padding"].pxValue;
-      var overlayOpacity = node._private.style["overlay-opacity"].value;
-      var overlayColor = node._private.style["overlay-color"].value;
+      var overlayPadding = node._private.style['overlay-padding'].pxValue;
+      var overlayOpacity = node._private.style['overlay-opacity'].value;
+      var overlayColor = node._private.style['overlay-color'].value;
       if( overlayOpacity > 0 ){
         context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 

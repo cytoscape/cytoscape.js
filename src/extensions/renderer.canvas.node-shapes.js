@@ -333,7 +333,7 @@
     }
   };
   
-  nodeShapes["roundrectangle2"] = {
+  nodeShapes['roundrectangle2'] = {
     roundness: 4.99,
     
     draw: function(node, width, height) {
@@ -342,7 +342,7 @@
       }
     
       renderer.drawPolygon(node._private.position.x,
-        node._private.position.y, width, height, nodeSapes["roundrectangle2"].points);
+        node._private.position.y, width, height, nodeSapes['roundrectangle2'].points);
     },
 
     intersectLine: function(node, width, height, x, y) {
@@ -617,27 +617,27 @@
 
   star5Points = $$.math.fitPolygonToSquare( star5Points );
   
-  nodeShapes["star5"] = nodeShapes['star'] = {
+  nodeShapes['star5'] = nodeShapes['star'] = {
     points: star5Points,
     
     draw: function(context, centerX, centerY, width, height) {
       renderer.drawPolygon(context,
         centerX, centerY,
         width, height,
-        nodeShapes["star5"].points);
+        nodeShapes['star5'].points);
     },
     
     drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawPolygonPath(context,
         centerX, centerY,
         width, height,
-        nodeShapes["star5"].points);
+        nodeShapes['star5'].points);
     },
     
     intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
       return renderer.polygonIntersectLine(
         x, y,
-        nodeShapes["star5"].points,
+        nodeShapes['star5'].points,
         nodeX,
         nodeY,
         width / 2, height / 2,
@@ -647,7 +647,7 @@
     intersectBox: function(
         x1, y1, x2, y2, width, height, centerX, centerY, padding) {
       
-      var points = nodeShapes["star5"].points;
+      var points = nodeShapes['star5'].points;
       
       return renderer.boxIntersectPolygon(
           x1, y1, x2, y2,
@@ -658,14 +658,14 @@
       x, y, padding, width, height, centerX, centerY) {
     
       return $$.math.checkInBoundingBox(
-        x, y, nodeShapes["star5"].points, 
+        x, y, nodeShapes['star5'].points, 
           padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
-      return $$.math.pointInsidePolygon(x, y, nodeShapes["star5"].points,
+      return $$.math.pointInsidePolygon(x, y, nodeShapes['star5'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
   };

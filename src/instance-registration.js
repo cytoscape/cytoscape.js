@@ -42,7 +42,7 @@
       $$.lastInstanceTime = time;
       suffix = $$.instanceCounter;
 
-      var id = "cy-" + time + "-" + suffix;
+      var id = 'cy-' + time + '-' + suffix;
 
       // create the registration object
       var registration = {

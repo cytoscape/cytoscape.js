@@ -4,7 +4,7 @@
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var canvas = this.data.canvases[0];
-    var context = canvas.getContext("2d");
+    var context = canvas.getContext('2d');
 
     var backingStore = context.backingStorePixelRatio ||
       context.webkitBackingStorePixelRatio ||
@@ -251,7 +251,7 @@
       if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
         // console.log('redrawing node layer');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext("2d");
+        var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
 
         setContextTransform( context );
         drawElements(elesNotInDragLayer, context);
@@ -263,7 +263,7 @@
       
       if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
         
-        var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext("2d");
+        var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
         
         setContextTransform( context );
         drawElements(elesInDragLayer, context);
@@ -276,7 +276,7 @@
       if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
         // console.log('redrawing selection box');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext("2d");
+        var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
         
         setContextTransform( context );
         
@@ -284,14 +284,14 @@
 
         if (data.select[4] == 1) {
           var zoom = data.cy.zoom();
-          var borderWidth = coreStyle["selection-box-border-width"].value / zoom;
+          var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
           
           context.lineWidth = borderWidth;
           context.fillStyle = "rgba(" 
-            + coreStyle["selection-box-color"].value[0] + ","
-            + coreStyle["selection-box-color"].value[1] + ","
-            + coreStyle["selection-box-color"].value[2] + ","
-            + coreStyle["selection-box-opacity"].value + ")";
+            + coreStyle['selection-box-color'].value[0] + ","
+            + coreStyle['selection-box-color'].value[1] + ","
+            + coreStyle['selection-box-color'].value[2] + ","
+            + coreStyle['selection-box-opacity'].value + ")";
           
           context.fillRect(
             data.select[0],
@@ -301,10 +301,10 @@
           
           if (borderWidth > 0) {
             context.strokeStyle = "rgba(" 
-              + coreStyle["selection-box-border-color"].value[0] + ","
-              + coreStyle["selection-box-border-color"].value[1] + ","
-              + coreStyle["selection-box-border-color"].value[2] + ","
-              + coreStyle["selection-box-opacity"].value + ")";
+              + coreStyle['selection-box-border-color'].value[0] + ","
+              + coreStyle['selection-box-border-color'].value[1] + ","
+              + coreStyle['selection-box-border-color'].value[2] + ","
+              + coreStyle['selection-box-opacity'].value + ")";
             
             context.strokeRect(
               data.select[0],
@@ -319,13 +319,13 @@
           var pos = data.bgActivePosistion;
 
           context.fillStyle = "rgba(" 
-            + coreStyle["active-bg-color"].value[0] + ","
-            + coreStyle["active-bg-color"].value[1] + ","
-            + coreStyle["active-bg-color"].value[2] + ","
-            + coreStyle["active-bg-opacity"].value + ")";
+            + coreStyle['active-bg-color'].value[0] + ","
+            + coreStyle['active-bg-color'].value[1] + ","
+            + coreStyle['active-bg-color'].value[2] + ","
+            + coreStyle['active-bg-opacity'].value + ")";
 
           context.beginPath();
-          context.arc(pos.x, pos.y, coreStyle["active-bg-size"].pxValue / zoom, 0, 2 * Math.PI); 
+          context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pxValue / zoom, 0, 2 * Math.PI); 
           context.fill();
         }
         

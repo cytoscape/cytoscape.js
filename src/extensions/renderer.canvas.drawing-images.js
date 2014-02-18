@@ -48,7 +48,7 @@
         buffer.width = image.width;
         buffer.height = image.height;
         
-        buffer.getContext("2d").drawImage(image,
+        buffer.getContext('2d').drawImage(image,
             0, 0
           );
         
@@ -126,7 +126,7 @@
     
     context.restore();
     
-    if (node._private.style["border-width"].value > 0) {
+    if (node._private.style['border-width'].value > 0) {
       context.stroke();
     }
     

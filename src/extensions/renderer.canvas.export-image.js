@@ -7,7 +7,7 @@
     buffer.width = w;
     buffer.height = h;
     
-    return [buffer, buffer.getContext("2d")];
+    return [buffer, buffer.getContext('2d')];
   }
 
   CanvasRenderer.prototype.png = function( options ){
@@ -24,7 +24,7 @@
     buffCanvas.style.width = width + 'px';
     buffCanvas.style.height = height + 'px';
 
-    var buffCxt = buffCanvas.getContext("2d");
+    var buffCxt = buffCanvas.getContext('2d');
 
     // Rasterize the layers, but only if container has nonzero size
     if (width > 0 && height > 0) {
@@ -37,7 +37,7 @@
         buffCxt.fill();
       }
 
-      buffCxt.globalCompositeOperation = "source-over";
+      buffCxt.globalCompositeOperation = 'source-over';
 
       if( options.full ){ // draw the full bounds of the graph
         this.redraw({
@@ -54,7 +54,7 @@
       }
     }
 
-    return buffCanvas.toDataURL("image/png");
+    return buffCanvas.toDataURL('image/png');
   };
 
 })( cytoscape );

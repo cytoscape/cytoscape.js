@@ -161,10 +161,10 @@
         var style = parent._private.style;
         var bb = children.boundingBox({ includeLabels: false, includeEdges: false });
         var padding = {
-          top: style["padding-top"].pxValue,
-          bottom: style["padding-bottom"].pxValue,
-          left: style["padding-left"].pxValue,
-          right: style["padding-right"].pxValue
+          top: style['padding-top'].pxValue,
+          bottom: style['padding-bottom'].pxValue,
+          left: style['padding-left'].pxValue,
+          right: style['padding-right'].pxValue
         };
         var pos = parent._private.position;
         var didUpdate = false;
@@ -266,7 +266,7 @@
       if( ele ){
         var style = ele._private.style;
         var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;;
-        var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
         return width + border;
       }
@@ -306,7 +306,7 @@
       if( ele ){
         var style = ele._private.style;
         var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
-        var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
         return height + border;
       }

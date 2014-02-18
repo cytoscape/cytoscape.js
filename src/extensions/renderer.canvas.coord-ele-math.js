@@ -144,7 +144,7 @@
               rs.endY))))
            { addCurrentEdge = true; }
       
-      } else if (rs.edgeType == 'bundled') {
+      } else if (rs.edgeType == 'haystack') {
         var tgt = edges[i].target()[0];
         var tgtPos = tgt.position();
         var src = edges[i].source()[0];
@@ -651,7 +651,7 @@
   CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
     var hashTable = {}; var cy = this.data.cy;
     var pairIds = [];
-    var bundledEdges = [];
+    var haystackEdges = [];
     
     // create a table of edge (src, tgt) => list of edges between them
     var pairId;
@@ -665,8 +665,8 @@
         continue;
       }
 
-      if( style['curve-style'].value === 'bundled' ){
-        bundledEdges.push( edge );
+      if( style['curve-style'].value === 'haystack' ){
+        haystackEdges.push( edge );
         continue;
       }
 
@@ -975,11 +975,11 @@
       }
     }
       
-    for( var i = 0; i < bundledEdges.length; i++ ){
-      var edge = bundledEdges[i];
+    for( var i = 0; i < haystackEdges.length; i++ ){
+      var edge = haystackEdges[i];
       var rscratch = edge._private.rscratch;
 
-      if( !rscratch.bundled ){
+      if( !rscratch.haystack ){
         var src = edge.source()[0];
         var srcPos = src.position();
         var srcW = src.width();
@@ -1004,8 +1004,8 @@
           y: Math.round( tgtR * Math.sin(angle) )
         };
 
-        rscratch.edgeType = 'bundled';
-        rscratch.bundled = true;
+        rscratch.edgeType = 'haystack';
+        rscratch.haystack = true;
       }  
     }
 

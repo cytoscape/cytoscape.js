@@ -68,7 +68,7 @@
     
     // validate group
     if( params.group !== 'nodes' && params.group !== 'edges' ){
-      $$.util.error("An element must be of type `nodes` or `edges`; you specified `" + params.group + "`");
+      $$.util.error('An element must be of type `nodes` or `edges`; you specified `' + params.group + '`');
       return;
     }
     
@@ -336,12 +336,12 @@
       if( data.id === undefined ){
         data.id = idFactory.generate( cy, ele );
       } else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
-        $$.util.error("Can not create element with invalid string ID `" + data.id + "`");
+        $$.util.error('Can not create element with invalid string ID `' + data.id + '`');
         
         // can't create element if it has empty string as id or non-string id
         continue;
       } else if( cy.getElementById( data.id ).length != 0 ){
-        $$.util.error("Can not create second element with ID `" + data.id + "`");
+        $$.util.error('Can not create second element with ID `' + data.id + '`');
         
         // can't create element if one already has that id
         continue;
@@ -362,11 +362,11 @@
           
           if( val == null || val === '' ){
             // can't create if source or target is not defined properly
-            $$.util.error("Can not create edge `" + data.id + "` with unspecified " + field);
+            $$.util.error('Can not create edge `' + data.id + '` with unspecified ' + field);
             badSourceOrTarget = true;
           } else if( cy.getElementById(val).empty() ){ 
             // can't create edge if one of its nodes doesn't exist
-            $$.util.error("Can not create edge `" + data.id + "` with nonexistant " + field + " `" + val + "`");
+            $$.util.error('Can not create edge `' + data.id + '` with nonexistant ' + field + ' `' + val + '`');
             badSourceOrTarget = true;
           }
         }

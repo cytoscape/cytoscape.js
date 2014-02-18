@@ -178,7 +178,7 @@
         //NB : VERY EXPENSIVE
         //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
-        var hideEdges = r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+        var hideEdges = r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
 
         if( hideEdges ){ 
         } else {

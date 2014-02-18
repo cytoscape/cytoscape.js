@@ -1313,6 +1313,8 @@
           dEleCol
             .trigger('drag')
           ;
+
+          r.hoverData.draggingEles = true;
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
@@ -1434,6 +1436,7 @@
       var select = r.data.select;
 
       r.swipePanning = false;
+      r.hoverData.draggingEles = false;
       
       var cy = r.data.cy; 
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();

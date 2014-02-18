@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
@@ -44,7 +44,7 @@
         
         var image = imageCache[url].image;
         
-        var buffer = document.createElement("canvas");
+        var buffer = document.createElement('canvas');
         buffer.width = image.width;
         buffer.height = image.height;
         
@@ -101,8 +101,8 @@
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;
 
-    //var nodeWidth = node._private.style["width"].value;
-    //var nodeHeight = node._private.style["height"].value;
+    //var nodeWidth = node._private.style['width'].value;
+    //var nodeHeight = node._private.style['height'].value;
     var nodeWidth = this.getNodeWidth(node);
     var nodeHeight = this.getNodeHeight(node);
     

@@ -1,4 +1,4 @@
-;(function( $$ ){ "use strict";
+;(function( $$ ){ 'use strict';
   
   $$.fn.eles({
     addClass: function(classes){
@@ -26,7 +26,7 @@
         new $$.Collection(this._private.cy, changed).updateStyle();
       }
 
-      self.trigger("class");
+      self.trigger('class');
       return self;
     },
 
@@ -69,7 +69,7 @@
         new $$.Collection(this._private.cy, changed).updateStyle();
       }
 
-      self.trigger("class");
+      self.trigger('class');
       return self;
     },
 
@@ -83,7 +83,7 @@
 
         for( var j = 0; j < classes.length; j++ ){
           var cls = classes[j];
-          if( !cls || cls === "" ){ continue; }
+          if( !cls || cls === '' ){ continue; }
 
           var hasClass = ele._private.classes[cls];
           delete ele._private.classes[cls];
@@ -99,7 +99,7 @@
         new $$.Collection(self._private.cy, changed).updateStyle();
       }
 
-      self.trigger("class");
+      self.trigger('class');
       return self;
     }
   });

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.fn.core({
     
@@ -124,7 +124,7 @@
         // notify renderer
         if( eles.length > 0 ){
           cy.notify({
-            type: "draw",
+            type: 'draw',
             collection: eles
           });
         }

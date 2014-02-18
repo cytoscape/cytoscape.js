@@ -1,4 +1,4 @@
-;(function( $$ ){ "use strict";
+;(function( $$ ){ 'use strict';
   
   // Regular degree functions (works on single element)
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,27 +74,27 @@
   }
   
   $$.fn.eles({
-    minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
+    minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
       return degree < min;
     }),
 
-    maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
+    maxDegree: defineDegreeBoundsFunction('degree', function(degree, max){
       return degree > max;
     }),
 
-    minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
+    minIndegree: defineDegreeBoundsFunction('indegree', function(degree, min){
       return degree < min;
     }),
 
-    maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
+    maxIndegree: defineDegreeBoundsFunction('indegree', function(degree, max){
       return degree > max;
     }),
 
-    minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
+    minOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, min){
       return degree < min;
     }),
 
-    maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
+    maxOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, max){
       return degree > max;
     })
   });

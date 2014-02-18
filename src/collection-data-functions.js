@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var borderWidthMultiplier = 2 * 0.5;
   var borderWidthAdjustment = 0;
@@ -6,52 +6,52 @@
   $$.fn.eles({
 
     data: $$.define.data({
-      field: "data",
-      bindingEvent: "data",
+      field: 'data',
+      bindingEvent: 'data',
       allowBinding: true,
       allowSetting: true,
-      settingEvent: "data",
+      settingEvent: 'data',
       settingTriggersEvent: true,
-      triggerFnName: "trigger",
+      triggerFnName: 'trigger',
       allowGetting: true,
       immutableKeys: {
-        "id": true,
-        "source": true,
-        "target": true,
-        "parent": true
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
       },
       updateMappers: true
     }),
 
     removeData: $$.define.removeData({
-      field: "data",
-      event: "data",
-      triggerFnName: "trigger",
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
       triggerEvent: true,
       immutableKeys: {
-        "id": true,
-        "source": true,
-        "target": true,
-        "parent": true
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
       },
       updateMappers: true
     }),
 
     batchData: $$.define.batchData({
-      field: "data",
-      event: "data",
-      triggerFnName: "trigger",
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
       immutableKeys: {
-        "id": true,
-        "source": true,
-        "target": true,
-        "parent": true
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
       },
       updateMappers: true
     }),
 
     scratch: $$.define.data({
-      field: "scratch",
+      field: 'scratch',
       allowBinding: false,
       allowSetting: true,
       settingTriggersEvent: false,
@@ -59,12 +59,12 @@
     }),
 
     removeScratch: $$.define.removeData({
-      field: "scratch",
+      field: 'scratch',
       triggerEvent: false
     }),
 
     rscratch: $$.define.data({
-      field: "rscratch",
+      field: 'rscratch',
       allowBinding: false,
       allowSetting: true,
       settingTriggersEvent: false,
@@ -72,7 +72,7 @@
     }),
 
     removeRscratch: $$.define.removeData({
-      field: "rscratch",
+      field: 'rscratch',
       triggerEvent: false
     }),
 
@@ -85,18 +85,18 @@
     },
 
     position: $$.define.data({
-      field: "position",
-      bindingEvent: "position",
+      field: 'position',
+      bindingEvent: 'position',
       allowBinding: true,
       allowSetting: true,
-      settingEvent: "position",
+      settingEvent: 'position',
       settingTriggersEvent: true,
-      triggerFnName: "rtrigger",
+      triggerFnName: 'rtrigger',
       allowGetting: true,
-      validKeys: ["x", "y"],
+      validKeys: ['x', 'y'],
       onSet: function( eles ){
         var updatedEles = eles.updateCompoundBounds();
-        updatedEles.rtrigger("position");
+        updatedEles.rtrigger('position');
       },
       canSet: function( ele ){
         return !ele.locked();
@@ -105,15 +105,15 @@
 
     // position but no notification to renderer
     silentPosition: $$.define.data({
-      field: "position",
-      bindingEvent: "position",
+      field: 'position',
+      bindingEvent: 'position',
       allowBinding: false,
       allowSetting: true,
-      settingEvent: "position",
+      settingEvent: 'position',
       settingTriggersEvent: false,
-      triggerFnName: "trigger",
+      triggerFnName: 'trigger',
       allowGetting: true,
-      validKeys: ["x", "y"],
+      validKeys: ['x', 'y'],
       onSet: function( eles ){
         eles.updateCompoundBounds();
       },
@@ -143,7 +143,7 @@
 
         var updatedEles = this.updateCompoundBounds();
         
-        this.add( updatedEles ).rtrigger("position");
+        this.add( updatedEles ).rtrigger('position');
       }
 
       return this; // chaining
@@ -169,13 +169,13 @@
         var pos = parent._private.position;
         var didUpdate = false;
 
-        if( style["width"].value === "auto" ){
+        if( style['width'].value === 'auto' ){
           parent._private.autoWidth = bb.w + padding.left + padding.right;
           pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
           didUpdate = true;
         }
 
-        if( style["height"].value === "auto" ){
+        if( style['height'].value === 'auto' ){
           parent._private.autoHeight = bb.h + padding.top + padding.bottom;
           pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
           didUpdate = true;
@@ -229,7 +229,7 @@
             }
           }
 
-          this.rtrigger("position");
+          this.rtrigger('position');
         } else { // getting
           var pos = ele._private.position;
           rpos = {
@@ -256,7 +256,7 @@
 
       if( ele ){
         var w = ele._private.style.width;
-        return w.strValue === "auto" ? ele._private.autoWidth : w.pxValue;
+        return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
       }
     },
 
@@ -265,7 +265,7 @@
 
       if( ele ){
         var style = ele._private.style;
-        var width = style.width.strValue === "auto" ? ele._private.autoWidth : style.width.pxValue;;
+        var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;;
         var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
         return width + border;
@@ -296,7 +296,7 @@
 
       if( ele && ele.isNode() ){
         var h = ele._private.style.height;
-        return h.strValue === "auto" ? ele._private.autoHeight : h.pxValue;
+        return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
       }
     },
 
@@ -305,7 +305,7 @@
 
       if( ele ){
         var style = ele._private.style;
-        var height = style.height.strValue === "auto" ? ele._private.autoHeight : style.height.pxValue;
+        var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
         var border = style["border-width"] ? style["border-width"].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
         return height + border;
@@ -375,7 +375,7 @@
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;
 
-        if( ele.css("display") === "none" ){ continue; } // then ele doesn't take up space      
+        if( ele.css('display') === 'none' ){ continue; } // then ele doesn't take up space      
 
         if( ele.isNode() && options.includeNodes ){
           includedEle = true;
@@ -476,34 +476,34 @@
             ly2 = labelY + lh/2;
           } else {
             switch( halign.value ){
-              case "left":
+              case 'left':
                 lx1 = labelX - lw;
                 lx2 = labelX;
                 break;
 
-              case "center":
+              case 'center':
                 lx1 = labelX - lw/2;
                 lx2 = labelX + lw/2;
                 break;
 
-              case "right":
+              case 'right':
                 lx1 = labelX;
                 lx2 = labelX + lw;
                 break;
             }
 
             switch( valign.value ){
-              case "top":
+              case 'top':
                 ly1 = labelY - lh;
                 ly2 = labelY;
                 break;
 
-              case "center":
+              case 'center':
                 ly1 = labelY - lh/2;
                 ly2 = labelY + lh/2;
                 break;
 
-              case "bottom":
+              case 'bottom':
                 ly1 = labelY;
                 ly2 = labelY + lh;
                 break;

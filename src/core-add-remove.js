@@ -1,4 +1,4 @@
-(function($$, window){ "use strict";
+(function($$, window){ 'use strict';
 
   function ready(f) {
     var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
@@ -43,7 +43,7 @@
         var elesByGroup = opts;
         var jsons = [];
 
-        var grs = ["nodes", "edges"];
+        var grs = ['nodes', 'edges'];
         for( var i = 0, il = grs.length; i < il; i++ ){
           var group = grs[i];
           var elesArray = elesByGroup[group];
@@ -100,20 +100,20 @@
       }
       
       function callback(){        
-        cy.one("layoutready", function(e){
+        cy.one('layoutready', function(e){
           cy.notifications(true);
           cy.trigger(e); // we missed this event by turning notifications off, so pass it on
 
           cy.notify({
-            type: "load",
+            type: 'load',
             collection: cy.elements()
           });
 
-          cy.one("load", onload);
-          cy.trigger("load");
-        }).one("layoutstop", function(){
-          cy.one("done", ondone);
-          cy.trigger("done");
+          cy.one('load', onload);
+          cy.trigger('load');
+        }).one('layoutstop', function(){
+          cy.one('done', ondone);
+          cy.trigger('done');
         });
         
         cy.layout( cy._private.options.layout );

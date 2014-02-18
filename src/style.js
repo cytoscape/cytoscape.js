@@ -1,4 +1,4 @@
-;(function($$, window){ "use strict";
+;(function($$, window){ 'use strict';
   
   var isTouch = $$.is.touch();
 
@@ -9,7 +9,7 @@
     }
 
     if( !$$.is.core(cy) ){
-      $$.util.error("A style must have a core reference");
+      $$.util.error('A style must have a core reference');
       return;
     }
 
@@ -92,20 +92,20 @@
   };
 
   $$.style.applyFromString = function( style, string ){
-    var remaining = "" + string;
+    var remaining = '' + string;
     var selAndBlockStr;
     var blockRem;
     var propAndValStr;
 
     // remove comments from the style string
-    remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, "");
+    remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
 
     function removeSelAndBlockFromRemaining(){
       // remove the parsed selector and block from the remaining text to parse
       if( remaining.length > selAndBlockStr.length ){
         remaining = remaining.substr( selAndBlockStr.length );
       } else {
-        remaining = "";
+        remaining = '';
       }
     }
 
@@ -114,7 +114,7 @@
       if( blockRem.length > propAndValStr.length ){
         blockRem = blockRem.substr( propAndValStr.length );
       } else {
-        blockRem = "";
+        blockRem = '';
       }
     }
 
@@ -279,7 +279,7 @@
       }
 
       json.push({
-        selector: !selector ? "core" : selector.toString(),
+        selector: !selector ? 'core' : selector.toString(),
         css: css
       });
     }
@@ -344,33 +344,33 @@
       percent: { number: true, min: 0, max: 100, units: "%" },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-      size: { number: true, min: 0, enums: ["auto"] },
+      size: { number: true, min: 0, enums: ['auto'] },
       bgSize: { number: true, min: 0, allowPercent: true },
       color: { color: true },
-      lineStyle: { enums: ["solid", "dotted", "dashed"] },
-      curveStyle: { enums: ["bundled", "bezier"] },
+      lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
+      curveStyle: { enums: ['bundled', 'bezier'] },
       fontFamily: { regex: "^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$" },
-      fontVariant: { enums: ["small-caps", "normal"] },
-      fontStyle: { enums: ["italic", "normal", "oblique"] },
-      fontWeight: { enums: ["normal", "bold", "bolder", "lighter", "100", "200", "300", "400", "500", "600", "800", "900", 100, 200, 300, 400, 500, 600, 700, 800, 900] },
-      textDecoration: { enums: ["none", "underline", "overline", "line-through"] },
-      textTransform: { enums: ["none", "capitalize", "uppercase", "lowercase"] },
-      nodeShape: { enums: ["rectangle", "roundrectangle", "ellipse", "triangle",
-                           "square", "pentagon", "hexagon", "heptagon", "octagon", "star"] },
-      arrowShape: { enums: ["tee", "triangle", "square", "circle", "diamond", "none"] },
-      display: { enums: ["element", "none"] },
-      visibility: { enums: ["hidden", "visible"] },
-      valign: { enums: ["top", "center", "bottom"] },
-      halign: { enums: ["left", "center", "right"] },
-      positionx: { enums: ["left", "center", "right"], number: true, allowPercent: true },
-      positiony: { enums: ["top", "center", "bottom"], number: true, allowPercent: true },
-      bgRepeat: { enums: ["repeat", "repeat-x", "repeat-y", "no-repeat"] },
-      cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
+      fontVariant: { enums: ["small-caps", 'normal'] },
+      fontStyle: { enums: ['italic', 'normal', 'oblique'] },
+      fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', "100", "200", "300", "400", "500", "600", "800", "900", 100, 200, 300, 400, 500, 600, 700, 800, 900] },
+      textDecoration: { enums: ['none', 'underline', 'overline', "line-through"] },
+      textTransform: { enums: ['none', 'capitalize', 'uppercase', 'lowercase'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle',
+                           'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
+      arrowShape: { enums: ['tee', 'triangle', 'square', 'circle', 'diamond', 'none'] },
+      display: { enums: ['element', 'none'] },
+      visibility: { enums: ['hidden', 'visible'] },
+      valign: { enums: ['top', 'center', 'bottom'] },
+      halign: { enums: ['left', 'center', 'right'] },
+      positionx: { enums: ['left', 'center', 'right'], number: true, allowPercent: true },
+      positiony: { enums: ['top', 'center', 'bottom'], number: true, allowPercent: true },
+      bgRepeat: { enums: ['repeat', "repeat-x", "repeat-y", "no-repeat"] },
+      cursor: { enums: ['auto', 'crosshair', 'default', "e-resize", "n-resize", "ne-resize", "nw-resize", 'pointer', 'progress', "s-resize", "sw-resize", 'text', "w-resize", 'wait', 'grab', 'grabbing'] },
       text: { string: true },
-      data: { mapping: true, regex: data("data") },
-      layoutData: { mapping: true, regex: data("layoutData") },
-      mapData: { mapping: true, regex: mapData("mapData") },
-      mapLayoutData: { mapping: true, regex: mapData("mapLayoutData") },
+      data: { mapping: true, regex: data('data') },
+      layoutData: { mapping: true, regex: data('layoutData') },
+      mapData: { mapping: true, regex: mapData('mapData') },
+      mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       url: { regex: "^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$" }
     };
 
@@ -380,8 +380,8 @@
       // these are for elements
       { name: "text-valign", type: t.valign },
       { name: "text-halign", type: t.halign },
-      { name: "color", type: t.color },
-      { name: "content", type: t.text },
+      { name: 'color', type: t.color },
+      { name: 'content', type: t.text },
       { name: "max-content-width", type: t.size },
       { name: "max-content-height", type: t.size },
       { name: "text-outline-color", type: t.color },
@@ -396,9 +396,9 @@
       { name: "font-weight", type: t.fontWeight },
       { name: "font-size", type: t.size },
       { name: "min-zoomed-font-size", type: t.size },
-      { name: "display", type: t.display },
-      { name: "visibility", type: t.visibility },
-      { name: "opacity", type: t.zeroOneNumber },
+      { name: 'display', type: t.display },
+      { name: 'visibility', type: t.visibility },
+      { name: 'opacity', type: t.zeroOneNumber },
       { name: "z-index", type: t.nonNegativeInt },
       { name: "overlay-padding", type: t.size },
       { name: "overlay-color", type: t.color },
@@ -449,13 +449,13 @@
       { name: "border-opacity", type: t.zeroOneNumber },
       { name: "border-width", type: t.size },
       { name: "border-style", type: t.lineStyle },
-      { name: "height", type: t.size },
-      { name: "width", type: t.size },
+      { name: 'height', type: t.size },
+      { name: 'width', type: t.size },
       { name: "padding-left", type: t.size },
       { name: "padding-right", type: t.size },
       { name: "padding-top", type: t.size },
       { name: "padding-bottom", type: t.size },
-      { name: "shape", type: t.nodeShape },
+      { name: 'shape', type: t.nodeShape },
 
       // these are just for edges
       { name: "source-arrow-shape", type: t.arrowShape },
@@ -499,27 +499,27 @@
     // instead of the developer's values so let's just make it explicit for the dev for now
     //
     // delaying the read of these val's is not an opt'n: that would delay init'l load time
-    var fontFamily = "Helvetica" || this.containerPropertyAsString("font-family") || "sans-serif";
-    var fontStyle = "normal" || this.containerPropertyAsString("font-style") || "normal";
-    var fontVariant = "normal" || this.containerPropertyAsString("font-variant") || "normal";
-    var fontWeight = "normal" || this.containerPropertyAsString("font-weight") || "normal";
-    var color = "#000" || this.containerPropertyAsString("color") || "#000";
-    var textTransform = "none" || this.containerPropertyAsString("text-transform") || "none";
-    var textDecoration = "none" || this.containerPropertyAsString("text-decoration") || "none";
+    var fontFamily = 'Helvetica' || this.containerPropertyAsString("font-family") || "sans-serif";
+    var fontStyle = 'normal' || this.containerPropertyAsString("font-style") || 'normal';
+    var fontVariant = 'normal' || this.containerPropertyAsString("font-variant") || 'normal';
+    var fontWeight = 'normal' || this.containerPropertyAsString("font-weight") || 'normal';
+    var color = "#000" || this.containerPropertyAsString('color') || "#000";
+    var textTransform = 'none' || this.containerPropertyAsString("text-transform") || 'none';
+    var textDecoration = 'none' || this.containerPropertyAsString("text-decoration") || 'none';
     var fontSize = 16 || this.containerPropertyAsString("font-size") || 16;
 
     // fill the style with the default stylesheet
     this
       .selector("node, edge") // common properties
         .css({
-          "text-valign": "top",
-          "text-halign": "center",
-          "color": color,
+          "text-valign": 'top',
+          "text-halign": 'center',
+          'color': color,
           "text-outline-color": "#000",
           "text-outline-width": 0,
           "text-outline-opacity": 1,
           "text-opacity": 1,
-          "text-decoration": "none",
+          "text-decoration": 'none',
           "text-transform": textTransform,
           "font-family": fontFamily,
           "font-style": fontStyle,
@@ -527,11 +527,11 @@
           "font-weight": fontWeight,
           "font-size": fontSize,
           "min-zoomed-font-size": 0,
-          "visibility": "visible",
-          "display": "element",
-          "opacity": 1,
+          'visibility': 'visible',
+          'display': 'element',
+          'opacity': 1,
           "z-index": 0,
-          "content": "",
+          'content': '',
           "max-content-width": 50,
           "max-content-height": fontSize,
           "overlay-opacity": 0,
@@ -541,90 +541,90 @@
           // node props
           "background-color": "#888",
           "background-opacity": 1,
-          "background-image": "none",
+          "background-image": 'none',
           "border-color": "#000",
           "border-opacity": 1,
           "border-width": 0,
-          "border-style": "solid",
-          "height": 30,
-          "width": 30,
+          "border-style": 'solid',
+          'height': 30,
+          'width': 30,
           "padding-top": 0,
           "padding-bottom": 0,
           "padding-left": 0,
           "padding-right": 0,
-          "shape": "ellipse",
-          "pie-1-background-color": "black",
+          'shape': 'ellipse',
+          "pie-1-background-color": 'black',
           "pie-1-background-size": "0%",
-          "pie-2-background-color": "black",
+          "pie-2-background-color": 'black',
           "pie-2-background-size": "0%",
-          "pie-3-background-color": "black",
+          "pie-3-background-color": 'black',
           "pie-3-background-size": "0%",
-          "pie-4-background-color": "black",
+          "pie-4-background-color": 'black',
           "pie-4-background-size": "0%",
-          "pie-5-background-color": "black",
+          "pie-5-background-color": 'black',
           "pie-5-background-size": "0%",
-          "pie-6-background-color": "black",
+          "pie-6-background-color": 'black',
           "pie-6-background-size": "0%",
-          "pie-7-background-color": "black",
+          "pie-7-background-color": 'black',
           "pie-7-background-size": "0%",
-          "pie-8-background-color": "black",
+          "pie-8-background-color": 'black',
           "pie-8-background-size": "0%",
-          "pie-9-background-color": "black",
+          "pie-9-background-color": 'black',
           "pie-9-background-size": "0%",
-          "pie-10-background-color": "black",
+          "pie-10-background-color": 'black',
           "pie-10-background-size": "0%",
-          "pie-11-background-color": "black",
+          "pie-11-background-color": 'black',
           "pie-11-background-size": "0%",
-          "pie-12-background-color": "black",
+          "pie-12-background-color": 'black',
           "pie-12-background-size": "0%",
-          "pie-13-background-color": "black",
+          "pie-13-background-color": 'black',
           "pie-13-background-size": "0%",
-          "pie-14-background-color": "black",
+          "pie-14-background-color": 'black',
           "pie-14-background-size": "0%",
-          "pie-15-background-color": "black",
+          "pie-15-background-color": 'black',
           "pie-15-background-size": "0%",
-          "pie-16-background-color": "black",
+          "pie-16-background-color": 'black',
           "pie-16-background-size": "0%",
 
           // edge props
-          "source-arrow-shape": "none",
-          "target-arrow-shape": "none",
+          "source-arrow-shape": 'none',
+          "target-arrow-shape": 'none',
           "source-arrow-color": "#bbb",
           "target-arrow-color": "#bbb",
-          "line-style": "solid",
+          "line-style": 'solid',
           "line-color": "#bbb",
           "control-point-step-size": 40,
-          "curve-style": "bezier"
+          "curve-style": 'bezier'
         })
       .selector("$node > node") // compound (parent) node properties
         .css({
-          "width": "auto",
-          "height": "auto",
-          "shape": "rectangle",
+          'width': 'auto',
+          'height': 'auto',
+          'shape': 'rectangle',
           "background-opacity": 0.5,
           "padding-top": 10,
           "padding-right": 10,
           "padding-left": 10,
           "padding-bottom": 10
         })
-      .selector("edge") // just edge properties
+      .selector('edge') // just edge properties
         .css({
-          "width": 1,
+          'width': 1,
         })
       .selector(":active")
         .css({
-          "overlay-color": "black",
+          "overlay-color": 'black',
           "overlay-padding": 10,
           "overlay-opacity": 0.25
         })
-      .selector("core") // just core properties
+      .selector('core') // just core properties
         .css({
           "selection-box-color": "#ddd",
           "selection-box-opacity": 0.65,
           "selection-box-border-color": "#aaa",
           "selection-box-border-width": 1,
-          "panning-cursor": "grabbing",
-          "active-bg-color": "black",
+          "panning-cursor": 'grabbing',
+          "active-bg-color": 'black',
           "active-bg-opacity": 0.15,
           "active-bg-size": isTouch ? 40 : 15
         })
@@ -650,7 +650,7 @@
     return this;
   };
 
-  // builds a style object for the "core" selector
+  // builds a style object for the 'core' selector
   $$.styfn.core = function(){
     return this._private.coreStyle;
   };
@@ -663,7 +663,7 @@
   // - bypass : true iff the property is a bypass property
   $$.styfn.parse = function( name, value, propIsBypass ){
     
-    name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
+    name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name' not 'propertyName")
     var property = $$.style.properties[ name ];
     var passedValue = value;
     
@@ -679,7 +679,7 @@
     if( !type ){ return null; } // no type, no luck
 
     // check if bypass is null or empty string (i.e. indication to delete bypass property)
-    if( propIsBypass && (value === "" || value === null) ){
+    if( propIsBypass && (value === '' || value === null) ){
       return {
         name: name,
         value: value,
@@ -766,7 +766,7 @@
     // check the type and return the appropriate object
     if( type.number ){ 
       var units;
-      var implicitUnit = "px"; // not set => px
+      var implicitUnit = 'px'; // not set => px
 
       if( type.units ){ // use specified units if set
         units = type.units;
@@ -774,7 +774,7 @@
 
       if( !type.unitless ){
         if( valueIsString ){
-          var unitsRegex = "px|em" + (type.allowPercent ? "|\\%" : "");
+          var unitsRegex = "px|em" + (type.allowPercent ? "|\\%" : '');
           if( units ){ unitsRegex = units; } // only allow explicit units if so set 
           var match = value.match( "^(" + $$.util.regex.number + ")(" + unitsRegex + ")?" + "$" );
           
@@ -831,13 +831,13 @@
       var ret = {
         name: name,
         value: value,
-        strValue: "" + value + (units ? units : ""),
+        strValue: '' + value + (units ? units : ''),
         units: units,
         bypass: propIsBypass,
         pxValue: type.unitless || units === "%" ?
           undefined
           :
-          ( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )
+          ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) )
       };
 
       return ret;
@@ -936,8 +936,8 @@
 
   // create a new context from the specified selector string and switch to that context
   $$.styfn.selector = function( selectorStr ){
-    // "core" is a special case and does not need a selector
-    var selector = selectorStr === "core" ? null : new $$.Selector( selectorStr );
+    // 'core' is a special case and does not need a selector
+    var selector = selectorStr === 'core' ? null : new $$.Selector( selectorStr );
 
     var i = this.length++; // new context means new index
     this[i] = {
@@ -1031,7 +1031,7 @@
     var origPropIsBypass = origProp && origProp.bypass;
 
     // can't apply auto to width or height unless it's a parent node
-    if( (parsedProp.name === "height" || parsedProp.name === "width") && parsedProp.value === "auto" && ele.isNode() && !ele.isParent() ){
+    if( (parsedProp.name === 'height' || parsedProp.name === 'width') && parsedProp.value === 'auto' && ele.isNode() && !ele.isParent() ){
       return false;
     }
 
@@ -1093,7 +1093,7 @@
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: [ "rgba(", clr[0], ", ", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join("") // fake it til you make it
+          strValue: [ "rgba(", clr[0], ", ", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join('') // fake it til you make it
         };
       
       } else if( type.number ){
@@ -1240,7 +1240,7 @@
       // apply the styles
       for( var i = 0; i < this.length; i++ ){
         var context = this[i];
-        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for "core"
+        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
         var props = context.properties;
 
         // console.log(i + ' : looking at selector: ' + context.selector);
@@ -1306,7 +1306,7 @@
         var styleProp = style[ prop.name ];
 
         if( styleProp ){
-          var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + "px";
+          var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + 'px';
           rstyle[ prop.name ] = val;
           rstyle[ $$.util.dash2camel(prop.name) ] = val;
         }
@@ -1463,7 +1463,7 @@
     for( var i = 0; i < $$.style.properties.length; i++ ){
       var prop = $$.style.properties[i];
       var name = prop.name;
-      var value = ""; // empty => remove bypass
+      var value = ''; // empty => remove bypass
 
       var parsedProp = this.parse(name, value, true);
 

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var defaults = {
     maxSimulationTime: 1000,
@@ -36,7 +36,7 @@
 
     // make some nodes
     nodes.each(function(i, node){
-      node.scratch("springy", {
+      node.scratch('springy', {
         model: graph.newNode({
           element: node
         })
@@ -45,10 +45,10 @@
 
     // connect them with edges
     edges.each(function(i, edge){
-      fdSrc = edge.source().scratch("springy").model;
-      fdTgt = edge.target().scratch("springy").model;
+      fdSrc = edge.source().scratch('springy').model;
+      fdTgt = edge.target().scratch('springy').model;
       
-      edge.scratch("springy", {
+      edge.scratch('springy', {
         model: graph.newEdge(fdSrc, fdTgt, {
           element: edge
         })
@@ -104,8 +104,8 @@
       }
       
       if( drawnNodes == numNodes ){
-        cy.one("layoutready", options.ready);
-        cy.trigger("layoutready");
+        cy.one('layoutready', options.ready);
+        cy.trigger('layoutready');
       } 
       
       drawnNodes++;
@@ -124,18 +124,18 @@
     // update actual node positions every once in a while
     setInterval(function(){
       if( movedNodes.size() > 0 ){
-        movedNodes.rtrigger("position");
+        movedNodes.rtrigger('position');
         movedNodes = cy.collection();
       }
     }, 50);
     
     // update node positions when dragging
-    nodes.bind("drag", function(){
+    nodes.bind('drag', function(){
       setLayoutPositionForElement(this);
     });
     
     function setLayoutPositionForElement(element){
-      var fdId = element.scratch("springy").model.id;
+      var fdId = element.scratch('springy').model.id;
       var fdP = fdRenderer.layout.nodePoints[fdId].p;
       var pos = element.position();
       var positionInFd = (pos.x != null && pos.y != null) ? fromScreen(element.position()) : {
@@ -178,8 +178,8 @@
           cy.fit();
         }
         
-        cy.one("layoutstop", options.stop);
-        cy.trigger("layoutstop");
+        cy.one('layoutstop', options.stop);
+        cy.trigger('layoutstop');
 
         self.stopSystem = null;
       });
@@ -198,7 +198,7 @@
     }
   };
   
-  $$("layout", "springy", SpringyLayout);
+  $$('layout', 'springy', SpringyLayout);
 
   
 })(cytoscape);

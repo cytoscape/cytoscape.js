@@ -1,4 +1,4 @@
-;(function($, $$){ "use strict";
+;(function($, $$){ 'use strict';
   
   if( !$ ){ return } // no jquery => don't need this
 
@@ -8,7 +8,7 @@
     var $this = $(this);
 
     // get object
-    if( opts === "get" ){
+    if( opts === 'get' ){
       var reg = $$.getRegistrationForInstance( $this[0] );
       return reg.cy;
     }
@@ -27,7 +27,7 @@
       
       if( reg && reg.cy && reg.cy.ready() ){
         // already ready so just trigger now
-        reg.cy.trigger("ready", [], ready);
+        reg.cy.trigger('ready', [], ready);
 
       } else {
         // not yet ready, so add to readies list

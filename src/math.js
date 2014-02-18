@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   $$.math = {};
   
@@ -852,7 +852,7 @@
         + params[i] * params[i] * y3;
         
       distSquared = Math.pow(curX - x, 2) + Math.pow(curY - y, 2);
-      // debug("distance for param " + params[i] + ": " + Math.sqrt(distSquared));
+      // debug('distance for param ' + params[i] + ": " + Math.sqrt(distSquared));
       if (minDistanceSquared >= 0) {
         if (distSquared < minDistanceSquared) {
           minDistanceSquared = distSquared;
@@ -1650,7 +1650,7 @@
     var increment = 1.0 / sides * 2 * Math.PI;
     var startAngle = sides % 2 == 0 ? 
       Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-//    console.log(nodeShapes["square"]);
+//    console.log(nodeShapes['square']);
     startAngle += rotationRadians;
     
     var points = new Array(sides * 2);

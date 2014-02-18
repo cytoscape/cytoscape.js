@@ -2,7 +2,7 @@
 // or it's just a global to this module if commonjs
 var cytoscape;
 
-(function(window){ "use strict";
+(function(window){ 'use strict';
 
   // the object iteself is a function that init's an instance of cytoscape
   var $$ = cytoscape = function(){
@@ -25,10 +25,10 @@ var cytoscape;
     } 
     
     // allow for registration of extensions
-    // e.g. $.cytoscape("renderer", "svg", SvgRenderer);
-    // e.g. $.cytoscape("renderer", "svg", "nodeshape", "ellipse", SvgEllipseNodeShape);
-    // e.g. $.cytoscape("core", "doSomething", function(){ /* doSomething code */ });
-    // e.g. $.cytoscape("collection", "doSomething", function(){ /* doSomething code */ });
+    // e.g. $.cytoscape('renderer', 'svg', SvgRenderer);
+    // e.g. $.cytoscape('renderer', 'svg', 'nodeshape', 'ellipse', SvgEllipseNodeShape);
+    // e.g. $.cytoscape('core', 'doSomething', function(){ /* doSomething code */ });
+    // e.g. $.cytoscape('collection', 'doSomething', function(){ /* doSomething code */ });
     else if( $$.is.string( options ) ) {
       return $$.extension.apply($$.extension, arguments);
     }

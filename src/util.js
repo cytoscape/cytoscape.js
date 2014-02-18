@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // utility functions only for internal use
 
@@ -14,7 +14,7 @@
         deep = false;
 
       // Handle a deep copy situation
-      if ( typeof target === "boolean" ) {
+      if ( typeof target === 'boolean' ) {
         deep = target;
         target = arguments[1] || {};
         // skip the boolean and the target
@@ -22,7 +22,7 @@
       }
 
       // Handle case when target is a string or something (possible in deep copy)
-      if ( typeof target !== "object" && !$$.is.fn(target) ) {
+      if ( typeof target !== 'object' && !$$.is.fn(target) ) {
         target = {};
       }
 
@@ -145,7 +145,7 @@
         var key = keys[i];
 
         if( $$.is.plainObject( key ) ){
-          $$.util.error("Tried to set map with object key");
+          $$.util.error('Tried to set map with object key');
         }
 
         if( i < keys.length - 1 ){
@@ -173,7 +173,7 @@
         var key = keys[i];
 
         if( $$.is.plainObject( key ) ){
-          $$.util.error("Tried to get map with object key");
+          $$.util.error('Tried to get map with object key');
         }
 
         obj = obj[key];
@@ -197,7 +197,7 @@
         var key = keys[i];
 
         if( $$.is.plainObject( key ) ){
-          $$.util.error("Tried to delete map with object key");
+          $$.util.error('Tried to delete map with object key');
         }
 
         var lastKey = i === options.keys.length - 1;
@@ -246,7 +246,7 @@
       var noUpperCases = ret.length === str.length;
       if( noUpperCases ){ return str } // cheaper than .join()
 
-      return ret.join("");
+      return ret.join('');
     },
 
     dash2camel: function( str ){
@@ -270,7 +270,7 @@
         }
       }
 
-      return ret.join("");
+      return ret.join('');
     },
 
     // strip spaces from beginning of string and end of string
@@ -278,10 +278,10 @@
       var first, last;
 
       // find first non-space char
-      for( first = 0; first < str.length && str[first] === " "; first++ ){}
+      for( first = 0; first < str.length && str[first] === ' '; first++ ){}
 
       // find last non-space char
-      for( last = str.length - 1; last > first && str[last] === " "; last-- ){}
+      for( last = str.length - 1; last > first && str[last] === ' '; last-- ){}
 
       return str.substring(first, last + 1);
     },

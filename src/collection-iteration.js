@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // Functions for iterating over collections
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,11 +90,11 @@
 
   $$.Collection.zIndexSort = function(a, b) {
     var elementDepth = function(ele) {
-      if (ele._private.group == "nodes")
+      if (ele._private.group == 'nodes')
       {
         return ele.parents().size();
       }
-      else if (ele._private.group == "edges")
+      else if (ele._private.group == 'edges')
       {
         return Math.max(ele.source()[0].parents().size(),
                         ele.target()[0].parents().size());
@@ -121,16 +121,16 @@
     // then edges should be drawn first
     if (depthA - depthB === 0)
     {
-      // "a" is a node, it should be drawn later
-      if (a._private.group === "nodes"
-        && b._private.group === "edges")
+      // 'a' is a node, it should be drawn later
+      if (a._private.group === 'nodes'
+        && b._private.group === 'edges')
       {
         return 1;
       }
       
-      // "a" is an edge, it should be drawn first
-      else if (a._private.group === "edges"
-        && b._private.group === "nodes")
+      // 'a' is an edge, it should be drawn first
+      else if (a._private.group === 'edges'
+        && b._private.group === 'nodes')
       {
         return -1;
       }

@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
@@ -207,17 +207,17 @@
       cy.fit( options.padding );
     } 
     
-    cy.one("layoutready", params.ready);
-    cy.trigger("layoutready");
+    cy.one('layoutready', params.ready);
+    cy.trigger('layoutready');
     
-    cy.one("layoutstop", params.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', params.stop);
+    cy.trigger('layoutstop');
   };
 
   GridLayout.prototype.stop = function(){
     // not a continuous layout
   };
   
-  $$("layout", "grid", GridLayout);
+  $$('layout', 'grid', GridLayout);
   
 })( cytoscape );

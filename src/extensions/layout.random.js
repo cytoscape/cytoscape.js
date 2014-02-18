@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   var defaults = {
     ready: undefined, // callback on layoutready
@@ -36,16 +36,16 @@
     
     // layoutready should be triggered when the layout has set each node's
     // position at least once
-    cy.one("layoutready", options.ready);
-    cy.trigger("layoutready");
+    cy.one('layoutready', options.ready);
+    cy.trigger('layoutready');
     
     if( options.fit ){
       cy.fit( options.padding );
     }
     
     // layoutstop should be triggered when the layout stops running
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
   
   RandomLayout.prototype.stop = function(){
@@ -54,8 +54,8 @@
 
   // register the layout
   $$(
-    "layout", // we're registering a layout
-    "random", // the layout name
+    'layout', // we're registering a layout
+    'random', // the layout name
     RandomLayout // the layout prototype
   );
   

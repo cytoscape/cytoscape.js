@@ -1,4 +1,4 @@
-;(function($$){ "use strict";
+;(function($$){ 'use strict';
   
   // metaprogramming makes me happy
 
@@ -15,14 +15,14 @@
     // access data field
     data: function( params ){
       var defaults = { 
-        field: "data",
-        bindingEvent: "data",
+        field: 'data',
+        bindingEvent: 'data',
         allowBinding: false,
         allowSetting: false,
         allowGetting: false,
-        settingEvent: "data",
+        settingEvent: 'data',
         settingTriggersEvent: false,
-        triggerFnName: "trigger",
+        triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
         updateMappers: false,
         onSet: function( self ){},
@@ -37,10 +37,10 @@
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
         var single = selfIsArrayLike ? self[0] : self;
 
-        // .data("foo", ...)
+        // .data('foo', ...)
         if( $$.is.string(name) ){ // set or get property
 
-          // .data("foo")
+          // .data('foo')
           if( p.allowGetting && value === undefined ){ // get
 
             var ret;
@@ -49,7 +49,7 @@
             }
             return ret;
           
-          // .data("foo", "bar")
+          // .data('foo', 'bar')
           } else if( p.allowSetting && value !== undefined ) { // set
             var valid = !p.immutableKeys[name];
             if( valid ){
@@ -71,7 +71,7 @@
             }
           }
 
-        // .data({ "foo": "bar" })
+        // .data({ 'foo': 'bar' })
         } else if( p.allowSetting && $$.is.plainObject(name) ){ // extend
           var obj = name;
           var k, v;
@@ -119,9 +119,9 @@
 
     batchData: function( params ){
       var defaults = {
-        field: "data",
-        event: "data",
-        triggerFnName: "trigger",
+        field: 'data',
+        event: 'data',
+        triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
         updateMappers: false
       };
@@ -169,9 +169,9 @@
     // remove data field
     removeData: function( params ){
       var defaults = { 
-        field: "data",
-        event: "data",
-        triggerFnName: "trigger",
+        field: 'data',
+        event: 'data',
+        triggerFnName: 'trigger',
         triggerEvent: false,
         immutableKeys: {} // key => true if immutable
       };
@@ -184,7 +184,7 @@
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
         var single = selfIsArrayLike ? self[0] : self;
         
-        // .removeData("foo bar")
+        // .removeData('foo bar')
         if( $$.is.string(names) ){ // then get the list of keys, and delete them
           var keys = names.split(/\s+/);
           var l = keys.length;
@@ -303,7 +303,7 @@
                 data: data, // extra data in eventObj.data
                 delegated: selector ? true : false, // whether the evt is delegated
                 selector: selector, // the selector to match for delegated events
-                type: type, // the event type (e.g. "click")
+                type: type, // the event type (e.g. 'click')
                 namespace: namespace, // the event namespace (e.g. ".foo")
                 unbindSelfOnTrigger: p.unbindSelfOnTrigger,
                 unbindAllBindersOnTrigger: p.unbindAllBindersOnTrigger,

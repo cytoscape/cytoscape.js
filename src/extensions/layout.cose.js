@@ -4,7 +4,7 @@
   Modifications tracked on Github.
 */
 
-;(function($$) { "use strict";
+;(function($$) { 'use strict';
 
   var DEBUG;
 
@@ -141,11 +141,11 @@
     // Get end time
     var endTime = new Date();
 
-    console.info("Layout took " + (endTime - startTime) + " ms");
+    console.info('Layout took ' + (endTime - startTime) + ' ms');
 
     // Layout has finished
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
 
 
@@ -155,8 +155,8 @@
   CoseLayout.prototype.stop = function(){
     var options = this.options;
 
-    cy.one("layoutstop", options.stop);
-    cy.trigger("layoutstop");
+    cy.one('layoutstop', options.stop);
+    cy.trigger('layoutstop');
   };
 
 
@@ -302,7 +302,7 @@
         depth++;
       }
 
-      logDebug("LCA of nodes " + tempEdge.sourceId + " and " + tempEdge.targetId +  
+      logDebug('LCA of nodes ' + tempEdge.sourceId + ' and ' + tempEdge.targetId +  
          ". Index: " + lca + " Contents: " + lcaGraph.toString() + 
          ". Depth: " + depth);
 
@@ -427,24 +427,24 @@
       console.debug(s);    
     }  
     
-    console.debug("idToIndex");
+    console.debug('idToIndex');
     for (var i in layoutInfo.idToIndex) {
       console.debug("Id: " + i + "\nIndex: " + layoutInfo.idToIndex[i]);
     }
 
-    console.debug("Graph Set");
+    console.debug('Graph Set');
     var set = layoutInfo.graphSet;
     for (var i = 0; i < set.length; i ++) {
       console.debug("Set : " + i + ": " + set[i].toString());
     } 
 
-    var s = "IndexToGraph";
+    var s = 'IndexToGraph';
     for (var i = 0; i < layoutInfo.indexToGraph.length; i ++) {
       s += "\nIndex : " + i + " Graph: "+ layoutInfo.indexToGraph[i];
     }
     console.debug(s);
 
-    s = "Layout Edges";
+    s = 'Layout Edges';
     for (var i = 0; i < layoutInfo.layoutEdges.length; i++) {
       var e = layoutInfo.layoutEdges[i];
       s += "\nEdge Index: " + i + " ID: " + e.id + 
@@ -492,7 +492,7 @@
     var width     = container.clientWidth;
     var height    = container.clientHeight;
     
-    var s = "Refreshing positions";
+    var s = 'Refreshing positions';
     logDebug(s);
 
     cy.nodes().positions(function(i, ele) {
@@ -508,11 +508,11 @@
 
     // Trigger layoutReady only on first call
     if (true != layoutInfo.ready) {
-      s = "Triggering layoutready";
+      s = 'Triggering layoutready';
       logDebug(s);
       layoutInfo.ready = true;
-      cy.one("layoutready", options.ready);
-      cy.trigger("layoutready");
+      cy.one('layoutready', options.ready);
+      cy.trigger('layoutready');
     }
   };
 
@@ -548,7 +548,7 @@
   var calculateNodeForces = function(layoutInfo, cy, options) {
     // Go through each of the graphs in graphSet
     // Nodes only repel each other if they belong to the same graph
-    var s = "calculateNodeForces";
+    var s = 'calculateNodeForces';
     logDebug(s);
     for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
       var graph    = layoutInfo.graphSet[i];
@@ -652,7 +652,7 @@
     var nodeSlope    = H / W;
     var nodeinvSlope = W / H;
 
-    var s = "Computing clipping point of node " + node.id + 
+    var s = 'Computing clipping point of node ' + node.id + 
       " . Height:  " + H + ", Width: " + W + 
       "\nDirection " + dX + ", " + dY; 
     
@@ -797,7 +797,7 @@
       target.offsetX -= forceX;
       target.offsetY -= forceY;
 
-      var s = "Edge force between nodes " + source.id + " and " + target.id;
+      var s = 'Edge force between nodes ' + source.id + ' and ' + target.id;
       s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
       logDebug(s);
     }
@@ -808,7 +808,7 @@
    * @brief : Computes gravity forces for all nodes
    */
   var calculateGravityForces = function(layoutInfo, cy, options) {
-    var s = "calculateGravityForces";
+    var s = 'calculateGravityForces';
     logDebug(s);
     for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
       var graph    = layoutInfo.graphSet[i];
@@ -867,7 +867,7 @@
     var start = 0;   // Points to the start the queue
     var end   = -1;  // Points to the end of the queue
 
-    logDebug("propagateForces");
+    logDebug('propagateForces');
 
     // Start by visiting the nodes in the root graph
     queue.push.apply(queue, layoutInfo.graphSet[0]);
@@ -914,7 +914,7 @@
    *          the accumulated forces
    */
   var updatePositions = function(layoutInfo, cy, options) {
-    var s = "Updating positions";
+    var s = 'Updating positions';
     logDebug(s);
 
     // Reset boundaries for compound nodes
@@ -1071,6 +1071,6 @@
 
 
   // register the layout
-  $$("layout", "cose", CoseLayout);
+  $$('layout', 'cose', CoseLayout);
 
 })(cytoscape);

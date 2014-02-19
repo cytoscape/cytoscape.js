@@ -161,6 +161,7 @@ Compound nodes:
 
 These properties apply only to edges:
 
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`source-arrow-color`** : The colour of the edge's arrow on the source side.

@@ -146,6 +146,30 @@
 						<span class="icon-caret-down expanded-icon"></span>
 						<span class="icon-caret-right collapsed-icon"></span>
 					</span>
+					<a href="#performance"><span class="icon-bookmark"></span> Performance</a>
+				</div>
+
+				
+					<div class="section lvl2">
+						
+						<a href="#performance/background"><span class="icon-bookmark"></span> Background</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#performance/optimisations"><span class="icon-bookmark"></span> Optimisations</a>
+					</div>
+
+					
+				
+			
+				<div class="section lvl1">
+					<span class="expander">
+						<span class="icon-caret-down expanded-icon"></span>
+						<span class="icon-caret-right collapsed-icon"></span>
+					</span>
 					<a href="#selectors"><span class="icon-bookmark"></span> Selectors</a>
 				</div>
 
@@ -746,7 +770,11 @@
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span> edges.source() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/traversing/edges.sources"><span class="icon-bookmark"></span> edges.sources() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/traversing/edges.target"><span class="icon-bookmark"></span> edges.target() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/traversing/edges.targets"><span class="icon-bookmark"></span> edges.targets() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.parallelEdges"><span class="icon-bookmark"></span> edges.parallelEdges() </a></div>
 					
@@ -849,7 +877,7 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">2.1.0</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.2.0</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
@@ -1199,6 +1227,40 @@ edge ......... a collection of a single edge</code></pre>
 				
 				
 			
+				<h1 id="performance">Performance <a href="#performance"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<h2 id="performance/background">Background <a href="#performance/background"><span class="icon-bookmark"></span></a></h2>
+<p>You may notice that performance starts to degrade on graphs with large numbers of elements.  This happens for several reasons:
+
+</p>
+<ul>
+<li>Performance is a function of graph size, so performance decreases as the number of elements increases.</li>
+<li>The rich visual styles that Cytoscape.js supports can be very expensive.  Only drawing circles and straight lines is cheap, but drawing complex graphs is not.</li>
+<li>Edges are particularly expensive to render.  Multigraphs become even more expensive with the need for bezier curve edges.</li>
+<li>Interactivity is expensive.  Being able to pan, pinch-to-zoom, drag nodes around, et cetera is expensive &mdash; especially when having to rerender edges.</li>
+</ul>
+<h2 id="performance/optimisations">Optimisations <a href="#performance/optimisations"><span class="icon-bookmark"></span></a></h2>
+<p>You can get much better performance out of Cytoscape.js by tuning your options:
+
+</p>
+<ul>
+<li><strong>Haystacks make fast edges</strong> : Set your edges <code>curve-style</code> to <code>haystack</code> in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than <code>bezier</code> edges.</li>
+<li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
+<li><strong>Concise stylsheets are fast stylesheets</strong> : Try to keep your stylesheets from getting overly long.  Cut out unused blocks and try to limit the number of blocks &mdash; and therefore selectors &mdash; you have.  Each time style needs to be recalculated, each block&#39;s selector needs to be compared to each element.  Note that usually stylesheet length has a much lesser effect on performance than other factors.</li>
+</ul>
+<p>By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.</p>
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+			
 				<h1 id="selectors">Selectors <a href="#selectors"><span class="icon-bookmark"></span></a></h1>
 
 				
@@ -1350,6 +1412,13 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <ul>
 <li><strong><code>:parent</code></strong> : Matches parent nodes (they have one or more child nodes).</li>
 <li><strong><code>:child</code></strong> : Matches child nodes (they each have a parent).</li>
+</ul>
+<p><strong>Edges</strong>
+
+</p>
+<ul>
+<li><strong><code>:loop</code></strong> : Matches loop edges (same source as target).</li>
+<li><strong><code>:simple</code></strong> : Matches simple edges (i.e. as would be in a <em>simple</em> graph, different source as target).</li>
 </ul>
 
 				
@@ -1536,6 +1605,7 @@ node {
 
 </p>
 <ul>
+<li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes; may be <code>bezier</code> (default) or <code>haystack</code> (for which loops are unsupported).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for <code>haystack</code> edges.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>source-arrow-color</code></strong> : The colour of the edge&#39;s arrow on the source side.</li>
@@ -6874,7 +6944,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 					
 						<div class="function">
 							<div class="name" id="collection/traversing/edges.source"><span class="fn-name">edges.source()</span>  <a href="#collection/traversing/edges.source"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.source"><p>Get source nodes connected to the edges in the collection.</p>
+							<div class="descr" id="collection/traversing/edges.source"><p>Get source node of this edge.</p>
 </div>
 
 							
@@ -6906,8 +6976,41 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/traversing/edges.sources"><span class="fn-name">edges.sources()</span>  <a href="#collection/traversing/edges.sources"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/edges.sources"><p>Get source nodes connected to the edges in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.sources(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/traversing/edges.target"><span class="fn-name">edges.target()</span>  <a href="#collection/traversing/edges.target"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/edges.target"><p>Get target nodes connected to the edges in the collection.</p>
+							<div class="descr" id="collection/traversing/edges.target"><p>Get target node of this edge.</p>
 </div>
 
 							
@@ -6916,6 +7019,39 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 									<div class="format">
 										
 											<div class="name">edges.target(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">An optional selector that is used to filter the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/traversing/edges.targets"><span class="fn-name">edges.targets()</span>  <a href="#collection/traversing/edges.targets"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/traversing/edges.targets"><p>Get target nodes connected to the edges in the collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.targets(  [<span class="comma">, </span>selector] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">

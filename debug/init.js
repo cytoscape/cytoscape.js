@@ -46,6 +46,7 @@ $(function(){
           "target-arrow-shape": "data(tgtShape)",
           "source-arrow-shape": "data(srcShape)",
           "curve-style": "haystack"
+          //"content": "data(id)"
         })
       .selector(":selected")
         .css({
@@ -80,7 +81,7 @@ $(function(){
   ;
   
   window.options = {
-    hideEdgesOnViewport: true,
+    //hideEdgesOnViewport: true,
     renderer: {
       name: "canvas"
     },
@@ -108,9 +109,9 @@ $(function(){
     }
   };
   
-  var cliques = 3;
-  var numNodes = 20;
-  var numEdges = 100;
+  var cliques = 5;
+  var numNodes = 100;
+  var numEdges = 1000;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

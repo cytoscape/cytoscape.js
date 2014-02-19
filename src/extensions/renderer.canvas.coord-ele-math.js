@@ -548,6 +548,8 @@
     rs.labelY = textY;
     rstyle.labelX = textX;
     rstyle.labelY = textY;
+
+    this.applyLabelDimensions( node );
   };
 
   CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
@@ -568,6 +570,12 @@
     } else if (rs.edgeType == 'bezier') {
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
+    } else if (rs.edgeType == 'haystack') {
+      var srcPos = edge.source().position();
+      var tgtPos = edge.target().position();
+
+      edgeCenterX = (srcPos.x + rs.source.x + tgtPos.x + rs.target.x)/2;
+      edgeCenterY = (srcPos.y + rs.source.y + tgtPos.y + rs.target.y)/2;
     }
     
     textX = edgeCenterX;
@@ -579,6 +587,36 @@
     rstyle.labelX = textX;
     rstyle.labelY = textY;
 
+    this.applyLabelDimensions( edge );
+  };
+
+  CanvasRenderer.prototype.applyLabelDimensions = function( ele ){
+    var rs = ele._private.rscratch;
+    var rstyle = ele._private.rstyle;
+
+    var text = this.getLabelText( ele );
+    var labelDims = this.calculateLabelDimensions( ele, text );
+ 
+    rstyle.labelWidth = labelDims.width;
+    rs.labelWidth = labelDims.width;
+ 
+    rstyle.labelHeight = labelDims.height;
+    rs.labelHeight = labelDims.height;
+  };
+
+  CanvasRenderer.prototype.getLabelText = function( ele ){
+    var style = ele._private.style;
+    var text = ele._private.style['content'].strValue;
+    var textTransform = style['text-transform'].value;
+    
+    if (textTransform == 'none') {
+    } else if (textTransform == 'uppercase') {
+      text = text.toUpperCase();
+    } else if (textTransform == 'lowercase') {
+      text = text.toLowerCase();
+    }
+
+    return text;
   };
 
   CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
@@ -588,6 +626,14 @@
     var family = style['font-family'].strValue;
     var variant = style['font-variant'].strValue;
     var weight = style['font-weight'].strValue;
+
+    var rscratch = ele._private.rscratch;
+    var cacheKey = [fStyle, size, family, variant, weight].join('$$$');
+    var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
+
+    if( cache[cacheKey] ){
+      return cache[cacheKey];
+    }
 
     var div = this.labelCalcDiv;
 
@@ -617,7 +663,7 @@
     // put label content in div
     div.innerText = text;
 
-    return {
+    return cache[cacheKey] = {
       width: div.clientWidth,
       height: div.clientHeight
     };

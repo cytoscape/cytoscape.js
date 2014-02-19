@@ -2,8 +2,11 @@ Please note that although we offer downloads of previous versions of Cytoscape.j
 
 If there's a bug or other issue preventing you from using the latest version of Cytoscape.js, we would love your feedback so we could support your use case.  Please [make a ticket](https://github.com/cytoscape/cytoscape.js/issues/new) in the issue tracker. 
 
+## 2.2.x
+ * [2.2.0](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.2.0.zip) (latest)
+
 ## 2.1.x
- * [2.1.0](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip) (latest)
+ * [2.1.0](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip)
 
 ## 2.0.x
  * [2.0.5](http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.0.5.zip)

@@ -326,7 +326,7 @@
       
     }, false);
     
-    r.registerBinding(window, 'mousemove', function(e) {
+    r.registerBinding(window, 'mousemove', $$.util.throttle( function(e) {
       var preventDefault = false;
       var capture = r.hoverData.capture;
 
@@ -514,7 +514,7 @@
           if(e.preventDefault) e.preventDefault();
           return false;
         }
-    }, false);
+    }, 1000/30), false);
     
     r.registerBinding(window, 'mouseup', function(e) {
       // console.log('--\nmouseup', e)
@@ -1125,7 +1125,7 @@
     
 // console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
-    r.registerBinding(window, 'touchmove', function(e) {
+    r.registerBinding(window, 'touchmove', $$.util.throttle(function(e) {
     
       var select = r.data.select;
       var capture = r.touchData.capture; //if (!capture) { return; }; 
@@ -1427,7 +1427,7 @@
       for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
       r.redraw();
       
-    }, false);
+    }, 1000/30), false);
     
     r.registerBinding(window, 'touchend', function(e) {
       
@@ -1524,8 +1524,10 @@
         //}, 100);
       }
 
-      if( !e.touches[1] ){
+      if( e.touches.length < 2 ){
         r.pinching = false;
+        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+        r.redraw();
       }
 
       var updateStartStyle = false;

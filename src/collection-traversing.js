@@ -508,11 +508,19 @@
   /////////////////
 
   $$.fn.eles({
-    source: defineSourceFunction({
+    source: function( selector ){
+      return new $$.Collection( this.cy(), this._private.source ).filter( selector );
+    },
+
+    target: function( selector ){
+      return new $$.Collection( this.cy(), this._private.target ).filter( selector );
+    },
+
+    sources: defineSourceFunction({
       attr: 'source'
     }),
 
-    target: defineSourceFunction({
+    targets: defineSourceFunction({
       attr: 'target'
     })
   });
@@ -520,15 +528,13 @@
   function defineSourceFunction( params ){
     return function( selector ){
       var sources = [];
-      var edges = this.edges();
       var cy = this._private.cy;
 
-      for( var i = 0; i < edges.length; i++ ){
-        var edge = edges[i];
-        var id = edge._private.data[params.attr];
-        var src = cy.getElementById( id );
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var source = ele._private[ params.attr ];
 
-        if( src.length > 0 ){
+        if( src ){
           sources.push( src );
         }
       }

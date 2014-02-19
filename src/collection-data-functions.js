@@ -459,8 +459,8 @@
         var fontSize = style['font-size'];
         var halign = style['text-halign'];
         var valign = style['text-valign'];
-        var labelWidth = style['max-content-width'].pxValue;
-        var labelHeight = style['max-content-height'].pxValue;
+        var labelWidth = rstyle.labelWidth;
+        var labelHeight = rstyle.labelHeight;
         var labelX = rstyle.labelX;
         var labelY = rstyle.labelY;
 

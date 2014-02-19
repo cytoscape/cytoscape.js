@@ -379,6 +379,9 @@
         src._private.edges.push( edge );
         tgt._private.edges.push( edge );
 
+        edge._private.source = src;
+        edge._private.target = tgt;
+
       } // if is edge
        
       // create mock ids map for element so it can be used like collections

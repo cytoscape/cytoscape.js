@@ -161,7 +161,11 @@
 		},
 
 		registered: function(){
-			return !! this._private;
+            if( this._private && this._private.instanceId != null ){
+                return true;
+            } else {
+                return false;
+            }
 		},
 
 		registeredId: function(){

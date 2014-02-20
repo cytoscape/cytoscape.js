@@ -139,79 +139,68 @@
 
   $$.fn.eles({
     // do a breadth first search from the nodes in the collection
-    // from pseudocode on wikipedia
+    // from pseudocode on wikipedia for dfs modified to use a queue instead of a stack
     breadthFirstSearch: function( fn, directed ){
       fn = fn || function(){};
       var cy = this._private.cy;
       var v = this;
-      var Q = [];
-      var marked = {};
-      var id2depth = {};
-      var connectedFrom = {};
+      var S = [];
       var connectedEles = [];
+      var connectedFrom = {};
+      var id2depth = {};
+      var discovered = {};
+      var j = 0;
 
-      // enqueue v
+      // push v
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
-          Q.unshift( v[i] );
-
-          // and mark v
-          marked[ v[i].id() ] = true;
-
-          id2depth[ v[i].id() ] = 0;
+          S.unshift( v[i] );
 
           connectedEles.push( v[i] );
+          id2depth[ v[i].id() ] = 0;
         }
       }
 
-      i = 0;
-      while( Q.length !== 0 ){ // while Q not empty
-        var t = Q.shift();
-        var depth = 0;
+      while( S.length !== 0 ){
+        var v = S[0];
 
-        var fromNodeId = connectedFrom[ t.id() ];
-        while( fromNodeId ){
-          depth++;
-          fromNodeId = connectedFrom[ fromNodeId ];
-        }
+        if( !discovered[ v.id() ] ){
+          S.shift();
 
-        id2depth[ t.id() ] = depth;
-        var ret = fn.call(t, i, depth);
-        i++;
+          discovered[ v.id() ] = true;
 
-        // on return true, return the result
-        if( ret === true ){
-          return new $$.Collection( cy, [ t ] );
-        } 
+          var depth = id2depth[ v.id() ];
 
-        // on return false, stop iteration
-        else if( ret === false ){
-          break;
-        }
+          var ret = fn.call(v, j++, depth);
 
-        var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
+          if( ret === true ){
+            return new $$.Collection( cy, [v] );
+          }
 
-        for( var j = 0; j < adjacentEdges.length; j++ ){
-          var e = adjacentEdges[j];
-          var u = e.connectedNodes('[id != "' + t.id() + '"]');
+          if( ret === false ){
+            continue;
+          }
 
-          if( u.length !== 0 ){
-            u = u[0];
+          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined);
+          for( var i = 0; i < vwEdges.length; i++ ){
+            var e = vwEdges[i];
+            var w = e.connectedNodes('[id != "' + v.id() + '"]');
 
-            if( !marked[ u.id() ] ){
-              marked[ u.id() ] = true; // mark u
-              Q.unshift( u ); // enqueue u onto Q
-              
-              connectedFrom[ u.id() ] = t.id();
-              
-              connectedEles.push( u );
+            if( w.length !== 0 && !discovered[ w.id() ] ){
+              w = w[0];
+
+              S.unshift( w );
+
+              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+
+              connectedEles.push( w );
               connectedEles.push( e );
             }
           }
         }
       }
 
-      return new $$.Collection( cy, connectedEles ); // return none
+      return new $$.Collection( cy, connectedEles );
     },
 
     // do a depth first search on the nodes in the collection
@@ -221,69 +210,60 @@
       var cy = this._private.cy;
       var v = this;
       var S = [];
-      var discovered = [];
-      var forwardEdge = {};
-      var backEdge = {};
-      var crossEdge = {};
-      var treeEdge = {};
-      var explored = {};
-
-      function labelled(e){
-        var id = e.id();
-        return forwardEdge[id] || backEdge[id] || crossEdge[id] || treeEdge[id];
-      }
+      var connectedEles = [];
+      var connectedFrom = {};
+      var id2depth = {};
+      var discovered = {};
+      var j = 0;
 
       // push v
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
           S.push( v[i] );
 
-          // and mark discovered
-          discovered[ v[i].id() ] = true;
+          connectedEles.push( v[i] );
+          id2depth[ v[i].id() ] = 0;
         }
       }
 
       while( S.length !== 0 ){
-        var t = S[ S.length - 1 ];
-        var ret = fn.call(t);
-        var breaked = false;
+        var v = S.pop();
 
-        if( ret === true ){
-          return new $$.Collection( cy, [t] );
-        }
+        if( !discovered[ v.id() ] ){
+          discovered[ v.id() ] = true;
 
-        var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
-        for( var i = 0; i < adjacentEdges.length; i++ ){
-          var e = adjacentEdges[i];
+          var depth = id2depth[ v.id() ];
 
-          if( labelled(e) ){
+          var ret = fn.call(v, j++, depth);
+
+          if( ret === true ){
+            return new $$.Collection( cy, [v] );
+          }
+
+          if( ret === false ){
             continue;
           }
 
-          var w = e.connectedNodes('[id != "' + t.id() + '"]');
-          if( w.length !== 0 ){
-            w = w[0];
-            var wid = w.id();
+          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined);
+          for( var i = 0; i < vwEdges.length; i++ ){
+            var e = vwEdges[i];
+            var w = e.connectedNodes('[id != "' + v.id() + '"]');
 
-            if( !discovered[wid] && !explored[wid] ){
-              treeEdge[wid] = true;
-              discovered[wid] = true;
-              S.push(w);
-              breaked = true;
-              break;
-            } else if( discovered[wid] ){
-              backEdge[wid] = true;
-            } else {
-              crossEdge[wid] = true;
-            }  
+            if( w.length !== 0 && !discovered[ w.id() ] ){
+              w = w[0];
+
+              S.push( w );
+
+              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+
+              connectedEles.push( w );
+              connectedEles.push( e );
+            }
           }
         }
-
-        if( !breaked ){
-          explored[ t.id() ] = true;
-          S.pop();
-        }
       }
+
+      return new $$.Collection( cy, connectedEles );
     },
 
     // get the root nodes in the DAG

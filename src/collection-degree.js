@@ -4,8 +4,12 @@
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   function defineDegreeFunction(callback){
-    return function(){
+    return function( includeLoops ){
       var self = this;
+
+      if( includeLoops === undefined ){
+        includeLoops = true;
+      }
       
       if( self.length === 0 ){ return; }
 
@@ -16,6 +20,11 @@
 
         for( var i = 0; i < connectedEdges.length; i++ ){
           var edge = connectedEdges[i];
+
+          if( !includeLoops && edge.isLoop() ){
+            continue;
+          }
+
           degree += callback( node, edge );
         }
         
@@ -57,13 +66,13 @@
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   function defineDegreeBoundsFunction(degreeFn, callback){
-    return function(){
+    return function( includeLoops ){
       var ret = undefined;
       var nodes = this.nodes();
 
       for( var i = 0; i < nodes.length; i++ ){
         var ele = nodes[i];
-        var degree = ele[degreeFn]();
+        var degree = ele[degreeFn]( includeLoops );
         if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
           ret = degree;
         }
@@ -100,12 +109,12 @@
   });
   
   $$.fn.eles({
-    totalDegree: function(){
+    totalDegree: function( includeLoops ){
       var total = 0;
       var nodes = this.nodes();
 
       for( var i = 0; i < nodes.length; i++ ){
-        total += nodes[i].degree();
+        total += nodes[i].degree( includeLoops );
       }
 
       return total;

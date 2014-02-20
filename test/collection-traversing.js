@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-describe('Collection iteration', function(){
+describe('Collection traversing', function(){
 
   var cy, n1, n2, n3, n1n2, n2n3;
 

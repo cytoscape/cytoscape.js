@@ -64,7 +64,9 @@
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
         style.applyBypass( this, props );
-        this.rtrigger('style'); // let the renderer know we've updated style
+
+        var updatedCompounds = this.updateCompoundBounds();
+        this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
   
@@ -79,7 +81,9 @@
 
         } else { // then set the bypass with the property value
           style.applyBypass( this, name, value );
-          this.rtrigger('style'); // let the renderer know we've updated style
+
+          var updatedCompounds = this.updateCompoundBounds();
+        	this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -105,7 +109,8 @@
         style.removeAllBypasses( ele );
       }
 
-      this.rtrigger('style');
+      var updatedCompounds = this.updateCompoundBounds();
+      this.add( updatedCompounds ).rtrigger('style');
     },
 
     show: function(){

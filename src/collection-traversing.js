@@ -138,6 +138,84 @@
   });
 
   $$.fn.eles({
+    // get the root nodes in the DAG
+    roots: function( selector ){
+      var eles = this;
+      var roots = [];
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        if( !ele.isNode() ){
+          continue;
+        }
+
+        var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"][source != "' + ele.id() + '"]').length > 0;
+
+        if( !hasEdgesPointingIn ){
+          roots.push( ele );
+        }
+      }
+
+      return new $$.Collection( this._private.cy, roots ).filter( selector );
+    },
+
+    // normally called children in graph theory
+    // these nodes =edges=> forward nodes
+    forwardNodes: function( selector ){
+      var eles = this;
+      var fNodes = [];
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var eleId = ele.id();
+
+        if( !ele.isNode() ){ continue; }
+
+        var edges = ele._private.edges;
+        for( var j = 0; j < edges.length; j++ ){
+          var edge = edges[j];
+          var srcId = edge._private.data.source;
+          var tgtId = edge._private.data.target;
+
+          if( srcId === eleId && tgtId !== eleId ){
+            fNodes.push( edge.target()[0] );
+          }
+        }
+      }
+
+      return new $$.Collection( this._private.cy, fNodes ).filter( selector );
+    },
+
+    // normally called parents in graph theory
+    // these nodes <=edges= backward nodes
+    backwardNodes: function( selector ){
+      var eles = this;
+      var bNodes = [];
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var eleId = ele.id();
+
+        if( !ele.isNode() ){ continue; }
+
+        var edges = ele._private.edges;
+        for( var j = 0; j < edges.length; j++ ){
+          var edge = edges[j];
+          var srcId = edge._private.data.source;
+          var tgtId = edge._private.data.target;
+
+          if( tgtId === eleId && srcId !== eleId ){
+            bNodes.push( edge.source()[0] );
+          }
+        }
+      }
+
+      return new $$.Collection( this._private.cy, bNodes ).filter( selector );
+    }
+  });
+
+  // search, spanning trees, etc
+  $$.fn.eles({
+
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia for dfs modified to use a queue instead of a stack
     breadthFirstSearch: function( fn, directed ){
@@ -266,26 +344,6 @@
       return new $$.Collection( cy, connectedEles );
     },
 
-    // get the root nodes in the DAG
-    roots: function( selector ){
-      var eles = this;
-      var roots = [];
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        if( !ele.isNode() ){
-          continue;
-        }
-
-        var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"][source != "' + ele.id() + '"]').length > 0;
-
-        if( !hasEdgesPointingIn ){
-          roots.push( ele );
-        }
-      }
-
-      return new $$.Collection( this._private.cy, roots ).filter( selector );
-    },
-
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
     // implemented from pseudocode from wikipedia
     kruskal: function( weightFn ){
@@ -342,7 +400,6 @@
     dijkstra: function( target, weightFn, directed ){
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
-      directed = directed === undefined || directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
       if( this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0 ){
@@ -355,28 +412,51 @@
       var prev = {};
 
       var nodes = cy.nodes();
+      var Q = [];
       for( var i = 0; i < nodes.length; i++ ){
         dist[ nodes[i].id() ] = Infinity;
+        Q.push( nodes[i] );
       }
 
       dist[ source.id() ] = 0;
-      var Q = nodes;
 
-      var smallestDist = function(Q){
+      var remove = function(Q, node){
+        for( var i = 0; i < Q.length; i++ ){
+          var n = Q[i];
+
+          if( n.id() === node.id() ){
+            Q.splice(i, 1);
+            return;
+          }
+        }
+      };
+
+      var smallestDistNode = function(Q){
         var smallest = Infinity;
         var index;
-        for(var i in dist){
-          if( dist[i] < smallest && Q.$('#' + i).length !== 0 ){
-            smallest = dist[i];
+        var node;
+
+        for( var i = 0; i < Q.length; i++ ){
+          var n = Q[i];
+          var id = n.id();
+          var d = dist[ id ];
+
+          if( d < smallest || !node ){
+            smallest = d;
             index = i;
+            node = n;
           }
         }
 
-        return index;
+        return {
+          index: index,
+          node: node,
+          dist: smallest
+        };
       };
 
       var distBetween = function(u, v){
-        var edges = u.edgesWith(v);
+        var edges = directed ? u.edgesTo(v).not(':loop') : u.edgesWith(v).not(':loop');
         var smallestDistance = Infinity;
         var smallestEdge;
 
@@ -384,7 +464,7 @@
           var edge = edges[i];
           var weight = weightFn.call(edge);
 
-          if( weight < smallestDistance ){
+          if( weight < smallestDistance || !smallestEdge ){
             smallestDistance = weight;
             smallestEdge = edge;
           }
@@ -396,43 +476,71 @@
         };
       };
 
+      var decreaseKey = function(Q, v){
+        for( var i = 0; i < Q.length; i++ ){
+          var q = Q[i];
+
+          if( q.id() === v.id() ){
+            if( i > 0 ){
+              Q.splice(i, 1);
+              Q.splice(i - 1, 0, v);
+            }
+            break;
+          }
+        }
+      };
+
       while( Q.length !== 0 ){
-        var uid = smallestDist(Q);
-        var u = Q.filter('#' + uid);
+        var smallestDist = smallestDistNode(Q);
+        var u = smallestDist.node;
+        var uid = u.id();
 
-        if( u.length === 0 ){
-          continue;
-        }
-
-        //debugger;
-
-        Q = Q.not( u );
-
-        if( u.same(target) ){
-          break;
-        }
+        remove(Q, u);
 
         if( dist[uid] === Math.Infinite ){
+          console.log('fail')
           break;
         }
 
         var neighbors = u.neighborhood().nodes();
         for( var i = 0; i < neighbors.length; i++ ){
           var v = neighbors[i];
-          var vid = v.id()
+          var vid = v.id();
+          var vDist = distBetween(u, v);
 
-          var duv = distBetween(u, v);
-          var alt = dist[uid] + duv.dist;
+          var alt = dist[ uid ] + vDist.dist;
+
           if( alt < dist[vid] ){
             dist[vid] = alt;
-            prev[vid] = {
-              node: v,
-              edge: duv.edge
+            prev[ vid ] = {
+              node: u,
+              edge: vDist.edge
             };
-            // TODO decrease-key v in Q
+            //decreaseKey(Q, v);
           }
         }
+
+        if( u.id() === target.id() ){
+          console.log('done');
+          break;
+        }
       }
+
+      var S = [];
+      var u = target;
+
+      S.unshift( target );
+
+      while( prev[ u.id() ] ){
+        var p = prev[ u.id() ];
+
+        S.unshift( p.node );
+        S.unshift( p.edge );
+
+        u = p.node;
+      }
+
+      return new $$.Collection( cy, S );
     }  
   });
 

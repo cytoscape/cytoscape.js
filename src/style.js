@@ -699,7 +699,7 @@
       return {
         name: name,
         value: data,
-        strValue: value,
+        strValue: '' + value,
         mapped: isLayout ? $$.style.types.layoutData : $$.style.types.data,
         field: data[1],
         bypass: propIsBypass
@@ -748,7 +748,7 @@
       return {
         name: name,
         value: mapData,
-        strValue: value,
+        strValue: '' + value,
         mapped: isLayout ? $$.style.types.mapLayoutData : $$.style.types.mapData,
         field: mapData[1],
         fieldMin: parseFloat( mapData[2] ), // min & max are numeric
@@ -803,7 +803,7 @@
             return {
               name: name,
               value: value,
-              strValue: value,
+              strValue: '' + value,
               bypass: propIsBypass
             };
           }
@@ -844,7 +844,7 @@
       return {
         name: name,
         value: tuple,
-        strValue: value,
+        strValue: '' + value,
         bypass: propIsBypass
       };
 
@@ -856,7 +856,7 @@
           return {
             name: name,
             value: value,
-            strValue: value,
+            strValue: '' + value,
             bypass: propIsBypass
           };
         }
@@ -870,7 +870,7 @@
         return {
           name: name,
           value: m,
-          strValue: value,
+          strValue: '' + value,
           bypass: propIsBypass
         };
       } else { // regex doesn't match
@@ -882,7 +882,7 @@
       return {
         name: name,
         value: value,
-        strValue: value,
+        strValue: '' + value,
         bypass: propIsBypass
       };
 

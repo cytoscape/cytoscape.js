@@ -37,9 +37,14 @@ var cytoscape;
   // define the function namespace here, since it has members in many places
   $$.fn = {};
 
-  // TODO test that this works:
   if( typeof exports !== 'undefined' ){ // expose as a commonjs module
     exports = module.exports = cytoscape;
+  }
+
+  if( typeof define !== 'undefined' ){ // expose as an amd/requirejs module
+    define('cytoscape', function(){
+      return cytoscape;
+    });
   }
 
   // make sure we always register in the window just in case (e.g. w/ derbyjs)

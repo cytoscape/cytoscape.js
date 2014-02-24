@@ -92,24 +92,4 @@ describe('Collection traversing', function(){
     expect( n1n2.codirectedEdges().same( e.add(n1n2) ) ).to.be.true;
   });
 
-  it('eles.breadthFirstSearch()', function(){
-    var ids = [];
-
-    n1.breadthFirstSearch(function(i, depth){
-      ids.push( this.id() );
-    });
-
-    expect( ids ).to.deep.equal(['n1', 'n2', 'n3']);
-  });
-
-  it('eles.breadthFirstSearch() undirected', function(){
-    var ids = [];
-
-    n3.breadthFirstSearch(function(i, depth){
-      ids.push( this.id() );
-    });    
-
-    expect( ids ).to.deep.equal(['n3', 'n2', 'n1']);
-  });
-
 });

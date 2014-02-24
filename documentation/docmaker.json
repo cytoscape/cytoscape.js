@@ -1410,6 +1410,105 @@
         },
 
         {
+          "name": "Building & filtering",
+          "fns": [
+            {
+              "name": "eles.add",
+              "descr": "Get a new collection, resulting from adding the collection with another one",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to add." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "Elements in the graph matching this selector are added." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.not",
+              "descr": "Get a new collection, resulting from the collection without some specified elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements that will not be in the resultant collection." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "Elements from the calling collection matching this selector will not be in the resultant collection." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.intersect",
+              "descr": "Get the elements in both this collection and another specified collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to intersect with." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.filter",
+              "descr": "Get a new collection containing elements that are accepted by the specified filter.",
+              "formats": [
+                {
+                  "name": "eles.filter",
+                  "descr": "Get the elements that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                },
+
+                {
+                  "name": "eles.filter",
+                  "descr": "Get the elements that match the specified filter function.",
+                  "args": [
+                    {
+                      "name": "function(i, ele)",
+                      "descr": "The filter function that returns true for elements to include.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the current element being considered." },
+                        { "name": "ele", "descr": "The element being considered." }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "name": "eles.nodes",
+                  "descr": "Get the nodes that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                },
+
+                {
+                  "name": "eles.edges",
+                  "descr": "Get the edges that match the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                }
+              ]
+            }
+            
+          ]
+        },
+
+        {
           "name": "Traversing",
           "fns": [
             {
@@ -1575,15 +1674,21 @@
                 }
               ],
               "md": "collection/codirectedEdges"
-            },
+            }
+          ]
+        },
 
+        {
+          "name": "Algorithms",
+          "fns": [
             {
               "name": "eles.breadthFirstSearch",
-              "descr": "Perform a breadth-first search, with this collection as the root nodes of the search.",
+              "descr": "Perform a breadth-first search within the elements in the collection.",
               "formats": [
                 {
                   "args": [
-                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.", "optional": true, "fields": [
+                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                       { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
                     ] },
@@ -1592,100 +1697,53 @@
                 }
               ],
               "md": "collection/breadthFirstSearch"
+            },
+
+            {
+              "name": "eles.depthFirstSearch",
+              "descr": "Perform a depth-first search within the elements in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                    ] },
+                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default false).", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/depthFirstSearch"
+            },
+
+            {
+              "name": "eles.dijkstra",
+              "descr": "Perform Dijkstra's algorithm on the elements in the collection.  This finds the shortest paths to all other nodes in the collection from the root node.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
+                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default false).", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/dijkstra"
+            },
+
+            {
+              "name": "eles.kruskal",
+              "descr": "Perform Kruskal's algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/kruskal"
             }
-          ]
-        },
-
-        {
-          "name": "Building & filtering",
-          "fns": [
-            {
-              "name": "eles.add",
-              "descr": "Get a new collection, resulting from adding the collection with another one",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "eles", "descr": "The elements to add." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.not",
-              "descr": "Get a new collection, resulting from the collection without some specified elements.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "eles", "descr": "The elements that will not be in the resultant collection." }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "selector", "descr": "Elements from the calling collection matching this selector will not be in the resultant collection." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.intersect",
-              "descr": "Get the elements in both this collection and another specified collection.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "eles", "descr": "The elements to intersect with." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.filter",
-              "descr": "Get a new collection containing elements that are accepted by the specified filter.",
-              "formats": [
-                {
-                  "name": "eles.filter",
-                  "descr": "Get the elements that match the specified selector.",
-                  "args": [
-                    { "name": "selector", "descr": "The selector to match against." }
-                  ]
-                },
-
-                {
-                  "name": "eles.filter",
-                  "descr": "Get the elements that match the specified filter function.",
-                  "args": [
-                    {
-                      "name": "function(i, ele)",
-                      "descr": "The filter function that returns true for elements to include.",
-                      "fields": [
-                        { "name": "i", "descr": "The index of the current element being considered." },
-                        { "name": "ele", "descr": "The element being considered." }
-                      ]
-                    }
-                  ]
-                },
-
-                {
-                  "name": "eles.nodes",
-                  "descr": "Get the nodes that match the specified selector.",
-                  "args": [
-                    { "name": "selector", "descr": "The selector to match against." }
-                  ]
-                },
-
-                {
-                  "name": "eles.edges",
-                  "descr": "Get the edges that match the specified selector.",
-                  "args": [
-                    { "name": "selector", "descr": "The selector to match against." }
-                  ]
-                }
-              ]
-            }
-            
           ]
         },
 

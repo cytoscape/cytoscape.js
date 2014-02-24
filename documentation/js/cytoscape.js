@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js github-snapshot-2014.02.19-15.42.18.
+ * This file is part of cytoscape.js github-snapshot-2014.02.24-16.56.42.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -58,9 +58,14 @@ var cytoscape;
   // define the function namespace here, since it has members in many places
   $$.fn = {};
 
-  // TODO test that this works:
   if( typeof exports !== 'undefined' ){ // expose as a commonjs module
     exports = module.exports = cytoscape;
+  }
+
+  if( typeof define !== 'undefined' ){ // expose as an amd/requirejs module
+    define('cytoscape', function(){
+      return cytoscape;
+    });
   }
 
   // make sure we always register in the window just in case (e.g. w/ derbyjs)
@@ -5036,7 +5041,7 @@ var cytoscape;
       return {
         name: name,
         value: data,
-        strValue: value,
+        strValue: '' + value,
         mapped: isLayout ? $$.style.types.layoutData : $$.style.types.data,
         field: data[1],
         bypass: propIsBypass
@@ -5085,7 +5090,7 @@ var cytoscape;
       return {
         name: name,
         value: mapData,
-        strValue: value,
+        strValue: '' + value,
         mapped: isLayout ? $$.style.types.mapLayoutData : $$.style.types.mapData,
         field: mapData[1],
         fieldMin: parseFloat( mapData[2] ), // min & max are numeric
@@ -5140,7 +5145,7 @@ var cytoscape;
             return {
               name: name,
               value: value,
-              strValue: value,
+              strValue: '' + value,
               bypass: propIsBypass
             };
           }
@@ -5181,7 +5186,7 @@ var cytoscape;
       return {
         name: name,
         value: tuple,
-        strValue: value,
+        strValue: '' + value,
         bypass: propIsBypass
       };
 
@@ -5193,7 +5198,7 @@ var cytoscape;
           return {
             name: name,
             value: value,
-            strValue: value,
+            strValue: '' + value,
             bypass: propIsBypass
           };
         }
@@ -5207,7 +5212,7 @@ var cytoscape;
         return {
           name: name,
           value: m,
-          strValue: value,
+          strValue: '' + value,
           bypass: propIsBypass
         };
       } else { // regex doesn't match
@@ -5219,7 +5224,7 @@ var cytoscape;
       return {
         name: name,
         value: value,
-        strValue: value,
+        strValue: '' + value,
         bypass: propIsBypass
       };
 
@@ -6015,7 +6020,7 @@ var cytoscape;
 
         if( !alreadyInPool ){
           index = elements.length;
-          elements.push( ele )
+          elements.push( ele );
           id2index[ id ] = index;
           ele._private.index = index;
         }
@@ -8606,8 +8611,12 @@ var cytoscape;
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   function defineDegreeFunction(callback){
-    return function(){
+    return function( includeLoops ){
       var self = this;
+
+      if( includeLoops === undefined ){
+        includeLoops = true;
+      }
       
       if( self.length === 0 ){ return; }
 
@@ -8618,6 +8627,11 @@ var cytoscape;
 
         for( var i = 0; i < connectedEdges.length; i++ ){
           var edge = connectedEdges[i];
+
+          if( !includeLoops && edge.isLoop() ){
+            continue;
+          }
+
           degree += callback( node, edge );
         }
         
@@ -8659,13 +8673,13 @@ var cytoscape;
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   function defineDegreeBoundsFunction(degreeFn, callback){
-    return function(){
+    return function( includeLoops ){
       var ret = undefined;
       var nodes = this.nodes();
 
       for( var i = 0; i < nodes.length; i++ ){
         var ele = nodes[i];
-        var degree = ele[degreeFn]();
+        var degree = ele[degreeFn]( includeLoops );
         if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
           ret = degree;
         }
@@ -8702,12 +8716,12 @@ var cytoscape;
   });
   
   $$.fn.eles({
-    totalDegree: function(){
+    totalDegree: function( includeLoops ){
       var total = 0;
       var nodes = this.nodes();
 
       for( var i = 0; i < nodes.length; i++ ){
-        total += nodes[i].degree();
+        total += nodes[i].degree( includeLoops );
       }
 
       return total;
@@ -9006,7 +9020,9 @@ var cytoscape;
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
         style.applyBypass( this, props );
-        this.rtrigger('style'); // let the renderer know we've updated style
+
+        var updatedCompounds = this.updateCompoundBounds();
+        this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
   
@@ -9021,7 +9037,9 @@ var cytoscape;
 
         } else { // then set the bypass with the property value
           style.applyBypass( this, name, value );
-          this.rtrigger('style'); // let the renderer know we've updated style
+
+          var updatedCompounds = this.updateCompoundBounds();
+        	this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -9047,7 +9065,8 @@ var cytoscape;
         style.removeAllBypasses( ele );
       }
 
-      this.rtrigger('style');
+      var updatedCompounds = this.updateCompoundBounds();
+      this.add( updatedCompounds ).rtrigger('style');
     },
 
     show: function(){
@@ -9400,154 +9419,6 @@ var cytoscape;
   });
 
   $$.fn.eles({
-    // do a breadth first search from the nodes in the collection
-    // from pseudocode on wikipedia
-    breadthFirstSearch: function( fn, directed ){
-      fn = fn || function(){};
-      var cy = this._private.cy;
-      var v = this;
-      var Q = [];
-      var marked = {};
-      var id2depth = {};
-      var connectedFrom = {};
-      var connectedEles = [];
-
-      // enqueue v
-      for( var i = 0; i < v.length; i++ ){
-        if( v[i].isNode() ){
-          Q.unshift( v[i] );
-
-          // and mark v
-          marked[ v[i].id() ] = true;
-
-          id2depth[ v[i].id() ] = 0;
-
-          connectedEles.push( v[i] );
-        }
-      }
-
-      i = 0;
-      while( Q.length !== 0 ){ // while Q not empty
-        var t = Q.shift();
-        var depth = 0;
-
-        var fromNodeId = connectedFrom[ t.id() ];
-        while( fromNodeId ){
-          depth++;
-          fromNodeId = connectedFrom[ fromNodeId ];
-        }
-
-        id2depth[ t.id() ] = depth;
-        var ret = fn.call(t, i, depth);
-        i++;
-
-        // on return true, return the result
-        if( ret === true ){
-          return new $$.Collection( cy, [ t ] );
-        } 
-
-        // on return false, stop iteration
-        else if( ret === false ){
-          break;
-        }
-
-        var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
-
-        for( var j = 0; j < adjacentEdges.length; j++ ){
-          var e = adjacentEdges[j];
-          var u = e.connectedNodes('[id != "' + t.id() + '"]');
-
-          if( u.length !== 0 ){
-            u = u[0];
-
-            if( !marked[ u.id() ] ){
-              marked[ u.id() ] = true; // mark u
-              Q.unshift( u ); // enqueue u onto Q
-              
-              connectedFrom[ u.id() ] = t.id();
-              
-              connectedEles.push( u );
-              connectedEles.push( e );
-            }
-          }
-        }
-      }
-
-      return new $$.Collection( cy, connectedEles ); // return none
-    },
-
-    // do a depth first search on the nodes in the collection
-    // from pseudocode on wikipedia (iterative impl)
-    depthFirstSearch: function( fn, directed ){
-      fn = fn || function(){};
-      var cy = this._private.cy;
-      var v = this;
-      var S = [];
-      var discovered = [];
-      var forwardEdge = {};
-      var backEdge = {};
-      var crossEdge = {};
-      var treeEdge = {};
-      var explored = {};
-
-      function labelled(e){
-        var id = e.id();
-        return forwardEdge[id] || backEdge[id] || crossEdge[id] || treeEdge[id];
-      }
-
-      // push v
-      for( var i = 0; i < v.length; i++ ){
-        if( v[i].isNode() ){
-          S.push( v[i] );
-
-          // and mark discovered
-          discovered[ v[i].id() ] = true;
-        }
-      }
-
-      while( S.length !== 0 ){
-        var t = S[ S.length - 1 ];
-        var ret = fn.call(t);
-        var breaked = false;
-
-        if( ret === true ){
-          return new $$.Collection( cy, [t] );
-        }
-
-        var adjacentEdges = t.connectedEdges(directed ? '[source = "' + t.id() + '"]' : undefined);
-        for( var i = 0; i < adjacentEdges.length; i++ ){
-          var e = adjacentEdges[i];
-
-          if( labelled(e) ){
-            continue;
-          }
-
-          var w = e.connectedNodes('[id != "' + t.id() + '"]');
-          if( w.length !== 0 ){
-            w = w[0];
-            var wid = w.id();
-
-            if( !discovered[wid] && !explored[wid] ){
-              treeEdge[wid] = true;
-              discovered[wid] = true;
-              S.push(w);
-              breaked = true;
-              break;
-            } else if( discovered[wid] ){
-              backEdge[wid] = true;
-            } else {
-              crossEdge[wid] = true;
-            }  
-          }
-        }
-
-        if( !breaked ){
-          explored[ t.id() ] = true;
-          S.pop();
-        }
-      }
-    },
-
     // get the root nodes in the DAG
     roots: function( selector ){
       var eles = this;
@@ -9568,10 +9439,221 @@ var cytoscape;
       return new $$.Collection( this._private.cy, roots ).filter( selector );
     },
 
+    // normally called children in graph theory
+    // these nodes =edges=> forward nodes
+    forwardNodes: function( selector ){
+      var eles = this;
+      var fNodes = [];
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var eleId = ele.id();
+
+        if( !ele.isNode() ){ continue; }
+
+        var edges = ele._private.edges;
+        for( var j = 0; j < edges.length; j++ ){
+          var edge = edges[j];
+          var srcId = edge._private.data.source;
+          var tgtId = edge._private.data.target;
+
+          if( srcId === eleId && tgtId !== eleId ){
+            fNodes.push( edge.target()[0] );
+          }
+        }
+      }
+
+      return new $$.Collection( this._private.cy, fNodes ).filter( selector );
+    },
+
+    // normally called parents in graph theory
+    // these nodes <=edges= backward nodes
+    backwardNodes: function( selector ){
+      var eles = this;
+      var bNodes = [];
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var eleId = ele.id();
+
+        if( !ele.isNode() ){ continue; }
+
+        var edges = ele._private.edges;
+        for( var j = 0; j < edges.length; j++ ){
+          var edge = edges[j];
+          var srcId = edge._private.data.source;
+          var tgtId = edge._private.data.target;
+
+          if( tgtId === eleId && srcId !== eleId ){
+            bNodes.push( edge.source()[0] );
+          }
+        }
+      }
+
+      return new $$.Collection( this._private.cy, bNodes ).filter( selector );
+    }
+  });
+
+  // search, spanning trees, etc
+  $$.fn.eles({
+
+    // do a breadth first search from the nodes in the collection
+    // from pseudocode on wikipedia
+    breadthFirstSearch: function( roots, fn, directed ){
+      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      fn = $$.is.fn(fn) ? fn : function(){};
+      var cy = this._private.cy;
+      var v = $$.is.string(roots) ? this.filter(roots) : roots;
+      var Q = [];
+      var connectedEles = [];
+      var connectedFrom = {};
+      var id2depth = {};
+      var V = {};
+      var j = 0;
+      var found;
+      var nodes = this.nodes();
+      var edges = this.edges();
+
+      // enqueue v
+      for( var i = 0; i < v.length; i++ ){
+        if( v[i].isNode() ){
+          Q.unshift( v[i] );
+          V[ v[i].id() ] = true; 
+
+          connectedEles.push( v[i] );
+          id2depth[ v[i].id() ] = 0;
+        }
+      }
+
+      while( Q.length !== 0 ){
+        var v = Q.shift();
+        var depth = id2depth[ v.id() ];
+        var ret = fn.call(v, j++, depth);
+
+        if( ret === true ){
+          found = v;
+          break;
+        }
+
+        if( ret === false ){
+          break;
+        }
+
+        var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+        for( var i = 0; i < vwEdges.length; i++ ){
+          var e = vwEdges[i];
+          var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+
+          if( w.length !== 0 && !V[ w.id() ] ){
+            w = w[0];
+
+            Q.push( w );
+            V[ w.id() ] = true;
+
+            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+
+            connectedEles.push( w );
+            connectedEles.push( e );
+          }
+        }
+        
+      }
+
+      return {
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
+      };
+    },
+
+    // do a depth first search on the nodes in the collection
+    // from pseudocode on wikipedia (iterative impl)
+    depthFirstSearch: function( roots, fn, directed ){
+      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      fn = $$.is.fn(fn) ? fn : function(){};
+      var cy = this._private.cy;
+      var v = $$.is.string(roots) ? this.filter(roots) : roots;
+      var S = [];
+      var connectedNodes = [];
+      var connectedBy = {};
+      var id2depth = {};
+      var discovered = {};
+      var j = 0;
+      var found;
+      var edges = this.edges();
+      var nodes = this.nodes();
+
+      // push v
+      for( var i = 0; i < v.length; i++ ){
+        if( v[i].isNode() ){
+          S.push( v[i] );
+
+          connectedNodes.push( v[i] );
+          id2depth[ v[i].id() ] = 0;
+        }
+      }
+
+      while( S.length !== 0 ){
+        var v = S.pop();
+
+        if( !discovered[ v.id() ] ){
+          discovered[ v.id() ] = true;
+
+          var depth = id2depth[ v.id() ];
+
+          var ret = fn.call(v, j++, depth);
+
+          if( ret === true ){
+            found = v;
+            break;
+          }
+
+          if( ret === false ){
+            break;
+          }
+
+          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+          
+          for( var i = 0; i < vwEdges.length; i++ ){
+            var e = vwEdges[i];
+            var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+
+            if( w.length !== 0 && !discovered[ w.id() ] ){
+              w = w[0];
+
+              S.push( w );
+
+              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+
+              connectedNodes.push( w );
+              connectedBy[ w.id() ] = e;
+            }
+          }
+        }
+      }
+
+      var connectedEles = [];
+
+      for( var i = 0; i < connectedNodes.length; i++ ){
+        var node = connectedNodes[i];
+        var edge = connectedBy[ node.id() ];
+
+        if( edge ){
+          connectedEles.push( edge );
+        }
+
+        connectedEles.push( node );
+      }
+
+      return {
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
+      }
+    },
+
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
     // implemented from pseudocode from wikipedia
     kruskal: function( weightFn ){
-      weightFn = weightFn || function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+      weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
       function findSet(ele){
         for( var i = 0; i < forest.length; i++ ){
@@ -9609,9 +9691,10 @@ var cytoscape;
         var setU = findSet(u);
         var setV = findSet(v);
 
-        if( setU.eles !== setV.eles ){
+        if( setU.index !== setV.index ){
           A = A.add( edge );
 
+          // combine forests for u and v
           forest[ setU.index ] = setU.eles.add( setV.eles );
           forest.splice( setV.index, 1 );
         }
@@ -9621,52 +9704,70 @@ var cytoscape;
 
     },
 
-    dijkstra: function( target, weightFn, directed ){
+    dijkstra: function( root, weightFn, directed ){
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
-      directed = directed === undefined || directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
-      if( this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0 ){
-        return new $$.Collection(cy, []);
-      }
-
-      var source = this[0];
-      target = target[0];
+      var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
 
-      var nodes = cy.nodes();
+      var edges = this.edges().not(':loop');
+      var nodes = this.nodes();
+      var Q = [];
       for( var i = 0; i < nodes.length; i++ ){
         dist[ nodes[i].id() ] = Infinity;
+        Q.push( nodes[i] );
       }
 
       dist[ source.id() ] = 0;
-      var Q = nodes;
 
-      var smallestDist = function(Q){
+      var remove = function(Q, node){
+        for( var i = 0; i < Q.length; i++ ){
+          var n = Q[i];
+
+          if( n.id() === node.id() ){
+            Q.splice(i, 1);
+            return;
+          }
+        }
+      };
+
+      var smallestDistNode = function(Q){
         var smallest = Infinity;
         var index;
-        for(var i in dist){
-          if( dist[i] < smallest && Q.$('#' + i).length !== 0 ){
-            smallest = dist[i];
+        var node;
+
+        for( var i = 0; i < Q.length; i++ ){
+          var n = Q[i];
+          var id = n.id();
+          var d = dist[ id ];
+
+          if( d < smallest || !node ){
+            smallest = d;
             index = i;
+            node = n;
           }
         }
 
-        return index;
+        return {
+          index: index,
+          node: node,
+          dist: smallest
+        };
       };
 
       var distBetween = function(u, v){
-        var edges = u.edgesWith(v);
+        var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
         var smallestDistance = Infinity;
         var smallestEdge;
 
-        for( var i = 0; i < edges.length; i++ ){
-          var edge = edges[i];
+        for( var i = 0; i < uvs.length; i++ ){
+          var edge = uvs[i];
           var weight = weightFn.call(edge);
 
-          if( weight < smallestDistance ){
+          if( weight < smallestDistance || !smallestEdge ){
             smallestDistance = weight;
             smallestEdge = edge;
           }
@@ -9678,43 +9779,76 @@ var cytoscape;
         };
       };
 
+      var decreaseKey = function(Q, v){
+        for( var i = 0; i < Q.length; i++ ){
+          var q = Q[i];
+
+          if( q.id() === v.id() ){
+            if( i > 0 ){
+              Q.splice(i, 1);
+              Q.splice(i - 1, 0, v);
+            }
+            break;
+          }
+        }
+      };
+
       while( Q.length !== 0 ){
-        var uid = smallestDist(Q);
-        var u = Q.filter('#' + uid);
+        var smallestDist = smallestDistNode(Q);
+        var u = smallestDist.node;
+        var uid = u.id();
 
-        if( u.length === 0 ){
-          continue;
-        }
-
-        //debugger;
-
-        Q = Q.not( u );
-
-        if( u.same(target) ){
-          break;
-        }
+        remove(Q, u);
 
         if( dist[uid] === Math.Infinite ){
           break;
         }
 
-        var neighbors = u.neighborhood().nodes();
+        var neighbors = u.neighborhood().intersect(nodes);
         for( var i = 0; i < neighbors.length; i++ ){
           var v = neighbors[i];
-          var vid = v.id()
+          var vid = v.id();
+          var vDist = distBetween(u, v);
 
-          var duv = distBetween(u, v);
-          var alt = dist[uid] + duv.dist;
+          var alt = dist[ uid ] + vDist.dist;
+
           if( alt < dist[vid] ){
             dist[vid] = alt;
-            prev[vid] = {
-              node: v,
-              edge: duv.edge
+            prev[ vid ] = {
+              node: u,
+              edge: vDist.edge
             };
-            // TODO decrease-key v in Q
+            decreaseKey(Q, v);
           }
         }
       }
+
+      return {
+        distanceTo: function(node){
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+
+          return dist[ target.id() ];
+        },
+
+        pathTo: function(node){
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+          var S = [];
+          var u = target;
+
+          S.unshift( target );
+
+          while( prev[ u.id() ] ){
+            var p = prev[ u.id() ];
+
+            S.unshift( p.edge );
+            S.unshift( p.node );
+
+            u = p.node;
+          }
+
+          return new $$.Collection( cy, S );
+        }
+      };
     }  
   });
 
@@ -9771,11 +9905,25 @@ var cytoscape;
 
   $$.fn.eles({
     source: function( selector ){
-      return new $$.Collection( this.cy(), this._private.source ).filter( selector );
+      var ele = this[0];
+      var src;
+
+      if( ele ){
+        src = ele._private.source;
+      }
+
+      return new $$.Collection( this.cy(), src ).filter( selector );
     },
 
     target: function( selector ){
-      return new $$.Collection( this.cy(), this._private.target ).filter( selector );
+      var ele = this[0];
+      var tgt;
+
+      if( ele ){
+        tgt = ele._private.target;
+      }
+
+      return new $$.Collection( this.cy(), tgt ).filter( selector );
     },
 
     sources: defineSourceFunction({
@@ -13469,7 +13617,6 @@ var cytoscape;
     // auto resize
     r.registerBinding(window, 'resize', function(e) { 
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-      r.matchCanvasSize( r.data.container );
       r.redraw();
     }, true);
 
@@ -16448,436 +16595,441 @@ var cytoscape;
 })(cytoscape);
 
 ;(function($$){ 'use strict';
+  
+  var defaults = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+    padding: 30, // the padding on fit
+    startAngle: 3/2 * Math.PI, // the position of the first node
+    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+  };
+  
+  function CircleLayout( options ){
+    this.options = $$.util.extend({}, defaults, options);
+  }
+  
+  CircleLayout.prototype.run = function(){
+    var params = this.options;
+    var options = params;
     
-    var defaults = {
-        fit: true, // whether to fit the viewport to the graph
-        ready: undefined, // callback on layoutready
-        stop: undefined, // callback on layoutstop
-        rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
-        padding: 30, // the padding on fit
-        startAngle: 3/2 * Math.PI, // the position of the first node
-        counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+    var cy = params.cy;
+    var nodes = cy.nodes().filter(function(){
+      return !this.isFullAutoParent();
+    });
+    var edges = cy.edges();
+    var container = cy.container();
+    
+    var width = container.clientWidth;
+    var height = container.clientHeight;
+
+    var center = {
+      x: width/2,
+      y: height/2
     };
+
+    var padding = 50;
     
-    function CircleLayout( options ){
-        this.options = $$.util.extend({}, defaults, options);
+    var theta = options.startAngle;
+    var dTheta = 2 * Math.PI / nodes.length;
+    var maxNodeSize = 0;
+
+    for( var i = 0; i < nodes.length; i++ ){
+      var node = nodes[i];
+
+      maxNodeSize = Math.max( node.outerWidth(), node.outerHeight() );
     }
+
+    var r = width/2 - maxNodeSize;
+
+    function distanceBetweenNodes(){
+      var t1 = 0;
+      var t2 = dTheta;
+
+      var p1 = {
+        x: center.x + r * Math.cos(t1),
+        y: center.y + r * Math.sin(t1)
+      };
+
+      var p2 = {
+        x: center.x + r * Math.cos(t2),
+        y: center.y + r * Math.sin(t2)
+      }; 
+
+      var dist = Math.sqrt( (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y) );
+
+      return dist;
+    }
+
+    while( distanceBetweenNodes() < maxNodeSize && !(nodes.length < 2) ){
+      r += options.rStepSize;
+    }
+
+
+    var i = 0;
+    nodes.positions(function(){
+      var node = this;
+      var rx = r * Math.cos( theta );
+      var ry = r * Math.sin( theta );
+      var pos = {
+        x: center.x + rx,
+        y: center.y + ry
+      };
+
+      i++;
+      theta = options.counterclockwise ? theta - dTheta : theta + dTheta;
+      return pos;
+    });
     
-    CircleLayout.prototype.run = function(){
-        var params = this.options;
-        var options = params;
-        
-        var cy = params.cy;
-        var nodes = cy.nodes().filter(function(){
-            return !this.isFullAutoParent();
-        });
-        var edges = cy.edges();
-        var container = cy.container();
-        
-        var width = container.clientWidth;
-        var height = container.clientHeight;
-
-        var center = {
-            x: width/2,
-            y: height/2
-        };
-
-        var padding = 50;
-        
-        var theta = options.startAngle;
-        var dTheta = 2 * Math.PI / nodes.length;
-        var maxNodeSize = 0;
-
-        for( var i = 0; i < nodes.length; i++ ){
-            var node = nodes[i];
-
-            maxNodeSize = Math.max( node.outerWidth(), node.outerHeight() );
-        }
-
-        var r = width/2 - maxNodeSize;
-
-        function distanceBetweenNodes(){
-            var t1 = 0;
-            var t2 = dTheta;
-
-            var p1 = {
-                x: center.x + r * Math.cos(t1),
-                y: center.y + r * Math.sin(t1)
-            };
-
-            var p2 = {
-                x: center.x + r * Math.cos(t2),
-                y: center.y + r * Math.sin(t2)
-            }; 
-
-            var dist = Math.sqrt( (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y) );
-
-            return dist;
-        }
-
-        while( distanceBetweenNodes() < maxNodeSize && !(nodes.length < 2) ){
-            r += options.rStepSize;
-        }
-
-
-        var i = 0;
-        nodes.positions(function(){
-            var node = this;
-            var rx = r * Math.cos( theta );
-            var ry = r * Math.sin( theta );
-            var pos = {
-                x: center.x + rx,
-                y: center.y + ry
-            };
-
-            i++;
-            theta = options.counterclockwise ? theta - dTheta : theta + dTheta;
-            return pos;
-        });
-        
-        if( params.fit ){
-            cy.fit( options.padding );
-        } 
-        
-        cy.one('layoutready', params.ready);
-        cy.trigger('layoutready');
-        
-        cy.one('layoutstop', params.stop);
-        cy.trigger('layoutstop');
-    };
-
-    CircleLayout.prototype.stop = function(){
-        // not a continuous layout
-    };
+    if( params.fit ){
+      cy.fit( options.padding );
+    } 
     
-    $$('layout', 'circle', CircleLayout);
+    cy.one('layoutready', params.ready);
+    cy.trigger('layoutready');
     
+    cy.one('layoutstop', params.stop);
+    cy.trigger('layoutstop');
+  };
+
+  CircleLayout.prototype.stop = function(){
+    // not a continuous layout
+  };
+  
+  $$('layout', 'circle', CircleLayout);
+  
 })( cytoscape );
 
 ;(function($$){ 'use strict';
+  
+  var defaults = {
+    fit: true, // whether to fit the viewport to the graph
+    ready: undefined, // callback on layoutready
+    stop: undefined, // callback on layoutstop
+    directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+    padding: 30, // padding on fit
+    circle: false, // put depths in concentric circles if true, put depths top down if false
+    roots: undefined, // the roots of the trees
+    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+  };
+  
+  function BreadthFirstLayout( options ){
+    this.options = $$.util.extend({}, defaults, options);
+  }
+  
+  BreadthFirstLayout.prototype.run = function(){
+    var params = this.options;
+    var options = params;
     
-    var defaults = {
-        fit: true, // whether to fit the viewport to the graph
-        ready: undefined, // callback on layoutready
-        stop: undefined, // callback on layoutstop
-        directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
-        padding: 30, // padding on fit
-        circle: false, // put depths in concentric circles if true, put depths top down if false
-        roots: undefined, // the roots of the trees
-        maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
-    };
+    var cy = params.cy;
+    var nodes = cy.nodes();
+    var edges = cy.edges();
+    var container = cy.container();
     
-    function BreadthFirstLayout( options ){
-        this.options = $$.util.extend({}, defaults, options);
+    var width = container.clientWidth;
+    var height = container.clientHeight;
+
+    var roots;
+    if( $$.is.elementOrCollection(options.roots) ){
+      roots = options.roots;
+    } else if( $$.is.array(options.roots) ){
+      var rootsArray = [];
+
+      for( var i = 0; i < options.roots.length; i++ ){
+        var id = options.roots[i];
+        var ele = cy.getElementById( id );
+        roots.push( ele );
+      }
+
+      roots = new $$.Collection( cy, rootsArray );
+    } else {
+      if( options.directed ){
+        roots = nodes.roots();
+      } else {
+        var maxDegree = nodes.maxDegree( false );
+        roots = nodes.filter('[[degree = ' + maxDegree + ']]');
+      }
     }
-    
-    BreadthFirstLayout.prototype.run = function(){
-        var params = this.options;
-        var options = params;
+
+
+    var depths = [];
+    var foundByBfs = {};
+    var id2depth = {};
+
+    // find the depths of the nodes
+    roots.bfs(function(i, depth){
+      var ele = this[0];
+
+      if( !depths[depth] ){
+        depths[depth] = [];
+      }
+
+      depths[depth].push( ele );
+      foundByBfs[ ele.id() ] = true;
+      id2depth[ ele.id() ] = depth;
+    }, options.directed);
+
+    // check for nodes not found by bfs
+    var orphanNodes = [];
+    for( var i = 0; i < nodes.length; i++ ){
+      var ele = nodes[i];
+
+      if( foundByBfs[ ele.id() ] ){
+        continue;
+      } else {
+        orphanNodes.push( ele );
+      }
+    }
+
+    // assign orphan nodes a depth from their neighborhood
+    var maxChecks = orphanNodes.length * 3;
+    var checks = 0;
+    while( orphanNodes.length !== 0 && checks < maxChecks ){
+      var node = orphanNodes.shift();
+      var neighbors = node.neighborhood().nodes();
+      var assignedDepth = false;
+
+      for( var i = 0; i < neighbors.length; i++ ){
+        var depth = id2depth[ neighbors[i].id() ];
+
+        if( depth !== undefined ){
+          depths[depth].push( node );
+          assignedDepth = true;
+          break;
+        }
+      }
+
+      if( !assignedDepth ){
+        orphanNodes.push( node );
+      }
+
+      checks++;
+    }
+
+    // assign orphan nodes that are still left to the depth of their subgraph
+    while( orphanNodes.length !== 0 ){
+      var node = orphanNodes.shift();
+      var subgraph = node.bfs();
+      var assignedDepth = false;
+
+      for( var i = 0; i < subgraph.length; i++ ){
+        var depth = id2depth[ subgraph[i].id() ];
+
+        if( depth !== undefined ){
+          depths[depth].push( node );
+          assignedDepth = true;
+          break;
+        }
+      }
+
+      if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
+        if( depths.length === 0 ){
+          depths.push([]);
+        }
         
-        var cy = params.cy;
-        var nodes = cy.nodes();
-        var edges = cy.edges();
-        var container = cy.container();
-        
-        var width = container.clientWidth;
-        var height = container.clientHeight;
+        depths[0].push( node );
+      }
+    }
 
-        var roots;
-        if( $$.is.elementOrCollection(options.roots) ){
-            roots = options.roots;
-        } else if( $$.is.array(options.roots) ){
-            var rootsArray = [];
+    // assign the nodes a depth and index
+    var assignDepthsToEles = function(){
+      for( var i = 0; i < depths.length; i++ ){
+        var eles = depths[i];
 
-            for( var i = 0; i < options.roots.length; i++ ){
-                var id = options.roots[i];
-                var ele = cy.getElementById( id );
-                roots.push( ele );
-            }
+        for( var j = 0; j < eles.length; j++ ){
+          var ele = eles[j];
 
-            roots = new $$.Collection( cy, rootsArray );
-        } else {
-            roots = nodes.roots();
+          ele._private.scratch.BreadthFirstLayout = {
+            depth: i,
+            index: j
+          };
+        }
+      }
+    };
+    assignDepthsToEles();
+
+     // make maximal if so set by adjusting depths
+    for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
+
+      var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
+        var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+        var thisInfo = node._private.scratch.BreadthFirstLayout;
+        var highestDepthOfOther = 0;
+        var highestOther;
+        for( var i = 0; i < edges.length; i++ ){
+          var edge = edges[i];
+          var otherNode = edge.source()[0];
+          var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+
+          if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+            highestDepthOfOther = otherInfo.depth;
+            highestOther = otherNode;
+          }
         }
 
+        return highestOther;
+      };
 
-        var depths = [];
-        var foundByBfs = {};
-        var id2depth = {};
+      var nDepths = depths.length;
+      var elesToMove = [];
+      for( var i = 0; i < nDepths; i++ ){
+        var depth = depths[i];
 
-        // find the depths of the nodes
-        roots.bfs(function(i, depth){
-            var ele = this[0];
+        var nDepth = depth.length;
+        for( var j = 0; j < nDepth; j++ ){
+          var ele = depth[j];
+          var info = ele._private.scratch.BreadthFirstLayout;
+          var intEle = intersectsDepth(ele);
 
-            if( !depths[depth] ){
-                depths[depth] = [];
-            }
-
-            depths[depth].push( ele );
-            foundByBfs[ ele.id() ] = true;
-            id2depth[ ele.id() ] = depth;
-        }, options.directed);
-
-        // check for nodes not found by bfs
-        var orphanNodes = [];
-        for( var i = 0; i < nodes.length; i++ ){
-            var ele = nodes[i];
-
-            if( foundByBfs[ ele.id() ] ){
-                continue;
-            } else {
-                orphanNodes.push( ele );
-            }
+          if( intEle ){
+            info.intEle = intEle;
+            elesToMove.push( ele );
+          }
         }
+      }
 
-        // assign orphan nodes a depth from their neighborhood
-        var maxChecks = orphanNodes.length * 3;
-        var checks = 0;
-        while( orphanNodes.length !== 0 && checks < maxChecks ){
-            var node = orphanNodes.shift();
-            var neighbors = node.neighborhood().nodes();
-            var assignedDepth = false;
+      for( var i = 0; i < elesToMove.length; i++ ){ 
+        var ele = elesToMove[i];
+        var info = ele._private.scratch.BreadthFirstLayout;
+        var intEle = info.intEle;
+        var intInfo = intEle._private.scratch.BreadthFirstLayout;
 
-            for( var i = 0; i < neighbors.length; i++ ){
-                var depth = id2depth[ neighbors[i].id() ];
+        depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
 
-                if( depth !== undefined ){
-                    depths[depth].push( node );
-                    assignedDepth = true;
-                    break;
-                }
-            }
-
-            if( !assignedDepth ){
-                orphanNodes.push( node );
-            }
-
-            checks++;
+        // add to end of new depth
+        var newDepth = intInfo.depth + 1;
+        while( newDepth > depths.length - 1 ){
+          depths.push([]);
         }
+        depths[ newDepth ].push( ele );
 
-        // assign orphan nodes that are still left to the depth of their subgraph
-        while( orphanNodes.length !== 0 ){
-            var node = orphanNodes.shift();
-            var subgraph = node.bfs();
-            var assignedDepth = false;
+        info.depth = newDepth;
+        info.index = depths[newDepth].length - 1;
+      }
 
-            for( var i = 0; i < subgraph.length; i++ ){
-                var depth = id2depth[ subgraph[i].id() ];
+      assignDepthsToEles();
+    }
 
-                if( depth !== undefined ){
-                    depths[depth].push( node );
-                    assignedDepth = true;
-                    break;
-                }
-            }
+    // find min distance we need to leave between nodes
+    var minDistance = 0;
+    for( var i = 0; i < nodes.length; i++ ){
+      var w = nodes[i].outerWidth();
+      var h = nodes[i].outerHeight();
+      
+      minDistance = Math.max(minDistance, w, h);
+    }
+    minDistance *= 1.75; // just to have some nice spacing
 
-            if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
-                if( depths.length === 0 ){
-                    depths.push([]);
-                }
-                
-                depths[0].push( node );
-            }
+    // get the weighted percent for an element based on its connectivity to other levels
+    var cachedWeightedPercent = {};
+    var getWeightedPercent = function( ele ){
+      if( cachedWeightedPercent[ ele.id() ] ){
+        return cachedWeightedPercent[ ele.id() ];
+      }
+
+      var eleDepth = ele._private.scratch.BreadthFirstLayout.depth;
+      var neighbors = ele.neighborhood().nodes();
+      var percent = 0;
+      var samples = 0;
+
+      for( var i = 0; i < neighbors.length; i++ ){
+        var neighbor = neighbors[i];
+        var nEdges = neighbor.edgesWith( ele );
+        var index = neighbor._private.scratch.BreadthFirstLayout.index;
+        var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
+        var nDepth = depths[depth].length;
+
+        if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
+          percent += index / nDepth;
+          samples++;
         }
+      }
 
-        // assign the nodes a depth and index
-        var assignDepthsToEles = function(){
-            for( var i = 0; i < depths.length; i++ ){
-                var eles = depths[i];
+      samples = Math.max(1, samples);
+      percent = percent / samples;
 
-                for( var j = 0; j < eles.length; j++ ){
-                    var ele = eles[j];
+      if( samples === 0 ){ // so lone nodes have a "don't care" state in sorting
+        percent = undefined;
+      }
 
-                    ele._private.scratch.BreadthFirstLayout = {
-                        depth: i,
-                        index: j
-                    };
-                }
-            }
-        };
-        assignDepthsToEles();
+      cachedWeightedPercent[ ele.id() ] = percent;
+      return percent;
+    };
 
-         // make maximal if so set by adjusting depths
-        for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
+    // rearrange the indices in each depth level based on connectivity
+    for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
 
-            var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-                var edges = node.connectedEdges('[target = "' + node.id() + '"]');
-                var thisInfo = node._private.scratch.BreadthFirstLayout;
-                var highestDepthOfOther = 0;
-                var highestOther;
-                for( var i = 0; i < edges.length; i++ ){
-                    var edge = edges[i];
-                    var otherNode = edge.source()[0];
-                    var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+      for( var i = 0; i < depths.length; i++ ){
+        var depth = i;
+        var newDepths = [];
 
-                    if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
-                        highestDepthOfOther = otherInfo.depth;
-                        highestOther = otherNode;
-                    }
-                }
-
-                return highestOther;
-            };
-
-            var nDepths = depths.length;
-            var elesToMove = [];
-            for( var i = 0; i < nDepths; i++ ){
-                var depth = depths[i];
-
-                var nDepth = depth.length;
-                for( var j = 0; j < nDepth; j++ ){
-                    var ele = depth[j];
-                    var info = ele._private.scratch.BreadthFirstLayout;
-                    var intEle = intersectsDepth(ele);
-
-                    if( intEle ){
-                        info.intEle = intEle;
-                        elesToMove.push( ele );
-                    }
-                }
-            }
-
-            for( var i = 0; i < elesToMove.length; i++ ){ 
-                var ele = elesToMove[i];
-                var info = ele._private.scratch.BreadthFirstLayout;
-                var intEle = info.intEle;
-                var intInfo = intEle._private.scratch.BreadthFirstLayout;
-
-                depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
-
-                // add to end of new depth
-                var newDepth = intInfo.depth + 1;
-                while( newDepth > depths.length - 1 ){
-                    depths.push([]);
-                }
-                depths[ newDepth ].push( ele );
-
-                info.depth = newDepth;
-                info.index = depths[newDepth].length - 1;
-            }
-
-            assignDepthsToEles();
-        }
-
-        // find min distance we need to leave between nodes
-        var minDistance = 0;
-        for( var i = 0; i < nodes.length; i++ ){
-            var w = nodes[i].outerWidth();
-            var h = nodes[i].outerHeight();
-            
-            minDistance = Math.max(minDistance, w, h);
-        }
-        minDistance *= 1.75; // just to have some nice spacing
-
-        // get the weighted percent for an element based on its connectivity to other levels
-        var cachedWeightedPercent = {};
-        var getWeightedPercent = function( ele ){
-            if( cachedWeightedPercent[ ele.id() ] ){
-                return cachedWeightedPercent[ ele.id() ];
-            }
-
-            var eleDepth = ele._private.scratch.BreadthFirstLayout.depth;
-            var neighbors = ele.neighborhood().nodes();
-            var percent = 0;
-            var samples = 0;
-
-            for( var i = 0; i < neighbors.length; i++ ){
-                var neighbor = neighbors[i];
-                var nEdges = neighbor.edgesWith( ele );
-                var index = neighbor._private.scratch.BreadthFirstLayout.index;
-                var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
-                var nDepth = depths[depth].length;
-
-                if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
-                    percent += index / nDepth;
-                    samples++;
-                }
-            }
-
-            samples = Math.max(1, samples);
-            percent = percent / samples;
-
-            if( samples === 0 ){ // so lone nodes have a "don't care" state in sorting
-                percent = undefined;
-            }
-
-            cachedWeightedPercent[ ele.id() ] = percent;
-            return percent;
-        };
-
-        // rearrange the indices in each depth level based on connectivity
-        for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
-
-            for( var i = 0; i < depths.length; i++ ){
-                var depth = i;
-                var newDepths = [];
-
-                depths[i] = depths[i].sort(function(a, b){
-                    var apct = getWeightedPercent( a );
-                    var bpct = getWeightedPercent( b );
+        depths[i] = depths[i].sort(function(a, b){
+          var apct = getWeightedPercent( a );
+          var bpct = getWeightedPercent( b );
 
 
-                    return apct - bpct;
-                });
-            }
-            assignDepthsToEles(); // and update
-
-        }
-
-        var center = {
-            x: width/2,
-            y: height/2
-        };
-        nodes.positions(function(){
-            var ele = this[0];
-            var info = ele._private.scratch.BreadthFirstLayout;
-            var depth = info.depth;
-            var index = info.index;
-
-            var distanceX = Math.max( width / (depths[depth].length + 1), minDistance );
-            var distanceY = Math.max( height / (depths.length + 1), minDistance );
-            var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
-            radiusStepSize = Math.max( radiusStepSize, minDistance );
-
-            if( options.circle ){
-                var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
-                var theta = 2 * Math.PI / depths[depth].length * index;
-
-                if( depth === 0 && depths[0].length === 1 ){
-                    radius = 1;
-                }
-
-                return {
-                    x: center.x + radius * Math.cos(theta),
-                    y: center.y + radius * Math.sin(theta)
-                };
-
-            } else {
-                return {
-                    x: (index + 1) * distanceX,
-                    y: (depth + 1) * distanceY
-                };
-            }
-            
+          return apct - bpct;
         });
-        
-        if( params.fit ){
-            cy.fit( options.padding );
-        } 
-        
-        cy.one('layoutready', params.ready);
-        cy.trigger('layoutready');
-        
-        cy.one('layoutstop', params.stop);
-        cy.trigger('layoutstop');
-    };
+      }
+      assignDepthsToEles(); // and update
 
-    BreadthFirstLayout.prototype.stop = function(){
-        // not a continuous layout
+    }
+
+    var center = {
+      x: width/2,
+      y: height/2
     };
+    nodes.positions(function(){
+      var ele = this[0];
+      var info = ele._private.scratch.BreadthFirstLayout;
+      var depth = info.depth;
+      var index = info.index;
+
+      var distanceX = Math.max( width / (depths[depth].length + 1), minDistance );
+      var distanceY = Math.max( height / (depths.length + 1), minDistance );
+      var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
+      radiusStepSize = Math.max( radiusStepSize, minDistance );
+
+      if( options.circle ){
+        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
+        var theta = 2 * Math.PI / depths[depth].length * index;
+
+        if( depth === 0 && depths[0].length === 1 ){
+          radius = 1;
+        }
+
+        return {
+          x: center.x + radius * Math.cos(theta),
+          y: center.y + radius * Math.sin(theta)
+        };
+
+      } else {
+        return {
+          x: (index + 1) * distanceX,
+          y: (depth + 1) * distanceY
+        };
+      }
+      
+    });
     
-    $$('layout', 'breadthfirst', BreadthFirstLayout);
+    if( params.fit ){
+      cy.fit( options.padding );
+    } 
     
+    cy.one('layoutready', params.ready);
+    cy.trigger('layoutready');
+    
+    cy.one('layoutstop', params.stop);
+    cy.trigger('layoutstop');
+  };
+
+  BreadthFirstLayout.prototype.stop = function(){
+    // not a continuous layout
+  };
+  
+  $$('layout', 'breadthfirst', BreadthFirstLayout);
+  
 })( cytoscape );
 
 /*

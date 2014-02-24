@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-describe('Collection style', function(){
+describe('Collection comparison', function(){
 
   var cy;
 

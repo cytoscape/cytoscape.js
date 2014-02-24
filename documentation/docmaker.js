@@ -12,7 +12,7 @@ var demoFile = './js/load.js';
 try {
   config = require(configFile);
 } catch(e){
-  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://jsonlint.com/';
+  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/';
 }
 
 // load the demo file

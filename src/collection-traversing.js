@@ -217,89 +217,96 @@
   $$.fn.eles({
 
     // do a breadth first search from the nodes in the collection
-    // from pseudocode on wikipedia for dfs modified to use a queue instead of a stack
-    breadthFirstSearch: function( fn, directed ){
-      fn = fn || function(){};
+    // from pseudocode on wikipedia
+    breadthFirstSearch: function( roots, fn, directed ){
+      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
-      var v = this;
-      var S = [];
+      var v = $$.is.string(roots) ? this.filter(roots) : roots;
+      var Q = [];
       var connectedEles = [];
       var connectedFrom = {};
       var id2depth = {};
-      var discovered = {};
+      var V = {};
       var j = 0;
+      var found;
+      var nodes = this.nodes();
+      var edges = this.edges();
 
-      // push v
+      // enqueue v
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
-          S.unshift( v[i] );
+          Q.unshift( v[i] );
+          V[ v[i].id() ] = true; 
 
           connectedEles.push( v[i] );
           id2depth[ v[i].id() ] = 0;
         }
       }
 
-      while( S.length !== 0 ){
-        var v = S[0];
+      while( Q.length !== 0 ){
+        var v = Q.shift();
+        var depth = id2depth[ v.id() ];
+        var ret = fn.call(v, j++, depth);
 
-        if( !discovered[ v.id() ] ){
-          S.shift();
+        if( ret === true ){
+          found = v;
+          break;
+        }
 
-          discovered[ v.id() ] = true;
+        if( ret === false ){
+          break;
+        }
 
-          var depth = id2depth[ v.id() ];
+        var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+        for( var i = 0; i < vwEdges.length; i++ ){
+          var e = vwEdges[i];
+          var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
 
-          var ret = fn.call(v, j++, depth);
+          if( w.length !== 0 && !V[ w.id() ] ){
+            w = w[0];
 
-          if( ret === true ){
-            return new $$.Collection( cy, [v] );
-          }
+            Q.push( w );
+            V[ w.id() ] = true;
 
-          if( ret === false ){
-            continue;
-          }
+            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
 
-          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined);
-          for( var i = 0; i < vwEdges.length; i++ ){
-            var e = vwEdges[i];
-            var w = e.connectedNodes('[id != "' + v.id() + '"]');
-
-            if( w.length !== 0 && !discovered[ w.id() ] ){
-              w = w[0];
-
-              S.unshift( w );
-
-              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
-
-              connectedEles.push( w );
-              connectedEles.push( e );
-            }
+            connectedEles.push( w );
+            connectedEles.push( e );
           }
         }
+        
       }
 
-      return new $$.Collection( cy, connectedEles );
+      return {
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
+      };
     },
 
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)
-    depthFirstSearch: function( fn, directed ){
-      fn = fn || function(){};
+    depthFirstSearch: function( roots, fn, directed ){
+      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
-      var v = this;
+      var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var S = [];
-      var connectedEles = [];
-      var connectedFrom = {};
+      var connectedNodes = [];
+      var connectedBy = {};
       var id2depth = {};
       var discovered = {};
       var j = 0;
+      var found;
+      var edges = this.edges();
+      var nodes = this.nodes();
 
       // push v
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
           S.push( v[i] );
 
-          connectedEles.push( v[i] );
+          connectedNodes.push( v[i] );
           id2depth[ v[i].id() ] = 0;
         }
       }
@@ -315,17 +322,19 @@
           var ret = fn.call(v, j++, depth);
 
           if( ret === true ){
-            return new $$.Collection( cy, [v] );
+            found = v;
+            break;
           }
 
           if( ret === false ){
-            continue;
+            break;
           }
 
-          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined);
+          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+          
           for( var i = 0; i < vwEdges.length; i++ ){
             var e = vwEdges[i];
-            var w = e.connectedNodes('[id != "' + v.id() + '"]');
+            var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
 
             if( w.length !== 0 && !discovered[ w.id() ] ){
               w = w[0];
@@ -334,20 +343,36 @@
 
               id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
 
-              connectedEles.push( w );
-              connectedEles.push( e );
+              connectedNodes.push( w );
+              connectedBy[ w.id() ] = e;
             }
           }
         }
       }
 
-      return new $$.Collection( cy, connectedEles );
+      var connectedEles = [];
+
+      for( var i = 0; i < connectedNodes.length; i++ ){
+        var node = connectedNodes[i];
+        var edge = connectedBy[ node.id() ];
+
+        if( edge ){
+          connectedEles.push( edge );
+        }
+
+        connectedEles.push( node );
+      }
+
+      return {
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
+      }
     },
 
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
     // implemented from pseudocode from wikipedia
     kruskal: function( weightFn ){
-      weightFn = weightFn || function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+      weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
       function findSet(ele){
         for( var i = 0; i < forest.length; i++ ){
@@ -385,9 +410,10 @@
         var setU = findSet(u);
         var setV = findSet(v);
 
-        if( setU.eles !== setV.eles ){
+        if( setU.index !== setV.index ){
           A = A.add( edge );
 
+          // combine forests for u and v
           forest[ setU.index ] = setU.eles.add( setV.eles );
           forest.splice( setV.index, 1 );
         }
@@ -397,21 +423,17 @@
 
     },
 
-    dijkstra: function( target, weightFn, directed ){
+    dijkstra: function( root, weightFn, directed ){
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
-      if( this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0 ){
-        return new $$.Collection(cy, []);
-      }
-
-      var source = this[0];
-      target = target[0];
+      var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
 
-      var nodes = cy.nodes();
+      var edges = this.edges().not(':loop');
+      var nodes = this.nodes();
       var Q = [];
       for( var i = 0; i < nodes.length; i++ ){
         dist[ nodes[i].id() ] = Infinity;
@@ -456,12 +478,12 @@
       };
 
       var distBetween = function(u, v){
-        var edges = directed ? u.edgesTo(v).not(':loop') : u.edgesWith(v).not(':loop');
+        var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
         var smallestDistance = Infinity;
         var smallestEdge;
 
-        for( var i = 0; i < edges.length; i++ ){
-          var edge = edges[i];
+        for( var i = 0; i < uvs.length; i++ ){
+          var edge = uvs[i];
           var weight = weightFn.call(edge);
 
           if( weight < smallestDistance || !smallestEdge ){
@@ -498,11 +520,10 @@
         remove(Q, u);
 
         if( dist[uid] === Math.Infinite ){
-          console.log('fail')
           break;
         }
 
-        var neighbors = u.neighborhood().nodes();
+        var neighbors = u.neighborhood().intersect(nodes);
         for( var i = 0; i < neighbors.length; i++ ){
           var v = neighbors[i];
           var vid = v.id();
@@ -516,31 +537,37 @@
               node: u,
               edge: vDist.edge
             };
-            //decreaseKey(Q, v);
+            decreaseKey(Q, v);
           }
         }
+      }
 
-        if( u.id() === target.id() ){
-          console.log('done');
-          break;
+      return {
+        distanceTo: function(node){
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+
+          return dist[ target.id() ];
+        },
+
+        pathTo: function(node){
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+          var S = [];
+          var u = target;
+
+          S.unshift( target );
+
+          while( prev[ u.id() ] ){
+            var p = prev[ u.id() ];
+
+            S.unshift( p.edge );
+            S.unshift( p.node );
+
+            u = p.node;
+          }
+
+          return new $$.Collection( cy, S );
         }
-      }
-
-      var S = [];
-      var u = target;
-
-      S.unshift( target );
-
-      while( prev[ u.id() ] ){
-        var p = prev[ u.id() ];
-
-        S.unshift( p.node );
-        S.unshift( p.edge );
-
-        u = p.node;
-      }
-
-      return new $$.Collection( cy, S );
+      };
     }  
   });
 
@@ -597,11 +624,25 @@
 
   $$.fn.eles({
     source: function( selector ){
-      return new $$.Collection( this.cy(), this._private.source ).filter( selector );
+      var ele = this[0];
+      var src;
+
+      if( ele ){
+        src = ele._private.source;
+      }
+
+      return new $$.Collection( this.cy(), src ).filter( selector );
     },
 
     target: function( selector ){
-      return new $$.Collection( this.cy(), this._private.target ).filter( selector );
+      var ele = this[0];
+      var tgt;
+
+      if( ele ){
+        tgt = ele._private.target;
+      }
+
+      return new $$.Collection( this.cy(), tgt ).filter( selector );
     },
 
     sources: defineSourceFunction({

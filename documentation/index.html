@@ -83,6 +83,13 @@
 				
 					<div class="section lvl2">
 						
+						<a href="#downloads/2.2.x"><span class="icon-bookmark"></span> 2.2.x</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
 						<a href="#downloads/2.1.x"><span class="icon-bookmark"></span> 2.1.x</a>
 					</div>
 
@@ -754,6 +761,24 @@
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>
+						<a href="#collection/building--filtering"><span class="icon-bookmark"></span> Building &amp; filtering</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span> eles.add() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span> eles.not() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span> eles.intersect() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span> eles.filter() et al</a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
 						<a href="#collection/traversing"><span class="icon-bookmark"></span> Traversing</a>
 					</div>
 
@@ -780,25 +805,23 @@
 					
 						<div class="section lvl3"><a href="#collection/traversing/edges.codirectedEdges"><span class="icon-bookmark"></span> edges.codirectedEdges() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/traversing/eles.breadthFirstSearch"><span class="icon-bookmark"></span> eles.breadthFirstSearch() </a></div>
-					
 				
 					<div class="section lvl2">
 						<span class="expander">
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>
-						<a href="#collection/building--filtering"><span class="icon-bookmark"></span> Building &amp; filtering</a>
+						<a href="#collection/algorithms"><span class="icon-bookmark"></span> Algorithms</a>
 					</div>
 
 					
-						<div class="section lvl3"><a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span> eles.add() </a></div>
+						<div class="section lvl3"><a href="#collection/algorithms/eles.breadthFirstSearch"><span class="icon-bookmark"></span> eles.breadthFirstSearch() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span> eles.not() </a></div>
+						<div class="section lvl3"><a href="#collection/algorithms/eles.depthFirstSearch"><span class="icon-bookmark"></span> eles.depthFirstSearch() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span> eles.intersect() </a></div>
+						<div class="section lvl3"><a href="#collection/algorithms/eles.dijkstra"><span class="icon-bookmark"></span> eles.dijkstra() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span> eles.filter() et al</a></div>
+						<div class="section lvl3"><a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark"></span> eles.kruskal() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -878,7 +901,7 @@
 		<div id="content">
 
 			<div id="top" class="title">Cytoscape.js <span class="version">2.2.0</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://requirejs.org">AMD/Require.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			<div class="links">
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
 				<a href="#downloads"><span class="icon-download-alt"></span> Downloads</a> |
@@ -1056,9 +1079,13 @@
 <p>If there&#39;s a bug or other issue preventing you from using the latest version of Cytoscape.js, we would love your feedback so we could support your use case.  Please <a href="https://github.com/cytoscape/cytoscape.js/issues/new">make a ticket</a> in the issue tracker. 
 
 </p>
+<h2 id="downloads/2.2.x">2.2.x <a href="#downloads/2.2.x"><span class="icon-bookmark"></span></a></h2>
+<ul>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.2.0.zip">2.2.0</a> (latest)</li>
+</ul>
 <h2 id="downloads/2.1.x">2.1.x <a href="#downloads/2.1.x"><span class="icon-bookmark"></span></a></h2>
 <ul>
-<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip">2.1.0</a> (latest)</li>
+<li><a href="http://cytoscape.github.com/cytoscape.js/download/cytoscape.js-2.1.0.zip">2.1.0</a></li>
 </ul>
 <h2 id="downloads/2.0.x">2.0.x <a href="#downloads/2.0.x"><span class="icon-bookmark"></span></a></h2>
 <ul>
@@ -1075,6 +1102,9 @@
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -1247,6 +1277,7 @@ edge ......... a collection of a single edge</code></pre>
 <ul>
 <li><strong>Haystacks make fast edges</strong> : Set your edges <code>curve-style</code> to <code>haystack</code> in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than <code>bezier</code> edges.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
+<li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  Background images are very expensive, so you should remove them if you need high performance.  Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 <li><strong>Concise stylsheets are fast stylesheets</strong> : Try to keep your stylesheets from getting overly long.  Cut out unused blocks and try to limit the number of blocks &mdash; and therefore selectors &mdash; you have.  Each time style needs to be recalculated, each block&#39;s selector needs to be compared to each element.  Note that usually stylesheet length has a much lesser effect on performance than other factors.</li>
 </ul>
 <p>By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.</p>
@@ -1848,7 +1879,7 @@ cy.layout( options );</code></pre>
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
-    directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
+    directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
     roots: undefined, // the roots of the trees
@@ -2078,6 +2109,12 @@ $container.cytoscape(function(){
 
 </p>
 <pre><code>var cytoscape = require(&#39;cytoscape&#39;);</code></pre>
+<p>To use Cytoscape.js with AMD/Require.js:
+
+</p>
+<pre><code>require([&#39;cytoscape&#39;], function(cytoscape){
+  // ...
+});</code></pre>
 <h3>Getting started</h3>
 <p>An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
 
@@ -4487,100 +4524,170 @@ var weight = j.data(&#39;weight&#39;);</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">node.degree()</div>
+											<div class="name">node.degree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the degree of a node.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">node.indegree()</div>
+											<div class="name">node.indegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the indegree of a node.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">node.outdegree()</div>
+											<div class="name">node.outdegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the outdegree of a node.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.totalDegree()</div>
+											<div class="name">nodes.totalDegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the total degree of a collection of nodes.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.minDegree()</div>
+											<div class="name">nodes.minDegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the minimum degree of the nodes in the collection.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.maxDegree()</div>
+											<div class="name">nodes.maxDegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the maximum degree of the nodes in the collection.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.minIndegree()</div>
+											<div class="name">nodes.minIndegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the minimum indegree of the nodes in the collection.</div>
 										<ul class="args">
 											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.maxIndegree()</div>
+											<div class="name">nodes.maxIndegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the maximum indegree of the nodes in the collection.</div>
 										<ul class="args">
 											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">nodes.minOutdegree()</div>
-										
-										<div class="descr">Get the minimum outdegree of the nodes in the collection.</div>
-										<ul class="args">
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
 											
 										</ul>
 									</div>
 								
 									<div class="format">
 										
-											<div class="name">nodes.maxOutdegree()</div>
+											<div class="name">nodes.minOutdegree( <span class="comma">, </span>includeLoops )</div>
+										
+										<div class="descr">Get the minimum outdegree of the nodes in the collection.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">nodes.maxOutdegree( <span class="comma">, </span>includeLoops )</div>
 										
 										<div class="descr">Get the maximum outdegree of the nodes in the collection.</div>
 										<ul class="args">
+											
+												<li>
+													<span class="name">includeLoops</span>
+													<span class="descr">A boolean, indicating whether loops are to be included in degree calculations.</span>
+
+													
+												</li>
 											
 										</ul>
 									</div>
@@ -6694,6 +6801,246 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 				
 				
 				
+					<h2 id="collection/building--filtering">Building &amp; filtering <a href="#collection/building--filtering"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="collection/building--filtering/eles.add"><span class="fn-name">eles.add()</span>  <a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/building--filtering/eles.add"><p>Get a new collection, resulting from adding the collection with another one</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.add( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements to add.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.add( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">Elements in the graph matching this selector are added.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/building--filtering/eles.not"><span class="fn-name">eles.not()</span>  <a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/building--filtering/eles.not"><p>Get a new collection, resulting from the collection without some specified elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.not( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements that will not be in the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.not( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">Elements from the calling collection matching this selector will not be in the resultant collection.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/building--filtering/eles.intersect"><span class="fn-name">eles.intersect()</span>  <a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/building--filtering/eles.intersect"><p>Get the elements in both this collection and another specified collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.intersect( <span class="comma">, </span>eles )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">eles</span>
+													<span class="descr">The elements to intersect with.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/building--filtering/eles.filter"><span class="fn-name">eles.filter()</span> et al <a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/building--filtering/eles.filter"><p>Get a new collection containing elements that are accepted by the specified filter.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.filter( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get the elements that match the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.filter( <span class="comma">, </span>function(i, ele) )</div>
+										
+										<div class="descr">Get the elements that match the specified filter function.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(i, ele)</span>
+													<span class="descr">The filter function that returns true for elements to include.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">i</span>
+															<span class="descr">The index of the current element being considered.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">ele</span>
+															<span class="descr">The element being considered.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.nodes( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get the nodes that match the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.edges( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr">Get the edges that match the specified selector.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr">The selector to match against.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
 					<h2 id="collection/traversing">Traversing <a href="#collection/traversing"><span class="icon-bookmark"></span></a></h2>
 
 					
@@ -7154,9 +7501,18 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 							</div>		
 						</div>
 					
+
+				
+				
+				
+					<h2 id="collection/algorithms">Algorithms <a href="#collection/algorithms"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
 						<div class="function">
-							<div class="name" id="collection/traversing/eles.breadthFirstSearch"><span class="fn-name">eles.breadthFirstSearch()</span>  <a href="#collection/traversing/eles.breadthFirstSearch"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/traversing/eles.breadthFirstSearch"><p>Perform a breadth-first search, with this collection as the root nodes of the search.</p>
+							<div class="name" id="collection/algorithms/eles.breadthFirstSearch"><span class="fn-name">eles.breadthFirstSearch()</span>  <a href="#collection/algorithms/eles.breadthFirstSearch"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/algorithms/eles.breadthFirstSearch"><p>Perform a breadth-first search within the elements in the collection.</p>
 </div>
 
 							
@@ -7164,14 +7520,21 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">eles.breadthFirstSearch(  [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
+											<div class="name">eles.breadthFirstSearch( <span class="comma">, </span>roots [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
+													<span class="name">roots</span>
+													<span class="descr">The root nodes (selector or collection) to start the search from.</span>
+
+													
+												</li>
+											
+												<li>
 													<span class="name">function(i, depth)</span>
-													<span class="descr">A handler function that is called when a node is visited in the search.</span>
+													<span class="descr">A handler function that is called when a node is visited in the search.  The handler returns &#x60;true&#x60; when it finds the desired node, and it returns &#x60;false&#x60; to cancel the search.</span>
 
 													
 													<ul class="fields">
@@ -7192,7 +7555,7 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 											
 												<li>
 													<span class="name">directed</span>
-													<span class="descr">A boolean indicating whether the search should only go along edges from source to target (default true).</span>
+													<span class="descr">A boolean indicating whether the search should only go along edges from source to target (default false).</span>
 
 													
 												</li>
@@ -7206,30 +7569,48 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 							<div class="details">
 								
 									<h3>Details</h3>
+<p>Note that this function performs a breadth-first search on only the subset of the graph in the calling collection.
+
+</p>
+<p>This function returns an object that contains two collections (<code>{ path: eles, found: node }</code>), the node found by the search and the path of the search: 
+
+</p>
+<ul>
+<li>If no node was found, then <code>found</code> is empty.</li>
+<li>If your handler function returns <code>false</code>, then the only the path up to that point is returned.</li>
+<li>The path returned includes edges such that if <code>path[i]</code> is a node, then <code>path[i - 1]</code> is the edge used to get to that node.</li>
+</ul>
 <p>This function has a shorter alias, <code>eles.bfs()</code>.
 
 </p>
 <h3>Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;#j&#39;).bfs(function(i, depth){
-  console.log(&#39;visit &#39; + this.id());
-}, false);</code></pre>
+<pre><code class="lang-js">var bfs = cy.elements().bfs(&#39;#e&#39;, function(i, depth){
+  console.log( &#39;visit &#39; + this.id() );
+
+  // example of finding desired node
+  if( this.data(&#39;weight&#39;) &gt; 70 ){
+    return true;
+  }
+
+  // example of exiting search early
+  if( this.data(&#39;weight&#39;) &lt; 0 ){
+    return false;
+  }
+}, false);
+
+var path = bfs.path; // path to found node
+var found = bfs.found; // found node
+
+// select the path
+path.select();</code></pre>
 
 								
 							</div>		
 						</div>
 					
-
-				
-				
-				
-					<h2 id="collection/building--filtering">Building &amp; filtering <a href="#collection/building--filtering"><span class="icon-bookmark"></span></a></h2>
-
-					
-
-					
 						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.add"><span class="fn-name">eles.add()</span>  <a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.add"><p>Get a new collection, resulting from adding the collection with another one</p>
+							<div class="name" id="collection/algorithms/eles.depthFirstSearch"><span class="fn-name">eles.depthFirstSearch()</span>  <a href="#collection/algorithms/eles.depthFirstSearch"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/algorithms/eles.depthFirstSearch"><p>Perform a depth-first search within the elements in the collection.</p>
 </div>
 
 							
@@ -7237,195 +7618,42 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 								
 									<div class="format">
 										
-											<div class="name">eles.add( <span class="comma">, </span>eles )</div>
+											<div class="name">eles.depthFirstSearch( <span class="comma">, </span>roots [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name">eles</span>
-													<span class="descr">The elements to add.</span>
+													<span class="name">roots</span>
+													<span class="descr">The root nodes (selector or collection) to start the search from.</span>
 
 													
 												</li>
 											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.not"><span class="fn-name">eles.not()</span>  <a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.not"><p>Get a new collection, resulting from the collection without some specified elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.not( <span class="comma">, </span>eles )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
 												<li>
-													<span class="name">eles</span>
-													<span class="descr">The elements that will not be in the resultant collection.</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.not( <span class="comma">, </span>selector )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">selector</span>
-													<span class="descr">Elements from the calling collection matching this selector will not be in the resultant collection.</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.intersect"><span class="fn-name">eles.intersect()</span>  <a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.intersect"><p>Get the elements in both this collection and another specified collection.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.intersect( <span class="comma">, </span>eles )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">eles</span>
-													<span class="descr">The elements to intersect with.</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.filter"><span class="fn-name">eles.filter()</span> et al <a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="collection/building--filtering/eles.filter"><p>Get a new collection containing elements that are accepted by the specified filter.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.filter( <span class="comma">, </span>selector )</div>
-										
-										<div class="descr">Get the elements that match the specified selector.</div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">selector</span>
-													<span class="descr">The selector to match against.</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.filter( <span class="comma">, </span>function(i, ele) )</div>
-										
-										<div class="descr">Get the elements that match the specified filter function.</div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">function(i, ele)</span>
-													<span class="descr">The filter function that returns true for elements to include.</span>
+													<span class="name">function(i, depth)</span>
+													<span class="descr">A handler function that is called when a node is visited in the search.  The handler returns &#x60;true&#x60; when it finds the desired node, and it returns &#x60;false&#x60; to cancel the search.</span>
 
 													
 													<ul class="fields">
 														
 														<li>&ndash;
 															<span class="name">i</span>
-															<span class="descr">The index of the current element being considered.</span>
+															<span class="descr">The index indicating this node is the ith visited node.</span>
 														</li>
 														
 														<li>&ndash;
-															<span class="name">ele</span>
-															<span class="descr">The element being considered.</span>
+															<span class="name">depth</span>
+															<span class="descr">How many edge hops away this node is from the root nodes.</span>
 														</li>
 														
 													</ul>
 													
 												</li>
 											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.nodes( <span class="comma">, </span>selector )</div>
-										
-										<div class="descr">Get the nodes that match the specified selector.</div>
-										<ul class="args">
-											
 												<li>
-													<span class="name">selector</span>
-													<span class="descr">The selector to match against.</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.edges( <span class="comma">, </span>selector )</div>
-										
-										<div class="descr">Get the edges that match the specified selector.</div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">selector</span>
-													<span class="descr">The selector to match against.</span>
+													<span class="name">directed</span>
+													<span class="descr">A boolean indicating whether the search should only go along edges from source to target (default false).</span>
 
 													
 												</li>
@@ -7437,6 +7665,159 @@ j.trigger(&#39;tap&#39;); // tap!!</code></pre>
 							
 
 							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that this function performs a depth-first search on only the subset of the graph in the calling collection.
+
+</p>
+<p>This function returns an object that contains two collections (<code>{ path: eles, found: node }</code>), the node found by the search and the path of the search: 
+
+</p>
+<ul>
+<li>If no node was found, then <code>found</code> is empty.</li>
+<li>If your handler function returns <code>false</code>, then the only the path up to that point is returned.</li>
+<li>The path returned includes edges such that if <code>path[i]</code> is a node, then <code>path[i - 1]</code> is the edge used to get to that node.</li>
+</ul>
+<p>This function has a shorter alias, <code>eles.dfs()</code>.
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">var dfs = cy.elements().dfs(&#39;#e&#39;, function(i, depth){
+  console.log( &#39;visit &#39; + this.id() );
+
+  // example of finding desired node
+  if( this.data(&#39;weight&#39;) &gt; 70 ){
+    return true;
+  }
+
+  // example of exiting search early
+  if( this.data(&#39;weight&#39;) &lt; 0 ){
+    return false;
+  }
+}, false);
+
+var path = dfs.path; // path to found node
+var found = dfs.found; // found node
+
+// select the path
+path.select();</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/algorithms/eles.dijkstra"><span class="fn-name">eles.dijkstra()</span>  <a href="#collection/algorithms/eles.dijkstra"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/algorithms/eles.dijkstra"><p>Perform Dijkstra&#39;s algorithm on the elements in the collection.  This finds the shortest paths to all other nodes in the collection from the root node.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.dijkstra( <span class="comma">, </span>root [<span class="comma">, </span>function()] [<span class="comma">, </span>directed] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">root</span>
+													<span class="descr">The root node (selector or collection) where the algorithm starts.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function()</span>
+													<span class="descr">A function that returns the positive numeric weight for &#x60;this&#x60; edge.</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">directed</span>
+													<span class="descr">A boolean indicating whether the algorithm should only go along edges from source to target (default false).</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that this function performs Dijkstra&#39;s algorithm on only the subset of the graph in the calling collection.
+
+</p>
+<p>This function returns an object of the following form:
+
+</p>
+<pre><code class="lang-js">{
+  distanceTo: function( node ){ /* impl */ }
+  pathTo: function( node ){ /* impl */ }
+}</code></pre>
+<p><code>distanceTo(node)</code> returns the distance from the source node to <code>node</code>, and <code>pathTo(node)</code> returns a collection containing the shortest path from the source node to <code>node</code>.  The path starts with the source node and includes the edges between the nodes in the path such that if <code>pathTo(node)[i]</code> is an edge, then <code>pathTo(node)[i-1]</code> is the previous node in the path and <code>pathTo(node)[i+1]</code> is the next node in the path.
+
+</p>
+<p>If no weight function is defined, a constance weight of 1 is used for each edge. 
+
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">var dijkstra = cy.elements().dijkstra(&#39;#e&#39;, function(){
+  return this.data(&#39;weight&#39;);
+});
+
+var pathToJ = dijkstra.pathTo( cy.$(&#39;#j&#39;) );
+var distToJ = dijkstra.distanceTo( cy.$(&#39;#j&#39;) );</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/algorithms/eles.kruskal"><span class="fn-name">eles.kruskal()</span>  <a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/algorithms/eles.kruskal"><p>Perform Kruskal&#39;s algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.kruskal(  [<span class="comma">, </span>function()] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function()</span>
+													<span class="descr">A function that returns the positive numeric weight for &#x60;this&#x60; edge.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3>Details</h3>
+<p>Note that this function runs Kruskal&#39;s algorithm on the subset of the graph in the calling collection.
+
+
+</p>
+<h3>Examples</h3>
+<pre><code class="lang-js">cy.elements().kruskal();</code></pre>
+
 								
 							</div>		
 						</div>

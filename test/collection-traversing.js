@@ -78,8 +78,6 @@ describe('Collection traversing', function(){
       data: { source: 'n1', target: 'n2', id: 'e' }
     });
 
-    console.log(e)
-
     expect( n1n2.parallelEdges().same( e.add(n1n2) ) ).to.be.true;
   });
 

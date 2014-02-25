@@ -114,6 +114,7 @@ EXTENSIONS = $(EXTENSIONS_DIR)/renderer.null.js\
 	$(EXTENSIONS_DIR)/layout.circle.js\
 	$(EXTENSIONS_DIR)/layout.breadthfirst.js\
 	$(EXTENSIONS_DIR)/layout.cose.js\
+	$(EXTENSIONS_DIR)/layout.concentric.js\
 
 
 # names of the cytoscape web release js files

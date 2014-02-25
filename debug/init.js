@@ -14,8 +14,10 @@ $(function(){
           "background-color": "#DDD",
           "border-color": "#555",
           "shape": "ellipse",
-          "width": "mapData(weight, 0, 100, 10, 100)",
-          "height": "mapData(weight, 0, 100, 10, 100)",
+          // "width": "mapData(weight, 0, 100, 10, 100)",
+          // "height": "mapData(weight, 0, 100, 10, 100)",
+          "width": "mapLayoutData(concentric, 0, 10, 10, 50)",
+          "height": "mapLayoutData(concentric, 0, 10, 10, 50)",
           //"border-style": "dashed"
           //"background-size-x": '5',
           //"background-image": "images/test-bg.png",
@@ -49,8 +51,9 @@ $(function(){
           "width": "mapData(weight, 0, 100, 1, 4)",
           "target-arrow-shape": "triangle", //"data(tgtShape)",
           //"source-arrow-shape": "data(srcShape)"
-          //"curve-style": "haystack"
-          "content": "data(weight)"
+          "curve-style": "haystack",
+          "opacity": 0.5
+          //"content": "data(weight)"
         })
       .selector(":selected")
         .css({
@@ -96,21 +99,21 @@ $(function(){
     
     elements: {
       nodes: [
-        { data: { id: 'a' } },
-        { data: { id: 'b' } },
-        { data: { id: 'c' } },
-        { data: { id: 'd' } },
-        { data: { id: 'e' } }
+        // { data: { id: 'a' } },
+        // { data: { id: 'b' } },
+        // { data: { id: 'c' } },
+        // { data: { id: 'd' } },
+        // { data: { id: 'e' } }
       ], 
       
       edges: [
-        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
-        { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
-        { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
-        { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
-        { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
-        { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+        // { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        // { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
+        // { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
+        // { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
+        // { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        // { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
+        // { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
       ]
     },
     ready: function(){
@@ -125,9 +128,9 @@ $(function(){
     }
   };
   
-  var cliques = 1;
-  var numNodes = 10;
-  var numEdges = 20;
+  var cliques = 3;
+  var numNodes = 40;
+  var numEdges = 200;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;
@@ -162,35 +165,35 @@ $(function(){
     return shapes[index];
   }
 
-  // for(var i = 0; i < numNodes; i++){
+  for(var i = 0; i < numNodes; i++){
 
-  //   options.elements.nodes.push({
-  //     data: {
-  //       id: "n" + i,
-  //       weight: Math.round( Math.random() * 100 ),
-  //       shape: randShape()
-  //     }
-  //   });
-  // }
+    options.elements.nodes.push({
+      data: {
+        id: "n" + i,
+        weight: Math.round( Math.random() * 100 ),
+        shape: randShape()
+      }
+    });
+  }
   
-  // var j = 0;
-  // for(var clique = 0; clique < cliques; clique++){
-  //   for(var i = 0; i < numEdges/cliques; i++){
-  //     var srcId = randNodeId( clique );
-  //     var tgtId = randNodeId( clique );
+  var j = 0;
+  for(var clique = 0; clique < cliques; clique++){
+    for(var i = 0; i < numEdges/cliques; i++){
+      var srcId = randNodeId( clique );
+      var tgtId = randNodeId( clique );
 
-  //     options.elements.edges.push({
-  //       data: {
-  //         id: "e" + (j++),
-  //         source: srcId,
-  //         target: tgtId,
-  //         weight: Math.round( Math.random() * 100 ),
-  //         tgtShape: randTgtArrow(),
-  //         srcShape: randSrcArrow()
-  //       }
-  //     });
-  //   }
-  // }
+      options.elements.edges.push({
+        data: {
+          id: "e" + (j++),
+          source: srcId,
+          target: tgtId,
+          weight: Math.round( Math.random() * 100 ),
+          tgtShape: randTgtArrow(),
+          srcShape: randSrcArrow()
+        }
+      });
+    }
+  }
   
   var $container = $("#cytoscape");
   var $container2 = $("#cytoscape2");

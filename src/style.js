@@ -1064,9 +1064,12 @@
         fieldVal = fieldVal[ field ];
       }
 
-      if( !$$.is.number(fieldVal) ){ return false; } // it had better be a number
-
-      var percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
+      var percent;
+      if( !$$.is.number(fieldVal) ){ // then keep the mapping but assume 0% for now
+        percent = 0;
+      } else {
+        percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
+      }
 
       if( type.color ){
         var r1 = prop.valueMin[0];

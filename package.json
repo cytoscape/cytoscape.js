@@ -55,6 +55,11 @@
     "gulp-mocha": "~0.4.1",
     "gulp": "~3.5.2",
     "gulp-tap": "~0.1.1",
-    "gulp-clean": "~0.2.4"
+    "gulp-clean": "~0.2.4",
+    "gulp-concat": "~2.1.7",
+    "gulp-uglify": "~0.2.1",
+    "gulp-replace": "~0.2.0",
+    "gulp-inject": "~0.4.1",
+    "gulp-zip": "~0.1.2"
   }
 }

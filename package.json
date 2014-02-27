@@ -1,7 +1,7 @@
 {
   "name": "cytoscape",
   "description": "A JavaScript graph library for analysis and visualisation",
-  "version": "2.2.0",
+  "version": "snapshot-1393532612616",
   "license": "LGPL",
   "engines": {
     "node": ">=0.6"
@@ -47,7 +47,7 @@
     "visualization",
     "analysis"
   ],
-  "main": "releases/2.2.0/cytoscape.js",
+  "main": "dist/cytoscape.js",
   "scripts": {},
   "devDependencies": {
     "chai": "~1.9.0",
@@ -60,6 +60,7 @@
     "gulp-uglify": "~0.2.1",
     "gulp-replace": "~0.2.0",
     "gulp-inject": "~0.4.1",
-    "gulp-zip": "~0.1.2"
+    "gulp-zip": "~0.1.2",
+    "marked": "~0.3.1"
   }
 }

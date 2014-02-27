@@ -31,66 +31,56 @@ at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/m
 
 ## Adding source files
 
-When adding source (.js) files to the repository, there are several files that should be updated accordingly:
+When adding source (.js) files to the repository, update the list of JS files in `gulpfile.js`.  You can update the references to these JS files in the tests and debug page et cetera with `gulp`:
 
- * `Makefile` : Include the file in the build process so that the concatenated and minified files generated for distribution include the new file.
+ 1. `gulp debugrefs` : Update the JS files referenced in the debug page (`debug/index.html`).
 
- * `src/debug/index.html` : Update the `<script>` tag list with the file so that the debug page can continue to be used to visually test the library.
-
- * `test/index.html` : Update the list of JavaScript files that the testing framework considers to consistute the library.  Otherwise, the tests will almost certainly fail when run via HTML.
+ 1. `gulp testrefs` : Update teh JS files referenced in the test page (`test/index.html`).
 
 
 
 
 ## Build dependencies
 
-You need a number of executables installed on your system to successfully run
-`make` to build the project.
-	
-Their paths are defined in `Makefile`, so you can revise the paths to these
-executables and still run `make` successfully.  You should be able to run
-`make` without modification on any well configured Unix-like machine, such as
-Linux or Mac OS X---Mac needs XCode with command line tools installed to run
-`make`.
+Install `npm` and `gulp`.
 
 
 
 
 ## Build instructions
 
-Run `make` in the console.  The targets are:
+Run `gulp` in the console.  The main targets are:
 
- * `all` : build everything (default)
- * `minify` : build the production minified JS
- * `concat` : build the production (non-minified) JS
- * `zip` : minify and make a ZIP file for release
- * `clean` : deletes built files
- * `test` : run the Node.js tests in the terminal and open the tests in the browser
- * `publish` : make a release and publish it; follow the terminal prompts, which contains individually (e.g. in case you'd like to skip something)
-  * `test`
-  * `version` 
-  * `release`
-  * `docspublish`
-  * `tag`
-  * `npm`
-
-A note to developers:
-
-For `zip` and `publish`, make sure to define the `VERSION` environment variable in the terminal if you're making an
-actual release ZIP.
+ * `build` : build the library
+ * `zip` : build the release ZIP
+ * `clean` : clean the `build` directory
+ * `testrefs` : update JS lib file refs in the tests page
+ * `testlist` : update list of test JS files in tests page
+ * `debugrefs` : update JS lib file refs in debug page
+ * `test` : run the Mocha unit tests
+ * `docs` : build the documentation template
+ * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
+ * `dist` : update the distribution JS for npm, bower, etc.
+ * `pub` : publish a new version of Cytoscape.js
+ * `watch` : update JS refs in HTML files automatically when JS files are added or deleted
 
 
 
 
 ## Release instructions
 
-Run `make publish`.  Follow the prompts and a full release should be made for you.
+ 1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`.
+ 1. Confirm `VERSION` is picked up by gulp: `gulp version`.
+ 1. Build and publish the release: `gulp pub`.  If you want to do this manually instead:
+  1. Update the package versions, build the distribution JS, and build the publishable documentation: `gulp pkgver dist docspub`
+  1. Create a tag for this version in `git`
+  1. Copy the docs in `documentation` to the `gh-pages` branch and push
 
 
 
 ## Tests
 
-Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`make test`).
+Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`gulp test`).
 
 
 

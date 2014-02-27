@@ -5,7 +5,7 @@
 
 ## Documentation
 
-You can find the documentation on the [project website](http://cytoscape.github.com/cytoscape.js), or you may be interested in [downloading the library](http://cytoscape.github.io/cytoscape.js/#downloads).  This readme is mostly for developers of Cytoscape.js.
+You can find the documentation and downloads on the [project website](http://cytoscape.github.com/cytoscape.js).  This readme is mostly for developers of Cytoscape.js.
 
 
 

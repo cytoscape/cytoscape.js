@@ -37,7 +37,7 @@ When adding source (.js) files to the repository, update the list of JS files in
 
  1. `gulp testrefs` : Update the JS files referenced in the test page (`test/index.html`).
 
-  1. `gulp testlist` : Update the JS test files referenced in the test page (`test/index.html`).
+ 1. `gulp testlist` : Update the JS test files referenced in the test page (`test/index.html`).
 
 
 

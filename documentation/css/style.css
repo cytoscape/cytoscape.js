@@ -3,7 +3,10 @@ body {
 	line-height: 1.5;
 }
 
-* { -webkit-tap-highlight-color: transparent !important; }
+* {
+	-webkit-tap-highlight-color: transparent !important;
+	outline: 0;
+}
 
 #cy {
 	position: fixed;
@@ -264,6 +267,11 @@ button:active {
 	white-space: nowrap;
 }
 
+.buttons-subtitle {
+	margin: 0.5em 0;
+	font-size: 1.5em;
+}
+
 h1 {
 	font-size: 2em;
 	margin: 1em 0 0.5em 0;
@@ -303,6 +311,20 @@ a {
 	color: #4183C4;
 	text-decoration: none;
 	border-radius: 0.125em;
+}
+
+a.button {
+	font: inherit;
+	border: 0;
+	background: #4183C4;
+	border-radius: 0.25em;
+	color: #fff;
+	cursor: pointer;
+	padding: 0.25em 0.5em;
+}
+
+a.button.green {
+	background: #41C483;
 }
 
 a:active {

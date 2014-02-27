@@ -1,7 +1,6 @@
 {
-  "version": "2.2.0",
+  "version": "snapshot-1393532612616",
   "jqueryVersion": "1.4",
-
 
   "templates": {
     "TODO": "we are not using function templates yet but it might be nice"
@@ -9,10 +8,6 @@
 
   "sections": [
     { "name": "Introduction", "md": "intro" },
-
-    { "name": "Downloads", "md": "downloads" },
-
-    { "name": "Roadmap", "md": "roadmap" },
 
     { "name": "Notation", "md": "notation" },
 

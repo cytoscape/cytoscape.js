@@ -1,5 +1,4 @@
 ;(function($$){ 'use strict';
-    
 
   $$.fn.selector = function(map, options){
     for( var name in map ){
@@ -24,33 +23,6 @@
     self._private = {
       selectorText: null,
       invalid: true
-    }
-  
-    // storage for parsed queries
-    // when you add something here, also add to Selector.toString()
-    var newQuery = function(){
-      return {
-        classes: [], 
-        colonSelectors: [],
-        data: [],
-        group: null,
-        ids: [],
-        meta: [],
-
-        // fake selectors
-        collection: null, // a collection to match against
-        filter: null, // filter function
-
-        // these are defined in the upward direction rather than down (e.g. child)
-        // because we need to go up in Selector.filter()
-        parent: null, // parent query obj
-        ancestor: null, // ancestor query obj
-        subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-        // use these only when subject has been defined
-        child: null,
-        descendant: null
-      };
     }
     
     if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
@@ -82,45 +54,74 @@
       self.length = 1;
       
     } else if( $$.is.string( selector ) ){
-    
-      // these are the actual tokens in the query language
-      var metaChar = '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]'; // chars we need to escape in var names, etc
-      var variable = '(?:[\\w-]|(?:\\\\"+ metaChar +"))+'; // a variable name
-      var comparatorOp = '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*='; // binary comparison op (used in data selectors)
-      var boolOp = '\\?|\\!|\\^'; // boolean (unary) operators (used in data selectors)
-      var string = '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
-      var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
-      var value = string + '|' + number; // a value literal, either a string or number
-      var meta = 'degree|indegree|outdegree'; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
-      var separator = '\\s*,\\s*'; // queries are separated by commas; e.g. edge[foo = 'bar'], node.someClass
-      var className = variable; // a class name (follows variable conventions)
-      var descendant = '\\s+';
-      var child = '\\s+>\\s+';
-      var subject = '\\$';
-      var id = variable; // an element id (follows variable conventions)
+
+      // the current subject in the query
+      var currentSubject = null;
       
+      // storage for parsed queries
+      var newQuery = function(){
+        return {
+          classes: [], 
+          colonSelectors: [],
+          data: [],
+          group: null,
+          ids: [],
+          meta: [],
+
+          // fake selectors
+          collection: null, // a collection to match against
+          filter: null, // filter function
+
+          // these are defined in the upward direction rather than down (e.g. child)
+          // because we need to go up in Selector.filter()
+          parent: null, // parent query obj
+          ancestor: null, // ancestor query obj
+          subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+          // use these only when subject has been defined
+          child: null,
+          descendant: null
+        };
+      };
+
+      // tokens in the query language
+      var tokens = {
+        metaChar: '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
+        variable: '(?:[\\w-]|(?:\\\\"+ metaChar +"))+', // a variable name
+        comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
+        boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
+        string: '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'", // string literals (used in data selectors) -- doublequotes | singlequotes
+        number: $$.util.regex.number, // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+        meta: 'degree|indegree|outdegree', // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
+        separator: '\\s*,\\s*', // queries are separated by commas, e.g. edge[foo = 'bar'], node.someClass
+        descendant: '\\s+',
+        child: '\\s+>\\s+',
+        subject: '\\$'
+      };
+      tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
+      tokens.className = tokens.variable; // a class name (follows variable conventions)
+      tokens.id = tokens.variable; // an element id (follows variable conventions)
+
       // when a token like a variable has escaped meta characters, we need to clean the backslashes out
       // so that values get compared properly in Selector.filter()
       var cleanMetaChars = function(str){
-        return str.replace(new RegExp('\\\\(' + metaChar + ')', 'g'), function(match, $1, offset, original){
+        return str.replace(new RegExp('\\\\(' + tokens.metaChar + ')', 'g'), function(match, $1, offset, original){
           return $1;
         });
       };
       
       // add @ variants to comparatorOp
-      var ops = comparatorOp.split('|');
+      var ops = tokens.comparatorOp.split('|');
       for( var i = 0; i < ops.length; i++ ){
         var op = ops[i];
-        comparatorOp += '|@' + op;
+        tokens.comparatorOp += '|@' + op;
       }
 
-      // the current subject in the query
-      var currentSubject = null;
-      
       // NOTE: add new expression syntax here to have it recognised by the parser;
-      // a query contains all adjacent (i.e. no separator in between) expressions;
-      // the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
-      // you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+      // - a query contains all adjacent (i.e. no separator in between) expressions;
+      // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
+      // - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+      // - when you add something here, also add to Selector.toString()
       var exprs = {
         group: {
           query: true,
@@ -140,7 +141,7 @@
         
         id: {
           query: true,
-          regex: '\\#('+ id +')',
+          regex: '\\#('+ tokens.id +')',
           populate: function( id ){
             this.ids.push( cleanMetaChars(id) );
           }
@@ -148,7 +149,7 @@
         
         className: {
           query: true,
-          regex: '\\.('+ className +')',
+          regex: '\\.('+ tokens.className +')',
           populate: function( className ){
             this.classes.push( cleanMetaChars(className) );
           }
@@ -156,7 +157,7 @@
         
         dataExists: {
           query: true,
-          regex: '\\[\\s*('+ variable +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( variable ){
             this.data.push({
               field: cleanMetaChars(variable)
@@ -166,7 +167,7 @@
         
         dataCompare: {
           query: true,
-          regex: '\\[\\s*('+ variable +')\\s*('+ comparatorOp +')\\s*('+ value +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
           populate: function( variable, comparatorOp, value ){
             this.data.push({
               field: cleanMetaChars(variable),
@@ -178,7 +179,7 @@
         
         dataBool: {
           query: true,
-          regex: '\\[\\s*('+ boolOp +')\\s*('+ variable +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( boolOp, variable ){
             this.data.push({
               field: cleanMetaChars(variable),
@@ -189,7 +190,7 @@
         
         metaCompare: {
           query: true,
-          regex: '\\[\\[\\s*('+ meta +')\\s*('+ comparatorOp +')\\s*('+ number +')\\s*\\]\\]',
+          regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
           populate: function( meta, comparatorOp, number ){
             this.meta.push({
               field: cleanMetaChars(meta),
@@ -201,7 +202,7 @@
 
         nextQuery: {
           separator: true,
-          regex: separator,
+          regex: tokens.separator,
           populate: function(){
             // go on to next query
             self[++i] = newQuery();
@@ -211,7 +212,7 @@
 
         child: {
           separator: true,
-          regex: child,
+          regex: tokens.child,
           populate: function(){
             // this query is the parent of the following query
             var childQuery = newQuery();
@@ -225,7 +226,7 @@
 
         descendant: {
           separator: true,
-          regex: descendant,
+          regex: tokens.descendant,
           populate: function(){
             // this query is the ancestor of the following query
             var descendantQuery = newQuery();
@@ -239,7 +240,7 @@
 
         subject: {
           modifier: true,
-          regex: subject,
+          regex: tokens.subject,
           populate: function(){
             if( currentSubject != null && this.subject != this ){
               $$.util.error('Redefinition of subject in selector `' + selector + '`');
@@ -754,12 +755,17 @@
       
       for(var j = 0; j < query.data.length; j++){
         var data = query.data[j];
-        str += '[' + data.field + clean(data.operator) + clean(data.value) + ']'
+        
+        if( data.value ){
+          str += '[' + data.field + clean(data.operator) + clean(data.value) + ']';
+        } else {
+          str += '[' + clean(data.operator) + data.field + ']';
+        }
       }
 
       for(var j = 0; j < query.meta.length; j++){
         var meta = query.meta[j];
-        str += '{' + meta.field + clean(meta.operator) + clean(meta.value) + '}'
+        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value) + ']]';
       }
       
       for(var j = 0; j < query.colonSelectors.length; j++){

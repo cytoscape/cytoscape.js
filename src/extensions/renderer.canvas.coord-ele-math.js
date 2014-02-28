@@ -791,6 +791,13 @@
           y: ( srcOutside[1] + tgtOutside[1] )/2
         };
 
+        var midptSrcPts = {
+          x1: srcOutside[0],
+          x2: tgtOutside[0],
+          y1: srcOutside[1],
+          y2: tgtOutside[1]
+        };
+
         var dy = ( tgtOutside[1] - srcOutside[1] );
         var dx = ( tgtOutside[0] - srcOutside[0] );
         var l = Math.sqrt( dx*dx + dy*dy );
@@ -876,7 +883,10 @@
           // console.log('edge ctrl pt cache MISS')
         }
 
-        var stepSize = edge._private.style['control-point-step-size'].value;
+        var eStyle = edge._private.style;
+        var stepSize = eStyle['control-point-step-size'].pxValue;
+        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
+        var stepWeight = eStyle['control-point-weight'].value;
 
         // Self-edge
         if ( src.id() == tgt.id() ) {
@@ -901,12 +911,19 @@
           
         // Bezier edge
         } else {
-          var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+          var normStepDist = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+          var manStepDist = stepDist !== undefined ? $$.math.signum( normStepDist ) * stepDist : undefined;
+          var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
           
+          var adjustedMidpt = {
+            x: midptSrcPts.x1 * (1 - stepWeight) + midptSrcPts.x2 * stepWeight,
+            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight,
+          };
+
           rs.edgeType = 'bezier';
           
-          rs.cp2x = midpt.x + vectorNormInverse.x * distanceFromMidpoint;
-          rs.cp2y = midpt.y + vectorNormInverse.y * distanceFromMidpoint;
+          rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
+          rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
           
           // console.log(edge, midPointX, displacementX, distanceFromMidpoint);
         }

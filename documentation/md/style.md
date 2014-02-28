@@ -106,7 +106,7 @@ Labels:
 
 Size & visibility:
 
- * **`opacity`** * : The opacity of the element.
+ * **`opacity`** : The opacity of the element.
  * **`visibility`** : Whether the element is visible; can be `visible` or `hidden`.
  * **`width`** : The element's width; the line width for edges or the horizontal size of a node.
  * **`z-index`** : A non-negative integer that specifies the z-ordering of the element.  An element with a higher `z-index` is put on top of an element with a lower value.
@@ -162,6 +162,9 @@ Compound nodes:
 These properties apply only to edges:
 
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
+ * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the inter-control-point distance.
+ * **`control-point-distance`** : Overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
+ * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`source-arrow-color`** : The colour of the edge's arrow on the source side.

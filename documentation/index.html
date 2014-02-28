@@ -862,13 +862,13 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">snapshot-1393535983170</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">snapshot-1393621196246</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://requirejs.org">AMD/Require.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-snapshot-1393535983170.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-snapshot-1393621196246.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -1486,7 +1486,7 @@ node {
 
 </p>
 <ul>
-<li><strong><code>opacity</code></strong> * : The opacity of the element.</li>
+<li><strong><code>opacity</code></strong> : The opacity of the element.</li>
 <li><strong><code>visibility</code></strong> : Whether the element is visible; can be <code>visible</code> or <code>hidden</code>.</li>
 <li><strong><code>width</code></strong> : The element&#39;s width; the line width for edges or the horizontal size of a node.</li>
 <li><strong><code>z-index</code></strong> : A non-negative integer that specifies the z-ordering of the element.  An element with a higher <code>z-index</code> is put on top of an element with a lower value.</li>
@@ -1551,6 +1551,9 @@ node {
 </p>
 <ul>
 <li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes; may be <code>bezier</code> (default) or <code>haystack</code> (for which loops are unsupported).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for <code>haystack</code> edges.</li>
+<li><strong><code>control-point-step-size</code></strong> : From the line perpendicular from source to target, this value specifies the inter-control-point distance.</li>
+<li><strong><code>control-point-distance</code></strong> : Overrides <code>control-point-step-size</code> with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it&#39;s best to use this as a one-off value for particular edges if need be.</li>
+<li><strong><code>control-point-weight</code></strong> : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>source-arrow-color</code></strong> : The colour of the edge&#39;s arrow on the source side.</li>
@@ -1722,6 +1725,7 @@ node {
 
 </p>
 <pre><code class="lang-js">options = {
+    name: &#39;null&#39;,
     ready: function(){}, // on layoutready
     stop: function(){} // on layoutstop
 }

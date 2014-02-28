@@ -27,6 +27,7 @@ var paths = {
     'src/define.js',
     'src/selector.js',
     'src/style.js',
+    'src/style-*.js',
     'src/core.js',
     'src/core-*.js',
     'src/collection.js',

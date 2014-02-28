@@ -11,6 +11,7 @@ The `null` layout puts all nodes at (0, 0).  It's useful for debugging purposes.
 
 ```js
 options = {
+	name: 'null',
 	ready: function(){}, // on layoutready
 	stop: function(){} // on layoutstop
 }

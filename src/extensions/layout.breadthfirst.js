@@ -22,6 +22,7 @@
     var cy = params.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
+    var graph = nodes.add(edges);
     var container = cy.container();
     
     var width = container.clientWidth;
@@ -55,7 +56,7 @@
     var id2depth = {};
 
     // find the depths of the nodes
-    roots.bfs(function(i, depth){
+    graph.bfs(roots, function(i, depth){
       var ele = this[0];
 
       if( !depths[depth] ){
@@ -107,18 +108,18 @@
     // assign orphan nodes that are still left to the depth of their subgraph
     while( orphanNodes.length !== 0 ){
       var node = orphanNodes.shift();
-      var subgraph = node.bfs();
+      //var subgraph = graph.bfs( node ).path;
       var assignedDepth = false;
 
-      for( var i = 0; i < subgraph.length; i++ ){
-        var depth = id2depth[ subgraph[i].id() ];
+      // for( var i = 0; i < subgraph.length; i++ ){
+      //   var depth = id2depth[ subgraph[i].id() ];
 
-        if( depth !== undefined ){
-          depths[depth].push( node );
-          assignedDepth = true;
-          break;
-        }
-      }
+      //   if( depth !== undefined ){
+      //     depths[depth].push( node );
+      //     assignedDepth = true;
+      //     break;
+      //   }
+      // }
 
       if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
         if( depths.length === 0 ){

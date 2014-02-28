@@ -7,81 +7,90 @@ $(function(){
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
-      .selector("node")
+      .selector('node')
         .css({
-          "content": "data(id)",
-          "border-width": 3,
-          "background-color": "#DDD",
-          "border-color": "#555",
-          "shape": "ellipse",
-          // "width": "mapData(weight, 0, 100, 10, 100)",
-          // "height": "mapData(weight, 0, 100, 10, 100)",
-          "width": "mapLayoutData(concentric, 0, 10, 10, 50)",
-          "height": "mapLayoutData(concentric, 0, 10, 10, 50)",
-          //"border-style": "dashed"
-          //"background-size-x": '5',
-          //"background-image": "images/test-bg.png",
-          //"background-position-x": 5,
-          // "pie-1-background-size": "33%",
-          // "pie-1-background-color": "red",
-          // "pie-2-background-size": "25%",
-          // "pie-2-background-color": "green",
-          // "pie-3-background-size": "10%",
-          // "pie-3-background-color": "blue",
-          // "pie-4-background-size": "15%",
-          // "pie-4-background-color": "yellow"
+          'content': 'data(id)',
+          'border-width': 3,
+          'background-color': '#DDD',
+          'border-color': '#555',
+          'shape': 'data(shape)',
+          'width': 'mapData(weight, 0, 100, 10, 100)',
+          'height': 'mapData(weight, 0, 100, 10, 100)',
+          //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
+          //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
+          //'border-style': 'dashed'
+          //'background-size-x': '5',
+          //'background-image': 'images/test-bg.png',
+          //'background-position-x': 5,
+          // 'pie-1-background-size': '33%',
+          // 'pie-1-background-color': 'red',
+          // 'pie-2-background-size': '25%',
+          // 'pie-2-background-color': 'green',
+          // 'pie-3-background-size': '10%',
+          // 'pie-3-background-color': 'blue',
+          // 'pie-4-background-size': '15%',
+          // 'pie-4-background-color': 'yellow'
         })
-      .selector("$node > node") // compound (parent) nodes
-        .css({"textValign": "bottom",
-          "font-weight": "bold",
-          "font-style": "italic",
-          "background-color": "#B7E1ED",
-          "padding-left": 10,
-          "padding-right": 20,
-          "padding-top": 5,
-          "padding-bottom": 30
+      .selector('$node > node') // compound (parent) nodes
+        .css({
+          'width': 'auto',
+          'height': 'auto',
+          'textValign': 'bottom',
+          'font-weight': 'bold',
+          'font-style': 'italic',
+          'background-color': '#B7E1ED',
+          'padding-left': 10,
+          'padding-right': 20,
+          'padding-top': 5,
+          'padding-bottom': 30
         })
-      .selector("node[id='non-auto']") // to init a non-auto sized compound
-        .css({"width": 100,
-          "height": 50,
-          "shape": "triangle"
+      .selector('node[id="non-auto"]') // to init a non-auto sized compound
+        .css({
+          'width': 100,
+          'height': 50,
+          'shape': 'triangle'
           })
-      .selector("edge")
+      .selector('edge')
         .css({
-          "width": "mapData(weight, 0, 100, 1, 4)",
-          "target-arrow-shape": "triangle", //"data(tgtShape)",
-          //"source-arrow-shape": "data(srcShape)"
-          "curve-style": "haystack",
-          "opacity": 0.5
-          //"content": "data(weight)"
+          'width': 'mapData(weight, 0, 100, 1, 4)',
+          'target-arrow-shape': 'data(tgtShape)',
+          'source-arrow-shape': 'data(srcShape)'
+          //'curve-style': 'haystack',
+          //'opacity': 0.5
+          //'content': 'data(weight)'
         })
-      .selector(":selected")
+      // .selector('[source="n1"]')
+      //   .css({
+      //     'control-point-distance': 200,
+      //     'control-point-weight': 0
+      //   })
+      .selector(':selected')
         .css({
-          "background-color": "#000",
-          "line-color": "#000",
-          "source-arrow-color": "#000",
-          "target-arrow-color": "#000"
+          'background-color': '#000',
+          'line-color': '#000',
+          'source-arrow-color': '#000',
+          'target-arrow-color': '#000'
         })
-      .selector(".ui-cytoscape-edgehandles-source")
+      .selector('.ui-cytoscape-edgehandles-source')
         .css({
-          "border-color": "#5CC2ED",
-          "border-width": 3
+          'border-color': '#5CC2ED',
+          'border-width': 3
         })
-      .selector(".ui-cytoscape-edgehandles-target, node.ui-cytoscape-edgehandles-preview")
+      .selector('.ui-cytoscape-edgehandles-target, node.ui-cytoscape-edgehandles-preview')
         .css({
-          "background-color": "#5CC2ED"
+          'background-color': '#5CC2ED'
         })
-      .selector("edge.ui-cytoscape-edgehandles-preview")
+      .selector('edge.ui-cytoscape-edgehandles-preview')
         .css({
-          "line-color": "#5CC2ED",
-          "source-arrow-color": "#5CC2ED",
-          "target-arrow-color": "#5CC2ED"
+          'line-color': '#5CC2ED',
+          'source-arrow-color': '#5CC2ED',
+          'target-arrow-color': '#5CC2ED'
         })
-      .selector("node.ui-cytoscape-edgehandles-preview, node.intermediate")
+      .selector('node.ui-cytoscape-edgehandles-preview, node.intermediate')
         .css({
-          "shape": "rectangle",
-          "width": 15,
-          "height": 15
+          'shape': 'rectangle',
+          'width': 15,
+          'height': 15
         })
 
 
@@ -90,10 +99,10 @@ $(function(){
   window.options = {
     //hideEdgesOnViewport: true,
     renderer: {
-      name: "canvas"
+      name: 'canvas'
     },
     layout: {
-      name: "grid"
+      name: 'grid'
     },
     style: defaultSty,
     
@@ -136,14 +145,14 @@ $(function(){
     var min = numNodes * clique / cliques;
     var max = numNodes * (clique + 1) / cliques - (cliques == 1 ? 0 : 1);
     var rand = Math.floor( Math.random() * (max - min) + min );
-    var id = "n" + rand;
+    var id = 'n' + rand;
 
     return id;
   }
   
   function randShape(){
     var r = Math.random();
-    var shapes = ["ellipse", "triangle", "rectangle", "roundrectangle", "pentagon", "hexagon", "heptagon", "octagon", "star"];
+    var shapes = ['ellipse', 'triangle', 'rectangle', 'roundrectangle', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'];
     var index = Math.round( (shapes.length - 1) * r );
 
     return shapes[index];
@@ -151,7 +160,7 @@ $(function(){
 
   function randSrcArrow(){
     var r = Math.random();
-    var shapes = ["tee", "square", "circle", "roundrectangle", "none"];
+    var shapes = ['tee', 'square', 'circle', 'roundrectangle', 'none'];
     var index = Math.round( (shapes.length - 1) * r );
 
     return shapes[index];
@@ -159,7 +168,7 @@ $(function(){
 
   function randTgtArrow(){
     var r = Math.random();
-    var shapes = ["triangle", "diamond", "none"];
+    var shapes = ['triangle', 'diamond', 'none'];
     var index = Math.round( (shapes.length - 1) * r );
 
     return shapes[index];
@@ -169,7 +178,7 @@ $(function(){
 
     options.elements.nodes.push({
       data: {
-        id: "n" + i,
+        id: 'n' + i,
         weight: Math.round( Math.random() * 100 ),
         shape: randShape()
       }
@@ -184,7 +193,7 @@ $(function(){
 
       options.elements.edges.push({
         data: {
-          id: "e" + (j++),
+          id: 'e' + (j++),
           source: srcId,
           target: tgtId,
           weight: Math.round( Math.random() * 100 ),
@@ -195,8 +204,8 @@ $(function(){
     }
   }
   
-  var $container = $("#cytoscape");
-  var $container2 = $("#cytoscape2");
+  var $container = $('#cytoscape');
+  var $container2 = $('#cytoscape2');
   
   $container.cy(options).cy(function(){
     
@@ -215,7 +224,7 @@ $(function(){
     }
     
     function number(group){
-      var input = $("#" + group + "-number");
+      var input = $('#' + group + '-number');
       var val = parseInt( input.val() );
       
       if( isNaN(val) ){
@@ -230,18 +239,18 @@ $(function(){
       callback();
       var end = new Date();
       
-      $("#add-remove-time").html( (end - start) + " ms" );
+      $('#add-remove-time').html( (end - start) + ' ms' );
     }
     
-    $("#add-elements-button").click(function(){
-      var n = number("nodes");
-      var e = number("edges");
+    $('#add-elements-button').click(function(){
+      var n = number('nodes');
+      var e = number('edges');
       
       var nodes = [];
       for(var i = 0; i < n; i++){
         nodes.push({
-          group: "nodes",
-          data: { id: "n" + (i + numNodes), weight: Math.round( Math.random() * 100 ) },
+          group: 'nodes',
+          data: { id: 'n' + (i + numNodes), weight: Math.round( Math.random() * 100 ) },
           position: { x: Math.random() * width, y: Math.random() * height }
         });
       }
@@ -252,15 +261,15 @@ $(function(){
       var nodesCollection = cy.nodes();
       function nodeId(){
         var index = Math.round((nodesCollection.size() - 1) * Math.random());
-        return nodesCollection.eq(index).data("id");
+        return nodesCollection.eq(index).data('id');
       }
       
       var edges = [];
       for(var i = 0; i < e; i++){
         edges.push({
-          group: "edges",
+          group: 'edges',
           data: {
-            id: "e" + (i + numEdges), 
+            id: 'e' + (i + numEdges), 
             weight: Math.round( Math.random() * 100 ),
             source: nodeId(),
             target: nodeId()
@@ -275,9 +284,9 @@ $(function(){
     });
 
     
-    $("#remove-elements-button").click(function(){
-      var n = number("nodes");
-      var e = number("edges");
+    $('#remove-elements-button').click(function(){
+      var n = number('nodes');
+      var e = number('edges');
       
       time(function(){
         cy.nodes().slice(0, n).remove();
@@ -287,8 +296,8 @@ $(function(){
 
     });
     
-    $("#remove-selected-button").click(function(){
-      cy.elements(":selected").remove();
+    $('#remove-selected-button').click(function(){
+      cy.elements(':selected').remove();
     });
 
   });
@@ -318,33 +327,33 @@ $(function(){
 
     ready: function(){
        window.cy2 = this;
-       cy2.on("click", "node", function(evt){
+       cy2.on('click', 'node', function(evt){
            var node = this;
-           console.log("%o", node);
+           console.log('%o', node);
        });
     }
   }).cy(function(){
-    $("#compound-remove-selected-button").click(function(){
-      cy2.elements(":selected").remove();
+    $('#compound-remove-selected-button').click(function(){
+      cy2.elements(':selected').remove();
     });
 
-    $("#compound-hide-selected-button").click(function(){
-      cy2.elements(":selected").hide();
+    $('#compound-hide-selected-button').click(function(){
+      cy2.elements(':selected').hide();
     });
 
-    $("#compound-show-all-button").click(function(){
+    $('#compound-show-all-button').click(function(){
       cy2.elements().show();
     });
 
     var numChildren = 0;
 
-    $("#add-child-button").click(function(){
+    $('#add-child-button').click(function(){
 
-      var parentId = $("#parent-node").val();
+      var parentId = $('#parent-node').val();
       var nodes = [];
 
-      nodes.push({group: "nodes",
-                   data: {id: "c" + numChildren, parent: parentId},
+      nodes.push({group: 'nodes',
+                   data: {id: 'c' + numChildren, parent: parentId},
                    position: {x: Math.random() * width, y: Math.random() * height}});
 
       numChildren++;
@@ -352,18 +361,18 @@ $(function(){
       cy2.add(nodes);
     });
 
-    $("#set-random-style").click(function(){
+    $('#set-random-style').click(function(){
 
-      var nodes = cy2.elements("node:selected");
+      var nodes = cy2.elements('node:selected');
 
       for (var i=0; i < nodes.size(); i++)
       {
-        var shapes = ["triangle", "rectangle", "ellipse", "pentagon"];
+        var shapes = ['triangle', 'rectangle', 'ellipse', 'pentagon'];
 
         // pick a random shape and dimensions
-        nodes[i].css({"width": Math.round(Math.random() * 50 + 1),
-          "height": Math.round(Math.random() * 50 + 1),
-          "shape": shapes[Math.floor(Math.random() * 4)]});
+        nodes[i].css({'width': Math.round(Math.random() * 50 + 1),
+          'height': Math.round(Math.random() * 50 + 1),
+          'shape': shapes[Math.floor(Math.random() * 4)]});
       }
 
     });

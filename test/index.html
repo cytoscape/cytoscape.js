@@ -1,106 +1,102 @@
 <html>
-
 <head>
-    <meta charset="utf-8">
-    <title>Cy.js Mocha Tests</title>
+  <meta charset="utf-8">
+  <title>Cy.js Mocha Tests</title>
 
-    <!-- start cy.js source files -->
-    <!-- the core as split up dev scripts -->
-    <script type="text/javascript" src="../src/namespace.js"></script>
-    <script type="text/javascript" src="../src/is.js"></script>
-    <script type="text/javascript" src="../src/util.js"></script>
-    <script type="text/javascript" src="../src/math.js"></script>
-    <script type="text/javascript" src="../src/instance-registration.js"></script>
-    <script type="text/javascript" src="../src/extension.js"></script>
-    <script type="text/javascript" src="../src/jquery-plugin.js"></script>
-    <script type="text/javascript" src="../src/event.js"></script>
-    <script type="text/javascript" src="../src/define.js"></script>
-    <script type="text/javascript" src="../src/selector.js"></script>
-    <script type="text/javascript" src="../src/style.js"></script>
-    <script type="text/javascript" src="../src/core.js"></script>
-    <script type="text/javascript" src="../src/core-add-remove.js"></script>
-    <script type="text/javascript" src="../src/core-animation.js"></script>
-    <script type="text/javascript" src="../src/core-data-functions.js"></script>
-    <script type="text/javascript" src="../src/core-events.js"></script>
-    <script type="text/javascript" src="../src/core-export.js"></script>
-    <script type="text/javascript" src="../src/core-layout.js"></script>
-    <script type="text/javascript" src="../src/core-notification.js"></script>
-    <script type="text/javascript" src="../src/core-renderer.js"></script>
-    <script type="text/javascript" src="../src/core-search.js"></script>
-    <script type="text/javascript" src="../src/core-style.js"></script>
-    <script type="text/javascript" src="../src/core-viewport.js"></script>
-    <script type="text/javascript" src="../src/collection.js"></script>
-    <script type="text/javascript" src="../src/collection-animation.js"></script>
-    <script type="text/javascript" src="../src/collection-class.js"></script>
-    <script type="text/javascript" src="../src/collection-comparators.js"></script>
-    <script type="text/javascript" src="../src/collection-data-functions.js"></script>
-    <script type="text/javascript" src="../src/collection-degree.js"></script>
-    <script type="text/javascript" src="../src/collection-events.js"></script>
-    <script type="text/javascript" src="../src/collection-group.js"></script>
-    <script type="text/javascript" src="../src/collection-iteration.js"></script>
-    <script type="text/javascript" src="../src/collection-style.js"></script>
-    <script type="text/javascript" src="../src/collection-switch-functions.js"></script>
-    <script type="text/javascript" src="../src/collection-traversing.js"></script>
-    <script type="text/javascript" src="../src/heap.js"></script>
+  <!-- start cy.js source files -->
+      <!-- the core as split up dev scripts -->
+      <script type="text/javascript" src="../src/namespace.js"></script>
+      <script type="text/javascript" src="../src/is.js"></script>
+      <script type="text/javascript" src="../src/util.js"></script>
+      <script type="text/javascript" src="../src/math.js"></script>
+      <script type="text/javascript" src="../src/instance-registration.js"></script>
+      <script type="text/javascript" src="../src/extension.js"></script>
+      <script type="text/javascript" src="../src/jquery-plugin.js"></script>
+      <script type="text/javascript" src="../src/event.js"></script>
+      <script type="text/javascript" src="../src/define.js"></script>
+      <script type="text/javascript" src="../src/selector.js"></script>
+      <script type="text/javascript" src="../src/style.js"></script>
+      <script type="text/javascript" src="../src/core.js"></script>
+      <script type="text/javascript" src="../src/core-add-remove.js"></script>
+      <script type="text/javascript" src="../src/core-animation.js"></script>
+      <script type="text/javascript" src="../src/core-data-functions.js"></script>
+      <script type="text/javascript" src="../src/core-events.js"></script>
+      <script type="text/javascript" src="../src/core-export.js"></script>
+      <script type="text/javascript" src="../src/core-layout.js"></script>
+      <script type="text/javascript" src="../src/core-notification.js"></script>
+      <script type="text/javascript" src="../src/core-renderer.js"></script>
+      <script type="text/javascript" src="../src/core-search.js"></script>
+      <script type="text/javascript" src="../src/core-style.js"></script>
+      <script type="text/javascript" src="../src/core-viewport.js"></script>
+      <script type="text/javascript" src="../src/collection.js"></script>
+      <script type="text/javascript" src="../src/collection-animation.js"></script>
+      <script type="text/javascript" src="../src/collection-class.js"></script>
+      <script type="text/javascript" src="../src/collection-comparators.js"></script>
+      <script type="text/javascript" src="../src/collection-data-functions.js"></script>
+      <script type="text/javascript" src="../src/collection-degree.js"></script>
+      <script type="text/javascript" src="../src/collection-events.js"></script>
+      <script type="text/javascript" src="../src/collection-group.js"></script>
+      <script type="text/javascript" src="../src/collection-iteration.js"></script>
+      <script type="text/javascript" src="../src/collection-style.js"></script>
+      <script type="text/javascript" src="../src/collection-switch-functions.js"></script>
+      <script type="text/javascript" src="../src/collection-traversing.js"></script>
+	  <script type="text/javascript" src="../src/heap.js"></script>
+      
+      <!-- extensions -->
+      <script type="text/javascript" src="../src/extensions/renderer.null.js"></script>
+      
+      <script type="text/javascript" src="../src/extensions/layout.null.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.random.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.grid.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.preset.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.springy.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.arbor.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.circle.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.breadthfirst.js"></script>
+      <script type="text/javascript" src="../src/extensions/layout.cose.js"></script>
+  <!-- end cy.js source files -->
 
-    <!-- extensions -->
-    <script type="text/javascript" src="../src/extensions/renderer.null.js"></script>
+  <link rel="stylesheet" href="lib/mocha.css" />
 
-    <script type="text/javascript" src="../src/extensions/layout.null.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.random.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.grid.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.preset.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.springy.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.arbor.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.circle.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.breadthfirst.js"></script>
-    <script type="text/javascript" src="../src/extensions/layout.cose.js"></script>
-    <!-- end cy.js source files -->
+  <script src="lib/chai.js"></script>
 
-    <link rel="stylesheet" href="lib/mocha.css" />
+  <script>
+    window.require = function( name, fallbackVal ){
+      if( fallbackVal ){ return fallbackVal; }
 
-    <script src="lib/chai.js"></script>
-
-    <script>
-        window.require = function( name, fallbackVal ){
-          if( fallbackVal ){ return fallbackVal; }
-    
-          return window[ name ];
-        };
-    </script>
+      return window[ name ];
+    };
+  </script>
 </head>
 
 <body>
-    <div id="mocha"></div>
-    <script src="lib/mocha.js"></script>
-    <script>
-        mocha.setup('bdd')
-    </script>
+  <div id="mocha"></div>
+  <script src="lib/mocha.js"></script>
+  <script>mocha.setup('bdd')</script>
 
-    <!-- tests go here -->
-    <script src="core-init.js"></script>
-    <script src="core-graph-manipulation.js"></script>
-    <script src="core-export.js"></script>
-    <script src="collection-graph-manipulation.js"></script>
-    <script src="collection-data.js"></script>
-    <script src="collection-metadata.js"></script>
-    <script src="collection-position-and-dimensions.js"></script>
-    <script src="collection-style.js"></script>
-    <script src="collection-selection.js"></script>
-    <script src="collection-comparison.js"></script>
-    <script src="collection-iteration.js"></script>
-    <script src="collection-traversing.js"></script>
-    <script src="collection-traversing-algo.js"></script>
-    <script src="collection-building-and-filtering.js"></script>
-    <script src="collection-compound-nodes.js"></script>
-    <script src="events.js"></script>
-    <script src="heap.js"></script>
-
-    <script>
-        mocha.checkLeaks();
-        //mocha.globals(['jQuery']);
-        mocha.run();
-    </script>
+  <!-- tests go here -->
+  <script src="core-init.js"></script>
+  <script src="core-graph-manipulation.js"></script>
+  <script src="core-export.js"></script>
+  <script src="collection-graph-manipulation.js"></script>
+  <script src="collection-data.js"></script>
+  <script src="collection-metadata.js"></script>
+  <script src="collection-position-and-dimensions.js"></script>
+  <script src="collection-style.js"></script>
+  <script src="collection-selection.js"></script>
+  <script src="collection-comparison.js"></script>
+  <script src="collection-iteration.js"></script>
+  <script src="collection-traversing.js"></script>
+  <script src="collection-traversing-algo.js"></script>
+  <script src="collection-building-and-filtering.js"></script>
+  <script src="collection-compound-nodes.js"></script>
+  <script src="events.js"></script>
+  <script src="heap.js"></script>
+  
+  <script>
+    mocha.checkLeaks();
+    //mocha.globals(['jQuery']);
+    mocha.run();
+  </script>
 </body>
-
 </html>

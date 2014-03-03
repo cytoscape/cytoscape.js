@@ -83,7 +83,7 @@
           style.applyBypass( this, name, value );
 
           var updatedCompounds = this.updateCompoundBounds();
-        	this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+          this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){

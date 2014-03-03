@@ -15,9 +15,7 @@ $(function(){
           'border-color': '#555',
           'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 10, 100)',
-          'height': 'mapData(weight, 0, 100, 10, 100)',
-          'transition-property': 'width, height',
-          'transition-duration': '1.3s'
+          'height': 'mapData(weight, 0, 100, 10, 100)'
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -68,6 +66,8 @@ $(function(){
       //   })
       .selector(':selected')
         .css({
+          'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+          'transition-duration': '1.3s',
           'background-color': '#000',
           'line-color': '#000',
           'source-arrow-color': '#000',

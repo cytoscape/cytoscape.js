@@ -9,6 +9,7 @@
 
     for( var ie = 0; ie < eles.length; ie++ ){
       var ele = eles[ie];
+      var changedCxts = false;
 
       if( self._private.newStyle ){
         ele._private.styleCxts = [];
@@ -42,6 +43,8 @@
               // console.log(i + ' + MATCH: applying property: ' + prop.name);
               this.applyParsedProperty( ele, prop, context );
             }
+
+            changedCxts = changedCxts || ( newCxt && !self._private.newStyle );
           }
 
           // keep a note that this context matches
@@ -52,11 +55,16 @@
           if( ele._private.styleCxts[i] ){
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
+            changedCxts = true;
           }
 
           delete ele._private.styleCxts[i];
         }
       } // for context
+
+      if( changedCxts ){
+        this.updateTransitions( ele );
+      }
 
     } // for elements
 
@@ -311,5 +319,63 @@
       }
     }
   };
+
+  $$.styfn.updateTransitions = function( ele ){
+    var self = this;
+    var style = ele._private.style;
+
+    var props = style['transition-property'].value;
+    var duration = style['transition-duration'].value * 1000;
+    var delay = style['transition-delay'].value * 1000;
+    var css = {};
+
+    if( props.length > 0 && duration > 0 ){
+
+      // build up the style to animate towards
+      var anyPrev = false;
+      for( var i = 0; i < props.length; i++ ){
+        var prop = props[i];
+        var styProp = style[ prop ];
+
+        // if a previous value is defined, then we can animate from that value to the specified value
+        if( styProp.prev ){
+          css[ prop ] = style[ prop ].strValue; // to val
+          this.applyBypass(ele, prop, styProp.prev.strValue); // from val
+          anyPrev = true;
+        }
+      }
+
+      // can't transition if there's nothing previous to transition from
+      if( !anyPrev ){ return; }
+
+console.log('transition ', ele.id());
+      
+      ele._private.transitioning = true;
+
+      ele.stop();
+
+      if( delay > 0 ){
+        ele.delay( delay );
+      }
+
+      ele.animate({
+        css: css
+      }, {
+        duration: duration,
+        queue: false,
+        complete: function(){
+          self.removeAllBypasses( ele );
+        }
+      });
+
+    } else if( ele._private.transitioning ){
+console.log('cancel', ele.id())
+      ele.stop();
+
+      this.removeAllBypasses( ele );
+
+      ele._private.transitioning = false;
+    }
+  }; 
 
 })( cytoscape );

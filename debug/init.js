@@ -7,6 +7,12 @@ $(function(){
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
+      .selector('node, edge')
+        .css({
+          'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+          'transition-duration': '1.3s'
+        })
+
       .selector('node')
         .css({
           'content': 'data(id)',
@@ -66,8 +72,6 @@ $(function(){
       //   })
       .selector(':selected')
         .css({
-          'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-          'transition-duration': '1.3s',
           'background-color': '#000',
           'line-color': '#000',
           'source-arrow-color': '#000',

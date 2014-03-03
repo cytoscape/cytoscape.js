@@ -331,6 +331,9 @@
 
     if( props.length > 0 && duration > 0 ){
 
+      // if already transitioning, then this is a duplicate
+      if( ele._private.transitioning ){ return; }
+
       // build up the style to animate towards
       var anyPrev = false;
       for( var i = 0; i < props.length; i++ ){

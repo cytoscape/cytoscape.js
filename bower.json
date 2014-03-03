@@ -1,7 +1,7 @@
 {
   "name": "cytoscape",
-  "version": "2.1.0",
-  "main": "releases/2.1.0/cytoscape.js",
+  "version": "2.1.1",
+  "main": "releases/2.1.1/cytoscape.js",
   "ignore": [
   ]
 }

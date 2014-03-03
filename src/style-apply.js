@@ -23,6 +23,7 @@
         var context = this[i];
         var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
         var props = context.properties;
+        var newCxt = !ele._private.styleCxts[i];
 
         // console.log(i + ' : looking at selector: ' + context.selector);
 
@@ -32,7 +33,6 @@
           
           for( var j = 0; j < props.length; j++ ){ // for each prop
             var prop = props[j];
-            var newCxt = !ele._private.styleCxts[i];
             var currentEleProp = ele._private.style[prop.name];
             var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
             var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
@@ -43,12 +43,15 @@
               // console.log(i + ' + MATCH: applying property: ' + prop.name);
               this.applyParsedProperty( ele, prop, context );
             }
-
-            changedCxts = changedCxts || ( newCxt && !self._private.newStyle );
           }
 
           // keep a note that this context matches
           ele._private.styleCxts[i] = context;
+
+          if( self._private.newStyle === false && newCxt ){
+            changedCxts = true;
+          }
+          
         } else {
 
           // roll back style cxts that don't match now

@@ -32,6 +32,7 @@ var paths = {
     'src/core-*.js',
     'src/collection.js',
     'src/collection-*.js',
+	'src/heap.js',
     'src/extensions/renderer.canvas.define-and-init-etc.js',
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'

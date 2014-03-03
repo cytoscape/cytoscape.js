@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.1.0.
+ * This file is part of cytoscape.js 2.1.1.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -5696,7 +5696,7 @@ var cytoscape;
 	var defaults = {
 		hideEdgesOnViewport: false
 	};
-	
+
 	var origDefaults = $$.util.copy( defaults );
 
 	$$.defaults = function( opts ){
@@ -5709,7 +5709,7 @@ var cytoscape;
 			$$.Core.prototype[ name ] = fn;
 		}
 	};
-	
+
 	$$.Core = function( opts ){
 		if( !(this instanceof $$.Core) ){
 			return new $$.Core(opts);
@@ -5720,12 +5720,12 @@ var cytoscape;
 
 		var container = opts.container;
 		var reg = $$.getRegistrationForInstance(cy, container);
-		if( reg && reg.cy ){ 
+		if( reg && reg.cy ){
 			reg.domElement.innerHTML = '';
 			reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
 			$$.removeRegistrationForInstance(reg.cy, reg.domElement);
-		} 
+		}
 
 		reg = $$.registerInstance( cy, container );
 		var readies = reg.readies;
@@ -5733,14 +5733,14 @@ var cytoscape;
 		var options = opts;
 		options.layout = $$.util.extend( { name: window && container ? "grid" : "null" }, options.layout );
 		options.renderer = $$.util.extend( { name: window && container ? "canvas" : "null" }, options.renderer );
-		
+
 		// TODO determine whether we need a check like this even though we allow running headless now
-		// 
+		//
 		// if( !$$.is.domElement(options.container) ){
-		// 	$$.util.error("Cytoscape.js must be called on an element");
-		// 	return;
+		//	$$.util.error("Cytoscape.js must be called on an element");
+		//	return;
 		// }
-		
+
 		var _p = this._private = {
 			ready: false, // whether ready has been triggered
 			initrender: false, // has initrender has been triggered
@@ -5834,13 +5834,13 @@ var cytoscape;
 				cy.bind("ready", fn);
 			}
 			reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
-			
+
 			cy.trigger("ready");
 		}, options.done);
 	};
 
 	$$.corefn = $$.Core.prototype; // short alias
-	
+
 
 	$$.fn.core({
 		ready: function(){
@@ -5852,11 +5852,11 @@ var cytoscape;
 		},
 
 		registered: function(){
-			if( this._private && this._private.instanceId != null ){
-				return true;
-			} else {
-				return false;
-			}
+            if( this._private && this._private.instanceId != null ){
+                return true;
+            } else {
+                return false;
+            }
 		},
 
 		registeredId: function(){
@@ -5894,7 +5894,7 @@ var cytoscape;
 
 				if( !alreadyInPool ){
 					index = elements.length;
-					elements.push( ele )
+					elements.push( ele );
 					id2index[ id ] = index;
 					ele._private.index = index;
 				}
@@ -5934,19 +5934,19 @@ var cytoscape;
 		options: function(){
 			return $$.util.copy( this._private.options );
 		},
-		
+
 		json: function(params){
 			var json = {};
 			var cy = this;
-			
+
 			json.elements = {};
 			cy.elements().each(function(i, ele){
 				var group = ele.group();
-				
+
 				if( !json.elements[group] ){
 					json.elements[group] = [];
 				}
-				
+
 				json.elements[group].push( ele.json() );
 			});
 
@@ -5964,12 +5964,12 @@ var cytoscape;
 			json.layout = cy._private.options.layout;
 			json.renderer = cy._private.options.renderer;
 			json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
-			
+
 			return json;
 		}
-		
-	});	
-	
+
+	});
+
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
 (function($$, window){ "use strict";
@@ -8882,7 +8882,9 @@ var cytoscape;
 			if( $$.is.plainObject(name) ){ // then extend the bypass
 				var props = name;
 				style.applyBypass( this, props );
-				this.rtrigger("style"); // let the renderer know we've updated style
+				
+				var updatedCompounds = this.updateCompoundBounds();
+				this.add( updatedCompounds ).rtrigger("style"); // let the renderer know we've updated style
 
 			} else if( $$.is.string(name) ){
 	
@@ -8897,7 +8899,9 @@ var cytoscape;
 
 				} else { // then set the bypass with the property value
 					style.applyBypass( this, name, value );
-					this.rtrigger("style"); // let the renderer know we've updated style
+
+					var updatedCompounds = this.updateCompoundBounds();
+					this.add( updatedCompounds ).rtrigger("style"); // let the renderer know we've updated style
 				}
 
 			} else if( name === undefined ){
@@ -8923,7 +8927,8 @@ var cytoscape;
 				style.removeAllBypasses( ele );
 			}
 
-			this.rtrigger('style');
+			var updatedCompounds = this.updateCompoundBounds();
+			this.add( updatedCompounds ).rtrigger("style");
 		},
 
 		show: function(){

@@ -371,6 +371,8 @@ console.log('transition ', ele.id());
         queue: false,
         complete: function(){
           self.removeAllBypasses( ele );
+
+          ele._private.transitioning = false;
         }
       });
 

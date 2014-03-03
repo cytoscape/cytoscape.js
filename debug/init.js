@@ -16,6 +16,8 @@ $(function(){
           'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 10, 100)',
           'height': 'mapData(weight, 0, 100, 10, 100)',
+          'transition-property': 'width, height',
+          'transition-duration': '1.3s'
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -71,29 +73,6 @@ $(function(){
           'source-arrow-color': '#000',
           'target-arrow-color': '#000'
         })
-      .selector('.ui-cytoscape-edgehandles-source')
-        .css({
-          'border-color': '#5CC2ED',
-          'border-width': 3
-        })
-      .selector('.ui-cytoscape-edgehandles-target, node.ui-cytoscape-edgehandles-preview')
-        .css({
-          'background-color': '#5CC2ED'
-        })
-      .selector('edge.ui-cytoscape-edgehandles-preview')
-        .css({
-          'line-color': '#5CC2ED',
-          'source-arrow-color': '#5CC2ED',
-          'target-arrow-color': '#5CC2ED'
-        })
-      .selector('node.ui-cytoscape-edgehandles-preview, node.intermediate')
-        .css({
-          'shape': 'rectangle',
-          'width': 15,
-          'height': 15
-        })
-
-
   ;
   
   window.options = {

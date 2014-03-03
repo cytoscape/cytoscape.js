@@ -118,6 +118,10 @@ gulp.task('testlist', function(){
   ;
 });
 
+gulp.task('refs', ['debugrefs', 'testrefs', 'testlist'], function(next){
+  next();
+});
+
 gulp.task('zip', ['build'], function(){
   return gulp.src(['build/cytoscape.js', 'build/cytoscape.min.js', 'LGPL-LICENSE.txt', 'lib/arbor.js'])
     .pipe( zip('cytoscape.js-' + version + '.zip') )

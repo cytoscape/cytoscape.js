@@ -120,6 +120,10 @@
         if( clearQueue ){
           self._private.animation.queue = [];
         }
+
+        if( !jumpToEnd ){
+          self._private.animation.current = [];
+        }
       }
       
       // we have to notify (the animation loop doesn't do it for us on `stop`)

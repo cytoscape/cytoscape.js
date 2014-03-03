@@ -44,6 +44,7 @@
 
     // each visual style property has a type and needs to be validated according to it
     $$.style.types = {
+      time: { number: true, min: 0, units: 's' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
@@ -74,7 +75,8 @@
       layoutData: { mapping: true, regex: data('layoutData') },
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
-      url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' }
+      url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
+      propList: { propList: true }
     };
 
     // define visual style properties
@@ -104,6 +106,9 @@
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
+      { name: 'transition-property', type: t.propList },
+      { name: 'transition-duration', type: t.time },
+      { name: 'transition-delay', type: t.time },
 
       // these are just for nodes
       { name: 'background-color', type: t.color },
@@ -238,6 +243,9 @@
           'overlay-opacity': 0,
           'overlay-color': '#000',
           'overlay-padding': 10,
+          'transition-property': 'none',
+          'transition-duration': 0,
+          'transition-delay': 0,
 
           // node props
           'background-color': '#888',
@@ -535,17 +543,51 @@
         value: value,
         strValue: '' + value + (units ? units : ''),
         units: units,
-        bypass: propIsBypass,
-        pxValue: type.unitless || units === "%" ?
-          undefined
-          :
-          ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) )
+        bypass: propIsBypass 
       };
+
+      if( type.unitless || (units !== 'px' && units !== 'em') ){
+        // then pxValue does not apply
+      } else {
+        ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      }
 
       return ret;
 
+    } else if( type.propList ) {
+
+      var props = [];
+      var propsStr = '' + value;      
+ 
+      if( propsStr === 'none' ){
+        // leave empty
+
+      } else { // go over each prop
+
+        var propsSplit = propsStr.split(',');
+        for( var i = 0; i < propsSplit.length; i++ ){
+          var propName = $$.util.trim( propsSplit[i] );
+
+          if( $$.style.properties[propName] ){
+            props.push( propName );
+          }
+        }
+
+        if( props.length === 0 ){ return null; }
+
+      }
+
+      return {
+        name: name,
+        value: props,
+        strValue: props.length === 0 ? 'none' : props.join(', '),
+        bypass: propIsBypass
+      };
+
     } else if( type.color ){
       var tuple = $$.util.color2tuple( value );
+
+      if( !tuple ){ return null; }
 
       return {
         name: name,
@@ -567,6 +609,8 @@
           };
         }
       }
+
+      return null;
 
     } else if( type.regex ){
       var regex = new RegExp( type.regex ); // make a regex from the type
@@ -647,7 +691,7 @@
   };
 
   // add a single css rule to the current context
-  $$.styfn.cssRule = function( name, value ){
+  $$.styfn.cssRule = function( name, value ){ 
     // name-value pair
     var property = this.parse( name, value );
 

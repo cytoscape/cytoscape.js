@@ -9,8 +9,8 @@ $(function(){
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       .selector('node, edge')
         .css({
-          'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-          'transition-duration': '1.3s'
+          // 'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+          // 'transition-duration': '0.25s'
         })
 
       .selector('node')
@@ -61,7 +61,7 @@ $(function(){
           'width': 'mapData(weight, 0, 100, 1, 4)',
           'target-arrow-shape': 'data(tgtShape)',
           'source-arrow-shape': 'data(srcShape)'
-          //'curve-style': 'haystack',
+          // 'curve-style': 'haystack'
           //'opacity': 0.5
           //'content': 'data(weight)'
         })

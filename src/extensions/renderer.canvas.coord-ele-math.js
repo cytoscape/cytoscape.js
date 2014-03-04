@@ -264,61 +264,89 @@
     
     var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
     
-    for (var i=0;i<nodes.length;i++) {
-      if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
-        this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
-        nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style['border-width'].pxValue / 2))
-      { box.push(nodes[i]); }
+    for ( var i = 0; i < nodes.length; i++ ){
+      var pos = nodes[i]._private.position;
+      var nShape = this.getNodeShape(nodes[i]);
+      var w = this.getNodeWidth(nodes[i]);
+      var h = this.getNodeHeight(nodes[i]);
+      var border = nodes[i]._private.style['border-width'].pxValue / 2;
+      var shapeObj = CanvasRenderer.nodeShapes[ nShape ];
+
+      if ( shapeObj.intersectBox(x1, y1, x2, y2, w, h, pos.x, pos.y, border) ){
+        box.push(nodes[i]);
+      }
     }
     
-    for (var i=0;i<edges.length;i++) {
+    for ( var i = 0; i < edges.length; i++ ){
+      var rs = edges[i]._private.rscratch;
+
       if (edges[i]._private.rscratch.edgeType == 'self') {
         if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2ax, rs.cp2ay,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
+              rs.startX, rs.startY,
+              rs.cp2ax, rs.cp2ay,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue)))
                 ||
           (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2cx, rs.cp2cy,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
+              rs.startX, rs.startY,
+              rs.cp2cx, rs.cp2cy,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue)))
           )
         { box.push(edges[i]); }
       }
       
-      if (edges[i]._private.rscratch.edgeType == 'bezier' &&
+      if (rs.edgeType == 'bezier' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2x, rs.cp2y,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
+              rs.startX, rs.startY,
+              rs.cp2x, rs.cp2y,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
     
-      if (edges[i]._private.rscratch.edgeType == 'straight' &&
+      if (rs.edgeType == 'straight' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
-            edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.startX * 0.5 + rs.endX * 0.5, 
+            rs.startY * 0.5 + rs.endY * 0.5, 
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               && /* console.log('test', heur) == undefined && */
             (heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
+              rs.startX, rs.startY,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
+
+
+      if (rs.edgeType == 'haystack'){
+        var tgt = edges[i].target()[0];
+        var tgtPos = tgt.position();
+        var src = edges[i].source()[0];
+        var srcPos = src.position();
+
+        var startX = srcPos.x + rs.source.x;
+        var startY = srcPos.y + rs.source.y;
+        var endX = tgtPos.x + rs.target.x;
+        var endY = tgtPos.y + rs.target.y;
+
+        var startInBox = (x1 <= startX && startX <= x2) && (y1 <= startY && startY <= y2);
+        var endInBox = (x1 <= endX && endX <= x2) && (y1 <= endY && endY <= y2);
+
+        if( startInBox && endInBox ){
+          box.push( edges[i] );
+        }
+      }
       
     }
     

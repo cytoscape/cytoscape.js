@@ -9,7 +9,8 @@
 
     for( var ie = 0; ie < eles.length; ie++ ){
       var ele = eles[ie];
-      var changedCxts = false;
+      var addedCxts = [];
+      var removedCxts = [];
 
       if( self._private.newStyle ){
         ele._private.styleCxts = [];
@@ -49,7 +50,7 @@
           ele._private.styleCxts[i] = context;
 
           if( self._private.newStyle === false && newCxt ){
-            changedCxts = true;
+            addedCxts.push( context );
           }
           
         } else {
@@ -58,15 +59,15 @@
           if( ele._private.styleCxts[i] ){
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
-            changedCxts = true;
+            removedCxts.push( context );
           }
 
           delete ele._private.styleCxts[i];
         }
       } // for context
 
-      if( changedCxts ){
-        this.updateTransitions( ele );
+      if( addedCxts.length > 0 || removedCxts.length > 0 ){
+        this.updateTransitions( ele, addedCxts, removedCxts );
       }
 
     } // for elements
@@ -323,7 +324,7 @@
     }
   };
 
-  $$.styfn.updateTransitions = function( ele ){
+  $$.styfn.updateTransitions = function( ele, addedCxts, removedCxts ){
     var self = this;
     var style = ele._private.style;
 
@@ -334,27 +335,74 @@
 
     if( props.length > 0 && duration > 0 ){
 
-      // if already transitioning, then this is a duplicate
-      if( ele._private.transitioning ){ return; }
-
       // build up the style to animate towards
       var anyPrev = false;
       for( var i = 0; i < props.length; i++ ){
         var prop = props[i];
         var styProp = style[ prop ];
+        var fromProp = styProp.prev;
+        var toProp = style[ prop ];
+        var diff = false;
+        var fromAddedCxt = false;
+        var fromRemovedCxt = false;
 
-        // if a previous value is defined, then we can animate from that value to the specified value
-        if( styProp.prev ){
-          css[ prop ] = style[ prop ].strValue; // to val
-          this.applyBypass(ele, prop, styProp.prev.strValue); // from val
+        // see if the prop was added from one of the contexts
+        for( var j = 0; j < addedCxts.length; j++ ){
+          var cxt = addedCxts[j];
+
+          if( cxt === toProp.context ){
+            fromAddedCxt = true;
+            break;
+          }
+        } 
+
+        // see if the prop was removed from one of the contexts
+        for( var j = removedCxts.length - 1; j >= 0; j-- ){ // reverse order b/c last has precedence
+          var cxt = removedCxts[j];
+
+          for( var k = 0; k < cxt.properties.length; k++ ){
+            var cProp = cxt.properties[k];
+
+            if( cProp.name === prop ){
+              fromRemovedCxt = true;
+              fromProp = cProp;
+              break;
+            }
+          }
+
+          if( fromRemovedCxt ){ break; }
+        }
+
+        // if not from changed context, then it's not a state transition but just an overriding part of the stylesheet
+        if( !fromAddedCxt && !fromRemovedCxt ){ continue; }
+
+        // consider px values
+        if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
+          diff = fromProp.pxValue !== toProp.pxValue;
+
+        // consider numerical values
+        } else if( $$.is.number( fromProp.value ) && $$.is.number( toProp.value ) ){
+          diff = fromProp.value !== toProp.value;
+
+        // consider colour values
+        } else if( $$.is.array( fromProp.value ) && $$.is.array( toProp.value ) ){
+          diff = fromProp.value[0] !== toProp.value[0]
+            || fromProp.value[1] !== toProp.value[1]
+            || fromProp.value[2] !== toProp.value[2]
+          ;
+        }
+
+          // the previous value is good for an animation only if it's different
+        if( diff ){
+          css[ prop ] = toProp.strValue; // to val
+          this.applyBypass(ele, prop, fromProp.strValue); // from val
           anyPrev = true;
         }
-      }
+        
+      } // end if props allow ani
 
       // can't transition if there's nothing previous to transition from
       if( !anyPrev ){ return; }
-
-console.log('transition ', ele.id());
       
       ele._private.transitioning = true;
 
@@ -369,7 +417,7 @@ console.log('transition ', ele.id());
       }, {
         duration: duration,
         queue: false,
-        complete: function(){
+        complete: function(){ 
           self.removeAllBypasses( ele );
 
           ele._private.transitioning = false;
@@ -377,7 +425,6 @@ console.log('transition ', ele.id());
       });
 
     } else if( ele._private.transitioning ){
-console.log('cancel', ele.id())
       ele.stop();
 
       this.removeAllBypasses( ele );

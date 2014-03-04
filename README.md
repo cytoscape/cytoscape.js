@@ -107,6 +107,7 @@ Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Instit
 [UCSF](http://www.ucsf.edu/) |
 [Unilever](http://www.unilever.com) |
 [Toronto](http://www.utoronto.ca) |
-[NCIBI](http://portal.ncibi.org/gateway/index.html)
+[NCIBI](http://portal.ncibi.org/gateway/index.html) |
+[NRNB](http://nrnb.org)
 
 

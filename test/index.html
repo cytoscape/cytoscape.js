@@ -92,37 +92,39 @@
   </script>
 </head>
 
-<body>
-  <div id="mocha"></div>
-  <script src="lib/mocha.js"></script>
-  <script>mocha.setup('bdd')</script>
+  <body>
+    <div id="mocha"></div>
+    <script src="lib/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
 
-  <!-- `gulp testlist` updates these scripts -->
+    <!-- `gulp testlist` updates these scripts -->
 
-  <!-- inject:test:js -->
-  <script src="collection-algorithms.js"></script>
-  <script src="collection-building-and-filtering.js"></script>
-  <script src="collection-comparison.js"></script>
-  <script src="collection-compound-nodes.js"></script>
-  <script src="collection-data.js"></script>
-  <script src="collection-graph-manipulation.js"></script>
-  <script src="collection-iteration.js"></script>
-  <script src="collection-metadata.js"></script>
-  <script src="collection-position-and-dimensions.js"></script>
-  <script src="collection-selection.js"></script>
-  <script src="collection-style.js"></script>
-  <script src="collection-traversing.js"></script>
-  <script src="core-export.js"></script>
-  <script src="core-graph-manipulation.js"></script>
-  <script src="core-init.js"></script>
-  <script src="events.js"></script>
-  <script src="heap.js"></script>
-  <!-- endinject -->
+    <!-- inject:test:js -->
+    <script src="collection-algorithms.js"></script>
+    <script src="collection-building-and-filtering.js"></script>
+    <script src="collection-comparison.js"></script>
+    <script src="collection-compound-nodes.js"></script>
+    <script src="collection-data.js"></script>
+    <script src="collection-graph-manipulation.js"></script>
+    <script src="collection-iteration.js"></script>
+    <script src="collection-metadata.js"></script>
+    <script src="collection-position-and-dimensions.js"></script>
+    <script src="collection-selection.js"></script>
+    <script src="collection-style.js"></script>
+    <script src="collection-traversing.js"></script>
+    <script src="core-export.js"></script>
+    <script src="core-graph-manipulation.js"></script>
+    <script src="core-init.js"></script>
+    <script src="events.js"></script>
+    <script src="heap.js"></script>
+    <script src="selectors.js"></script>
+    <!-- endinject -->
   
-  <script>
-    mocha.checkLeaks();
-    //mocha.globals(['jQuery']);
-    mocha.run();
-  </script>
-</body>
+    <script>
+      mocha.checkLeaks();
+      //mocha.globals(['jQuery']);
+      mocha.run();
+    </script>
+
+  </body>
 </html>

@@ -168,7 +168,15 @@
         dataCompare: {
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
-          populate: function( variable, comparatorOp, value ){
+          populate: function( variable, comparatorOp, value ){ 
+            var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
+
+            if( valueIsString ){
+              value = value.substring(1, value.length - 1);
+            } else {
+              value = parseFloat(value)
+            }
+
             this.data.push({
               field: cleanMetaChars(variable),
               operator: comparatorOp,
@@ -195,7 +203,7 @@
             this.meta.push({
               field: cleanMetaChars(meta),
               operator: comparatorOp,
-              value: number
+              value: parseFloat(number)
             });
           }
         },
@@ -412,7 +420,7 @@
   };
   
   // filter an existing collection
-  $$.selfn.filter = function(collection, addLiveFunction){
+  $$.selfn.filter = function(collection){
     var self = this;
     var cy = collection.cy();
     
@@ -458,7 +466,7 @@
           allColonSelectorsMatch = !element.visible();
           break;
         case ':transparent':
-          allColonSelectorsMatch = !element.transparent();
+          allColonSelectorsMatch = element.transparent();
           break;
         case ':grabbed':
           allColonSelectorsMatch = element.grabbed();
@@ -546,8 +554,9 @@
           
           if( operator != null && value != null ){
             
-            var fieldStr = '' + params.fieldValue(field);
-            var valStr = '' + eval(value);
+            var fieldVal = params.fieldValue(field);
+            var fieldStr = !$$.is.string(fieldVal) && !$$.is.number(fieldVal) ? '' : '' + fieldVal;
+            var valStr = '' + value;
             
             var caseInsensitive = false;
             if( operator.charAt(0) == '@' ){
@@ -558,10 +567,13 @@
               caseInsensitive = true;
             }
             
-            if( operator == '=' ){
-              operator = '==';
+            // if we're doing a case insensitive comparison, then we're using a STRING comparison
+            // even if we're comparing numbers
+            if( caseInsensitive ){
+              value = valStr.toLowerCase();
+              fieldVal = fieldStr.toLowerCase();
             }
-            
+
             switch(operator){
             case '*=':
               matches = fieldStr.search(valStr) >= 0;
@@ -572,18 +584,27 @@
             case '^=':
               matches = new RegExp('^' + valStr).exec(fieldStr) != null;
               break;
+            case '=':
+              matches = fieldVal === value;
+              break;
+            case '!=':
+              matches = fieldVal !== value;
+              break;
+            case '>':
+              matches = fieldVal > value;
+              break;
+            case '>=':
+              matches = fieldVal >= value;
+              break;
+            case '<':
+              matches = fieldVal < value;
+              break;
+            case '<=':
+              matches = fieldVal <= value;
+              break;
             default:
-              // if we're doing a case insensitive comparison, then we're using a STRING comparison
-              // even if we're comparing numbers
-              if( caseInsensitive ){
-                // eval with lower case strings
-                var expr = 'fieldStr ' + operator + ' valStr';
-                matches = eval(expr);
-              } else {
-                // just eval as normal
-                var expr = params.fieldRef(field) + ' ' + operator + ' ' + value;
-                matches = eval(expr);
-              }
+              matches = false;
+              break;
               
             }
           } else if( operator != null ){

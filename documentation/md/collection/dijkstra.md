@@ -4,7 +4,7 @@ Note that this function performs Dijkstra's algorithm on only the subset of the 
 
 This function returns an object of the following form:
 
-```js
+```
 {
   distanceTo: function( node ){ /* impl */ }
   pathTo: function( node ){ /* impl */ }

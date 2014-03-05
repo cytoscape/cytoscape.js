@@ -359,101 +359,119 @@
 
 		},
 
-		dijkstra: function( target, weightFn, directed ){
-			var cy = this._private.cy;
-			directed = !$$.is.fn(weightFn) ? weightFn : directed;
-			directed = directed === undefined || directed;
-			weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+		dijkstra: function (target, weightFn, directed) {
+            var cy = this._private.cy;
+            directed = !$$.is.fn(weightFn) ? weightFn : directed;
+            directed = directed === undefined || directed;
+            weightFn = $$.is.fn(weightFn) ? weightFn : function () {
+                return 1;
+            }; // if not specified, assume each edge has equal weight (1)
 
-			if( this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0 ){
-				return new $$.Collection(cy, []);
-			}
+            if (this.length === 0 || !target || !$$.is.elementOrCollection(target) || target.length === 0) {
+                console.log("wrong function call");
+                return new $$.Collection(cy, []);
+            }
 
-			var source = this[0];
-			target = target[0];
-			var dist = {};
-			var prev = {};
+            var source = this[0],
+                dist = [],
+                knownDistances = {},
+                prev = {},
+                nodes = cy.nodes(),
+                curentId;
 
-			var nodes = cy.nodes();
-			for( var i = 0; i < nodes.length; i++ ){
-				dist[ nodes[i].id() ] = Infinity;
-			}
+            target = target[0];
+            for (var i = 0; i < nodes.length; i++) {
+                curentId = nodes[i].id();
+                dist.push({
+                    id: curentId,
+                    value: curentId === source.id() ? 0 : Infinity
+                });
+            }
 
-			dist[ source.id() ] = 0;
-			var Q = nodes;
+            var valExtr = function (obj) {
+                return obj.value;
+            };
+            var idExtr = function (obj) {
+                return obj.id;
+            };
 
-			var smallestDist = function(Q){
-				var smallest = Infinity;
-				var index;
-				for(var i in dist){
-					if( dist[i] < smallest && Q.$('#' + i).length !== 0 ){
-						smallest = dist[i];
-						index = i;
-					}
-				}
+            var Q = nodes,
+                visited = {},
+                heap = new $$.Heap(dist, $$.heapUtil.minHeapComparator, valExtr, idExtr);
 
-				return index;
-			};
+            var distBetween = function (u, v) {
+                var edges = directed ? u.edgesTo(v) : u.edgesWith(v),
+                    smallestDistance = Infinity,
+                    smallestEdge;
 
-			var distBetween = function(u, v){
-				var edges = u.edgesWith(v);
-				var smallestDistance = Infinity;
-				var smallestEdge;
+                for (var i = 0; i < edges.length; i++) {
+                    var edge = edges[i],
+                        weight = weightFn.call(edge);
+                    if (weight < 0) {
+                        throw "dijkstra: negative weight detected";
+                    }
+                    if (weight < smallestDistance) {
+                        smallestDistance = weight;
+                        smallestEdge = edge;
+                    }
+                }
+                return {
+                    edge: smallestEdge,
+                    dist: smallestDistance
+                };
+            };
 
-				for( var i = 0; i < edges.length; i++ ){
-					var edge = edges[i];
-					var weight = weightFn.call(edge);
+            while (Q.length !== 0 && heap.size() > 0) {
+                var cu = heap.top(),
+                    uid = cu.id,
+                    u = Q.filter('#' + uid),
+                    udist = cu.value;
+                visited[uid] = 1;
+                knownDistances[uid] = udist;
+                heap.pop();
 
-					if( weight < smallestDistance ){
-						smallestDistance = weight;
-						smallestEdge = edge;
-					}
-				}
+                if (u.length === 0) {
+                    continue;
+                }
 
-				return {
-					edge: smallestEdge,
-					dist: smallestDistance
-				};
-			};
+                Q = Q.not(u);
 
-			while( Q.length !== 0 ){
-				var uid = smallestDist(Q);
-				var u = Q.filter('#' + uid);
+                if (u.same(target)) {
+                    break;
+                }
+                if (cu.value === Infinity) {
+                    break;
+                }
 
-				if( u.length === 0 ){
-					continue;
-				}
-
-				//debugger;
-
-				Q = Q.not( u );
-
-				if( u.same(target) ){
-					break;
-				}
-
-				if( dist[uid] === Math.Infinite ){
-					break;
-				}
-
-				var neighbors = u.neighborhood().nodes();
-				for( var i = 0; i < neighbors.length; i++ ){
-					var v = neighbors[i];
-					var vid = v.id()
-
-					var duv = distBetween(u, v);
-					var alt = dist[uid] + duv.dist;
-					if( alt < dist[vid] ){
-						dist[vid] = alt;
-						prev[vid] = {
-							node: v,
-							edge: duv.edge
-						};
-						// TODO decrease-key v in Q
-					}
-				}
-			}
-		}  
+                var neighbors = u.neighborhood().nodes();
+                for (var i = 0; i < neighbors.length; i++) {
+                    var v = neighbors[i],
+                        vid = v.id();
+                    if (!visited.hasOwnProperty(vid)) {
+                        var duv = distBetween(u, v),
+                            alt = udist + duv.dist;
+                        if (alt < heap.getValueById(vid)) {
+                            heap.edit(vid, alt);
+                            prev[vid] = {
+                                node: u,
+                                edge: duv.edge
+                            };
+                        }
+                    }
+                }
+            }
+            if (knownDistances[target.id()] != Infinity && prev.hasOwnProperty(target.id())) {
+                var path = [],
+                    cid = target.id();
+                while (prev.hasOwnProperty(cid)) {
+                    path.unshift(prev[cid].edge);
+                    cid = prev[cid].node.id();
+                }
+                return new $$.Collection(cy, path);
+            } else {
+                return new $$.Collection(cy, []);
+            }
+        }  
 	});
 
 	// nice, short mathemathical alias

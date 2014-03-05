@@ -148,8 +148,9 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( di.distanceTo(c) ).to.equal(8);
     expect( di.pathTo(c).same( eles(a, ab, b, bc, c) ) ).to.be.true;
 
-    // expect( di.distanceTo(d) ).to.equal(10);
-    // expect( di.pathTo(d).same( a, ab, b, bc, c, cd, d ) ).to.be.true;
+    expect( di.distanceTo(d) ).to.equal(10);
+    expect( di.pathTo(d).same( eles(a, ab, b, bc, c, cd, d) ) ).to.be.true;
+
   });
 
   it('eles.kruskal()', function(){

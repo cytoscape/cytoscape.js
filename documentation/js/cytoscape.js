@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js snapshot-1393532612616.
+ * This file is part of cytoscape.js snapshot-1394047958698.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -3525,7 +3525,6 @@ var cytoscape;
 })( cytoscape );
 
 ;(function($$){ 'use strict';
-    
 
   $$.fn.selector = function(map, options){
     for( var name in map ){
@@ -3550,33 +3549,6 @@ var cytoscape;
     self._private = {
       selectorText: null,
       invalid: true
-    }
-  
-    // storage for parsed queries
-    // when you add something here, also add to Selector.toString()
-    var newQuery = function(){
-      return {
-        classes: [], 
-        colonSelectors: [],
-        data: [],
-        group: null,
-        ids: [],
-        meta: [],
-
-        // fake selectors
-        collection: null, // a collection to match against
-        filter: null, // filter function
-
-        // these are defined in the upward direction rather than down (e.g. child)
-        // because we need to go up in Selector.filter()
-        parent: null, // parent query obj
-        ancestor: null, // ancestor query obj
-        subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-        // use these only when subject has been defined
-        child: null,
-        descendant: null
-      };
     }
     
     if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
@@ -3608,45 +3580,74 @@ var cytoscape;
       self.length = 1;
       
     } else if( $$.is.string( selector ) ){
-    
-      // these are the actual tokens in the query language
-      var metaChar = '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]'; // chars we need to escape in var names, etc
-      var variable = '(?:[\\w-]|(?:\\\\"+ metaChar +"))+'; // a variable name
-      var comparatorOp = '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*='; // binary comparison op (used in data selectors)
-      var boolOp = '\\?|\\!|\\^'; // boolean (unary) operators (used in data selectors)
-      var string = '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'"; // string literals (used in data selectors) -- doublequotes | singlequotes
-      var number = $$.util.regex.number; // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
-      var value = string + '|' + number; // a value literal, either a string or number
-      var meta = 'degree|indegree|outdegree'; // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
-      var separator = '\\s*,\\s*'; // queries are separated by commas; e.g. edge[foo = 'bar'], node.someClass
-      var className = variable; // a class name (follows variable conventions)
-      var descendant = '\\s+';
-      var child = '\\s+>\\s+';
-      var subject = '\\$';
-      var id = variable; // an element id (follows variable conventions)
+
+      // the current subject in the query
+      var currentSubject = null;
       
+      // storage for parsed queries
+      var newQuery = function(){
+        return {
+          classes: [], 
+          colonSelectors: [],
+          data: [],
+          group: null,
+          ids: [],
+          meta: [],
+
+          // fake selectors
+          collection: null, // a collection to match against
+          filter: null, // filter function
+
+          // these are defined in the upward direction rather than down (e.g. child)
+          // because we need to go up in Selector.filter()
+          parent: null, // parent query obj
+          ancestor: null, // ancestor query obj
+          subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+          // use these only when subject has been defined
+          child: null,
+          descendant: null
+        };
+      };
+
+      // tokens in the query language
+      var tokens = {
+        metaChar: '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
+        variable: '(?:[\\w-]|(?:\\\\"+ metaChar +"))+', // a variable name
+        comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
+        boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
+        string: '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'", // string literals (used in data selectors) -- doublequotes | singlequotes
+        number: $$.util.regex.number, // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+        meta: 'degree|indegree|outdegree', // allowed metadata fields (i.e. allowed functions to use from $$.Collection)
+        separator: '\\s*,\\s*', // queries are separated by commas, e.g. edge[foo = 'bar'], node.someClass
+        descendant: '\\s+',
+        child: '\\s+>\\s+',
+        subject: '\\$'
+      };
+      tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
+      tokens.className = tokens.variable; // a class name (follows variable conventions)
+      tokens.id = tokens.variable; // an element id (follows variable conventions)
+
       // when a token like a variable has escaped meta characters, we need to clean the backslashes out
       // so that values get compared properly in Selector.filter()
       var cleanMetaChars = function(str){
-        return str.replace(new RegExp('\\\\(' + metaChar + ')', 'g'), function(match, $1, offset, original){
+        return str.replace(new RegExp('\\\\(' + tokens.metaChar + ')', 'g'), function(match, $1, offset, original){
           return $1;
         });
       };
       
       // add @ variants to comparatorOp
-      var ops = comparatorOp.split('|');
+      var ops = tokens.comparatorOp.split('|');
       for( var i = 0; i < ops.length; i++ ){
         var op = ops[i];
-        comparatorOp += '|@' + op;
+        tokens.comparatorOp += '|@' + op;
       }
 
-      // the current subject in the query
-      var currentSubject = null;
-      
       // NOTE: add new expression syntax here to have it recognised by the parser;
-      // a query contains all adjacent (i.e. no separator in between) expressions;
-      // the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
-      // you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+      // - a query contains all adjacent (i.e. no separator in between) expressions;
+      // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
+      // - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+      // - when you add something here, also add to Selector.toString()
       var exprs = {
         group: {
           query: true,
@@ -3666,7 +3667,7 @@ var cytoscape;
         
         id: {
           query: true,
-          regex: '\\#('+ id +')',
+          regex: '\\#('+ tokens.id +')',
           populate: function( id ){
             this.ids.push( cleanMetaChars(id) );
           }
@@ -3674,7 +3675,7 @@ var cytoscape;
         
         className: {
           query: true,
-          regex: '\\.('+ className +')',
+          regex: '\\.('+ tokens.className +')',
           populate: function( className ){
             this.classes.push( cleanMetaChars(className) );
           }
@@ -3682,7 +3683,7 @@ var cytoscape;
         
         dataExists: {
           query: true,
-          regex: '\\[\\s*('+ variable +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( variable ){
             this.data.push({
               field: cleanMetaChars(variable)
@@ -3692,7 +3693,7 @@ var cytoscape;
         
         dataCompare: {
           query: true,
-          regex: '\\[\\s*('+ variable +')\\s*('+ comparatorOp +')\\s*('+ value +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
           populate: function( variable, comparatorOp, value ){
             this.data.push({
               field: cleanMetaChars(variable),
@@ -3704,7 +3705,7 @@ var cytoscape;
         
         dataBool: {
           query: true,
-          regex: '\\[\\s*('+ boolOp +')\\s*('+ variable +')\\s*\\]',
+          regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( boolOp, variable ){
             this.data.push({
               field: cleanMetaChars(variable),
@@ -3715,7 +3716,7 @@ var cytoscape;
         
         metaCompare: {
           query: true,
-          regex: '\\[\\[\\s*('+ meta +')\\s*('+ comparatorOp +')\\s*('+ number +')\\s*\\]\\]',
+          regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
           populate: function( meta, comparatorOp, number ){
             this.meta.push({
               field: cleanMetaChars(meta),
@@ -3727,7 +3728,7 @@ var cytoscape;
 
         nextQuery: {
           separator: true,
-          regex: separator,
+          regex: tokens.separator,
           populate: function(){
             // go on to next query
             self[++i] = newQuery();
@@ -3737,7 +3738,7 @@ var cytoscape;
 
         child: {
           separator: true,
-          regex: child,
+          regex: tokens.child,
           populate: function(){
             // this query is the parent of the following query
             var childQuery = newQuery();
@@ -3751,7 +3752,7 @@ var cytoscape;
 
         descendant: {
           separator: true,
-          regex: descendant,
+          regex: tokens.descendant,
           populate: function(){
             // this query is the ancestor of the following query
             var descendantQuery = newQuery();
@@ -3765,7 +3766,7 @@ var cytoscape;
 
         subject: {
           modifier: true,
-          regex: subject,
+          regex: tokens.subject,
           populate: function(){
             if( currentSubject != null && this.subject != this ){
               $$.util.error('Redefinition of subject in selector `' + selector + '`');
@@ -4280,12 +4281,17 @@ var cytoscape;
       
       for(var j = 0; j < query.data.length; j++){
         var data = query.data[j];
-        str += '[' + data.field + clean(data.operator) + clean(data.value) + ']'
+        
+        if( data.value ){
+          str += '[' + data.field + clean(data.operator) + clean(data.value) + ']';
+        } else {
+          str += '[' + clean(data.operator) + data.field + ']';
+        }
       }
 
       for(var j = 0; j < query.meta.length; j++){
         var meta = query.meta[j];
-        str += '{' + meta.field + clean(meta.operator) + clean(meta.value) + '}'
+        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value) + ']]';
       }
       
       for(var j = 0; j < query.colonSelectors.length; j++){
@@ -4337,10 +4343,8 @@ var cytoscape;
   
 })( cytoscape );
 
-;(function($$, window){ 'use strict';
+;(function($$){ 'use strict';
   
-  var isTouch = $$.is.touch();
-
   $$.Style = function( cy ){
 
     if( !(this instanceof $$.Style) ){
@@ -4374,301 +4378,6 @@ var cytoscape;
     }
   };
 
-  // a dummy stylesheet object that doesn't need a reference to the core
-  $$.stylesheet = $$.Stylesheet = function(){
-    if( !(this instanceof $$.Stylesheet) ){
-      return new $$.Stylesheet();
-    }
-
-    this.length = 0;
-  };
-
-  // just store the selector to be parsed later
-  $$.Stylesheet.prototype.selector = function( selector ){
-    var i = this.length++;
-
-    this[i] = {
-      selector: selector,
-      properties: []
-    };
-
-    return this; // chaining
-  };
-
-  // just store the property to be parsed later
-  $$.Stylesheet.prototype.css = function( name, value ){
-    var i = this.length - 1;
-
-    if( $$.is.string(name) ){
-      this[i].properties.push({
-        name: name,
-        value: value
-      });
-    } else if( $$.is.plainObject(name) ){
-      var map = name;
-
-      for( var j = 0; j < $$.style.properties.length; j++ ){
-        var prop = $$.style.properties[j];
-        var mapVal = map[ prop.name ];
-
-        if( mapVal === undefined ){ // also try camel case name
-          mapVal = map[ $$.util.dash2camel(prop.name) ];
-        }
-
-        if( mapVal !== undefined ){
-          var name = prop.name;
-          var value = mapVal;
-
-          this[i].properties.push({
-            name: name,
-            value: value
-          });
-        }
-      }
-    }
-
-    return this; // chaining
-  };
-
-  $$.style.applyFromString = function( style, string ){
-    var remaining = '' + string;
-    var selAndBlockStr;
-    var blockRem;
-    var propAndValStr;
-
-    // remove comments from the style string
-    remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
-
-    function removeSelAndBlockFromRemaining(){
-      // remove the parsed selector and block from the remaining text to parse
-      if( remaining.length > selAndBlockStr.length ){
-        remaining = remaining.substr( selAndBlockStr.length );
-      } else {
-        remaining = '';
-      }
-    }
-
-    function removePropAndValFromRem(){
-      // remove the parsed property and value from the remaining block text to parse
-      if( blockRem.length > propAndValStr.length ){
-        blockRem = blockRem.substr( propAndValStr.length );
-      } else {
-        blockRem = '';
-      }
-    }
-
-    while(true){
-      var nothingLeftToParse = remaining.match(/^\s*$/);
-      if( nothingLeftToParse ){ break; }
-
-      var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
-
-      if( !selAndBlock ){
-        $$.util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
-        break;
-      }
-
-      selAndBlockStr = selAndBlock[0];
-
-      // parse the selector
-      var selectorStr = selAndBlock[1];
-      var selector = new $$.Selector( selectorStr );
-      if( selector._private.invalid ){
-        $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
-
-        // skip this selector and block
-        removeSelAndBlockFromRemaining();
-        continue; 
-      }
-
-      // parse the block of properties and values
-      var blockStr = selAndBlock[2];
-      var invalidBlock = false;
-      blockRem = blockStr;
-      var props = [];
-
-      while(true){
-        var nothingLeftToParse = blockRem.match(/^\s*$/);
-        if( nothingLeftToParse ){ break; }
-
-        var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
-
-        if( !propAndVal ){
-          $$.util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
-          invalidBlock = true;
-          break;
-        }
-
-        propAndValStr = propAndVal[0];
-        var propStr = propAndVal[1];
-        var valStr = propAndVal[2];
-
-        var prop = $$.style.properties[ propStr ];
-        if( !prop ){
-          $$.util.error('Skipping property: Invalid property name in: ' + propAndValStr);
-
-          // skip this property in the block
-          removePropAndValFromRem();
-          continue;
-        }
-
-        var parsedProp = style.parse( propStr, valStr );
-
-        if( !parsedProp ){
-          $$.util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
-
-          // skip this property in the block
-          removePropAndValFromRem();
-          continue;
-        }
-
-        props.push({
-          name: propStr,
-          val: valStr
-        });
-        removePropAndValFromRem();
-      }
-
-      if( invalidBlock ){
-        removeSelAndBlockFromRemaining();
-        break;
-      }
-
-      // put the parsed block in the style
-      style.selector( selectorStr );
-      for( var i = 0; i < props.length; i++ ){
-        var prop = props[i];
-        style.css( prop.name, prop.val );
-      }
-
-      removeSelAndBlockFromRemaining();
-    }
-
-    return style;
-  };
-
-  $$.style.fromString = function( cy, string ){
-    var style = new $$.Style(cy);
-    
-    $$.style.applyFromString( style, string );
-
-    return style;
-  };
-
-  $$.styfn.fromString = function( string ){
-    var style = this;
-
-    style.resetToDefault();
-
-    $$.style.applyFromString( style, string );
-
-    return style;
-  };
-
-  $$.style.applyFromJson = function( style, json ){
-    for( var i = 0; i < json.length; i++ ){
-      var context = json[i];
-      var selector = context.selector;
-      var props = context.css;
-
-      style.selector(selector); // apply selector
-
-      for( var name in props ){
-        var value = props[name];
-
-        style.css( name, value ); // apply property
-      }
-    }
-
-    return style;
-  };
-
-  // static function
-  $$.style.fromJson = function( cy, json ){
-    var style = new $$.Style(cy);
-
-    $$.style.applyFromJson( style, json );
-
-    return style;
-  };
-
-  $$.styfn.fromJson = function( json ){
-    var style = this;
-
-    style.resetToDefault();
-
-    $$.style.applyFromJson( style, json );
-
-    return style;
-  };
-
-  // get json from style api
-  $$.styfn.json = function(){
-    var json = [];
-
-    for( var i = 0; i < this.length; i++ ){
-      var cxt = this[i];
-      var selector = cxt.selector;
-      var props = cxt.properties;
-      var css = {};
-
-      for( var j = 0; j < props.length; j++ ){
-        var prop = props[j];
-        css[ prop.name ] = prop.strValue;
-      }
-
-      json.push({
-        selector: !selector ? 'core' : selector.toString(),
-        css: css
-      });
-    }
-
-    return json;
-  };
-
-  // generate a real style object from the dummy stylesheet
-  $$.Stylesheet.prototype.generateStyle = function( cy ){
-    var style = new $$.Style(cy);
-
-    for( var i = 0; i < this.length; i++ ){
-      var context = this[i];
-      var selector = context.selector;
-      var props = context.properties;
-
-      style.selector(selector); // apply selector
-
-      for( var j = 0; j < props.length; j++ ){
-        var prop = props[j];
-
-        style.css( prop.name, prop.value ); // apply property
-      }
-    }
-
-    return style;
-  };
-
-  $$.Stylesheet.prototype.assignToStyle = function( style, addDefaultStylesheet ){
-    style.clear();
-
-    if( addDefaultStylesheet || addDefaultStylesheet === undefined ){
-      style.addDefaultStylesheet();
-    }
-
-    for( var i = 0; i < this.length; i++ ){
-      var context = this[i];
-      var selector = context.selector;
-      var props = context.properties;
-
-      style.selector(selector); // apply selector
-
-      for( var j = 0; j < props.length; j++ ){
-        var prop = props[j];
-
-        style.css( prop.name, prop.value ); // apply property
-      }
-    }
-  };
-
   (function(){
     var number = $$.util.regex.number;
     var rgba = $$.util.regex.rgbaNoBackRefs;
@@ -4680,6 +4389,7 @@ var cytoscape;
 
     // each visual style property has a type and needs to be validated according to it
     $$.style.types = {
+      time: { number: true, min: 0, units: 's' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
@@ -4710,7 +4420,8 @@ var cytoscape;
       layoutData: { mapping: true, regex: data('layoutData') },
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
-      url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' }
+      url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
+      propList: { propList: true }
     };
 
     // define visual style properties
@@ -4740,6 +4451,9 @@ var cytoscape;
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
+      { name: 'transition-property', type: t.propList },
+      { name: 'transition-duration', type: t.time },
+      { name: 'transition-delay', type: t.time },
 
       // these are just for nodes
       { name: 'background-color', type: t.color },
@@ -4802,6 +4516,8 @@ var cytoscape;
       { name: 'line-style', type: t.lineStyle },
       { name: 'line-color', type: t.color },
       { name: 'control-point-step-size', type: t.size },
+      { name: 'control-point-distance', type: t.size },
+      { name: 'control-point-weight', type: t.zeroOneNumber },
       { name: 'curve-style', type: t.curveStyle },
 
       // these are just for the core
@@ -4872,6 +4588,9 @@ var cytoscape;
           'overlay-opacity': 0,
           'overlay-color': '#000',
           'overlay-padding': 10,
+          'transition-property': 'none',
+          'transition-duration': 0,
+          'transition-delay': 0,
 
           // node props
           'background-color': '#888',
@@ -4929,6 +4648,7 @@ var cytoscape;
           'line-style': 'solid',
           'line-color': '#bbb',
           'control-point-step-size': 40,
+          'control-point-weight': 0.5,
           'curve-style': 'bezier'
         })
       .selector('$node > node') // compound (parent) node properties
@@ -4961,7 +4681,7 @@ var cytoscape;
           'panning-cursor': 'grabbing',
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
-          'active-bg-size': isTouch ? 40 : 15
+          'active-bg-size': $$.is.touch() ? 40 : 15
         })
     ;
   };
@@ -5168,17 +4888,51 @@ var cytoscape;
         value: value,
         strValue: '' + value + (units ? units : ''),
         units: units,
-        bypass: propIsBypass,
-        pxValue: type.unitless || units === "%" ?
-          undefined
-          :
-          ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) )
+        bypass: propIsBypass 
       };
+
+      if( type.unitless || (units !== 'px' && units !== 'em') ){
+        // then pxValue does not apply
+      } else {
+        ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      }
 
       return ret;
 
+    } else if( type.propList ) {
+
+      var props = [];
+      var propsStr = '' + value;      
+ 
+      if( propsStr === 'none' ){
+        // leave empty
+
+      } else { // go over each prop
+
+        var propsSplit = propsStr.split(',');
+        for( var i = 0; i < propsSplit.length; i++ ){
+          var propName = $$.util.trim( propsSplit[i] );
+
+          if( $$.style.properties[propName] ){
+            props.push( propName );
+          }
+        }
+
+        if( props.length === 0 ){ return null; }
+
+      }
+
+      return {
+        name: name,
+        value: props,
+        strValue: props.length === 0 ? 'none' : props.join(', '),
+        bypass: propIsBypass
+      };
+
     } else if( type.color ){
       var tuple = $$.util.color2tuple( value );
+
+      if( !tuple ){ return null; }
 
       return {
         name: name,
@@ -5200,6 +4954,8 @@ var cytoscape;
           };
         }
       }
+
+      return null;
 
     } else if( type.regex ){
       var regex = new RegExp( type.regex ); // make a regex from the type
@@ -5229,44 +4985,6 @@ var cytoscape;
       return null; // not a type we can handle
     }
 
-  };
-
-  // gets what an em size corresponds to in pixels relative to a dom element
-  $$.styfn.getEmSizeInPixels = function(){
-    var cy = this._private.cy;
-    var domElement = cy.container();
-
-    if( window && domElement && window.getComputedStyle ){
-      var pxAsStr = window.getComputedStyle(domElement).getPropertyValue('font-size');
-      var px = parseFloat( pxAsStr );
-      return px;
-    } else {
-      return 1; // in case we're running outside of the browser
-    }
-  };
-
-  // gets css property from the core container
-  $$.styfn.containerCss = function( propName ){
-    var cy = this._private.cy;
-    var domElement = cy.container();
-
-    if( window && domElement && window.getComputedStyle ){
-      return window.getComputedStyle(domElement).getPropertyValue( propName );
-    }
-  };
-
-  $$.styfn.containerProperty = function( propName ){
-    var propStr = this.containerCss( propName );
-    var prop = this.parse( propName, propStr );
-    return prop;
-  };
-
-  $$.styfn.containerPropertyAsString = function( propName ){
-    var prop = this.containerProperty( propName );
-
-    if( prop ){
-      return prop.strValue;
-    }
   };
 
   // create a new context from the specified selector string and switch to that context
@@ -5318,7 +5036,7 @@ var cytoscape;
   };
 
   // add a single css rule to the current context
-  $$.styfn.cssRule = function( name, value ){
+  $$.styfn.cssRule = function( name, value ){ 
     // name-value pair
     var property = this.parse( name, value );
 
@@ -5335,6 +5053,125 @@ var cytoscape;
     }
 
     return this; // chaining
+  };
+
+})( cytoscape );
+;(function($$){ 'use strict';
+
+  // (potentially expensive calculation)
+  // apply the style to the element based on
+  // - its bypass
+  // - what selectors match it
+  $$.styfn.apply = function( eles ){
+    var self = this;
+
+    for( var ie = 0; ie < eles.length; ie++ ){
+      var ele = eles[ie];
+      var addedCxts = [];
+      var removedCxts = [];
+
+      if( self._private.newStyle ){
+        ele._private.styleCxts = [];
+        ele._private.style = {};
+      }
+
+      // console.log('APPLYING STYLESHEET\n--\n');
+
+      // apply the styles
+      for( var i = 0; i < this.length; i++ ){
+        var context = this[i];
+        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
+        var props = context.properties;
+        var newCxt = !ele._private.styleCxts[i];
+
+        // console.log(i + ' : looking at selector: ' + context.selector);
+
+        if( contextSelectorMatches ){ // then apply its properties
+
+          // apply the properties in the context
+          
+          for( var j = 0; j < props.length; j++ ){ // for each prop
+            var prop = props[j];
+            var currentEleProp = ele._private.style[prop.name];
+            var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
+            var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
+
+            //if(prop.mapped) debugger;
+
+            if( newCxt || needToUpdateCxtMapping ){
+              // console.log(i + ' + MATCH: applying property: ' + prop.name);
+              this.applyParsedProperty( ele, prop, context );
+            }
+          }
+
+          // keep a note that this context matches
+          ele._private.styleCxts[i] = context;
+
+          if( self._private.newStyle === false && newCxt ){
+            addedCxts.push( context );
+          }
+          
+        } else {
+
+          // roll back style cxts that don't match now
+          if( ele._private.styleCxts[i] ){
+            // console.log(i + ' x MISS: rolling back context');
+            this.rollBackContext( ele, context );
+            removedCxts.push( context );
+          }
+
+          delete ele._private.styleCxts[i];
+        }
+      } // for context
+
+      if( addedCxts.length > 0 || removedCxts.length > 0 ){
+        this.updateTransitions( ele, addedCxts, removedCxts );
+      }
+
+    } // for elements
+
+    self._private.newStyle = false;
+  };
+
+  // when a context's selector no longer matches the ele, roll back the context on the ele
+  // (cheaper than having to recalc from the beginning)
+  $$.styfn.rollBackContext = function( ele, context ){
+    for( var j = 0; j < context.properties.length; j++ ){ // for each prop
+      var prop = context.properties[j];
+      var eleProp = ele._private.style[ prop.name ];
+
+      // because bypasses do not store prevs, look at the bypassed property
+      if( eleProp.bypassed ){
+        eleProp = eleProp.bypassed;
+      }
+
+      var first = true;
+      var lastEleProp;
+      var l = 0;
+      while( eleProp.prev ){
+        var prev = eleProp.prev;
+
+        if( eleProp.context === context ){
+
+          if( first ){
+            ele._private.style[ prop.name ] = prev;
+          } else if( lastEleProp ){
+            lastEleProp.prev = prev;
+          }
+          
+        }
+
+        lastEleProp = eleProp;
+        eleProp = prev;
+        first = false;
+        l++;
+
+        // in case we have a problematic prev list
+        // if( l >= 100 ){
+        //   debugger;
+        // }
+      }
+    }
   };
 
   // apply a property to the style (for internal use)
@@ -5518,195 +5355,12 @@ var cytoscape;
     return true;
   };
 
-  $$.styfn.rollBackContext = function( ele, context ){
-    for( var j = 0; j < context.properties.length; j++ ){ // for each prop
-      var prop = context.properties[j];
-      var eleProp = ele._private.style[ prop.name ];
-
-      // because bypasses do not store prevs, look at the bypassed property
-      if( eleProp.bypassed ){
-        eleProp = eleProp.bypassed;
-      }
-
-      var first = true;
-      var lastEleProp;
-      var l = 0;
-      while( eleProp.prev ){
-        var prev = eleProp.prev;
-
-        if( eleProp.context === context ){
-
-          if( first ){
-            ele._private.style[ prop.name ] = prev;
-          } else if( lastEleProp ){
-            lastEleProp.prev = prev;
-          }
-          
-        }
-
-        lastEleProp = eleProp;
-        eleProp = prev;
-        first = false;
-        l++;
-
-        // in case we have a problematic prev list
-        // if( l >= 100 ){
-        //   debugger;
-        // }
-      }
-    }
-  };
-
-
-  // (potentially expensive calculation)
-  // apply the style to the element based on
-  // - its bypass
-  // - what selectors match it
-  $$.styfn.apply = function( eles ){
-    var self = this;
-
-    for( var ie = 0; ie < eles.length; ie++ ){
-      var ele = eles[ie];
-
-      if( self._private.newStyle ){
-        ele._private.styleCxts = [];
-        ele._private.style = {};
-      }
-
-      // console.log('APPLYING STYLESHEET\n--\n');
-
-      // apply the styles
-      for( var i = 0; i < this.length; i++ ){
-        var context = this[i];
-        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
-        var props = context.properties;
-
-        // console.log(i + ' : looking at selector: ' + context.selector);
-
-        if( contextSelectorMatches ){ // then apply its properties
-
-          // apply the properties in the context
-          
-          for( var j = 0; j < props.length; j++ ){ // for each prop
-            var prop = props[j];
-            var newCxt = !ele._private.styleCxts[i];
-            var currentEleProp = ele._private.style[prop.name];
-            var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
-            var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
-
-            //if(prop.mapped) debugger;
-
-            if( newCxt || needToUpdateCxtMapping ){
-              // console.log(i + ' + MATCH: applying property: ' + prop.name);
-              this.applyParsedProperty( ele, prop, context );
-            }
-          }
-
-          // keep a note that this context matches
-          ele._private.styleCxts[i] = context;
-        } else {
-
-          // roll back style cxts that don't match now
-          if( ele._private.styleCxts[i] ){
-            // console.log(i + ' x MISS: rolling back context');
-            this.rollBackContext( ele, context );
-          }
-
-          delete ele._private.styleCxts[i];
-        }
-      } // for context
-
-    } // for elements
-
-    self._private.newStyle = false;
-  };
-
   // updates the visual style for all elements (useful for manual style modification after init)
   $$.styfn.update = function(){
     var cy = this._private.cy;
     var eles = cy.elements();
 
     eles.updateStyle();
-  };
-
-  // gets the rendered style for an element
-  $$.styfn.getRenderedStyle = function( ele ){
-    var ele = ele[0]; // insure it's an element
-
-    if( ele ){
-      var rstyle = {};
-      var style = ele._private.style;
-      var cy = this._private.cy;
-      var zoom = cy.zoom();
-
-      for( var i = 0; i < $$.style.properties.length; i++ ){
-        var prop = $$.style.properties[i];
-        var styleProp = style[ prop.name ];
-
-        if( styleProp ){
-          var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + 'px';
-          rstyle[ prop.name ] = val;
-          rstyle[ $$.util.dash2camel(prop.name) ] = val;
-        }
-      }
-
-      return rstyle;
-    }
-  };
-
-  // gets the raw style for an element
-  $$.styfn.getRawStyle = function( ele ){
-    var ele = ele[0]; // insure it's an element
-
-    if( ele ){
-      var rstyle = {};
-      var style = ele._private.style;
-
-      for( var i = 0; i < $$.style.properties.length; i++ ){
-        var prop = $$.style.properties[i];
-        var styleProp = style[ prop.name ];
-
-        if( styleProp ){
-          rstyle[ prop.name ] = styleProp.strValue;
-          rstyle[ $$.util.dash2camel(prop.name) ] = styleProp.strValue;
-        }
-      }
-
-      return rstyle;
-    }
-  };
-
-  // gets the value style for an element (useful for things like animations)
-  $$.styfn.getValueStyle = function( ele ){
-    var rstyle, style;
-
-    if( $$.is.element(ele) ){
-      rstyle = {};
-      style = ele._private.style;    
-    } else {
-      rstyle = {};
-      style = ele; // just passed the style itself
-    }
-
-    if( style ){
-      for( var i = 0; i < $$.style.properties.length; i++ ){
-        var prop = $$.style.properties[i];
-        var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
-
-        if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
-          styleProp = this.parse(prop.name, styleProp);
-        }
-
-        if( styleProp ){
-          var val = styleProp.value === undefined ? styleProp : styleProp.value;
-
-          rstyle[ prop.name ] = val;
-          rstyle[ $$.util.dash2camel(prop.name) ] = val;
-        }
-      }
-    }
-
-    return rstyle;
   };
 
   // just update the functional properties (i.e. mappings) in the elements'
@@ -5727,6 +5381,118 @@ var cytoscape;
       }
     }
   };
+
+  $$.styfn.updateTransitions = function( ele, addedCxts, removedCxts ){
+    var self = this;
+    var style = ele._private.style;
+
+    var props = style['transition-property'].value;
+    var duration = style['transition-duration'].value * 1000;
+    var delay = style['transition-delay'].value * 1000;
+    var css = {};
+
+    if( props.length > 0 && duration > 0 ){
+
+      // build up the style to animate towards
+      var anyPrev = false;
+      for( var i = 0; i < props.length; i++ ){
+        var prop = props[i];
+        var styProp = style[ prop ];
+        var fromProp = styProp.prev;
+        var toProp = style[ prop ];
+        var diff = false;
+        var fromAddedCxt = false;
+        var fromRemovedCxt = false;
+
+        // see if the prop was added from one of the contexts
+        for( var j = 0; j < addedCxts.length; j++ ){
+          var cxt = addedCxts[j];
+
+          if( cxt === toProp.context ){
+            fromAddedCxt = true;
+            break;
+          }
+        } 
+
+        // see if the prop was removed from one of the contexts
+        for( var j = removedCxts.length - 1; j >= 0; j-- ){ // reverse order b/c last has precedence
+          var cxt = removedCxts[j];
+
+          for( var k = 0; k < cxt.properties.length; k++ ){
+            var cProp = cxt.properties[k];
+
+            if( cProp.name === prop ){
+              fromRemovedCxt = true;
+              fromProp = cProp;
+              break;
+            }
+          }
+
+          if( fromRemovedCxt ){ break; }
+        }
+
+        // if not from changed context, then it's not a state transition but just an overriding part of the stylesheet
+        if( !fromAddedCxt && !fromRemovedCxt ){ continue; }
+
+        // consider px values
+        if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
+          diff = fromProp.pxValue !== toProp.pxValue;
+
+        // consider numerical values
+        } else if( $$.is.number( fromProp.value ) && $$.is.number( toProp.value ) ){
+          diff = fromProp.value !== toProp.value;
+
+        // consider colour values
+        } else if( $$.is.array( fromProp.value ) && $$.is.array( toProp.value ) ){
+          diff = fromProp.value[0] !== toProp.value[0]
+            || fromProp.value[1] !== toProp.value[1]
+            || fromProp.value[2] !== toProp.value[2]
+          ;
+        }
+
+          // the previous value is good for an animation only if it's different
+        if( diff ){
+          css[ prop ] = toProp.strValue; // to val
+          this.applyBypass(ele, prop, fromProp.strValue); // from val
+          anyPrev = true;
+        }
+        
+      } // end if props allow ani
+
+      // can't transition if there's nothing previous to transition from
+      if( !anyPrev ){ return; }
+      
+      ele._private.transitioning = true;
+
+      ele.stop();
+
+      if( delay > 0 ){
+        ele.delay( delay );
+      }
+
+      ele.animate({
+        css: css
+      }, {
+        duration: duration,
+        queue: false,
+        complete: function(){ 
+          self.removeAllBypasses( ele );
+
+          ele._private.transitioning = false;
+        }
+      });
+
+    } else if( ele._private.transitioning ){
+      ele.stop();
+
+      this.removeAllBypasses( ele );
+
+      ele._private.transitioning = false;
+    }
+  }; 
+
+})( cytoscape );
+;(function($$){ 'use strict';
 
   // bypasses are applied to an existing style on an element, and just tacked on temporarily
   // returns true iff application was successful for at least 1 specified property
@@ -5812,9 +5578,416 @@ var cytoscape;
     }
   };
 
+})( cytoscape );
+;(function($$, window){ 'use strict';
+
+  // gets what an em size corresponds to in pixels relative to a dom element
+  $$.styfn.getEmSizeInPixels = function(){
+    var cy = this._private.cy;
+    var domElement = cy.container();
+
+    if( window && domElement && window.getComputedStyle ){
+      var pxAsStr = window.getComputedStyle(domElement).getPropertyValue('font-size');
+      var px = parseFloat( pxAsStr );
+      return px;
+    } else {
+      return 1; // in case we're running outside of the browser
+    }
+  };
+
+  // gets css property from the core container
+  $$.styfn.containerCss = function( propName ){
+    var cy = this._private.cy;
+    var domElement = cy.container();
+
+    if( window && domElement && window.getComputedStyle ){
+      return window.getComputedStyle(domElement).getPropertyValue( propName );
+    }
+  };
+
+  $$.styfn.containerProperty = function( propName ){
+    var propStr = this.containerCss( propName );
+    var prop = this.parse( propName, propStr );
+    return prop;
+  };
+
+  $$.styfn.containerPropertyAsString = function( propName ){
+    var prop = this.containerProperty( propName );
+
+    if( prop ){
+      return prop.strValue;
+    }
+  };
 
 })( cytoscape, typeof window === 'undefined' ? null : window );
+;(function($$){ 'use strict';
 
+  // gets the rendered style for an element
+  $$.styfn.getRenderedStyle = function( ele ){
+    var ele = ele[0]; // insure it's an element
+
+    if( ele ){
+      var rstyle = {};
+      var style = ele._private.style;
+      var cy = this._private.cy;
+      var zoom = cy.zoom();
+
+      for( var i = 0; i < $$.style.properties.length; i++ ){
+        var prop = $$.style.properties[i];
+        var styleProp = style[ prop.name ];
+
+        if( styleProp ){
+          var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + 'px';
+          rstyle[ prop.name ] = val;
+          rstyle[ $$.util.dash2camel(prop.name) ] = val;
+        }
+      }
+
+      return rstyle;
+    }
+  };
+
+  // gets the raw style for an element
+  $$.styfn.getRawStyle = function( ele ){
+    var ele = ele[0]; // insure it's an element
+
+    if( ele ){
+      var rstyle = {};
+      var style = ele._private.style;
+
+      for( var i = 0; i < $$.style.properties.length; i++ ){
+        var prop = $$.style.properties[i];
+        var styleProp = style[ prop.name ];
+
+        if( styleProp ){
+          rstyle[ prop.name ] = styleProp.strValue;
+          rstyle[ $$.util.dash2camel(prop.name) ] = styleProp.strValue;
+        }
+      }
+
+      return rstyle;
+    }
+  };
+
+  // gets the value style for an element (useful for things like animations)
+  $$.styfn.getValueStyle = function( ele ){
+    var rstyle, style;
+
+    if( $$.is.element(ele) ){
+      rstyle = {};
+      style = ele._private.style;    
+    } else {
+      rstyle = {};
+      style = ele; // just passed the style itself
+    }
+
+    if( style ){
+      for( var i = 0; i < $$.style.properties.length; i++ ){
+        var prop = $$.style.properties[i];
+        var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
+
+        if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
+          styleProp = this.parse(prop.name, styleProp);
+        }
+
+        if( styleProp ){
+          var val = styleProp.value === undefined ? styleProp : styleProp.value;
+
+          rstyle[ prop.name ] = val;
+          rstyle[ $$.util.dash2camel(prop.name) ] = val;
+        }
+      }
+    }
+
+    return rstyle;
+  };
+
+})( cytoscape );
+;(function($$){ 'use strict';
+
+  $$.style.applyFromJson = function( style, json ){
+    for( var i = 0; i < json.length; i++ ){
+      var context = json[i];
+      var selector = context.selector;
+      var props = context.css;
+
+      style.selector(selector); // apply selector
+
+      for( var name in props ){
+        var value = props[name];
+
+        style.css( name, value ); // apply property
+      }
+    }
+
+    return style;
+  };
+
+  // static function
+  $$.style.fromJson = function( cy, json ){
+    var style = new $$.Style(cy);
+
+    $$.style.applyFromJson( style, json );
+
+    return style;
+  };
+
+  // accessible cy.style() function
+  $$.styfn.fromJson = function( json ){
+    var style = this;
+
+    style.resetToDefault();
+
+    $$.style.applyFromJson( style, json );
+
+    return style;
+  };
+
+  // get json from cy.style() api
+  $$.styfn.json = function(){
+    var json = [];
+
+    for( var i = 0; i < this.length; i++ ){
+      var cxt = this[i];
+      var selector = cxt.selector;
+      var props = cxt.properties;
+      var css = {};
+
+      for( var j = 0; j < props.length; j++ ){
+        var prop = props[j];
+        css[ prop.name ] = prop.strValue;
+      }
+
+      json.push({
+        selector: !selector ? 'core' : selector.toString(),
+        css: css
+      });
+    }
+
+    return json;
+  };
+
+})( cytoscape );
+;(function($$){ 'use strict';
+
+  $$.style.applyFromString = function( style, string ){
+    var remaining = '' + string;
+    var selAndBlockStr;
+    var blockRem;
+    var propAndValStr;
+
+    // remove comments from the style string
+    remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
+
+    function removeSelAndBlockFromRemaining(){
+      // remove the parsed selector and block from the remaining text to parse
+      if( remaining.length > selAndBlockStr.length ){
+        remaining = remaining.substr( selAndBlockStr.length );
+      } else {
+        remaining = '';
+      }
+    }
+
+    function removePropAndValFromRem(){
+      // remove the parsed property and value from the remaining block text to parse
+      if( blockRem.length > propAndValStr.length ){
+        blockRem = blockRem.substr( propAndValStr.length );
+      } else {
+        blockRem = '';
+      }
+    }
+
+    while(true){
+      var nothingLeftToParse = remaining.match(/^\s*$/);
+      if( nothingLeftToParse ){ break; }
+
+      var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
+
+      if( !selAndBlock ){
+        $$.util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
+        break;
+      }
+
+      selAndBlockStr = selAndBlock[0];
+
+      // parse the selector
+      var selectorStr = selAndBlock[1];
+      var selector = new $$.Selector( selectorStr );
+      if( selector._private.invalid ){
+        $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
+
+        // skip this selector and block
+        removeSelAndBlockFromRemaining();
+        continue; 
+      }
+
+      // parse the block of properties and values
+      var blockStr = selAndBlock[2];
+      var invalidBlock = false;
+      blockRem = blockStr;
+      var props = [];
+
+      while(true){
+        var nothingLeftToParse = blockRem.match(/^\s*$/);
+        if( nothingLeftToParse ){ break; }
+
+        var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
+
+        if( !propAndVal ){
+          $$.util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
+          invalidBlock = true;
+          break;
+        }
+
+        propAndValStr = propAndVal[0];
+        var propStr = propAndVal[1];
+        var valStr = propAndVal[2];
+
+        var prop = $$.style.properties[ propStr ];
+        if( !prop ){
+          $$.util.error('Skipping property: Invalid property name in: ' + propAndValStr);
+
+          // skip this property in the block
+          removePropAndValFromRem();
+          continue;
+        }
+
+        var parsedProp = style.parse( propStr, valStr );
+
+        if( !parsedProp ){
+          $$.util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
+
+          // skip this property in the block
+          removePropAndValFromRem();
+          continue;
+        }
+
+        props.push({
+          name: propStr,
+          val: valStr
+        });
+        removePropAndValFromRem();
+      }
+
+      if( invalidBlock ){
+        removeSelAndBlockFromRemaining();
+        break;
+      }
+
+      // put the parsed block in the style
+      style.selector( selectorStr );
+      for( var i = 0; i < props.length; i++ ){
+        var prop = props[i];
+        style.css( prop.name, prop.val );
+      }
+
+      removeSelAndBlockFromRemaining();
+    }
+
+    return style;
+  };
+
+  $$.style.fromString = function( cy, string ){
+    var style = new $$.Style(cy);
+    
+    $$.style.applyFromString( style, string );
+
+    return style;
+  };
+
+  $$.styfn.fromString = function( string ){
+    var style = this;
+
+    style.resetToDefault();
+
+    $$.style.applyFromString( style, string );
+
+    return style;
+  };
+
+})( cytoscape );
+
+;(function($$){ 'use strict';
+
+  // a dummy stylesheet object that doesn't need a reference to the core
+  // (useful for init)
+  $$.stylesheet = $$.Stylesheet = function(){
+    if( !(this instanceof $$.Stylesheet) ){
+      return new $$.Stylesheet();
+    }
+
+    this.length = 0;
+  };
+
+  // just store the selector to be parsed later
+  $$.Stylesheet.prototype.selector = function( selector ){
+    var i = this.length++;
+
+    this[i] = {
+      selector: selector,
+      properties: []
+    };
+
+    return this; // chaining
+  };
+
+  // just store the property to be parsed later
+  $$.Stylesheet.prototype.css = function( name, value ){
+    var i = this.length - 1;
+
+    if( $$.is.string(name) ){
+      this[i].properties.push({
+        name: name,
+        value: value
+      });
+    } else if( $$.is.plainObject(name) ){
+      var map = name;
+
+      for( var j = 0; j < $$.style.properties.length; j++ ){
+        var prop = $$.style.properties[j];
+        var mapVal = map[ prop.name ];
+
+        if( mapVal === undefined ){ // also try camel case name
+          mapVal = map[ $$.util.dash2camel(prop.name) ];
+        }
+
+        if( mapVal !== undefined ){
+          var name = prop.name;
+          var value = mapVal;
+
+          this[i].properties.push({
+            name: name,
+            value: value
+          });
+        }
+      }
+    }
+
+    return this; // chaining
+  };
+
+  // generate a real style object from the dummy stylesheet
+  $$.Stylesheet.prototype.generateStyle = function( cy ){
+    var style = new $$.Style(cy);
+
+    for( var i = 0; i < this.length; i++ ){
+      var context = this[i];
+      var selector = context.selector;
+      var props = context.properties;
+
+      style.selector(selector); // apply selector
+
+      for( var j = 0; j < props.length; j++ ){
+        var prop = props[j];
+
+        style.css( prop.name, prop.value ); // apply property
+      }
+    }
+
+    return style;
+  };
+
+})( cytoscape );
 ;(function($$, window){ 'use strict';
 
   var isTouch = $$.is.touch();
@@ -8007,52 +8180,25 @@ var cytoscape;
       var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
+      var knownDist = {};
 
       var edges = this.edges().not(':loop');
       var nodes = this.nodes();
       var Q = [];
+
       for( var i = 0; i < nodes.length; i++ ){
-        dist[ nodes[i].id() ] = Infinity;
+        dist[ nodes[i].id() ] = nodes[i].id() === source.id() ? 0 : Infinity;
         Q.push( nodes[i] );
       }
 
-      dist[ source.id() ] = 0;
-
-      var remove = function(Q, node){
-        for( var i = 0; i < Q.length; i++ ){
-          var n = Q[i];
-
-          if( n.id() === node.id() ){
-            Q.splice(i, 1);
-            return;
-          }
-        }
+      var valueFn = function(node) {
+        return dist[ node.id() ];
       };
-
-      var smallestDistNode = function(Q){
-        var smallest = Infinity;
-        var index;
-        var node;
-
-        for( var i = 0; i < Q.length; i++ ){
-          var n = Q[i];
-          var id = n.id();
-          var d = dist[ id ];
-
-          if( d < smallest || !node ){
-            smallest = d;
-            index = i;
-            node = n;
-          }
-        }
-
-        return {
-          index: index,
-          node: node,
-          dist: smallest
-        };
-      };
-
+      
+      Q = new $$.Collection(cy, Q);
+    
+      var heap = $$.Minheap(cy, Q, valueFn);
+    
       var distBetween = function(u, v){
         var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
         var smallestDistance = Infinity;
@@ -8074,28 +8220,15 @@ var cytoscape;
         };
       };
 
-      var decreaseKey = function(Q, v){
-        for( var i = 0; i < Q.length; i++ ){
-          var q = Q[i];
-
-          if( q.id() === v.id() ){
-            if( i > 0 ){
-              Q.splice(i, 1);
-              Q.splice(i - 1, 0, v);
-            }
-            break;
-          }
-        }
-      };
-
-      while( Q.length !== 0 ){
-        var smallestDist = smallestDistNode(Q);
-        var u = smallestDist.node;
-        var uid = u.id();
-
-        remove(Q, u);
-
-        if( dist[uid] === Math.Infinite ){
+      while(heap.size() > 0){
+        var smallestEl = heap.pop(),
+        smalletsDist = smallestEl.value,
+        uid = smallestEl.id,
+        u = cy.getElementById(uid);
+    
+        knownDist[uid] = smalletsDist;
+      
+        if( smalletsDist === Math.Infinite ){
           break;
         }
 
@@ -8105,24 +8238,23 @@ var cytoscape;
           var vid = v.id();
           var vDist = distBetween(u, v);
 
-          var alt = dist[ uid ] + vDist.dist;
+          var alt = smalletsDist + vDist.dist;
 
-          if( alt < dist[vid] ){
-            dist[vid] = alt;
+          if( alt < heap.getValueById(vid) ){
+            heap.edit(vid, alt);
             prev[ vid ] = {
               node: u,
               edge: vDist.edge
             };
-            decreaseKey(Q, v);
           }
-        }
-      }
+        } // for 
+      } // while
 
       return {
         distanceTo: function(node){
           var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
 
-          return dist[ target.id() ];
+          return knownDist[ target.id() ];
         },
 
         pathTo: function(node){
@@ -8273,6 +8405,10 @@ var cytoscape;
         // clear the queue of future animations
         if( clearQueue ){
           self._private.animation.queue = [];
+        }
+
+        if( !jumpToEnd ){
+          self._private.animation.current = [];
         }
       }
       
@@ -9621,7 +9757,7 @@ var cytoscape;
           style.applyBypass( this, name, value );
 
           var updatedCompounds = this.updateCompoundBounds();
-        	this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+          this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -10167,6 +10303,362 @@ var cytoscape;
 
   
 })( cytoscape );
+;(function ($$) {
+  "use strict";
+
+  /*  Min and Max heap predefaults */
+  
+  $$.Minheap = function (cy, eles, valueFn) {
+    return new $$.Heap(cy, eles, $$.Heap.minHeapComparator, valueFn);
+  };
+
+  $$.Maxheap = function (cy, eles, valueFn) {
+    return new $$.Heap(cy, eles, $$.Heap.maxHeapComparator, valueFn);
+  };
+  
+  $$.Heap = function (cy, eles, comparator, valueFn) {
+    if (typeof comparator === "undefined" || typeof eles === "undefined") {
+      return;
+    }
+    
+    if (typeof valueFn === "undefined") {
+      valueFn = $$.Heap.idFn;
+    }
+
+    var sourceHeap = [],
+      pointers = {},
+      elements = [],
+      i = 0,
+      id,
+      heap,
+      elesLen;
+
+    eles = this.getArgumentAsCollection(eles, cy);
+    elesLen = eles.length;
+
+    for (i = 0; i < elesLen; i += 1) {
+      sourceHeap.push(valueFn.call(cy, eles[i], i, eles));
+
+      id = eles[i].id();
+      
+      if (pointers.hasOwnProperty(id)) {
+        throw "ERROR: Multiple items with the same id found: " + id;
+      }
+      
+      pointers[id] = i;
+      elements.push(id);
+    }
+
+    this._private = {
+      cy: cy,
+      heap: sourceHeap,
+      pointers: pointers,
+      elements: elements,
+      comparator: comparator,
+      extractor: valueFn,
+      length: elesLen
+    };
+
+    for (i = Math.floor(elesLen / 2); i >= 0; i -= 1) {
+      heap = this.heapify(i);
+    }
+
+    return heap;
+  };
+
+  /* static methods */
+  $$.Heap.idFn = function (node) {
+    return node.id();
+  };
+
+  $$.Heap.minHeapComparator = function (a, b) {
+    return a >= b;
+  };
+
+  $$.Heap.maxHeapComparator = function (a, b) {
+    return a <= b;
+  };
+
+  /* object methods */
+  $$.Heap.prototype.size = function () {
+    return this._private.length;
+  };
+
+  $$.Heap.prototype.getArgumentAsCollection = function (eles, cy) {
+    var result;
+    if(typeof cy === "undefined") {
+      cy = this._private.cy;
+    }
+
+    if ($$.is.elementOrCollection(eles)) {
+      result = eles;
+
+    } else {
+      var resultArray = [],
+        sourceEles = [].concat.apply([], [eles]);
+
+      for (var i = 0; i < sourceEles.length; i++) {
+        var id = sourceEles[i],
+          ele = cy.getElementById(id);
+
+        if(ele.length > 0) {
+          resultArray.push(ele);
+        }
+      }
+
+      result = new $$.Collection(cy, resultArray);
+    }
+
+    return result;
+  };
+
+  $$.Heap.prototype.isHeap = function () {
+    var array = this._private.heap,
+      arrlen = array.length,
+      i,
+      left,
+      right,
+      lCheck,
+      rCheck,
+      comparator = this._private.comparator;
+
+    for (i = 0; i < arrlen; i += 1) {
+      left = 2 * i + 1;
+      right = left + 1;
+      lCheck = left < arrlen ? comparator(array[left], array[i]) : true;
+      rCheck = right < arrlen ? comparator(array[right], array[i]) : true;
+
+      if (!lCheck || !rCheck) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  $$.Heap.prototype.heapSwap = function (i, j) {
+    var heap = this._private.heap,
+      pointers = this._private.pointers,
+      elements = this._private.elements,
+      swapValue = heap[i],
+      swapElems = elements[i],
+      idI = elements[i],
+      idJ = elements[j];
+
+    heap[i] = heap[j];
+    elements[i] = elements[j];
+
+    pointers[idI] = j;
+    pointers[idJ] = i;
+
+    heap[j] = swapValue;
+    elements[j] = swapElems;
+  };
+
+  $$.Heap.prototype.heapify = function (i, rootToLeaf) {
+    var treeLen = 0,
+      condHeap = false,
+      array,
+      pointers,
+      current,
+      left,
+      right,
+      best,
+      tmp,
+      comparator,
+      parent;
+    
+    if (typeof rootToLeaf === "undefined") {
+      rootToLeaf = true;
+    }
+
+    array = this._private.heap;
+    treeLen = array.length;
+    comparator = this._private.comparator;
+    current = i;
+
+    while (!condHeap) {
+
+      if (rootToLeaf) {
+        left = 2 * current + 1;
+        right = left + 1;
+        best = current;
+        
+        if (left < treeLen && !comparator(array[left], array[best])) {
+          best = left;
+        }
+        
+        if (right < treeLen && !comparator(array[right], array[best])) {
+          best = right;
+        }
+        
+        condHeap = best === current;
+        
+        if (!condHeap) {
+          this.heapSwap(best, current);
+          current = best;
+        }
+
+      } else {
+        parent = Math.floor((current - 1) / 2);
+        best = current;
+        condHeap = parent < 0 || comparator(array[best], array[parent]);
+
+        if (!condHeap) {
+          this.heapSwap(best, parent);
+          current = parent;
+        }
+      }
+
+    } // while
+  };
+
+  /* collectionOrElement */
+  $$.Heap.prototype.insert = function (eles) {
+    var elements = this.getArgumentAsCollection(eles),
+      elsize = elements.length,
+      element,
+      elindex,
+      elvalue,
+      elid,
+      i;
+
+    for (i = 0; i < elsize; i += 1) {
+      element = elements[i];
+      elindex = this._private.heap.length;
+      elvalue = this._private.extractor(element);
+      elid = element.id();
+
+      if (this._private.pointers.hasOwnProperty(elid)) {
+        throw "ERROR: Multiple items with the same id found: " + elid;
+      }
+
+      this._private.heap.push(elvalue);
+      this._private.elements.push(elid);
+      this._private.pointers[elid] = elindex;
+      this.heapify(elindex, false);
+    }
+
+    this._private.length = this._private.heap.length;
+  };
+
+  $$.Heap.prototype.getValueById = function (elementId) {
+    if (this._private.pointers.hasOwnProperty(elementId)) {
+      var elementIndex = this._private.pointers[elementId];
+
+      return this._private.heap[elementIndex];
+    }
+  };
+  
+  $$.Heap.prototype.contains = function (eles) {
+    var elements = this.getArgumentAsCollection(eles);
+
+    for (var i = 0; i < elements.length; i += 1) {
+      var elementId = elements[i].id();
+
+      if(!this._private.pointers.hasOwnProperty(elementId)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+  
+  $$.Heap.prototype.top = function () {
+    if (this._private.length > 0) {
+
+      return {
+        value: this._private.heap[0],
+        id: this._private.elements[0]
+      };
+
+    }
+  };
+
+  $$.Heap.prototype.pop = function () {
+    if (this._private.length > 0) {
+      var top = this.top(),
+        lastIndex = this._private.length - 1,
+        removeCandidate,
+        removeValue,
+        remId;
+
+      this.heapSwap(0, lastIndex);
+
+      removeCandidate = this._private.elements[lastIndex];
+      removeValue = this._private.heap[lastIndex];
+      remId = removeCandidate;
+
+      this._private.heap.pop();
+      this._private.elements.pop();
+      this._private.length = this._private.heap.length;
+      delete this._private.pointers[remId];
+
+      this.heapify(0);
+      return top;
+    }
+  };
+
+  $$.Heap.prototype.findDirectionHeapify = function (index) {
+    var parent = Math.floor((index - 1) / 2),
+      array = this._private.heap,
+      condHeap = parent < 0 || this._private.comparator(array[index], array[parent]);
+
+    this.heapify(index, condHeap);
+  };
+
+  /* edit is a new value or function */
+  // only values in heap are updated. elements themselves are not!
+  $$.Heap.prototype.edit = function (eles, edit) {
+    var elements = this.getArgumentAsCollection(eles);
+    
+    for (var i = 0; i < elements.length; i += 1) {
+      var elementId = elements[i].id(),
+        elementIndex = this._private.pointers[elementId],
+        elementValue = this._private.heap[elementIndex];
+      
+      if ($$.is.number(edit)) {
+        this._private.heap[elementIndex] = edit;
+        
+      } else if ($$.is.fn(edit)) {
+        this._private.heap[elementIndex] = edit.call(this._private.cy, elementValue, elementIndex);
+      }
+
+      this.findDirectionHeapify(elementIndex);
+    }
+  };
+
+  $$.Heap.prototype.delete = function (eles) {
+    var elements = this.getArgumentAsCollection(eles);
+    
+    for (var i = 0; i < elements.length; i += 1) {
+      var elementId = elements[i].id(),
+        elementIndex = this._private.pointers[elementId],
+        lastIndex = this._private.length - 1,
+        removeCandidate,
+        removeValue,
+        remId;
+
+      if (elementIndex !== lastIndex) {
+        this.heapSwap(elementIndex, lastIndex);
+      }
+
+      removeCandidate = this._private.elements[lastIndex];
+      removeValue = this._private.heap[lastIndex];
+      remId = removeCandidate;
+
+      this._private.heap.pop();
+      this._private.elements.pop();
+      this._private.length = this._private.heap.length;
+      delete this._private.pointers[remId];
+
+      this.findDirectionHeapify(elementIndex);
+    }
+
+    return removeValue;
+  };
+
+})(cytoscape);
 /*
   The canvas renderer was written by Yue Dong.
 
@@ -10883,61 +11375,89 @@ var cytoscape;
     
     var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
     
-    for (var i=0;i<nodes.length;i++) {
-      if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].intersectBox(x1, y1, x2, y2,
-        this.getNodeWidth(nodes[i]), this.getNodeHeight(nodes[i]),
-        nodes[i]._private.position.x, nodes[i]._private.position.y, nodes[i]._private.style['border-width'].pxValue / 2))
-      { box.push(nodes[i]); }
+    for ( var i = 0; i < nodes.length; i++ ){
+      var pos = nodes[i]._private.position;
+      var nShape = this.getNodeShape(nodes[i]);
+      var w = this.getNodeWidth(nodes[i]);
+      var h = this.getNodeHeight(nodes[i]);
+      var border = nodes[i]._private.style['border-width'].pxValue / 2;
+      var shapeObj = CanvasRenderer.nodeShapes[ nShape ];
+
+      if ( shapeObj.intersectBox(x1, y1, x2, y2, w, h, pos.x, pos.y, border) ){
+        box.push(nodes[i]);
+      }
     }
     
-    for (var i=0;i<edges.length;i++) {
+    for ( var i = 0; i < edges.length; i++ ){
+      var rs = edges[i]._private.rscratch;
+
       if (edges[i]._private.rscratch.edgeType == 'self') {
         if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2ax, rs.cp2ay,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2ax, edges[i]._private.rscratch.cp2ay,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
+              rs.startX, rs.startY,
+              rs.cp2ax, rs.cp2ay,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue)))
                 ||
           (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2cx, rs.cp2cy,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2cx, edges[i]._private.rscratch.cp2cy,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue)))
+              rs.startX, rs.startY,
+              rs.cp2cx, rs.cp2cy,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue)))
           )
         { box.push(edges[i]); }
       }
       
-      if (edges[i]._private.rscratch.edgeType == 'bezier' &&
+      if (rs.edgeType == 'bezier' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.cp2x, rs.cp2y,
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               &&
             (heur == 2 || (heur == 1 && $$.math.checkBezierInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.cp2x, edges[i]._private.rscratch.cp2y,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
+              rs.startX, rs.startY,
+              rs.cp2x, rs.cp2y,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
     
-      if (edges[i]._private.rscratch.edgeType == 'straight' &&
+      if (rs.edgeType == 'straight' &&
         (heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
-            edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-            edges[i]._private.rscratch.startX * 0.5 + edges[i]._private.rscratch.endX * 0.5, 
-            edges[i]._private.rscratch.startY * 0.5 + edges[i]._private.rscratch.endY * 0.5, 
-            edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))
+            rs.startX, rs.startY,
+            rs.startX * 0.5 + rs.endX * 0.5, 
+            rs.startY * 0.5 + rs.endY * 0.5, 
+            rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))
               && /* console.log('test', heur) == undefined && */
             (heur == 2 || (heur == 1 && $$.math.checkStraightEdgeInBox(x1, y1, x2, y2,
-              edges[i]._private.rscratch.startX, edges[i]._private.rscratch.startY,
-              edges[i]._private.rscratch.endX, edges[i]._private.rscratch.endY, edges[i]._private.style['width'].pxValue))))
+              rs.startX, rs.startY,
+              rs.endX, rs.endY, edges[i]._private.style['width'].pxValue))))
         { box.push(edges[i]); }
+
+
+      if (rs.edgeType == 'haystack'){
+        var tgt = edges[i].target()[0];
+        var tgtPos = tgt.position();
+        var src = edges[i].source()[0];
+        var srcPos = src.position();
+
+        var startX = srcPos.x + rs.source.x;
+        var startY = srcPos.y + rs.source.y;
+        var endX = tgtPos.x + rs.target.x;
+        var endY = tgtPos.y + rs.target.y;
+
+        var startInBox = (x1 <= startX && startX <= x2) && (y1 <= startY && startY <= y2);
+        var endInBox = (x1 <= endX && endX <= x2) && (y1 <= endY && endY <= y2);
+
+        if( startInBox && endInBox ){
+          box.push( edges[i] );
+        }
+      }
       
     }
     
@@ -11410,6 +11930,13 @@ var cytoscape;
           y: ( srcOutside[1] + tgtOutside[1] )/2
         };
 
+        var midptSrcPts = {
+          x1: srcOutside[0],
+          x2: tgtOutside[0],
+          y1: srcOutside[1],
+          y2: tgtOutside[1]
+        };
+
         var dy = ( tgtOutside[1] - srcOutside[1] );
         var dx = ( tgtOutside[0] - srcOutside[0] );
         var l = Math.sqrt( dx*dx + dy*dy );
@@ -11495,7 +12022,10 @@ var cytoscape;
           // console.log('edge ctrl pt cache MISS')
         }
 
-        var stepSize = edge._private.style['control-point-step-size'].value;
+        var eStyle = edge._private.style;
+        var stepSize = eStyle['control-point-step-size'].pxValue;
+        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
+        var stepWeight = eStyle['control-point-weight'].value;
 
         // Self-edge
         if ( src.id() == tgt.id() ) {
@@ -11520,12 +12050,19 @@ var cytoscape;
           
         // Bezier edge
         } else {
-          var distanceFromMidpoint = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+          var normStepDist = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
+          var manStepDist = stepDist !== undefined ? $$.math.signum( normStepDist ) * stepDist : undefined;
+          var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
           
+          var adjustedMidpt = {
+            x: midptSrcPts.x1 * (1 - stepWeight) + midptSrcPts.x2 * stepWeight,
+            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight,
+          };
+
           rs.edgeType = 'bezier';
           
-          rs.cp2x = midpt.x + vectorNormInverse.x * distanceFromMidpoint;
-          rs.cp2y = midpt.y + vectorNormInverse.y * distanceFromMidpoint;
+          rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
+          rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
           
           // console.log(edge, midPointX, displacementX, distanceFromMidpoint);
         }
@@ -16166,6 +16703,7 @@ var cytoscape;
     var cy = params.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
+    var graph = nodes.add(edges);
     var container = cy.container();
     
     var width = container.clientWidth;
@@ -16199,7 +16737,7 @@ var cytoscape;
     var id2depth = {};
 
     // find the depths of the nodes
-    roots.bfs(function(i, depth){
+    graph.bfs(roots, function(i, depth){
       var ele = this[0];
 
       if( !depths[depth] ){
@@ -16251,18 +16789,18 @@ var cytoscape;
     // assign orphan nodes that are still left to the depth of their subgraph
     while( orphanNodes.length !== 0 ){
       var node = orphanNodes.shift();
-      var subgraph = node.bfs();
+      //var subgraph = graph.bfs( node ).path;
       var assignedDepth = false;
 
-      for( var i = 0; i < subgraph.length; i++ ){
-        var depth = id2depth[ subgraph[i].id() ];
+      // for( var i = 0; i < subgraph.length; i++ ){
+      //   var depth = id2depth[ subgraph[i].id() ];
 
-        if( depth !== undefined ){
-          depths[depth].push( node );
-          assignedDepth = true;
-          break;
-        }
-      }
+      //   if( depth !== undefined ){
+      //     depths[depth].push( node );
+      //     assignedDepth = true;
+      //     break;
+      //   }
+      // }
 
       if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
         if( depths.length === 0 ){

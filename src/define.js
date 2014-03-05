@@ -303,6 +303,7 @@
                 data: data, // extra data in eventObj.data
                 delegated: selector ? true : false, // whether the evt is delegated
                 selector: selector, // the selector to match for delegated events
+                selObj: new $$.Selector(selector), // cached selector object to save rebuilding
                 type: type, // the event type (e.g. 'click')
                 namespace: namespace, // the event namespace (e.g. ".foo")
                 unbindSelfOnTrigger: p.unbindSelfOnTrigger,
@@ -494,7 +495,7 @@
               var lis = listeners[k];
               var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
               var typeMatches = lis.type === evt.type;
-              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && evt.cyTarget.is(lis.selector) ) : (true); // we're not going to validate the hierarchy; that's too expensive
+              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.filter(evt.cyTarget) > 0 ) : (true); // we're not going to validate the hierarchy; that's too expensive
               var listenerMatches = nsMatches && typeMatches && targetMatches;
 
               if( listenerMatches ){ // then trigger it

@@ -218,22 +218,25 @@
       var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
-	  var knownDist = {};
+      var knownDist = {};
 
       var edges = this.edges().not(':loop');
       var nodes = this.nodes();
       var Q = [];
+
       for( var i = 0; i < nodes.length; i++ ){
         dist[ nodes[i].id() ] = nodes[i].id() === source.id() ? 0 : Infinity;
         Q.push( nodes[i] );
       }
-	  var valueFn = function(node) {
-		  return dist[node.id()];
-	  };
-	  Q = new $$.Collection(cy, Q);
-		
-	  var heap = $$.Minheap(cy, Q, valueFn);
-	  
+
+      var valueFn = function(node) {
+        return dist[ node.id() ];
+      };
+      
+      Q = new $$.Collection(cy, Q);
+    
+      var heap = $$.Minheap(cy, Q, valueFn);
+    
       var distBetween = function(u, v){
         var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
         var smallestDistance = Infinity;
@@ -257,12 +260,12 @@
 
       while(heap.size() > 0){
         var smallestEl = heap.pop(),
-			smalletsDist = smallestEl.value,
-			uid = smallestEl.id,
-			u = cy.getElementById(uid);
-		
-		knownDist[uid] = smalletsDist;
-		  
+        smalletsDist = smallestEl.value,
+        uid = smallestEl.id,
+        u = cy.getElementById(uid);
+    
+        knownDist[uid] = smalletsDist;
+      
         if( smalletsDist === Math.Infinite ){
           break;
         }
@@ -282,8 +285,8 @@
               edge: vDist.edge
             };
           }
-        }
-      }
+        } // for 
+      } // while
 
       return {
         distanceTo: function(node){

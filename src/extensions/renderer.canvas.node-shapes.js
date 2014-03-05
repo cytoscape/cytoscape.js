@@ -68,6 +68,7 @@
 		checkPoint: function(
 			x, y, padding, width, height, centerX, centerY) {
 			
+			centerX += width / 2;
 //			console.log(arguments);
 			
 			x -= centerX;

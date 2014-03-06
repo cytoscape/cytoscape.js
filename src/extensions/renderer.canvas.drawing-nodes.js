@@ -40,12 +40,19 @@
         + (node._private.style['border-opacity'].value * node._private.style['opacity'].value * parentOpacity) + ")";
       
       context.lineJoin = 'miter'; // so borders are square with the node shape
-      
+
       //var image = this.getCachedImage('url');
       
       var url = node._private.style['background-image'].value[2] ||
         node._private.style['background-image'].value[1];
       
+      CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+            context,
+            node._private.position.x,
+            node._private.position.y,
+            nodeWidth,
+            nodeHeight);
+
       if (url != undefined) {
         
         var r = this;
@@ -66,34 +73,13 @@
         );
         
         if (image.complete == false) {
-
-          CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
-            context,
-            node._private.position.x,
-            node._private.position.y,
-              nodeWidth, nodeHeight);
-            //node._private.style['width'].value,
-            //node._private.style['height'].value);
-          
-          context.stroke();
-          context.fillStyle = "#555555";
-          context.fill();
           
         } else {
           //context.clip
           this.drawInscribedImage(context, image, node);
         }
         
-      } else {
-
-        // Draw node
-        CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
-          context,
-          node._private.position.x,
-          node._private.position.y,
-          nodeWidth,
-          nodeHeight); //node._private.data.weight / 5.0
-      }
+      } 
       
       this.drawPie(context, node);
 
@@ -151,6 +137,7 @@
 
     if( !this.hasPie(node) ){ return; } // exit early if not needed
 
+    var pieSize = node._private.style['pie-size'];
     var nodeW = this.getNodeWidth( node );
     var nodeH = this.getNodeHeight( node );
     var x = node._private.position.x;
@@ -158,13 +145,19 @@
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
 
-    context.save();
+    if( pieSize.units === '%' ){
+      radius = radius * pieSize.value / 100;
+    } else if( pieSize.pxValue !== undefined ){
+      radius = pieSize.pxValue / 2;
+    }
 
-    // clip to the node shape
-    CanvasRenderer.nodeShapes[ this.getNodeShape(node) ]
-      .drawPath( context, x, y, nodeW, nodeH )
-    ;
-    context.clip();
+    // context.save();
+
+    // // clip to the node shape
+    // CanvasRenderer.nodeShapes[ this.getNodeShape(node) ]
+    //   .drawPath( context, x, y, nodeW, nodeH )
+    // ;
+    // context.clip();
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
       var size = node._private.style['pie-' + i + '-background-size'].value;

@@ -790,7 +790,7 @@
       badBezier = false;
       
 
-      if (hashTable[pairId].length > 1) {
+      if (hashTable[pairId].length > 1 && src !== tgt) {
 
         // pt outside src shape to calc distance/displacement from src to tgt
         var srcOutside = srcShape.intersectLine(

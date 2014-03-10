@@ -78,8 +78,6 @@
     
     context.clip();
     
-//    context.setTransform(1, 0, 0, 1, 0, 0);
-
     var w = img.width;
     var h = img.height;
 

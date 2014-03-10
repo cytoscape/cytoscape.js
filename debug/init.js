@@ -22,7 +22,7 @@ $(function(){
           'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 10, 100)',
           'height': 'mapData(weight, 0, 100, 10, 100)'
-          // 'background-image': 'images/gnu.jpg',
+          //'background-image': 'images/gnu.jpg',
           //'background-position-x': '50%',
           //'background-position-y': '50%',
           // 'background-fit': 'contain',
@@ -65,7 +65,8 @@ $(function(){
         .css({
           'width': 'mapData(weight, 0, 100, 1, 4)',
           'target-arrow-shape': 'data(tgtShape)',
-          'source-arrow-shape': 'data(srcShape)'
+          'source-arrow-shape': 'data(srcShape)',
+          // 'source-arrow-fill': 'hollow'
           // 'curve-style': 'haystack'
           //'opacity': 0.5
           //'content': 'data(weight)'
@@ -81,6 +82,7 @@ $(function(){
           'line-color': '#000',
           'source-arrow-color': '#000',
           'target-arrow-color': '#000'
+          //'background-blacken': 0.5
         })
   ;
   

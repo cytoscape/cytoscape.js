@@ -47,6 +47,7 @@
       time: { number: true, min: 0, units: 's' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
+      nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
       size: { number: true, min: 0, enums: ['auto'] },
       bgSize: { number: true, min: 0, allowPercent: true },
@@ -65,6 +66,7 @@
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle',
                            'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'square', 'circle', 'diamond', 'none'] },
+      arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
       visibility: { enums: ['hidden', 'visible'] },
       valign: { enums: ['top', 'center', 'bottom'] },
@@ -111,6 +113,7 @@
       { name: 'transition-delay', type: t.time },
 
       // these are just for nodes
+      { name: 'background-blacken', type: t.nOneOneNumber },
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
       { name: 'background-image', type: t.url },
@@ -168,6 +171,8 @@
       { name: 'target-arrow-shape', type: t.arrowShape },
       { name: 'source-arrow-color', type: t.color },
       { name: 'target-arrow-color', type: t.color },
+      { name: 'source-arrow-fill', type: t.arrowFill },
+      { name: 'target-arrow-fill', type: t.arrowFill },
       { name: 'line-style', type: t.lineStyle },
       { name: 'line-color', type: t.color },
       { name: 'control-point-step-size', type: t.size },
@@ -248,6 +253,7 @@
           'transition-delay': 0,
 
           // node props
+          'background-blacken': 0,
           'background-color': '#888',
           'background-opacity': 1,
           'background-image': 'none',
@@ -305,6 +311,8 @@
           'target-arrow-shape': 'none',
           'source-arrow-color': '#bbb',
           'target-arrow-color': '#bbb',
+          'source-arrow-fill': 'filled',
+          'target-arrow-fill': 'filled',
           'line-style': 'solid',
           'line-color': '#bbb',
           'control-point-step-size': 40,

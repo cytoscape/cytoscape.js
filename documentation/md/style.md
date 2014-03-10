@@ -130,6 +130,7 @@ Labels:
 Body:
 
  * **`background-color`** : The colour of the node's body.
+ * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's body.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
@@ -178,8 +179,10 @@ These properties apply only to edges:
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`source-arrow-color`** : The colour of the edge's arrow on the source side.
  * **`source-arrow-shape`** : The shape of the edge's arrow on the source side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+ * **`source-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
  * **`target-arrow-color`** : The colour of the edge's arrow on the target side.
  * **`target-arrow-shape`** : The shape of the edge's arrow on the target side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+ * **`target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
 ### Core properties
 

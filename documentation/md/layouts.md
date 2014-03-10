@@ -12,6 +12,7 @@ The `null` layout puts all nodes at (0, 0).  It's useful for debugging purposes.
 ```js
 options = {
 	name: 'null',
+	
 	ready: function(){}, // on layoutready
 	stop: function(){} // on layoutstop
 }
@@ -27,6 +28,7 @@ The `random` layout puts nodes in random positions within the viewport.
 ```js
 options = {
 	name: 'random',
+
 	ready: undefined, // callback on layoutready
 	stop: undefined, // callback on layoutstop
 	fit: true // whether to fit to viewport
@@ -44,12 +46,14 @@ The `preset` layout puts nodes in the positions you specify manually.
 ```js
 options = {
 	name: 'preset',
+
 	fit: true, // whether to fit to viewport
 	ready: undefined, // callback on layoutready
 	stop: undefined, // callback on layoutstop
 	positions: undefined, // map of (node id) => (position obj)
 	zoom: undefined, // the zoom level to set (prob want fit = false if set)
-	pan: undefined // the pan level to set (prob want fit = false if set)
+	pan: undefined, // the pan level to set (prob want fit = false if set)
+	padding: 30 // padding on fit
 };
 
 cy.layout( options );
@@ -61,11 +65,14 @@ cy.layout( options );
 The `grid` layout puts nodes in a well-spaced grid.
 
 ```js
-options = {
+{
 	name: 'grid',
+
 	fit: true, // whether to fit the viewport to the graph
+	padding: 30, // padding used on fit
 	rows: undefined, // force num of rows in the grid
 	columns: undefined, // force num of cols in the grid
+	position: function( node ){}, // returns { row, col } for element
 	ready: undefined, // callback on layoutready
 	stop: undefined // callback on layoutstop
 };
@@ -82,13 +89,14 @@ The `circle` layout puts nodes in a circle.
 ```js
 options = {
 	name: 'circle',
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
-    padding: 30, // the padding on fit
-    startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+
+	fit: true, // whether to fit the viewport to the graph
+	ready: undefined, // callback on layoutready
+	stop: undefined, // callback on layoutstop
+	rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
+	padding: 30, // the padding on fit
+	startAngle: 3/2 * Math.PI, // the position of the first node
+	counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
 };
 
 cy.layout( options );
@@ -102,14 +110,15 @@ The `breadthfirst` layout puts nodes in a hierarchy, based on a breadthfirst tra
 ```js
 options = {
 	name: 'breadthfirst',
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-    padding: 30, // padding on fit
-    circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined, // the roots of the trees
-    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+
+	fit: true, // whether to fit the viewport to the graph
+	ready: undefined, // callback on layoutready
+	stop: undefined, // callback on layoutstop
+	directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+	padding: 30, // padding on fit
+	circle: false, // put depths in concentric circles if true, put depths top down if false
+	roots: undefined, // the roots of the trees
+	maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
 cy.layout( options );
@@ -124,6 +133,7 @@ The `arbor` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-di
 ```js
 options = {
 	name: 'arbor',
+
 	liveUpdate: true, // whether to show the layout as it's running
 	ready: undefined, // callback on layoutready 
 	stop: undefined, // callback on layoutstop
@@ -151,8 +161,8 @@ options = {
 	// function that returns true if the system is stable to indicate
 	// that the layout can be stopped
 	stableEnergy: function( energy ){
-		var e = energy; 
-		return (e.max <= 0.5) || (e.mean <= 0.3);
+	  var e = energy; 
+	  return (e.max <= 0.5) || (e.mean <= 0.3);
 	}
 };
 
@@ -191,57 +201,57 @@ Based on the article "A layout algorithm for undirected compound graphs" by Ugur
 options = {
 	name: 'cose',
 
-		// Called on `layoutready`
-		ready               : function() {},
+	// Called on `layoutready`
+	ready               : function() {},
 
-		// Called on `layoutstop`
-		stop                : function() {},
+	// Called on `layoutstop`
+	stop                : function() {},
 
-		// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-		refresh             : 0,
-		
-		// Whether to fit the network view after when done
-		fit                 : true, 
+	// Number of iterations between consecutive screen positions update (0 -> only updated on the end)
+	refresh             : 0,
 
-		// Padding on fit
-		padding             : 30, 
+	// Whether to fit the network view after when done
+	fit                 : true, 
+
+	// Padding on fit
+	padding             : 30, 
 
 
-		// Whether to randomize node positions on the beginning
-		randomize           : true,
-		
-		// Whether to use the JS console to print debug messages
-		debug               : false,
+	// Whether to randomize node positions on the beginning
+	randomize           : true,
 
-		// Node repulsion (non overlapping) multiplier
-		nodeRepulsion       : 10000,
-		
-		// Node repulsion (overlapping) multiplier
-		nodeOverlap         : 10,
-		
-		// Ideal edge (non nested) length
-		idealEdgeLength     : 10,
-		
-		// Divisor to compute edge forces
-		edgeElasticity      : 100,
-		
-		// Nesting factor (multiplier) to compute ideal edge length for nested edges
-		nestingFactor       : 5, 
-		
-		// Gravity force (constant)
-		gravity             : 250, 
-		
-		// Maximum number of iterations to perform
-		numIter             : 100,
-		
-		// Initial temperature (maximum node displacement)
-		initialTemp         : 200,
-		
-		// Cooling factor (how the temperature is reduced between consecutive iterations
-		coolingFactor       : 0.95, 
-		
-		// Lower temperature threshold (below this point the layout will end)
-		minTemp             : 1
+	// Whether to use the JS console to print debug messages
+	debug               : false,
+
+	// Node repulsion (non overlapping) multiplier
+	nodeRepulsion       : 10000,
+
+	// Node repulsion (overlapping) multiplier
+	nodeOverlap         : 10,
+
+	// Ideal edge (non nested) length
+	idealEdgeLength     : 10,
+
+	// Divisor to compute edge forces
+	edgeElasticity      : 100,
+
+	// Nesting factor (multiplier) to compute ideal edge length for nested edges
+	nestingFactor       : 5, 
+
+	// Gravity force (constant)
+	gravity             : 250, 
+
+	// Maximum number of iterations to perform
+	numIter             : 100,
+
+	// Initial temperature (maximum node displacement)
+	initialTemp         : 200,
+
+	// Cooling factor (how the temperature is reduced between consecutive iterations
+	coolingFactor       : 0.95, 
+
+	// Lower temperature threshold (below this point the layout will end)
+	minTemp             : 1
 };
 
 cy.layout( options );

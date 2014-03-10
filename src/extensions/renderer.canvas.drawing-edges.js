@@ -406,6 +406,8 @@
 
     var startX = edge._private.rscratch.arrowStartX;
     var startY = edge._private.rscratch.arrowStartY;
+
+    var style = edge._private.style;
     
     var srcPos = edge.source().position();
     dispX = startX - srcPos.x;
@@ -416,23 +418,21 @@
       var gco = context.globalCompositeOperation;
 
       context.globalCompositeOperation = 'destination-out';
-    
-      context.lineWidth = edge._private.style['width'].pxValue;
       
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
+      this.drawArrowShape(context, 'filled', style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       context.fillStyle = "rgba("
-        + edge._private.style['source-arrow-color'].value[0] + ","
-        + edge._private.style['source-arrow-color'].value[1] + ","
-        + edge._private.style['source-arrow-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";
+        + style['source-arrow-color'].value[0] + ","
+        + style['source-arrow-color'].value[1] + ","
+        + style['source-arrow-color'].value[2] + ","
+        + style.opacity.value + ")";
 
-      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
+      this.drawArrowShape(context, style['source-arrow-fill'].value, style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
     } else {
@@ -453,29 +453,27 @@
 
       context.globalCompositeOperation = 'destination-out';
 
-      context.lineWidth = edge._private.style['width'].pxValue;
-
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
+      this.drawArrowShape(context, 'filled', style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       //this.context.strokeStyle = "rgba("
       context.fillStyle = "rgba("
-        + edge._private.style['target-arrow-color'].value[0] + ","
-        + edge._private.style['target-arrow-color'].value[1] + ","
-        + edge._private.style['target-arrow-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";  
-    
-      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
+        + style['target-arrow-color'].value[0] + ","
+        + style['target-arrow-color'].value[1] + ","
+        + style['target-arrow-color'].value[2] + ","
+        + style.opacity.value + ")";  
+
+      this.drawArrowShape(context, style['target-arrow-fill'].value, style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
     }
   }
   
   // Draw arrowshape
-  CanvasRenderer.prototype.drawArrowShape = function(context, shape, x, y, dispX, dispY) {
+  CanvasRenderer.prototype.drawArrowShape = function(context, fill, shape, x, y, dispX, dispY) {
   
     // Negative of the angle
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
@@ -505,7 +503,12 @@
     context.closePath();
     
 //    context.stroke();
-    context.fill();
+    if( fill === 'hollow' ){
+      context.lineWidth = 1/size;
+      context.stroke();
+    } else {
+      context.fill();
+    }
 
     context.scale(1/size, 1/size);
     context.rotate(angle);

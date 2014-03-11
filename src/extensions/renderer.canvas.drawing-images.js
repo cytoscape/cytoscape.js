@@ -1,19 +1,11 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
-
-  
   var imageCache = {};
-  
-  // Discard after 5 min. of disuse
-  var IMAGE_KEEP_TIME = 30 * 300; // 300frames@30fps, or. 5min
   
   CanvasRenderer.prototype.getCachedImage = function(url, onLoadRedraw) {
 
     if (imageCache[url] && imageCache[url].image) {
-
-      // Reset image discard timer
-      imageCache[url].keepTime = IMAGE_KEEP_TIME; 
       return imageCache[url].image;
     }
     
@@ -25,9 +17,6 @@
       imageCache[url].image.onload = onLoadRedraw;
       
       imageCache[url].image.src = url;
-      
-      // Initialize image discard timer
-      imageCache[url].keepTime = IMAGE_KEEP_TIME;
       
       imageContainer = imageCache[url];
     }
@@ -65,70 +54,86 @@
   }
   
   CanvasRenderer.prototype.updateImageCaches = function() {
-    
-    for (var url in imageCache) {
-      if (imageCache[url].keepTime <= 0) {
-        
-        if (imageCache[url].image != undefined) {
-          imageCache[url].image.src = undefined;
-          imageCache[url].image = undefined;
-        }
-        
-        imageCache[url] = undefined;
-      } else {
-        imageCache[url] -= 1;
-      }
-    }
-  }
-  
-  CanvasRenderer.prototype.drawImage = function(context, x, y, widthScale, heightScale, rotationCW, image) {
-    
-    image.widthScale = 0.5;
-    image.heightScale = 0.5;
-    
-    image.rotate = rotationCW;
-    
-    var finalWidth; var finalHeight;
-    
-    canvas.drawImage(image, x, y);
   }
 
   CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
     var r = this;
-//    console.log(this.data);
     var zoom = this.data.cy._private.zoom;
-    
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;
-
-    //var nodeWidth = node._private.style['width'].value;
-    //var nodeHeight = node._private.style['height'].value;
-    var nodeWidth = this.getNodeWidth(node);
-    var nodeHeight = this.getNodeHeight(node);
+    var style = node._private.style;
+    var fit = style['background-fit'].value;
+    var xPos = style['background-position-x'];
+    var yPos = style['background-position-y'];
+    var repeat = style['background-repeat'].value;
+    var nodeW = this.getNodeWidth(node);
+    var nodeH = this.getNodeHeight(node);
     
     context.save();
     
     CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
         context,
         nodeX, nodeY, 
-        nodeWidth, nodeHeight);
+        nodeW, nodeH);
     
     context.clip();
     
-//    context.setTransform(1, 0, 0, 1, 0, 0);
-    
-    var imgDim = [img.width, img.height];
-    context.drawImage(img, 
-        nodeX - imgDim[0] / 2,
-        nodeY - imgDim[1] / 2,
-        imgDim[0],
-        imgDim[1]);
+    var w = img.width;
+    var h = img.height;
+
+    if( fit === 'contain' ){
+      var scale = Math.min( nodeW/w, nodeH/h );
+
+      w *= scale;
+      h *= scale;
+
+    } else if( fit === 'cover' ){
+      var scale = Math.max( nodeW/w, nodeH/h );
+
+      w *= scale;
+      h *= scale;
+    }
+
+    var x = (nodeX - nodeW/2); // left
+    if( xPos.units === '%' ){
+      x += (nodeW - w) * xPos.value/100;
+    } else {
+      x += xPos.pxValue;
+    }
+
+    var y = (nodeY - nodeH/2); // top
+    if( yPos.units === '%' ){
+      y += (nodeH - h) * yPos.value/100;
+    } else {
+      y += yPos.pxValue;
+    }
+
+    if( repeat === 'repeat-x' || repeat === 'repeat-y' || repeat === 'repeat' ){
+      var pattern = context.createPattern( img, repeat );
+
+      x = Math.min(x, nodeX + nodeW/2);
+      x = Math.max(x, nodeX - nodeW/2);
+      y = Math.min(y, nodeY + nodeY/2);
+      y = Math.max(y, nodeY - nodeY/2);
+
+      context.fillStyle = pattern;
+      context.translate(x, y);
+
+      if( repeat === 'repeat-x' ){
+        context.fillRect( -nodeW, 0, 2*nodeW, nodeH );
+      } else if( repeat === 'repeat-y' ){
+        context.fillRect( 0, -nodeH, nodeW, 2*nodeH );
+      } else {
+        context.fill();
+      }
+
+      
+    } else {
+      context.drawImage( img, x, y, w, h );  
+    }
     
     context.restore();
-    
-    if (node._private.style['border-width'].value > 0) {
-      context.stroke();
-    }
+  
     
   };
 

@@ -66,12 +66,13 @@
 
   }
 
-  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan, pxRatio ){
     this.redraw({
       forcedContext: cxt,
       forcedZoom: zoom,
       forcedPan: pan,
-      drawAllLayers: true
+      drawAllLayers: true,
+      forcedPxRatio: pxRatio
     });
   };
 
@@ -84,7 +85,7 @@
     var forcedZoom = options.forcedZoom;
     var forcedPan = options.forcedPan;
     var r = this;
-    var pixelRatio = this.getPixelRatio();
+    var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     
     clearTimeout( this.redrawTimeout );
@@ -350,7 +351,7 @@
     }
 
     if( !forcedContext ){
-      setTimeout(drawToContext, 0); // makes direct renders to screen a bit more responsive
+      $$.util.requestAnimationFrame(drawToContext); // makes direct renders to screen a bit more responsive
     } else {
       drawToContext();
     }

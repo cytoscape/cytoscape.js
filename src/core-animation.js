@@ -31,9 +31,7 @@
       // initialise the list
       cy._private.aniEles = [];
       
-      // TODO change this when standardised
-      var requestAnimationFrame = typeof window === 'undefined' ? function(){} : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
-        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
+      var requestAnimationFrame = $$.util.requestAnimationFrame;
       
       if( requestAnimationFrame == null || !useRequestAnimationFrame ){
         requestAnimationFrame = function(fn){

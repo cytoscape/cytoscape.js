@@ -2,10 +2,10 @@
   
   $$.fn.core({
     
-    renderTo: function( context, zoom, pan ){
+    renderTo: function( context, zoom, pan, pxRatio ){
       var r = this._private.renderer;
 
-      r.renderTo( context, zoom, pan );
+      r.renderTo( context, zoom, pan, pxRatio );
       return this;
     },
 

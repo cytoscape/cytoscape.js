@@ -19,7 +19,7 @@ $(function(){
           'border-width': 3,
           'background-color': '#DDD',
           'border-color': '#555',
-          'shape': 'data(shape)',
+          'shape': 'ellipse',
           'width': 'mapData(weight, 0, 100, 10, 100)',
           'height': 'mapData(weight, 0, 100, 10, 100)'
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
@@ -59,9 +59,9 @@ $(function(){
       .selector('edge')
         .css({
           'width': 'mapData(weight, 0, 100, 1, 4)',
-          'target-arrow-shape': 'data(tgtShape)',
-          'source-arrow-shape': 'data(srcShape)'
-          // 'curve-style': 'haystack'
+          // 'target-arrow-shape': 'data(tgtShape)',
+          // 'source-arrow-shape': 'data(srcShape)',
+          'curve-style': 'haystack'
           //'opacity': 0.5
           //'content': 'data(weight)'
         })
@@ -80,7 +80,7 @@ $(function(){
   ;
   
   window.options = {
-    //hideEdgesOnViewport: true,
+    hideEdgesOnViewport: true,
     renderer: {
       name: 'canvas'
     },

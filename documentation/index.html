@@ -862,13 +862,13 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">snapshot-1394051172647</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">snapshot-1394561428167</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://requirejs.org">AMD/Require.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-snapshot-1394051172647.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-snapshot-1394561428167.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -1140,11 +1140,17 @@ edge ......... a collection of a single edge
 <li>Interactivity is expensive.  Being able to pan, pinch-to-zoom, drag nodes around, et cetera is expensive &mdash; especially when having to rerender edges.</li>
 </ul>
 <h2 id="performance/optimisations">Optimisations <a href="#performance/optimisations"><span class="icon-bookmark"></span></a></h2>
-<p>You can get much better performance out of Cytoscape.js by tuning your options:</p>
+<p>You can get much better performance out of Cytoscape.js by tuning your options, in descending order of significance:</p>
 <ul>
 <li><strong>Haystacks make fast edges</strong> : Set your edges <code>curve-style</code> to <code>haystack</code> in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than <code>bezier</code> edges.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
-<li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  Background images are very expensive, so you should remove them if you need high performance.  Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
+<li><strong>Labels</strong> : Drawing labels is expensive.  If you can go without them or show them on tap/mouseover, you&#39;ll get better performance.  Consider not having labels for edges.</li>
+<li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
+<li>Background images are very expensive, so you should remove them if you need high performance.</li>
+<li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
+</ul>
+</li>
+<li><strong>Opacity</strong> : Making elements semitransparent is more expensive than leaving them opaque.  Try to use <code>visibility: hidden</code> or <code>display: none</code> to hide elements rather than using opacity.</li>
 <li><strong>Concise stylsheets are fast stylesheets</strong> : Try to keep your stylesheets from getting overly long.  Cut out unused blocks and try to limit the number of blocks &mdash; and therefore selectors &mdash; you have.  Each time style needs to be recalculated, each block&#39;s selector needs to be compared to each element.  Note that usually stylesheet length has a much lesser effect on performance than other factors.</li>
 </ul>
 <p>By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.</p>

@@ -726,4 +726,11 @@
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
+  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ fn && fn() } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
+
+  $$.util.requestAnimationFrame = function(fn){
+    requestAnimationFrame(fn);
+  };
+
 })( cytoscape );

@@ -14,7 +14,13 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
 
 * **Haystacks make fast edges** : Set your edges `curve-style` to `haystack` in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than `bezier` edges.
 * **Hide edges during interactivity** : Set `hideEdgesOnViewport` to `true` in your [initialisation options](#core/initialisation).  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.
-* **Labels** : Drawing labels is expensive.  If you can go without them or show them on tap/mouseover, you'll get better performance.  Consider not having labels for edges.
+* **Animations** : You will get better performance without animations.  If using animations anyway:
+ * Try to limit the number of concurrent animating elements.
+ * When using transition animations in the style, make sure `transition-property` is defined only for states that you want to animate.  If you have `transition-property` defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.
+* **Labels** : Drawing labels is expensive.
+ * If you can go without them or show them on tap/mouseover, you'll get better performance.
+ * Consider not having labels for edges.
+ * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
 * **Simplify node style** : Keep your node styles simple to improve performance.  
  * Background images are very expensive, so you should remove them if you need high performance.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.

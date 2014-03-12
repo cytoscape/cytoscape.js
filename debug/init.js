@@ -91,21 +91,21 @@ $(function(){
     
     elements: {
       nodes: [
-        // { data: { id: 'a' } },
-        // { data: { id: 'b' } },
-        // { data: { id: 'c' } },
-        // { data: { id: 'd' } },
-        // { data: { id: 'e' } }
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'd' } },
+        { data: { id: 'e' } }
       ], 
       
       edges: [
-        // { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
-        // { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
-        // { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
-        // { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
-        // { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
-        // { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-        // { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
+        { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
+        { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
+        { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
+        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
       ]
     },
     ready: function(){
@@ -157,35 +157,35 @@ $(function(){
     return shapes[index];
   }
 
-  for(var i = 0; i < numNodes; i++){
+  // for(var i = 0; i < numNodes; i++){
 
-    options.elements.nodes.push({
-      data: {
-        id: 'n' + i,
-        weight: Math.round( Math.random() * 100 ),
-        shape: randShape()
-      }
-    });
-  }
+  //   options.elements.nodes.push({
+  //     data: {
+  //       id: 'n' + i,
+  //       weight: Math.round( Math.random() * 100 ),
+  //       shape: randShape()
+  //     }
+  //   });
+  // }
   
-  var j = 0;
-  for(var clique = 0; clique < cliques; clique++){
-    for(var i = 0; i < numEdges/cliques; i++){
-      var srcId = randNodeId( clique );
-      var tgtId = randNodeId( clique );
+  // var j = 0;
+  // for(var clique = 0; clique < cliques; clique++){
+  //   for(var i = 0; i < numEdges/cliques; i++){
+  //     var srcId = randNodeId( clique );
+  //     var tgtId = randNodeId( clique );
 
-      options.elements.edges.push({
-        data: {
-          id: 'e' + (j++),
-          source: srcId,
-          target: tgtId,
-          weight: Math.round( Math.random() * 100 ),
-          tgtShape: randTgtArrow(),
-          srcShape: randSrcArrow()
-        }
-      });
-    }
-  }
+  //     options.elements.edges.push({
+  //       data: {
+  //         id: 'e' + (j++),
+  //         source: srcId,
+  //         target: tgtId,
+  //         weight: Math.round( Math.random() * 100 ),
+  //         tgtShape: randTgtArrow(),
+  //         srcShape: randSrcArrow()
+  //       }
+  //     });
+  //   }
+  // }
   
   var $container = $('#cytoscape');
   var $container2 = $('#cytoscape2');

@@ -204,24 +204,7 @@ gulp.task('dist', ['build'], function(){
 });
 
 gulp.task('pub', ['pkgver', 'dist', 'docspub'], function(next){
-
-  fs.chmodSync('./publish-tag.sh', 0775);
-  fs.chmodSync('./publish-docs.sh', 0775);
-  fs.chmodSync('./publish-npm.sh', 0775);
-  
-  var tag = child_process.spawn('./publish-tag.sh');
-
-  tag.on('close', function(){
-    var npm = child_process.spawn('./publish-npm.sh');
-
-    npm.on('close', function(){
-      var docs = child_process.spawn('./publish-docs.sh');
-
-      docs.on('close', function(){
-        next();
-      });
-    });
-  });
+  next();
 });
 
 gulp.task('watch', function(next){

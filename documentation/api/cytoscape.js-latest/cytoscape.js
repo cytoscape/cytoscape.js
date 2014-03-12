@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js snapshot-1394047958698.
+ * This file is part of cytoscape.js 2.2.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -901,6 +901,13 @@ var cytoscape;
   
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
+
+  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ fn && fn() } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
+
+  $$.util.requestAnimationFrame = function(fn){
+    requestAnimationFrame(fn);
+  };
 
 })( cytoscape );
 
@@ -3255,6 +3262,7 @@ var cytoscape;
                 data: data, // extra data in eventObj.data
                 delegated: selector ? true : false, // whether the evt is delegated
                 selector: selector, // the selector to match for delegated events
+                selObj: new $$.Selector(selector), // cached selector object to save rebuilding
                 type: type, // the event type (e.g. 'click')
                 namespace: namespace, // the event namespace (e.g. ".foo")
                 unbindSelfOnTrigger: p.unbindSelfOnTrigger,
@@ -3446,7 +3454,7 @@ var cytoscape;
               var lis = listeners[k];
               var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
               var typeMatches = lis.type === evt.type;
-              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && evt.cyTarget.is(lis.selector) ) : (true); // we're not going to validate the hierarchy; that's too expensive
+              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.filter(evt.cyTarget).length > 0 ) : (true); // we're not going to validate the hierarchy; that's too expensive
               var listenerMatches = nsMatches && typeMatches && targetMatches;
 
               if( listenerMatches ){ // then trigger it
@@ -3694,7 +3702,15 @@ var cytoscape;
         dataCompare: {
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
-          populate: function( variable, comparatorOp, value ){
+          populate: function( variable, comparatorOp, value ){ 
+            var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
+
+            if( valueIsString ){
+              value = value.substring(1, value.length - 1);
+            } else {
+              value = parseFloat(value)
+            }
+
             this.data.push({
               field: cleanMetaChars(variable),
               operator: comparatorOp,
@@ -3721,7 +3737,7 @@ var cytoscape;
             this.meta.push({
               field: cleanMetaChars(meta),
               operator: comparatorOp,
-              value: number
+              value: parseFloat(number)
             });
           }
         },
@@ -3938,7 +3954,7 @@ var cytoscape;
   };
   
   // filter an existing collection
-  $$.selfn.filter = function(collection, addLiveFunction){
+  $$.selfn.filter = function(collection){
     var self = this;
     var cy = collection.cy();
     
@@ -3984,7 +4000,7 @@ var cytoscape;
           allColonSelectorsMatch = !element.visible();
           break;
         case ':transparent':
-          allColonSelectorsMatch = !element.transparent();
+          allColonSelectorsMatch = element.transparent();
           break;
         case ':grabbed':
           allColonSelectorsMatch = element.grabbed();
@@ -4072,8 +4088,9 @@ var cytoscape;
           
           if( operator != null && value != null ){
             
-            var fieldStr = '' + params.fieldValue(field);
-            var valStr = '' + eval(value);
+            var fieldVal = params.fieldValue(field);
+            var fieldStr = !$$.is.string(fieldVal) && !$$.is.number(fieldVal) ? '' : '' + fieldVal;
+            var valStr = '' + value;
             
             var caseInsensitive = false;
             if( operator.charAt(0) == '@' ){
@@ -4084,10 +4101,13 @@ var cytoscape;
               caseInsensitive = true;
             }
             
-            if( operator == '=' ){
-              operator = '==';
+            // if we're doing a case insensitive comparison, then we're using a STRING comparison
+            // even if we're comparing numbers
+            if( caseInsensitive ){
+              value = valStr.toLowerCase();
+              fieldVal = fieldStr.toLowerCase();
             }
-            
+
             switch(operator){
             case '*=':
               matches = fieldStr.search(valStr) >= 0;
@@ -4098,18 +4118,27 @@ var cytoscape;
             case '^=':
               matches = new RegExp('^' + valStr).exec(fieldStr) != null;
               break;
+            case '=':
+              matches = fieldVal === value;
+              break;
+            case '!=':
+              matches = fieldVal !== value;
+              break;
+            case '>':
+              matches = fieldVal > value;
+              break;
+            case '>=':
+              matches = fieldVal >= value;
+              break;
+            case '<':
+              matches = fieldVal < value;
+              break;
+            case '<=':
+              matches = fieldVal <= value;
+              break;
             default:
-              // if we're doing a case insensitive comparison, then we're using a STRING comparison
-              // even if we're comparing numbers
-              if( caseInsensitive ){
-                // eval with lower case strings
-                var expr = 'fieldStr ' + operator + ' valStr';
-                matches = eval(expr);
-              } else {
-                // just eval as normal
-                var expr = params.fieldRef(field) + ' ' + operator + ' ' + value;
-                matches = eval(expr);
-              }
+              matches = false;
+              break;
               
             }
           } else if( operator != null ){
@@ -4392,9 +4421,13 @@ var cytoscape;
       time: { number: true, min: 0, units: 's' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
+      nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
       size: { number: true, min: 0, enums: ['auto'] },
       bgSize: { number: true, min: 0, allowPercent: true },
+      bgPos: { number: true, allowPercent: true },
+      bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
+      bgFit: { enums: ['none', 'contain', 'cover'] },
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       curveStyle: { enums: ['bezier', 'haystack'] },
@@ -4407,13 +4440,11 @@ var cytoscape;
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle',
                            'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'square', 'circle', 'diamond', 'none'] },
+      arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
       visibility: { enums: ['hidden', 'visible'] },
       valign: { enums: ['top', 'center', 'bottom'] },
       halign: { enums: ['left', 'center', 'right'] },
-      positionx: { enums: ['left', 'center', 'right'], number: true, allowPercent: true },
-      positiony: { enums: ['top', 'center', 'bottom'], number: true, allowPercent: true },
-      bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
       cursor: { enums: ['auto', 'crosshair', 'default', 'e-resize', 'n-resize', 'ne-resize', 'nw-resize', 'pointer', 'progress', 's-resize', 'sw-resize', 'text', 'w-resize', 'wait', 'grab', 'grabbing'] },
       text: { string: true },
       data: { mapping: true, regex: data('data') },
@@ -4456,14 +4487,15 @@ var cytoscape;
       { name: 'transition-delay', type: t.time },
 
       // these are just for nodes
+      { name: 'background-blacken', type: t.nOneOneNumber },
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
       { name: 'background-image', type: t.url },
-      { name: 'background-position-x', type: t.positionx },
-      { name: 'background-position-y', type: t.positiony },
+      { name: 'background-position-x', type: t.bgPos },
+      { name: 'background-position-y', type: t.bgPos },
       { name: 'background-repeat', type: t.bgRepeat },
-      { name: 'background-size-x', type: t.bgSize },
-      { name: 'background-size-y', type: t.bgSize },
+      { name: 'background-fit', type: t.bgFit },
+      { name: 'pie-size', type: t.bgSize },
       { name: 'pie-1-background-color', type: t.color },
       { name: 'pie-2-background-color', type: t.color },
       { name: 'pie-3-background-color', type: t.color },
@@ -4513,6 +4545,8 @@ var cytoscape;
       { name: 'target-arrow-shape', type: t.arrowShape },
       { name: 'source-arrow-color', type: t.color },
       { name: 'target-arrow-color', type: t.color },
+      { name: 'source-arrow-fill', type: t.arrowFill },
+      { name: 'target-arrow-fill', type: t.arrowFill },
       { name: 'line-style', type: t.lineStyle },
       { name: 'line-color', type: t.color },
       { name: 'control-point-step-size', type: t.size },
@@ -4593,9 +4627,14 @@ var cytoscape;
           'transition-delay': 0,
 
           // node props
+          'background-blacken': 0,
           'background-color': '#888',
           'background-opacity': 1,
           'background-image': 'none',
+          'background-position-x': '50%',
+          'background-position-y': '50%',
+          'background-repeat': 'no-repeat',
+          'background-fit': 'none',
           'border-color': '#000',
           'border-opacity': 1,
           'border-width': 0,
@@ -4607,6 +4646,7 @@ var cytoscape;
           'padding-left': 0,
           'padding-right': 0,
           'shape': 'ellipse',
+          'pie-size': '100%',
           'pie-1-background-color': 'black',
           'pie-1-background-size': '0%',
           'pie-2-background-color': 'black',
@@ -4645,6 +4685,8 @@ var cytoscape;
           'target-arrow-shape': 'none',
           'source-arrow-color': '#bbb',
           'target-arrow-color': '#bbb',
+          'source-arrow-fill': 'filled',
+          'target-arrow-fill': 'filled',
           'line-style': 'solid',
           'line-color': '#bbb',
           'control-point-step-size': 40,
@@ -6405,7 +6447,7 @@ var cytoscape;
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){ 'use strict';
+;(function($$, window){ 'use strict';
   
   $$.fn.core({
     
@@ -6434,13 +6476,16 @@ var cytoscape;
       var stepDelay = 1000/60;
       var useTimeout = false;
       var useRequestAnimationFrame = true;
+
+      // don't execute the animation loop in headless environments
+      if( !window ){
+        return;
+      }
       
       // initialise the list
       cy._private.aniEles = [];
       
-      // TODO change this when standardised
-      var requestAnimationFrame = typeof window === 'undefined' ? function(){} : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
-        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
+      var requestAnimationFrame = $$.util.requestAnimationFrame;
       
       if( requestAnimationFrame == null || !useRequestAnimationFrame ){
         requestAnimationFrame = function(fn){
@@ -6659,7 +6704,7 @@ var cytoscape;
     
   });
   
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
 
   
@@ -6850,10 +6895,10 @@ var cytoscape;
   
   $$.fn.core({
     
-    renderTo: function( context, zoom, pan ){
+    renderTo: function( context, zoom, pan, pxRatio ){
       var r = this._private.renderer;
 
-      r.renderTo( context, zoom, pan );
+      r.renderTo( context, zoom, pan, pxRatio );
       return this;
     },
 
@@ -10833,12 +10878,22 @@ var cytoscape;
   // spacing: dist(arrowTip, nodeBoundary)
   // gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
 
+  var bbCollide = function(x, y, centerX, centerY, width, height, direction, padding){
+    var x1 = centerX - width/2;
+    var x2 = centerX + width/2;
+    var y1 = centerY - height/2;
+    var y2 = centerY + height/2;
+
+    return (x1 <= x && x <= x2) && (y1 <= y && y <= y2);
+  };
+
   arrowShapes['arrow'] = {
     _points: [
       -0.15, -0.3,
       0, 0,
       0.15, -0.3
     ],
+    
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       var points = arrowShapes['arrow']._points;
       
@@ -10847,16 +10902,9 @@ var cytoscape;
       return $$.math.pointInsidePolygon(
         x, y, points, centerX, centerY, width, height, direction, padding);
     },
-    roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-      if (typeof(arrowShapes['arrow']._farthestPointSqDistance) == 'undefined') {
-        arrowShapes['arrow']._farthestPointSqDistance = 
-          $$.math.findMaxSqDistanceToOrigin(arrowShapes['arrow']._points);
-      }
     
-      return $$.math.checkInBoundingCircle(
-        x, y, arrowShapes['arrow']._farthestPointSqDistance,
-        0, width, height, centerX, centerY);
-    },
+    roughCollide: bbCollide,
+    
     draw: function(context) {
       var points = arrowShapes['arrow']._points;
     
@@ -10864,32 +10912,38 @@ var cytoscape;
         context.lineTo(points[i * 2], points[i * 2 + 1]);
       }
     },
+    
     spacing: function(edge) {
       return 0;
     },
+    
     gap: function(edge) {
       return edge._private.style['width'].pxValue * 2;
     }
-  }
-  
+  };
+
   arrowShapes['triangle'] = arrowShapes['arrow'];
   
   arrowShapes['none'] = {
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       return false;
     },
+    
     roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
       return false;
     },
+    
     draw: function(context) {
     },
+    
     spacing: function(edge) {
       return 0;
     },
+    
     gap: function(edge) {
       return 0;
     }
-  }
+  };
   
   arrowShapes['circle'] = {
     _baseRadius: 0.15,
@@ -10923,20 +10977,22 @@ var cytoscape;
             * arrowShapes['circle']._baseRadius, 2));
       }
     },
-    roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-      return true;
-    },
+    
+    roughCollide: bbCollide,
+    
     draw: function(context) {
       context.arc(0, 0, arrowShapes['circle']._baseRadius, 0, Math.PI * 2, false);
     },
+    
     spacing: function(edge) {
       return rendFunc.getArrowWidth(edge._private.style['width'].pxValue)
         * arrowShapes['circle']._baseRadius;
     },
+    
     gap: function(edge) {
       return edge._private.style['width'].pxValue * 2;
     }
-  }
+  };
   
   arrowShapes['inhibitor'] = {
     _points: [
@@ -10945,22 +11001,16 @@ var cytoscape;
       0.25, -0.1,
       0.25, 0
     ],
+    
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       var points = arrowShapes['inhibitor']._points;
       
       return $$.math.pointInsidePolygon(
         x, y, points, centerX, centerY, width, height, direction, padding);
     },
-    roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-      if (typeof(arrowShapes['inhibitor']._farthestPointSqDistance) == 'undefined') {
-        arrowShapes['inhibitor']._farthestPointSqDistance = 
-          $$.math.findMaxSqDistanceToOrigin(arrowShapes['inhibitor']._points);
-      }
     
-      return $$.math.checkInBoundingCircle(
-        x, y, arrowShapes['inhibitor']._farthestPointSqDistance,
-        0, width, height, centerX, centerY);
-    },
+    roughCollide: bbCollide,
+    
     draw: function(context) {
       var points = arrowShapes['inhibitor']._points;
       
@@ -10968,14 +11018,18 @@ var cytoscape;
         context.lineTo(points[i * 2], points[i * 2 + 1]);
       }
     },
+    
     spacing: function(edge) {
       return 4;
     },
+    
     gap: function(edge) {
       return 4;
     }
-  }
-  
+  };
+
+  arrowShapes['tee'] = arrowShapes['inhibitor'];
+
   arrowShapes['square'] = {
     _points: [
       -0.12, 0.00,
@@ -10983,22 +11037,16 @@ var cytoscape;
       0.12, -0.24,
       -0.12, -0.24
     ],
+    
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       var points = arrowShapes['square']._points;
       
       return $$.math.pointInsidePolygon(
         x, y, points, centerX, centerY, width, height, direction, padding);
     },
-    roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-      if (typeof(arrowShapes['square']._farthestPointSqDistance) == 'undefined') {
-        arrowShapes['square']._farthestPointSqDistance = 
-          $$.math.findMaxSqDistanceToOrigin(arrowShapes['square']._points);
-      }
     
-      return $$.math.checkInBoundingCircle(
-        x, y, arrowShapes['square']._farthestPointSqDistance,
-        0, width, height, centerX, centerY);
-    },
+    roughCollide: bbCollide,
+    
     draw: function(context) {
       var points = arrowShapes['square']._points;
     
@@ -11006,14 +11054,16 @@ var cytoscape;
         context.lineTo(points[i * 2], points[i * 2 + 1]);
       }
     },
+    
     spacing: function(edge) {
       return 0;
     },
+
     gap: function(edge) {
       return edge._private.style['width'].pxValue * 2;
     }
-  }
-  
+  };
+
   arrowShapes['diamond'] = {
     _points: [
       -0.14, -0.14,
@@ -11021,38 +11071,31 @@ var cytoscape;
       0.14, -0.14,
       0, 0
     ],
+
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       var points = arrowShapes['diamond']._points;
           
       return $$.math.pointInsidePolygon(
         x, y, points, centerX, centerY, width, height, direction, padding);
     },
-    roughCollide: function(x, y, centerX, centerY, width, height, direction, padding) {
-      if (typeof(arrowShapes['diamond']._farthestPointSqDistance) == 'undefined') {
-        arrowShapes['diamond']._farthestPointSqDistance = 
-          $$.math.findMaxSqDistanceToOrigin(arrowShapes['diamond']._points);
-      }
-        
-      return $$.math.checkInBoundingCircle(
-        x, y, arrowShapes['diamond']._farthestPointSqDistance,
-        0, width, height, centerX, centerY);
-    },
+
+    roughCollide: bbCollide,
+
     draw: function(context) {
-//      context.translate(0, 0.16);
       context.lineTo(-0.14, -0.14);
       context.lineTo(0, -0.28);
       context.lineTo(0.14, -0.14);
       context.lineTo(0, 0.0);
     },
+    
     spacing: function(edge) {
       return 0;
     },
+    
     gap: function(edge) {
       return edge._private.style['width'].pxValue * 2;
     }
-  }
-  
-  arrowShapes['tee'] = arrowShapes['inhibitor'];
+  };
 
 })( cytoscape );
 ;(function($$){ 'use strict';
@@ -11901,7 +11944,7 @@ var cytoscape;
       badBezier = false;
       
 
-      if (hashTable[pairId].length > 1) {
+      if (hashTable[pairId].length > 1 && src !== tgt) {
 
         // pt outside src shape to calc distance/displacement from src to tgt
         var srcOutside = srcShape.intersectLine(
@@ -12856,6 +12899,8 @@ var cytoscape;
 
     var startX = edge._private.rscratch.arrowStartX;
     var startY = edge._private.rscratch.arrowStartY;
+
+    var style = edge._private.style;
     
     var srcPos = edge.source().position();
     dispX = startX - srcPos.x;
@@ -12866,23 +12911,21 @@ var cytoscape;
       var gco = context.globalCompositeOperation;
 
       context.globalCompositeOperation = 'destination-out';
-    
-      context.lineWidth = edge._private.style['width'].pxValue;
       
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
+      this.drawArrowShape(context, 'filled', style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       context.fillStyle = "rgba("
-        + edge._private.style['source-arrow-color'].value[0] + ","
-        + edge._private.style['source-arrow-color'].value[1] + ","
-        + edge._private.style['source-arrow-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";
+        + style['source-arrow-color'].value[0] + ","
+        + style['source-arrow-color'].value[1] + ","
+        + style['source-arrow-color'].value[2] + ","
+        + style.opacity.value + ")";
 
-      this.drawArrowShape(context, edge._private.style['source-arrow-shape'].value, 
+      this.drawArrowShape(context, style['source-arrow-fill'].value, style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
     } else {
@@ -12903,29 +12946,27 @@ var cytoscape;
 
       context.globalCompositeOperation = 'destination-out';
 
-      context.lineWidth = edge._private.style['width'].pxValue;
-
       context.fillStyle = 'white';
 
-      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
+      this.drawArrowShape(context, 'filled', style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
       //this.context.strokeStyle = "rgba("
       context.fillStyle = "rgba("
-        + edge._private.style['target-arrow-color'].value[0] + ","
-        + edge._private.style['target-arrow-color'].value[1] + ","
-        + edge._private.style['target-arrow-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";  
-    
-      this.drawArrowShape(context, edge._private.style['target-arrow-shape'].value,
+        + style['target-arrow-color'].value[0] + ","
+        + style['target-arrow-color'].value[1] + ","
+        + style['target-arrow-color'].value[2] + ","
+        + style.opacity.value + ")";  
+
+      this.drawArrowShape(context, style['target-arrow-fill'].value, style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
     }
   }
   
   // Draw arrowshape
-  CanvasRenderer.prototype.drawArrowShape = function(context, shape, x, y, dispX, dispY) {
+  CanvasRenderer.prototype.drawArrowShape = function(context, fill, shape, x, y, dispX, dispY) {
   
     // Negative of the angle
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
@@ -12955,7 +12996,12 @@ var cytoscape;
     context.closePath();
     
 //    context.stroke();
-    context.fill();
+    if( fill === 'hollow' ){
+      context.lineWidth = 1/size;
+      context.stroke();
+    } else {
+      context.fill();
+    }
 
     context.scale(1/size, 1/size);
     context.rotate(angle);
@@ -12967,19 +13013,11 @@ var cytoscape;
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
-
-  
   var imageCache = {};
-  
-  // Discard after 5 min. of disuse
-  var IMAGE_KEEP_TIME = 30 * 300; // 300frames@30fps, or. 5min
   
   CanvasRenderer.prototype.getCachedImage = function(url, onLoadRedraw) {
 
     if (imageCache[url] && imageCache[url].image) {
-
-      // Reset image discard timer
-      imageCache[url].keepTime = IMAGE_KEEP_TIME; 
       return imageCache[url].image;
     }
     
@@ -12991,9 +13029,6 @@ var cytoscape;
       imageCache[url].image.onload = onLoadRedraw;
       
       imageCache[url].image.src = url;
-      
-      // Initialize image discard timer
-      imageCache[url].keepTime = IMAGE_KEEP_TIME;
       
       imageContainer = imageCache[url];
     }
@@ -13031,70 +13066,86 @@ var cytoscape;
   }
   
   CanvasRenderer.prototype.updateImageCaches = function() {
-    
-    for (var url in imageCache) {
-      if (imageCache[url].keepTime <= 0) {
-        
-        if (imageCache[url].image != undefined) {
-          imageCache[url].image.src = undefined;
-          imageCache[url].image = undefined;
-        }
-        
-        imageCache[url] = undefined;
-      } else {
-        imageCache[url] -= 1;
-      }
-    }
-  }
-  
-  CanvasRenderer.prototype.drawImage = function(context, x, y, widthScale, heightScale, rotationCW, image) {
-    
-    image.widthScale = 0.5;
-    image.heightScale = 0.5;
-    
-    image.rotate = rotationCW;
-    
-    var finalWidth; var finalHeight;
-    
-    canvas.drawImage(image, x, y);
   }
 
   CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
     var r = this;
-//    console.log(this.data);
     var zoom = this.data.cy._private.zoom;
-    
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;
-
-    //var nodeWidth = node._private.style['width'].value;
-    //var nodeHeight = node._private.style['height'].value;
-    var nodeWidth = this.getNodeWidth(node);
-    var nodeHeight = this.getNodeHeight(node);
+    var style = node._private.style;
+    var fit = style['background-fit'].value;
+    var xPos = style['background-position-x'];
+    var yPos = style['background-position-y'];
+    var repeat = style['background-repeat'].value;
+    var nodeW = this.getNodeWidth(node);
+    var nodeH = this.getNodeHeight(node);
     
     context.save();
     
     CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
         context,
         nodeX, nodeY, 
-        nodeWidth, nodeHeight);
+        nodeW, nodeH);
     
     context.clip();
     
-//    context.setTransform(1, 0, 0, 1, 0, 0);
-    
-    var imgDim = [img.width, img.height];
-    context.drawImage(img, 
-        nodeX - imgDim[0] / 2,
-        nodeY - imgDim[1] / 2,
-        imgDim[0],
-        imgDim[1]);
+    var w = img.width;
+    var h = img.height;
+
+    if( fit === 'contain' ){
+      var scale = Math.min( nodeW/w, nodeH/h );
+
+      w *= scale;
+      h *= scale;
+
+    } else if( fit === 'cover' ){
+      var scale = Math.max( nodeW/w, nodeH/h );
+
+      w *= scale;
+      h *= scale;
+    }
+
+    var x = (nodeX - nodeW/2); // left
+    if( xPos.units === '%' ){
+      x += (nodeW - w) * xPos.value/100;
+    } else {
+      x += xPos.pxValue;
+    }
+
+    var y = (nodeY - nodeH/2); // top
+    if( yPos.units === '%' ){
+      y += (nodeH - h) * yPos.value/100;
+    } else {
+      y += yPos.pxValue;
+    }
+
+    if( repeat === 'repeat-x' || repeat === 'repeat-y' || repeat === 'repeat' ){
+      var pattern = context.createPattern( img, repeat );
+
+      x = Math.min(x, nodeX + nodeW/2);
+      x = Math.max(x, nodeX - nodeW/2);
+      y = Math.min(y, nodeY + nodeY/2);
+      y = Math.max(y, nodeY - nodeY/2);
+
+      context.fillStyle = pattern;
+      context.translate(x, y);
+
+      if( repeat === 'repeat-x' ){
+        context.fillRect( -nodeW, 0, 2*nodeW, nodeH );
+      } else if( repeat === 'repeat-y' ){
+        context.fillRect( 0, -nodeH, nodeW, 2*nodeH );
+      } else {
+        context.fill();
+      }
+
+      
+    } else {
+      context.drawImage( img, x, y, w, h );  
+    }
     
     context.restore();
-    
-    if (node._private.style['border-width'].value > 0) {
-      context.stroke();
-    }
+  
     
   };
 
@@ -13260,6 +13311,7 @@ var cytoscape;
   CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
 
     var nodeWidth, nodeHeight;
+    var style = node._private.style;
     
     if ( !node.visible() ) {
       return;
@@ -13274,32 +13326,39 @@ var cytoscape;
     nodeWidth = this.getNodeWidth(node);
     nodeHeight = this.getNodeHeight(node);
     
-    context.lineWidth = node._private.style['border-width'].pxValue;
+    context.lineWidth = style['border-width'].pxValue;
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
       // Node color & opacity
       context.fillStyle = "rgba(" 
-        + node._private.style['background-color'].value[0] + ","
-        + node._private.style['background-color'].value[1] + ","
-        + node._private.style['background-color'].value[2] + ","
-        + (node._private.style['background-opacity'].value 
-        * node._private.style['opacity'].value * parentOpacity) + ")";
+        + style['background-color'].value[0] + ","
+        + style['background-color'].value[1] + ","
+        + style['background-color'].value[2] + ","
+        + (style['background-opacity'].value 
+        * style['opacity'].value * parentOpacity) + ")";
       
       // Node border color & opacity
       context.strokeStyle = "rgba(" 
-        + node._private.style['border-color'].value[0] + ","
-        + node._private.style['border-color'].value[1] + ","
-        + node._private.style['border-color'].value[2] + ","
-        + (node._private.style['border-opacity'].value * node._private.style['opacity'].value * parentOpacity) + ")";
+        + style['border-color'].value[0] + ","
+        + style['border-color'].value[1] + ","
+        + style['border-color'].value[2] + ","
+        + (style['border-opacity'].value * style['opacity'].value * parentOpacity) + ")";
       
       context.lineJoin = 'miter'; // so borders are square with the node shape
-      
+
       //var image = this.getCachedImage('url');
       
-      var url = node._private.style['background-image'].value[2] ||
-        node._private.style['background-image'].value[1];
+      var url = style['background-image'].value[2] ||
+        style['background-image'].value[1];
       
+      CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+            context,
+            node._private.position.x,
+            node._private.position.y,
+            nodeWidth,
+            nodeHeight);
+
       if (url != undefined) {
         
         var r = this;
@@ -13320,56 +13379,36 @@ var cytoscape;
         );
         
         if (image.complete == false) {
-
-          CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
-            context,
-            node._private.position.x,
-            node._private.position.y,
-              nodeWidth, nodeHeight);
-            //node._private.style['width'].value,
-            //node._private.style['height'].value);
-          
-          context.stroke();
-          context.fillStyle = "#555555";
-          context.fill();
           
         } else {
           //context.clip
           this.drawInscribedImage(context, image, node);
         }
         
-      } else {
-
-        // Draw node
-        CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
-          context,
-          node._private.position.x,
-          node._private.position.y,
-          nodeWidth,
-          nodeHeight); //node._private.data.weight / 5.0
-      }
+      } 
       
       this.drawPie(context, node);
 
-      // Border width, draw border
-      if (node._private.style['border-width'].pxValue > 0) {
-        CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
-          context,
-          node._private.position.x,
-          node._private.position.y,
-          nodeWidth,
-          nodeHeight)
-        ;
+      var darkness = style['background-blacken'].value;
+      if( darkness > 0 ){
+        context.fillStyle = 'rgba(0, 0, 0, ' + darkness + ')';
+        context.fill();
+      } else if( darkness < 0 ){
+        context.fillStyle = 'rgba(255, 255, 255, ' + Math.abs(darkness) + ')';
+        context.fill();
+      }
 
+      // Border width, draw border
+      if (style['border-width'].pxValue > 0) {
         context.stroke();
       }
 
     // draw the overlay
     } else {
 
-      var overlayPadding = node._private.style['overlay-padding'].pxValue;
-      var overlayOpacity = node._private.style['overlay-opacity'].value;
-      var overlayColor = node._private.style['overlay-color'].value;
+      var overlayPadding = style['overlay-padding'].pxValue;
+      var overlayOpacity = style['overlay-opacity'].value;
+      var overlayColor = style['overlay-color'].value;
       if( overlayOpacity > 0 ){
         context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
@@ -13405,6 +13444,7 @@ var cytoscape;
 
     if( !this.hasPie(node) ){ return; } // exit early if not needed
 
+    var pieSize = node._private.style['pie-size'];
     var nodeW = this.getNodeWidth( node );
     var nodeH = this.getNodeHeight( node );
     var x = node._private.position.x;
@@ -13412,13 +13452,19 @@ var cytoscape;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
 
-    context.save();
+    if( pieSize.units === '%' ){
+      radius = radius * pieSize.value / 100;
+    } else if( pieSize.pxValue !== undefined ){
+      radius = pieSize.pxValue / 2;
+    }
 
-    // clip to the node shape
-    CanvasRenderer.nodeShapes[ this.getNodeShape(node) ]
-      .drawPath( context, x, y, nodeW, nodeH )
-    ;
-    context.clip();
+    // context.save();
+
+    // // clip to the node shape
+    // CanvasRenderer.nodeShapes[ this.getNodeShape(node) ]
+    //   .drawPath( context, x, y, nodeW, nodeH )
+    // ;
+    // context.clip();
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
       var size = node._private.style['pie-' + i + '-background-size'].value;
@@ -13529,12 +13575,13 @@ var cytoscape;
 
   }
 
-  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan ){
+  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan, pxRatio ){
     this.redraw({
       forcedContext: cxt,
       forcedZoom: zoom,
       forcedPan: pan,
-      drawAllLayers: true
+      drawAllLayers: true,
+      forcedPxRatio: pxRatio
     });
   };
 
@@ -13547,7 +13594,7 @@ var cytoscape;
     var forcedZoom = options.forcedZoom;
     var forcedPan = options.forcedPan;
     var r = this;
-    var pixelRatio = this.getPixelRatio();
+    var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     
     clearTimeout( this.redrawTimeout );
@@ -13813,7 +13860,7 @@ var cytoscape;
     }
 
     if( !forcedContext ){
-      setTimeout(drawToContext, 0); // makes direct renders to screen a bit more responsive
+      $$.util.requestAnimationFrame(drawToContext); // makes direct renders to screen a bit more responsive
     } else {
       drawToContext();
     }
@@ -14665,7 +14712,7 @@ var cytoscape;
               }
             } else {
               if( !shiftDown ){
-                cy.$(':selected').unselect();
+                cy.$(':selected').not( near ).unselect();
                 near.select();
               }               
             }
@@ -14719,7 +14766,7 @@ var cytoscape;
             newlySelCol.select();
           } else {
             if( !shiftDown ){
-              cy.$(':selected').unselect();
+              cy.$(':selected').not( newlySelCol ).unselect();
             }
 
             newlySelCol.select();
@@ -15495,7 +15542,7 @@ var cytoscape;
           var newlySelCol = (new $$.Collection( cy, newlySelected ));
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').unselect();
+            cy.$(':selected').not( newlySelCol ).unselect();
           }
 
           newlySelCol.select();
@@ -15628,7 +15675,7 @@ var cytoscape;
             && (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').unselect();
+            cy.$(':selected').not( start ).unselect();
             start.select();
           } else {
             if( start.selected() ){

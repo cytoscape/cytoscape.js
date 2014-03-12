@@ -204,14 +204,6 @@ gulp.task('dist', ['build'], function(){
 });
 
 gulp.task('pub', ['pkgver', 'dist', 'docspub'], function(next){
-
-  fs.chmodSync('./publish-tag.sh', 0775);
-  fs.chmodSync('./publish-docs.sh', 0775);
-  fs.chmodSync('./publish-npm.sh', 0775);
-  child_process.execFile('./publish-tag.sh');
-  child_process.execFile('./publish-npm.sh');
-  child_process.execFile('./publish-docs.sh');
-
   next();
 });
 

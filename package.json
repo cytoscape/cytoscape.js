@@ -1,57 +1,66 @@
 {
-	"name": "cytoscape",
-	"description": "A JavaScript graph library for analysis and visualisation",
-	"version": "2.1.1",
-	"license": "LGPL",
-	"engines": {
-		"node": ">=0.6"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/cytoscape/cytoscape.js.git"
-	},
-	"bugs": {
-		"url": "https://github.com/cytoscape/cytoscape.js/issues"
-	},
-	"author": {
-		"name": "Max Franz",
-		"email": "maxkfranz@gmail.com",
-		"url": "http://maxfranz.com"
-	},
-	"contributors": [
-		{
-			"name": "Christian Lopes",
-			"email": "chrtannus@gmail.com"
-		},
-		{
-			"name": "Yue Dong",
-			"email": "oryato@gmail.com"
-		},
-		{
-			"name": "Onur Sumer",
-			"email": "s.onur.sumer@gmail.com"
-		},
-		{
-			"name": "Gerardo Huck",
-			"email": "gerardohuck@gmail.com"
-		},
-		{
-			"name": "Alexandr Truhin (bumbu)",
-			"email": "bmbalex@gmail.com"
-		}
-	],
-	"keywords": [
-		"graph",
-		"theory",
-		"visualisation",
-		"visualization",
-		"analysis"
-	],
-	"main": "releases/2.1.1/cytoscape.js",
-	"scripts": {
-	},
-	"devDependencies": {
-		"chai": "~1.9.0",
-		"mocha": "~1.17.1"
-	}
+  "name": "cytoscape",
+  "description": "A JavaScript graph library for analysis and visualisation",
+  "version": "2.2.0+snapshot",
+  "license": "LGPL",
+  "engines": {
+    "node": ">=0.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cytoscape/cytoscape.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cytoscape/cytoscape.js/issues"
+  },
+  "author": {
+    "name": "Max Franz",
+    "email": "maxkfranz@gmail.com",
+    "url": "http://maxfranz.com"
+  },
+  "contributors": [
+    {
+      "name": "Christian Lopes",
+      "email": "chrtannus@gmail.com"
+    },
+    {
+      "name": "Yue Dong",
+      "email": "oryato@gmail.com"
+    },
+    {
+      "name": "Onur Sumer",
+      "email": "s.onur.sumer@gmail.com"
+    },
+    {
+      "name": "Gerardo Huck",
+      "email": "gerardohuck@gmail.com"
+    },
+    {
+      "name": "Alexandr Truhin (bumbu)",
+      "email": "bmbalex@gmail.com"
+    }
+  ],
+  "keywords": [
+    "graph",
+    "theory",
+    "visualisation",
+    "visualization",
+    "analysis"
+  ],
+  "main": "dist/cytoscape.js",
+  "scripts": {},
+  "devDependencies": {
+    "chai": "~1.9.0",
+    "mocha": "~1.17.1",
+    "gulp-mocha": "~0.4.1",
+    "gulp": "~3.5.2",
+    "gulp-tap": "~0.1.1",
+    "gulp-clean": "~0.2.4",
+    "gulp-concat": "~2.1.7",
+    "gulp-uglify": "~0.2.1",
+    "gulp-replace": "~0.2.0",
+    "gulp-inject": "~0.4.1",
+    "gulp-zip": "~0.1.2",
+    "marked": "~0.3.1"
+  }
 }

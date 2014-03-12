@@ -70,15 +70,20 @@
 		<div id="content">
 
 			<div id="top" class="title">Cytoscape.js <span class="version">{{version}}</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, and plain JavaScript)</div>
+			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://requirejs.org">AMD/Require.js</a>, <a href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, and plain JavaScript)</div>
+			
+			<div class="buttons-subtitle">
+				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
+
+				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download</a>
+			</div>
+
 			<div class="links">
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github"></span> GitHub</a> |
-				<a href="#downloads"><span class="icon-download-alt"></span> Downloads</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a>
 			</div>
 
@@ -174,14 +179,18 @@
 
 		</div>
 
-		<script>
-			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-			ga('create', 'UA-155159-11', 'cytoscape.github.io');
-			ga('send', 'pageview');
+		<script type="text/javascript">
+
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-155159-11']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
 
 		</script>
 

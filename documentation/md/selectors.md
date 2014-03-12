@@ -146,3 +146,8 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 
 * **`:parent`** : Matches parent nodes (they have one or more child nodes).
 * **`:child`** : Matches child nodes (they each have a parent).
+
+**Edges**
+
+* **`:loop`** : Matches loop edges (same source as target).
+* **`:simple`** : Matches simple edges (i.e. as would be in a *simple* graph, different source as target).

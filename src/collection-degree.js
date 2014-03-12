@@ -1,117 +1,126 @@
-;(function( $$ ){ "use strict";
-	
-	// Regular degree functions (works on single element)
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	function defineDegreeFunction(callback){
-		return function(){
-			var self = this;
-			
-			if( self.length === 0 ){ return; }
+;(function( $$ ){ 'use strict';
+  
+  // Regular degree functions (works on single element)
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  function defineDegreeFunction(callback){
+    return function( includeLoops ){
+      var self = this;
 
-			if( self.isNode() && !self.removed() ){
-				var degree = 0;
-				var node = self[0];
-				var connectedEdges = node._private.edges;
+      if( includeLoops === undefined ){
+        includeLoops = true;
+      }
+      
+      if( self.length === 0 ){ return; }
 
-				for( var i = 0; i < connectedEdges.length; i++ ){
-					var edge = connectedEdges[i];
-					degree += callback( node, edge );
-				}
-				
-				return degree;
-			} else {
-				return;
-			}
-		};
-	}
-	
-	$$.fn.eles({
-		degree: defineDegreeFunction(function(node, edge){
-			if( edge.source().same( edge.target() ) ){
-				return 2;
-			} else {
-				return 1;
-			}
-		}),
+      if( self.isNode() && !self.removed() ){
+        var degree = 0;
+        var node = self[0];
+        var connectedEdges = node._private.edges;
 
-		indegree: defineDegreeFunction(function(node, edge){
-			if( edge.target().same(node) ){
-				return 1;
-			} else {
-				return 0;
-			}
-		}),
+        for( var i = 0; i < connectedEdges.length; i++ ){
+          var edge = connectedEdges[i];
 
-		outdegree: defineDegreeFunction(function(node, edge){
-			if( edge.source().same(node) ){
-				return 1;
-			} else {
-				return 0;
-			}
-		})
-	});
-	
-	
-	// Collection degree stats
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	function defineDegreeBoundsFunction(degreeFn, callback){
-		return function(){
-			var ret = undefined;
-			var nodes = this.nodes();
+          if( !includeLoops && edge.isLoop() ){
+            continue;
+          }
 
-			for( var i = 0; i < nodes.length; i++ ){
-				var ele = nodes[i];
-				var degree = ele[degreeFn]();
-				if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
-					ret = degree;
-				}
-			}
-			
-			return ret;
-		};
-	}
-	
-	$$.fn.eles({
-		minDegree: defineDegreeBoundsFunction("degree", function(degree, min){
-			return degree < min;
-		}),
+          degree += callback( node, edge );
+        }
+        
+        return degree;
+      } else {
+        return;
+      }
+    };
+  }
+  
+  $$.fn.eles({
+    degree: defineDegreeFunction(function(node, edge){
+      if( edge.source().same( edge.target() ) ){
+        return 2;
+      } else {
+        return 1;
+      }
+    }),
 
-		maxDegree: defineDegreeBoundsFunction("degree", function(degree, max){
-			return degree > max;
-		}),
+    indegree: defineDegreeFunction(function(node, edge){
+      if( edge.target().same(node) ){
+        return 1;
+      } else {
+        return 0;
+      }
+    }),
 
-		minIndegree: defineDegreeBoundsFunction("indegree", function(degree, min){
-			return degree < min;
-		}),
+    outdegree: defineDegreeFunction(function(node, edge){
+      if( edge.source().same(node) ){
+        return 1;
+      } else {
+        return 0;
+      }
+    })
+  });
+  
+  
+  // Collection degree stats
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  function defineDegreeBoundsFunction(degreeFn, callback){
+    return function( includeLoops ){
+      var ret = undefined;
+      var nodes = this.nodes();
 
-		maxIndegree: defineDegreeBoundsFunction("indegree", function(degree, max){
-			return degree > max;
-		}),
+      for( var i = 0; i < nodes.length; i++ ){
+        var ele = nodes[i];
+        var degree = ele[degreeFn]( includeLoops );
+        if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
+          ret = degree;
+        }
+      }
+      
+      return ret;
+    };
+  }
+  
+  $$.fn.eles({
+    minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
+      return degree < min;
+    }),
 
-		minOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, min){
-			return degree < min;
-		}),
+    maxDegree: defineDegreeBoundsFunction('degree', function(degree, max){
+      return degree > max;
+    }),
 
-		maxOutdegree: defineDegreeBoundsFunction("outdegree", function(degree, max){
-			return degree > max;
-		})
-	});
-	
-	$$.fn.eles({
-		totalDegree: function(){
-			var total = 0;
-			var nodes = this.nodes();
+    minIndegree: defineDegreeBoundsFunction('indegree', function(degree, min){
+      return degree < min;
+    }),
 
-			for( var i = 0; i < nodes.length; i++ ){
-				total += nodes[i].degree();
-			}
+    maxIndegree: defineDegreeBoundsFunction('indegree', function(degree, max){
+      return degree > max;
+    }),
 
-			return total;
-		}
-	});
-	
+    minOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, min){
+      return degree < min;
+    }),
+
+    maxOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, max){
+      return degree > max;
+    })
+  });
+  
+  $$.fn.eles({
+    totalDegree: function( includeLoops ){
+      var total = 0;
+      var nodes = this.nodes();
+
+      for( var i = 0; i < nodes.length; i++ ){
+        total += nodes[i].degree( includeLoops );
+      }
+
+      return total;
+    }
+  });
+  
 })( cytoscape );
 
-	
+  

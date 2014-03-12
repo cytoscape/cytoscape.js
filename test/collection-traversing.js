@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-describe('Collection iteration', function(){
+describe('Collection traversing', function(){
 
   var cy, n1, n2, n3, n1n2, n2n3;
 
@@ -78,8 +78,6 @@ describe('Collection iteration', function(){
       data: { source: 'n1', target: 'n2', id: 'e' }
     });
 
-    console.log(e)
-
     expect( n1n2.parallelEdges().same( e.add(n1n2) ) ).to.be.true;
   });
 
@@ -90,26 +88,6 @@ describe('Collection iteration', function(){
     });
 
     expect( n1n2.codirectedEdges().same( e.add(n1n2) ) ).to.be.true;
-  });
-
-  it('eles.breadthFirstSearch()', function(){
-    var ids = [];
-
-    n1.breadthFirstSearch(function(i, depth){
-      ids.push( this.id() );
-    });
-
-    expect( ids ).to.deep.equal(['n1', 'n2', 'n3']);
-  });
-
-  it('eles.breadthFirstSearch() undirected', function(){
-    var ids = [];
-
-    n3.breadthFirstSearch(function(i, depth){
-      ids.push( this.id() );
-    });    
-
-    expect( ids ).to.deep.equal(['n3', 'n2', 'n1']);
   });
 
 });

@@ -14,6 +14,14 @@ To use Cytoscape.js in a CommonJS environment like Node.js:
 var cytoscape = require('cytoscape');
 ```
 
+To use Cytoscape.js with AMD/Require.js:
+
+```
+require(['cytoscape'], function(cytoscape){
+  // ...
+});
+```
+
 ### Getting started
 
 An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:

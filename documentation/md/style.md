@@ -106,7 +106,7 @@ Labels:
 
 Size & visibility:
 
- * **`opacity`** * : The opacity of the element.
+ * **`opacity`** : The opacity of the element.
  * **`visibility`** : Whether the element is visible; can be `visible` or `hidden`.
  * **`width`** : The element's width; the line width for edges or the horizontal size of a node.
  * **`z-index`** : A non-negative integer that specifies the z-ordering of the element.  An element with a higher `z-index` is put on top of an element with a lower value.
@@ -129,8 +129,8 @@ Labels:
 
 Body:
 
- * **`background-image`** : The URL that points to the image that should be used as the node's background.
  * **`background-color`** : The colour of the node's body.
+ * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's body.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
@@ -138,12 +138,22 @@ Body:
  * **`height`** : The height of the node's body.
  * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits with the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
 
+Background image:
+
+ * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.
+ * **`background-fit`** : How the background image is fit to the node; may be `none` for original size, `contain` to fit inside node, or `cover` to cover the node.
+ * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`.
+ * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+
+
 Pie chart background:
 
 These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
 
 You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
 
+ * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
  * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
  * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
 
@@ -161,12 +171,18 @@ Compound nodes:
 
 These properties apply only to edges:
 
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
+ * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the inter-control-point distance.
+ * **`control-point-distance`** : Overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
+ * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`source-arrow-color`** : The colour of the edge's arrow on the source side.
  * **`source-arrow-shape`** : The shape of the edge's arrow on the source side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+ * **`source-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
  * **`target-arrow-color`** : The colour of the edge's arrow on the target side.
  * **`target-arrow-shape`** : The shape of the edge's arrow on the target side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+ * **`target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
 ### Core properties
 

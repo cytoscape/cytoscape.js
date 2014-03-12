@@ -12,7 +12,7 @@ var demoFile = './js/load.js';
 try {
   config = require(configFile);
 } catch(e){
-  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://jsonlint.com/';
+  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/';
 }
 
 // load the demo file
@@ -57,12 +57,12 @@ function makeBookmark( id ){
 function parseSubsections( section ){
   var parentName = section.name;
   var html = section.html;
-  var matches = html.match(/\<h2\>.+?\<\/h2\>/g);
+  var matches = html.match(/\<h2.*?\>.+?\<\/h2\>/g);
   var psubs = [];
 
   for( var i = 0; matches && i < matches.length; i++ ){
     var match = matches[i];
-    var name = match.match(/\<h2\>(.+)\<\/h2\>/)[1];
+    var name = match.match(/\<h2.*?\>(.+)\<\/h2\>/)[1];
     var id = toUrl(parentName) + '/' + toUrl(name);
 
     psubs.push({

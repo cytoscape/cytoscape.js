@@ -102,4 +102,10 @@ $(function(){
     })(text)
   }
 
+  $('#download-button').on('mousedown touchstart', function(){
+    if( _gaq ){
+      _gaq.push(['_trackEvent', 'Actions', 'Download']);
+    }
+  });
+
 });

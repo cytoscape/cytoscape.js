@@ -1,5 +1,6 @@
 #!/bin/bash
 
-NPM = npm
+GIT = git
 
-$(NPM) publish .
+$(GIT) tag -a v$(VERSION) -m "v$(VERSION)"
+$(GIT) push origin v$(VERSION)

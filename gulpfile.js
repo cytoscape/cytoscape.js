@@ -9,6 +9,7 @@ var inject = require('gulp-inject');
 var zip = require('gulp-zip');
 var mocha = require('gulp-mocha');
 var child_process = require('child_process');
+var fs = require('fs');
 
 var now = new Date();
 var version = process.env['VERSION'] || ['snapshot', +now].join('-');

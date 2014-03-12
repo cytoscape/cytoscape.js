@@ -71,6 +71,7 @@ Run `gulp` in the console.  The main targets are:
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`.
  1. Confirm `VERSION` is picked up by gulp: `gulp version`.
  1. Build and publish the release: `gulp pub`, and then...
+  1. Make sure all your changes are pushed.
   1. Create a tag for this version in `git` (e.g. `./publish-tag.sh`)
   1. Copy the docs in `documentation` to the `gh-pages` branch and push (e.g. `./publish-docs.sh`)
   1. Publish to npm (e.g. `./publish-npm.sh`)

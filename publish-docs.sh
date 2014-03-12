@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CP=cp -R
-RM=rm -rf
+CP="cp -R"
+RM="rm -rf"
 GIT=git
 TEMP_DIR=/tmp
 DOC_DIR=documentation

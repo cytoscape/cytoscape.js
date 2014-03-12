@@ -1,5 +1,5 @@
 #!/bin/bash
 
-NPM = npm
+NPM=npm
 
-$(NPM) publish .
+$NPM publish .

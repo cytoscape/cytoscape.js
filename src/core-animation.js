@@ -1,4 +1,4 @@
-;(function($$){ 'use strict';
+;(function($$, window){ 'use strict';
   
   $$.fn.core({
     
@@ -27,6 +27,11 @@
       var stepDelay = 1000/60;
       var useTimeout = false;
       var useRequestAnimationFrame = true;
+
+      // don't execute the animation loop in headless environments
+      if( !window ){
+        return;
+      }
       
       // initialise the list
       cy._private.aniEles = [];
@@ -250,7 +255,7 @@
     
   });
   
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window );
 
 
   

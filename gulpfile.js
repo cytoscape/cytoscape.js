@@ -162,7 +162,7 @@ gulp.task('docsjs', ['build'], function(){
 });
 
 gulp.task('docsdl', ['zip'], function(){
-  return gulp.src('build/cytoscape.js-' + version + '.js')
+  return gulp.src('build/cytoscape.js-' + version + '.zip')
     .pipe( gulp.dest('documentation/download') )
   ;
 });

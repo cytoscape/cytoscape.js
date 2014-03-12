@@ -862,13 +862,13 @@
 
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">snapshot-1394561428167</span></div>
+			<div id="top" class="title">Cytoscape.js <span class="version">2.2.0</span></div>
 			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a href="http://nodejs.org/">Node.js</a>, <a href="http://requirejs.org">AMD/Require.js</a>, <a href="http://jquery.com/">jQuery</a> 1.4+, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" target="_blank" href="download/cytoscape.js-snapshot-1394561428167.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.0.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -1000,7 +1000,8 @@
 <a href="http://www.ucsf.edu/">UCSF</a> |
 <a href="http://www.unilever.com">Unilever</a> |
 <a href="http://www.utoronto.ca">Toronto</a> |
-<a href="http://portal.ncibi.org/gateway/index.html">NCIBI</a></p>
+<a href="http://portal.ncibi.org/gateway/index.html">NCIBI</a> |
+<a href="http://nrnb.org">NRNB</a></p>
 
 				
 
@@ -1144,7 +1145,17 @@ edge ......... a collection of a single edge
 <ul>
 <li><strong>Haystacks make fast edges</strong> : Set your edges <code>curve-style</code> to <code>haystack</code> in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than <code>bezier</code> edges.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
-<li><strong>Labels</strong> : Drawing labels is expensive.  If you can go without them or show them on tap/mouseover, you&#39;ll get better performance.  Consider not having labels for edges.</li>
+<li><strong>Animations</strong> : You will get better performance without animations.  If using animations anyway:<ul>
+<li>Try to limit the number of concurrent animating elements.</li>
+<li>When using transition animations in the style, make sure <code>transition-property</code> is defined only for states that you want to animate.  If you have <code>transition-property</code> defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.</li>
+</ul>
+</li>
+<li><strong>Labels</strong> : Drawing labels is expensive.<ul>
+<li>If you can go without them or show them on tap/mouseover, you&#39;ll get better performance.</li>
+<li>Consider not having labels for edges.</li>
+<li>Consider setting <code>min-zoomed-font-size</code> in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.</li>
+</ul>
+</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
 <li>Background images are very expensive, so you should remove them if you need high performance.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
@@ -1365,11 +1376,17 @@ node {
 <li><strong><code>width</code></strong> : The element&#39;s width; the line width for edges or the horizontal size of a node.</li>
 <li><strong><code>z-index</code></strong> : A non-negative integer that specifies the z-ordering of the element.  An element with a higher <code>z-index</code> is put on top of an element with a lower value.</li>
 </ul>
-<p>For overlays (e.g. used in <code>:active</code> state):</p>
+<p>Overlays (e.g. used in <code>:active</code> state):</p>
 <ul>
 <li><strong><code>overlay-color</code></strong> : The colour of the overlay.</li>
 <li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
 <li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
+</ul>
+<p>Transition animations:</p>
+<ul>
+<li><strong><code>transition-property</code></strong> : A comma separated list of style properties to animate in this state.</li>
+<li><strong><code>transition-duration</code></strong> : The length of the transition in seconds (e.g. <code>0.5s</code>).</li>
+<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>0.25</code>).</li>
 </ul>
 <h3 id="node-properties">Node properties</h3>
 <p>These properties apply only to nodes.</p>
@@ -1380,8 +1397,8 @@ node {
 </ul>
 <p>Body:</p>
 <ul>
-<li><strong><code>background-image</code></strong> : The URL that points to the image that should be used as the node&#39;s background.</li>
 <li><strong><code>background-color</code></strong> : The colour of the node&#39;s body.</li>
+<li><strong><code>background-blacken</code></strong> : Blackens the node&#39;s body for values from 0 to 1; whitens the node&#39;s body for values from 0 to -1.</li>
 <li><strong><code>background-opacity</code></strong> : The opacity level of the node&#39;s body.</li>
 <li><strong><code>border-color</code></strong> : The colour of the node&#39;s border.</li>
 <li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
@@ -1389,10 +1406,19 @@ node {
 <li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
 <li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>, <code>star</code>.  Note that each shape fits with the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).</li>
 </ul>
+<p>Background image:</p>
+<ul>
+<li><strong><code>background-image</code></strong> : The URL that points to the image that should be used as the node&#39;s background.  PNG, JPG, and SVG are supported formats.</li>
+<li><strong><code>background-fit</code></strong> : How the background image is fit to the node; may be <code>none</code> for original size, <code>contain</code> to fit inside node, or <code>cover</code> to cover the node.</li>
+<li><strong><code>background-repeat</code></strong> : Whether to repeat the background image; may be <code>no-repeat</code>, <code>repeat-x</code>, <code>repeat-y</code>, or <code>repeat</code>.</li>
+<li><strong><code>background-position-x</code></strong> : The x position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>
+<li><strong><code>background-position-y</code></strong> : The y position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>
+</ul>
 <p>Pie chart background:</p>
 <p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o&#39;clock position and working clockwise.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
 <ul>
+<li><strong><code>pie-size</code></strong> : The diameter of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
 <li><strong><code>pie-i-background-color</code></strong> : The colour of the node&#39;s ith pie chart slice.</li>
 <li><strong><code>pie-i-background-size</code></strong> : The size of the node&#39;s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
 </ul>
@@ -1414,8 +1440,10 @@ node {
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>source-arrow-color</code></strong> : The colour of the edge&#39;s arrow on the source side.</li>
 <li><strong><code>source-arrow-shape</code></strong> : The shape of the edge&#39;s arrow on the source side; may be <code>tee</code>, <code>triangle</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
+<li><strong><code>source-arrow-fill</code></strong> : The fill state of the edge&#39;s source arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 <li><strong><code>target-arrow-color</code></strong> : The colour of the edge&#39;s arrow on the target side.</li>
 <li><strong><code>target-arrow-shape</code></strong> : The shape of the edge&#39;s arrow on the target side; may be <code>tee</code>, <code>triangle</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
+<li><strong><code>target-arrow-fill</code></strong> : The fill state of the edge&#39;s target arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 </ul>
 <h3 id="core-properties">Core properties</h3>
 <p>These properties apply only to the core.  You can use the special <code>core</code> selector string to set these properties.</p>
@@ -1551,6 +1579,7 @@ node {
 <p>The <code>null</code> layout puts all nodes at (0, 0).  It&#39;s useful for debugging purposes.</p>
 <pre><code class="lang-js">options = {
     name: &#39;null&#39;,
+
     ready: function(){}, // on layoutready
     stop: function(){} // on layoutstop
 }
@@ -1561,6 +1590,7 @@ cy.layout( options );
 <p>The <code>random</code> layout puts nodes in random positions within the viewport.</p>
 <pre><code class="lang-js">options = {
     name: &#39;random&#39;,
+
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     fit: true // whether to fit to viewport
@@ -1572,23 +1602,28 @@ cy.layout( options );
 <p>The <code>preset</code> layout puts nodes in the positions you specify manually.</p>
 <pre><code class="lang-js">options = {
     name: &#39;preset&#39;,
+
     fit: true, // whether to fit to viewport
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
     positions: undefined, // map of (node id) =&gt; (position obj)
     zoom: undefined, // the zoom level to set (prob want fit = false if set)
-    pan: undefined // the pan level to set (prob want fit = false if set)
+    pan: undefined, // the pan level to set (prob want fit = false if set)
+    padding: 30 // padding on fit
 };
 
 cy.layout( options );
 </code></pre>
 <h2 id="layouts/grid">Grid <a href="#layouts/grid"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>grid</code> layout puts nodes in a well-spaced grid.</p>
-<pre><code class="lang-js">options = {
+<pre><code class="lang-js">{
     name: &#39;grid&#39;,
+
     fit: true, // whether to fit the viewport to the graph
+    padding: 30, // padding used on fit
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
+    position: function( node ){}, // returns { row, col } for element
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
 };
@@ -1599,6 +1634,7 @@ cy.layout( options );
 <p>The <code>circle</code> layout puts nodes in a circle.</p>
 <pre><code class="lang-js">options = {
     name: &#39;circle&#39;,
+
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -1614,6 +1650,7 @@ cy.layout( options );
 <p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.</p>
 <pre><code class="lang-js">options = {
     name: &#39;breadthfirst&#39;,
+
     fit: true, // whether to fit the viewport to the graph
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -1630,6 +1667,7 @@ cy.layout( options );
 <p>The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.</p>
 <pre><code class="lang-js">options = {
     name: &#39;arbor&#39;,
+
     liveUpdate: true, // whether to show the layout as it&#39;s running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
@@ -1657,8 +1695,8 @@ cy.layout( options );
     // function that returns true if the system is stable to indicate
     // that the layout can be stopped
     stableEnergy: function( energy ){
-        var e = energy; 
-        return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
+      var e = energy; 
+      return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
     }
 };
 
@@ -1687,57 +1725,57 @@ It was implemented by Gerardo Huck as part of Google Summer of Code 2013 (Mentor
 <pre><code class="lang-js">options = {
     name: &#39;cose&#39;,
 
-        // Called on `layoutready`
-        ready               : function() {},
+    // Called on `layoutready`
+    ready               : function() {},
 
-        // Called on `layoutstop`
-        stop                : function() {},
+    // Called on `layoutstop`
+    stop                : function() {},
 
-        // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
-        refresh             : 0,
+    // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
+    refresh             : 0,
 
-        // Whether to fit the network view after when done
-        fit                 : true, 
+    // Whether to fit the network view after when done
+    fit                 : true, 
 
-        // Padding on fit
-        padding             : 30, 
+    // Padding on fit
+    padding             : 30, 
 
 
-        // Whether to randomize node positions on the beginning
-        randomize           : true,
+    // Whether to randomize node positions on the beginning
+    randomize           : true,
 
-        // Whether to use the JS console to print debug messages
-        debug               : false,
+    // Whether to use the JS console to print debug messages
+    debug               : false,
 
-        // Node repulsion (non overlapping) multiplier
-        nodeRepulsion       : 10000,
+    // Node repulsion (non overlapping) multiplier
+    nodeRepulsion       : 10000,
 
-        // Node repulsion (overlapping) multiplier
-        nodeOverlap         : 10,
+    // Node repulsion (overlapping) multiplier
+    nodeOverlap         : 10,
 
-        // Ideal edge (non nested) length
-        idealEdgeLength     : 10,
+    // Ideal edge (non nested) length
+    idealEdgeLength     : 10,
 
-        // Divisor to compute edge forces
-        edgeElasticity      : 100,
+    // Divisor to compute edge forces
+    edgeElasticity      : 100,
 
-        // Nesting factor (multiplier) to compute ideal edge length for nested edges
-        nestingFactor       : 5, 
+    // Nesting factor (multiplier) to compute ideal edge length for nested edges
+    nestingFactor       : 5, 
 
-        // Gravity force (constant)
-        gravity             : 250, 
+    // Gravity force (constant)
+    gravity             : 250, 
 
-        // Maximum number of iterations to perform
-        numIter             : 100,
+    // Maximum number of iterations to perform
+    numIter             : 100,
 
-        // Initial temperature (maximum node displacement)
-        initialTemp         : 200,
+    // Initial temperature (maximum node displacement)
+    initialTemp         : 200,
 
-        // Cooling factor (how the temperature is reduced between consecutive iterations
-        coolingFactor       : 0.95, 
+    // Cooling factor (how the temperature is reduced between consecutive iterations
+    coolingFactor       : 0.95, 
 
-        // Lower temperature threshold (below this point the layout will end)
-        minTemp             : 1
+    // Lower temperature threshold (below this point the layout will end)
+    minTemp             : 1
 };
 
 cy.layout( options );

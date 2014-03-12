@@ -1,5 +1,6 @@
 #!/bin/bash
 
+CD=cd
 CP="cp -R"
 RM="rm -rf"
 GIT=git

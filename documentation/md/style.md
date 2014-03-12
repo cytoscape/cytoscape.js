@@ -111,11 +111,17 @@ Size & visibility:
  * **`width`** : The element's width; the line width for edges or the horizontal size of a node.
  * **`z-index`** : A non-negative integer that specifies the z-ordering of the element.  An element with a higher `z-index` is put on top of an element with a lower value.
 
-For overlays (e.g. used in `:active` state):
+Overlays (e.g. used in `:active` state):
 
  * **`overlay-color`** : The colour of the overlay.
  * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
  * **`overlay-opacity`** : The opacity of the overlay.
+
+Transition animations:
+
+ * **`transition-property`** : A comma separated list of style properties to animate in this state.
+ * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
+ * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25`).
 
 
 ### Node properties

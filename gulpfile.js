@@ -32,7 +32,7 @@ var paths = {
     'src/core-*.js',
     'src/collection.js',
     'src/collection-*.js',
-	'src/heap.js',
+    'src/heap.js',
     'src/extensions/renderer.canvas.define-and-init-etc.js',
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'
@@ -206,7 +206,9 @@ gulp.task('pub', ['pkgver', 'dist', 'docspub'], function(next){
 
   fs.chmodSync('./publish-tag.sh', 0775);
   fs.chmodSync('./publish-docs.sh', 0775);
+  fs.chmodSync('./publish-npm.sh', 0775);
   child_process.execFile('./publish-tag.sh');
+  child_process.execFile('./publish-npm.sh');
   child_process.execFile('./publish-docs.sh');
 
   next();

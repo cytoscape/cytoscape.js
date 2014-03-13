@@ -168,7 +168,7 @@ gulp.task('docsdl', ['zip'], function(){
   ;
 });
 
-gulp.task('docs', ['docsver'], function(next){
+gulp.task('docs', function(next){
   var cwd = process.cwd();
 
   process.chdir('./documentation');
@@ -178,7 +178,7 @@ gulp.task('docs', ['docsver'], function(next){
   next();
 });
 
-gulp.task('docspub', ['docs', 'docsjs', 'docsdl'], function(){
+gulp.task('docspub', ['docsver', 'docs', 'docsjs', 'docsdl'], function(){
 
 });
 

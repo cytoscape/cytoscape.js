@@ -91,7 +91,7 @@
                 { "args": [
                   { "name": "id", "descr": "The ID of the element to get." }
                 ] }
-              ],
+              ]
             },
 
             {

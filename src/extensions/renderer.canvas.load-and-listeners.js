@@ -321,8 +321,6 @@
       select[0] = select[2] = pos[0];
       select[1] = select[3] = pos[1];
       
-      r.redraw();
-      
     }, false);
     
     r.registerBinding(window, 'mousemove', $$.util.throttle( function(e) {
@@ -441,6 +439,9 @@
         if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
           clearTimeout( r.bgActiveTimeout );
           r.data.bgActivePosistion = undefined;
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          r.redraw();
         }
         
         if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -495,18 +496,13 @@
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
         }
-        
-        if( cy.boxSelectionEnabled() ){
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-        }
 
         // prevent the dragging from triggering text selection on the page
         preventDefault = true;
       }
       
       select[2] = pos[0]; select[3] = pos[1];
-      
-      r.redraw();
+    
       
       if( preventDefault ){ 
         if(e.stopPropagation) e.stopPropagation();
@@ -720,6 +716,13 @@
           
           var newlySelected = [];
           var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+          if (box.length > 0) { 
+            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          }
+
           // console.log(box);
           var event = new $$.Event(e, {type: 'select'});
           for (var i=0;i<box.length;i++) { 
@@ -740,17 +743,26 @@
 
             newlySelCol.select();
           }
-          
-          if (box.length > 0) { 
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+
+          if (box.length === 0) { 
+            r.redraw();
           }
+          
         }
         
         // Cancel drag pan
+        if( r.hoverData.dragging ){
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          r.redraw();
+        }
+
         r.hoverData.dragging = false;
         
         if (!select[4]) {
           // console.log('free at end', draggedElements)
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
           for (var i=0;i<draggedElements.length;i++) {
             
@@ -769,25 +781,22 @@
             
           }
 
-          if( down){ down.trigger('free'); }
+          if( down ){ down.trigger('free'); }
 
   //        draggedElements = r.dragData.possibleDragElements = [];
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          
         }
       
       } // else not right mouse
 
       select[4] = 0; r.hoverData.down = null;
       
-      r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true; 
+      //r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true; 
       
 //      console.log('mu', pos[0], pos[1]);
 //      console.log('ss', select);
       
       r.dragData.didDrag = false;
-
-      r.redraw();
       
     }, false);
     
@@ -1079,7 +1088,7 @@
           };
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-
+          r.redraw();
         }
         
         
@@ -1118,7 +1127,7 @@
         }, 1000);
       }
       
-      r.redraw();
+      //r.redraw();
       
     }, false);
     
@@ -1205,6 +1214,8 @@
         }
 
         select[4] = 1;
+
+        r.redraw();
 
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
@@ -1424,7 +1435,7 @@
       }
 
       for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
-      r.redraw();
+      //r.redraw();
       
     }, 1000/30), false);
     
@@ -1701,7 +1712,7 @@
         start.updateStyle(false);
       }
 
-      r.redraw();
+      //r.redraw();
       
     }, false);
   };

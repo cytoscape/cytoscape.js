@@ -80,6 +80,8 @@
   CanvasRenderer.prototype.redraw = function( options ) {
     options = options || {};
 
+    // console.log('redraw');
+
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
     var forcedZoom = options.forcedZoom;
@@ -109,6 +111,8 @@
 
     if( !forcedContext ){
       if( !callAfterLimit ){
+        // console.log('-- skip');
+
         clearTimeout( this.redrawTimeout );
         this.redrawTimeout = setTimeout(function(){
           r.redraw();

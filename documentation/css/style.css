@@ -248,6 +248,7 @@ button:active {
 	font-weight: 200;
 	font-size: 4em;
 	line-height: 1.25;
+	white-space: nowrap;
 }
 
 .title .version {

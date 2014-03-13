@@ -321,7 +321,9 @@ a.button {
 	color: #fff;
 	cursor: pointer;
 	padding: 0.25em 0.5em;
+	margin: 0.125em 0;
 	white-space: nowrap;
+	display: inline-block;
 }
 
 a.button.green {

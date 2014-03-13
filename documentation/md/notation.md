@@ -28,6 +28,8 @@ For functions that return a value, note that calling a singular &mdash; `ele`, `
 
 ## Position
 
+A node's position refers to the centre point of its bounding box.
+
 There is an important distinction to make for position:  A position may be a _model_ position or a _rendered_ position.
 
 A model position &mdash; as its name suggests &mdash; is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.

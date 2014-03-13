@@ -22,6 +22,12 @@ require(['cytoscape'], function(cytoscape){
 });
 ```
 
+To install Cytoscape.js via Bower (in the terminal):
+
+```
+bower install cytoscape
+```
+
 ### Getting started
 
 An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:

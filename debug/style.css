@@ -1,4 +1,4 @@
-body { font: 14pt arial; }	
+body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; }	
 #cytoscape, #cytoscape2 { border: 1px solid #888; height: 600px; background: #fff; width: 600px; }	
 #commands { position: absolute; right: 0; top: 4.5em; margin: 0.5em; font-size: 0.75em; line-height: 1; }
 #commands h2 { margin-top: 1em; font-size: 1.25em; }

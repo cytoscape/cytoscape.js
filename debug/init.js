@@ -157,35 +157,35 @@ $(function(){
     return shapes[index];
   }
 
-  // for(var i = 0; i < numNodes; i++){
+  for(var i = 0; i < numNodes; i++){
 
-  //   options.elements.nodes.push({
-  //     data: {
-  //       id: 'n' + i,
-  //       weight: Math.round( Math.random() * 100 ),
-  //       shape: randShape()
-  //     }
-  //   });
-  // }
+    options.elements.nodes.push({
+      data: {
+        id: 'n' + i,
+        weight: Math.round( Math.random() * 100 ),
+        shape: randShape()
+      }
+    });
+  }
   
-  // var j = 0;
-  // for(var clique = 0; clique < cliques; clique++){
-  //   for(var i = 0; i < numEdges/cliques; i++){
-  //     var srcId = randNodeId( clique );
-  //     var tgtId = randNodeId( clique );
+  var j = 0;
+  for(var clique = 0; clique < cliques; clique++){
+    for(var i = 0; i < numEdges/cliques; i++){
+      var srcId = randNodeId( clique );
+      var tgtId = randNodeId( clique );
 
-  //     options.elements.edges.push({
-  //       data: {
-  //         id: 'e' + (j++),
-  //         source: srcId,
-  //         target: tgtId,
-  //         weight: Math.round( Math.random() * 100 ),
-  //         tgtShape: randTgtArrow(),
-  //         srcShape: randSrcArrow()
-  //       }
-  //     });
-  //   }
-  // }
+      options.elements.edges.push({
+        data: {
+          id: 'e' + (j++),
+          source: srcId,
+          target: tgtId,
+          weight: Math.round( Math.random() * 100 ),
+          tgtShape: randTgtArrow(),
+          srcShape: randSrcArrow()
+        }
+      });
+    }
+  }
   
   var $container = $('#cytoscape');
   var $container2 = $('#cytoscape2');

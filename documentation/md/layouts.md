@@ -102,6 +102,30 @@ options = {
 cy.layout( options );
 ```
 
+## Concentric
+
+The `concentric` layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the `concentric` layout value based on your metric, which can be used with `mapLayoutData()`.
+
+```js
+	name: 'concentric',
+
+	fit: true, // whether to fit the viewport to the graph
+	ready: undefined, // callback on layoutready
+	stop: undefined, // callback on layoutstop
+	padding: 30, // the padding on fit
+	startAngle: 3/2 * Math.PI, // the position of the first node
+	counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+	minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
+	height: undefined, // height of layout area (overrides container height)
+	width: undefined, // width of layout area (overrides container width)
+	concentric: function(){ // returns numeric value for each node, placing higher nodes in levels towards the centre
+	  return this.degree();
+	},
+	levelWidth: function(nodes){ // the variation of concentric values in each level
+	  return nodes.maxDegree() / 4;
+	} 
+```
+
 
 ## Breadthfirst
 

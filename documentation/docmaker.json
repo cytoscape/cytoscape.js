@@ -85,6 +85,16 @@
             },
 
             {
+              "name": "cy.getElementById",
+              "descr": "Gets an element from its ID in a very performant way.",
+              "formats": [
+                { "args": [
+                  { "name": "id", "descr": "The ID of the element to get." }
+                ] }
+              ],
+            },
+
+            {
               "name": "cy.$",
               "descr": "Get elements in the graph matching a selector or a filter function.",
               "formats": [
@@ -1414,6 +1424,12 @@
                 {
                   "args": [
                     { "name": "eles", "descr": "The elements to add." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "elesArray", "descr": "An array of elements to add." }
                   ]
                 },
 

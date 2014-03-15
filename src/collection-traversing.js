@@ -161,7 +161,7 @@
 
       for( var i = 0; i < this.length; i++ ){
         var ele = this[i];
-        var source = ele._private[ params.attr ];
+        var src = ele._private[ params.attr ];
 
         if( src ){
           sources.push( src );

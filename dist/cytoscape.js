@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.0.
+ * This file is part of cytoscape.js 2.2.1.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -10204,7 +10204,7 @@ var cytoscape;
 
       for( var i = 0; i < this.length; i++ ){
         var ele = this[i];
-        var source = ele._private[ params.attr ];
+        var src = ele._private[ params.attr ];
 
         if( src ){
           sources.push( src );
@@ -10348,6 +10348,7 @@ var cytoscape;
 
   
 })( cytoscape );
+
 ;(function ($$) {
   "use strict";
 
@@ -11687,7 +11688,7 @@ var cytoscape;
 
   CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
     var content = node._private.style['content'].strValue;
-    if( !content || content.match(/\s+/) ){ return; }
+    if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;
     var nodeWidth = node.outerWidth();
@@ -11736,7 +11737,7 @@ var cytoscape;
 
   CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
     var content = edge._private.style['content'].strValue;
-    if( !content || content.match(/\s+/) ){ return; }
+    if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;  
     var edgeCenterX, edgeCenterY;
@@ -13159,7 +13160,7 @@ var cytoscape;
   CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
     var text = edge._private.style['content'].strValue;
 
-    if( !edge.visible() || !text || text.match(/\s+/) ){
+    if( !edge.visible() || !text || text.match(/^\s+$/) ){
       return;
     }
 
@@ -13187,7 +13188,7 @@ var cytoscape;
   CanvasRenderer.prototype.drawNodeText = function(context, node) {
     var text = node._private.style['content'].strValue;
 
-    if ( !node.visible() || !text || text.match(/\s+/) ) {
+    if ( !node.visible() || !text || text.match(/^\s+$/) ) {
       return;
     }
 
@@ -13387,7 +13388,17 @@ var cytoscape;
         
       } 
       
-      this.drawPie(context, node);
+      if( this.hasPie(node) ){
+        this.drawPie(context, node);
+
+        // redraw path for blacken and border
+        CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
+            context,
+            node._private.position.x,
+            node._private.position.y,
+            nodeWidth,
+            nodeHeight);
+      }
 
       var darkness = style['background-blacken'].value;
       if( darkness > 0 ){
@@ -13589,6 +13600,8 @@ var cytoscape;
   CanvasRenderer.prototype.redraw = function( options ) {
     options = options || {};
 
+    // console.log('redraw');
+
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
     var forcedZoom = options.forcedZoom;
@@ -13618,6 +13631,8 @@ var cytoscape;
 
     if( !forcedContext ){
       if( !callAfterLimit ){
+        // console.log('-- skip');
+
         clearTimeout( this.redrawTimeout );
         this.redrawTimeout = setTimeout(function(){
           r.redraw();
@@ -14352,8 +14367,6 @@ var cytoscape;
       select[0] = select[2] = pos[0];
       select[1] = select[3] = pos[1];
       
-      r.redraw();
-      
     }, false);
     
     r.registerBinding(window, 'mousemove', $$.util.throttle( function(e) {
@@ -14472,6 +14485,9 @@ var cytoscape;
         if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
           clearTimeout( r.bgActiveTimeout );
           r.data.bgActivePosistion = undefined;
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          r.redraw();
         }
         
         if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -14526,18 +14542,13 @@ var cytoscape;
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
         }
-        
-        if( cy.boxSelectionEnabled() ){
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-        }
 
         // prevent the dragging from triggering text selection on the page
         preventDefault = true;
       }
       
       select[2] = pos[0]; select[3] = pos[1];
-      
-      r.redraw();
+    
       
       if( preventDefault ){ 
         if(e.stopPropagation) e.stopPropagation();
@@ -14751,6 +14762,13 @@ var cytoscape;
           
           var newlySelected = [];
           var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+          if (box.length > 0) { 
+            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          }
+
           // console.log(box);
           var event = new $$.Event(e, {type: 'select'});
           for (var i=0;i<box.length;i++) { 
@@ -14771,17 +14789,26 @@ var cytoscape;
 
             newlySelCol.select();
           }
-          
-          if (box.length > 0) { 
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+
+          if (box.length === 0) { 
+            r.redraw();
           }
+          
         }
         
         // Cancel drag pan
+        if( r.hoverData.dragging ){
+          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          r.redraw();
+        }
+
         r.hoverData.dragging = false;
         
         if (!select[4]) {
           // console.log('free at end', draggedElements)
+
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
           for (var i=0;i<draggedElements.length;i++) {
             
@@ -14800,25 +14827,22 @@ var cytoscape;
             
           }
 
-          if( down){ down.trigger('free'); }
+          if( down ){ down.trigger('free'); }
 
   //        draggedElements = r.dragData.possibleDragElements = [];
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          
         }
       
       } // else not right mouse
 
       select[4] = 0; r.hoverData.down = null;
       
-      r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true; 
+      //r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true; 
       
 //      console.log('mu', pos[0], pos[1]);
 //      console.log('ss', select);
       
       r.dragData.didDrag = false;
-
-      r.redraw();
       
     }, false);
     
@@ -15110,7 +15134,7 @@ var cytoscape;
           };
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-
+          r.redraw();
         }
         
         
@@ -15149,7 +15173,7 @@ var cytoscape;
         }, 1000);
       }
       
-      r.redraw();
+      //r.redraw();
       
     }, false);
     
@@ -15236,6 +15260,8 @@ var cytoscape;
         }
 
         select[4] = 1;
+
+        r.redraw();
 
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
@@ -15455,7 +15481,7 @@ var cytoscape;
       }
 
       for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
-      r.redraw();
+      //r.redraw();
       
     }, 1000/30), false);
     
@@ -15732,7 +15758,7 @@ var cytoscape;
         start.updateStyle(false);
       }
 
-      r.redraw();
+      //r.redraw();
       
     }, false);
   };

@@ -4,4 +4,4 @@ The client application accesses Cytoscape.js solely through the [core](#core).  
 
 The following diagram summarises the extensions of Cytoscape.js, which are discussed in further detail [later in this documentation](#extensions).
 
-![The architecture of Cytoscape.js](https://raw.github.com/cytoscape/cytoscape.js/master/ref/arch.png)
+![The architecture of Cytoscape.js](ref/arch.png)

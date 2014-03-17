@@ -533,7 +533,7 @@
 
   CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
     var content = node._private.style['content'].strValue;
-    if( !content || content.match(/\s+/) ){ return; }
+    if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;
     var nodeWidth = node.outerWidth();
@@ -582,7 +582,7 @@
 
   CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
     var content = edge._private.style['content'].strValue;
-    if( !content || content.match(/\s+/) ){ return; }
+    if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;  
     var edgeCenterX, edgeCenterY;

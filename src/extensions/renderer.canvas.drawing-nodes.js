@@ -82,7 +82,17 @@
         
       } 
       
-      this.drawPie(context, node);
+      if( this.hasPie(node) ){
+        this.drawPie(context, node);
+
+        // redraw path for blacken and border
+        CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
+            context,
+            node._private.position.x,
+            node._private.position.y,
+            nodeWidth,
+            nodeHeight);
+      }
 
       var darkness = style['background-blacken'].value;
       if( darkness > 0 ){

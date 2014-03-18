@@ -199,7 +199,7 @@
         {
           // If something is under the cursor and it is draggable, prepare to grab it
           if (near != null && r.nodeIsDraggable(near)) {
-            if (near._private.group == 'nodes' && near._private.selected == false) {
+            if ( near.isNode() && !near.selected() ) {
 
               draggedElements = r.dragData.possibleDragElements = [ ];
               addNodeToDrag(near, draggedElements);
@@ -216,9 +216,8 @@
 
               // also add nodes and edges related to the topmost ancestor
               updateAncestorsInDragLayer(near, true);
-            }
-                
-            if (near._private.group == 'nodes' && near._private.selected == true) {
+
+            } else if ( near.isNode() && near.selected() ) {
               draggedElements = r.dragData.possibleDragElements = [  ];
 
               var triggeredGrab = false;
@@ -475,16 +474,16 @@
             // Locked nodes not draggable, as well as non-visible nodes
             if (ele.isNode() && r.nodeIsDraggable(ele)) {
               var pos = ele.position();
+
+              toTrigger.push( ele );
               
               return {
                 x: pos.x + disp[0],
                 y: pos.y + disp[1]
               };
 
-              toTrigger.push( ele );
             }
           });
-          
           
           (new $$.Collection(cy, toTrigger))
             .trigger('drag')
@@ -707,7 +706,7 @@
               updateAncestorsInDragLayer(ele, false);
             }
 
-            grabbedEles.trigger('free');
+            near.trigger('free');
           }
         }
         

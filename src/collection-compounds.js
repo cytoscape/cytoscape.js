@@ -89,6 +89,6 @@
   });
 
   // aliases
-  $$.fn.eles.ancestors = $$.fn.eles.parents;
+  $$.elesfn.ancestors = $$.elesfn.parents;
   
 })( cytoscape );

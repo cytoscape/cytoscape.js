@@ -74,12 +74,21 @@
     return a <= b;
   };
 
+  $$.fn.heap = function( fnMap, options ){
+    for( var name in fnMap ){
+      var fn = fnMap[name];
+      $$.Heap.prototype[ name ] = fn;
+    }
+  };
+
+  $$.heapfn = $$.Heap.prototype; // short alias
+
   /* object methods */
-  $$.Heap.prototype.size = function () {
+  $$.heapfn.size = function () {
     return this._private.length;
   };
 
-  $$.Heap.prototype.getArgumentAsCollection = function (eles, cy) {
+  $$.heapfn.getArgumentAsCollection = function (eles, cy) {
     var result;
     if(typeof cy === "undefined") {
       cy = this._private.cy;
@@ -107,7 +116,7 @@
     return result;
   };
 
-  $$.Heap.prototype.isHeap = function () {
+  $$.heapfn.isHeap = function () {
     var array = this._private.heap,
       arrlen = array.length,
       i,
@@ -131,7 +140,7 @@
     return true;
   };
 
-  $$.Heap.prototype.heapSwap = function (i, j) {
+  $$.heapfn.heapSwap = function (i, j) {
     var heap = this._private.heap,
       pointers = this._private.pointers,
       elements = this._private.elements,
@@ -150,7 +159,7 @@
     elements[j] = swapElems;
   };
 
-  $$.Heap.prototype.heapify = function (i, rootToLeaf) {
+  $$.heapfn.heapify = function (i, rootToLeaf) {
     var treeLen = 0,
       condHeap = false,
       array,
@@ -209,7 +218,7 @@
   };
 
   /* collectionOrElement */
-  $$.Heap.prototype.insert = function (eles) {
+  $$.heapfn.insert = function (eles) {
     var elements = this.getArgumentAsCollection(eles),
       elsize = elements.length,
       element,
@@ -237,7 +246,7 @@
     this._private.length = this._private.heap.length;
   };
 
-  $$.Heap.prototype.getValueById = function (elementId) {
+  $$.heapfn.getValueById = function (elementId) {
     if (this._private.pointers.hasOwnProperty(elementId)) {
       var elementIndex = this._private.pointers[elementId];
 
@@ -245,7 +254,7 @@
     }
   };
   
-  $$.Heap.prototype.contains = function (eles) {
+  $$.heapfn.contains = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
 
     for (var i = 0; i < elements.length; i += 1) {
@@ -259,7 +268,7 @@
     return true;
   };
   
-  $$.Heap.prototype.top = function () {
+  $$.heapfn.top = function () {
     if (this._private.length > 0) {
 
       return {
@@ -270,7 +279,7 @@
     }
   };
 
-  $$.Heap.prototype.pop = function () {
+  $$.heapfn.pop = function () {
     if (this._private.length > 0) {
       var top = this.top(),
         lastIndex = this._private.length - 1,
@@ -294,7 +303,7 @@
     }
   };
 
-  $$.Heap.prototype.findDirectionHeapify = function (index) {
+  $$.heapfn.findDirectionHeapify = function (index) {
     var parent = Math.floor((index - 1) / 2),
       array = this._private.heap,
       condHeap = parent < 0 || this._private.comparator(array[index], array[parent]);
@@ -304,7 +313,7 @@
 
   /* edit is a new value or function */
   // only values in heap are updated. elements themselves are not!
-  $$.Heap.prototype.edit = function (eles, edit) {
+  $$.heapfn.edit = function (eles, edit) {
     var elements = this.getArgumentAsCollection(eles);
     
     for (var i = 0; i < elements.length; i += 1) {
@@ -323,7 +332,7 @@
     }
   };
 
-  $$.Heap.prototype.delete = function (eles) {
+  $$.heapfn.delete = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
     
     for (var i = 0; i < elements.length; i += 1) {

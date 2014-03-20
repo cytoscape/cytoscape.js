@@ -12,6 +12,14 @@
       return;
     }
 
+    var overlayPadding = style['overlay-padding'].pxValue;
+    var overlayOpacity = style['overlay-opacity'].value;
+    var overlayColor = style['overlay-color'].value;
+
+    if( drawOverlayInstead && overlayOpacity === 0 ){ // exit early if drawing overlay but none to draw
+      return;
+    }
+
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
@@ -111,9 +119,6 @@
     // draw the overlay
     } else {
 
-      var overlayPadding = style['overlay-padding'].pxValue;
-      var overlayOpacity = style['overlay-opacity'].value;
-      var overlayColor = style['overlay-color'].value;
       if( overlayOpacity > 0 ){
         context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
@@ -132,22 +137,12 @@
   // does the node have at least one pie piece?
   CanvasRenderer.prototype.hasPie = function(node){
     node = node[0]; // ensure ele ref
-
-    for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-      var size = node._private.style['pie-' + i + '-background-size'].value;
-
-      if( size > 0 ){
-        return true;
-      }
-    }
-
-    return false;
+    
+    return node._private.hasPie;
   };
 
   CanvasRenderer.prototype.drawPie = function(context, node){
     node = node[0]; // ensure ele ref
-
-    if( !this.hasPie(node) ){ return; } // exit early if not needed
 
     var pieSize = node._private.style['pie-size'];
     var nodeW = this.getNodeWidth( node );

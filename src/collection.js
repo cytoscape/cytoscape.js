@@ -156,7 +156,6 @@
     }
     
     var ids = {};
-    var uniqueElements = [];
     var createdElements = false;
     
     if( !elements ){
@@ -192,6 +191,8 @@
       elements = eles;
     }
     
+    this.length = 0;
+
     for( var i = 0, l = elements.length; i < l; i++ ){
       var element = elements[i];
       if( !element ){  continue; }
@@ -200,14 +201,11 @@
       
       if( !ids[ id ] ){
         ids[ id ] = element;
-        uniqueElements.push( element );
+
+        this[ this.length ] = element;
+        this.length++;
       }
     }
-    
-    for(var i = 0, l = uniqueElements.length; i < l; i++){
-      this[i] = uniqueElements[i];
-    }
-    this.length = uniqueElements.length;
     
     this._private = {
       cy: cy,

@@ -125,33 +125,38 @@
 
     visible: function(){
       var ele = this[0];
+      var cy = this.cy();
 
       if( ele ){
+        var style = ele._private.style;
+
         if(
-          ele.css('visibility') !== 'visible'
-        ||  ele.css('display') !== 'element'
-        // ||  parseFloat( ele.css('opacity') ) === 0
+          style['visibility'].value !== 'visible'
+          || style['display'].value !== 'element'
         ){
           return false;
         }
         
         if( ele.isNode() ){
-          var parents = ele.parents();
-          for( var i = 0; i < parents.length; i++ ){
-            var parent = parents[i];
-            var pVis = parent.css('visibility');
-            var pDis = parent.css('display');
-            var pOpac = parseFloat( parent.css('opacity') );
+          var parents = ele._private.data.parent ? ele.parents() : null;
 
-            if( pVis !== 'visible' || pDis !== 'element' ){
-              return false;
+          if( parents ){
+            for( var i = 0; i < parents.length; i++ ){
+              var parent = parents[i];
+              var pStyle = parent._private.style;
+              var pVis = pStyle['visibility'].value;
+              var pDis = pStyle['display'].value;
+
+              if( pVis !== 'visible' || pDis !== 'element' ){
+                return false;
+              }
             }
           }
 
           return true;
         } else if( ele.isEdge() ){
-          var src = ele.source();
-          var tgt = ele.target();
+          var src = cy.getElementById( ele._private.data.source );
+          var tgt = cy.getElementById( ele._private.data.target );
 
           return src.visible() && tgt.visible();
         }
@@ -172,13 +177,15 @@
 
       if( ele ){
         var parentOpacity = ele._private.style.opacity.value;
-        var parents = ele.parents();
+        var parents = !ele._private.data.parent ? null : ele.parents();
         
-        for( var i = 0; i < parents.length; i++ ){
-          var parent = parents[i];
-          var opacity = parent._private.style.opacity.value;
+        if( parents ){
+          for( var i = 0; i < parents.length; i++ ){
+            var parent = parents[i];
+            var opacity = parent._private.style.opacity.value;
 
-          parentOpacity = opacity * parentOpacity;
+            parentOpacity = opacity * parentOpacity;
+          }
         }
 
         return parentOpacity;

@@ -20,6 +20,14 @@
 
       return this;
     },
+
+    resize: function(){
+      this.notify({
+        type: 'resize'
+      });
+
+      return this;
+    },
     
     initRenderer: function( options ){
       var cy = this;
@@ -36,8 +44,7 @@
           style: cy._private.style
         })
       );
-      
-      
+       
     },
 
     recalculateRenderedStyle: function(){

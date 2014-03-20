@@ -70,6 +70,21 @@
         this.updateTransitions( ele, addedCxts, removedCxts );
       }
 
+      // set whether has pie or not; for greater efficiency
+      var hasPie = false;
+      if( ele._private.group === 'nodes' ){
+        for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
+          var size = ele._private.style['pie-' + i + '-background-size'].value;
+
+          if( size > 0 ){
+            hasPie = true;
+            break;
+          }
+        }
+      }
+
+      ele._private.hasPie = hasPie;
+
     } // for elements
 
     self._private.newStyle = false;

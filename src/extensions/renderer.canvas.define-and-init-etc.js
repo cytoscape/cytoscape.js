@@ -118,6 +118,9 @@
       break;
     }
 
+    if( params.type === 'load' || params.type === 'resize' ){
+      this.matchCanvasSize(this.data.container);
+    }
     
     this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;

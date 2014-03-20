@@ -350,6 +350,11 @@
               "name": "cy.forceRender",
               "descr": "Force the renderer to redraw (i.e. draw a new frame).",
               "md": "core/forceRender"
+            },
+
+            {
+              "name": "cy.resize",
+              "descr": "Force the renderer to resize the viewport based on its container size."
             }
           ]
 

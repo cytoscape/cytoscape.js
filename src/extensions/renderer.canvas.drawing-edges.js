@@ -16,31 +16,24 @@
       return;
     }
 
-    var startNode, endNode, source, target;
-
-    source = startNode = edge.source()[0];
-    target = endNode = edge.target()[0];
-
-    var targetPos = target.position();
-    var sourcePos = source.position();
+    var style = edge._private.style;
     
-    if ( 
-         edge._private.style['visibility'].value != 'visible'
-      || edge._private.style['display'].value != 'element'
-      || startNode._private.style['visibility'].value != 'visible'
-      || startNode._private.style['display'].value != 'element'
-      || endNode._private.style['visibility'].value != 'visible'
-      || endNode._private.style['display'].value != 'element'
-    ){
+    // Edge line width
+    if (style['width'].pxValue <= 0) {
       return;
     }
-    
-    var overlayPadding = edge._private.style['overlay-padding'].pxValue;
-    var overlayOpacity = edge._private.style['overlay-opacity'].value;
-    var overlayColor = edge._private.style['overlay-color'].value;
+
+    var overlayPadding = style['overlay-padding'].pxValue;
+    var overlayOpacity = style['overlay-opacity'].value;
+    var overlayColor = style['overlay-color'].value;
 
     // Edge color & opacity
     if( drawOverlayInstead ){
+
+      if( overlayOpacity === 0 ){ // exit early if no overlay
+        return;
+      }
+
       context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
       context.lineCap = 'round';
 
@@ -50,27 +43,32 @@
 
     } else {
       context.strokeStyle = "rgba(" 
-        + edge._private.style['line-color'].value[0] + ","
-        + edge._private.style['line-color'].value[1] + ","
-        + edge._private.style['line-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";
+        + style['line-color'].value[0] + ","
+        + style['line-color'].value[1] + ","
+        + style['line-color'].value[2] + ","
+        + style.opacity.value + ")";
 
       
       context.lineCap = 'butt'; 
     }
-
-    // Edge line width
-    if (edge._private.style['width'].pxValue <= 0) {
-      return;
-    }
     
-    var edgeWidth = edge._private.style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-    var lineStyle = drawOverlayInstead ? 'solid' : edge._private.style['line-style'].value;
+    var cy = edge._private.cy;
+    var startNode, endNode, source, target;
+    source = startNode = cy.getElementById( edge._private.data.source );
+    target = endNode = cy.getElementById( edge._private.data.target );
+
+    var targetPos = target.position();
+    var sourcePos = source.position();
+
+    var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+    var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
     context.lineWidth = edgeWidth;
     
-    this.findEndpoints(edge);
+    if( rs.edgeType !== 'haystack' ){
+      this.findEndpoints(edge);
+    }
     
-    if( rs.edgeType == 'haystack' ){
+    if( rs.edgeType === 'haystack' ){
       this.drawStyledEdge(
         edge, 
         context, 
@@ -78,7 +76,7 @@
         lineStyle,
         edgeWidth
       );
-    } else if (rs.edgeType == 'self') {
+    } else if (rs.edgeType === 'self') {
           
       var details = edge._private.rscratch;
       this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
@@ -100,31 +98,31 @@
       //   context.fillRect(pt.x, pt.y, 2, 2);
       // }
       
-    } else if (rs.edgeType == 'straight') {
+    } else if (rs.edgeType === 'straight') {
       
       var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
       var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
       
-      var edgeDirectionX = edge._private.rscratch.endX - edge._private.rscratch.startX;
-      var edgeDirectionY = edge._private.rscratch.endY - edge._private.rscratch.startY;
+      var edgeDirectionX = rs.endX - rs.startX;
+      var edgeDirectionY = rs.endY - rs.startY;
       
       if (nodeDirectionX * edgeDirectionX
         + nodeDirectionY * edgeDirectionY < 0) {
         
-        edge._private.rscratch.straightEdgeTooShort = true;  
+        rs.straightEdgeTooShort = true;  
       } else {
         
-        var details = edge._private.rscratch;
+        var details = rs;
         this.drawStyledEdge(edge, context, [details.startX, details.startY,
                                       details.endX, details.endY],
                                       lineStyle,
                                       edgeWidth);
         
-        edge._private.rscratch.straightEdgeTooShort = false;  
+        rs.straightEdgeTooShort = false;  
       }  
     } else {
       
-      var details = edge._private.rscratch;
+      var details = rs;
 
       // context.fillStyle = 'rgba(255, 0, 0, 1)';
       // context.fillRect(details.startX, details.startY, 2, 2);
@@ -150,8 +148,7 @@
       
     }
     
-    if (edge._private.rscratch.noArrowPlacement !== true
-        && edge._private.rscratch.startX !== undefined) {
+    if ( rs.edgeType !== 'haystack' && rs.noArrowPlacement !== true && rs.startX !== undefined ){
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
 

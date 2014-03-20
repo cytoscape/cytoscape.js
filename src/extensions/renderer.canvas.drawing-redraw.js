@@ -89,6 +89,7 @@
     var r = this;
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
+    var needDraw = data.canvasNeedsRedraw;
     
     clearTimeout( this.redrawTimeout );
 
@@ -137,9 +138,9 @@
     function drawToContext(){
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 
-      if( !forcedContext ){
-        r.matchCanvasSize(data.container);
-      }
+      // if( !forcedContext ){
+      //   r.matchCanvasSize(data.container);
+      // }
 
       var zoom = cy.zoom();
       var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
@@ -158,10 +159,16 @@
       effectivePan.x *= pixelRatio;
       effectivePan.y *= pixelRatio;
       
-      var elements;
-      var elesInDragLayer;
-      var elesNotInDragLayer;
-      var element;
+      var eles = {
+        drag: {
+          nodes: [],
+          edges: []
+        },
+        nondrag: {
+          nodes: [],
+          edges: []
+        }
+      };
 
       function setContextTransform(context){
         context.setTransform(1, 0, 0, 1, 0, 0);
@@ -179,7 +186,7 @@
         }
       }
 
-      if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers) {
         //NB : VERY EXPENSIVE
         //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
@@ -195,20 +202,20 @@
       
 
         // console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-        elements = r.getCachedZSortedEles();
+        var zEles = r.getCachedZSortedEles();
         // } console.timeEnd('sort')
 
-        elesInDragLayer = [];
-        elesNotInDragLayer = [];
+        for (var i = 0; i < zEles.length; i++) {
+          var ele = zEles[i];
+          var list;
 
-        for (var index = 0; index < elements.length; index++) {
-          element = elements[index];
-
-          if ( element._private.rscratch.inDragLayer ) {
-            elesInDragLayer.push( element );
+          if ( ele._private.rscratch.inDragLayer ) {
+            list = eles.drag;
           } else {
-            elesNotInDragLayer.push( element );
+            list = eles.nondrag;
           }
+
+          list[ ele._private.group ].push( ele );
         }
 
         // console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
@@ -221,25 +228,14 @@
       }
       
       
-      function drawElements( eleList, context ){
-        var edges = [];
-        var nodes = [];
-
-        for (var i = 0; i < eleList.length; i++) {
-          ele = eleList[i];
-          
-          if ( ele.isNode() ) {
-            nodes.push( ele );
-            
-          } else if ( ele.isEdge() && !hideEdges ) {
-            r.drawEdge(context, ele);
-            edges.push( ele );
-          }
-        }
+      function drawElements( list, context ){
+        var edges = list.edges;
+        var nodes = list.nodes;
 
         for (var i = 0; i < edges.length && !hideEdges; i++) {
           ele = edges[i];
           
+          r.drawEdge(context, ele);
           r.drawEdgeText(context, ele);
           r.drawEdge(context, ele, true);
         }
@@ -255,32 +251,32 @@
 
 
       // console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-      if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.NODE] || drawAllLayers) {
         // console.log('redrawing node layer');
         
         var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
 
         setContextTransform( context );
-        drawElements(elesNotInDragLayer, context);
+        drawElements(eles.nondrag, context);
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; 
+          needDraw[CanvasRenderer.NODE] = false; 
         }
       }
       
-      if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.DRAG] || drawAllLayers) {
         
         var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
         
         setContextTransform( context );
-        drawElements(elesInDragLayer, context);
+        drawElements(eles.drag, context);
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false;
+          needDraw[CanvasRenderer.DRAG] = false;
         }
       }
       
-      if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
+      if (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
         // console.log('redrawing selection box');
         
         var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
@@ -337,7 +333,7 @@
         }
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; 
+          needDraw[CanvasRenderer.SELECT_BOX] = false; 
         }
       }
 

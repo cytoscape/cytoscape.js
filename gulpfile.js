@@ -10,6 +10,8 @@ var zip = require('gulp-zip');
 var mocha = require('gulp-mocha');
 var child_process = require('child_process');
 var fs = require('fs');
+var htmlmin = require('gulp-htmlmin');
+var cssmin = require('gulp-cssmin');
 
 var now = new Date();
 var version = process.env['VERSION'] || ['snapshot', +now].join('-');
@@ -37,7 +39,23 @@ var paths = {
     'src/extensions/renderer.canvas.define-and-init-etc.js',
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'
-  ]
+  ],
+
+  docs: {
+    js: [
+      'documentation/js/fastclick.js',
+      'documentation/js/jquery.js',
+      'documentation/js/cytoscape.js',
+      'documentation/js/load.js',
+      'documentation/js/script.js'
+    ],
+
+    css: [
+      'documentation/css/reset.css',
+      'documentation/css/font-awesome.css',
+      'documentation/css/style.css'
+    ]
+  }
 };
 
 
@@ -178,8 +196,70 @@ gulp.task('docs', function(next){
   next();
 });
 
-gulp.task('docspub', ['docsver', 'docs', 'docsjs', 'docsdl'], function(){
+gulp.task('docsmin', ['docshtmlmin'], function(next){
+  next();
+});
 
+gulp.task('docsclean', function(next){
+  return gulp.src(['documentation/js/all.min.js', 'documentation/css/all.min.css', 'documentation/index.html'])
+    .pipe( clean({ read: false }) )
+  ;
+});
+
+gulp.task('docshtmlmin', ['docsminrefs'], function(){
+  return gulp.src('documentation/index.html')
+    .pipe( htmlmin({ collapseWhitespace: true }) )
+
+    .pipe( gulp.dest('documentation') )
+  ;
+});
+
+gulp.task('docsjsmin', ['docs'], function(){
+  return gulp.src( paths.docs.js )
+    .pipe( concat('all.min.js') )
+    
+    .pipe( uglify({
+      mangle: true
+    }) )
+
+    .pipe( gulp.dest('documentation/js') )
+  ;
+});
+
+gulp.task('docscssmin', ['docs'], function(){ 
+  return gulp.src( paths.docs.css )
+    .pipe( concat('all.min.css') )
+
+    .pipe( cssmin() )
+
+    .pipe( gulp.dest('documentation/css') )
+  ;
+});
+
+gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
+  return gulp.src('documentation/index.html')
+    .pipe( inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ], { read: false }), {
+      addRootSlash: false,
+      ignorePath: 'documentation'
+    } ) )
+
+    .pipe( gulp.dest('documentation') )
+  ;
+});
+
+gulp.task('docsrefs', function(){
+  return gulp.src([ 'documentation/index.html', 'documentation/template.html' ])
+    .pipe( inject( gulp.src(paths.docs.js.concat( paths.docs.css ), { read: false }), {
+      addRootSlash: false,
+      ignorePath: 'documentation'
+    } ) )
+
+    .pipe( gulp.dest('documentation') )
+  ;
+});
+
+gulp.task('docspub', ['docsver', 'docsjs', 'docsdl'], function(){
+  return gulp.start('docsmin');
 });
 
 gulp.task('pkgver', function(){

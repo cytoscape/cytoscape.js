@@ -1,76 +1,29 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta name="description" content="A JavaScript graph library for analysis and visualisation (compatible with CommonJS/Node.js, jQuery {{jqueryVersion}}+, and plain JavaScript)">
+		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
-		<meta name="keywords" content="cytoscape,graph,graph theory,library,javascript,jquery,visualisation,visualization,node.js,node,example,demo,tutorial,layout,extension,plugin,api,documentation,node,edge,link,network,vertex,editor,interactive,json,dynamic,selector,compound,class,event,collection,pan,zoom,degree,grab,lock,select,binding,bind,listener,animation,iteration,search,analysis,filter,renderer,canvas,force directed">
+		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery {{jqueryVersion}}+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
-		<meta name="viewport" content="user-scalable=false, initial-zoom=1.0;">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
-		<link href="css/reset.css" rel="stylesheet" />
-		<link href="css/font-awesome.css" rel="stylesheet" />
-		<link href="css/style.css" rel="stylesheet" />
-
-		<script src="js/require.js"></script>
-		<script src="js/jquery.js"></script>
-		<script src="js/cytoscape.js"></script>
-		<script src="js/arbor.js"></script>
-		<script src="js/load.js"></script>
-		<script src="js/script.js"></script>
+		<!-- inject:css -->
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/style.css">
+		<!-- endinject -->
 		
 	</head>
 
 	<body>
 
-		<div id="cy-title"><pre class="content"></pre></div>
-		<div id="cy"></div>
-		<div id="cy-refresh">
-			<span class="icon-refresh"></span>
-		</div>
-		<div id="cy-show">
-			<span class="icon-plus"></span>
-		</div>
-		<div id="cy-hide">
-			<span class="icon-minus"></span>
-		</div>
-
-		<div id="navigation">
-			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
-
-			{{#each sections}}
-				<div class="section lvl1">
-					{{#if sections}}<span class="expander">
-						<span class="icon-caret-down expanded-icon"></span>
-						<span class="icon-caret-right collapsed-icon"></span>
-					</span>{{/if}}
-					<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
-				</div>
-
-				{{#each sections}}
-					<div class="section lvl2">
-						{{#if fns}}<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
-						</span>{{/if}}
-						<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
-					</div>
-
-					{{#each fns}}
-						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
-					{{/each}}
-				{{/each}}
-			{{/each}}
-
-			<p><span class="icon-sign-blank"></span></p>
-		</div>
-
 		<div id="content">
 
-			<div id="top" class="title">Cytoscape.js <span class="version">{{version}}</span></div>
-			<div class="subtitle">A JavaScript graph library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery {{jqueryVersion}}+, and plain JavaScript)</span><span class="version">{{version}}</span></h1>
+			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
@@ -179,6 +132,61 @@
 
 		</div>
 
+
+		<div id="navigation">
+			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
+
+			{{#each sections}}
+				<div class="section lvl1">
+					{{#if sections}}<span class="expander">
+						<span class="icon-caret-down expanded-icon"></span>
+						<span class="icon-caret-right collapsed-icon"></span>
+					</span>{{/if}}
+					<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
+				</div>
+
+				{{#each sections}}
+					<div class="section lvl2">
+						{{#if fns}}<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>{{/if}}
+						<a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}</a>
+					</div>
+
+					{{#each fns}}
+						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+					{{/each}}
+				{{/each}}
+			{{/each}}
+
+			<p><span class="icon-sign-blank"></span></p>
+		</div>
+
+
+
+		<div id="cy-title"><pre class="content"></pre></div>
+		<div id="cy"></div>
+		<div id="cy-refresh">
+			<span class="icon-refresh"></span>
+		</div>
+		<div id="cy-show">
+			<span class="icon-plus"></span>
+		</div>
+		<div id="cy-hide">
+			<span class="icon-minus"></span>
+		</div>
+
+
+		<!-- inject:js -->
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
+		<!-- endinject -->
+
+		<script src="js/arbor.js"></script>
 
 		<script type="text/javascript">
 

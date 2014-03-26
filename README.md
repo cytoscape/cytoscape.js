@@ -58,6 +58,7 @@ Run `gulp` in the console.  The main targets are:
  * `debugrefs` : update JS lib file refs in debug page
  * `test` : run the Mocha unit tests
  * `docs` : build the documentation template
+ * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
  * `dist` : update the distribution JS for npm, bower, etc.
  * `pub` : publish a new version of Cytoscape.js

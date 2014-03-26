@@ -1,11 +1,20 @@
 body {
 	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
+	-webkit-text-size-adjust: 100%
 }
 
-* {
+body, html {
+	width: 100%;
+}
+
+body {
 	-webkit-tap-highlight-color: transparent !important;
 	outline: 0;
+}
+
+img {
+	max-width: 80%;
 }
 
 #cy {
@@ -120,7 +129,7 @@ button:active {
 #navigation .lvl3 {
 	margin-left: 2em;
 	font-size: 0.7em;
-	font-family: /*Andale Mono,*/ courier new, monospace;
+	font-family: Consolas, "Liberation Mono", Courier, monospace;
 }
 
 #navigation .expander {
@@ -249,6 +258,11 @@ button:active {
 	font-size: 4em;
 	line-height: 1.25;
 	white-space: nowrap;
+	margin: 0;
+}
+
+.title .description {
+	display: none;
 }
 
 .title .version {
@@ -350,7 +364,7 @@ ul {
 
 code,
 pre {
-	font-family: /*Consolas,*/ courier new, monospace;
+	font-family: Consolas, "Liberation Mono", Courier, monospace;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	font-size: 1em;
@@ -380,28 +394,24 @@ pre code {
 
 .function {
 	padding: 1em 0;
-	border-bottom: 1px dashed #bbb;
 }
 
 .function + .function {
-	margin-top: 1em;
-	border-top: 0;
-	padding-top: 0;
+	border-top: 1px dashed #888;
 }
 
 .function .name {
-	font-family: /*Andale Mono,*/ courier new, monospace;
-	font-weight: bold;
+	font-family: Consolas, "Liberation Mono", Courier, monospace;
 }
 
 .function > .name {
-	
+	font-size: 1.25em;
 }
 
 .function > .formats,
 .function > .details {
 	padding-left: 0.25em;
-	margin: 0.25em 1em;
+	margin: 0.25em 0;
 }
 
 .function .formats {
@@ -444,11 +454,19 @@ pre code {
 
 
 @media only screen 
-and (min-device-width : 320px) 
-and (max-device-width : 480px) {
+and (max-width : 800px) {
 
 	body {
 		width: 100%;
+		font-size: 10pt;
+	}
+
+	.title {
+		font-size: 2.5em;
+	}
+
+	.buttons-subtitle {
+		font-size: 1.25em;
 	}
 
 	#navigation {
@@ -459,15 +477,10 @@ and (max-device-width : 480px) {
 		margin-left: 0.5em;
 	}
 
-	.title {
-		font-size: 2.75em;
-	}
-
 }
 
 @media only screen 
-and (min-device-width : 320px) 
-and (max-device-width : 480px)
+and (max-width : 800px)
 and (orientation:landscape) {
 
 	#navigation {
@@ -481,12 +494,11 @@ and (orientation:landscape) {
 }
 
 @media only screen 
-and (min-device-width : 320px) 
-and (max-device-width : 480px)
+and (max-width : 800px)
 and (orientation:portrait) {
 
 	#content {
-		font-size: 2.5em;
+
 	}
 
 }

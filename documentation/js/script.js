@@ -25,24 +25,24 @@ $(function(){
 
   loadCy();
 
-  $('#cy-refresh').on('mousedown touchstart', function(){
+  $('#cy-refresh').on('click', function(){
     loadCy();
 
     $('#cy').attr('style', '');
   });
 
-  $('#cy-hide').on('mousedown touchstart', function(){
+  $('#cy-hide').on('click', function(){
     $('#cy, #cy-hide, #cy-refresh').hide();
     $('#cy-show').show();
   });
 
-  $('#cy-show').on('mousedown touchstart', function(){
+  $('#cy-show').on('click', function(){
     $('#cy, #cy-hide, #cy-refresh').show();
     $('#cy-show').hide();
   });
 
 
-  $('#demo-source .expander').on('mousedown touchstart', function(){
+  $('#demo-source .expander').on('click', function(){
     $('#demo-source').removeClass('collapsed');
   });
 
@@ -102,7 +102,7 @@ $(function(){
     })(text)
   }
 
-  $('#download-button').on('mousedown touchstart', function(){
+  $('#download-button').on('click', function(){
     if( _gaq ){
       _gaq.push(['_trackEvent', 'Actions', 'Download']);
     }

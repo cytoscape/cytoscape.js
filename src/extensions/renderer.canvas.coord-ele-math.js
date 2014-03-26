@@ -620,7 +620,7 @@
     var weight = style['font-weight'].strValue;
 
     var rscratch = ele._private.rscratch;
-    var cacheKey = [fStyle, size, family, variant, weight].join('$$$');
+    var cacheKey = [fStyle, size, family, variant, weight, text].join('$$$');
     var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
 
     if( cache[cacheKey] ){

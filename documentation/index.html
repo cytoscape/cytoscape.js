@@ -1133,12 +1133,10 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 <p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. </p>
 <p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.</p>
 <p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
-<ul>
-<li><code>hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
-</ul>
+<p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</p>
 <p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:</p>
 <ul>
-<li><code>renderer.name</code> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
+<li><strong><code>renderer.name</code></strong> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
 </ul>
 <p><strong><code>style</code></strong> : The stylesheet used to style the document.</p>
 <p>For example:</p>

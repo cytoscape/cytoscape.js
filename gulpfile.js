@@ -69,7 +69,7 @@ gulp.task('version', function(){
 });
 
 gulp.task('clean', function(){
-  return gulp.src(['build', 'dist'])
+  return gulp.src(['build'])
     .pipe( clean({ read: false }) )
   ;
 });

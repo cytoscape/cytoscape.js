@@ -1059,13 +1059,13 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'ready'</span>) }
 });
 </code></pre>
-<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&quot;null&quot;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.</p>
+<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.</p>
 <p>If you&#39;ve included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: </p>
-<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
     <span class="hljs-comment">// you can access the core object API through cy</span>
 
-    console.log(<span class="hljs-string">"ready"</span>);
+    console.log(<span class="hljs-string">'ready'</span>);
   }
 
   <span class="hljs-comment">// , ...</span>
@@ -1073,13 +1073,13 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 </code></pre>
 <p>This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.</p>
 <p>For example, </p>
-<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape(options)
-  .css(<span class="hljs-string">"background"</span>, <span class="hljs-string">"red"</span>)
-  .css(<span class="hljs-string">"border-color"</span>, <span class="hljs-string">"black"</span>); <span class="hljs-comment">// can use jquery functions on 'cy' div</span>
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape(options)
+  .css(<span class="hljs-string">'background'</span>, <span class="hljs-string">'red'</span>)
+  .css(<span class="hljs-string">'border-color'</span>, <span class="hljs-string">'black'</span>); <span class="hljs-comment">// can use jquery functions on 'cy' div</span>
 </code></pre>
 <p>Because this style doesn&#39;t give you access to the <code>cy</code> object outside of the callback function, there is an option to get the <code>cy</code> object from a jQuery selector.</p>
-<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape(options);
-<span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">"#cy"</span>).cytoscape(<span class="hljs-string">"get"</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape(options);
+<span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-string">'get'</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
 </code></pre>
 <h3 id="the-ready-callback">The ready callback</h3>
 <p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.</p>
@@ -1088,26 +1088,26 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 <pre><code class="lang-js"><span class="hljs-comment">// in foo.js</span>
 $(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
 
-  $(<span class="hljs-string">"#cy"</span>).cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventObject)</span>{</span> <span class="hljs-comment">// on Cytoscape.js ready on the `cy` div</span>
+  $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventObject)</span>{</span> <span class="hljs-comment">// on Cytoscape.js ready on the `cy` div</span>
     <span class="hljs-comment">// this code executes when Cytoscape.js is ready even though we</span>
     <span class="hljs-comment">// don't actually initialise Cytoscape.js on the `cy` div until</span>
     <span class="hljs-comment">// bar.js is loaded</span>
 
     <span class="hljs-keyword">var</span> cy = <span class="hljs-keyword">this</span>; <span class="hljs-comment">// `this` holds the reference to the core object</span>
 
-    console.log(<span class="hljs-string">"Ready, Freddie!"</span>);
+    console.log(<span class="hljs-string">'Ready, Freddie!'</span>);
   });
 
 });
 
 <span class="hljs-comment">// in bar.js (should be after foo.js in your js includes)</span>
 $(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
-  $(<span class="hljs-string">"#cy"</span>).cytoscape(options);
+  $(<span class="hljs-string">'#cy'</span>).cytoscape(options);
 });
 </code></pre>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
-<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
   selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
   layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
   zoom: <span class="hljs-number">1</span>,
@@ -1125,11 +1125,7 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
   elements: [ <span class="hljs-comment">/* ... */</span> ]
 });
 </code></pre>
-<p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&quot;additive&quot;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&quot;single&quot;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
-<ul>
-<li><code>renderer.hideEdgesOnViewport</code> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</li>
-</ul>
-<p><strong><code>showOverlay</code></strong> : A boolean, indicating whether you&#39;d like to see the &quot;cytoscape.js&quot; overlay in the bottom right of the viewport (default <code>true</code>).</p>
+<p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&#39;additive&#39;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&#39;single&#39;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
 <p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports, as described in <a href="#core/visuals/cy.layout"><code>cy.layout()</code></a>.</p>
 <p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
 <p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.</p>
@@ -1146,7 +1142,7 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 </ul>
 <p><strong><code>style</code></strong> : The stylesheet used to style the document.</p>
 <p>For example:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
   <span class="hljs-comment">/* ... */</span>
 
   style: cytoscape.stylesheet()

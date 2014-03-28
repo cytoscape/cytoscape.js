@@ -39,16 +39,16 @@ cytoscape({
 });
 ```
 
-If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `"null"` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.
+If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.
 
 If you've included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: 
 
 ```js
-$("#cy").cytoscape({ // for some div with id 'cy'
+$('#cy').cytoscape({ // for some div with id 'cy'
   ready: function(){
     // you can access the core object API through cy
 
-    console.log("ready");
+    console.log('ready');
   }
 
   // , ...
@@ -60,16 +60,16 @@ This initialises Cytoscape.js and returns back to you your instance of jQuery.  
 For example, 
 
 ```js
-$("#cy").cytoscape(options)
-  .css("background", "red")
-  .css("border-color", "black"); // can use jquery functions on 'cy' div 
+$('#cy').cytoscape(options)
+  .css('background', 'red')
+  .css('border-color', 'black'); // can use jquery functions on 'cy' div 
 ```
 
 Because this style doesn't give you access to the `cy` object outside of the callback function, there is an option to get the `cy` object from a jQuery selector.
 
 ```js
-$("#cy").cytoscape(options);
-var cy = $("#cy").cytoscape("get"); // now we have a global reference to `cy`
+$('#cy').cytoscape(options);
+var cy = $('#cy').cytoscape('get'); // now we have a global reference to `cy`
 ```
 
 
@@ -88,21 +88,21 @@ Because the `ready` event may occur before you can bind to the core, you can use
 // in foo.js
 $(function(){ // on jquery ready
 
-  $("#cy").cytoscape(function(eventObject){ // on Cytoscape.js ready on the `cy` div
+  $('#cy').cytoscape(function(eventObject){ // on Cytoscape.js ready on the `cy` div
     // this code executes when Cytoscape.js is ready even though we
     // don't actually initialise Cytoscape.js on the `cy` div until
     // bar.js is loaded
 
     var cy = this; // `this` holds the reference to the core object
 
-    console.log("Ready, Freddie!");
+    console.log('Ready, Freddie!');
   });
 
 });
 
 // in bar.js (should be after foo.js in your js includes)
 $(function(){ // on jquery ready
-  $("#cy").cytoscape(options);
+  $('#cy').cytoscape(options);
 });
 ```
 
@@ -112,7 +112,7 @@ $(function(){ // on jquery ready
 An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.
 
 ```js
-$("#cy").cytoscape({
+$('#cy').cytoscape({
   selectionType: (isTouchDevice ? 'additive' : 'single'),
   layout: { name: 'grid' /* , ... */ },
   zoom: 1,
@@ -131,11 +131,7 @@ $("#cy").cytoscape({
 });
 ```
 
-**`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `"additive"` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `"single"` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
-
-* `renderer.hideEdgesOnViewport` : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
-
-**`showOverlay`** : A boolean, indicating whether you'd like to see the "cytoscape.js" overlay in the bottom right of the viewport (default `true`).
+**`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `'additive'` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `'single'` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a layout's documentation for the options it supports, as described in [`cy.layout()`](#core/visuals/cy.layout).
 
@@ -162,7 +158,7 @@ $("#cy").cytoscape({
 For example:
 
 ```js
-$("#cy").cytoscape({
+$('#cy').cytoscape({
   /* ... */
 
   style: cytoscape.stylesheet()

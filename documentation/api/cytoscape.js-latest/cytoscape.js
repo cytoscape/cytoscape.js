@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.1.
+ * This file is part of cytoscape.js 2.2.2.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -5170,6 +5170,21 @@ var cytoscape;
         this.updateTransitions( ele, addedCxts, removedCxts );
       }
 
+      // set whether has pie or not; for greater efficiency
+      var hasPie = false;
+      if( ele._private.group === 'nodes' ){
+        for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
+          var size = ele._private.style['pie-' + i + '-background-size'].value;
+
+          if( size > 0 ){
+            hasPie = true;
+            break;
+          }
+        }
+      }
+
+      ele._private.hasPie = hasPie;
+
     } // for elements
 
     self._private.newStyle = false;
@@ -6913,6 +6928,14 @@ var cytoscape;
 
       return this;
     },
+
+    resize: function(){
+      this.notify({
+        type: 'resize'
+      });
+
+      return this;
+    },
     
     initRenderer: function( options ){
       var cy = this;
@@ -6929,8 +6952,7 @@ var cytoscape;
           style: cy._private.style
         })
       );
-      
-      
+       
     },
 
     recalculateRenderedStyle: function(){
@@ -7541,7 +7563,6 @@ var cytoscape;
     }
     
     var ids = {};
-    var uniqueElements = [];
     var createdElements = false;
     
     if( !elements ){
@@ -7577,6 +7598,8 @@ var cytoscape;
       elements = eles;
     }
     
+    this.length = 0;
+
     for( var i = 0, l = elements.length; i < l; i++ ){
       var element = elements[i];
       if( !element ){  continue; }
@@ -7585,14 +7608,11 @@ var cytoscape;
       
       if( !ids[ id ] ){
         ids[ id ] = element;
-        uniqueElements.push( element );
+
+        this[ this.length ] = element;
+        this.length++;
       }
     }
-    
-    for(var i = 0, l = uniqueElements.length; i < l; i++){
-      this[i] = uniqueElements[i];
-    }
-    this.length = uniqueElements.length;
     
     this._private = {
       cy: cy,
@@ -8705,7 +8725,7 @@ var cytoscape;
   });
 
   // aliases
-  $$.fn.eles.ancestors = $$.fn.eles.parents;
+  $$.elesfn.ancestors = $$.elesfn.parents;
   
 })( cytoscape );
 ;(function($$){ 'use strict';
@@ -9844,33 +9864,38 @@ var cytoscape;
 
     visible: function(){
       var ele = this[0];
+      var cy = this.cy();
 
       if( ele ){
+        var style = ele._private.style;
+
         if(
-          ele.css('visibility') !== 'visible'
-        ||  ele.css('display') !== 'element'
-        // ||  parseFloat( ele.css('opacity') ) === 0
+          style['visibility'].value !== 'visible'
+          || style['display'].value !== 'element'
         ){
           return false;
         }
         
         if( ele.isNode() ){
-          var parents = ele.parents();
-          for( var i = 0; i < parents.length; i++ ){
-            var parent = parents[i];
-            var pVis = parent.css('visibility');
-            var pDis = parent.css('display');
-            var pOpac = parseFloat( parent.css('opacity') );
+          var parents = ele._private.data.parent ? ele.parents() : null;
 
-            if( pVis !== 'visible' || pDis !== 'element' ){
-              return false;
+          if( parents ){
+            for( var i = 0; i < parents.length; i++ ){
+              var parent = parents[i];
+              var pStyle = parent._private.style;
+              var pVis = pStyle['visibility'].value;
+              var pDis = pStyle['display'].value;
+
+              if( pVis !== 'visible' || pDis !== 'element' ){
+                return false;
+              }
             }
           }
 
           return true;
         } else if( ele.isEdge() ){
-          var src = ele.source();
-          var tgt = ele.target();
+          var src = cy.getElementById( ele._private.data.source );
+          var tgt = cy.getElementById( ele._private.data.target );
 
           return src.visible() && tgt.visible();
         }
@@ -9891,13 +9916,15 @@ var cytoscape;
 
       if( ele ){
         var parentOpacity = ele._private.style.opacity.value;
-        var parents = ele.parents();
+        var parents = !ele._private.data.parent ? null : ele.parents();
         
-        for( var i = 0; i < parents.length; i++ ){
-          var parent = parents[i];
-          var opacity = parent._private.style.opacity.value;
+        if( parents ){
+          for( var i = 0; i < parents.length; i++ ){
+            var parent = parents[i];
+            var opacity = parent._private.style.opacity.value;
 
-          parentOpacity = opacity * parentOpacity;
+            parentOpacity = opacity * parentOpacity;
+          }
         }
 
         return parentOpacity;
@@ -10425,12 +10452,21 @@ var cytoscape;
     return a <= b;
   };
 
+  $$.fn.heap = function( fnMap, options ){
+    for( var name in fnMap ){
+      var fn = fnMap[name];
+      $$.Heap.prototype[ name ] = fn;
+    }
+  };
+
+  $$.heapfn = $$.Heap.prototype; // short alias
+
   /* object methods */
-  $$.Heap.prototype.size = function () {
+  $$.heapfn.size = function () {
     return this._private.length;
   };
 
-  $$.Heap.prototype.getArgumentAsCollection = function (eles, cy) {
+  $$.heapfn.getArgumentAsCollection = function (eles, cy) {
     var result;
     if(typeof cy === "undefined") {
       cy = this._private.cy;
@@ -10458,7 +10494,7 @@ var cytoscape;
     return result;
   };
 
-  $$.Heap.prototype.isHeap = function () {
+  $$.heapfn.isHeap = function () {
     var array = this._private.heap,
       arrlen = array.length,
       i,
@@ -10482,7 +10518,7 @@ var cytoscape;
     return true;
   };
 
-  $$.Heap.prototype.heapSwap = function (i, j) {
+  $$.heapfn.heapSwap = function (i, j) {
     var heap = this._private.heap,
       pointers = this._private.pointers,
       elements = this._private.elements,
@@ -10501,7 +10537,7 @@ var cytoscape;
     elements[j] = swapElems;
   };
 
-  $$.Heap.prototype.heapify = function (i, rootToLeaf) {
+  $$.heapfn.heapify = function (i, rootToLeaf) {
     var treeLen = 0,
       condHeap = false,
       array,
@@ -10560,7 +10596,7 @@ var cytoscape;
   };
 
   /* collectionOrElement */
-  $$.Heap.prototype.insert = function (eles) {
+  $$.heapfn.insert = function (eles) {
     var elements = this.getArgumentAsCollection(eles),
       elsize = elements.length,
       element,
@@ -10588,7 +10624,7 @@ var cytoscape;
     this._private.length = this._private.heap.length;
   };
 
-  $$.Heap.prototype.getValueById = function (elementId) {
+  $$.heapfn.getValueById = function (elementId) {
     if (this._private.pointers.hasOwnProperty(elementId)) {
       var elementIndex = this._private.pointers[elementId];
 
@@ -10596,7 +10632,7 @@ var cytoscape;
     }
   };
   
-  $$.Heap.prototype.contains = function (eles) {
+  $$.heapfn.contains = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
 
     for (var i = 0; i < elements.length; i += 1) {
@@ -10610,7 +10646,7 @@ var cytoscape;
     return true;
   };
   
-  $$.Heap.prototype.top = function () {
+  $$.heapfn.top = function () {
     if (this._private.length > 0) {
 
       return {
@@ -10621,7 +10657,7 @@ var cytoscape;
     }
   };
 
-  $$.Heap.prototype.pop = function () {
+  $$.heapfn.pop = function () {
     if (this._private.length > 0) {
       var top = this.top(),
         lastIndex = this._private.length - 1,
@@ -10645,7 +10681,7 @@ var cytoscape;
     }
   };
 
-  $$.Heap.prototype.findDirectionHeapify = function (index) {
+  $$.heapfn.findDirectionHeapify = function (index) {
     var parent = Math.floor((index - 1) / 2),
       array = this._private.heap,
       condHeap = parent < 0 || this._private.comparator(array[index], array[parent]);
@@ -10655,7 +10691,7 @@ var cytoscape;
 
   /* edit is a new value or function */
   // only values in heap are updated. elements themselves are not!
-  $$.Heap.prototype.edit = function (eles, edit) {
+  $$.heapfn.edit = function (eles, edit) {
     var elements = this.getArgumentAsCollection(eles);
     
     for (var i = 0; i < elements.length; i += 1) {
@@ -10674,7 +10710,7 @@ var cytoscape;
     }
   };
 
-  $$.Heap.prototype.delete = function (eles) {
+  $$.heapfn.delete = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
     
     for (var i = 0; i < elements.length; i += 1) {
@@ -10825,6 +10861,9 @@ var cytoscape;
       break;
     }
 
+    if( params.type === 'load' || params.type === 'resize' ){
+      this.matchCanvasSize(this.data.container);
+    }
     
     this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -11230,182 +11269,146 @@ var cytoscape;
     
     // Check nodes
     for (var i = 0; i < nodes.length; i++) {
-      if (CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPointRough(x, y,
-          nodes[i]._private.style['border-width'].pxValue / 2,
-          this.getNodeWidth(nodes[i]) + nodeThreshold, this.getNodeHeight(nodes[i]) + nodeThreshold,
-          nodes[i]._private.position.x, nodes[i]._private.position.y)
-        &&
-        CanvasRenderer.nodeShapes[this.getNodeShape(nodes[i])].checkPoint(x, y,
-          nodes[i]._private.style['border-width'].pxValue / 2,
-          (this.getNodeWidth(nodes[i]) + nodeThreshold), (this.getNodeHeight(nodes[i]) + nodeThreshold),
-          nodes[i]._private.position.x, nodes[i]._private.position.y)) {
+      var node = nodes[i];
+      var shape = CanvasRenderer.nodeShapes[ this.getNodeShape(node) ];
+      var borderWO = node._private.style['border-width'].pxValue / 2;
+      var width = this.getNodeWidth( node );
+      var height = this.getNodeHeight( node );
+      var pos = node._private.position;
+      var style = node._private.style;
+
+      if(
+        shape.checkPointRough(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+          &&
+        shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+      ){
         
         if (visibleElementsOnly) {
-          if (nodes[i]._private.style['opacity'].value != 0
-            && nodes[i]._private.style['visibility'].value == 'visible'
-            && nodes[i]._private.style['display'].value == 'element') {
+          if(
+            style['opacity'].value !== 0 &&
+            style['visibility'].value === 'visible' &&
+            style['display'].value === 'element'
+          ){
             
-            near.push(nodes[i]);  
+            near.push( node );  
           }
         } else {
-          near.push(nodes[i]);
+          near.push( node );
         }
       }
     }
     
     // Check edges
-    var addCurrentEdge;
-    for (var i = 0; i < edges.length; i++) {
+    for( var i = 0; i < edges.length; i++ ){
       var edge = edges[i];
       var rs = edge._private.rscratch;
+      var style = edge._private.style;
+      var width = style['width'].pxValue;
+      var widthSq = width * width;
+      var width2 = width * 2;
+      var visible = edge.visible() && !edge.transparent();
+      var src = data.cy.getElementById(edge._private.data.source);
+      var tgt = data.cy.getElementById(edge._private.data.target);
+      var srcStyle = src._private.style;
+      var tgtStyle = tgt._private.style;
 
-      addCurrentEdge = false;
+      // exit early if invisible edge and must be visible
+      if( visibleElementsOnly && !visible ){
+        continue;
+      }
 
-      if (rs.edgeType == 'self') {
-        if (($$.math.inBezierVicinity(x, y,
-            rs.startX,
-            rs.startY,
-            rs.cp2ax,
-            rs.cp2ay,
-            rs.selfEdgeMidX,
-            rs.selfEdgeMidY,
-            Math.pow(edge._private.style['width'].pxValue/2, 2))
-              &&
-          (Math.pow(edges[i]._private.style['width'].pxValue/2, 2) + edgeThreshold > 
-            $$.math.sqDistanceToQuadraticBezier(x, y,
-              rs.startX,
-              rs.startY,
-              rs.cp2ax,
-              rs.cp2ay,
-              rs.selfEdgeMidX,
-              rs.selfEdgeMidY)))
-          ||
-          ($$.math.inBezierVicinity(x, y,
-            rs.selfEdgeMidX,
-            rs.selfEdgeMidY,
-            rs.cp2cx,
-            rs.cp2cy,
-            rs.endX,
-            rs.endY,
-            Math.pow(edges[i]._private.style['width'].pxValue/2, 2))
-              &&
-          (Math.pow(edges[i]._private.style['width'].pxValue/2, 2) + edgeThreshold > 
-            $$.math.sqDistanceToQuadraticBezier(x, y,
-              rs.selfEdgeMidX,
-              rs.selfEdgeMidY,
-              rs.cp2cx,
-              rs.cp2cy,
-              rs.endX,
-              rs.endY))))
-           { addCurrentEdge = true; }
+      if (rs.edgeType === 'self') {
+        if(
+            (
+              $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq)
+                &&
+              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY) )
+            )
+              ||
+            (
+              $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY,widthSq)
+                &&
+              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY) )
+            )
+        ){
+          near.push( edge );
+          continue;
+        }
       
       } else if (rs.edgeType == 'haystack') {
-        var tgt = edges[i].target()[0];
-        var tgtPos = tgt.position();
-        var src = edges[i].source()[0];
-        var srcPos = src.position();
+        var tgtPos = tgt._private.position;
+        var srcPos = src._private.position;
 
         var startX = srcPos.x + rs.source.x;
         var startY = srcPos.y + rs.source.y;
         var endX = tgtPos.x + rs.target.x;
         var endY = tgtPos.y + rs.target.y;
-        if ($$.math.inLineVicinity(x, y, startX, startY, endX, endY, edges[i]._private.style['width'].pxValue * 2)
+
+        if( 
+          $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2)
             &&
-          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2) + edgeThreshold >
-          $$.math.sqDistanceToFiniteLine(x, y,
-            startX,
-            startY,
-            endX,
-            endY))
-          { addCurrentEdge = true; }
+          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, startX, startY, endX, endY)
+        ){
+          near.push( edge );
+          continue;
+        }
       
-      } else if (rs.edgeType == 'straight') {
-        if ($$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, edges[i]._private.style['width'].pxValue * 2)
+      } else if (rs.edgeType === 'straight') {
+        if(
+          $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2)
             &&
-          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2) + edgeThreshold >
-          $$.math.sqDistanceToFiniteLine(x, y,
-            rs.startX,
-            rs.startY,
-            rs.endX,
-            rs.endY))
-          { addCurrentEdge = true; }
+          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
+        ){
+          near.push( edge );
+          continue;
+        }
       
-      } else if (rs.edgeType == 'bezier') {
-        if ($$.math.inBezierVicinity(x, y,
-          rs.startX,
-          rs.startY,
-          rs.cp2x,
-          rs.cp2y,
-          rs.endX,
-          rs.endY,
-          Math.pow(edges[i]._private.style['width'].pxValue / 2, 2))
+      } else if (rs.edgeType === 'bezier') {
+        if(
+          $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq)
             &&
-          (Math.pow(edges[i]._private.style['width'].pxValue / 2 , 2) + edgeThreshold >
-            $$.math.sqDistanceToQuadraticBezier(x, y,
-              rs.startX,
-              rs.startY,
-              rs.cp2x,
-              rs.cp2y,
-              rs.endX,
-              rs.endY)))
-          { addCurrentEdge = true; }
-      }
-      
-      if (!near.length || near[near.length - 1] != edges[i]) {
-        if ((CanvasRenderer.arrowShapes[edges[i]._private.style['source-arrow-shape'].value].roughCollide(x, y,
-            edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
-            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
-            [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
-              edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0)
-            &&
-          CanvasRenderer.arrowShapes[edges[i]._private.style['source-arrow-shape'].value].collide(x, y,
-            edges[i]._private.rscratch.arrowStartX, edges[i]._private.rscratch.arrowStartY,
-            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
-            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
-            [edges[i]._private.rscratch.arrowStartX - edges[i].source()[0]._private.position.x,
-              edges[i]._private.rscratch.arrowStartY - edges[i].source()[0]._private.position.y], 0))
-          ||
-          (CanvasRenderer.arrowShapes[edges[i]._private.style['target-arrow-shape'].value].roughCollide(x, y,
-            edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
-            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
-            [edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
-              edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)
-            &&
-          CanvasRenderer.arrowShapes[edges[i]._private.style['target-arrow-shape'].value].collide(x, y,
-            edges[i]._private.rscratch.arrowEndX, edges[i]._private.rscratch.arrowEndY,
-            this.getArrowWidth(edges[i]._private.style['width'].pxValue),
-            this.getArrowHeight(edges[i]._private.style['width'].pxValue),
-            [edges[i]._private.rscratch.arrowEndX - edges[i].target()[0]._private.position.x,
-              edges[i]._private.rscratch.arrowEndY - edges[i].target()[0]._private.position.y], 0)))
-          { addCurrentEdge = true; }
-      }
-      
-      if (addCurrentEdge) {
-        if (visibleElementsOnly) {
-          // For edges, make sure the edge is visible/has nonzero opacity,
-          // then also make sure both source and target nodes are visible/have
-          // nonzero opacity
-          var source = data.cy.getElementById(edges[i]._private.data.source)
-          var target = data.cy.getElementById(edges[i]._private.data.target)
-          
-          if (edges[i]._private.style['opacity'].value != 0
-            && edges[i]._private.style['visibility'].value == 'visible'
-            && edges[i]._private.style['display'].value == 'element'
-            && source._private.style['opacity'].value != 0
-            && source._private.style['visibility'].value == 'visible'
-            && source._private.style['display'].value == 'element'
-            && target._private.style['opacity'].value != 0
-            && target._private.style['visibility'].value == 'visible'
-            && target._private.style['display'].value == 'element') {
-            
-            near.push(edges[i]);  
-          }
-        } else {
-          near.push(edges[i]);
+          (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
+        ){
+          near.push( edge );
+          continue;
         }
       }
+      
+      if( near.length === 0 || near[near.length - 1] !== edge ){
+        var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
+        var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
+
+        var src = src || data.cy.getElementById(edge._private.data.source);
+        var tgt = tgt || data.cy.getElementById(edge._private.data.target);
+
+        var tgtPos = tgt._private.position;
+        var srcPos = src._private.position;
+
+        var srcArW = this.getArrowWidth( style['width'].pxValue );
+        var srcArH = this.getArrowHeight( style['width'].pxValue );
+
+        var tgtArW = srcArW;
+        var tgtArH = srcArH;
+
+        if(
+          (
+            srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+              &&
+            srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+          )
+            ||
+          (
+            tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+              &&
+            tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+          )
+        ){
+          near.push( edge );
+          continue;
+        }
+
+      }
+      
     } 
     
     near.sort( this.zOrderSort );
@@ -11811,7 +11814,7 @@ var cytoscape;
     var weight = style['font-weight'].strValue;
 
     var rscratch = ele._private.rscratch;
-    var cacheKey = [fStyle, size, family, variant, weight].join('$$$');
+    var cacheKey = [fStyle, size, family, variant, weight, text].join('$$$');
     var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
 
     if( cache[cacheKey] ){
@@ -12510,31 +12513,24 @@ var cytoscape;
       return;
     }
 
-    var startNode, endNode, source, target;
-
-    source = startNode = edge.source()[0];
-    target = endNode = edge.target()[0];
-
-    var targetPos = target.position();
-    var sourcePos = source.position();
+    var style = edge._private.style;
     
-    if ( 
-         edge._private.style['visibility'].value != 'visible'
-      || edge._private.style['display'].value != 'element'
-      || startNode._private.style['visibility'].value != 'visible'
-      || startNode._private.style['display'].value != 'element'
-      || endNode._private.style['visibility'].value != 'visible'
-      || endNode._private.style['display'].value != 'element'
-    ){
+    // Edge line width
+    if (style['width'].pxValue <= 0) {
       return;
     }
-    
-    var overlayPadding = edge._private.style['overlay-padding'].pxValue;
-    var overlayOpacity = edge._private.style['overlay-opacity'].value;
-    var overlayColor = edge._private.style['overlay-color'].value;
+
+    var overlayPadding = style['overlay-padding'].pxValue;
+    var overlayOpacity = style['overlay-opacity'].value;
+    var overlayColor = style['overlay-color'].value;
 
     // Edge color & opacity
     if( drawOverlayInstead ){
+
+      if( overlayOpacity === 0 ){ // exit early if no overlay
+        return;
+      }
+
       context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
       context.lineCap = 'round';
 
@@ -12544,27 +12540,32 @@ var cytoscape;
 
     } else {
       context.strokeStyle = "rgba(" 
-        + edge._private.style['line-color'].value[0] + ","
-        + edge._private.style['line-color'].value[1] + ","
-        + edge._private.style['line-color'].value[2] + ","
-        + edge._private.style.opacity.value + ")";
+        + style['line-color'].value[0] + ","
+        + style['line-color'].value[1] + ","
+        + style['line-color'].value[2] + ","
+        + style.opacity.value + ")";
 
       
       context.lineCap = 'butt'; 
     }
-
-    // Edge line width
-    if (edge._private.style['width'].pxValue <= 0) {
-      return;
-    }
     
-    var edgeWidth = edge._private.style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-    var lineStyle = drawOverlayInstead ? 'solid' : edge._private.style['line-style'].value;
+    var cy = edge._private.cy;
+    var startNode, endNode, source, target;
+    source = startNode = cy.getElementById( edge._private.data.source );
+    target = endNode = cy.getElementById( edge._private.data.target );
+
+    var targetPos = target.position();
+    var sourcePos = source.position();
+
+    var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+    var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
     context.lineWidth = edgeWidth;
     
-    this.findEndpoints(edge);
+    if( rs.edgeType !== 'haystack' ){
+      this.findEndpoints(edge);
+    }
     
-    if( rs.edgeType == 'haystack' ){
+    if( rs.edgeType === 'haystack' ){
       this.drawStyledEdge(
         edge, 
         context, 
@@ -12572,7 +12573,7 @@ var cytoscape;
         lineStyle,
         edgeWidth
       );
-    } else if (rs.edgeType == 'self') {
+    } else if (rs.edgeType === 'self') {
           
       var details = edge._private.rscratch;
       this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
@@ -12594,31 +12595,31 @@ var cytoscape;
       //   context.fillRect(pt.x, pt.y, 2, 2);
       // }
       
-    } else if (rs.edgeType == 'straight') {
+    } else if (rs.edgeType === 'straight') {
       
       var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
       var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
       
-      var edgeDirectionX = edge._private.rscratch.endX - edge._private.rscratch.startX;
-      var edgeDirectionY = edge._private.rscratch.endY - edge._private.rscratch.startY;
+      var edgeDirectionX = rs.endX - rs.startX;
+      var edgeDirectionY = rs.endY - rs.startY;
       
       if (nodeDirectionX * edgeDirectionX
         + nodeDirectionY * edgeDirectionY < 0) {
         
-        edge._private.rscratch.straightEdgeTooShort = true;  
+        rs.straightEdgeTooShort = true;  
       } else {
         
-        var details = edge._private.rscratch;
+        var details = rs;
         this.drawStyledEdge(edge, context, [details.startX, details.startY,
                                       details.endX, details.endY],
                                       lineStyle,
                                       edgeWidth);
         
-        edge._private.rscratch.straightEdgeTooShort = false;  
+        rs.straightEdgeTooShort = false;  
       }  
     } else {
       
-      var details = edge._private.rscratch;
+      var details = rs;
 
       // context.fillStyle = 'rgba(255, 0, 0, 1)';
       // context.fillRect(details.startX, details.startY, 2, 2);
@@ -12644,8 +12645,7 @@ var cytoscape;
       
     }
     
-    if (edge._private.rscratch.noArrowPlacement !== true
-        && edge._private.rscratch.startX !== undefined) {
+    if ( rs.edgeType !== 'haystack' && rs.noArrowPlacement !== true && rs.startX !== undefined ){
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
 
@@ -13318,6 +13318,14 @@ var cytoscape;
       return;
     }
 
+    var overlayPadding = style['overlay-padding'].pxValue;
+    var overlayOpacity = style['overlay-opacity'].value;
+    var overlayColor = style['overlay-color'].value;
+
+    if( drawOverlayInstead && overlayOpacity === 0 ){ // exit early if drawing overlay but none to draw
+      return;
+    }
+
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
@@ -13417,9 +13425,6 @@ var cytoscape;
     // draw the overlay
     } else {
 
-      var overlayPadding = style['overlay-padding'].pxValue;
-      var overlayOpacity = style['overlay-opacity'].value;
-      var overlayColor = style['overlay-color'].value;
       if( overlayOpacity > 0 ){
         context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
 
@@ -13438,22 +13443,12 @@ var cytoscape;
   // does the node have at least one pie piece?
   CanvasRenderer.prototype.hasPie = function(node){
     node = node[0]; // ensure ele ref
-
-    for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-      var size = node._private.style['pie-' + i + '-background-size'].value;
-
-      if( size > 0 ){
-        return true;
-      }
-    }
-
-    return false;
+    
+    return node._private.hasPie;
   };
 
   CanvasRenderer.prototype.drawPie = function(context, node){
     node = node[0]; // ensure ele ref
-
-    if( !this.hasPie(node) ){ return; } // exit early if not needed
 
     var pieSize = node._private.style['pie-size'];
     var nodeW = this.getNodeWidth( node );
@@ -13609,6 +13604,7 @@ var cytoscape;
     var r = this;
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
+    var needDraw = data.canvasNeedsRedraw;
     
     clearTimeout( this.redrawTimeout );
 
@@ -13657,9 +13653,9 @@ var cytoscape;
     function drawToContext(){
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
 
-      if( !forcedContext ){
-        r.matchCanvasSize(data.container);
-      }
+      // if( !forcedContext ){
+      //   r.matchCanvasSize(data.container);
+      // }
 
       var zoom = cy.zoom();
       var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
@@ -13678,10 +13674,16 @@ var cytoscape;
       effectivePan.x *= pixelRatio;
       effectivePan.y *= pixelRatio;
       
-      var elements;
-      var elesInDragLayer;
-      var elesNotInDragLayer;
-      var element;
+      var eles = {
+        drag: {
+          nodes: [],
+          edges: []
+        },
+        nondrag: {
+          nodes: [],
+          edges: []
+        }
+      };
 
       function setContextTransform(context){
         context.setTransform(1, 0, 0, 1, 0, 0);
@@ -13699,7 +13701,7 @@ var cytoscape;
         }
       }
 
-      if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers) {
         //NB : VERY EXPENSIVE
         //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
@@ -13715,20 +13717,20 @@ var cytoscape;
       
 
         // console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
-        elements = r.getCachedZSortedEles();
+        var zEles = r.getCachedZSortedEles();
         // } console.timeEnd('sort')
 
-        elesInDragLayer = [];
-        elesNotInDragLayer = [];
+        for (var i = 0; i < zEles.length; i++) {
+          var ele = zEles[i];
+          var list;
 
-        for (var index = 0; index < elements.length; index++) {
-          element = elements[index];
-
-          if ( element._private.rscratch.inDragLayer ) {
-            elesInDragLayer.push( element );
+          if ( ele._private.rscratch.inDragLayer ) {
+            list = eles.drag;
           } else {
-            elesNotInDragLayer.push( element );
+            list = eles.nondrag;
           }
+
+          list[ ele._private.group ].push( ele );
         }
 
         // console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
@@ -13741,25 +13743,14 @@ var cytoscape;
       }
       
       
-      function drawElements( eleList, context ){
-        var edges = [];
-        var nodes = [];
-
-        for (var i = 0; i < eleList.length; i++) {
-          ele = eleList[i];
-          
-          if ( ele.isNode() ) {
-            nodes.push( ele );
-            
-          } else if ( ele.isEdge() && !hideEdges ) {
-            r.drawEdge(context, ele);
-            edges.push( ele );
-          }
-        }
+      function drawElements( list, context ){
+        var edges = list.edges;
+        var nodes = list.nodes;
 
         for (var i = 0; i < edges.length && !hideEdges; i++) {
           ele = edges[i];
           
+          r.drawEdge(context, ele);
           r.drawEdgeText(context, ele);
           r.drawEdge(context, ele, true);
         }
@@ -13775,32 +13766,32 @@ var cytoscape;
 
 
       // console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-      if (data.canvasNeedsRedraw[CanvasRenderer.NODE] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.NODE] || drawAllLayers) {
         // console.log('redrawing node layer');
         
         var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
 
         setContextTransform( context );
-        drawElements(elesNotInDragLayer, context);
+        drawElements(eles.nondrag, context);
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.NODE] = false; 
+          needDraw[CanvasRenderer.NODE] = false; 
         }
       }
       
-      if (data.canvasNeedsRedraw[CanvasRenderer.DRAG] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.DRAG] || drawAllLayers) {
         
         var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
         
         setContextTransform( context );
-        drawElements(elesInDragLayer, context);
+        drawElements(eles.drag, context);
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.DRAG] = false;
+          needDraw[CanvasRenderer.DRAG] = false;
         }
       }
       
-      if (data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
+      if (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
         // console.log('redrawing selection box');
         
         var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
@@ -13857,7 +13848,7 @@ var cytoscape;
         }
         
         if( !drawAllLayers ){
-          data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = false; 
+          needDraw[CanvasRenderer.SELECT_BOX] = false; 
         }
       }
 
@@ -14245,7 +14236,7 @@ var cytoscape;
         {
           // If something is under the cursor and it is draggable, prepare to grab it
           if (near != null && r.nodeIsDraggable(near)) {
-            if (near._private.group == 'nodes' && near._private.selected == false) {
+            if ( near.isNode() && !near.selected() ) {
 
               draggedElements = r.dragData.possibleDragElements = [ ];
               addNodeToDrag(near, draggedElements);
@@ -14262,9 +14253,8 @@ var cytoscape;
 
               // also add nodes and edges related to the topmost ancestor
               updateAncestorsInDragLayer(near, true);
-            }
-                
-            if (near._private.group == 'nodes' && near._private.selected == true) {
+
+            } else if ( near.isNode() && near.selected() ) {
               draggedElements = r.dragData.possibleDragElements = [  ];
 
               var triggeredGrab = false;
@@ -14521,16 +14511,16 @@ var cytoscape;
             // Locked nodes not draggable, as well as non-visible nodes
             if (ele.isNode() && r.nodeIsDraggable(ele)) {
               var pos = ele.position();
+
+              toTrigger.push( ele );
               
               return {
                 x: pos.x + disp[0],
                 y: pos.y + disp[1]
               };
 
-              toTrigger.push( ele );
             }
           });
-          
           
           (new $$.Collection(cy, toTrigger))
             .trigger('drag')
@@ -14753,7 +14743,7 @@ var cytoscape;
               updateAncestorsInDragLayer(ele, false);
             }
 
-            grabbedEles.trigger('free');
+            near.trigger('free');
           }
         }
         
@@ -15485,9 +15475,20 @@ var cytoscape;
       
     }, 1000/30), false);
     
+    r.registerBinding(window, 'touchcancel', function(e) {
+      r.touchData.capture = false;
+    });
+
     r.registerBinding(window, 'touchend', function(e) {
       
-      var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
+      var capture = r.touchData.capture; 
+
+      if( capture ){
+        r.touchData.capture = false;
+      } else {
+        return;
+      }
+      
       e.preventDefault();
       var select = r.data.select;
 

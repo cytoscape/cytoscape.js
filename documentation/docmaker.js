@@ -3,7 +3,8 @@ var fs = require('fs');
 // var converter = new Converter();
 var marked = require('marked');
 // var mdConvertor = require('node-markdown').Markdown;
-var Handlebars = require('./js/handlebars').Handlebars;
+var Handlebars = require('handlebars');
+var hljs = require('highlight.js');
 var encoding = 'utf8';
 var config;
 var configFile = './docmaker.json';
@@ -18,6 +19,8 @@ try {
 // load the demo file
 try {
   config.demojs = fs.readFileSync(demoFile, 'utf8');
+
+  config.demojs = hljs.highlight('js', config.demojs).value;
 } catch(e){
   throw '`' + demoFile + '` could not be read';
 }
@@ -37,7 +40,18 @@ function md2html( file ){
 
   // var html = converter.makeHtml( md );
   //var html = mdConvertor( md );
-  var html = marked( md );
+  var html = marked( md, {
+    highlight: function(code, lang){
+
+      if( lang ){
+        return hljs.highlight(lang, code).value;
+      } else {
+        return hljs.highlightAuto(code).value;
+      }
+      
+    }
+  } );
+
 
   return html;
 }

@@ -1,66 +1,60 @@
 /*
-
-github.com style (c) Vasily Polovnyov <vast@whiteants.net>
-
+Docco style used in http://jashkenas.github.com/docco/ converted by Simon Madine (@thingsinjars)
 */
 
 .hljs {
   display: block; padding: 0.5em;
-  color: #333;
-  background: #f8f8f8
+  color: #000;
+  background: #f8f8ff
 }
 
 .hljs-comment,
 .hljs-template_comment,
 .diff .hljs-header,
 .hljs-javadoc {
-  color: #998;
+  color: #408080;
   font-style: italic
 }
 
 .hljs-keyword,
+.assignment,
+.hljs-literal,
 .css .rule .hljs-keyword,
 .hljs-winutils,
 .javascript .hljs-title,
-.nginx .hljs-title,
-.hljs-subst,
-.hljs-request,
-.hljs-status {
-  color: #333;
-  font-weight: bold
+.lisp .hljs-title,
+.hljs-subst {
+  color: #954121;
 }
 
 .hljs-number,
-.hljs-hexcolor,
-.ruby .hljs-constant {
-  color: #099;
+.hljs-hexcolor {
+  color: #40a070
 }
 
 .hljs-string,
 .hljs-tag .hljs-value,
 .hljs-phpdoc,
 .tex .hljs-formula {
-  color: #d14
+  color: #219161;
 }
 
 .hljs-title,
-.hljs-id,
-.coffeescript .hljs-params,
-.scss .hljs-preprocessor {
-  color: #900;
-  font-weight: bold
+.hljs-id {
+  color: #19469D;
+}
+.hljs-params {
+  color: #00F;
 }
 
 .javascript .hljs-title,
 .lisp .hljs-title,
-.clojure .hljs-title,
 .hljs-subst {
   font-weight: normal
 }
 
 .hljs-class .hljs-title,
-.haskell .hljs-type,
-.vhdl .hljs-literal,
+.haskell .hljs-label,
 .tex .hljs-command {
   color: #458;
   font-weight: bold
@@ -76,25 +70,34 @@ github.com style (c) Vasily Polovnyov <vast@whiteants.net>
 
 .hljs-attribute,
 .hljs-variable,
+.instancevar,
 .lisp .hljs-body {
   color: #008080
 }
 
 .hljs-regexp {
-  color: #009926
+  color: #B68
+}
+
+.hljs-class {
+  color: #458;
+  font-weight: bold
 }
 
 .hljs-symbol,
 .ruby .hljs-symbol .hljs-string,
+.ruby .hljs-symbol .hljs-keyword,
+.ruby .hljs-symbol .keymethods,
 .lisp .hljs-keyword,
 .tex .hljs-special,
-.hljs-prompt {
+.input_number {
   color: #990073
 }
 
+.builtin,
+.constructor,
 .hljs-built_in,
-.lisp .hljs-title,
-.clojure .hljs-built_in {
+.lisp .hljs-title {
   color: #0086b3
 }
 
@@ -122,4 +125,8 @@ github.com style (c) Vasily Polovnyov <vast@whiteants.net>
 
 .hljs-chunk {
   color: #aaa
+}
+
+.tex .hljs-formula {
+  opacity: 0.5;
 }

@@ -63,6 +63,8 @@
     "gulp-zip": "~0.1.2",
     "marked": "~0.3.1",
     "gulp-htmlmin": "~0.1.2",
-    "gulp-cssmin": "~0.1.4"
+    "gulp-cssmin": "~0.1.4",
+    "handlebars": "~2.0.0-alpha.2",
+    "highlight.js": "~8.0.0"
   }
 }

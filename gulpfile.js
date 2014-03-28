@@ -53,6 +53,7 @@ var paths = {
     css: [
       'documentation/css/reset.css',
       'documentation/css/font-awesome.css',
+      'documentation/css/highlight/github.css',
       'documentation/css/style.css'
     ]
   }

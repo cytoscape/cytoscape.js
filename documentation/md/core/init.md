@@ -24,7 +24,7 @@ require(['cytoscape'], function(cytoscape){
 
 To install Cytoscape.js via Bower (in the terminal):
 
-```
+```bash
 bower install cytoscape
 ```
 

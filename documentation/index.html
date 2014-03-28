@@ -54,82 +54,82 @@
 				</div>
 
 
-				<pre><code>$(loadCy = function(){
+				<pre><code>$(loadCy = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
 
   options = {
-    showOverlay: false,
-    minZoom: 0.5,
-    maxZoom: 2,
+    showOverlay: <span class="hljs-literal">false</span>,
+    minZoom: <span class="hljs-number">0.5</span>,
+    maxZoom: <span class="hljs-number">2</span>,
 
     style: cytoscape.stylesheet()
-      .selector(&#x27;node&#x27;)
+      .selector(<span class="hljs-string">'node'</span>)
         .css({
-          &#x27;content&#x27;: &#x27;data(name)&#x27;,
-          &#x27;font-family&#x27;: &#x27;helvetica&#x27;,
-          &#x27;font-size&#x27;: 14,
-          &#x27;text-outline-width&#x27;: 3,
-          &#x27;text-outline-color&#x27;: &#x27;#888&#x27;,
-          &#x27;text-valign&#x27;: &#x27;center&#x27;,
-          &#x27;color&#x27;: &#x27;#fff&#x27;,
-          &#x27;width&#x27;: &#x27;mapData(weight, 30, 80, 20, 50)&#x27;,
-          &#x27;height&#x27;: &#x27;mapData(height, 0, 200, 10, 45)&#x27;,
-          &#x27;border-color&#x27;: &#x27;#fff&#x27;
+          <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(name)'</span>,
+          <span class="hljs-string">'font-family'</span>: <span class="hljs-string">'helvetica'</span>,
+          <span class="hljs-string">'font-size'</span>: <span class="hljs-number">14</span>,
+          <span class="hljs-string">'text-outline-width'</span>: <span class="hljs-number">3</span>,
+          <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#888'</span>,
+          <span class="hljs-string">'text-valign'</span>: <span class="hljs-string">'center'</span>,
+          <span class="hljs-string">'color'</span>: <span class="hljs-string">'#fff'</span>,
+          <span class="hljs-string">'width'</span>: <span class="hljs-string">'mapData(weight, 30, 80, 20, 50)'</span>,
+          <span class="hljs-string">'height'</span>: <span class="hljs-string">'mapData(height, 0, 200, 10, 45)'</span>,
+          <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#fff'</span>
         })
-      .selector(&#x27;:selected&#x27;)
+      .selector(<span class="hljs-string">':selected'</span>)
         .css({
-          &#x27;background-color&#x27;: &#x27;#000&#x27;,
-          &#x27;line-color&#x27;: &#x27;#000&#x27;,
-          &#x27;target-arrow-color&#x27;: &#x27;#000&#x27;,
-          &#x27;text-outline-color&#x27;: &#x27;#000&#x27;
+          <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#000'</span>,
+          <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#000'</span>,
+          <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#000'</span>,
+          <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#000'</span>
         })
-      .selector(&#x27;edge&#x27;)
+      .selector(<span class="hljs-string">'edge'</span>)
         .css({
-          &#x27;width&#x27;: 2,
-          &#x27;target-arrow-shape&#x27;: &#x27;triangle&#x27;
+          <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
+          <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
         })
     ,
 
     elements: {
       nodes: [
         {
-          data: { id: &#x27;j&#x27;, name: &#x27;Jerry&#x27;, weight: 65, height: 174 }
+          data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> }
         },
 
         {
-          data: { id: &#x27;e&#x27;, name: &#x27;Elaine&#x27;, weight: 48, height: 160 }
+          data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> }
         },
 
         {
-          data: { id: &#x27;k&#x27;, name: &#x27;Kramer&#x27;, weight: 75, height: 185 }
+          data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> }
         },
 
         {
-          data: { id: &#x27;g&#x27;, name: &#x27;George&#x27;, weight: 70, height: 150 }
+          data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> }
         }
       ],
 
       edges: [
-        { data: { source: &#x27;j&#x27;, target: &#x27;e&#x27; } },
-        { data: { source: &#x27;j&#x27;, target: &#x27;k&#x27; } },
-        { data: { source: &#x27;j&#x27;, target: &#x27;g&#x27; } },
+        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'e'</span> } },
+        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'k'</span> } },
+        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'g'</span> } },
 
-        { data: { source: &#x27;e&#x27;, target: &#x27;j&#x27; } },
-        { data: { source: &#x27;e&#x27;, target: &#x27;k&#x27; } },
+        { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'j'</span> } },
+        { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'k'</span> } },
 
-        { data: { source: &#x27;k&#x27;, target: &#x27;j&#x27; } },
-        { data: { source: &#x27;k&#x27;, target: &#x27;e&#x27; } },
-        { data: { source: &#x27;k&#x27;, target: &#x27;g&#x27; } },
+        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'j'</span> } },
+        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'e'</span> } },
+        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'g'</span> } },
 
-        { data: { source: &#x27;g&#x27;, target: &#x27;j&#x27; } }
+        { data: { source: <span class="hljs-string">'g'</span>, target: <span class="hljs-string">'j'</span> } }
       ],
     },
 
-    ready: function(){
-      cy = this;
+    ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+      cy = <span class="hljs-keyword">this</span>;
     }
   };
 
-  $(&#x27;#cy&#x27;).cytoscape(options);
+  $(<span class="hljs-string">'#cy'</span>).cytoscape(options);
 
 });</code></pre>
 			</div>
@@ -183,15 +183,15 @@
 <p>The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  A set of functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.</p>
 <h2 id="notation/notation">Notation <a href="#notation/notation"><span class="icon-bookmark"></span></a></h2>
 <p>There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below:</p>
-<pre><code>Notation       Works on
---------       --------
-cy ........... the core
-eles ......... a collection of one or more elements (nodes and edges)
-ele .......... a collection of a single element (node or edge)
-nodes ........ a collection of one or more nodes
-node ......... a collection of a single node
-edges ........ a collection of one or more edges
-edge ......... a collection of a single edge
+<pre><code>Notation       Works <span class="hljs-command"><span class="hljs-keyword">on</span></span>
+<span class="hljs-comment">--------       --------</span>
+cy ........... <span class="hljs-operator">the</span> core
+eles ......... <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-constant">one</span> <span class="hljs-operator">or</span> more elements (nodes <span class="hljs-operator">and</span> edges)
+ele .......... <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-operator">a</span> single <span class="hljs-keyword">element</span> (node <span class="hljs-operator">or</span> edge)
+nodes ........ <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-constant">one</span> <span class="hljs-operator">or</span> more nodes
+node ......... <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-operator">a</span> single node
+edges ........ <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-constant">one</span> <span class="hljs-operator">or</span> more edges
+edge ......... <span class="hljs-operator">a</span> collection <span class="hljs-operator">of</span> <span class="hljs-operator">a</span> single edge
 </code></pre><p>By default, a function returns a reference back to the calling object to allow for jQuery-like chaining (e.g. <code>obj.fn1().fn2().fn3()</code>).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.</p>
 <p>For functions that return a value, note that calling a singular &mdash; <code>ele</code>, <code>node</code>, or <code>edge</code> &mdash; function on a collection of more than one element will return the expected value for only the first element.</p>
 <h2 id="notation/position">Position <a href="#notation/position"><span class="icon-bookmark"></span></a></h2>
@@ -202,70 +202,70 @@ edge ......... a collection of a single edge
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.</p>
 <h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
 <p>Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:</p>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
 
   elements: [
-    { // node n1
-      group: &#39;nodes&#39;, // &#39;nodes&#39; for a node, &#39;edges&#39; for an edge
+    { <span class="hljs-comment">// node n1</span>
+      group: <span class="hljs-string">'nodes'</span>, <span class="hljs-comment">// 'nodes' for a node, 'edges' for an edge</span>
 
-      // NB: id fields must be strings
-      data: { // element data (put dev data here)
-          id: &#39;n1&#39;, // mandatory for each element, assigned automatically on undefined
-          parent: &#39;nparent&#39;, // indicates the compound node parent id; not defined =&gt; no parent
+      <span class="hljs-comment">// NB: id fields must be strings</span>
+      data: { <span class="hljs-comment">// element data (put dev data here)</span>
+          id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory for each element, assigned automatically on undefined</span>
+          parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
       },
 
-      position: { // the model position of the node (optional on init, mandatory after)
-          x: 100,
-          y: 100
+      position: { <span class="hljs-comment">// the model position of the node (optional on init, mandatory after)</span>
+          x: <span class="hljs-number">100</span>,
+          y: <span class="hljs-number">100</span>
       },
 
-      selected: false, // whether the element is selected (default false)
+      selected: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the element is selected (default false)</span>
 
-      selectable: true, // whether the selection state is mutable (default true)
+      selectable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the selection state is mutable (default true)</span>
 
-      locked: false, // when locked a node&#39;s position is immutable (default false)
+      locked: <span class="hljs-literal">false</span>, <span class="hljs-comment">// when locked a node's position is immutable (default false)</span>
 
-      grabbable: true, // whether the node can be grabbed and moved by the user
+      grabbable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
 
-      classes: &#39;foo bar&#39; // a space separated list of class names that the element has
+      classes: <span class="hljs-string">'foo bar'</span> <span class="hljs-comment">// a space separated list of class names that the element has</span>
 
-      // NB: you should only use `css` for very special cases; use classes instead
-      css: { backgroundColor: red } // overriden style properties
+      <span class="hljs-comment">// NB: you should only use `css` for very special cases; use classes instead</span>
+      css: { backgroundColor: red } <span class="hljs-comment">// overriden style properties</span>
     },
 
-    { // node n2
-      group: &#39;nodes&#39;,
-      data: { id: &#39;n2&#39; },
-      renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
+    { <span class="hljs-comment">// node n2</span>
+      group: <span class="hljs-string">'nodes'</span>,
+      data: { id: <span class="hljs-string">'n2'</span> },
+      renderedPosition: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">200</span> } <span class="hljs-comment">// can alternatively specify position in rendered on-screen pixels</span>
     },
 
-    { // node n3
-      group: &#39;nodes&#39;,
-      data: { id: &#39;n3&#39;, parent: &#39;nparent&#39; },
-      position: { x: 123, y: 234 }
+    { <span class="hljs-comment">// node n3</span>
+      group: <span class="hljs-string">'nodes'</span>,
+      data: { id: <span class="hljs-string">'n3'</span>, parent: <span class="hljs-string">'nparent'</span> },
+      position: { x: <span class="hljs-number">123</span>, y: <span class="hljs-number">234</span> }
     },
 
-    { // node nparent
-      group: &#39;nodes&#39;,
-      data: { id: &#39;nparent&#39; }
+    { <span class="hljs-comment">// node nparent</span>
+      group: <span class="hljs-string">'nodes'</span>,
+      data: { id: <span class="hljs-string">'nparent'</span> }
     },
 
-    { // edge e1
-      group: &#39;edges&#39;,
+    { <span class="hljs-comment">// edge e1</span>
+      group: <span class="hljs-string">'edges'</span>,
       data: {
-          id: &#39;e1&#39;,
-          source: &#39;n1&#39;, // the source node id (edge comes from this node)
-          target: &#39;n2&#39;  // the target node id (edge goes to this node)
+          id: <span class="hljs-string">'e1'</span>,
+          source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
+          target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
       }
     }
   ],
 
-  // so we can see the ids
+  <span class="hljs-comment">// so we can see the ids</span>
   style: [
     {
-      selector: &#39;node&#39;,
+      selector: <span class="hljs-string">'node'</span>,
       css: {
-        &#39;content&#39;: &#39;data(id)&#39;
+        <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(id)'</span>
       }
     }
   ]
@@ -344,16 +344,16 @@ edge ......... a collection of a single edge
 					<h2 id="selectors/notes-amp-caveats">Notes &amp; caveats <a href="#selectors/notes-amp-caveats"><span class="icon-bookmark"></span></a></h2>
 <p>A selector functions similar to a <a href="http://api.jquery.com/category/selectors/">jQuery selector</a> on DOM elements, but selectors in Cytoscape.js instead work on collections.</p>
 <p>The selectors can be combined together to make powerful queries in Cytoscape.js, for example:</p>
-<pre><code class="lang-js">// get all nodes with weight more than 50 and height strictly less than 180
-cy.elements(&quot;node[weight &gt;= 50][height &lt; 180]&quot;);
+<pre><code class="lang-js"><span class="hljs-comment">// get all nodes with weight more than 50 and height strictly less than 180</span>
+cy.elements(<span class="hljs-string">"node[weight &gt;= 50][height &lt; 180]"</span>);
 </code></pre>
 <p>Selectors can be joined together (effectively creating a logical OR) with commas:</p>
-<pre><code class="lang-js">// get node j and the edges coming out from it
-cy.elements(&quot;node#j, edge[source = &#39;j&#39;]&quot;);
+<pre><code class="lang-js"><span class="hljs-comment">// get node j and the edges coming out from it</span>
+cy.elements(<span class="hljs-string">"node#j, edge[source = 'j']"</span>);
 </code></pre>
 <p>It is important to note that strings need to be enclosed by quotation marks:</p>
-<pre><code class="lang-js">//cy.filter(&quot;node[name = Jerry]&quot;); // this doesn&#39;t work
-cy.filter(&quot;node[name = &#39;Jerry&#39;]&quot;); // but this does
+<pre><code class="lang-js"><span class="hljs-comment">//cy.filter("node[name = Jerry]"); // this doesn't work</span>
+cy.filter(<span class="hljs-string">"node[name = 'Jerry']"</span>); <span class="hljs-comment">// but this does</span>
 </code></pre>
 <h2 id="selectors/group-class-amp-id">Group, class, &amp; ID <a href="#selectors/group-class-amp-id"><span class="icon-bookmark"></span></a></h2>
 <p><strong><code>node</code>,  <code>edge</code>, or <code>*</code> (group selector)</strong>
@@ -461,51 +461,51 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <h3 id="string-format">String format</h3>
 <p>Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.</p>
 <p>An example style file:</p>
-<pre><code>/* comments may be entered like this */
-node {
-  background-color: green;
-}
+<pre><code><span class="hljs-comment">/* comments may be entered like this */</span>
+<span class="hljs-tag">node</span> <span class="hljs-rules">{
+  <span class="hljs-rule"><span class="hljs-attribute">background-color</span>:<span class="hljs-value"> green</span></span>;
+<span class="hljs-rule">}</span></span>
 </code></pre><p>At initialisation:</p>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
-  // ...
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+  <span class="hljs-comment">// ...</span>
 
-  style: aStyleString // probably previously loaded via ajax
+  style: aStyleString <span class="hljs-comment">// probably previously loaded via ajax</span>
 
-  // , ...
+  <span class="hljs-comment">// , ...</span>
 });
 </code></pre>
 <h3 id="plain-json-format">Plain JSON format</h3>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
-  // ...
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+  <span class="hljs-comment">// ...</span>
 
   style: [
     {
-      selector: &#39;node&#39;,
+      selector: <span class="hljs-string">'node'</span>,
       css: {
-        &#39;background-color&#39;: &#39;red&#39;
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>
       }
     }
 
-    // , ...
+    <span class="hljs-comment">// , ...</span>
   ]
 
-  // , ...
+  <span class="hljs-comment">// , ...</span>
 });
 </code></pre>
 <h3 id="functional-format">Functional format</h3>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
-  // ...
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+  <span class="hljs-comment">// ...</span>
 
   style: cytoscape.stylesheet()
-    .selector(&#39;node&#39;)
+    .selector(<span class="hljs-string">'node'</span>)
       .css({
-        &#39;background-color&#39;: &#39;blue&#39;
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'blue'</span>
       })
 
-      // ...
+      <span class="hljs-comment">// ...</span>
 
 
-  // , ...
+  <span class="hljs-comment">// , ...</span>
 });
 </code></pre>
 <h2 id="style/properties">Properties <a href="#style/properties"><span class="icon-bookmark"></span></a></h2>
@@ -741,10 +741,10 @@ node {
 <h2 id="layouts/null">Null <a href="#layouts/null"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>null</code> layout puts all nodes at (0, 0).  It&#39;s useful for debugging purposes.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;null&#39;,
+    name: <span class="hljs-string">'null'</span>,
 
-    ready: function(){}, // on layoutready
-    stop: function(){} // on layoutstop
+    ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>}, <span class="hljs-comment">// on layoutready</span>
+    stop: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>} <span class="hljs-comment">// on layoutstop</span>
 }
 
 cy.layout( options );
@@ -752,11 +752,11 @@ cy.layout( options );
 <h2 id="layouts/random">Random <a href="#layouts/random"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>random</code> layout puts nodes in random positions within the viewport.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;random&#39;,
+    name: <span class="hljs-string">'random'</span>,
 
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    fit: true // whether to fit to viewport
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    fit: <span class="hljs-literal">true</span> <span class="hljs-comment">// whether to fit to viewport</span>
 };
 
 cy.layout( options );
@@ -764,15 +764,15 @@ cy.layout( options );
 <h2 id="layouts/preset">Preset <a href="#layouts/preset"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>preset</code> layout puts nodes in the positions you specify manually.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;preset&#39;,
+    name: <span class="hljs-string">'preset'</span>,
 
-    fit: true, // whether to fit to viewport
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    positions: undefined, // map of (node id) =&gt; (position obj)
-    zoom: undefined, // the zoom level to set (prob want fit = false if set)
-    pan: undefined, // the pan level to set (prob want fit = false if set)
-    padding: 30 // padding on fit
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    positions: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// map of (node id) =&gt; (position obj)</span>
+    zoom: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the zoom level to set (prob want fit = false if set)</span>
+    pan: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the pan level to set (prob want fit = false if set)</span>
+    padding: <span class="hljs-number">30</span> <span class="hljs-comment">// padding on fit</span>
 };
 
 cy.layout( options );
@@ -780,15 +780,15 @@ cy.layout( options );
 <h2 id="layouts/grid">Grid <a href="#layouts/grid"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>grid</code> layout puts nodes in a well-spaced grid.</p>
 <pre><code class="lang-js">{
-    name: &#39;grid&#39;,
+    name: <span class="hljs-string">'grid'</span>,
 
-    fit: true, // whether to fit the viewport to the graph
-    padding: 30, // padding used on fit
-    rows: undefined, // force num of rows in the grid
-    columns: undefined, // force num of cols in the grid
-    position: function( node ){}, // returns { row, col } for element
-    ready: undefined, // callback on layoutready
-    stop: undefined // callback on layoutstop
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
+    padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding used on fit</span>
+    rows: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of rows in the grid</span>
+    columns: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of cols in the grid</span>
+    position: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span>{</span>}, <span class="hljs-comment">// returns { row, col } for element</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span> <span class="hljs-comment">// callback on layoutstop</span>
 };
 
 cy.layout( options );
@@ -796,52 +796,52 @@ cy.layout( options );
 <h2 id="layouts/circle">Circle <a href="#layouts/circle"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>circle</code> layout puts nodes in a circle.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;circle&#39;,
+    name: <span class="hljs-string">'circle'</span>,
 
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    rStepSize: 10, // the step size for increasing the radius if the nodes don&#39;t fit on screen
-    padding: 30, // the padding on fit
-    startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    rStepSize: <span class="hljs-number">10</span>, <span class="hljs-comment">// the step size for increasing the radius if the nodes don't fit on screen</span>
+    padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
+    startAngle: <span class="hljs-number">3</span>/<span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// the position of the first node</span>
+    counterclockwise: <span class="hljs-literal">false</span> <span class="hljs-comment">// whether the layout should go counterclockwise (true) or clockwise (false)</span>
 };
 
 cy.layout( options );
 </code></pre>
 <h2 id="layouts/concentric">Concentric <a href="#layouts/concentric"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>concentric</code> layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the <code>concentric</code> layout value based on your metric, which can be used with <code>mapLayoutData()</code>.</p>
-<pre><code class="lang-js">    name: &#39;concentric&#39;,
+<pre><code class="lang-js">    name: <span class="hljs-string">'concentric'</span>,
 
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    padding: 30, // the padding on fit
-    startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
-    minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
-    height: undefined, // height of layout area (overrides container height)
-    width: undefined, // width of layout area (overrides container width)
-    concentric: function(){ // returns numeric value for each node, placing higher nodes in levels towards the centre
-      return this.degree();
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
+    startAngle: <span class="hljs-number">3</span>/<span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// the position of the first node</span>
+    counterclockwise: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the layout should go counterclockwise (true) or clockwise (false)</span>
+    minNodeSpacing: <span class="hljs-number">10</span>, <span class="hljs-comment">// min spacing between outside of nodes (used for radius adjustment)</span>
+    height: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// height of layout area (overrides container height)</span>
+    width: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// width of layout area (overrides container width)</span>
+    concentric: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.degree();
     },
-    levelWidth: function(nodes){ // the variation of concentric values in each level
-      return nodes.maxDegree() / 4;
+    levelWidth: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(nodes)</span>{</span> <span class="hljs-comment">// the variation of concentric values in each level</span>
+      <span class="hljs-keyword">return</span> nodes.maxDegree() / <span class="hljs-number">4</span>;
     }
 </code></pre>
 <h2 id="layouts/breadthfirst">Breadthfirst <a href="#layouts/breadthfirst"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;breadthfirst&#39;,
+    name: <span class="hljs-string">'breadthfirst'</span>,
 
-    fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
-    directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-    padding: 30, // padding on fit
-    circle: false, // put depths in concentric circles if true, put depths top down if false
-    roots: undefined, // the roots of the trees
-    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    directed: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the tree is directed downwards (or edges can point in any direction if false)</span>
+    padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
+    circle: <span class="hljs-literal">false</span>, <span class="hljs-comment">// put depths in concentric circles if true, put depths top down if false</span>
+    roots: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the roots of the trees</span>
+    maximalAdjustments: <span class="hljs-number">0</span> <span class="hljs-comment">// how many times to try to position the nodes in a maximal way (i.e. no backtracking)</span>
 };
 
 cy.layout( options );
@@ -849,37 +849,37 @@ cy.layout( options );
 <h2 id="layouts/arbor">Arbor <a href="#layouts/arbor"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;arbor&#39;,
+    name: <span class="hljs-string">'arbor'</span>,
 
-    liveUpdate: true, // whether to show the layout as it&#39;s running
-    ready: undefined, // callback on layoutready 
-    stop: undefined, // callback on layoutstop
-    maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // reset viewport to fit default simulationBounds
-    padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
-    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
-    ungrabifyWhileSimulating: true, // so you can&#39;t drag nodes during layout
+    liveUpdate: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
+    ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready </span>
+    stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+    maxSimulationTime: <span class="hljs-number">4000</span>, <span class="hljs-comment">// max length in ms to run the layout</span>
+    fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// reset viewport to fit default simulationBounds</span>
+    padding: [ <span class="hljs-number">50</span>, <span class="hljs-number">50</span>, <span class="hljs-number">50</span>, <span class="hljs-number">50</span> ], <span class="hljs-comment">// top, right, bottom, left</span>
+    simulationBounds: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// [x1, y1, x2, y2]; [0, 0, width, height] by default</span>
+    ungrabifyWhileSimulating: <span class="hljs-literal">true</span>, <span class="hljs-comment">// so you can't drag nodes during layout</span>
 
-    // forces used by arbor (use arbor default on undefined)
-    repulsion: undefined,
-    stiffness: undefined,
-    friction: undefined,
-    gravity: true,
-    fps: undefined,
-    precision: undefined,
+    <span class="hljs-comment">// forces used by arbor (use arbor default on undefined)</span>
+    repulsion: <span class="hljs-literal">undefined</span>,
+    stiffness: <span class="hljs-literal">undefined</span>,
+    friction: <span class="hljs-literal">undefined</span>,
+    gravity: <span class="hljs-literal">true</span>,
+    fps: <span class="hljs-literal">undefined</span>,
+    precision: <span class="hljs-literal">undefined</span>,
 
-    // static numbers or functions that dynamically return what these
-    // values should be for each element
-    nodeMass: undefined, 
-    edgeLength: undefined,
+    <span class="hljs-comment">// static numbers or functions that dynamically return what these</span>
+    <span class="hljs-comment">// values should be for each element</span>
+    nodeMass: <span class="hljs-literal">undefined</span>, 
+    edgeLength: <span class="hljs-literal">undefined</span>,
 
-    stepSize: 1, // size of timestep in simulation
+    stepSize: <span class="hljs-number">1</span>, <span class="hljs-comment">// size of timestep in simulation</span>
 
-    // function that returns true if the system is stable to indicate
-    // that the layout can be stopped
-    stableEnergy: function( energy ){
-      var e = energy; 
-      return (e.max &lt;= 0.5) || (e.mean &lt;= 0.3);
+    <span class="hljs-comment">// function that returns true if the system is stable to indicate</span>
+    <span class="hljs-comment">// that the layout can be stopped</span>
+    stableEnergy: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( energy )</span>{</span>
+      <span class="hljs-keyword">var</span> e = energy; 
+      <span class="hljs-keyword">return</span> (e.max &lt;= <span class="hljs-number">0.5</span>) || (e.mean &lt;= <span class="hljs-number">0.3</span>);
     }
 };
 
@@ -892,13 +892,13 @@ cy.layout( options );
 <li>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
 <li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:</li>
 </ul>
-<pre><code class="lang-html">&lt;head&gt;
+<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">head</span>&gt;</span>
     ...
 
-    &lt;script src=&quot;arbor.js&quot;&gt;&lt;/script&gt;
+    <span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"arbor.js"</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
 
     ...
-&lt;/head&gt;
+<span class="hljs-tag">&lt;/<span class="hljs-title">head</span>&gt;</span>
 </code></pre>
 <p>Arbor does some automatic path finding because it uses web workers, and so it must be included this way.  Therefore, you can not combine <code>arbor.js</code> with your other JavaScript files &mdash; as you probably would as a part of the minification of the scripts in your webapp.</p>
 <h2 id="layouts/cose">CoSE <a href="#layouts/cose"><span class="icon-bookmark"></span></a></h2>
@@ -906,59 +906,59 @@ cy.layout( options );
 It was implemented by Gerardo Huck as part of Google Summer of Code 2013 (Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz).</p>
 <p>Based on the article &quot;A layout algorithm for undirected compound graphs&quot; by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.</p>
 <pre><code class="lang-js">options = {
-    name: &#39;cose&#39;,
+    name: <span class="hljs-string">'cose'</span>,
 
-    // Called on `layoutready`
-    ready               : function() {},
+    <span class="hljs-comment">// Called on `layoutready`</span>
+    ready               : <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>},
 
-    // Called on `layoutstop`
-    stop                : function() {},
+    <span class="hljs-comment">// Called on `layoutstop`</span>
+    stop                : <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>},
 
-    // Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)
-    refresh             : 0,
+    <span class="hljs-comment">// Number of iterations between consecutive screen positions update (0 -&gt; only updated on the end)</span>
+    refresh             : <span class="hljs-number">0</span>,
 
-    // Whether to fit the network view after when done
-    fit                 : true, 
+    <span class="hljs-comment">// Whether to fit the network view after when done</span>
+    fit                 : <span class="hljs-literal">true</span>, 
 
-    // Padding on fit
-    padding             : 30, 
+    <span class="hljs-comment">// Padding on fit</span>
+    padding             : <span class="hljs-number">30</span>, 
 
 
-    // Whether to randomize node positions on the beginning
-    randomize           : true,
+    <span class="hljs-comment">// Whether to randomize node positions on the beginning</span>
+    randomize           : <span class="hljs-literal">true</span>,
 
-    // Whether to use the JS console to print debug messages
-    debug               : false,
+    <span class="hljs-comment">// Whether to use the JS console to print debug messages</span>
+    debug               : <span class="hljs-literal">false</span>,
 
-    // Node repulsion (non overlapping) multiplier
-    nodeRepulsion       : 10000,
+    <span class="hljs-comment">// Node repulsion (non overlapping) multiplier</span>
+    nodeRepulsion       : <span class="hljs-number">10000</span>,
 
-    // Node repulsion (overlapping) multiplier
-    nodeOverlap         : 10,
+    <span class="hljs-comment">// Node repulsion (overlapping) multiplier</span>
+    nodeOverlap         : <span class="hljs-number">10</span>,
 
-    // Ideal edge (non nested) length
-    idealEdgeLength     : 10,
+    <span class="hljs-comment">// Ideal edge (non nested) length</span>
+    idealEdgeLength     : <span class="hljs-number">10</span>,
 
-    // Divisor to compute edge forces
-    edgeElasticity      : 100,
+    <span class="hljs-comment">// Divisor to compute edge forces</span>
+    edgeElasticity      : <span class="hljs-number">100</span>,
 
-    // Nesting factor (multiplier) to compute ideal edge length for nested edges
-    nestingFactor       : 5, 
+    <span class="hljs-comment">// Nesting factor (multiplier) to compute ideal edge length for nested edges</span>
+    nestingFactor       : <span class="hljs-number">5</span>, 
 
-    // Gravity force (constant)
-    gravity             : 250, 
+    <span class="hljs-comment">// Gravity force (constant)</span>
+    gravity             : <span class="hljs-number">250</span>, 
 
-    // Maximum number of iterations to perform
-    numIter             : 100,
+    <span class="hljs-comment">// Maximum number of iterations to perform</span>
+    numIter             : <span class="hljs-number">100</span>,
 
-    // Initial temperature (maximum node displacement)
-    initialTemp         : 200,
+    <span class="hljs-comment">// Initial temperature (maximum node displacement)</span>
+    initialTemp         : <span class="hljs-number">200</span>,
 
-    // Cooling factor (how the temperature is reduced between consecutive iterations
-    coolingFactor       : 0.95, 
+    <span class="hljs-comment">// Cooling factor (how the temperature is reduced between consecutive iterations</span>
+    coolingFactor       : <span class="hljs-number">0.95</span>, 
 
-    // Lower temperature threshold (below this point the layout will end)
-    minTemp             : 1
+    <span class="hljs-comment">// Lower temperature threshold (below this point the layout will end)</span>
+    minTemp             : <span class="hljs-number">1</span>
 };
 
 cy.layout( options );
@@ -1003,9 +1003,9 @@ cy.layout( options );
 <p>Thus, a Cytoscape.js plugin is simply a jQuery plugin that is called on Cytoscape.js container and interacts with Cytoscape.js via its API.</p>
 <h2 id="plugins/writing-a-plugin">Writing a plugin <a href="#plugins/writing-a-plugin"><span class="icon-bookmark"></span></a></h2>
 <p>Writing a jQuery plugin is a straightforward process, outlined in the <a href="http://learn.jquery.com/plugins/">jQuery plugin documentation</a>.  You can use the <code>ready</code> callback to get an instance of Cytoscape.js in your plugin code, assuming that the plugin is called on the Cytoscape.js container:</p>
-<pre><code class="lang-js">var $container = $(this); // `this` points to container inside plugin code
-$container.cytoscape(function(){
-    var cy = this; // now we have a reference to the core
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> $container = $(<span class="hljs-keyword">this</span>); <span class="hljs-comment">// `this` points to container inside plugin code</span>
+$container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    <span class="hljs-keyword">var</span> cy = <span class="hljs-keyword">this</span>; <span class="hljs-comment">// now we have a reference to the core</span>
 });
 </code></pre>
 <p>You can then interact with the instance of Cytoscape.js in your plugin.</p>
@@ -1040,88 +1040,89 @@ $container.cytoscape(function(){
 					
 						<h3 id="script-includes">Script includes</h3>
 <p>To use Cytoscape.js in your HTML document:</p>
-<pre><code class="lang-html">&lt;script src=&quot;cytoscape.js&quot;&gt;&lt;/script&gt;
+<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"cytoscape.js"</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
 </code></pre>
 <p><strong>Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</strong></p>
 <p>To use Cytoscape.js in a CommonJS environment like Node.js:</p>
-<pre><code>var cytoscape = require(&#39;cytoscape&#39;);
+<pre><code><span class="hljs-keyword">var</span> cytoscape = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cytoscape'</span>);
 </code></pre><p>To use Cytoscape.js with AMD/Require.js:</p>
-<pre><code>require([&#39;cytoscape&#39;], function(cytoscape){
-  // ...
+<pre><code><span class="hljs-keyword">require</span>([<span class="hljs-string">'cytoscape'</span>], <span class="hljs-keyword">function</span>(cytoscape){
+  // <span class="hljs-keyword">...</span>
 });
 </code></pre><p>To install Cytoscape.js via Bower (in the terminal):</p>
-<pre><code>bower install cytoscape
-</code></pre><h3 id="getting-started">Getting started</h3>
+<pre><code class="lang-bash">bower install cytoscape
+</code></pre>
+<h3 id="getting-started">Getting started</h3>
 <p>An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:</p>
 <pre><code class="lang-js">cytoscape({
-  container: document.getElementById(&#39;cy&#39;),
-  ready: function(){ console.log(&#39;ready&#39;) }
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'ready'</span>) }
 });
 </code></pre>
 <p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&quot;null&quot;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.</p>
 <p>If you&#39;ve included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: </p>
-<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({ // for some div with id &#39;cy&#39;
-  ready: function(){
-    // you can access the core object API through cy
+<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    <span class="hljs-comment">// you can access the core object API through cy</span>
 
-    console.log(&quot;ready&quot;);
+    console.log(<span class="hljs-string">"ready"</span>);
   }
 
-  // , ...
+  <span class="hljs-comment">// , ...</span>
 });
 </code></pre>
 <p>This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.</p>
 <p>For example, </p>
-<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options)
-  .css(&quot;background&quot;, &quot;red&quot;)
-  .css(&quot;border-color&quot;, &quot;black&quot;); // can use jquery functions on &#39;cy&#39; div
+<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape(options)
+  .css(<span class="hljs-string">"background"</span>, <span class="hljs-string">"red"</span>)
+  .css(<span class="hljs-string">"border-color"</span>, <span class="hljs-string">"black"</span>); <span class="hljs-comment">// can use jquery functions on 'cy' div</span>
 </code></pre>
 <p>Because this style doesn&#39;t give you access to the <code>cy</code> object outside of the callback function, there is an option to get the <code>cy</code> object from a jQuery selector.</p>
-<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape(options);
-var cy = $(&quot;#cy&quot;).cytoscape(&quot;get&quot;); // now we have a global reference to `cy`
+<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape(options);
+<span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">"#cy"</span>).cytoscape(<span class="hljs-string">"get"</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
 </code></pre>
 <h3 id="the-ready-callback">The ready callback</h3>
 <p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.</p>
 <p>Because the <code>ready</code> event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in <code>options.ready</code>.</p>
 <p><strong>NB: You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can&#39;t modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.</strong></p>
-<pre><code class="lang-js">// in foo.js
-$(function(){ // on jquery ready
+<pre><code class="lang-js"><span class="hljs-comment">// in foo.js</span>
+$(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
 
-  $(&quot;#cy&quot;).cytoscape(function(eventObject){ // on Cytoscape.js ready on the `cy` div
-    // this code executes when Cytoscape.js is ready even though we
-    // don&#39;t actually initialise Cytoscape.js on the `cy` div until
-    // bar.js is loaded
+  $(<span class="hljs-string">"#cy"</span>).cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventObject)</span>{</span> <span class="hljs-comment">// on Cytoscape.js ready on the `cy` div</span>
+    <span class="hljs-comment">// this code executes when Cytoscape.js is ready even though we</span>
+    <span class="hljs-comment">// don't actually initialise Cytoscape.js on the `cy` div until</span>
+    <span class="hljs-comment">// bar.js is loaded</span>
 
-    var cy = this; // `this` holds the reference to the core object
+    <span class="hljs-keyword">var</span> cy = <span class="hljs-keyword">this</span>; <span class="hljs-comment">// `this` holds the reference to the core object</span>
 
-    console.log(&quot;Ready, Freddie!&quot;);
+    console.log(<span class="hljs-string">"Ready, Freddie!"</span>);
   });
 
 });
 
-// in bar.js (should be after foo.js in your js includes)
-$(function(){ // on jquery ready
-  $(&quot;#cy&quot;).cytoscape(options);
+<span class="hljs-comment">// in bar.js (should be after foo.js in your js includes)</span>
+$(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
+  $(<span class="hljs-string">"#cy"</span>).cytoscape(options);
 });
 </code></pre>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
-<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
-  selectionType: (isTouchDevice ? &#39;additive&#39; : &#39;single&#39;),
-  layout: { name: &#39;grid&#39; /* , ... */ },
-  zoom: 1,
-  minZoom: 1e-50,
-  maxZoom: 1e50,
-  zoomingEnabled: true,
-  userZoomingEnabled: true,
-  pan: { x: 0, y: 0 },
-  panningEnabled: true,
-  hideEdgesOnViewport: false,
-  renderer: { /* ... */ },
-  style: undefined /* ... */,
-  ready: function(evt){ /* ... */ },
-  initrender: function(evt){ /* ... */ },
-  elements: [ /* ... */ ]
+<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({
+  selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
+  layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
+  zoom: <span class="hljs-number">1</span>,
+  minZoom: <span class="hljs-number">1e-50</span>,
+  maxZoom: <span class="hljs-number">1e50</span>,
+  zoomingEnabled: <span class="hljs-literal">true</span>,
+  userZoomingEnabled: <span class="hljs-literal">true</span>,
+  pan: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> },
+  panningEnabled: <span class="hljs-literal">true</span>,
+  hideEdgesOnViewport: <span class="hljs-literal">false</span>,
+  renderer: { <span class="hljs-comment">/* ... */</span> },
+  style: <span class="hljs-literal">undefined</span> <span class="hljs-comment">/* ... */</span>,
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
+  initrender: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
+  elements: [ <span class="hljs-comment">/* ... */</span> ]
 });
 </code></pre>
 <p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&quot;additive&quot;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&quot;single&quot;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
@@ -1145,95 +1146,95 @@ $(function(){ // on jquery ready
 </ul>
 <p><strong><code>style</code></strong> : The stylesheet used to style the document.</p>
 <p>For example:</p>
-<pre><code class="lang-js">$(&quot;#cy&quot;).cytoscape({
-  /* ... */
+<pre><code class="lang-js">$(<span class="hljs-string">"#cy"</span>).cytoscape({
+  <span class="hljs-comment">/* ... */</span>
 
   style: cytoscape.stylesheet()
-    .selector(&#39;node&#39;)
+    .selector(<span class="hljs-string">'node'</span>)
       .css({
-        &#39;background-color&#39;: &#39;red&#39;,
-        &#39;border-color&#39;: &#39;#ffff00&#39;
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>,
+        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#ffff00'</span>
       })
-    .selector(&#39;edge&#39;)
+    .selector(<span class="hljs-string">'edge'</span>)
       .css({
-        &#39;line-color&#39;: &#39;blue&#39;
+        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'blue'</span>
       })
 
-  /* ... */
+  <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
 <p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.</p>
 <p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.</p>
 <p><strong><code>elements</code></strong> : An array of elements specified as plain objects.</p>
 <p>For example:</p>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
-  /* ... */
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+  <span class="hljs-comment">/* ... */</span>
 
   elements: [
     {
-      data: { id: &#39;foo&#39; }, 
-      group: &#39;nodes&#39;
+      data: { id: <span class="hljs-string">'foo'</span> }, 
+      group: <span class="hljs-string">'nodes'</span>
     },
 
     {
-      data: { id: &#39;bar&#39; },
-      group: &#39;nodes&#39;
+      data: { id: <span class="hljs-string">'bar'</span> },
+      group: <span class="hljs-string">'nodes'</span>
     },
 
     {
-      data: { weight: 100 }, // elided id =&gt; autogenerated id 
-      group: &#39;nodes&#39;,
+      data: { weight: <span class="hljs-number">100</span> }, <span class="hljs-comment">// elided id =&gt; autogenerated id </span>
+      group: <span class="hljs-string">'nodes'</span>,
       position: {
-        x: 100,
-        y: 100
+        x: <span class="hljs-number">100</span>,
+        y: <span class="hljs-number">100</span>
       },
-      classes: &#39;className1 className2&#39;,
-      selected: true,
-      selectable: true,
-      locked: true,
-      grabbable: true
+      classes: <span class="hljs-string">'className1 className2'</span>,
+      selected: <span class="hljs-literal">true</span>,
+      selectable: <span class="hljs-literal">true</span>,
+      locked: <span class="hljs-literal">true</span>,
+      grabbable: <span class="hljs-literal">true</span>
     },
 
     {
-      data: { id: &#39;baz&#39;, source: &#39;foo&#39;, target: &#39;bar&#39; },
-      group: &#39;edges&#39;
+      data: { id: <span class="hljs-string">'baz'</span>, source: <span class="hljs-string">'foo'</span>, target: <span class="hljs-string">'bar'</span> },
+      group: <span class="hljs-string">'edges'</span>
     }
   ]
 
-  /* ... */
+  <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
 <p>You can alternatively specify separate arrays indexed in a object by the group names so you don&#39;t have to specify the <code>group</code> property over and over for each element:</p>
-<pre><code class="lang-js">$(&#39;#cy&#39;).cytoscape({
-  /* ... */
+<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+  <span class="hljs-comment">/* ... */</span>
 
   elements: {
     nodes: [
-      { data: { id: &#39;foo&#39; } }, // NB no group specified
+      { data: { id: <span class="hljs-string">'foo'</span> } }, <span class="hljs-comment">// NB no group specified</span>
 
-      { data: { id: &#39;bar&#39; } },
+      { data: { id: <span class="hljs-string">'bar'</span> } },
 
       {
-        data: { weight: 100 }, // elided id =&gt; autogenerated id 
-        group: &#39;nodes&#39;,
+        data: { weight: <span class="hljs-number">100</span> }, <span class="hljs-comment">// elided id =&gt; autogenerated id </span>
+        group: <span class="hljs-string">'nodes'</span>,
         position: {
-          x: 100,
-          y: 100
+          x: <span class="hljs-number">100</span>,
+          y: <span class="hljs-number">100</span>
         },
-        classes: &#39;className1 className2&#39;,
-        selected: true,
-        selectable: true,
-        locked: true,
-        grabbable: true
+        classes: <span class="hljs-string">'className1 className2'</span>,
+        selected: <span class="hljs-literal">true</span>,
+        selectable: <span class="hljs-literal">true</span>,
+        locked: <span class="hljs-literal">true</span>,
+        grabbable: <span class="hljs-literal">true</span>
       }
     ],
 
     edges: [
-      { data: { id: &#39;baz&#39;, source: &#39;foo&#39;, target: &#39;bar&#39; } } // NB no group specified
+      { data: { id: <span class="hljs-string">'baz'</span>, source: <span class="hljs-string">'foo'</span>, target: <span class="hljs-string">'bar'</span> } } <span class="hljs-comment">// NB no group specified</span>
     ]
   }
 
-  /* ... */
+  <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
 
@@ -1320,17 +1321,17 @@ $(function(){ // on jquery ready
 <h3 id="examples">Examples</h3>
 <p>Add a node from a plain object.</p>
 <pre><code class="lang-js">cy.add({
-    group: &quot;nodes&quot;,
-    data: { weight: 75 },
-    position: { x: 200, y: 200 }
+    group: <span class="hljs-string">"nodes"</span>,
+    data: { weight: <span class="hljs-number">75</span> },
+    position: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">200</span> }
 });
 </code></pre>
 <p>Add nodes and edges to the graph as plain objects:</p>
-<pre><code class="lang-js">// can use reference to eles later
-var eles = cy.add([
-  { group: &quot;nodes&quot;, data: { id: &quot;n0&quot; }, position: { x: 100, y: 100 } },
-  { group: &quot;nodes&quot;, data: { id: &quot;n1&quot; }, position: { x: 200, y: 200 } },
-  { group: &quot;edges&quot;, data: { id: &quot;e0&quot;, source: &quot;n0&quot;, target: &quot;n1&quot; } }
+<pre><code class="lang-js"><span class="hljs-comment">// can use reference to eles later</span>
+<span class="hljs-keyword">var</span> eles = cy.add([
+  { group: <span class="hljs-string">"nodes"</span>, data: { id: <span class="hljs-string">"n0"</span> }, position: { x: <span class="hljs-number">100</span>, y: <span class="hljs-number">100</span> } },
+  { group: <span class="hljs-string">"nodes"</span>, data: { id: <span class="hljs-string">"n1"</span> }, position: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">200</span> } },
+  { group: <span class="hljs-string">"edges"</span>, data: { id: <span class="hljs-string">"e0"</span>, source: <span class="hljs-string">"n0"</span>, target: <span class="hljs-string">"n1"</span> } }
 ]);
 </code></pre>
 
@@ -1389,15 +1390,15 @@ var eles = cy.add([
 <p>Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, almost all functions will not work on removed elements.  For example, the <code>eles.neighborhood()</code> function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.  In effect, removed elements just exist so you can restore them back to the originating core instance or to a new instance.</p>
 <h3 id="examples">Examples</h3>
 <p>Remove an element:</p>
-<pre><code class="lang-js">var j = cy.$(&quot;#j&quot;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">"#j"</span>);
 cy.remove( j );
 </code></pre>
 <p>Remove a collection:</p>
-<pre><code class="lang-js">var collection = cy.elements(&quot;node[weight &gt; 50]&quot;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> collection = cy.elements(<span class="hljs-string">"node[weight &gt; 50]"</span>);
 cy.remove( collection );
 </code></pre>
 <p>Remove elements matching a selector:</p>
-<pre><code class="lang-js">cy.remove(&quot;node[weight &gt; 50]&quot;); // remove nodes with weight greater than 50
+<pre><code class="lang-js">cy.remove(<span class="hljs-string">"node[weight &gt; 50]"</span>); <span class="hljs-comment">// remove nodes with weight greater than 50</span>
 </code></pre>
 
 								
@@ -1453,38 +1454,38 @@ cy.remove( collection );
 <h3 id="examples">Examples</h3>
 <p>As an array:</p>
 <pre><code class="lang-js">cy.load([
-  { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; },
-  { data: { id: &quot;n2&quot; }, group: &quot;nodes&quot; },
-  { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; }, group: &quot;edges&quot; }
+  { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> },
+  { data: { id: <span class="hljs-string">"n2"</span> }, group: <span class="hljs-string">"nodes"</span> },
+  { data: { id: <span class="hljs-string">"e1"</span>, source: <span class="hljs-string">"n1"</span>, target: <span class="hljs-string">"n2"</span> }, group: <span class="hljs-string">"edges"</span> }
 ]);
 </code></pre>
 <p>As a <code>group</code>-indexed map:</p>
 <pre><code class="lang-js">cy.load({
   nodes: [
-    { data: { id: &quot;n1&quot; } },
-    { data: { id: &quot;n2&quot; } }
+    { data: { id: <span class="hljs-string">"n1"</span> } },
+    { data: { id: <span class="hljs-string">"n2"</span> } }
   ],
 
   edges: [
-    { data: { id: &quot;e1&quot;, source: &quot;n1&quot;, target: &quot;n2&quot; } }
+    { data: { id: <span class="hljs-string">"e1"</span>, source: <span class="hljs-string">"n1"</span>, target: <span class="hljs-string">"n2"</span> } }
   ]
 });
 </code></pre>
 <p>With specified callbacks:</p>
-<pre><code class="lang-js">cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ], function(e){
-  console.log(&quot;cy loaded elements&quot;);
-}, function(e){
-  console.log(&quot;cy laid out elements&quot;);
+<pre><code class="lang-js">cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> } ], <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  console.log(<span class="hljs-string">"cy loaded elements"</span>);
+}, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  console.log(<span class="hljs-string">"cy laid out elements"</span>);
 });
 </code></pre>
 <p>This is equivalent to:</p>
-<pre><code class="lang-js">cy.one(&quot;load&quot;, function(e){
-  console.log(&quot;cy loaded elements&quot;);
-}).one(&quot;layoutstop&quot;, function(e){
-  console.log(&quot;cy laid out elements&quot;);
+<pre><code class="lang-js">cy.one(<span class="hljs-string">"load"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  console.log(<span class="hljs-string">"cy loaded elements"</span>);
+}).one(<span class="hljs-string">"layoutstop"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  console.log(<span class="hljs-string">"cy laid out elements"</span>);
 });
 
-cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);
+cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> } ]);
 </code></pre>
 
 								
@@ -1525,13 +1526,13 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);
 <p>This function take a map whose indices are element IDs (e.g. <code>&#39;n0&#39;</code>) mapped to objects that are used to update the corresponding data object.  If an element already has data with the specified field name, then it is overwritten.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js">cy.batchData({
-  &#39;j&#39;: {
-      weight: 73 // too much non-fat yoghourt
+  <span class="hljs-string">'j'</span>: {
+      weight: <span class="hljs-number">73</span> <span class="hljs-comment">// too much non-fat yoghourt</span>
   },
 
-  &#39;g&#39;: {
-      weight: 72,
-      height: 154 // shoe inserts
+  <span class="hljs-string">'g'</span>: {
+      weight: <span class="hljs-number">72</span>,
+      height: <span class="hljs-number">154</span> <span class="hljs-comment">// shoe inserts</span>
   }
 });
 </code></pre>
@@ -1553,9 +1554,9 @@ cy.load([ { data: { id: &quot;n1&quot; }, group: &quot;nodes&quot; } ]);
 <p>This function is useful for building up collections.</p>
 <h3 id="examples">Examples</h3>
 <p>Keep a collection of nodes that have been clicked:</p>
-<pre><code class="lang-js">var collection = cy.collection();
-cy.nodes().live(&quot;click&quot;, function(){
-  collection = collection.add(this);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> collection = cy.collection();
+cy.nodes().live(<span class="hljs-string">"click"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  collection = collection.add(<span class="hljs-keyword">this</span>);
 });
 </code></pre>
 
@@ -1730,21 +1731,21 @@ cy.nodes().live(&quot;click&quot;, function(){
 <p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It&#39;s just convenient to save you typing.  It is analogous to the jQuery <code>$</code> alias used to search the document</p>
 <h3 id="examples">Examples</h3>
 <p>Get nodes with weight greater than 50:</p>
-<pre><code class="lang-js">cy.nodes(&quot;[weight&gt;50]&quot;);
+<pre><code class="lang-js">cy.nodes(<span class="hljs-string">"[weight&gt;50]"</span>);
 </code></pre>
 <p>Get edges with source node <code>n0</code>:</p>
-<pre><code class="lang-js">cy.edges(&quot;[source=&#39;j&#39;]&quot;);
+<pre><code class="lang-js">cy.edges(<span class="hljs-string">"[source='j']"</span>);
 </code></pre>
 <p>Get all nodes and edges with weight greater than 50:</p>
-<pre><code class="lang-js">cy.elements(&quot;[weight&gt;50]&quot;);
-cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line
+<pre><code class="lang-js">cy.elements(<span class="hljs-string">"[weight&gt;50]"</span>);
+cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-comment">// works the same as the above line</span>
 </code></pre>
 <p>Get nodes with weight greater than 50 with a filter function:</p>
-<pre><code class="lang-js">cy.filter(function(i, element){
-  if( element.isNode() &amp;&amp; element.data(&quot;weight&quot;) &gt; 50 ){
-    return true;
+<pre><code class="lang-js">cy.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, element)</span>{</span>
+  <span class="hljs-keyword">if</span>( element.isNode() &amp;&amp; element.data(<span class="hljs-string">"weight"</span>) &gt; <span class="hljs-number">50</span> ){
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
   }
-  return false;
+  <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
 });
 </code></pre>
 
@@ -1805,7 +1806,7 @@ cy.filter(&quot;[weight&gt;50]&quot;); // works the same as the above line
 <p>If an empty collection or no collection is specified, then the graph is centred on all nodes and edges in the graph.</p>
 <h3 id="examples">Examples</h3>
 <p>Centre the graph on node <code>j</code>:</p>
-<pre><code class="lang-js">var j = cy.$(&quot;#j&quot;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">"#j"</span>);
 cy.center( j );
 </code></pre>
 
@@ -1864,7 +1865,7 @@ cy.center( j );
 <p>If an empty collection or no collection is specified, then the graph is fit to all nodes and edges in the graph.</p>
 <h3 id="examples">Examples</h3>
 <p>Fit the graph on nodes <code>j</code> and <code>e</code>:</p>
-<pre><code class="lang-js">cy.fit( cy.$(&#39;#j, #e&#39;) );
+<pre><code class="lang-js">cy.fit( cy.$(<span class="hljs-string">'#j, #e'</span>) );
 </code></pre>
 
 								
@@ -1897,17 +1898,17 @@ cy.center( j );
 									<h3 id="details">Details</h3>
 <p>This resets the viewport to the origin (0, 0) at zoom level 1.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">setTimeout( function(){
-    cy.pan({ x: 50, y: -100 });
-}, 1000 );
+<pre><code class="lang-js">setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    cy.pan({ x: <span class="hljs-number">50</span>, y: -<span class="hljs-number">100</span> });
+}, <span class="hljs-number">1000</span> );
 
-setTimeout( function(){
-    cy.zoom( 2 );
-}, 2000 );
+setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    cy.zoom( <span class="hljs-number">2</span> );
+}, <span class="hljs-number">2000</span> );
 
-setTimeout( function(){
+setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
     cy.reset();
-}, 3000 );
+}, <span class="hljs-number">3000</span> );
 </code></pre>
 
 								
@@ -1959,11 +1960,11 @@ setTimeout( function(){
 <h3 id="examples">Examples</h3>
 <p>Pan the graph to (100, 100) rendered pixels.</p>
 <pre><code class="lang-js">cy.pan({
-  x: 100,
-  y: 100 
+  x: <span class="hljs-number">100</span>,
+  y: <span class="hljs-number">100</span> 
 });
 
-console.log( cy.pan() ); // prints { x: 100, y: 100 }
+console.log( cy.pan() ); <span class="hljs-comment">// prints { x: 100, y: 100 }</span>
 </code></pre>
 
 								
@@ -2005,8 +2006,8 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }
 <h3 id="examples">Examples</h3>
 <p>Pan the graph 100 pixels to the right.</p>
 <pre><code class="lang-js">cy.panBy({
-  x: 100,
-  y: 0 
+  x: <span class="hljs-number">100</span>,
+  y: <span class="hljs-number">0</span> 
 });
 </code></pre>
 
@@ -2181,33 +2182,33 @@ console.log( cy.pan() ); // prints { x: 100, y: 100 }
 <p>When zooming about a point via <code>cy.zoom( options )</code>, the options are defined as follows.</p>
 <p>For zooming about a rendered position (i.e. a position on-screen):</p>
 <pre><code class="lang-js">cy.zoom({
-  level: 2.0, // the zoom level
-  renderedPosition: { x: 100, y: 100 }
+  level: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
+  renderedPosition: { x: <span class="hljs-number">100</span>, y: <span class="hljs-number">100</span> }
 });
 </code></pre>
 <p>For zooming about a model position:</p>
 <pre><code class="lang-js">cy.zoom({
-  level: 2.0, // the zoom level
-  position: { x: 0, y: 0 }
+  level: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
+  position: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> }
 });
 </code></pre>
 <p>For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.</p>
 <h3 id="examples">Examples</h3>
 <p>Zoom in to factor 2</p>
-<pre><code class="lang-js">cy.zoom(2);
+<pre><code class="lang-js">cy.zoom(<span class="hljs-number">2</span>);
 </code></pre>
 <p>Zoom in to the minimum zoom factor</p>
-<pre><code class="lang-js">cy.zoom(0); // 0 is outside of the valid range and
-            // its closest valid level is the min
+<pre><code class="lang-js">cy.zoom(<span class="hljs-number">0</span>); <span class="hljs-comment">// 0 is outside of the valid range and</span>
+            <span class="hljs-comment">// its closest valid level is the min</span>
 </code></pre>
 <p>Zoom in to the maximum zoom factor</p>
-<pre><code class="lang-js">cy.zoom(1/0); // infinity is outside of the valid range and
-              // its closest valid level is the max
+<pre><code class="lang-js">cy.zoom(<span class="hljs-number">1</span>/<span class="hljs-number">0</span>); <span class="hljs-comment">// infinity is outside of the valid range and</span>
+              <span class="hljs-comment">// its closest valid level is the max</span>
 </code></pre>
 <p>Zoom about a node</p>
-<pre><code class="lang-js">var pos = cy.nodes(&quot;#j&quot;).position();
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> pos = cy.nodes(<span class="hljs-string">"#j"</span>).position();
 cy.zoom({
-  level: 1.5,
+  level: <span class="hljs-number">1.5</span>,
   position: pos
 });
 </code></pre>
@@ -2561,24 +2562,24 @@ cy.zoom({
 								
 									<h3 id="examples">Examples</h3>
 <p>Bind to events that bubble up from elements matching the specified <code>node</code> selector:</p>
-<pre><code class="lang-js">cy.on(&#39;tap&#39;, &#39;node&#39;, { foo: &#39;bar&#39; }, function(evt){
-  console.log( evt.data.foo ); // &#39;bar&#39;
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, { foo: <span class="hljs-string">'bar'</span> }, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
+  console.log( evt.data.foo ); <span class="hljs-comment">// 'bar'</span>
 
-  var node = evt.cyTarget;
-  console.log( &#39;tapped &#39; + node.id() );
+  <span class="hljs-keyword">var</span> node = evt.cyTarget;
+  console.log( <span class="hljs-string">'tapped '</span> + node.id() );
   debugger;
 });
 </code></pre>
 <p>Bind to all tap events that the core receives:</p>
-<pre><code class="lang-js">cy.on(&#39;tap&#39;, function(event){
-  // cyTarget holds a reference to the originator
-  // of the event (core or element)
-  var evtTarget = event.cyTarget;
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(event)</span>{</span>
+  <span class="hljs-comment">// cyTarget holds a reference to the originator</span>
+  <span class="hljs-comment">// of the event (core or element)</span>
+  <span class="hljs-keyword">var</span> evtTarget = event.cyTarget;
 
-  if( evtTarget === cy ){
-      console.log(&#39;tap on background&#39;);
-  } else {
-    console.log(&#39;tap on some element&#39;);
+  <span class="hljs-keyword">if</span>( evtTarget === cy ){
+      console.log(<span class="hljs-string">'tap on background'</span>);
+  } <span class="hljs-keyword">else</span> {
+    console.log(<span class="hljs-string">'tap on some element'</span>);
   }
 });
 </code></pre>
@@ -2679,12 +2680,12 @@ cy.zoom({
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.one(&#39;tap&#39;, &#39;node&#39;, function(){
-  console.log(&#39;tap!&#39;);
+<pre><code class="lang-js">cy.one(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'tap!'</span>);
 });
 
-cy.$(&#39;node&#39;).eq(0).trigger(&#39;tap&#39;); // tap!
-cy.$(&#39;node&#39;).eq(1).trigger(&#39;tap&#39;); // nothing b/c already tapped
+cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">0</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!</span>
+cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// nothing b/c already tapped</span>
 </code></pre>
 
 								
@@ -2761,24 +2762,24 @@ cy.$(&#39;node&#39;).eq(1).trigger(&#39;tap&#39;); // nothing b/c already tapped
 								
 									<h3 id="examples">Examples</h3>
 <p>For all handlers:</p>
-<pre><code class="lang-js">cy.on(&quot;tap&quot;, function(){ /* ... */ });
+<pre><code class="lang-js">cy.on(<span class="hljs-string">"tap"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">/* ... */</span> });
 
-// unbind all tap handlers, including the one above
-cy.off(&quot;tap&quot;);
+<span class="hljs-comment">// unbind all tap handlers, including the one above</span>
+cy.off(<span class="hljs-string">"tap"</span>);
 </code></pre>
 <p>For a particular handler:</p>
-<pre><code class="lang-js">var handler = function(){
-  console.log(&quot;called handler&quot;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">"called handler"</span>);
 };
-cy.on(&quot;tap&quot;, handler);
+cy.on(<span class="hljs-string">"tap"</span>, handler);
 
-var otherHandler = function(){
-  console.log(&quot;called other handler&quot;);
+<span class="hljs-keyword">var</span> otherHandler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">"called other handler"</span>);
 };
-cy.on(&quot;tap&quot;, otherHandler);
+cy.on(<span class="hljs-string">"tap"</span>, otherHandler);
 
-// just unbind handler
-cy.off(&quot;tap&quot;, handler);
+<span class="hljs-comment">// just unbind handler</span>
+cy.off(<span class="hljs-string">"tap"</span>, handler);
 </code></pre>
 
 								
@@ -2823,11 +2824,11 @@ cy.off(&quot;tap&quot;, handler);
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.bind(&#39;tap&#39;, function(evt, foo, bar){
-  console.log(&#39;tap&#39;);
+<pre><code class="lang-js">cy.bind(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt, foo, bar)</span>{</span>
+  console.log(<span class="hljs-string">'tap'</span>);
 });
 
-cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);
+cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>]);
 </code></pre>
 
 								
@@ -2894,7 +2895,7 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);
 <p>You must specify <code>options.name</code> with the name of the layout you wish to run.</p>
 <h3 id="examples">Examples</h3>
 <p>Run the grid layout:</p>
-<pre><code class="lang-js">cy.layout({ name: &#39;grid&#39; });
+<pre><code class="lang-js">cy.layout({ name: <span class="hljs-string">'grid'</span> });
 </code></pre>
 
 								
@@ -2914,36 +2915,36 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);
 <p>You can use this function to gain access to the visual style after initialisation.  This is useful if you need to change the entire stylesheet at runtime, though this is strongly not advised for most developers.  It&#39;s akin to changing the CSS files you&#39;re using on a HTML document on-the-fly.</p>
 <p>This example sets an entirely new style to the graph, specifying <a href="#selectors">selectors</a> and <a href="#style">style properties</a>:</p>
 <pre><code class="lang-js">cy.style()
-  .resetToDefault() // start a fresh default stylesheet
+  .resetToDefault() <span class="hljs-comment">// start a fresh default stylesheet</span>
 
-  // and then define new styles
-  .selector(&#39;node&#39;)
-      .css(&#39;background-color&#39;, &#39;blue&#39;)
+  <span class="hljs-comment">// and then define new styles</span>
+  .selector(<span class="hljs-string">'node'</span>)
+      .css(<span class="hljs-string">'background-color'</span>, <span class="hljs-string">'blue'</span>)
 
-  // ...
+  <span class="hljs-comment">// ...</span>
 
-  .update() // update the elements in the graph with the new style
+  .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
 </code></pre>
 <p>You can also set the style from plain JSON:</p>
 <pre><code class="lang-js">cy.style()
   .fromJson([
     {
-      selector: &#39;node&#39;,
+      selector: <span class="hljs-string">'node'</span>,
       css: {
-        &#39;background-color&#39;: &#39;blue&#39;
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'blue'</span>
       }
     }
 
-    // , ...
+    <span class="hljs-comment">// , ...</span>
   ])
 
-  .update() // update the elements in the graph with the new style
+  .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
 </code></pre>
 <p>You can also set the style from a style string (that you would probably pull from a file on your server):</p>
 <pre><code class="lang-js">cy.style()
-  .fromString(&#39;node { background-color: blue; }&#39;)
+  .fromString(<span class="hljs-string">'node { background-color: blue; }'</span>)
 
-  .update() // update the elements in the graph with the new style
+  .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
 </code></pre>
 
 								
@@ -3030,9 +3031,9 @@ cy.trigger(&#39;tap&#39;, [&#39;foo&#39;, &#39;bar&#39;]);
 
 				
 					<p>A collection contains a set of nodes and edges.  Calling a function applies the function to all elements in the collection.  When reading values from a collection, <a href="#collection/data/eles.data"><code>eles.data()</code></a> for example, the value of the first element in the collection is returned.  This follows the jQuery convention.  For example:</p>
-<pre><code class="lang-js">var weight = cy.nodes().data(&quot;weight&quot;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> weight = cy.nodes().data(<span class="hljs-string">"weight"</span>);
 
-console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight ); // weight is the first ele&#39;s weight
+console.log( cy.nodes()[<span class="hljs-number">0</span>].data(<span class="hljs-string">"weight"</span>) + <span class="hljs-string">' == '</span> + weight ); <span class="hljs-comment">// weight is the first ele's weight</span>
 </code></pre>
 <p>You can insure that you&#39;re reading from the element you want by using a <a href="#selectors">selector</a> to narrow down the collection to one element (i.e. <code>eles.size() === 1</code>) or the <a href="#collection/iteration/eles.eq"><code>eles.eq()</code></a> function.</p>
 
@@ -3059,7 +3060,7 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 <p><strong>NB: A removed element just exists to be added back to its originating core instance or some other core instance.  A removed element is not functional, because it is no longer a part of the graph: Nothing really makes sense for it anymore outside of the context of a graph.  It merely exists in this limbo state so you can later add it back to some core instance.</strong></p>
 <h3 id="examples">Examples</h3>
 <p>Remove selected elements:</p>
-<pre><code class="lang-js">cy.$(&#39;:selected&#39;).remove();
+<pre><code class="lang-js">cy.$(<span class="hljs-string">':selected'</span>).remove();
 </code></pre>
 
 								
@@ -3103,10 +3104,10 @@ console.log( cy.nodes()[0].data(&quot;weight&quot;) + &#39; == &#39; + weight );
 <p>This function puts back elements in the graph that have been removed.  It will do nothing if the elements are already in the graph.</p>
 <p>An element can not be restored if its ID is the same as an element already in the graph.  You should specify an alternative ID for the element you want to add in that case.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">// remove selected elements
-var eles = cy.$(&#39;:selected&#39;).remove();
+<pre><code class="lang-js"><span class="hljs-comment">// remove selected elements</span>
+<span class="hljs-keyword">var</span> eles = cy.$(<span class="hljs-string">':selected'</span>).remove();
 
-// ... then some time later put them back
+<span class="hljs-comment">// ... then some time later put them back</span>
 eles.restore();
 </code></pre>
 
@@ -3212,18 +3213,18 @@ eles.restore();
 <li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
 </ul>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var j = cy.$(&#39;#j&#39;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
 
-// set the weight field in data
-j.data(&#39;weight&#39;, 60);
+<span class="hljs-comment">// set the weight field in data</span>
+j.data(<span class="hljs-string">'weight'</span>, <span class="hljs-number">60</span>);
 
-// set several fields at once
+<span class="hljs-comment">// set several fields at once</span>
 j.data({
-  name: &#39;Jerry Jerry Dingleberry&#39;,
-  height: 176
+  name: <span class="hljs-string">'Jerry Jerry Dingleberry'</span>,
+  height: <span class="hljs-number">176</span>
 });
 
-var weight = j.data(&#39;weight&#39;);
+<span class="hljs-keyword">var</span> weight = j.data(<span class="hljs-string">'weight'</span>);
 </code></pre>
 
 								
@@ -3672,19 +3673,19 @@ var weight = j.data(&#39;weight&#39;);
 									<h3 id="details">Details</h3>
 <p>A position has two fields, <code>x</code> and <code>y</code>, that can take on numerical values.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">// get x for j
-var x = cy.$(&#39;#j&#39;).position(&#39;x&#39;);
+<pre><code class="lang-js"><span class="hljs-comment">// get x for j</span>
+<span class="hljs-keyword">var</span> x = cy.$(<span class="hljs-string">'#j'</span>).position(<span class="hljs-string">'x'</span>);
 
-// get the whole position for e
-var pos = cy.$(&#39;#e&#39;).position();
+<span class="hljs-comment">// get the whole position for e</span>
+<span class="hljs-keyword">var</span> pos = cy.$(<span class="hljs-string">'#e'</span>).position();
 
-// set y for j
-cy.$(&#39;#j&#39;).position(&#39;y&#39;, 100);
+<span class="hljs-comment">// set y for j</span>
+cy.$(<span class="hljs-string">'#j'</span>).position(<span class="hljs-string">'y'</span>, <span class="hljs-number">100</span>);
 
-// set multiple
-cy.$(&#39;#e&#39;).position({
-  x: 123,
-  y: 200
+<span class="hljs-comment">// set multiple</span>
+cy.$(<span class="hljs-string">'#e'</span>).position({
+  x: <span class="hljs-number">123</span>,
+  y: <span class="hljs-number">200</span>
 });
 </code></pre>
 
@@ -4307,8 +4308,8 @@ cy.$(&#39;#e&#39;).position({
 									<h3 id="defails">Defails</h3>
 <p>In the handler function, <code>this</code> references the originally bound object, and <code>evt.cyTarget</code> references the target of the event.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.on(&#39;tap&#39;, function(evt){
-  console.log( &#39;tap &#39; + evt.cyTarget.id() );
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
+  console.log( <span class="hljs-string">'tap '</span> + evt.cyTarget.id() );
 });
 </code></pre>
 
@@ -4411,9 +4412,9 @@ cy.$(&#39;#e&#39;).position({
 <p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element in the calling collection once.  </p>
 <p>The semantics is a bit more complicated for compound nodes where a delegate selector has been specified:  Note that the handler is called once per element in the <em>calling collection</em>, and the handler is triggered by matching descendant elements.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;node&#39;).one(&#39;tap&#39;, function(e){
-  var ele = e.cyTarget;
-  console.log(&#39;tapped &#39; + ele.id());
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).one(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  <span class="hljs-keyword">var</span> ele = e.cyTarget;
+  console.log(<span class="hljs-string">'tapped '</span> + ele.id());
 });
 </code></pre>
 
@@ -4515,9 +4516,9 @@ cy.$(&#39;#e&#39;).position({
 									<h3 id="details">Details</h3>
 <p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the calling collection.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.$(&#39;node&#39;).once(&#39;click&#39;, function(e){
-  var ele = e.cyTarget;
-  console.log(&#39;clicked &#39; + ele.id());
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).once(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  <span class="hljs-keyword">var</span> ele = e.cyTarget;
+  console.log(<span class="hljs-string">'clicked '</span> + ele.id());
 });
 </code></pre>
 
@@ -4594,26 +4595,26 @@ cy.$(&#39;#e&#39;).position({
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var j = cy.$(&#39;#j&#39;);
-var handler = function(){ console.log(&#39;tap&#39;) };
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'tap'</span>) };
 
-// bind
-j.on(&#39;tap&#39;, handler);
+<span class="hljs-comment">// bind</span>
+j.on(<span class="hljs-string">'tap'</span>, handler);
 
-// bind some other handler
-j.on(&#39;tap&#39;, function(){
-  console.log(&#39;some other handler&#39;);
+<span class="hljs-comment">// bind some other handler</span>
+j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'some other handler'</span>);
 });
 
-j.trigger(&#39;tap&#39;); // &#39;tap&#39; &amp; &#39;some other handler&#39;
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// 'tap' &amp; 'some other handler'</span>
 
-// unbind the renferenced handler
-j.off(&#39;tap&#39;, handler);
+<span class="hljs-comment">// unbind the renferenced handler</span>
+j.off(<span class="hljs-string">'tap'</span>, handler);
 
-j.trigger(&#39;tap&#39;); // some other handler
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// some other handler</span>
 
-// unbind all tap handlers (including unnamed handler)
-j.off(&#39;tap&#39;);
+<span class="hljs-comment">// unbind all tap handlers (including unnamed handler)</span>
+j.off(<span class="hljs-string">'tap'</span>);
 </code></pre>
 
 								
@@ -4658,13 +4659,13 @@ j.off(&#39;tap&#39;);
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var j = cy.$(&#39;#j&#39;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
 
-j.on(&#39;tap&#39;, function(){
-  console.log(&#39;tap!!&#39;);
+j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'tap!!'</span>);
 });
 
-j.trigger(&#39;tap&#39;); // tap!!
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!!</span>
 </code></pre>
 
 								
@@ -5188,10 +5189,10 @@ j.trigger(&#39;tap&#39;); // tap!!
 <p>Note that you can specify only one of <code>position</code> and <code>renderedPosition</code>:  You can not animate to two positions at once.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js">cy.nodes().animate({
-  position: { x: 100, y: 100 },
-  css: { backgroundColor: &#39;red&#39; }
+  position: { x: <span class="hljs-number">100</span>, y: <span class="hljs-number">100</span> },
+  css: { backgroundColor: <span class="hljs-string">'red'</span> }
 }, {
-  duration: 1000
+  duration: <span class="hljs-number">1000</span>
 });
 </code></pre>
 
@@ -5571,8 +5572,8 @@ j.trigger(&#39;tap&#39;); // tap!!
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.elements().each(function(i, ele){
-  console.log( ele.id() + &#39; is &#39; + ( ele.selected() ? &#39;selected&#39; : &#39;not selected&#39; ) );
+<pre><code class="lang-js">cy.elements().each(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, ele)</span>{</span>
+  console.log( ele.id() + <span class="hljs-string">' is '</span> + ( ele.selected() ? <span class="hljs-string">'selected'</span> : <span class="hljs-string">'not selected'</span> ) );
 });
 </code></pre>
 
@@ -6445,24 +6446,24 @@ j.trigger(&#39;tap&#39;); // tap!!
 </ul>
 <p>This function has a shorter alias, <code>eles.bfs()</code>.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var bfs = cy.elements().bfs(&#39;#e&#39;, function(i, depth){
-  console.log( &#39;visit &#39; + this.id() );
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> bfs = cy.elements().bfs(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, depth)</span>{</span>
+  console.log( <span class="hljs-string">'visit '</span> + <span class="hljs-keyword">this</span>.id() );
 
-  // example of finding desired node
-  if( this.data(&#39;weight&#39;) &gt; 70 ){
-    return true;
+  <span class="hljs-comment">// example of finding desired node</span>
+  <span class="hljs-keyword">if</span>( <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">70</span> ){
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
   }
 
-  // example of exiting search early
-  if( this.data(&#39;weight&#39;) &lt; 0 ){
-    return false;
+  <span class="hljs-comment">// example of exiting search early</span>
+  <span class="hljs-keyword">if</span>( <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>) &lt; <span class="hljs-number">0</span> ){
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
   }
-}, false);
+}, <span class="hljs-literal">false</span>);
 
-var path = bfs.path; // path to found node
-var found = bfs.found; // found node
+<span class="hljs-keyword">var</span> path = bfs.path; <span class="hljs-comment">// path to found node</span>
+<span class="hljs-keyword">var</span> found = bfs.found; <span class="hljs-comment">// found node</span>
 
-// select the path
+<span class="hljs-comment">// select the path</span>
 path.select();
 </code></pre>
 
@@ -6538,24 +6539,24 @@ path.select();
 </ul>
 <p>This function has a shorter alias, <code>eles.dfs()</code>.</p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var dfs = cy.elements().dfs(&#39;#e&#39;, function(i, depth){
-  console.log( &#39;visit &#39; + this.id() );
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> dfs = cy.elements().dfs(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, depth)</span>{</span>
+  console.log( <span class="hljs-string">'visit '</span> + <span class="hljs-keyword">this</span>.id() );
 
-  // example of finding desired node
-  if( this.data(&#39;weight&#39;) &gt; 70 ){
-    return true;
+  <span class="hljs-comment">// example of finding desired node</span>
+  <span class="hljs-keyword">if</span>( <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">70</span> ){
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
   }
 
-  // example of exiting search early
-  if( this.data(&#39;weight&#39;) &lt; 0 ){
-    return false;
+  <span class="hljs-comment">// example of exiting search early</span>
+  <span class="hljs-keyword">if</span>( <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>) &lt; <span class="hljs-number">0</span> ){
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
   }
-}, false);
+}, <span class="hljs-literal">false</span>);
 
-var path = dfs.path; // path to found node
-var found = dfs.found; // found node
+<span class="hljs-keyword">var</span> path = dfs.path; <span class="hljs-comment">// path to found node</span>
+<span class="hljs-keyword">var</span> found = dfs.found; <span class="hljs-comment">// found node</span>
 
-// select the path
+<span class="hljs-comment">// select the path</span>
 path.select();
 </code></pre>
 
@@ -6611,18 +6612,18 @@ path.select();
 <p>Note that this function performs Dijkstra&#39;s algorithm on only the subset of the graph in the calling collection.</p>
 <p>This function returns an object of the following form:</p>
 <pre><code>{
-  distanceTo: function( node ){ /* impl */ }
-  pathTo: function( node ){ /* impl */ }
+  distanceTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span>{</span> <span class="hljs-comment">/* impl */</span> }
+  pathTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span>{</span> <span class="hljs-comment">/* impl */</span> }
 }
 </code></pre><p><code>distanceTo(node)</code> returns the distance from the source node to <code>node</code>, and <code>pathTo(node)</code> returns a collection containing the shortest path from the source node to <code>node</code>.  The path starts with the source node and includes the edges between the nodes in the path such that if <code>pathTo(node)[i]</code> is an edge, then <code>pathTo(node)[i-1]</code> is the previous node in the path and <code>pathTo(node)[i+1]</code> is the next node in the path.</p>
 <p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js">var dijkstra = cy.elements().dijkstra(&#39;#e&#39;, function(){
-  return this.data(&#39;weight&#39;);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> dijkstra = cy.elements().dijkstra(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>);
 });
 
-var pathToJ = dijkstra.pathTo( cy.$(&#39;#j&#39;) );
-var distToJ = dijkstra.distanceTo( cy.$(&#39;#j&#39;) );
+<span class="hljs-keyword">var</span> pathToJ = dijkstra.pathTo( cy.$(<span class="hljs-string">'#j'</span>) );
+<span class="hljs-keyword">var</span> distToJ = dijkstra.distanceTo( cy.$(<span class="hljs-string">'#j'</span>) );
 </code></pre>
 
 								
@@ -6905,7 +6906,7 @@ var distToJ = dijkstra.distanceTo( cy.$(&#39;#j&#39;) );
 				
 					<h2 id="extensions/api">API <a href="#extensions/api"><span class="icon-bookmark"></span></a></h2>
 <p>The extensions API is very simple, following this format:</p>
-<pre><code>cytoscape( type, name, extension );
+<pre><code>cytoscape( <span class="hljs-class"><span class="hljs-keyword">type</span>, <span class="hljs-title">name</span>, <span class="hljs-title">extension</span> );</span>
 </code></pre><p>The value of <code>type</code> can take on the following values:</p>
 <ul>
 <li><code>core</code> : The extension adds a core function.</li>
@@ -6917,16 +6918,16 @@ var distToJ = dijkstra.distanceTo( cy.$(&#39;#j&#39;) );
 <h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
 <p>Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to <code>return this;</code> at the end of your function.</p>
 <p>Here is an example collection function:</p>
-<pre><code class="lang-js">cytoscape(&#39;collection&#39;, &#39;forEach&#39;, function( fn ){
-  for( var i = 0; i &lt; this.length; i++ ){
-    fn.apply( this[i], [ i, this[i] ] );
+<pre><code class="lang-js">cytoscape(<span class="hljs-string">'collection'</span>, <span class="hljs-string">'forEach'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( fn )</span>{</span>
+  <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-keyword">this</span>.length; i++ ){
+    fn.apply( <span class="hljs-keyword">this</span>[i], [ i, <span class="hljs-keyword">this</span>[i] ] );
   }
 
-  return this; // chainability
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>; <span class="hljs-comment">// chainability</span>
 });
 
-cy.elements().forEach(function(){
-  console.log( &#39;forEach &#39; + this.id() );
+cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log( <span class="hljs-string">'forEach '</span> + <span class="hljs-keyword">this</span>.id() );
 });
 </code></pre>
 <h2 id="extensions/layouts">Layouts <a href="#extensions/layouts"><span class="icon-bookmark"></span></a></h2>
@@ -6994,7 +6995,7 @@ cy.elements().forEach(function(){
 				
 					<div class="section lvl2">
 						
-						<a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span> Cytoscape.js &amp; Cytoscape</a>
+						<a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span> Cytoscape.js &amp;amp; Cytoscape</a>
 					</div>
 
 					
@@ -7018,7 +7019,7 @@ cy.elements().forEach(function(){
 				
 					<div class="section lvl2">
 						
-						<a href="#notation/architecture-amp-api"><span class="icon-bookmark"></span> Architecture &amp; API</a>
+						<a href="#notation/architecture-amp-api"><span class="icon-bookmark"></span> Architecture &amp;amp; API</a>
 					</div>
 
 					
@@ -7080,14 +7081,14 @@ cy.elements().forEach(function(){
 				
 					<div class="section lvl2">
 						
-						<a href="#selectors/notes-amp-caveats"><span class="icon-bookmark"></span> Notes &amp; caveats</a>
+						<a href="#selectors/notes-amp-caveats"><span class="icon-bookmark"></span> Notes &amp;amp; caveats</a>
 					</div>
 
 					
 				
 					<div class="section lvl2">
 						
-						<a href="#selectors/group-class-amp-id"><span class="icon-bookmark"></span> Group, class, &amp; ID</a>
+						<a href="#selectors/group-class-amp-id"><span class="icon-bookmark"></span> Group, class, &amp;amp; ID</a>
 					</div>
 
 					

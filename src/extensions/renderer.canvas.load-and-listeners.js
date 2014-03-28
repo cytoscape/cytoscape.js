@@ -1438,9 +1438,20 @@
       
     }, 1000/30), false);
     
+    r.registerBinding(window, 'touchcancel', function(e) {
+      r.touchData.capture = false;
+    });
+
     r.registerBinding(window, 'touchend', function(e) {
       
-      var capture = r.touchData.capture; if (!capture) { return; }; r.touchData.capture = false;
+      var capture = r.touchData.capture; 
+
+      if( capture ){
+        r.touchData.capture = false;
+      } else {
+        return;
+      }
+      
       e.preventDefault();
       var select = r.data.select;
 

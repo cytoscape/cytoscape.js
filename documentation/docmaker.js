@@ -114,9 +114,9 @@ function compileConfig( config ){
           fn.html = md2html( fn.md );
 
           // the html for functions should only have h3 tags, not h1 or h2
-          fn.html = fn.html.replace(/\<h2\>/g, '<h3>');
+          fn.html = fn.html.replace(/\<h2/g, '<h3');
           fn.html = fn.html.replace(/\<\/h2\>/g, '</h3>');
-          fn.html = fn.html.replace(/\<h1\>/g, '<h3>');
+          fn.html = fn.html.replace(/\<h1/g, '<h3');
           fn.html = fn.html.replace(/\<\/h1\>/g, '</h3>');
         }
 

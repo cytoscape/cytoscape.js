@@ -208,7 +208,10 @@ gulp.task('docsclean', function(next){
 
 gulp.task('docshtmlmin', ['docsminrefs'], function(){
   return gulp.src('documentation/index.html')
-    .pipe( htmlmin({ collapseWhitespace: true }) )
+    .pipe( htmlmin({
+      collapseWhitespace: false,
+      keepClosingSlash: true
+    }) )
 
     .pipe( gulp.dest('documentation') )
   ;

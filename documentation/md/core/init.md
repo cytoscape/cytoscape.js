@@ -147,11 +147,11 @@ $('#cy').cytoscape({
 
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
-* `hideEdgesOnViewport` : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
+**`hideEdgesOnViewport`** : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 
-* `renderer.name` : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
+* **`renderer.name`** : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
 
 **`style`** : The stylesheet used to style the document.
 

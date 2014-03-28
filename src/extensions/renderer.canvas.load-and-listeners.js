@@ -411,6 +411,30 @@
 
         r.hoverData.cxtDragged = true;
 
+        if( !r.hoverData.cxtOver || near !== r.hoverData.cxtOver ){
+
+          if( r.hoverData.cxtOver ){
+            r.hoverData.cxtOver.trigger( new $$.Event(e, {
+              type: 'cxtdragout',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) );
+
+            // console.log('cxtdragout ' + r.hoverData.cxtOver.id());
+          }
+
+          r.hoverData.cxtOver = near;
+
+          if( near ){
+            near.trigger( new $$.Event(e, {
+              type: 'cxtdragover',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) );
+
+            // console.log('cxtdragover ' + near.id());
+          }
+
+        }
+
       // Check if we are drag panning the entire graph
       } else if (r.hoverData.dragging) {
         preventDefault = true;
@@ -932,7 +956,7 @@
         ];
 
         // consider context tap
-        if( distance1 < 100 ){
+        if( distance1 < 200 ){
 
           var near1 = r.findNearestElement(now[0], now[1], true);
           var near2 = r.findNearestElement(now[2], now[3], true);
@@ -1195,6 +1219,32 @@
 
         //console.log('cxtdrag')
 
+        var near = r.findNearestElement(now[0], now[1], true);
+
+        if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
+
+          if( r.touchData.cxtOver ){
+            r.touchData.cxtOver.trigger( new $$.Event(e, {
+              type: 'cxtdragout',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
+
+            // console.log('cxtdragout');
+          }
+
+          r.touchData.cxtOver = near;
+
+          if( near ){
+            near.trigger( new $$.Event(e, {
+              type: 'cxtdragover',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
+
+            // console.log('cxtdragover');
+          }
+
+        }
+
       } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
@@ -1392,10 +1442,10 @@
             }
           }
 
-          // if (near != last) {
-          //   if (last) { last.trigger(new $$.Event(e, {type: 'touchout'})); }
-          //   if (near) { near.trigger(new $$.Event(e, {type: 'touchover'})); }
-          // }
+          if (near != last) {
+            if (last) { last.trigger(new $$.Event(e, {type: 'touchout'})); }
+            if (near) { near.trigger(new $$.Event(e, {type: 'touchover'})); }
+          }
 
           r.touchData.last = near;
         }
@@ -1439,11 +1489,18 @@
     }, 1000/30), false);
     
     r.registerBinding(window, 'touchcancel', function(e) {
+      var start = r.touchData.start;
+
       r.touchData.capture = false;
+
+      if( start ){
+        start.unactivate();
+      }
     });
 
     r.registerBinding(window, 'touchend', function(e) {
-      
+      var start = r.touchData.start;
+
       var capture = r.touchData.capture; 
 
       if( capture ){
@@ -1461,12 +1518,16 @@
       var cy = r.data.cy; 
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
-      var start = r.touchData.start;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
       if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
       
+      if( start ){
+        start.unactivate();
+      }
+
+      var ctxTapend;
       if( r.touchData.cxt ){
         ctxTapend = new $$.Event(e, {
           type: 'cxttapend',
@@ -1474,7 +1535,6 @@
         });
 
         if( start ){
-          start.unactivate();
           start.trigger( ctxTapend );
         } else {
           cy.trigger( ctxTapend );
@@ -1555,7 +1615,7 @@
       if( start != null ){
         start._private.active = false;
         updateStartStyle = true;
-        start.trigger('unactivate');
+        start.unactivate();
       }
 
       if (e.touches[2]) {
@@ -1618,6 +1678,8 @@
             }))
           ;
           
+          start.unactivate();
+
           r.touchData.start = null;
           
         } else {

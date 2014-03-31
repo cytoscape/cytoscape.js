@@ -128,8 +128,8 @@
       if (node._private.style['opacity'].value != 0
         && node._private.style['visibility'].value == 'visible'
         && node._private.style['display'].value == 'element'
-        && !node._private.locked
-        && node._private.grabbable) {
+        && !node.locked()
+        && node.grabbable() ) {
   
         return true;
       }
@@ -198,56 +198,61 @@
         // Element dragging
         {
           // If something is under the cursor and it is draggable, prepare to grab it
-          if (near != null && r.nodeIsDraggable(near)) {
-            if ( near.isNode() && !near.selected() ) {
+          if (near != null) {
 
-              draggedElements = r.dragData.possibleDragElements = [ ];
-              addNodeToDrag(near, draggedElements);
-              near.trigger(grabEvent);
+            if( r.nodeIsDraggable(near) ){
 
-              // add descendant nodes only if the compound size is set to auto
-              if (near._private.style['width'].value == 'auto' ||
-                  near._private.style['height'].value == 'auto')
-              {
-                addDescendantsToDrag(near,
-                  true,
-                  draggedElements);
-              }
+              if ( near.isNode() && !near.selected() ) {
 
-              // also add nodes and edges related to the topmost ancestor
-              updateAncestorsInDragLayer(near, true);
+                draggedElements = r.dragData.possibleDragElements = [ ];
+                addNodeToDrag(near, draggedElements);
+                near.trigger(grabEvent);
 
-            } else if ( near.isNode() && near.selected() ) {
-              draggedElements = r.dragData.possibleDragElements = [  ];
-
-              var triggeredGrab = false;
-              var selectedNodes = cy.$('node:selected');
-              for( var i = 0; i < selectedNodes.length; i++ ){
-                //r.dragData.possibleDragElements.push( selectedNodes[i] );
-                
-                // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-                if (r.nodeIsDraggable(selectedNodes[i]))
+                // add descendant nodes only if the compound size is set to auto
+                if (near._private.style['width'].value == 'auto' ||
+                    near._private.style['height'].value == 'auto')
                 {
-                  addNodeToDrag(selectedNodes[i], draggedElements);
+                  addDescendantsToDrag(near,
+                    true,
+                    draggedElements);
+                }
+
+                // also add nodes and edges related to the topmost ancestor
+                updateAncestorsInDragLayer(near, true);
+
+              } else if ( near.isNode() && near.selected() ) {
+                draggedElements = r.dragData.possibleDragElements = [  ];
+
+                var triggeredGrab = false;
+                var selectedNodes = cy.$('node:selected');
+                for( var i = 0; i < selectedNodes.length; i++ ){
+                  //r.dragData.possibleDragElements.push( selectedNodes[i] );
                   
-                  // only trigger for grabbed node once
-                  if( !triggeredGrab ){
-                    near.trigger(grabEvent);
-                    triggeredGrab = true;
-                  }
-
-                  if (selectedNodes[i]._private.style['width'].value == 'auto' ||
-                    selectedNodes[i]._private.style['height'].value == 'auto')
+                  // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
+                  if (r.nodeIsDraggable(selectedNodes[i]))
                   {
-                    addDescendantsToDrag(selectedNodes[i],
-                      false,
-                      draggedElements);
-                  }
+                    addNodeToDrag(selectedNodes[i], draggedElements);
+                    
+                    // only trigger for grabbed node once
+                    if( !triggeredGrab ){
+                      near.trigger(grabEvent);
+                      triggeredGrab = true;
+                    }
 
-                  // also add nodes and edges related to the topmost ancestor
-                  updateAncestorsInDragLayer(selectedNodes[i], true);
+                    if (selectedNodes[i]._private.style['width'].value == 'auto' ||
+                      selectedNodes[i]._private.style['height'].value == 'auto')
+                    {
+                      addDescendantsToDrag(selectedNodes[i],
+                        false,
+                        draggedElements);
+                    }
+
+                    // also add nodes and edges related to the topmost ancestor
+                    updateAncestorsInDragLayer(selectedNodes[i], true);
+                  }
                 }
               }
+
             }
             
             near
@@ -476,11 +481,21 @@
               type: 'mouseout',
               cyPosition: { x: pos[0], y: pos[1] }
             }) ); 
+
+            last.trigger( new $$.Event(e, {
+              type: 'tapdragout',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) ); 
           }
           
           if (near) {
             near.trigger( new $$.Event(e, {
               type: 'mouseover',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) ); 
+
+            near.trigger( new $$.Event(e, {
+              type: 'tapdragover',
               cyPosition: { x: pos[0], y: pos[1] }
             }) ); 
           }
@@ -1353,6 +1368,7 @@
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
+        var near = r.findNearestElement(now[0], now[1], true);
         
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;
@@ -1387,6 +1403,7 @@
         
         // Touchmove event
         {
+
           if (start != null) {
             start.trigger( new $$.Event(e, {
               type: 'touchmove',
@@ -1405,7 +1422,6 @@
           }
           
           if (start == null) { 
-            var near = r.findNearestElement(now[0], now[1], true);
 
             if (near != null) { 
               near.trigger( new $$.Event(e, {
@@ -1443,8 +1459,8 @@
           }
 
           if (near != last) {
-            if (last) { last.trigger(new $$.Event(e, {type: 'touchout'})); }
-            if (near) { near.trigger(new $$.Event(e, {type: 'touchover'})); }
+            if (last) { last.trigger(new $$.Event(e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } })); }
+            if (near) { near.trigger(new $$.Event(e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } })); }
           }
 
           r.touchData.last = near;

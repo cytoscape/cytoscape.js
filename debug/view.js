@@ -50,6 +50,22 @@ $(function(){
 		$("#disable-user-zooming").click(function(){
 			cy.userZoomingEnabled(false);
 		});
+
+		$("#enable-autolock").click(function(){
+			cy.autolockNodes(true);
+		});
+
+		$("#disable-autolock").click(function(){
+			cy.autolockNodes(false);
+		});
+
+		$("#enable-autoungrabify").click(function(){
+			cy.autoungrabifyNodes(true);
+		});
+
+		$("#disable-autoungrabify").click(function(){
+			cy.autoungrabifyNodes(false);
+		});
 		
 	});
 

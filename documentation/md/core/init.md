@@ -122,6 +122,9 @@ $('#cy').cytoscape({
   userZoomingEnabled: true,
   pan: { x: 0, y: 0 },
   panningEnabled: true,
+  userPanningEnabled: true,
+  autolockNodes: false,
+  autoungrabifyNodes: false,
   hideEdgesOnViewport: false,
   renderer: { /* ... */ },
   style: undefined /* ... */,
@@ -145,7 +148,13 @@ $('#cy').cytoscape({
 
 **`panningEnabled`** : Whether panning the graph is enabled, both by user events and programmatically.
 
+**`userPanningEnabled`** : Whether panning the graph is enabled by user events.
+
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
+
+**`autolockNodes`** : Whether nodes should be locked by default (if `true`, overrides individual node state).
+
+**`autoungrabifyNodes`** : Whether nodes should be ungrabified (not grabbable by user) by default (if `true`, overrides individual node state).
 
 **`hideEdgesOnViewport`** : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
 

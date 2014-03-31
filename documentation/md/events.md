@@ -41,6 +41,8 @@ There are also some higher level events that you can use so you don't have to bi
 
  * `tapstart` or `vmousedown` : normalised tap start event (either `mousedown` or `touchstart`)
  * `tapdrag` or `vmousemove` : normalised move event (either `touchmove` or `mousemove`)
+ * `tapdragover` : normalised over element event (either `touchmove` or `mousemove`/`mouseover`)
+ * `tapdragout` : normalised off of element event (either `touchmove` or `mousemove`/`mouseout`)
  * `tapend` or `vmouseup` : normalised tap end event (either `mouseup` or `touchend`)
  * `tap` or `vclick` : normalised tap event (either `click`, or `touchstart` followed by `touchend` without `touchmove`)
  * `taphold` : normalised tap hold event
@@ -48,6 +50,8 @@ There are also some higher level events that you can use so you don't have to bi
  * `cxttapend` : normalised right-click `mouseup` or two-finger `tapend`
  * `cxttap` : normalised right-click or two-finger `tap`
  * `cxtdrag` : normalised mousemove or two-finger drag after `cxttapstart` but before `cxttapend`
+ * `cxtdragover` : when going over a node via `cxtdrag`
+ * `cxtdragout` : when going off a node via `cxtdrag`
 
 
 ## Collection events

@@ -42,6 +42,14 @@
     $$.elesfn[ params.field ] = function(){
       var ele = this[0];
       if( ele ){
+        if( params.altFieldFn ){
+          var val = params.altFieldFn(ele);
+
+          if( val !== undefined ){
+            return val;
+          }
+        }
+
         return ele._private[ params.field ];
       }
     };
@@ -63,12 +71,18 @@
   
   defineSwitchSet({
     field: 'locked',
+    altFieldFn: function(ele){
+      return ele.cy().autolockNodes() ? true : undefined;
+    },
     on: 'lock',
     off: 'unlock'
   });
   
   defineSwitchSet({
     field: 'grabbable',
+    altFieldFn: function(ele){
+      return ele.cy().autoungrabifyNodes() ? false : undefined;
+    },
     on: 'grabify',
     off: 'ungrabify'
   });

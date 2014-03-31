@@ -2,6 +2,26 @@
   
   $$.fn.core({
     
+    autolockNodes: function(bool){
+      if( bool !== undefined ){
+        this._private.autolockNodes = bool ? true : false;
+      } else {
+        return this._private.autolockNodes;
+      }
+      
+      return this; // chaining
+    },
+
+    autoungrabifyNodes: function(bool){
+      if( bool !== undefined ){
+        this._private.autoungrabifyNodes = bool ? true : false;
+      } else {
+        return this._private.autoungrabifyNodes;
+      }
+      
+      return this; // chaining
+    },
+
     panningEnabled: function( bool ){
       if( bool !== undefined ){
         this._private.panningEnabled = bool ? true : false;

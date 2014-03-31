@@ -70,6 +70,8 @@
       panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
       userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
+      autolockNodes: options.autolockNodes === undefined ? false : options.autolockNodes,
+      autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,

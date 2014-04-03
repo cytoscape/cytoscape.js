@@ -24,6 +24,37 @@
     return (window.devicePixelRatio || 1) / backingStore;
   }
 
+  // TODO use this
+  CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
+    var caches = this.fillStyleCaches = this.fillStyleCaches || [];
+    var needToCreateCache = true;
+
+    for(var i = 0; i < caches; i++ ){
+      var cache = caches[i];
+
+      if( cache.context === context ){
+        needToCreateCache = false;
+        break;
+      }
+    }
+
+    if( needToCreateCache ){
+      cache = {};
+      this.fillStyleCaches.push( cache );
+    }
+
+    var style = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+    if( cache.style !== style ){
+      context.fillStyle = style;
+    }
+  };
+
+  // TODO test and implement as above
+  CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
+    context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  };
+
   // Resize canvas
   CanvasRenderer.prototype.matchCanvasSize = function(container) {
     var data = this.data; var width = container.clientWidth; var height = container.clientHeight;

@@ -12,7 +12,7 @@
     context.translate(x, y);
     context.scale(width / 2, height / 2);
 
-    context.beginPath();
+    context.beginPath && context.beginPath();
 
     context.moveTo(points[0], points[1]);
 
@@ -46,7 +46,7 @@
     var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
     context.translate(x, y);
     
-    context.beginPath();
+    context.beginPath && context.beginPath();
     
     // Start at top middle
     context.moveTo(0, -halfHeight);

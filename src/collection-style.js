@@ -155,8 +155,8 @@
 
           return true;
         } else if( ele.isEdge() ){
-          var src = cy.getElementById( ele._private.data.source );
-          var tgt = cy.getElementById( ele._private.data.target );
+          var src = ele._private.source;
+          var tgt = ele._private.target;
 
           return src.visible() && tgt.visible();
         }

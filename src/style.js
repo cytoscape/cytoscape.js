@@ -384,7 +384,7 @@
   // - value : the parsed, native-typed value of the property
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
-  $$.styfn.parse = function( name, value, propIsBypass ){
+  $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
     
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];
@@ -413,7 +413,7 @@
 
     // check if value is mapped
     var data, mapData, layoutData, mapLayoutData;
-    if( !valueIsString ){
+    if( !valueIsString || propIsFlat ){
       // then don't bother to do the expensive regex checks
 
     } else if(

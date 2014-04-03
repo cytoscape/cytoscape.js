@@ -230,14 +230,14 @@
       
       } else if( type.number ){
         var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
-        flatProp = this.parse( prop.name, calcValue, prop.bypass );
+        flatProp = this.parse( prop.name, calcValue, prop.bypass, true );
       
       } else {
         return false; // can only map to colours and numbers
       }
 
       if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass);
+        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
       } 
 
       flatProp.mapping = prop; // keep a reference to the mapping
@@ -259,9 +259,9 @@
         fieldVal = fieldVal[ field ];
       }
 
-      flatProp = this.parse( prop.name, fieldVal, prop.bypass );
+      flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
       if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass);
+        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
       } 
 
       flatProp.mapping = prop; // keep a reference to the mapping

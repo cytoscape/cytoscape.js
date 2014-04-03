@@ -215,6 +215,11 @@
     
     var cy = this.data.cy;
     var zoom = cy.zoom();
+    var rs = edge._private.rscratch;
+    var canvasCxt = context;
+    var path;
+    var pathCacheHit = false;
+    var usePaths = typeof Path2D !== 'undefined';
     
 
     // Adjusted edge width for dotted
@@ -224,15 +229,37 @@
 
     if (type == 'solid') {
       
-      context.beginPath();
-      context.moveTo(pts[0], pts[1]);
-      if (pts.length == 3 * 2) {
-        context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-      } else {
-        context.lineTo(pts[2], pts[3]);
+      if( usePaths ){
+
+        var pathCacheKey = pts.join('$$');
+        if( rs.pathCacheKey === pathCacheKey ){
+          path = context = rs.pathCache;
+          pathCacheHit = true;
+        } else {
+          path = context = new Path2D();
+          rs.pathCacheKey = pathCacheKey;
+          rs.pathCache = path;
+        }
+
       }
-//      context.closePath();
-      context.stroke();
+
+      if( !pathCacheHit ){
+        context.beginPath && context.beginPath();
+        context.moveTo(pts[0], pts[1]);
+        if (pts.length == 3 * 2) {
+          context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
+        } else {
+          context.lineTo(pts[2], pts[3]);
+        }
+        context.closePath();
+      }
+
+      context = canvasCxt;
+      if( usePaths ){
+        context.stroke( path );
+      } else {
+        context.stroke();
+      }
       
     } else if (type == 'dotted') {
       
@@ -282,6 +309,8 @@
             bufW / zoom,
             bufH / zoom);
       }
+
+      context.closePath();
       
       //context.restore();
       
@@ -384,6 +413,8 @@
         context.rotate(-angle);
         
         context.translate(-pt[i*2], -pt[i*2+1]);
+
+        context.closePath();
         
       }
       

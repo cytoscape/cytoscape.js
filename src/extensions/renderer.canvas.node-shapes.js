@@ -2,6 +2,7 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var renderer = CanvasRenderer.prototype;
+  var usePaths = typeof Path2D !== 'undefined';
 
   // Node shape contract:
   //
@@ -23,21 +24,37 @@
     
     drawPath: function(context, centerX, centerY, width, height) {
       
-      //context.save();
-      
-      context.beginPath();
-      context.translate(centerX, centerY);
-      context.scale(width / 2, height / 2);
-      // At origin, radius 1, 0 to 2pi
-      context.arc(0, 0, 1, 0, Math.PI * 2 * 0.999, false); // *0.999 b/c chrome rendering bug on full circle
-      context.closePath();
+      if( usePaths ){
+        context.beginPath && context.beginPath();
 
-      context.scale(2/width, 2/height);
-      context.translate(-centerX, -centerY);
-      //context.restore();
-      
-//      console.log('drawing ellipse');
-//      console.log(arguments);
+        var xPos, yPos;
+        var rw = width/2;
+        var rh = height/2;
+        for (var i = 0 * Math.PI; i < 2 * Math.PI; i += 0.1 ) {
+            xPos = centerX - (rw * Math.sin(i)) * Math.sin(0 * Math.PI) + (rw * Math.cos(i)) * Math.cos(0 * Math.PI);
+            yPos = centerY + (rh * Math.cos(i)) * Math.sin(0 * Math.PI) + (rh * Math.sin(i)) * Math.cos(0 * Math.PI);
+
+            if (i === 0) {
+                context.moveTo(xPos, yPos);
+            } else {
+                context.lineTo(xPos, yPos);
+            }
+        }
+        context.closePath();
+
+      } else {
+
+        context.beginPath && context.beginPath();
+        context.translate(centerX, centerY);
+        context.scale(width / 2, height / 2);
+        // At origin, radius 1, 0 to 2pi
+        context.arc(0, 0, 1, 0, Math.PI * 2 * 0.999, false); // *0.999 b/c chrome rendering bug on full circle
+        context.closePath();
+
+        context.scale(2/width, 2/height);
+        context.translate(-centerX, -centerY);
+
+      }
       
     },
     

@@ -68,15 +68,22 @@
     var repeat = style['background-repeat'].value;
     var nodeW = this.getNodeWidth(node);
     var nodeH = this.getNodeHeight(node);
+    var rs = node._private.rscratch;
     
     context.save();
     
-    CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+    if( rs.pathCache ){
+      context.clip( rs.pathCache );
+    } else {
+      CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
         context,
         nodeX, nodeY, 
         nodeW, nodeH);
+
+      context.clip();
+    }
     
-    context.clip();
+    
     
     var w = img.width;
     var h = img.height;

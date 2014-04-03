@@ -82,6 +82,25 @@
     this.drawText(context, node, rs.labelX, rs.labelY);
   };
   
+  CanvasRenderer.prototype.getFontCache = function(context){
+    this.fontCaches = this.fontCaches || [];
+
+    for( var i = 0; i < this.fontCaches.length; i++ ){
+      var cache = this.fontCaches[i];
+
+      if( cache.context === context ){
+        return cache;
+      }
+    }
+
+    cache = {
+      context: context
+    };
+    this.fontCaches.push(cache);
+
+    return cache;
+  };
+
   // set up canvas context with font
   // returns transformed text string
   CanvasRenderer.prototype.setupTextStyle = function( context, element ){
@@ -93,10 +112,19 @@
     var labelFamily = style['font-family'].strValue;
     var labelVariant = style['font-variant'].strValue;
     var labelWeight = style['font-weight'].strValue;
-    
-    context.font = labelStyle + ' ' + labelWeight + ' '
-      + labelSize + ' ' + labelFamily;
-    
+    var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
+    var color = style['color'].value;
+    var outlineColor = style['text-outline-color'].value;
+
+    var fontCacheKey = [labelStyle, labelWeight, labelSize, labelFamily].join('$$');
+    var cache = this.getFontCache(context);
+
+    if( cache.key !== fontCacheKey ){
+      context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
+
+      cache.key = fontCacheKey;
+    }
+
     var text = String(style['content'].value);
     var textTransform = style['text-transform'].value;
     
@@ -113,18 +141,16 @@
     context.lineJoin = 'round';
 
     context.fillStyle = "rgba(" 
-      + style['color'].value[0] + ","
-      + style['color'].value[1] + ","
-      + style['color'].value[2] + ","
-      + (style['text-opacity'].value
-      * style['opacity'].value * parentOpacity) + ")";
+      + color[0] + ","
+      + color[1] + ","
+      + color[2] + ","
+      + opacity + ")";
     
     context.strokeStyle = "rgba(" 
-      + style['text-outline-color'].value[0] + ","
-      + style['text-outline-color'].value[1] + ","
-      + style['text-outline-color'].value[2] + ","
-      + (style['text-opacity'].value
-      * style['opacity'].value * parentOpacity) + ")";
+      + outlineColor[0] + ","
+      + outlineColor[1] + ","
+      + outlineColor[2] + ","
+      + opacity + ")";
 
     return text;
   }
@@ -144,7 +170,7 @@
         context.strokeText(text, textX, textY);
       }
 
-      context.fillText('' + text, textX, textY);
+      context.fillText(text, textX, textY);
     }
   };
 

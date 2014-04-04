@@ -1669,7 +1669,7 @@
   $$.math.getRoundRectangleRadius = function(width, height) {
     
     // Set the default radius, unless half of width or height is smaller than default
-    return Math.min(width / 2, height / 2, 10);
+    return Math.min(width / 4, height / 4, 8);
   };
   
 })( cytoscape );

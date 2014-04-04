@@ -253,6 +253,9 @@
                 }
               }
 
+              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+              r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
             }
             
             near
@@ -507,6 +510,10 @@
         }
         
         if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
+          if( !r.dragData.didDrag ) {
+            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          }
+
           r.dragData.didDrag = true; // indicate that we actually did drag the node
 
           r.hoverData.draggingEles = true;
@@ -525,17 +532,14 @@
               };
 
             }
-          });
+          }, true);
           
           (new $$.Collection(cy, toTrigger))
             .trigger('drag')
           ;
-
-          if (select[2] == select[0] && select[3] == select[1]) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          }
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+          r.redraw();
         }
 
         // prevent the dragging from triggering text selection on the page
@@ -1390,7 +1394,7 @@
                 y: pos.y + disp[1]
               };
             }
-          });
+          }, true);
 
           dEleCol
             .trigger('drag')
@@ -1406,6 +1410,7 @@
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           }
           
+          r.redraw();
         }
         
         // Touchmove event

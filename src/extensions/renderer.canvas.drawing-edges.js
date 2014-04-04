@@ -251,7 +251,6 @@
         } else {
           context.lineTo(pts[2], pts[3]);
         }
-        context.closePath();
       }
 
       context = canvasCxt;

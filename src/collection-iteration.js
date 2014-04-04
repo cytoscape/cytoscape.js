@@ -90,14 +90,19 @@
 
   $$.Collection.zIndexSort = function(a, b) {
     var elementDepth = function(ele) {
-      if (ele._private.group == 'nodes')
+      if (ele._private.group === 'nodes')
       {
-        return ele.parents().size();
+        return ele._private.data.parent ? ele.parents().size() : 0;
       }
-      else if (ele._private.group == 'edges')
+      else if (ele._private.group === 'edges')
       {
-        return Math.max(ele.source()[0].parents().size(),
-                        ele.target()[0].parents().size());
+        var souce = ele._private.source;
+        var target = ele._private.target;
+
+        var sourceDepth = source._private.data.parent ? source.parents().size() : 0;
+        var targetDepth = target._private.data.parent ? target.parents().size() : 0;
+
+        return Math.max(sourceDepth, targetDepth);
       }
       else
       {

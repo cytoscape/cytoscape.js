@@ -125,7 +125,7 @@
 
     visible: function(){
       var ele = this[0];
-      var cy = this.cy();
+      var cy = this._private.cy;
 
       if( ele ){
         var style = ele._private.style;
@@ -137,7 +137,7 @@
           return false;
         }
         
-        if( ele.isNode() ){
+        if( ele._private.group === 'nodes' ){
           var parents = ele._private.data.parent ? ele.parents() : null;
 
           if( parents ){
@@ -154,7 +154,7 @@
           }
 
           return true;
-        } else if( ele.isEdge() ){
+        } else {
           var src = ele._private.source;
           var tgt = ele._private.target;
 

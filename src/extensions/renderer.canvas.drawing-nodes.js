@@ -64,8 +64,12 @@
       
       var styleShape = style['shape'].strValue;
 
+      var pos = node._private.position;
+
       if( usePaths ){
-        var pathCacheKey = [styleShape, node._private.position.x, node._private.position.y, nodeWidth, nodeHeight].join('$$');
+        var pathCacheKey = [styleShape, nodeWidth, nodeHeight].join('$$');
+
+        context.translate( pos.x, pos.y );
 
         if( rs.pathCacheKey === pathCacheKey ){
           path = context = rs.pathCache;
@@ -78,10 +82,20 @@
       }
 
       if( !pathCacheHit ){
+
+        var npos = pos;
+
+        if( usePaths ){
+          npos = {
+            x: 0,
+            y: 0
+          };
+        }
+
         CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
               context,
-              node._private.position.x,
-              node._private.position.y,
+              npos.x,
+              npos.y,
               nodeWidth,
               nodeHeight);
       }
@@ -133,8 +147,8 @@
           if( !usePaths ){
             CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
                 context,
-                node._private.position.x,
-                node._private.position.y,
+                pos.x,
+                pos.y,
                 nodeWidth,
                 nodeHeight);
           }
@@ -169,6 +183,10 @@
           context.stroke();
         }
 
+      }
+
+      if( usePaths ){
+        context.translate( -pos.x, -pos.y );
       }
 
     // draw the overlay

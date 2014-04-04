@@ -531,7 +531,7 @@
               
               if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
                 dPos.x += disp[0];
-                pos.y += disp[1];
+                dPos.y += disp[1];
               }
 
             }

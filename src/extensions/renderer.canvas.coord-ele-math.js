@@ -66,7 +66,9 @@
 
   // Find nearest element
   CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly) {
-    var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var near = [];
+    var data = this.data; 
+    var eles = this.getCachedZSortedEles();
+    var near = [];
     var isTouch = CanvasRenderer.isTouch;
     
     var zoom = this.data.cy.zoom();
@@ -74,47 +76,55 @@
     var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
     
     // Check nodes
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
+    for (var i = eles.length - 1; i >= 0; i--) {
+      var node = eles[i];
+
+      if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
+
+      if( node._private.group !== 'nodes' ){ break; } // move on to edges
+
       var shape = CanvasRenderer.nodeShapes[ this.getNodeShape(node) ];
       var borderWO = node._private.style['border-width'].pxValue / 2;
       var width = this.getNodeWidth( node );
       var height = this.getNodeHeight( node );
+      var hw = width/2;
+      var hh = height/2;
       var pos = node._private.position;
       var style = node._private.style;
+      var visible = node.visible() && !node.transparent();
+
+      // exit early if invisible edge and must be visible
+      if( visibleElementsOnly && !visible ){
+        continue;
+      }
 
       if(
+        pos.x - hw <= x && x <= pos.x + hw // bb check x
+          &&
+        pos.y - hh <= y && y <= pos.y + hh // bb check y
+          && 
         shape.checkPointRough(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
           &&
         shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
       ){
-        
-        if (visibleElementsOnly) {
-          if(
-            style['opacity'].value !== 0 &&
-            style['visibility'].value === 'visible' &&
-            style['display'].value === 'element'
-          ){
-            
-            near.push( node );  
-          }
-        } else {
           near.push( node );
-        }
       }
     }
     
     // Check edges
-    for( var i = 0; i < edges.length; i++ ){
-      var edge = edges[i];
+    for( i = i; i >= 0; i-- ){
+      // if already hit node or edge, don't bother checking anymore
+      if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
+
+      var edge = eles[i];
       var rs = edge._private.rscratch;
       var style = edge._private.style;
       var width = style['width'].pxValue;
       var widthSq = width * width;
       var width2 = width * 2;
       var visible = edge.visible() && !edge.transparent();
-      var src = data.cy.getElementById(edge._private.data.source);
-      var tgt = data.cy.getElementById(edge._private.data.target);
+      var src = edge._private.source;
+      var tgt = edge._private.target;
       var srcStyle = src._private.style;
       var tgtStyle = tgt._private.style;
 
@@ -184,8 +194,8 @@
         var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
         var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
 
-        var src = src || data.cy.getElementById(edge._private.data.source);
-        var tgt = tgt || data.cy.getElementById(edge._private.data.target);
+        var src = src || edge._private.source;
+        var tgt = tgt || edge._private.target;
 
         var tgtPos = tgt._private.position;
         var srcPos = src._private.position;
@@ -216,8 +226,6 @@
       }
       
     } 
-    
-    near.sort( this.zOrderSort );
     
     if (near.length > 0) { return near[ near.length - 1 ]; } else { return null; }
   }

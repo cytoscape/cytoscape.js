@@ -519,23 +519,26 @@
           r.hoverData.draggingEles = true;
 
           var toTrigger = [];
-          new $$.Collection(cy, draggedElements).positions(function(i, ele){
-            // Locked nodes not draggable, as well as non-visible nodes
-            if (ele.isNode() && r.nodeIsDraggable(ele)) {
-              var pos = ele.position();
 
-              toTrigger.push( ele );
+          for( var i = 0; i < draggedElements.length; i++ ){
+            var dEle = draggedElements[i];
+
+            // Locked nodes not draggable, as well as non-visible nodes
+            if (dEle.isNode() && r.nodeIsDraggable(dEle)) {
+              var dPos = dEle._private.position;
+
+              toTrigger.push( dEle );
               
-              return {
-                x: pos.x + disp[0],
-                y: pos.y + disp[1]
-              };
+              if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
+                dPos.x += disp[0];
+                pos.y += disp[1];
+              }
 
             }
-          }, true);
+          }
           
           (new $$.Collection(cy, toTrigger))
-            .trigger('drag')
+            .trigger('position drag')
           ;
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
@@ -1049,6 +1052,8 @@
             var draggedEles = r.dragData.touchDragEles = [];
             addNodeToDrag(near, draggedEles);
             near.trigger('grab');
+            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
             if( near.selected() ){
               // reset drag elements, since near will be added again
@@ -1384,20 +1389,20 @@
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;
 
-          var dEleCol = new $$.Collection(cy, draggedEles).positions(function(i, draggedEle){
+          for( var k = 0; k < draggedEles.length; k++ ){
+            var draggedEle = draggedEles[k];
+
             if( r.nodeIsDraggable(draggedEle) ){
               r.dragData.didDrag = true;
-              var pos = draggedEle.position();
+              var dPos = draggedEle._private.position;
 
-              return {
-                x: pos.x + disp[0],
-                y: pos.y + disp[1]
-              };
+              dPos.x += disp[0];
+              dPos.y += disp[1];
             }
-          }, true);
+          }
 
-          dEleCol
-            .trigger('drag')
+          (new $$.Collection(cy, draggedEle))
+            .trigger('position drag')
           ;
 
           r.hoverData.draggingEles = true;

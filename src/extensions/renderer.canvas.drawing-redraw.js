@@ -168,9 +168,7 @@
 
     function drawToContext(){
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
-
-      console.log( needDraw[CanvasRenderer.DRAG], needDraw[CanvasRenderer.NODE] );
-
+      
       // if( !forcedContext ){
       //   r.matchCanvasSize(data.container);
       // }

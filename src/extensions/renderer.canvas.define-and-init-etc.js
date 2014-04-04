@@ -121,8 +121,9 @@
     if( params.type === 'load' || params.type === 'resize' ){
       this.matchCanvasSize(this.data.container);
     }
+
+    console.log(params.type);
     
-    this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
 
     this.redraw();

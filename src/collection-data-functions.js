@@ -122,7 +122,7 @@
       }
     }),
 
-    positions: function( pos ){
+    positions: function( pos, silent ){
       if( $$.is.plainObject(pos) ){
         this.position(pos);
         
@@ -143,7 +143,13 @@
 
         var updatedEles = this.updateCompoundBounds();
         
-        this.add( updatedEles ).rtrigger('position');
+        var toTrigger = this.add( updatedEles );
+
+        if( silent ){
+          toTrigger.trigger('position');
+        } else {
+          toTrigger.rtrigger('position');
+        }
       }
 
       return this; // chaining

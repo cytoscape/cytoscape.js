@@ -347,7 +347,10 @@
       var pos = r.projectIntoViewport(e.pageX, e.pageY);
       var select = r.data.select;
       
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = null;
+      if( !r.hoverData.draggingEles ){
+        near = r.findNearestElement(pos[0], pos[1], true);
+      }
       var last = r.hoverData.last;
       var down = r.hoverData.down;
       
@@ -1368,8 +1371,12 @@
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = r.findNearestElement(now[0], now[1], true);
-        
+        var near = null;
+
+        if( !r.hoverData.draggingEles ){
+          r.findNearestElement(now[0], now[1], true);
+        }
+
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;
 

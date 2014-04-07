@@ -96,7 +96,7 @@
       }
       else if (ele._private.group === 'edges')
       {
-        var souce = ele._private.source;
+        var source = ele._private.source;
         var target = ele._private.target;
 
         var sourceDepth = source._private.data.parent ? source.parents().size() : 0;

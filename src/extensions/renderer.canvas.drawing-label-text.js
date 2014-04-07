@@ -116,7 +116,7 @@
     var color = style['color'].value;
     var outlineColor = style['text-outline-color'].value;
 
-    var fontCacheKey = [labelStyle, labelWeight, labelSize, labelFamily].join('$$');
+    var fontCacheKey = element._private.fontKey;
     var cache = this.getFontCache(context);
 
     if( cache.key !== fontCacheKey ){
@@ -140,17 +140,9 @@
     // so text outlines aren't jagged
     context.lineJoin = 'round';
 
-    context.fillStyle = "rgba(" 
-      + color[0] + ","
-      + color[1] + ","
-      + color[2] + ","
-      + opacity + ")";
+    this.fillStyle(context, color[0], color[1], color[2], opacity);
     
-    context.strokeStyle = "rgba(" 
-      + outlineColor[0] + ","
-      + outlineColor[1] + ","
-      + outlineColor[2] + ","
-      + opacity + ")";
+    this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], opacity);
 
     return text;
   }

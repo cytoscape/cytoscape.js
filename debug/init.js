@@ -19,7 +19,7 @@ $(function(){
           'border-width': 3,
           'background-color': '#DDD',
           'border-color': '#555',
-           'shape': 'ellipse',
+          'shape': 'ellipse',
           //'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 10, 100)',
           'height': 'mapData(weight, 0, 100, 10, 100)'
@@ -285,8 +285,6 @@ $(function(){
     });
 
   });
-
-return;
 
   // compound graph in the second instance
   $container2.cy({

@@ -537,9 +537,10 @@
             }
           }
           
-          (new $$.Collection(cy, toTrigger))
-            .trigger('position drag')
-          ;
+          var tcol = (new $$.Collection(cy, toTrigger));
+
+          tcol.updateCompoundBounds();
+          tcol.trigger('position drag');
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
           r.redraw();
@@ -1401,9 +1402,10 @@
             }
           }
 
-          (new $$.Collection(cy, draggedEle))
-            .trigger('position drag')
-          ;
+          var tcol = new $$.Collection(cy, draggedEle);
+          
+          tcol.updateCompoundBounds();
+          tcol.trigger('position drag');
 
           r.hoverData.draggingEles = true;
           

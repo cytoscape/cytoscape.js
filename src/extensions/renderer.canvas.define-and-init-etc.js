@@ -95,6 +95,12 @@
   CanvasRenderer.panOrBoxSelectDelay = 400;
   CanvasRenderer.isTouch = $$.is.touch();
 
+  // whether to use Path2D caching for drawing
+  var pathsImpld = typeof Path2D !== 'undefined';
+  CanvasRenderer.usePaths = function(){
+    return pathsImpld;
+  };
+
   CanvasRenderer.prototype.notify = function(params) {
     switch( params.type ){
 

@@ -30,7 +30,7 @@
       };
       params = $$.util.extend({}, defaults, params);
 
-      return function( name, value ){
+      return function dataImpl( name, value ){
         var p = params;
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
@@ -127,7 +127,7 @@
       };
       var p = params = $$.util.extend({}, defaults, params);
 
-      return function( map ){
+      return function batchDataImpl( map ){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var eles = selfIsArrayLike ? self : self._private.elements;
@@ -177,7 +177,7 @@
       };
       params = $$.util.extend({}, defaults, params);
 
-      return function( names ){
+      return function removeDataImpl( names ){
         var p = params;
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
@@ -244,7 +244,7 @@
       };
       params = $$.util.extend({}, defaults, params);
       
-      return function(events, selector, data, callback){
+      return function onImpl(events, selector, data, callback){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
@@ -322,7 +322,7 @@
       }; // function
     }, // on
 
-    off: function( params ){
+    off: function offImpl( params ){
       var defaults = {
       };
       params = $$.util.extend({}, defaults, params);
@@ -402,7 +402,7 @@
       var defaults = {};
       params = $$.util.extend({}, defaults, params);
       
-      return function(events, extraParams, fnToTrigger){
+      return function triggerImpl(events, extraParams, fnToTrigger){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like

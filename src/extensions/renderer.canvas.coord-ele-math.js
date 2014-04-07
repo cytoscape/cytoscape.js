@@ -65,28 +65,22 @@
   }
 
   // Find nearest element
-  CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly) {
+  CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly){
+    var self = this;
     var data = this.data; 
     var eles = this.getCachedZSortedEles();
     var near = [];
     var isTouch = CanvasRenderer.isTouch;
-    
     var zoom = this.data.cy.zoom();
+    var hasCompounds = this.data.cy.hasCompoundNodes();
     var edgeThreshold = (isTouch ? 256 : 32) / zoom;
     var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
-    
-    // Check nodes
-    for (var i = eles.length - 1; i >= 0; i--) {
-      var node = eles[i];
 
-      if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
-
-      if( node._private.group !== 'nodes' ){ break; } // move on to edges
-
-      var shape = CanvasRenderer.nodeShapes[ this.getNodeShape(node) ];
+    function checkNode(node){
+      var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
       var borderWO = node._private.style['border-width'].pxValue / 2;
-      var width = this.getNodeWidth( node );
-      var height = this.getNodeHeight( node );
+      var width = self.getNodeWidth( node );
+      var height = self.getNodeHeight( node );
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
@@ -95,7 +89,7 @@
 
       // exit early if invisible edge and must be visible
       if( visibleElementsOnly && !visible ){
-        continue;
+        return;
       }
 
       if(
@@ -110,13 +104,8 @@
           near.push( node );
       }
     }
-    
-    // Check edges
-    for( i = i; i >= 0; i-- ){
-      // if already hit node or edge, don't bother checking anymore
-      if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
 
-      var edge = eles[i];
+    function checkEdge(edge){
       var rs = edge._private.rscratch;
       var style = edge._private.style;
       var width = style['width'].pxValue;
@@ -130,7 +119,7 @@
 
       // exit early if invisible edge and must be visible
       if( visibleElementsOnly && !visible ){
-        continue;
+        return;
       }
 
       if (rs.edgeType === 'self') {
@@ -148,7 +137,6 @@
             )
         ){
           near.push( edge );
-          continue;
         }
       
       } else if (rs.edgeType == 'haystack') {
@@ -166,7 +154,6 @@
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY )
         ){
           near.push( edge );
-          continue;
         }
       
       } else if (rs.edgeType === 'straight') {
@@ -176,7 +163,6 @@
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
         ){
           near.push( edge );
-          continue;
         }
       
       } else if (rs.edgeType === 'bezier') {
@@ -186,7 +172,6 @@
           (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
         ){
           near.push( edge );
-          continue;
         }
       }
       
@@ -200,8 +185,8 @@
         var tgtPos = tgt._private.position;
         var srcPos = src._private.position;
 
-        var srcArW = this.getArrowWidth( style['width'].pxValue );
-        var srcArH = this.getArrowHeight( style['width'].pxValue );
+        var srcArW = self.getArrowWidth( style['width'].pxValue );
+        var srcArH = self.getArrowHeight( style['width'].pxValue );
 
         var tgtArW = srcArW;
         var tgtArH = srcArH;
@@ -220,14 +205,36 @@
           )
         ){
           near.push( edge );
-          continue;
         }
-
       }
-      
-    } 
+
+      // for compound graphs, hitting edge may actually want a connected node instead (b/c edge may have greater z-index precedence)
+      if( hasCompounds &&  near.length > 0 && near[ near.length - 1 ] === edge ){
+        checkNode( src );
+        checkNode( tgt );
+      }
+    }
+
+    for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence
+      var ele = eles[i];
+
+      if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
+
+      if( ele._private.group === 'nodes' ){ 
+        checkNode( eles[i] );
+
+      } else  { // then edge
+        checkEdge( eles[i] );
+      }
+
+    }
+  
     
-    if (near.length > 0) { return near[ near.length - 1 ]; } else { return null; }
+    if( near.length > 0 ){
+      return near[ near.length - 1 ];
+    } else {
+      return null;
+    }
   }
 
   // 'Give me everything from this box'
@@ -628,7 +635,7 @@
     var weight = style['font-weight'].strValue;
 
     var rscratch = ele._private.rscratch;
-    var cacheKey = [fStyle, size, family, variant, weight, text].join('$$$');
+    var cacheKey = ele._private.labelKey;
     var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
 
     if( cache[cacheKey] ){

@@ -9,12 +9,13 @@
 
     for( var ie = 0; ie < eles.length; ie++ ){
       var ele = eles[ie];
+      var _p = ele._private;
       var addedCxts = [];
       var removedCxts = [];
 
       if( self._private.newStyle ){
-        ele._private.styleCxts = [];
-        ele._private.style = {};
+        _p.styleCxts = [];
+        _p.style = {};
       }
 
       // console.log('APPLYING STYLESHEET\n--\n');
@@ -24,7 +25,7 @@
         var context = this[i];
         var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
         var props = context.properties;
-        var newCxt = !ele._private.styleCxts[i];
+        var newCxt = !_p.styleCxts[i];
 
         // console.log(i + ' : looking at selector: ' + context.selector);
 
@@ -34,7 +35,7 @@
           
           for( var j = 0; j < props.length; j++ ){ // for each prop
             var prop = props[j];
-            var currentEleProp = ele._private.style[prop.name];
+            var currentEleProp = _p.style[prop.name];
             var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
             var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
 
@@ -56,13 +57,13 @@
         } else {
 
           // roll back style cxts that don't match now
-          if( ele._private.styleCxts[i] ){
+          if( _p.styleCxts[i] ){
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
             removedCxts.push( context );
           }
 
-          delete ele._private.styleCxts[i];
+          delete _p.styleCxts[i];
         }
       } // for context
 
@@ -70,24 +71,40 @@
         this.updateTransitions( ele, addedCxts, removedCxts );
       }
 
-      // set whether has pie or not; for greater efficiency
-      var hasPie = false;
-      if( ele._private.group === 'nodes' ){
-        for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-          var size = ele._private.style['pie-' + i + '-background-size'].value;
-
-          if( size > 0 ){
-            hasPie = true;
-            break;
-          }
-        }
-      }
-
-      ele._private.hasPie = hasPie;
+      self.updateStyleHints( ele );
 
     } // for elements
 
     self._private.newStyle = false;
+  };
+
+  $$.styfn.updateStyleHints = function(ele){
+    var _p = ele._private;
+
+    // set whether has pie or not; for greater efficiency
+    var hasPie = false;
+    if( _p.group === 'nodes' ){
+      for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
+        var size = _p.style['pie-' + i + '-background-size'].value;
+
+        if( size > 0 ){
+          hasPie = true;
+          break;
+        }
+      }
+    }
+
+    _p.hasPie = hasPie;
+
+    var transform = _p.style['text-transform'].strValue;
+    var content = _p.style['content'].strValue;
+    var fStyle = _p.style['font-style'].strValue;
+    var size = _p.style['font-size'].pxValue + 'px';
+    var family = _p.style['font-family'].strValue;
+    var variant = _p.style['font-variant'].strValue;
+    var weight = _p.style['font-weight'].strValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform;
+    _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
   };
 
   // when a context's selector no longer matches the ele, roll back the context on the ele
@@ -225,7 +242,7 @@
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: [ "rgba(", clr[0], ", ", clr[1], ", ", clr[2], ", ", clr[3] , ")" ].join('') // fake it til you make it
+          strValue: 'rgba(' + clr[0] + ", " + clr[1] + ", " + clr[2] + ", " + clr[3]
         };
       
       } else if( type.number ){
@@ -336,6 +353,8 @@
           this.applyParsedProperty( ele, mapping ); // reapply the mapping property
         }
       }
+
+      self.updateStyleHints( ele );
     }
   };
 

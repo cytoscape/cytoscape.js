@@ -13,7 +13,7 @@
       return;
     }
 
-    var usePaths = typeof Path2D !== 'undefined';
+    var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;
     var pathCacheHit = false;
@@ -29,9 +29,6 @@
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
-    // context.fillStyle = 'orange';
-    // context.fillRect(node.position().x, node.position().y, 2, 2);
-    
     nodeWidth = this.getNodeWidth(node);
     nodeHeight = this.getNodeHeight(node);
     
@@ -41,20 +38,13 @@
 
       // Node color & opacity
 
-      context.fillStyle = "rgba(" 
-        + style['background-color'].value[0] + ","
-        + style['background-color'].value[1] + ","
-        + style['background-color'].value[2] + ","
-        + (style['background-opacity'].value 
-        * style['opacity'].value * parentOpacity) + ")";
+      var bgColor = style['background-color'].value;
+      var borderColor = style['border-color'].value;
+
+      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
       
-      // Node border color & opacity
-      context.strokeStyle = "rgba(" 
-        + style['border-color'].value[0] + ","
-        + style['border-color'].value[1] + ","
-        + style['border-color'].value[2] + ","
-        + (style['border-opacity'].value * style['opacity'].value * parentOpacity) + ")";
-      
+      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
       //var image = this.getCachedImage('url');
@@ -67,7 +57,7 @@
       var pos = node._private.position;
 
       if( usePaths ){
-        var pathCacheKey = [styleShape, nodeWidth, nodeHeight].join('$$');
+        var pathCacheKey = styleShape + '$' + nodeWidth +'$' + nodeHeight;
 
         context.translate( pos.x, pos.y );
 
@@ -156,7 +146,7 @@
       }
 
       if( darkness > 0 ){
-        context.fillStyle = 'rgba(0, 0, 0, ' + darkness + ')';
+        this.fillStyle(context, 0, 0, 0, darkness);
 
         if( usePaths ){
           context.fill( path );
@@ -165,7 +155,7 @@
         }
         
       } else if( darkness < 0 ){
-        context.fillStyle = 'rgba(255, 255, 255, ' + Math.abs(darkness) + ')';
+        this.fillStyle(context, 255, 255, 255, -darkness);
         
         if( usePaths ){
           context.fill( path );
@@ -193,7 +183,7 @@
     } else {
 
       if( overlayOpacity > 0 ){
-        context.fillStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
+        this.fillStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
 
         CanvasRenderer.nodeShapes['roundrectangle'].drawPath(
           context,
@@ -233,17 +223,9 @@
       radius = pieSize.pxValue / 2;
     }
 
-    // context.save();
-
-    // // clip to the node shape
-    // CanvasRenderer.nodeShapes[ this.getNodeShape(node) ]
-    //   .drawPath( context, x, y, nodeW, nodeH )
-    // ;
-    // context.clip();
-
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
       var size = node._private.style['pie-' + i + '-background-size'].value;
-      var color = node._private.style['pie-' + i + '-background-color'];
+      var color = node._private.style['pie-' + i + '-background-color'].value;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
@@ -266,18 +248,13 @@
       context.arc( x, y, radius, angleStart, angleEnd );
       context.closePath();
 
-      context.fillStyle = 'rgb(' 
-        + color.value[0] + ','
-        + color.value[1] + ','
-        + color.value[2] + ')'
-      ;
+      this.fillStyle(context, color[0], color[1], color[2], 1);
 
       context.fill();
 
       lastPercent += percent;
     }
 
-    // context.restore();
   };
 
   

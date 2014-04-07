@@ -34,7 +34,7 @@
         return;
       }
 
-      context.strokeStyle = "rgba( " + overlayColor[0] + ", " + overlayColor[1] + ", " + overlayColor[2] + ", " + overlayOpacity + " )";
+      this.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
       context.lineCap = 'round';
 
       if( edge._private.rscratch.edgeType == 'self'){
@@ -42,23 +42,20 @@
       }
 
     } else {
-      context.strokeStyle = "rgba(" 
-        + style['line-color'].value[0] + ","
-        + style['line-color'].value[1] + ","
-        + style['line-color'].value[2] + ","
-        + style.opacity.value + ")";
+      var lineColor = style['line-color'].value;
 
+      this.strokeStyle(context, lineColor[0], lineColor[1], lineColor[2], style.opacity.value);
       
       context.lineCap = 'butt'; 
     }
     
     var cy = edge._private.cy;
     var startNode, endNode, source, target;
-    source = startNode = cy.getElementById( edge._private.data.source );
-    target = endNode = cy.getElementById( edge._private.data.target );
+    source = startNode = edge._private.source;
+    target = endNode = edge._private.target;
 
-    var targetPos = target.position();
-    var sourcePos = source.position();
+    var targetPos = target._private.position;
+    var sourcePos = source._private.position;
 
     var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
@@ -88,15 +85,6 @@
         details.cp2cx, details.cp2cy, details.endX, details.endY],
         lineStyle,
         edgeWidth);
-
-      // DEBUG: draw projected bezier pts
-      // context.fillStyle = 'red';
-      // var bpts = edge._private.rstyle.bezierPts;
-      // for( var i = 0; i < bpts.length; i++ ){
-      //   var pt = bpts[i];
-
-      //   context.fillRect(pt.x, pt.y, 2, 2);
-      // }
       
     } else if (rs.edgeType === 'straight') {
       
@@ -123,28 +111,11 @@
     } else {
       
       var details = rs;
-
-      // context.fillStyle = 'rgba(255, 0, 0, 1)';
-      // context.fillRect(details.startX, details.startY, 2, 2);
-      // context.fillRect(details.endX, details.endY, 2, 2);
-
-      // context.fillStyle = edge._private.style['line-color'].strValue;
-      // context.fillRect(details.cp2x, details.cp2y, 2, 2);
-
       
       this.drawStyledEdge(edge, context, [details.startX, details.startY,
         details.cp2x, details.cp2y, details.endX, details.endY],
         lineStyle,
         edgeWidth);
-
-      // DEBUG: draw projected bezier pts
-      // context.fillStyle = 'red';
-      // var bpts = edge._private.rstyle.bezierPts;
-      // for( var i = 0; i < bpts.length; i++ ){
-      //   var pt = bpts[i];
-
-      //   context.fillRect(pt.x, pt.y, 2, 2);
-      // }
       
     }
     
@@ -206,10 +177,19 @@
     pt2 = _genpts(pt, oddspac);
   }
   
+  var calls = 0;
+  var time = 0;
+  var avg = 0;
   
+  function edgeCacheKey(edge, pts){
+
+  }
+
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
     
+    var start = +new Date();
+
     // 3 points given -> assume Bezier
     // 2 -> assume straight
     
@@ -219,7 +199,9 @@
     var canvasCxt = context;
     var path;
     var pathCacheHit = false;
-    var usePaths = typeof Path2D !== 'undefined';
+    var usePaths = CanvasRenderer.usePaths();
+
+
     
 
     // Adjusted edge width for dotted
@@ -227,12 +209,21 @@
 
     //    console.log('w', width);
 
-    if (type == 'solid') {
+    if (type === 'solid') {
       
       if( usePaths ){
 
-        var pathCacheKey = pts.join('$$');
-        if( rs.pathCacheKey === pathCacheKey ){
+        var pathCacheKey = pts;
+        var keyLengthMatches = rs.pathCacheKey && pathCacheKey.length === rs.pathCacheKey.length;
+        var keyMatches = keyLengthMatches;
+
+        for( var i = 0; keyMatches && i < pathCacheKey.length; i++ ){
+          if( rs.pathCacheKey[i] !== pathCacheKey[i] ){
+            keyMatches = false;
+          }
+        }
+
+        if( keyMatches ){
           path = context = rs.pathCache;
           pathCacheHit = true;
         } else {
@@ -260,7 +251,7 @@
         context.stroke();
       }
       
-    } else if (type == 'dotted') {
+    } else if (type === 'dotted') {
       
       var pt;
       if (pts.length == 3 * 2) {
@@ -313,7 +304,7 @@
       
       //context.restore();
       
-    } else if (type == 'dashed') {
+    } else if (type === 'dashed') {
       var pt;
       if (pts.length == 3 * 2) {
         pt = _genPoints(pts, 14, true);
@@ -423,6 +414,11 @@
       this.drawStyledEdge(edge, context, pts, 'solid', width);
     }
     
+    var end = +new Date();
+    time += end - start;
+    avg = time / (++calls);
+    window.avg = avg;
+
   };
 
   CanvasRenderer.prototype.drawArrowheads = function(context, edge, drawOverlayInstead) {
@@ -446,18 +442,15 @@
 
       context.globalCompositeOperation = 'destination-out';
       
-      context.fillStyle = 'white';
+      this.fillStyle(context, 255, 255, 255, 1);
 
       this.drawArrowShape(context, 'filled', style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
-      context.fillStyle = "rgba("
-        + style['source-arrow-color'].value[0] + ","
-        + style['source-arrow-color'].value[1] + ","
-        + style['source-arrow-color'].value[2] + ","
-        + style.opacity.value + ")";
+      var color = style['source-arrow-color'].value;
+      this.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
 
       this.drawArrowShape(context, style['source-arrow-fill'].value, style['source-arrow-shape'].value, 
         startX, startY, dispX, dispY);
@@ -480,19 +473,15 @@
 
       context.globalCompositeOperation = 'destination-out';
 
-      context.fillStyle = 'white';
+      this.fillStyle(context, 255, 255, 255, 1);
 
       this.drawArrowShape(context, 'filled', style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
 
       context.globalCompositeOperation = gco;
 
-      //this.context.strokeStyle = "rgba("
-      context.fillStyle = "rgba("
-        + style['target-arrow-color'].value[0] + ","
-        + style['target-arrow-color'].value[1] + ","
-        + style['target-arrow-color'].value[2] + ","
-        + style.opacity.value + ")";  
+      var color = style['target-arrow-color'].value;
+      this.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
 
       this.drawArrowShape(context, style['target-arrow-fill'].value, style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);

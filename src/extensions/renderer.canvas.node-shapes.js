@@ -2,7 +2,7 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var renderer = CanvasRenderer.prototype;
-  var usePaths = typeof Path2D !== 'undefined';
+  var usePaths = CanvasRenderer.usePaths();
 
   // Node shape contract:
   //
@@ -12,6 +12,19 @@
   // checkPoint: check x, y in node
 
   var nodeShapes = CanvasRenderer.nodeShapes = {};
+
+  var sin0 = Math.sin(0);
+  var cos0 = Math.cos(0);
+
+  var sin = {};
+  var cos = {};
+
+  var ellipseStepSize = 0.1;
+
+  for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
+    sin[i] = Math.sin(i);
+    cos[i] = Math.cos(i);
+  }
 
   nodeShapes['ellipse'] = {
     draw: function(context, centerX, centerY, width, height) {
@@ -30,9 +43,9 @@
         var xPos, yPos;
         var rw = width/2;
         var rh = height/2;
-        for (var i = 0 * Math.PI; i < 2 * Math.PI; i += 0.1 ) {
-            xPos = centerX - (rw * Math.sin(i)) * Math.sin(0 * Math.PI) + (rw * Math.cos(i)) * Math.cos(0 * Math.PI);
-            yPos = centerY + (rh * Math.cos(i)) * Math.sin(0 * Math.PI) + (rh * Math.sin(i)) * Math.cos(0 * Math.PI);
+        for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
+            xPos = centerX - (rw * sin[i]) * sin0 + (rw * cos[i]) * cos0;
+            yPos = centerY + (rh * cos[i]) * sin0 + (rh * sin[i]) * cos0;
 
             if (i === 0) {
                 context.moveTo(xPos, yPos);

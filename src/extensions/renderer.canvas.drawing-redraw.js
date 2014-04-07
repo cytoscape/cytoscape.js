@@ -24,13 +24,13 @@
     return (window.devicePixelRatio || 1) / backingStore;
   }
 
-  // TODO use this
-  CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
-    var caches = this.fillStyleCaches = this.fillStyleCaches || [];
+  CanvasRenderer.prototype.paintCache = function(context){
+    var caches = this.paintCaches = this.paintCaches || [];
     var needToCreateCache = true;
+    var cache;
 
-    for(var i = 0; i < caches; i++ ){
-      var cache = caches[i];
+    for(var i = 0; i < caches.length; i++ ){
+      cache = caches[i];
 
       if( cache.context === context ){
         needToCreateCache = false;
@@ -39,20 +39,41 @@
     }
 
     if( needToCreateCache ){
-      cache = {};
-      this.fillStyleCaches.push( cache );
+      cache = {
+        context: context
+      };
+      caches.push( cache );
     }
 
-    var style = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    return cache;
+  };
 
-    if( cache.style !== style ){
-      context.fillStyle = style;
+  // TODO use this
+  CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
+    context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    return; // turn off for now, seems context does its own caching
+
+    var cache = this.paintCache(context);
+
+    var fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+    if( cache.fillStyle !== fillStyle ){
+      context.fillStyle = cache.fillStyle = fillStyle;
     }
   };
 
   // TODO test and implement as above
   CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    return; // turn off for now, seems context does its own caching
+
+    var cache = this.paintCache(context);
+
+    var strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+    if( cache.strokeStyle !== strokeStyle ){
+      context.strokeStyle = cache.strokeStyle = strokeStyle;
+    }
   };
 
   // Resize canvas
@@ -107,6 +128,13 @@
     });
   };
 
+  CanvasRenderer.prototype.timeToRender = function(){
+    return this.redrawTotalTime / this.redrawCount;
+  };
+
+  CanvasRenderer.minRedrawLimit = 1000/60; // people can't see much better than 60fps
+  CanvasRenderer.maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
+
   // Redraw frame
   CanvasRenderer.prototype.redraw = function( options ) {
     options = options || {};
@@ -122,16 +150,19 @@
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
     
-    clearTimeout( this.redrawTimeout );
+    if( this.redrawTimeout ){
+      clearTimeout( this.redrawTimeout );
+    }
+    this.redrawTimeout = null;
 
     if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
 
-    var minRedrawLimit = 1000/60; // people can't see much better than 60fps
-    var maxRedrawLimit = 1000; // don't cap max b/c it's more important to be responsive than smooth
+    var minRedrawLimit = CanvasRenderer.minRedrawLimit; 
+    var maxRedrawLimit = CanvasRenderer.maxRedrawLimit;
 
     var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
-    redrawLimit = Math.max(minRedrawLimit, redrawLimit);
-    redrawLimit = Math.min(redrawLimit, maxRedrawLimit);
+    redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
+    redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
 
     //console.log('--\nideal: %i; effective: %i', this.averageRedrawTime, redrawLimit);
 
@@ -145,7 +176,6 @@
       if( !callAfterLimit ){
         // console.log('-- skip');
 
-        clearTimeout( this.redrawTimeout );
         this.redrawTimeout = setTimeout(function(){
           r.redraw();
         }, redrawLimit);
@@ -267,7 +297,17 @@
           ele = edges[i];
           
           r.drawEdge(context, ele);
+        }
+
+        for (var i = 0; i < edges.length && !hideEdges; i++) {
+          ele = edges[i];
+          
           r.drawEdgeText(context, ele);
+        }
+
+        for (var i = 0; i < edges.length && !hideEdges; i++) {
+          ele = edges[i];
+          
           r.drawEdge(context, ele, true);
         }
 
@@ -278,6 +318,7 @@
           r.drawNodeText(context, ele);
           r.drawNode(context, ele, true);
         }
+
       }
 
 
@@ -375,6 +416,18 @@
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;
       }
+
+      if( r.redrawCount === undefined ){
+        r.redrawCount = 0;
+      }
+
+      r.redrawCount++;
+
+      if( r.redrawTotalTime === undefined ){
+        r.redrawTotalTime = 0;
+      }
+
+      r.redrawTotalTime += endTime - startTime;
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;

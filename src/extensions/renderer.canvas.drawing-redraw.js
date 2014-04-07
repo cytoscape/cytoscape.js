@@ -113,6 +113,9 @@
         
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
+
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
       }
     }
 

@@ -870,7 +870,7 @@
 
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           r.redraw();
-        }, 150);
+        }, 500);
       
         var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
 

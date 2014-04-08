@@ -122,7 +122,7 @@ $(function(){
   };
   
   var cliques = 3;
-  var numNodes = 40;
+  var numNodes = 1000;
   var numEdges = 200;
   
   function randNodeId( clique ){

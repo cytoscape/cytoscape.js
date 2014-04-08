@@ -176,9 +176,10 @@
     var callAfterLimit = timeElapsed >= redrawLimit;
 
     if( !forcedContext ){
-      if( !callAfterLimit ){
+      if( !callAfterLimit || this.currentlyDrawing ){
         // console.log('-- skip');
 
+        // we have new things to draw but we're busy, so try again when possibly free
         this.redrawTimeout = setTimeout(function(){
           r.redraw();
         }, redrawLimit);
@@ -186,10 +187,11 @@
       }
 
       this.lastDrawTime = nowTime;
+      this.currentlyDrawing = true;
     }
 
 
-    var startTime = nowTime;
+    var startTime;
 
     var looperMax = 100;
     //console.log('-- redraw --')
@@ -200,6 +202,7 @@
     // } console.timeEnd('init')
 
     function drawToContext(){
+      startTime = +new Date;
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       
       // if( !forcedContext ){
@@ -248,6 +251,112 @@
         if( forcedZoom ){
           context.scale(forcedZoom, forcedZoom);
         }
+      }
+
+      var textureDraw = false && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+      var panning = r.hoverData.dragging || r.swipePanning;
+      var textureNSamplesDown = 3;
+      var maxTextureSize = 2000 * 2000;
+      var scaleFactor = 0.5;
+
+      if( textureDraw ){
+
+        var bb;
+
+        if( !r.textureCache ){
+          r.textureCache = {};
+
+          bb = r.textureCache.bb = cy.boundingBox();
+
+          var textureScale = 1;
+          if( bb.w * bb.h > maxTextureSize ){
+            textureScale = Math.sqrt( maxTextureSize/(bb.w * bb.h) );
+          }
+
+          bb.w *= textureScale;
+          bb.h *= textureScale;
+
+          r.textureCache.texture = r.bufferCanvasImage({
+            full: true,
+            scale: textureScale
+          });
+
+          r.textureCache.buffCanvas = [];
+          r.textureCache.buffCxt = [];
+
+          r.textureCache.cachedScale = [];
+
+          scale = 1;
+          for( var i = 0; i < textureNSamplesDown; i++ ){ 
+            if( i > 1 ){
+              scale *= scaleFactor;
+            }
+
+            var buffCanvas = r.textureCache.buffCanvas[i] = document.createElement('canvas');
+
+            r.textureCache.buffCxt[i] = buffCanvas.getContext('2d');
+
+            buffCanvas.width = bb.w * scale;
+            buffCanvas.height = bb.h * scale;
+
+            buffCanvas.style.width = bb.w * scale + 'px';
+            buffCanvas.style.height = bb.h * scale + 'px';
+
+            break;
+          }
+        }
+
+        needDraw[CanvasRenderer.DRAG] = false;
+        needDraw[CanvasRenderer.NODE] = false;
+
+        var context = data.canvases[CanvasRenderer.NODE].getContext('2d');
+
+        //setContextTransform(context);
+
+        var texture = r.textureCache.texture;
+        var z = cy.zoom();
+        var p = cy.pan();
+        var buffCanvas = r.textureCache.buffCanvas;
+        var buffCxt = r.textureCache.buffCxt;
+        var finalTexture = buffCanvas[0];
+        bb = r.textureCache.bb;
+
+        buffCxt[0].clearRect(0, 0, bb.w, bb.h);
+        buffCxt[0].drawImage( texture, 0, 0 );
+
+        var scale = 1;
+
+        // apply image smoothing for small scales
+        if( false && z < 1 ){
+
+          for( var i = 1; i < textureNSamplesDown && scale*scaleFactor > z; i++ ){
+            var prevScale = scale;
+            scale *= scaleFactor;
+
+            if( !r.textureCache.cachedScale[i] ){
+              r.textureCache.cachedScale[i] = true;
+
+              var prevTexture = buffCanvas[i - 1];
+
+              buffCxt[i].clearRect(0, 0, bb.w, bb.h);
+              buffCxt[i].drawImage( prevTexture, 0, 0, bb.w * prevScale, bb.h * prevScale, 0, 0, bb.w * scale, bb.h * scale );
+            }
+
+            finalTexture = buffCanvas[i];
+          }
+        }
+        
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+
+        context.translate( p.x, p.y );
+        context.scale( z, z );
+
+        var bb2 = cy.boundingBox();
+        context.drawImage( finalTexture, 0, 0, bb.w * scale, bb.h * scale, bb.x1, bb.y1, bb2.w, bb2.h );
+
+      } else if( !forcedContext ){ // clear the cache since we don't need it
+        r.textureCache = null;
       }
 
       if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers) {
@@ -435,7 +544,9 @@
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
       //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
-    }
+
+      r.currentlyDrawing = false;
+    } // draw to context
 
     if( !forcedContext ){
       $$.util.requestAnimationFrame(drawToContext); // makes direct renders to screen a bit more responsive

@@ -10,12 +10,21 @@
     return [buffer, buffer.getContext('2d')];
   }
 
-  CanvasRenderer.prototype.png = function( options ){
+  CanvasRenderer.prototype.bufferCanvasImage = function( options ){
     var data = this.data;
     var cy = data.cy;
     var bb = cy.boundingBox();
     var width = options.full ? Math.ceil(bb.w) : this.data.container.clientWidth;
     var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
+    var scale = 1;
+
+    if( options.full && options.scale !== undefined ){
+      width *= options.scale;
+      height *= options.scale;
+
+      scale = options.scale;
+    }
+
     var buffCanvas = document.createElement('canvas');
 
     buffCanvas.width = width;
@@ -43,7 +52,7 @@
         this.redraw({
           forcedContext: buffCxt,
           drawAllLayers: true,
-          forcedZoom: 1,
+          forcedZoom: scale,
           forcedPan: { x: -bb.x1, y: -bb.y1 }
         });
       } else { // draw the current view
@@ -54,7 +63,11 @@
       }
     }
 
-    return buffCanvas.toDataURL('image/png');
+    return buffCanvas;
+  }; 
+
+  CanvasRenderer.prototype.png = function( options ){
+    return this.bufferCanvasImage( options ).toDataURL('image/png');
   };
 
 })( cytoscape );

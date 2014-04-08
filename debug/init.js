@@ -123,7 +123,7 @@ $(function(){
   
   var cliques = 3;
   var numNodes = 1000;
-  var numEdges = 200;
+  var numEdges = 2000;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

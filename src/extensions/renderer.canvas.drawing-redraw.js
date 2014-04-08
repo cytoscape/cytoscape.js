@@ -2,6 +2,8 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
+  var isFirefox = typeof InstallTrigger !== 'undefined';
+
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var canvas = this.data.canvases[0];
     var context = canvas.getContext('2d');
@@ -14,8 +16,6 @@
       context.backingStorePixelRatio || 1;
 
     //console.log(window.devicePixelRatio, backingStore);
-
-    var isFirefox = typeof InstallTrigger !== 'undefined';
 
     if( isFirefox ){ // because ff can't scale canvas properly
       return 1;
@@ -78,7 +78,9 @@
 
   // Resize canvas
   CanvasRenderer.prototype.matchCanvasSize = function(container) {
-    var data = this.data; var width = container.clientWidth; var height = container.clientHeight;
+    var data = this.data;
+    var width = container.clientWidth;
+    var height = container.clientHeight;
     
     var canvas, canvasWidth = width, canvasHeight = height;
     var pixelRatio = this.getPixelRatio();
@@ -118,6 +120,9 @@
         canvas.style.height = height + 'px';
       }
     }
+
+    this.canvasWidth = width;
+    this.canvasHeight = height;
 
   }
 
@@ -239,7 +244,7 @@
 
       function setContextTransform(context){
         context.setTransform(1, 0, 0, 1, 0, 0);
-        !forcedContext && context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+        !forcedContext && context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
         
         if( !drawAllLayers ){
           context.translate(effectivePan.x, effectivePan.y);

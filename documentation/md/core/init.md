@@ -126,6 +126,8 @@ $('#cy').cytoscape({
   autolockNodes: false,
   autoungrabifyNodes: false,
   hideEdgesOnViewport: false,
+  hideLabelsOnViewport: false,
+  textureOnViewport: false,
   renderer: { /* ... */ },
   style: undefined /* ... */,
   ready: function(evt){ /* ... */ },
@@ -156,7 +158,11 @@ $('#cy').cytoscape({
 
 **`autoungrabifyNodes`** : Whether nodes should be ungrabified (not grabbable by user) by default (if `true`, overrides individual node state).
 
-**`hideEdgesOnViewport`** : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.
+**`hideEdgesOnViewport`** : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.
+
+**`hideLabelsOnViewport`** : When set to `true`, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.
+
+**`textureOnViewport`** : When set to `true`, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 

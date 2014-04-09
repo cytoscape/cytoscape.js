@@ -201,6 +201,8 @@ These properties apply only to the core.  You can use the special `core` selecto
  * **`selection-box-border-color`** : The colour of the border on the selection box.
  * **`selection-box-border-width`** : The size of the border on the selection box.
  * **`selection-box-opacity`** : The opacity of the selection box.
+ * **`outside-texture-bg-color`** : The colour of the area outside the viewport texture when `initOptions.textureOnViewport === true`.
+ * **`outside-texture-bg-opacity`** : The opacity of the area outside the viewport texture.
 
 
 

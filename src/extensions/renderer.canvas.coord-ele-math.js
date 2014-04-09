@@ -239,9 +239,22 @@
 
   // 'Give me everything from this box'
   CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
-    var data = this.data; var nodes = this.getCachedNodes(); var edges = this.getCachedEdges(); var box = [];
+    var data = this.data;
+    var nodes = this.getCachedNodes();
+    var edges = this.getCachedEdges();
+    var box = [];
     
-    var x1c = Math.min(x1, x2); var x2c = Math.max(x1, x2); var y1c = Math.min(y1, y2); var y2c = Math.max(y1, y2); x1 = x1c; x2 = x2c; y1 = y1c; y2 = y2c; var heur;
+    var x1c = Math.min(x1, x2);
+    var x2c = Math.max(x1, x2);
+    var y1c = Math.min(y1, y2);
+    var y2c = Math.max(y1, y2); 
+
+    x1 = x1c; 
+    x2 = x2c; 
+    y1 = y1c; 
+    y2 = y2c; 
+
+    var heur;
     
     for ( var i = 0; i < nodes.length; i++ ){
       var pos = nodes[i]._private.position;

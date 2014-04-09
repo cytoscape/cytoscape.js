@@ -53,12 +53,16 @@
           forcedContext: buffCxt,
           drawAllLayers: true,
           forcedZoom: scale,
-          forcedPan: { x: -bb.x1, y: -bb.y1 }
+          forcedPan: { x: -bb.x1, y: -bb.y1 },
+          forcedPxRatio: 1
         });
       } else { // draw the current view
         this.redraw({
           forcedContext: buffCxt,
-          drawAllLayers: true
+          drawAllLayers: true,
+          forcedZoom: cy.zoom(),
+          forcedPan: cy.pan(),
+          forcedPxRatio: 1
         });
       }
     }

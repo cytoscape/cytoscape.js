@@ -118,7 +118,9 @@
 
     // create the renderer
     cy.initRenderer( $$.util.extend({
-      hideEdgesOnViewport: options.hideEdgesOnViewport
+      hideEdgesOnViewport: options.hideEdgesOnViewport,
+      hideLabelsOnViewport: options.hideLabelsOnViewport,
+      textureOnViewport: options.textureOnViewport
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event

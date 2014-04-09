@@ -48,7 +48,6 @@
     return cache;
   };
 
-  // TODO use this
   CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
     context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     return; // turn off for now, seems context does its own caching
@@ -62,7 +61,6 @@
     }
   };
 
-  // TODO test and implement as above
   CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     return; // turn off for now, seems context does its own caching
@@ -121,8 +119,8 @@
       }
     }
 
-    this.canvasWidth = width;
-    this.canvasHeight = height;
+    this.canvasWidth = canvasWidth;
+    this.canvasHeight = canvasHeight;
 
   }
 
@@ -151,6 +149,7 @@
 
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
+    var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
     var forcedZoom = options.forcedZoom;
     var forcedPan = options.forcedPan;
     var r = this;
@@ -209,6 +208,7 @@
     function drawToContext(){
       startTime = +new Date;
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+      var coreStyle = cy.style()._private.coreStyle;
       
       // if( !forcedContext ){
       //   r.matchCanvasSize(data.container);
@@ -227,6 +227,7 @@
       }
 
       // apply pixel ratio
+
       effectiveZoom *= pixelRatio;
       effectivePan.x *= pixelRatio;
       effectivePan.y *= pixelRatio;
@@ -242,9 +243,9 @@
         }
       };
 
-      function setContextTransform(context){
+      function setContextTransform(context, clear){
         context.setTransform(1, 0, 0, 1, 0, 0);
-        !forcedContext && context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+        !forcedContext && (clear === undefined || clear) && context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
         
         if( !drawAllLayers ){
           context.translate(effectivePan.x, effectivePan.y);
@@ -258,11 +259,8 @@
         }
       }
 
-      var textureDraw = false && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
-      var panning = r.hoverData.dragging || r.swipePanning;
-      var textureNSamplesDown = 3;
-      var maxTextureSize = 2000 * 2000;
-      var scaleFactor = 0.5;
+      var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+      var scale;
 
       if( textureDraw ){
 
@@ -273,42 +271,29 @@
 
           bb = r.textureCache.bb = cy.boundingBox();
 
-          var textureScale = 1;
-          if( bb.w * bb.h > maxTextureSize ){
-            textureScale = Math.sqrt( maxTextureSize/(bb.w * bb.h) );
-          }
+          var canvas = r.textureCache.texture = r.data.bufferCanvases[0];
 
-          bb.w *= textureScale;
-          bb.h *= textureScale;
+          var cxt = canvas.getContext('2d');
 
-          r.textureCache.texture = r.bufferCanvasImage({
-            full: true,
-            scale: textureScale
+          cxt.setTransform(1, 0, 0, 1, 0, 0);
+          cxt.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+          
+          r.redraw({
+            forcedContext: cxt,
+            drawOnlyNodeLayer: true
           });
 
-          r.textureCache.buffCanvas = [];
-          r.textureCache.buffCxt = [];
+          var vp = r.textureCache.viewport = {
+            zoom: cy.zoom(),
+            pan: cy.pan(),
+            width: r.canvasWidth,
+            height: r.canvasHeight
+          };
 
-          r.textureCache.cachedScale = [];
-
-          scale = 1;
-          for( var i = 0; i < textureNSamplesDown; i++ ){ 
-            if( i > 1 ){
-              scale *= scaleFactor;
-            }
-
-            var buffCanvas = r.textureCache.buffCanvas[i] = document.createElement('canvas');
-
-            r.textureCache.buffCxt[i] = buffCanvas.getContext('2d');
-
-            buffCanvas.width = bb.w * scale;
-            buffCanvas.height = bb.h * scale;
-
-            buffCanvas.style.width = bb.w * scale + 'px';
-            buffCanvas.style.height = bb.h * scale + 'px';
-
-            break;
-          }
+          vp.mpan = {
+            x: (0 - vp.pan.x)/vp.zoom,
+            y: (0 - vp.pan.y)/vp.zoom
+          };
         }
 
         needDraw[CanvasRenderer.DRAG] = false;
@@ -316,59 +301,42 @@
 
         var context = data.canvases[CanvasRenderer.NODE].getContext('2d');
 
-        //setContextTransform(context);
-
         var texture = r.textureCache.texture;
         var z = cy.zoom();
         var p = cy.pan();
         var buffCanvas = r.textureCache.buffCanvas;
         var buffCxt = r.textureCache.buffCxt;
-        var finalTexture = buffCanvas[0];
+        var texture = r.textureCache.texture;
+        var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
 
-        buffCxt[0].clearRect(0, 0, bb.w, bb.h);
-        buffCxt[0].drawImage( texture, 0, 0 );
-
-        var scale = 1;
-
-        // apply image smoothing for small scales
-        if( false && z < 1 ){
-
-          for( var i = 1; i < textureNSamplesDown && scale*scaleFactor > z; i++ ){
-            var prevScale = scale;
-            scale *= scaleFactor;
-
-            if( !r.textureCache.cachedScale[i] ){
-              r.textureCache.cachedScale[i] = true;
-
-              var prevTexture = buffCanvas[i - 1];
-
-              buffCxt[i].clearRect(0, 0, bb.w, bb.h);
-              buffCxt[i].drawImage( prevTexture, 0, 0, bb.w * prevScale, bb.h * prevScale, 0, 0, bb.w * scale, bb.h * scale );
-            }
-
-            finalTexture = buffCanvas[i];
-          }
-        }
-        
         context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+        context.clearRect(0, 0, vp.width, vp.height);
 
-        context.translate( p.x, p.y );
-        context.scale( z, z );
+        var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
+        var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;
+        r.fillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
+        context.fillRect( 0, 0, vp.width, vp.height );
 
-        var bb2 = cy.boundingBox();
-        context.drawImage( finalTexture, 0, 0, bb.w * scale, bb.h * scale, bb.x1, bb.y1, bb2.w, bb2.h );
+        var pan = cy.pan();
+        var zoom = cy.zoom();
+        
+        setContextTransform( context, false );
+
+        context.clearRect( vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
+        context.drawImage( texture, vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
 
       } else if( !forcedContext ){ // clear the cache since we don't need it
         r.textureCache = null;
       }
 
-      if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers) {
+      var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
+      var hideEdges = r.hideEdgesOnViewport && vpManip;
+      var hideLabels = r.hideLabelsOnViewport && vpManip;
+
+      if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         //NB : VERY EXPENSIVE
         //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
-
-        var hideEdges = r.hideEdgesOnViewport && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
 
         if( hideEdges ){ 
         } else {
@@ -376,8 +344,6 @@
         }
 
         //} console.timeEnd('edgectlpts')
-
-      
 
         // console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
         var zEles = r.getCachedZSortedEles();
@@ -416,7 +382,7 @@
           r.drawEdge(context, ele);
         }
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
+        for (var i = 0; i < edges.length && !hideEdges && !hideLabels; i++) {
           ele = edges[i];
           
           r.drawEdgeText(context, ele);
@@ -432,7 +398,11 @@
           var ele = nodes[i];
 
           r.drawNode(context, ele);
-          r.drawNodeText(context, ele);
+          
+          if( !hideLabels ){
+            r.drawNodeText(context, ele);
+          }
+          
           r.drawNode(context, ele, true);
         }
 
@@ -440,7 +410,7 @@
 
 
       // console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
-      if (needDraw[CanvasRenderer.NODE] || drawAllLayers) {
+      if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         // console.log('redrawing node layer');
         
         var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
@@ -453,7 +423,7 @@
         }
       }
       
-      if (needDraw[CanvasRenderer.DRAG] || drawAllLayers) {
+      if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
         
         var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
         
@@ -465,14 +435,12 @@
         }
       }
       
-      if (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) {
+      if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) ) {
         // console.log('redrawing selection box');
         
         var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
         
         setContextTransform( context );
-        
-        var coreStyle = cy.style()._private.coreStyle;
 
         if (data.select[4] == 1) {
           var zoom = data.cy.zoom();

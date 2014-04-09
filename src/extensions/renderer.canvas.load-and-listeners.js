@@ -571,6 +571,11 @@
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var shiftDown = e.shiftKey;
       
+      if( r.data.bgActivePosistion ){
+        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        r.redraw();
+      }
+
       r.data.bgActivePosistion = undefined; // not active bg now
       clearTimeout( r.bgActiveTimeout );
 

@@ -188,7 +188,9 @@
       { name: 'panning-cursor', type: t.cursor },
       { name: 'active-bg-color', type: t.color },
       { name: 'active-bg-opacity', type: t.zeroOneNumber },
-      { name: 'active-bg-size', type: t.size }
+      { name: 'active-bg-size', type: t.size },
+      { name: 'outside-texture-bg-color', type: t.color },
+      { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
     ];
 
     // allow access of properties by name ( e.g. $$.style.properties.height )
@@ -349,7 +351,9 @@
           'panning-cursor': 'grabbing',
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
-          'active-bg-size': $$.is.touch() ? 40 : 15
+          'active-bg-size': $$.is.touch() ? 40 : 15,
+          'outside-texture-bg-color': '#000',
+          'outside-texture-bg-opacity': 0.125
         })
     ;
   };

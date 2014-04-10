@@ -20,13 +20,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.2</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.3</span></h1>
 			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.2.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.3.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -617,6 +617,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>selection-box-border-color</code></strong> : The colour of the border on the selection box.</li>
 <li><strong><code>selection-box-border-width</code></strong> : The size of the border on the selection box.</li>
 <li><strong><code>selection-box-opacity</code></strong> : The opacity of the selection box.</li>
+<li><strong><code>outside-texture-bg-color</code></strong> : The colour of the area outside the viewport texture when <code>initOptions.textureOnViewport === true</code>.</li>
+<li><strong><code>outside-texture-bg-opacity</code></strong> : The opacity of the area outside the viewport texture.</li>
 </ul>
 <h2 id="style/mappers">Mappers <a href="#style/mappers"><span class="icon-bookmark"></span></a></h2>
 <p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
@@ -676,6 +678,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <ul>
 <li><code>tapstart</code> or <code>vmousedown</code> : normalised tap start event (either <code>mousedown</code> or <code>touchstart</code>)</li>
 <li><code>tapdrag</code> or <code>vmousemove</code> : normalised move event (either <code>touchmove</code> or <code>mousemove</code>)</li>
+<li><code>tapdragover</code> : normalised over element event (either <code>touchmove</code> or <code>mousemove</code>/<code>mouseover</code>)</li>
+<li><code>tapdragout</code> : normalised off of element event (either <code>touchmove</code> or <code>mousemove</code>/<code>mouseout</code>)</li>
 <li><code>tapend</code> or <code>vmouseup</code> : normalised tap end event (either <code>mouseup</code> or <code>touchend</code>)</li>
 <li><code>tap</code> or <code>vclick</code> : normalised tap event (either <code>click</code>, or <code>touchstart</code> followed by <code>touchend</code> without <code>touchmove</code>)</li>
 <li><code>taphold</code> : normalised tap hold event</li>
@@ -683,6 +687,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><code>cxttapend</code> : normalised right-click <code>mouseup</code> or two-finger <code>tapend</code></li>
 <li><code>cxttap</code> : normalised right-click or two-finger <code>tap</code></li>
 <li><code>cxtdrag</code> : normalised mousemove or two-finger drag after <code>cxttapstart</code> but before <code>cxttapend</code></li>
+<li><code>cxtdragover</code> : when going over a node via <code>cxtdrag</code></li>
+<li><code>cxtdragout</code> : when going off a node via <code>cxtdrag</code></li>
 </ul>
 <h2 id="events/collection-events">Collection events <a href="#events/collection-events"><span class="icon-bookmark"></span></a></h2>
 <p>These events are custom to Cytoscape.js.  You can bind to these events for collections.</p>
@@ -1117,7 +1123,12 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
   userZoomingEnabled: <span class="hljs-literal">true</span>,
   pan: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> },
   panningEnabled: <span class="hljs-literal">true</span>,
+  userPanningEnabled: <span class="hljs-literal">true</span>,
+  autolockNodes: <span class="hljs-literal">false</span>,
+  autoungrabifyNodes: <span class="hljs-literal">false</span>,
   hideEdgesOnViewport: <span class="hljs-literal">false</span>,
+  hideLabelsOnViewport: <span class="hljs-literal">false</span>,
+  textureOnViewport: <span class="hljs-literal">false</span>,
   renderer: { <span class="hljs-comment">/* ... */</span> },
   style: <span class="hljs-literal">undefined</span> <span class="hljs-comment">/* ... */</span>,
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
@@ -1132,8 +1143,13 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 <p><strong><code>userZoomingEnabled</code></strong> : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.</p>
 <p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. </p>
 <p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.</p>
+<p><strong><code>userPanningEnabled</code></strong> : Whether panning the graph is enabled by user events.</p>
 <p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
-<p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning and zooming more responsive for large graphs.</p>
+<p><strong><code>autolockNodes</code></strong> : Whether nodes should be locked by default (if <code>true</code>, overrides individual node state).</p>
+<p><strong><code>autoungrabifyNodes</code></strong> : Whether nodes should be ungrabified (not grabbable by user) by default (if <code>true</code>, overrides individual node state).</p>
+<p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
+<p><strong><code>hideLabelsOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
+<p><strong><code>textureOnViewport</code></strong> : When set to <code>true</code>, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.</p>
 <p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:</p>
 <ul>
 <li><strong><code>renderer.name</code></strong> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
@@ -2080,6 +2096,92 @@ console.log( cy.pan() ); <span class="hljs-comment">// prints { x: 100, y: 100 }
 												<li>
 													<span class="name">bool</span>
 													<span class="descr">A truthy value enables user panning; a falsey value disables it.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.autolockNodes"><span class="fn-name">cy.autolockNodes()</span>  <a href="#core/viewport-manipulation/cy.autolockNodes"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.autolockNodes"><p>Get or set whether nodes are automatically locked (i.e. if <code>true</code>, nodes are locked despite their individual state).</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.autolockNodes()</div>
+										
+										<div class="descr">Get whether autolocking is enabled.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.autolockNodes( <span class="comma">, </span>bool )</div>
+										
+										<div class="descr">Set whether autolocking is enabled.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">bool</span>
+													<span class="descr">A truthy value enables autolocking; a falsey value disables it.</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/viewport-manipulation/cy.autoungrabifyNodes"><span class="fn-name">cy.autoungrabifyNodes()</span>  <a href="#core/viewport-manipulation/cy.autoungrabifyNodes"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/viewport-manipulation/cy.autoungrabifyNodes"><p>Get or set whether nodes are automatically ungrabifies (i.e. if <code>true</code>, nodes are ungrabbale despite their individual state).</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.autoungrabifyNodes()</div>
+										
+										<div class="descr">Get whether autoungrabbifying is enabled.</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.autoungrabifyNodes( <span class="comma">, </span>bool )</div>
+										
+										<div class="descr">Set whether autoungrabbifying is enabled.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">bool</span>
+													<span class="descr">A truthy value enables autoungrabbifying; a falsey value disables it.</span>
 
 													
 												</li>
@@ -7351,6 +7453,10 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.panningEnabled"><span class="icon-bookmark"></span> cy.panningEnabled() </a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.userPanningEnabled"><span class="icon-bookmark"></span> cy.userPanningEnabled() </a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.autolockNodes"><span class="icon-bookmark"></span> cy.autolockNodes() </a></div>
+					
+						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.autoungrabifyNodes"><span class="icon-bookmark"></span> cy.autoungrabifyNodes() </a></div>
 					
 						<div class="section lvl3"><a href="#core/viewport-manipulation/cy.zoom"><span class="icon-bookmark"></span> cy.zoom() </a></div>
 					

@@ -5,13 +5,16 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all"/>
+		<meta name="robots" content="all" />
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/all.min.css">
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
 		
 	</head>
@@ -305,6 +308,8 @@ edge ......... <span class="hljs-operator">a</span> collection <span class="hljs
 <ul>
 <li><strong>Haystacks make fast edges</strong> : Set your edges <code>curve-style</code> to <code>haystack</code> in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than <code>bezier</code> edges.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
+<li><strong>Hide labels during interactivity</strong> : Set <code>hideLabelsOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This works similarly to hiding edges on viewport operations.</li>
+<li><strong>Use textured zoom &amp; pan</strong> : Set <code>textureOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  Rather than rerendering the entire scene, this makes a texture cache of the viewport at the start of pan and zoom operations, and manipulates that instead.  Makes panning and zooming much smoother for large graphs.</li>
 <li><strong>Animations</strong> : You will get better performance without animations.  If using animations anyway:<ul>
 <li>Try to limit the number of concurrent animating elements.</li>
 <li>When using transition animations in the style, make sure <code>transition-property</code> is defined only for states that you want to animate.  If you have <code>transition-property</code> defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.</li>
@@ -7923,7 +7928,11 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/all.min.js"></script>
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

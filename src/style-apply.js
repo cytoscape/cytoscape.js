@@ -354,7 +354,7 @@
         }
       }
 
-      self.updateStyleHints( ele );
+      this.updateStyleHints( ele );
     }
   };
 

@@ -12,6 +12,7 @@
     CanvasRenderer.SELECT_BOX = 0;
     CanvasRenderer.DRAG = 2;
     CanvasRenderer.NODE = 4;
+    CanvasRenderer.TEXTURE_BUFFER = 0;
     CanvasRenderer.BUFFER_COUNT = 2;
 
     this.options = options;

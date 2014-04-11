@@ -119,6 +119,15 @@
       }
     }
 
+    this.textureMult = 1;
+    if( pixelRatio <= 1 ){
+      canvas = data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
+
+      this.textureMult = 2;
+      canvas.width = canvasWidth * this.textureMult;
+      canvas.height = canvasHeight * this.textureMult;
+    }
+
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
 
@@ -271,16 +280,17 @@
 
           bb = r.textureCache.bb = cy.boundingBox();
 
-          var canvas = r.textureCache.texture = r.data.bufferCanvases[0];
+          var canvas = r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 
           var cxt = canvas.getContext('2d');
 
           cxt.setTransform(1, 0, 0, 1, 0, 0);
-          cxt.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+          cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
           
           r.redraw({
             forcedContext: cxt,
-            drawOnlyNodeLayer: true
+            drawOnlyNodeLayer: true,
+            forcedPxRatio: pixelRatio * r.textureMult
           });
 
           var vp = r.textureCache.viewport = {
@@ -326,7 +336,7 @@
         context.clearRect( vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
         context.drawImage( texture, vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
 
-      } else if( !forcedContext ){ // clear the cache since we don't need it
+      } else if( r.textureOnViewport && !forcedContext ){ // clear the cache since we don't need it
         r.textureCache = null;
       }
 

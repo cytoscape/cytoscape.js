@@ -70,7 +70,7 @@
       panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
       userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
-      autolockNodes: options.autolockNodes === undefined ? false : options.autolockNodes,
+      autolockNodes: false,
       autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
@@ -277,6 +277,8 @@
       json.layout = cy._private.options.layout;
       json.renderer = cy._private.options.renderer;
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
+      json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
+      json.textureOnViewport = cy._private.options.textureOnViewport;
       
       return json;
     }

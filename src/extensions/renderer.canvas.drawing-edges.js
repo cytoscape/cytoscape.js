@@ -55,7 +55,12 @@
     target = endNode = edge._private.target;
 
     var targetPos = target._private.position;
+    var targetW = target.width();
+    var targetH = target.height();
     var sourcePos = source._private.position;
+    var sourceW = source.width();
+    var sourceH = source.height();
+
 
     var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
@@ -69,7 +74,7 @@
       this.drawStyledEdge(
         edge, 
         context, 
-        [rs.source.x + sourcePos.x, rs.source.y + sourcePos.y, rs.target.x + targetPos.x, rs.target.y + targetPos.y],
+        [rs.source.x * sourceW + sourcePos.x, rs.source.y * sourceH + sourcePos.y, rs.target.x * targetW + targetPos.x, rs.target.y * targetH + targetPos.y],
         lineStyle,
         edgeWidth
       );

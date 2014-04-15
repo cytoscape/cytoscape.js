@@ -141,12 +141,16 @@
       
       } else if (rs.edgeType == 'haystack') {
         var tgtPos = tgt._private.position;
+        var tgtW = tgt.width();
+        var tgtH = tgt.height();
         var srcPos = src._private.position;
+        var srcW = src.width();
+        var srcH = src.height();
 
-        var startX = srcPos.x + rs.source.x;
-        var startY = srcPos.y + rs.source.y;
-        var endX = tgtPos.x + rs.target.x;
-        var endY = tgtPos.y + rs.target.y;
+        var startX = srcPos.x + rs.source.x * srcW;
+        var startY = srcPos.y + rs.source.y * srcH;
+        var endX = tgtPos.x + rs.target.x * tgtW;
+        var endY = tgtPos.y + rs.target.y * tgtH;
 
         if( 
           $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2)
@@ -1066,26 +1070,24 @@
       if( !rscratch.haystack ){
         var src = edge.source()[0];
         var srcPos = src.position();
-        var srcW = src.width();
-        var srcH = src.height();
-        var srcR = Math.min( srcW, srcH ) * rFactor * 0.5;
+        var srcR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.source = {
-          x: Math.round( srcR * Math.cos(angle) ),
-          y: Math.round( srcR * Math.sin(angle) )
+          x: srcR * Math.cos(angle),
+          y: srcR * Math.sin(angle)
         };
 
         var tgt = edge.target()[0];
         var tgtPos = tgt.position();
         var tgtW = tgt.width();
         var tgtH = tgt.height();
-        var tgtR = Math.min( tgtW, tgtH ) * rFactor * 0.5;
+        var tgtR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.target = {
-          x: Math.round( tgtR * Math.cos(angle) ),
-          y: Math.round( tgtR * Math.sin(angle) )
+          x: tgtR * Math.cos(angle),
+          y: tgtR * Math.sin(angle)
         };
 
         rscratch.edgeType = 'haystack';

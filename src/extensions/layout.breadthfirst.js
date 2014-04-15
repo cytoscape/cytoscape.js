@@ -41,6 +41,9 @@
       }
 
       roots = new $$.Collection( cy, rootsArray );
+    } else if( $$.is.string(options.roots) ){
+      roots = cy.$( options.roots );
+
     } else {
       if( options.directed ){
         roots = nodes.roots();

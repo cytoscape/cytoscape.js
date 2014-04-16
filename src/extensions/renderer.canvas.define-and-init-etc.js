@@ -23,9 +23,11 @@
       renderer: this, cy: options.cy, container: options.cy.container(),
       
       canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
+      contexts: new Array(CanvasRenderer.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
       
-      bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT)
+      bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT),
+      bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS),
 
     };
     
@@ -67,6 +69,7 @@
 
     for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
       this.data.canvases[i] = document.createElement('canvas');
+      this.data.contexts[i] = this.data.canvases[i].getContext('2d');
       this.data.canvases[i].style.position = 'absolute';
       this.data.canvases[i].setAttribute('data-id', 'layer' + i);
       this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
@@ -81,6 +84,7 @@
     
     for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
       this.data.bufferCanvases[i] = document.createElement('canvas');
+      this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
       this.data.bufferCanvases[i].style.position = 'absolute';
       this.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
       this.data.bufferCanvases[i].style.zIndex = String(-i - 1);

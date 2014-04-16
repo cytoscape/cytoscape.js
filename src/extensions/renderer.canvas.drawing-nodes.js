@@ -5,6 +5,7 @@
   // Draw node
   CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
 
+    var r = this;
     var nodeWidth, nodeHeight;
     var style = node._private.style;
     var rs = node._private.rscratch;
@@ -98,29 +99,17 @@
         context.fill();
       }
 
-      if (url != undefined) {
+      if (url !== undefined) {
         
-        var r = this;
-        var image = this.getCachedImage(url,
-            
-            function() {
-              
-//              console.log(e);
-              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-              r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-              
-              // Replace Image object with Canvas to solve zooming too far
-              // into image graphical errors (Jan 10 2013)
-              r.swapCachedImage(url);
-              
-              r.redraw();
-            }
-        );
-        
-        if (image.complete == false) {
+        // get image, and if not loaded then ask to redraw when later loaded
+        var image = this.getCachedImage(url, function(){
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
           
-        } else {
-          //context.clip
+          r.redraw();
+        });
+        
+        if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
         

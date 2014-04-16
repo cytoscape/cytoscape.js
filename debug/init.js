@@ -22,12 +22,15 @@ $(function(){
           'shape': 'ellipse',
           //'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 10, 100)',
-          'height': 'mapData(weight, 0, 100, 10, 100)'
+          'height': 'mapData(weight, 0, 100, 10, 100)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
-          //'background-size-x': '5',
-          //'background-image': 'images/test-bg.png',
+          //'background-position-x': '5',
+          //'background-position-y': '5',
+          'background-image': 'images/gnu.png',
+          'background-fit': 'none',
+          'background-repeat': 'no-repeat'
           //'background-position-x': 5,
           // 'pie-1-background-size': '33%',
           // 'pie-1-background-color': 'red',

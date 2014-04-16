@@ -6,7 +6,7 @@
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var canvas = this.data.canvases[0];
-    var context = canvas.getContext('2d');
+    var context = this.data.contexts[0];
 
     var backingStore = context.backingStorePixelRatio ||
       context.webkitBackingStorePixelRatio ||
@@ -79,13 +79,16 @@
     var data = this.data;
     var width = container.clientWidth;
     var height = container.clientHeight;
-    
-    var canvas, canvasWidth = width, canvasHeight = height;
     var pixelRatio = this.getPixelRatio();
+    var canvasWidth = width * pixelRatio;
+    var canvasHeight = height * pixelRatio;
+    var canvas;
 
-    // apply pixel ratio
-    canvasWidth *= pixelRatio;
-    canvasHeight *= pixelRatio;
+    if( canvasWidth === this.canvasWidth && canvasHeight === this.canvasHeight ){
+      return; // save cycles if same
+    }
+
+    this.fontCaches = null; // because resizing resets the style
 
     var canvasContainer = data.canvasContainer;
     canvasContainer.style.width = width + 'px';
@@ -282,7 +285,7 @@
 
           var canvas = r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 
-          var cxt = canvas.getContext('2d');
+          var cxt = r.data.bufferContexts[ CanvasRenderer.TEXTURE_BUFFER ];
 
           cxt.setTransform(1, 0, 0, 1, 0, 0);
           cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
@@ -309,7 +312,7 @@
         needDraw[CanvasRenderer.DRAG] = false;
         needDraw[CanvasRenderer.NODE] = false;
 
-        var context = data.canvases[CanvasRenderer.NODE].getContext('2d');
+        var context = data.contexts[CanvasRenderer.NODE];
 
         var texture = r.textureCache.texture;
         var z = cy.zoom();
@@ -423,7 +426,7 @@
       if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         // console.log('redrawing node layer');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.NODE];
 
         setContextTransform( context );
         drawElements(eles.nondrag, context);
@@ -435,7 +438,7 @@
       
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
         
-        var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
         
         setContextTransform( context );
         drawElements(eles.drag, context);
@@ -448,7 +451,7 @@
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) ) {
         // console.log('redrawing selection box');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.SELECT_BOX];
         
         setContextTransform( context );
 

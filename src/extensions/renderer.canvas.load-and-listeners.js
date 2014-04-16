@@ -138,10 +138,11 @@
     }
 
     // auto resize
-    r.registerBinding(window, 'resize', function(e) { 
+    r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
+      r.matchCanvasSize(r.data.container);
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.redraw();
-    }, true);
+    }, 100 ) );
 
     // stop right click menu from appearing on cy
     r.registerBinding(r.data.container, 'contextmenu', function(e){

@@ -89,6 +89,10 @@
       return $$.util.debounce(func, wait, options);
     },
 
+    now: function(){
+      return +new Date;
+    },
+
     // ported lodash debounce function
     debounce: function(func, wait, options) {
       var args,
@@ -102,6 +106,9 @@
           maxWait = false,
           trailing = true;
 
+      if (!$$.is.fn(func)) {
+        return;
+      }
       wait = Math.max(0, wait) || 0;
       if (options === true) {
         var leading = true;
@@ -112,7 +119,7 @@
         trailing = 'trailing' in options ? options.trailing : trailing;
       }
       var delayed = function() {
-        var remaining = wait - (+new Date() - stamp);
+        var remaining = wait - ($$.util.now() - stamp);
         if (remaining <= 0) {
           if (maxTimeoutId) {
             clearTimeout(maxTimeoutId);
@@ -120,7 +127,7 @@
           var isCalled = trailingCall;
           maxTimeoutId = timeoutId = trailingCall = undefined;
           if (isCalled) {
-            lastCalled = +new Date();
+            lastCalled = $$.util.now();
             result = func.apply(thisArg, args);
             if (!timeoutId && !maxTimeoutId) {
               args = thisArg = null;
@@ -137,7 +144,7 @@
         }
         maxTimeoutId = timeoutId = trailingCall = undefined;
         if (trailing || (maxWait !== wait)) {
-          lastCalled = +new Date();
+          lastCalled = $$.util.now();
           result = func.apply(thisArg, args);
           if (!timeoutId && !maxTimeoutId) {
             args = thisArg = null;
@@ -147,7 +154,7 @@
 
       return function() {
         args = arguments;
-        stamp = +new Date();
+        stamp = $$.util.now();
         thisArg = this;
         trailingCall = trailing && (timeoutId || !leading);
 

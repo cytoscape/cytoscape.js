@@ -151,6 +151,7 @@ Background image:
  * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`.
  * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
  * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-clip`** : How background image clipping is handles; may be `node` for clipped to node shape or `none` for no clipping.
 
 
 Pie chart background:

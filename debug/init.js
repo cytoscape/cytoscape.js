@@ -29,8 +29,9 @@ $(function(){
           //'background-position-x': '5',
           //'background-position-y': '5',
           'background-image': 'images/gnu.png',
-          'background-fit': 'none',
-          'background-repeat': 'no-repeat'
+          'background-fit': 'contain',
+          'background-repeat': 'no-repeat',
+          'background-clip': 'none',
           //'background-position-x': 5,
           // 'pie-1-background-size': '33%',
           // 'pie-1-background-color': 'red',

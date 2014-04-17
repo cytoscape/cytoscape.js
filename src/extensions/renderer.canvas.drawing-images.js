@@ -34,6 +34,8 @@
     var nodeW = node.width();
     var nodeH = node.height();
     var rs = node._private.rscratch;
+    var clip = style['background-clip'].value;
+    var shouldClip = clip === 'node';
     
     var w = img.width;
     var h = img.height;
@@ -75,22 +77,26 @@
 
     if( repeat === 'no-repeat' ){
 
-      context.save();
+      if( shouldClip ){
+        context.save();
 
-      if( rs.pathCache ){
-        context.clip( rs.pathCache );
-      } else {
-        CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
-          context,
-          nodeX, nodeY, 
-          nodeW, nodeH);
+        if( rs.pathCache ){
+          context.clip( rs.pathCache );
+        } else {
+          CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+            context,
+            nodeX, nodeY, 
+            nodeW, nodeH);
 
-        context.clip();
+          context.clip();
+        }
       }
 
       context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
 
-      context.restore();
+      if( shouldClip ){
+        context.restore();
+      }
     } else {
       var pattern = context.createPattern( img, repeat );
       context.fillStyle = pattern;

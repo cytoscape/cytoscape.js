@@ -199,12 +199,10 @@
       
       var id = element._private.data.id;
       
-      if( !ids[ id ] ){
-        ids[ id ] = element;
+      ids[ id ] = element;
 
-        this[ this.length ] = element;
-        this.length++;
-      }
+      this[ this.length ] = element;
+      this.length++;
     }
     
     this._private = {

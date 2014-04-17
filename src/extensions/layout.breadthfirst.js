@@ -37,7 +37,7 @@
       for( var i = 0; i < options.roots.length; i++ ){
         var id = options.roots[i];
         var ele = cy.getElementById( id );
-        roots.push( ele );
+        rootsArray.push( ele );
       }
 
       roots = new $$.Collection( cy, rootsArray );
@@ -150,27 +150,28 @@
     };
     assignDepthsToEles();
 
+
+    var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
+      var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+      var thisInfo = node._private.scratch.BreadthFirstLayout;
+      var highestDepthOfOther = 0;
+      var highestOther;
+      for( var i = 0; i < edges.length; i++ ){
+        var edge = edges[i];
+        var otherNode = edge.source()[0];
+        var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+
+        if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+          highestDepthOfOther = otherInfo.depth;
+          highestOther = otherNode;
+        }
+      }
+
+      return highestOther;
+    };
+
      // make maximal if so set by adjusting depths
     for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
-
-      var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-        var edges = node.connectedEdges('[target = "' + node.id() + '"]');
-        var thisInfo = node._private.scratch.BreadthFirstLayout;
-        var highestDepthOfOther = 0;
-        var highestOther;
-        for( var i = 0; i < edges.length; i++ ){
-          var edge = edges[i];
-          var otherNode = edge.source()[0];
-          var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
-
-          if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
-            highestDepthOfOther = otherInfo.depth;
-            highestOther = otherNode;
-          }
-        }
-
-        return highestOther;
-      };
 
       var nDepths = depths.length;
       var elesToMove = [];
@@ -286,8 +287,9 @@
       var info = ele._private.scratch.BreadthFirstLayout;
       var depth = info.depth;
       var index = info.index;
+      var depthSize = depths[depth].length;
 
-      var distanceX = Math.max( width / (depths[depth].length + 1), minDistance );
+      var distanceX = Math.max( width / (depthSize + 1), minDistance );
       var distanceY = Math.max( height / (depths.length + 1), minDistance );
       var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
@@ -307,7 +309,7 @@
 
       } else {
         return {
-          x: (index + 1) * distanceX,
+          x: center.x + (index + 1 - depthSize/2) * distanceX,
           y: (depth + 1) * distanceY
         };
       }

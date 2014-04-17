@@ -112,9 +112,11 @@ describe('Collection style', function(){
   describe('eles.addClass() etc', function(){
 
     var n1;
+    var n2;
 
     beforeEach(function(){
       n1 = cy.$('#n1');
+      n2 = cy.$('#n2');
     });
 
     it('eles.addClass() adds class', function(){
@@ -173,6 +175,31 @@ describe('Collection style', function(){
 
       expect( n1.hasClass('foo') ).to.be.false;
       expect( n1.hasClass('bar') ).to.be.false;
+    });
+
+    it('eles.classes()', function(){
+      n1.add(n2).classes({
+        add: ['foo', 'bar']
+      });
+
+      expect( n1.hasClass('foo') ).to.be.true;
+      expect( n1.hasClass('bar') ).to.be.true;
+      expect( n2.hasClass('foo') ).to.be.true;
+      expect( n2.hasClass('bar') ).to.be.true;
+
+      n1.add(n2).classes({
+        remove: ['foo']
+      });
+
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n2.hasClass('foo') ).to.be.false;
+
+      n1.add(n2).classes({
+        toggle: ['bar']
+      });
+
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n2.hasClass('bar') ).to.be.false;
     });
 
   });

@@ -12,6 +12,7 @@ var child_process = require('child_process');
 var fs = require('fs');
 var htmlmin = require('gulp-htmlmin');
 var cssmin = require('gulp-cssmin');
+var shell = require('gulp-shell')
 
 var now = new Date();
 var version = process.env['VERSION'] || ['snapshot', +now].join('-');
@@ -290,6 +291,18 @@ gulp.task('dist', ['build'], function(){
 gulp.task('pub', ['pkgver', 'dist', 'docspub'], function(next){
   next();
 });
+
+gulp.task('tag', shell.task([
+  './publish-tag.sh'
+]));
+
+gulp.task('docspush', shell.task([
+  './publish-docs.sh'
+]));
+
+gulp.task('npm', shell.task([
+  './publish-npm.sh'
+]));
 
 gulp.task('watch', function(next){
   var watcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);

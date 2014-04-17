@@ -1,6 +1,74 @@
 ;(function( $$ ){ 'use strict';
   
   $$.fn.eles({
+    classes: function(opts){
+      var triggerEles = [];
+      var eles = this;
+      var changed = [];
+      var fn;
+
+      if( $$.is.fn(opts) ){
+        fn = opts;
+
+      } else if( !$$.is.plainObject(opts) ){
+        return this; // needs opts or fn
+      } 
+
+      for(var i = 0; i < eles.length; i++){
+        var ele = eles[i];
+        var eleChanged = false;
+
+        opts = fn ? fn.apply(ele, [i, ele]) : opts;
+
+        // add classes
+        if( opts.add ){ for( var j = 0; j < opts.add.length; j++ ){
+          var cls = opts.add[j];
+          var hasClass = ele._private.classes[cls];
+
+          ele._private.classes[cls] = true;
+
+          if( !hasClass && !eleChanged ){
+            changed.push( ele );
+            eleChanged = true;
+          }
+        } }
+
+        // remove classes
+        if( opts.remove ){ for( var j = 0; j < opts.remove.length; j++ ){
+          var cls = opts.remove[j];
+          var hasClass = ele._private.classes[cls];
+
+          ele._private.classes[cls] = false;
+
+          if( hasClass && !eleChanged ){
+            changed.push( ele );
+            eleChanged = true;
+          }
+        } }
+
+        // toggle classes
+        if( opts.toggle ){ for( var j = 0; j < opts.toggle.length; j++ ){
+          var cls = opts.toggle[j];
+          var hasClass = ele._private.classes[cls];
+
+          ele._private.classes[cls] = !hasClass;
+
+          if( !eleChanged ){
+            changed.push( ele );
+            eleChanged = true;
+          }
+        } }
+      }
+
+      if( changed.length > 0 ){
+        new $$.Collection( this.cy(), changed )
+          .updateStyle()
+          .trigger('class')
+      }
+
+      return this;
+    },
+
     addClass: function(classes){
       classes = classes.split(/\s+/);
       var self = this;
@@ -23,10 +91,12 @@
       
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
-        new $$.Collection(this._private.cy, changed).updateStyle();
+        new $$.Collection(this._private.cy, changed)
+          .updateStyle()
+          .trigger('class')
+        ;
       }
 
-      self.trigger('class');
       return self;
     },
 
@@ -66,10 +136,12 @@
       
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
-        new $$.Collection(this._private.cy, changed).updateStyle();
+        new $$.Collection(this._private.cy, changed)
+          .updateStyle()
+          .trigger('class')
+        ;
       }
 
-      self.trigger('class');
       return self;
     },
 

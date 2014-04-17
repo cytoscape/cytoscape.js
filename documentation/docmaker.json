@@ -1238,6 +1238,26 @@
             },
 
             {
+              "name": "eles.classes",
+              "descr": "Add, remove, and toggle classes for several elements all at once.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "options", 
+                      "descr": "A space-separated list of class names to toggle on the elements.",
+                      "fields": [
+                        { "name": "add", "descr": "An array of class names to add." },
+                        { "name": "remove", "descr": "An array of class names to remove." },
+                        { "name": "toggle", "descr": "An array of class names to toggle." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "ele.hasClass",
               "descr": "Get whether an element has a particular class.",
               "formats": [

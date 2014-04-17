@@ -309,7 +309,7 @@
 
       } else {
         return {
-          x: center.x + (index + 1 - depthSize/2) * distanceX,
+          x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
           y: (depth + 1) * distanceY
         };
       }

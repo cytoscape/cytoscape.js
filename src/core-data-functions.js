@@ -32,6 +32,12 @@
       updateMappers: true
     }),
 
+    batchPosition: $$.define.batchData({
+      field: 'position',
+      event: 'position',
+      triggerFnName: 'rtrigger'
+    }),
+
     scratch: $$.define.data({
       field: 'scratch',
       allowBinding: false,

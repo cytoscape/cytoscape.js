@@ -103,6 +103,12 @@
       }
     }),
 
+    batchPosition: $$.define.batchData({
+      field: 'position',
+      event: 'position',
+      triggerFnName: 'rtrigger'
+    }),
+
     // position but no notification to renderer
     silentPosition: $$.define.data({
       field: 'position',

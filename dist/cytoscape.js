@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.3.
+ * This file is part of cytoscape.js 2.2.4.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -265,6 +265,10 @@ var cytoscape;
       return $$.util.debounce(func, wait, options);
     },
 
+    now: function(){
+      return +new Date;
+    },
+
     // ported lodash debounce function
     debounce: function(func, wait, options) {
       var args,
@@ -278,6 +282,9 @@ var cytoscape;
           maxWait = false,
           trailing = true;
 
+      if (!$$.is.fn(func)) {
+        return;
+      }
       wait = Math.max(0, wait) || 0;
       if (options === true) {
         var leading = true;
@@ -288,7 +295,7 @@ var cytoscape;
         trailing = 'trailing' in options ? options.trailing : trailing;
       }
       var delayed = function() {
-        var remaining = wait - (+new Date() - stamp);
+        var remaining = wait - ($$.util.now() - stamp);
         if (remaining <= 0) {
           if (maxTimeoutId) {
             clearTimeout(maxTimeoutId);
@@ -296,7 +303,7 @@ var cytoscape;
           var isCalled = trailingCall;
           maxTimeoutId = timeoutId = trailingCall = undefined;
           if (isCalled) {
-            lastCalled = +new Date();
+            lastCalled = $$.util.now();
             result = func.apply(thisArg, args);
             if (!timeoutId && !maxTimeoutId) {
               args = thisArg = null;
@@ -313,7 +320,7 @@ var cytoscape;
         }
         maxTimeoutId = timeoutId = trailingCall = undefined;
         if (trailing || (maxWait !== wait)) {
-          lastCalled = +new Date();
+          lastCalled = $$.util.now();
           result = func.apply(thisArg, args);
           if (!timeoutId && !maxTimeoutId) {
             args = thisArg = null;
@@ -323,7 +330,7 @@ var cytoscape;
 
       return function() {
         args = arguments;
-        stamp = +new Date();
+        stamp = $$.util.now();
         thisArg = this;
         trailingCall = trailing && (timeoutId || !leading);
 
@@ -4428,6 +4435,7 @@ var cytoscape;
       bgPos: { number: true, allowPercent: true },
       bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
       bgFit: { enums: ['none', 'contain', 'cover'] },
+      bgClip: { enums: ['none', 'node'] },
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       curveStyle: { enums: ['bezier', 'haystack'] },
@@ -4495,6 +4503,7 @@ var cytoscape;
       { name: 'background-position-y', type: t.bgPos },
       { name: 'background-repeat', type: t.bgRepeat },
       { name: 'background-fit', type: t.bgFit },
+      { name: 'background-clip', type: t.bgClip },
       { name: 'pie-size', type: t.bgSize },
       { name: 'pie-1-background-color', type: t.color },
       { name: 'pie-2-background-color', type: t.color },
@@ -4637,6 +4646,7 @@ var cytoscape;
           'background-position-y': '50%',
           'background-repeat': 'no-repeat',
           'background-fit': 'none',
+          'background-clip': 'node',
           'border-color': '#000',
           'border-opacity': 1,
           'border-width': 0,
@@ -6140,7 +6150,7 @@ var cytoscape;
       panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
       userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
-      autolockNodes: options.autolockNodes === undefined ? false : options.autolockNodes,
+      autolockNodes: false,
       autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
@@ -6347,6 +6357,8 @@ var cytoscape;
       json.layout = cy._private.options.layout;
       json.renderer = cy._private.options.renderer;
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
+      json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
+      json.textureOnViewport = cy._private.options.textureOnViewport;
       
       return json;
     }
@@ -10827,6 +10839,7 @@ var cytoscape;
     CanvasRenderer.SELECT_BOX = 0;
     CanvasRenderer.DRAG = 2;
     CanvasRenderer.NODE = 4;
+    CanvasRenderer.TEXTURE_BUFFER = 0;
     CanvasRenderer.BUFFER_COUNT = 2;
 
     this.options = options;
@@ -10837,9 +10850,11 @@ var cytoscape;
       renderer: this, cy: options.cy, container: options.cy.container(),
       
       canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
+      contexts: new Array(CanvasRenderer.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
       
-      bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT)
+      bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT),
+      bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS),
 
     };
     
@@ -10881,6 +10896,7 @@ var cytoscape;
 
     for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
       this.data.canvases[i] = document.createElement('canvas');
+      this.data.contexts[i] = this.data.canvases[i].getContext('2d');
       this.data.canvases[i].style.position = 'absolute';
       this.data.canvases[i].setAttribute('data-id', 'layer' + i);
       this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
@@ -10895,6 +10911,7 @@ var cytoscape;
     
     for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
       this.data.bufferCanvases[i] = document.createElement('canvas');
+      this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
       this.data.bufferCanvases[i].style.position = 'absolute';
       this.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
       this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
@@ -11414,12 +11431,16 @@ var cytoscape;
       
       } else if (rs.edgeType == 'haystack') {
         var tgtPos = tgt._private.position;
+        var tgtW = tgt.width();
+        var tgtH = tgt.height();
         var srcPos = src._private.position;
+        var srcW = src.width();
+        var srcH = src.height();
 
-        var startX = srcPos.x + rs.source.x;
-        var startY = srcPos.y + rs.source.y;
-        var endX = tgtPos.x + rs.target.x;
-        var endY = tgtPos.y + rs.target.y;
+        var startX = srcPos.x + rs.source.x * srcW;
+        var startY = srcPos.y + rs.source.y * srcH;
+        var endX = tgtPos.x + rs.target.x * tgtW;
+        var endY = tgtPos.y + rs.target.y * tgtH;
 
         if( 
           $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2)
@@ -12339,26 +12360,24 @@ var cytoscape;
       if( !rscratch.haystack ){
         var src = edge.source()[0];
         var srcPos = src.position();
-        var srcW = src.width();
-        var srcH = src.height();
-        var srcR = Math.min( srcW, srcH ) * rFactor * 0.5;
+        var srcR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.source = {
-          x: Math.round( srcR * Math.cos(angle) ),
-          y: Math.round( srcR * Math.sin(angle) )
+          x: srcR * Math.cos(angle),
+          y: srcR * Math.sin(angle)
         };
 
         var tgt = edge.target()[0];
         var tgtPos = tgt.position();
         var tgtW = tgt.width();
         var tgtH = tgt.height();
-        var tgtR = Math.min( tgtW, tgtH ) * rFactor * 0.5;
+        var tgtR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.target = {
-          x: Math.round( tgtR * Math.cos(angle) ),
-          y: Math.round( tgtR * Math.sin(angle) )
+          x: tgtR * Math.cos(angle),
+          y: tgtR * Math.sin(angle)
         };
 
         rscratch.edgeType = 'haystack';
@@ -12659,7 +12678,12 @@ var cytoscape;
     target = endNode = edge._private.target;
 
     var targetPos = target._private.position;
+    var targetW = target.width();
+    var targetH = target.height();
     var sourcePos = source._private.position;
+    var sourceW = source.width();
+    var sourceH = source.height();
+
 
     var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
@@ -12673,7 +12697,7 @@ var cytoscape;
       this.drawStyledEdge(
         edge, 
         context, 
-        [rs.source.x + sourcePos.x, rs.source.y + sourcePos.y, rs.target.x + targetPos.x, rs.target.y + targetPos.y],
+        [rs.source.x * sourceW + sourcePos.x, rs.source.y * sourceH + sourcePos.y, rs.target.x * targetW + targetPos.x, rs.target.y * targetH + targetPos.y],
         lineStyle,
         edgeWidth
       );
@@ -13140,61 +13164,26 @@ var cytoscape;
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
-  var imageCache = {};
   
-  CanvasRenderer.prototype.getCachedImage = function(url, onLoadRedraw) {
+  var imageCache
 
-    if (imageCache[url] && imageCache[url].image) {
+  CanvasRenderer.prototype.getCachedImage = function(url, onLoad) {
+    var r = this;
+    var imageCache = r.imageCache = r.imageCache || {};
+
+    if( imageCache[url] && imageCache[url].image ){
       return imageCache[url].image;
     }
     
-    var imageContainer = imageCache[url];
-    
-    if (imageContainer == undefined) { 
-      imageCache[url] = new Object();
-      imageCache[url].image = new Image();
-      imageCache[url].image.onload = onLoadRedraw;
-      
-      imageCache[url].image.src = url;
-      
-      imageContainer = imageCache[url];
-    }
-    
-    return imageContainer.image;
-  }
-  
-  // Attempt to replace the image object with a canvas buffer to solve zooming problem
-  CanvasRenderer.prototype.swapCachedImage = function(url) {
-    if (imageCache[url]) {
-      
-      if (imageCache[url].image
-          && imageCache[url].image.complete) {
-        
-        var image = imageCache[url].image;
-        
-        var buffer = document.createElement('canvas');
-        buffer.width = image.width;
-        buffer.height = image.height;
-        
-        buffer.getContext('2d').drawImage(image,
-            0, 0
-          );
-        
-        imageCache[url].image = buffer;
-        imageCache[url].swappedWithCanvas = true;
-        
-        return buffer;
-      } else {
-        return null;
-      } 
-    } else {
-      return null;
-    }
-  }
-  
-  CanvasRenderer.prototype.updateImageCaches = function() {
-  }
+    var cache = imageCache[url] = imageCache[url] || {};
 
+    var image = cache.image = new Image();
+    image.addEventListener('load', onLoad);
+    image.src = url;
+    
+    return image;
+  }
+    
   CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
     var r = this;
     var zoom = this.data.cy._private.zoom;
@@ -13205,24 +13194,11 @@ var cytoscape;
     var xPos = style['background-position-x'];
     var yPos = style['background-position-y'];
     var repeat = style['background-repeat'].value;
-    var nodeW = this.getNodeWidth(node);
-    var nodeH = this.getNodeHeight(node);
+    var nodeW = node.width();
+    var nodeH = node.height();
     var rs = node._private.rscratch;
-    
-    context.save();
-    
-    if( rs.pathCache ){
-      context.clip( rs.pathCache );
-    } else {
-      CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
-        context,
-        nodeX, nodeY, 
-        nodeW, nodeH);
-
-      context.clip();
-    }
-    
-    
+    var clip = style['background-clip'].value;
+    var shouldClip = clip === 'node';
     
     var w = img.width;
     var h = img.height;
@@ -13254,32 +13230,49 @@ var cytoscape;
       y += yPos.pxValue;
     }
 
-    if( repeat === 'repeat-x' || repeat === 'repeat-y' || repeat === 'repeat' ){
-      var pattern = context.createPattern( img, repeat );
+    if( rs.pathCache ){
+      x -= nodeX;
+      y -= nodeY;
 
-      x = Math.min(x, nodeX + nodeW/2);
-      x = Math.max(x, nodeX - nodeW/2);
-      y = Math.min(y, nodeY + nodeY/2);
-      y = Math.max(y, nodeY - nodeY/2);
+      nodeX = 0;
+      nodeY = 0;
+    }
 
-      context.fillStyle = pattern;
-      context.translate(x, y);
+    if( repeat === 'no-repeat' ){
 
-      if( repeat === 'repeat-x' ){
-        context.fillRect( -nodeW, 0, 2*nodeW, nodeH );
-      } else if( repeat === 'repeat-y' ){
-        context.fillRect( 0, -nodeH, nodeW, 2*nodeH );
-      } else {
-        context.fill();
+      if( shouldClip ){
+        context.save();
+
+        if( rs.pathCache ){
+          context.clip( rs.pathCache );
+        } else {
+          CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+            context,
+            nodeX, nodeY, 
+            nodeW, nodeH);
+
+          context.clip();
+        }
       }
 
-      
+      context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+
+      if( shouldClip ){
+        context.restore();
+      }
     } else {
-      context.drawImage( img, x, y, w, h );  
+      var pattern = context.createPattern( img, repeat );
+      context.fillStyle = pattern;
+
+      CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+          context,
+          nodeX, nodeY, 
+          nodeW, nodeH);
+
+        context.translate(x, y);
+        context.fill();
+        context.translate(-x, -y);
     }
-    
-    context.restore();
-  
     
   };
 
@@ -13462,6 +13455,7 @@ var cytoscape;
   // Draw node
   CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
 
+    var r = this;
     var nodeWidth, nodeHeight;
     var style = node._private.style;
     var rs = node._private.rscratch;
@@ -13555,29 +13549,17 @@ var cytoscape;
         context.fill();
       }
 
-      if (url != undefined) {
+      if (url !== undefined) {
         
-        var r = this;
-        var image = this.getCachedImage(url,
-            
-            function() {
-              
-//              console.log(e);
-              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-              r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-              
-              // Replace Image object with Canvas to solve zooming too far
-              // into image graphical errors (Jan 10 2013)
-              r.swapCachedImage(url);
-              
-              r.redraw();
-            }
-        );
-        
-        if (image.complete == false) {
+        // get image, and if not loaded then ask to redraw when later loaded
+        var image = this.getCachedImage(url, function(){
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
           
-        } else {
-          //context.clip
+          r.redraw();
+        });
+        
+        if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
         
@@ -13724,7 +13706,7 @@ var cytoscape;
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var canvas = this.data.canvases[0];
-    var context = canvas.getContext('2d');
+    var context = this.data.contexts[0];
 
     var backingStore = context.backingStorePixelRatio ||
       context.webkitBackingStorePixelRatio ||
@@ -13797,13 +13779,16 @@ var cytoscape;
     var data = this.data;
     var width = container.clientWidth;
     var height = container.clientHeight;
-    
-    var canvas, canvasWidth = width, canvasHeight = height;
     var pixelRatio = this.getPixelRatio();
+    var canvasWidth = width * pixelRatio;
+    var canvasHeight = height * pixelRatio;
+    var canvas;
 
-    // apply pixel ratio
-    canvasWidth *= pixelRatio;
-    canvasHeight *= pixelRatio;
+    if( canvasWidth === this.canvasWidth && canvasHeight === this.canvasHeight ){
+      return; // save cycles if same
+    }
+
+    this.fontCaches = null; // because resizing resets the style
 
     var canvasContainer = data.canvasContainer;
     canvasContainer.style.width = width + 'px';
@@ -13835,6 +13820,15 @@ var cytoscape;
         canvas.style.width = width + 'px';
         canvas.style.height = height + 'px';
       }
+    }
+
+    this.textureMult = 1;
+    if( pixelRatio <= 1 ){
+      canvas = data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
+
+      this.textureMult = 2;
+      canvas.width = canvasWidth * this.textureMult;
+      canvas.height = canvasHeight * this.textureMult;
     }
 
     this.canvasWidth = canvasWidth;
@@ -13989,16 +13983,17 @@ var cytoscape;
 
           bb = r.textureCache.bb = cy.boundingBox();
 
-          var canvas = r.textureCache.texture = r.data.bufferCanvases[0];
+          var canvas = r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 
-          var cxt = canvas.getContext('2d');
+          var cxt = r.data.bufferContexts[ CanvasRenderer.TEXTURE_BUFFER ];
 
           cxt.setTransform(1, 0, 0, 1, 0, 0);
-          cxt.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+          cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
           
           r.redraw({
             forcedContext: cxt,
-            drawOnlyNodeLayer: true
+            drawOnlyNodeLayer: true,
+            forcedPxRatio: pixelRatio * r.textureMult
           });
 
           var vp = r.textureCache.viewport = {
@@ -14017,7 +14012,7 @@ var cytoscape;
         needDraw[CanvasRenderer.DRAG] = false;
         needDraw[CanvasRenderer.NODE] = false;
 
-        var context = data.canvases[CanvasRenderer.NODE].getContext('2d');
+        var context = data.contexts[CanvasRenderer.NODE];
 
         var texture = r.textureCache.texture;
         var z = cy.zoom();
@@ -14044,7 +14039,7 @@ var cytoscape;
         context.clearRect( vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
         context.drawImage( texture, vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
 
-      } else if( !forcedContext ){ // clear the cache since we don't need it
+      } else if( r.textureOnViewport && !forcedContext ){ // clear the cache since we don't need it
         r.textureCache = null;
       }
 
@@ -14131,7 +14126,7 @@ var cytoscape;
       if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         // console.log('redrawing node layer');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.NODE].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.NODE];
 
         setContextTransform( context );
         drawElements(eles.nondrag, context);
@@ -14143,7 +14138,7 @@ var cytoscape;
       
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
         
-        var context = forcedContext || data.canvases[CanvasRenderer.DRAG].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
         
         setContextTransform( context );
         drawElements(eles.drag, context);
@@ -14156,7 +14151,7 @@ var cytoscape;
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) ) {
         // console.log('redrawing selection box');
         
-        var context = forcedContext || data.canvases[CanvasRenderer.SELECT_BOX].getContext('2d');
+        var context = forcedContext || data.contexts[CanvasRenderer.SELECT_BOX];
         
         setContextTransform( context );
 
@@ -14541,10 +14536,11 @@ var cytoscape;
     }
 
     // auto resize
-    r.registerBinding(window, 'resize', function(e) { 
+    r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
+      r.matchCanvasSize(r.data.container);
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.redraw();
-    }, true);
+    }, 100 ) );
 
     // stop right click menu from appearing on cy
     r.registerBinding(r.data.container, 'contextmenu', function(e){
@@ -17290,10 +17286,13 @@ var cytoscape;
       for( var i = 0; i < options.roots.length; i++ ){
         var id = options.roots[i];
         var ele = cy.getElementById( id );
-        roots.push( ele );
+        rootsArray.push( ele );
       }
 
       roots = new $$.Collection( cy, rootsArray );
+    } else if( $$.is.string(options.roots) ){
+      roots = cy.$( options.roots );
+
     } else {
       if( options.directed ){
         roots = nodes.roots();
@@ -17400,27 +17399,28 @@ var cytoscape;
     };
     assignDepthsToEles();
 
+
+    var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
+      var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+      var thisInfo = node._private.scratch.BreadthFirstLayout;
+      var highestDepthOfOther = 0;
+      var highestOther;
+      for( var i = 0; i < edges.length; i++ ){
+        var edge = edges[i];
+        var otherNode = edge.source()[0];
+        var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+
+        if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+          highestDepthOfOther = otherInfo.depth;
+          highestOther = otherNode;
+        }
+      }
+
+      return highestOther;
+    };
+
      // make maximal if so set by adjusting depths
     for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
-
-      var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-        var edges = node.connectedEdges('[target = "' + node.id() + '"]');
-        var thisInfo = node._private.scratch.BreadthFirstLayout;
-        var highestDepthOfOther = 0;
-        var highestOther;
-        for( var i = 0; i < edges.length; i++ ){
-          var edge = edges[i];
-          var otherNode = edge.source()[0];
-          var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
-
-          if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
-            highestDepthOfOther = otherInfo.depth;
-            highestOther = otherNode;
-          }
-        }
-
-        return highestOther;
-      };
 
       var nDepths = depths.length;
       var elesToMove = [];
@@ -17536,8 +17536,9 @@ var cytoscape;
       var info = ele._private.scratch.BreadthFirstLayout;
       var depth = info.depth;
       var index = info.index;
+      var depthSize = depths[depth].length;
 
-      var distanceX = Math.max( width / (depths[depth].length + 1), minDistance );
+      var distanceX = Math.max( width / (depthSize + 1), minDistance );
       var distanceY = Math.max( height / (depths.length + 1), minDistance );
       var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
@@ -17557,7 +17558,7 @@ var cytoscape;
 
       } else {
         return {
-          x: (index + 1) * distanceX,
+          x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
           y: (depth + 1) * distanceY
         };
       }

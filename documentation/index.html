@@ -23,13 +23,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.3</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.4</span></h1>
 			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.3.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.4.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -324,7 +324,7 @@ edge ......... <span class="hljs-operator">a</span> collection <span class="hljs
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive, so you should remove them if you need high performance.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -580,6 +580,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>background-repeat</code></strong> : Whether to repeat the background image; may be <code>no-repeat</code>, <code>repeat-x</code>, <code>repeat-y</code>, or <code>repeat</code>.</li>
 <li><strong><code>background-position-x</code></strong> : The x position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>
 <li><strong><code>background-position-y</code></strong> : The y position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>
+<li><strong><code>background-clip</code></strong> : How background image clipping is handles; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</li>
 </ul>
 <p>Pie chart background:</p>
 <p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o&#39;clock position and working clockwise.</p>
@@ -1129,7 +1130,6 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
   pan: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> },
   panningEnabled: <span class="hljs-literal">true</span>,
   userPanningEnabled: <span class="hljs-literal">true</span>,
-  autolockNodes: <span class="hljs-literal">false</span>,
   autoungrabifyNodes: <span class="hljs-literal">false</span>,
   hideEdgesOnViewport: <span class="hljs-literal">false</span>,
   hideLabelsOnViewport: <span class="hljs-literal">false</span>,
@@ -1150,7 +1150,6 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 <p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.</p>
 <p><strong><code>userPanningEnabled</code></strong> : Whether panning the graph is enabled by user events.</p>
 <p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
-<p><strong><code>autolockNodes</code></strong> : Whether nodes should be locked by default (if <code>true</code>, overrides individual node state).</p>
 <p><strong><code>autoungrabifyNodes</code></strong> : Whether nodes should be ungrabified (not grabbable by user) by default (if <code>true</code>, overrides individual node state).</p>
 <p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
 <p><strong><code>hideLabelsOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>

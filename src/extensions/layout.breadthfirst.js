@@ -161,7 +161,7 @@
         var otherNode = edge.source()[0];
         var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
 
-        if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+        if( thisInfo.depth <= otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
           highestDepthOfOther = otherInfo.depth;
           highestOther = otherNode;
         }

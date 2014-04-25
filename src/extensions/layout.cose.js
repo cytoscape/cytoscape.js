@@ -175,7 +175,9 @@
       indexToGraph : [], 
       layoutEdges  : [],
       edgeSize     : cy.edges().size(),
-      temperature  : options.initialTemp
+      temperature  : options.initialTemp,
+      clientWidth  : cy.container().clientWidth,
+      clientHeight : cy.container().clientHeight
     }; 
     
     // Shortcut
@@ -467,8 +469,8 @@
    */
   var randomizePositions = function(layoutInfo, cy) {
     var container = cy.container();
-    var width     = container.clientWidth;
-    var height    = container.clientHeight;
+    var width     = layoutInfo.clientWidth;
+    var height    = layoutInfo.clientHeight;
 
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
@@ -489,8 +491,8 @@
    */
   var refreshPositions = function(layoutInfo, cy, options) {
     var container = cy.container();
-    var width     = container.clientWidth;
-    var height    = container.clientHeight;
+    var width     = layoutInfo.clientWidth;
+    var height    = layoutInfo.clientHeight;
     
     var s = 'Refreshing positions';
     logDebug(s);
@@ -820,8 +822,8 @@
       // Compute graph center
       if (0 == i) {
       var container = cy.container();    
-      var centerX   = container.clientHeight / 2;
-      var centerY   = container.clientWidth  / 2;    
+      var centerX   = layoutInfo.clientHeight / 2;
+      var centerY   = layoutInfo.clientWidth  / 2;    
       } else {
       // Get Parent node for this graph, and use its position as center
       var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];

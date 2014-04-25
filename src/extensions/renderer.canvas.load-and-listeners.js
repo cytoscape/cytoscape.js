@@ -139,9 +139,15 @@
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
+      r.containerBB = null; // invalidate bb cache
+
       r.matchCanvasSize(r.data.container);
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.redraw();
+    }, 100 ) );
+
+    r.registerBinding(window, 'scroll', $$.util.debounce( function(e) {
+      r.containerBB = null; // invalidate bb cache
     }, 100 ) );
 
     // stop right click menu from appearing on cy
@@ -159,7 +165,7 @@
       r.hoverData.capture = true;
       r.hoverData.which = e.which;
       
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
       var down = r.hoverData.down;
@@ -337,10 +343,10 @@
 
       if (!capture) {
         
-        var containerPageCoords = r.findContainerPageCoords();
+        var containerPageCoords = r.findContainerClientCoords();
         
-        if (e.pageX > containerPageCoords[0] && e.pageX < containerPageCoords[0] + r.data.container.clientWidth
-          && e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
+        if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
           
         } else {
           return;
@@ -348,7 +354,7 @@
       }
 
       var cy = r.data.cy;
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       
       var near = null;
@@ -458,7 +464,7 @@
         }
         
         // Needs reproject due to pan changing viewport
-        pos = r.projectIntoViewport(e.pageX, e.pageY);
+        pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       // Checks primary button down & out of time & mouse not moved much
       } else if (select[4] == 1 && (down == null || down.isEdge())
@@ -566,7 +572,7 @@
 
       var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
     
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
@@ -857,7 +863,7 @@
     
     var wheelHandler = function(e) { 
       var cy = r.data.cy;
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var rpos = [pos[0] * cy.zoom() + cy.pan().x,
                     pos[1] * cy.zoom() + cy.pan().y];
       
@@ -899,7 +905,7 @@
     // Functions to help with handling mouseout/mouseover on the Cytoscape container
           // Handle mouseout on Cytoscape container
     r.registerBinding(r.data.container, 'mouseout', function(e) { 
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       r.data.cy.trigger(new $$.Event(e, {
         type: 'mouseout',
@@ -908,7 +914,7 @@
     }, false);
     
     r.registerBinding(r.data.container, 'mouseover', function(e) { 
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       r.data.cy.trigger(new $$.Event(e, {
         type: 'mouseover',
@@ -920,7 +926,7 @@
     var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
     var center1, modelCenter1; // center point on start pinch to zoom
     var offsetLeft, offsetTop;
-    var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
+    var containerWidth = r.canvasWidth, containerHeight = r.canvasHeight;
     var twoFingersStartInside;
 
     var distance = function(x1, y1, x2, y2){
@@ -942,9 +948,9 @@
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       
       // record starting points for pinch-to-zoom
       if( e.touches[1] ){
@@ -960,15 +966,15 @@
         release(nodes);
         release(edges);
 
-        var offsets = r.findContainerPageCoords();
+        var offsets = r.findContainerClientCoords();
         offsetTop = offsets[1];
         offsetLeft = offsets[0];
 
-        f1x1 = e.touches[0].pageX - offsetLeft;
-        f1y1 = e.touches[0].pageY - offsetTop;
+        f1x1 = e.touches[0].clientX - offsetLeft;
+        f1y1 = e.touches[0].clientY - offsetTop;
         
-        f2x1 = e.touches[1].pageX - offsetLeft;
-        f2y1 = e.touches[1].pageY - offsetTop;
+        f2x1 = e.touches[1].clientX - offsetLeft;
+        f2y1 = e.touches[1].clientY - offsetTop;
 
         twoFingersStartInside = 
              0 <= f1x1 && f1x1 <= containerWidth
@@ -1200,15 +1206,15 @@
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
       
 
       if( capture && r.touchData.cxt ){
-        var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
-        var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
+        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
         var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
         var factor = distance2 / distance1;
 
@@ -1307,8 +1313,8 @@
         // console.log('touchmove ptz');
 
         // (x2, y2) for fingers 1 and 2
-        var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
-        var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
+        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
 
         // console.log( f1x2, f1y2 )
         // console.log( f2x2, f2y2 )
@@ -1380,9 +1386,9 @@
         }
         
         // Re-project
-        if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-        if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-        if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+        if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+        if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+        if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
 
       } else if (e.touches[0]) {
         var start = r.touchData.start;
@@ -1519,7 +1525,7 @@
           r.swipePanning = true;
           
           // Re-project
-          var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY);
+          var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
           now[0] = pos[0]; now[1] = pos[1];
         }
       }
@@ -1560,9 +1566,9 @@
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
 
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       
       if( start ){
         start.unactivate();

@@ -3,65 +3,29 @@
   var CanvasRenderer = $$('renderer', 'canvas');
 
   // Project mouse
-  CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
+  CanvasRenderer.prototype.projectIntoViewport = function(clientX, clientY) {
     
     var n = this.data.container;
       
-    var offsets = this.findContainerPageCoords();
+    var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
     
-//    console.log('calce');
-    
-    // By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-    var x = pageX - offsetLeft; 
-    var y = pageY - offsetTop;
+    var x = clientX - offsetLeft; 
+    var y = clientY - offsetTop;
     
     x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
     return [x, y];
   }
 
-  CanvasRenderer.prototype.findContainerPageCoords = function() {
-    var offsetLeft = 0;
-    var offsetTop = 0;
+  CanvasRenderer.prototype.findContainerClientCoords = function() {
     var container = this.data.container;
-    var n = container;
-        
-    while (n != null) {
-      var style = window.getComputedStyle(n); 
-      if (typeof(n.offsetLeft) === 'number') {
-        var position = style.getPropertyValue('position').toLowerCase();
-        var borderLeft = parseFloat( style.getPropertyValue('border-left-width') );
-        var borderTop = parseFloat( style.getPropertyValue('border-top-width') );
-
-        offsetLeft += n.offsetLeft;
-        offsetTop += n.offsetTop;
-
-        if( position !== 'static' || n === container ){
-          offsetLeft += borderLeft;
-          offsetTop += borderTop;
-        }
-
-        if( position === 'fixed' ){
-          offsetLeft += window.scrollX;
-          offsetTop += window.scrollY;
-          
-          break; // don't want to check any more parents after position:fixed
-        }
-        
-        if (n == document.body || n == document.header) {
-          // offsetLeft -= n.scrollLeft;
-          // offsetTop -= n.scrollTop;
-
-          break;
-        }
-      }
-
-      if( n ){ n = n.offsetParent };
-    }
     
-    // By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.
-    return [offsetLeft, offsetTop];
+    if(!this.containerBB){ console.log('bb miss') }
+
+    var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
+
+    return [bb.left, bb.top];
   }
 
   // Find nearest element

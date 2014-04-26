@@ -324,7 +324,7 @@ edge ......... <span class="hljs-operator">a</span> collection <span class="hljs
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -1501,6 +1501,62 @@ cy.remove( collection );
 
 cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> } ]);
 </code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.batchMove"><span class="fn-name">cy.batchMove()</span>  <a href="#core/graph-manipulation/cy.batchMove"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.batchMove"><p>Effectively moves several nodes and edges at once (in batch).</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.batchMove( <span class="comma">, </span>map )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">map</span>
+													<span class="descr">Element IDs mapped to location.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">location.parent</span>
+															<span class="descr">The new parent ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">location.source</span>
+															<span class="descr">The new source ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">location.target</span>
+															<span class="descr">The new target ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function moves elements in batch, making it a more performant option to <a href="#collection/graph-manipulation/eles.move"><code>eles.move()</code></a> when moving multiple elements to multiple locations.</p>
 
 								
 							</div>		
@@ -3210,6 +3266,90 @@ console.log( cy.nodes()[<span class="hljs-number">0</span>].data(<span class="hl
 <span class="hljs-comment">// ... then some time later put them back</span>
 eles.restore();
 </code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/graph-manipulation/eles.move"><span class="fn-name">eles.move()</span> et al <a href="#collection/graph-manipulation/eles.move"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/graph-manipulation/eles.move"><p>Effectively move edges to different nodes or move nodes to different parent node.  The modified (actually new) elements are returned.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.move( <span class="comma">, </span>location )</div>
+										
+										<div class="descr">Move edges to different nodes.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">location</span>
+													<span class="descr">Where the edges are moved.  You can specify a new source, a new target, or both.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">source</span>
+															<span class="descr">The new source node ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">target</span>
+															<span class="descr">The new target node ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">nodes.move( <span class="comma">, </span>location )</div>
+										
+										<div class="descr">Move nodes to different parent node.</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">location</span>
+													<span class="descr">Where the nodes are moved.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">parent</span>
+															<span class="descr">The new parent node ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>Note that this function does not really move the elements.  That&#39;s not possible in the semantics of a graph.  Instead, this function</p>
+<ul>
+<li>gets JSON copies of the elements,</li>
+<li>removes the original elements,</li>
+<li>modifies the JSON copies as specified, and</li>
+<li>adds new elements from the JSON copies.</li>
+</ul>
+<p>This creates the same effect as though the elements have been moved.</p>
 
 								
 							</div>		
@@ -5137,6 +5277,58 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 													<span class="name">toggle</span>
 													<span class="descr">Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.</span>
 
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/eles.classes"><span class="fn-name">eles.classes()</span>  <a href="#collection/style/eles.classes"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/eles.classes"><p>Add, remove, and toggle classes for several elements all at once.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.classes( <span class="comma">, </span>options )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr">A space-separated list of class names to toggle on the elements.</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">add</span>
+															<span class="descr">An array of class names to add.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">remove</span>
+															<span class="descr">An array of class names to remove.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">toggle</span>
+															<span class="descr">An array of class names to toggle.</span>
+														</li>
+														
+													</ul>
 													
 												</li>
 											
@@ -7426,6 +7618,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span> cy.load() </a></div>
 					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.batchMove"><span class="icon-bookmark"></span> cy.batchMove() </a></div>
+					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark"></span> cy.batchData() </a></div>
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span> cy.collection() </a></div>
@@ -7553,6 +7747,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#collection/graph-manipulation/ele.inside"><span class="icon-bookmark"></span> ele.inside() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark"></span> eles.restore() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.move"><span class="icon-bookmark"></span> eles.move() et al</a></div>
 					
 				
 					<div class="section lvl2">
@@ -7705,6 +7901,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#collection/style/eles.removeClass"><span class="icon-bookmark"></span> eles.removeClass() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/eles.toggleClass"><span class="icon-bookmark"></span> eles.toggleClass() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/eles.classes"><span class="icon-bookmark"></span> eles.classes() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span> ele.hasClass() </a></div>
 					

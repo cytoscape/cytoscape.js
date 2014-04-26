@@ -68,6 +68,25 @@
             },
 
             {
+              "name": "cy.batchMove",
+              "descr": "Effectively moves several nodes and edges at once (in batch).",
+              "formats": [ {
+                "args": [
+                  {
+                    "name": "map",
+                    "descr": "Element IDs mapped to location.",
+                    "fields": [
+                      { "name": "location.parent", "descr": "The new parent ID." },
+                      { "name": "location.source", "descr": "The new source ID." },
+                      { "name": "location.target", "descr": "The new target ID." }
+                    ]
+                  }
+                ]
+              } ],
+              "md": "core/batchMove"
+            },
+
+            {
               "name": "cy.batchData",
               "descr": "Update several data fields for several elements all at once (in batch).",
               "formats": [
@@ -582,6 +601,38 @@
               "name": "eles.restore",
               "descr": "Put removed elements back into the graph.",
               "md": "collection/restore"
+            },
+
+            {
+              "name": "eles.move",
+              "descr": "Effectively move edges to different nodes or move nodes to different parent node.  The modified (actually new) elements are returned.",
+              "formats": [
+                {
+                  "name": "edges.move",
+                  "descr": "Move edges to different nodes.",
+                  "args": [ {
+                    "name": "location",
+                    "descr": "Where the edges are moved.  You can specify a new source, a new target, or both.",
+                    "fields": [
+                      { "name": "source", "descr": "The new source node ID." },
+                      { "name": "target", "descr": "The new target node ID." }
+                    ]
+                  } ]
+                },
+
+                {
+                  "name": "nodes.move",
+                  "descr": "Move nodes to different parent node.",
+                  "args": [ {
+                    "name": "location",
+                    "descr": "Where the nodes are moved.",
+                    "fields": [
+                      { "name": "parent", "descr": "The new parent node ID." }
+                    ]
+                  } ]
+                }
+              ],
+              "md": "collection/move"
             }
           ]
         },

@@ -146,9 +146,25 @@
       r.redraw();
     }, 100 ) );
 
-    r.registerBinding(window, 'scroll', $$.util.debounce( function(e) {
-      r.containerBB = null; // invalidate bb cache
-    }, 100 ) );
+    var invalCtnrBBOnScroll = function(domEle){
+      r.registerBinding(domEle, 'scroll', function(e){
+        r.containerBB = null; // invalidate bb cache
+      } );
+    };
+
+    var bbCtnr = r.data.cy.container();
+
+    for( ;; ){
+      
+      invalCtnrBBOnScroll( bbCtnr );
+
+      if( bbCtnr.parentNode ){
+        bbCtnr = bbCtnr.parentNode;
+      } else {
+        break;
+      }
+      
+    }
 
     // stop right click menu from appearing on cy
     r.registerBinding(r.data.container, 'contextmenu', function(e){

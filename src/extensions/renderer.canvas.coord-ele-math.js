@@ -20,8 +20,6 @@
 
   CanvasRenderer.prototype.findContainerClientCoords = function() {
     var container = this.data.container;
-    
-    if(!this.containerBB){ console.log('bb miss') }
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
 

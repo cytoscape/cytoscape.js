@@ -612,6 +612,56 @@
 
     return this;
   };
+
+  $$.elesfn.move = function( struct ){
+    var cy = this._private.cy;
+
+    if( struct.source !== undefined || struct.target !== undefined ){
+      var srcId = struct.source;
+      var tgtId = struct.target;
+      var srcExists = cy.getElementById(srcId).length > 0;
+      var tgtExists = cy.getElementById(tgtId).length > 0;
+
+      if( srcExists || tgtExists ){
+        var jsons = this.jsons();
+
+        this.remove();
+
+        for( var i = 0; i < jsons.length; i++ ){
+          var json = jsons[i];
+
+          if( json.group === 'edges' ){
+            if( srcExists ){ json.data.source = srcId; }
+            if( tgtExists ){ json.data.target = tgtId; }
+          }
+        }
+
+        return cy.add( jsons );
+      }
+ 
+    } else if( struct.parent !== undefined ){ // move node to new parent
+      var parentId = struct.parent;
+      var parentExists = cy.getElementById( parentId ).length > 0;
+    
+      if( parentExists ){
+        var jsons = this.jsons();
+
+        this.remove();
+
+        for( var i = 0; i < this.length; i++ ){
+          var json = jsons[i];
+
+          if( json.group === 'nodes' ){
+            json.data.parent = parentId;
+          }
+        }
+      }
+
+      return cy.add( jsons );
+    }
+
+    return this; // if nothing done
+  };
   
 })( cytoscape );
 

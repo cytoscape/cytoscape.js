@@ -12,7 +12,8 @@ describe('Collection graph manipulation', function(){
         nodes: [
             { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
             { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
-            { data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" }
+            { data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" },
+            { data: { id: "child", parent: 'n3' } }
         ],
         
         edges: [
@@ -92,6 +93,38 @@ describe('Collection graph manipulation', function(){
       n1.restore();
       expect( n1.inside() ).to.be.true;
       expect( cy.$('#n1') ).to.have.length(1);
+    });
+
+  });
+
+  describe('eles.move()', function(){
+
+    it('should move edge source', function(){
+      cy.$('#n1n2').move({ source: 'n3' });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n3');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n2');
+    });
+
+    it('should move edge target', function(){
+      cy.$('#n1n2').move({ target: 'n3' });
+      
+      expect( cy.$('#n1n2').source().id() ).to.equal('n1');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n3');
+    });
+
+    it('should move edge source and target', function(){
+      cy.$('#n1n2').move({ source: 'n2', target: 'n1' });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n2');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n1');
+    });
+
+    it('should move node parent', function(){
+      cy.$('#child').move({ parent: 'n1' });
+      
+      expect( cy.$('#child').parent().id() ).to.equal('n1');
+      expect( cy.$('#n1').children().id() ).to.equal('child');
     });
 
   });

@@ -233,4 +233,31 @@ describe('Core graph manipulation', function(){
 
   });
 
+  describe('cy.batchMove()', function(){
+
+    it('should move edges', function(){
+      cy.batchMove({
+        'n1n2': { source: 'n2', target: 'n1' },
+        'n2n3': { source: 'n3', target: 'n2' }
+      });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n2');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n1');
+
+      expect( cy.$('#n2n3').source().id() ).to.equal('n3');
+      expect( cy.$('#n2n3').target().id() ).to.equal('n2');
+    });
+
+    it('should move nodes', function(){
+      cy.batchMove({
+        'n2': { parent: 'n1' },
+        'n3': { parent: 'n1' }
+      });
+
+      expect( cy.$('#n2').parent().id() ).to.equal('n1');
+      expect( cy.$('#n3').parent().id() ).to.equal('n1');
+    });
+
+  });
+
 });

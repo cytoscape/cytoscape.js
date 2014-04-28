@@ -20,7 +20,7 @@
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     removeData: $$.define.removeData({
@@ -34,7 +34,7 @@
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     batchData: $$.define.batchData({
@@ -47,7 +47,7 @@
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     scratch: $$.define.data({

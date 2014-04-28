@@ -61,7 +61,7 @@
     }
 
     // in case we used the `concentric` in style
-    nodes.updateMappers();
+    nodes.updateStyle();
 
     // calculate max size now based on potentially updated mappers
     for( var i = 0; i < nodes.length; i++ ){

@@ -388,7 +388,8 @@
 
             {
               "name": "cy.resize",
-              "descr": "Force the renderer to resize the viewport based on its container size."
+              "descr": "Force the renderer to resize the viewport based on its container size.",
+              "md": "core/resize"
             }
           ]
 

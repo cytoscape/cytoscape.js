@@ -8,6 +8,8 @@ To use Cytoscape.js in your HTML document:
 
 **Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.**
 
+**Also note that you should call [`cy.resize()`](#core/viewport-manipulation/cy.resize) if your code resizes the viewport.**
+
 To use Cytoscape.js in a CommonJS environment like Node.js:
 
 ```

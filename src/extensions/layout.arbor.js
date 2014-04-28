@@ -6,8 +6,8 @@
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
     fit: true, // reset viewport to fit default simulationBounds
-    padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
-    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
+    padding: 20, // around elements bounds
+    simulationBounds: 'auto', // [x1, y1, x2, y2]; [0, 0, width, height] by default
     ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
 
     // forces used by arbor (use arbor default on undefined)
@@ -45,11 +45,24 @@
     var container = cy.container();
     var width = container.clientWidth;
     var height = container.clientHeight;
-    var simulationBounds = options.simulationBounds;
+
+    var sampleNodeArea(){
+      var i = Math.round( (nodes.length - 1) * Math.random() );
+      node = nodes[i];
+    };
+
+    if( options.simulationBounds === 'auto' ){
+      var nodeAvgArea = 
+      var autoSize = Math.sqrt( nodes.length * nodeAvgArea );
+      options.simulationBounds = [0, 0, autoSize, autoSize];
+
+    }
 
     if( options.simulationBounds ){
-      width = simulationBounds[2] -  simulationBounds[0]; // x2 - x1
-      height = simulationBounds[3] - simulationBounds[1]; // y2 - y1
+      var simBB = options.simulationBounds;
+      width = simBB[2] -  simBB[0]; // x2 - x1
+      height = simBB[3] - simBB[1]; // y2 - y1
+
     } else {
       options.simulationBounds = [
         0,
@@ -58,6 +71,8 @@
         height
       ];
     }
+
+    console.log(options.simulationBounds);
 
     // make nice x & y fields
     var simBB = options.simulationBounds;
@@ -138,7 +153,8 @@
 
         var timeToDraw = (+new Date - lastDraw) >= 16;
         if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
-          new $$.Collection(cy, movedNodes).rtrigger('position');
+          cy.fit( options.padding );
+
           lastDraw = +new Date;
         }
 
@@ -153,7 +169,7 @@
     };
     sys.renderer = sysRenderer;
     sys.screenSize( width, height );
-    sys.screenPadding( options.padding[0], options.padding[1], options.padding[2], options.padding[3] );
+    sys.screenPadding( options.padding, options.padding, options.padding, options.padding );
     sys.screenStep( options.stepSize );
 
     function calculateValueForElement(element, value){

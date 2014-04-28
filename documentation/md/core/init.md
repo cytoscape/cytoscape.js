@@ -6,7 +6,15 @@ To use Cytoscape.js in your HTML document:
 <script src="cytoscape.js"></script>
 ```
 
-**Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.**
+<span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
+
+<span class="important-indicator"></span> Also note that you should call [`cy.resize()`](#core/viewport-manipulation/cy.resize) when your code resizes the viewport.
+
+To install Cytoscape.js via npm:
+
+```
+npm install cytoscape
+```
 
 To use Cytoscape.js in a CommonJS environment like Node.js:
 
@@ -82,7 +90,7 @@ All of your code that uses the core object API, i.e. through the `cy` object in 
 
 Because the `ready` event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in `options.ready`.
 
-**NB: You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can't modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.**
+<span class="important-indicator"></span> You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can't modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.
 
 ```js
 // in foo.js
@@ -149,8 +157,6 @@ $('#cy').cytoscape({
 
 **`panningEnabled`** : Whether panning the graph is enabled, both by user events and programmatically.
 
-**`userPanningEnabled`** : Whether panning the graph is enabled by user events.
-
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
 **`autoungrabifyNodes`** : Whether nodes should be ungrabified (not grabbable by user) by default (if `true`, overrides individual node state).
@@ -165,7 +171,7 @@ $('#cy').cytoscape({
 
 * **`renderer.name`** : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
 
-**`style`** : The stylesheet used to style the document.
+**`style`** : The [stylesheet](#style) used to style the document.
 
 For example:
 
@@ -192,7 +198,7 @@ $('#cy').cytoscape({
 
 **`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
 
-**`elements`** : An array of elements specified as plain objects.
+**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).
 
 For example:
 

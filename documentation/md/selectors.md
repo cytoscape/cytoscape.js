@@ -40,16 +40,16 @@ Matches element with the matching ID (e.g. `#foo` is the same as `[id = 'foo']`)
 ## Data
 
 **`[name]`**  
-Matches elements if they have the specified data attribute defined aka not `undefined` (e.g. `[foo]` for an attribute named "foo").  Here, `null` is considered a defined value.
+Matches elements if they have the specified data attribute defined, i.e. not `undefined` (e.g. `[foo]` for an attribute named "foo").  Here, `null` is considered a defined value.
+
+**`[^name]`**  
+Matches elements if the specified data attribute is not defined, i.e. `undefined` (e.g `[^foo]`).  Here, `null` is considered a defined value.
 
 **`[?name]`**  
 Matches elements if the specified data attribute is a [truthy](http://javascriptweblog.wordpress.com/2011/02/07/truth-equality-and-javascript/) value (e.g. `[?foo]`).
 
 **`[!name]`**  
 Matches elements if the specified data attribute is a [falsey](http://javascriptweblog.wordpress.com/2011/02/07/truth-equality-and-javascript/) value (e.g. `[!foo]`).
-
-**`[^name]`**  
-Matches elements if the specified data attribute is not defined aka `undefined` (e.g `[^foo]`).  Here, `null` is considered a defined value.
 
 **`[name = value]`**  
 Matches elements if their data attribute matches a specified value (e.g. `[foo = 'bar']` or `[num = 2]`).
@@ -122,8 +122,8 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 **Visibility**
 
 * **`:visible`** : Matches elements that are visible (i.e. `display: element` and `visibility: visible`).
-* **`:hidden`** : Matches elements that are hidden.
-* **`:transparent`** : Matches elements that are transparent (i.e. `opacity: 0`).
+* **`:hidden`** : Matches elements that are hidden (i.e. `display: none` or `visibility: hidden`).
+* **`:transparent`** : Matches elements that are transparent (i.e. `opacity: 0` for self or parents).
 
 
 **User interaction:**

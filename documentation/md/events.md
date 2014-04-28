@@ -77,7 +77,7 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
 These events are custom to Cytoscape.js, and they occur on the core.
 
  * `layoutstart` : when a layout starts running
- * `layoutready` : when a layout has set positions for all the nodes
+ * `layoutready` : when a layout has set initial positions for all the nodes (but perhaps not final positions)
  * `layoutstop` : when a layout has finished running completely or otherwise stopped running
  * `load` : when a new graph is loaded via initialisation or `cy.load()`
  * `ready` : when a new instance of Cytoscape.js is ready to be interacted with

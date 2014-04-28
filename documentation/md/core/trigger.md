@@ -1,8 +1,8 @@
 ## Examples
 
 ```js
-cy.bind('tap', function(evt, foo, bar){
-  console.log('tap');
+cy.bind('tap', function(evt, f, b){
+  console.log('tap', f, b);
 });
 
 cy.trigger('tap', ['foo', 'bar']);

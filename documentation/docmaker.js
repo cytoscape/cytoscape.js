@@ -135,13 +135,20 @@ function compileConfig( config ){
         }
 
         var formatsHaveDiffNames = false;
-        if( fn.formats && !fn.formatsSameFn ){
+        if( fn.formats ){
           var formats = fn.formats;
 
           for( var k = 0; k < formats.length; k++ ){
             var format = formats[k];
 
             format.name = format.name || fn.name; // copy name to format if not specified
+            format.descr = marked( format.descr || '' );
+
+            if( format.args ){
+              for( var m = 0; m < format.args.length; m++ ){
+                format.args[m].descr = marked( format.args[m].descr || '' );
+              }
+            }
 
             if( format.name !== fn.name ){
               formatsHaveDiffNames = true;

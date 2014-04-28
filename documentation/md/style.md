@@ -6,7 +6,7 @@ It is important to note that in your stylesheet, [specificity rules](http://www.
 
 ## Format
 
-The style specified at [initialisation](#core/initialisation) can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string format being more useful if you want to pull down the style from the server.  If you pull the style from the server, you must initialise Cytoscape.js after the style has been loaded.
+The style specified at [initialisation](#core/initialisation) can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string formats being more useful if you want to pull down the style from the server.  If you pull the style from the server, you must initialise Cytoscape.js after the style has been loaded.
 
 
 
@@ -29,7 +29,7 @@ At initialisation:
 $('#cy').cytoscape({
   // ...
 
-  style: aStyleString // probably previously loaded via ajax
+  style: 'node { background-color: green; }' // probably previously loaded via ajax rather than hardcoded
 
   // , ...
 });
@@ -121,7 +121,7 @@ Transition animations:
 
  * **`transition-property`** : A comma separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
- * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25`).
+ * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25s`).
 
 
 ### Node properties
@@ -142,7 +142,7 @@ Body:
  * **`border-opacity`** : The opacity of the node's border.
  * **`border-width`** : The size of the node's border.
  * **`height`** : The height of the node's body.
- * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits with the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
+ * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
 
 Background image:
 
@@ -151,7 +151,7 @@ Background image:
  * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`.
  * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
  * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
- * **`background-clip`** : How background image clipping is handles; may be `node` for clipped to node shape or `none` for no clipping.
+ * **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
 
 
 Pie chart background:
@@ -179,7 +179,7 @@ Compound nodes:
 These properties apply only to edges:
 
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
- * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the inter-control-point distance.
+ * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : Overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
  * **`line-color`** : The colour of the edge's line.

@@ -14,9 +14,9 @@ The library was developed at the [Donnelly Centre](http://thedonnellycentre.utor
 
 ## Cytoscape.js & Cytoscape
 
-Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/), Cytoscape.js is not Cytoscape.  Cytoscape.js is a JavaScript library for _programmers_.  It is not an app for end-users, nor can you just copy-paste some code to "automagically" make you a webapp.
+Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/), Cytoscape.js is not exactly the same as Cytoscape desktop.  Cytoscape.js is a JavaScript library for _programmers_.  It is not an app for end-users, and developers need to write code around Cytoscape.js to build graphcentric webapps.
 
-Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java_Script_.
+Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java_Script_.  However, Cytoscape.js supports its own ecosystem of UI plugins and API extensions.
 
 We are trying to make the two projects intercompatible as possible, and we do share philosophies with Cytoscape:  Graph style and data should be separate, the library should provide core functionality with extensions adding functionality on top of the library, and so on.
 

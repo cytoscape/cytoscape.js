@@ -7,7 +7,6 @@ cy.on('tap', 'node', { foo: 'bar' }, function(evt){
 
   var node = evt.cyTarget;
   console.log( 'tapped ' + node.id() );
-  debugger;
 });
 ```
 

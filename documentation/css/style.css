@@ -1,7 +1,12 @@
+* {
+	outline: 0;
+}
+
 body {
 	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
-	-webkit-text-size-adjust: 100%
+	-webkit-text-size-adjust: 100%;
+	background: #fff;
 }
 
 body, html {
@@ -99,6 +104,23 @@ button:active {
 	margin-top: 0.25em;
 }
 
+.important-indicator {
+	font-family: FontAwesome;
+	font-weight: normal;
+	font-style: normal;
+	text-decoration: inherit;
+	-webkit-font-smoothing: antialiased;
+	*margin-right: .3em;
+}
+
+.important-indicator:before {
+	text-decoration: inherit;
+	display: inline-block;
+	speak: none;
+	content: "\f069";
+	color: #BD1A1D;
+}
+
 #navigation {
 	position: fixed;
 	left: 0;
@@ -137,6 +159,10 @@ button:active {
 	display: none;
 	width: 1em;
 	text-align: center;
+}
+
+#navigation .bookmark-icon {
+	opacity: 0.333;
 }
 
 #navigation .expander .collapsed-icon {
@@ -321,6 +347,16 @@ hr {
 	border: 0;
 }
 
+th {
+	font-weight: bold;
+	text-align: left;
+}
+
+th, td {
+	padding: 0.25em 0.5em;
+	border: 1px solid #ddd;
+}
+
 a {
 	color: #4183C4;
 	text-decoration: none;
@@ -371,7 +407,7 @@ pre {
 }
 
 pre {
-	margin: 1.25em 0;
+	margin: 0.25em 0;
 	overflow-x: auto;
 	/* -webkit-overflow-scrolling: touch; */
 }
@@ -392,11 +428,14 @@ pre code {
 }
 
 .function {
-	padding: 1em 0;
+	margin: 1em 0;
+	padding: 0.25em 0.5em;
+	border: 1px solid #e0e0e0;
+	border-radius: 0.25em;
 }
 
 .function + .function {
-	border-top: 1px dashed #888;
+	
 }
 
 .function .name {
@@ -409,7 +448,6 @@ pre code {
 
 .function > .formats,
 .function > .details {
-	padding-left: 0.25em;
 	margin: 0.25em 0;
 }
 
@@ -418,6 +456,14 @@ pre code {
 	border: 1px solid #ddd;
 	background: #fafafa;
 	border-radius: 0.25em;
+}
+
+.function .formats p {
+	display: inline;
+}
+
+.function .formats .args .name {
+	font-weight: bold;
 }
 
 .function .comma:first-child {
@@ -429,8 +475,8 @@ pre code {
 	font-size: 0.8em;
 }
 
-.function .format {
-	margin-bottom: 0.5em;
+.function .format + .format {
+	margin-top: 0.5em;
 }
 
 .function .format > .descr {

@@ -7,7 +7,7 @@ This function is useful for building up collections.
 Keep a collection of nodes that have been clicked:
 ```js
 var collection = cy.collection();
-cy.nodes().live("click", function(){
+cy.nodes().on("click", function(){
   collection = collection.add(this);
 });
 ```

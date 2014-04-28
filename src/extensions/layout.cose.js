@@ -6,6 +6,7 @@
 
 ;(function($$) { 'use strict';
 
+  var raf = $$.util.requestAnimationFrame;
   var DEBUG;
 
   /**
@@ -111,15 +112,10 @@
 
     updatePositions(layoutInfo, cy, options);
 
-    // Main loop
-    for (var i = 0; i < options.numIter; i++) {
+    var i = 0;
+    raf(function onFrame(){
       // Do one step in the phisical simulation
       step(layoutInfo, cy, options, i);
-
-      // If required, update positions
-      if (0 < options.refresh && 0 == (i % options.refresh)) {
-        refreshPositions(layoutInfo, cy, options);
-      }
       
       // Update temperature
       layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
@@ -127,25 +123,35 @@
 
       if (layoutInfo.temperature < options.minTemp) {
         logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-        break;
+        return;
       }
-    }
-    
-    refreshPositions(layoutInfo, cy, options);
 
-    // Fit the graph if necessary
-    if (true == options.fit) {
+      refreshPositions(layoutInfo, cy, options);
       cy.fit( options.padding );
-    }
-    
-    // Get end time
-    var endTime = new Date();
 
-    console.info('Layout took ' + (endTime - startTime) + ' ms');
+      i++;
 
-    // Layout has finished
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+      if( i >= options.numIter ){
+        // Fit the graph if necessary
+        if (true == options.fit) {
+          cy.fit( options.padding );
+        }
+        
+        // Get end time
+        var endTime = new Date();
+
+        console.info('Layout took ' + (endTime - startTime) + ' ms');
+
+        // Layout has finished
+        cy.one('layoutstop', options.stop);
+        cy.trigger('layoutstop');
+
+        return;
+      }
+
+      raf( onFrame );
+    });
+
   };
 
 

@@ -66,8 +66,8 @@ $(function(){
           'width': 'mapData(weight, 0, 100, 1, 4)',
           // 'target-arrow-shape': 'data(tgtShape)',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack'
-          //'opacity': 0.5
+          'curve-style': 'haystack',
+          'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')

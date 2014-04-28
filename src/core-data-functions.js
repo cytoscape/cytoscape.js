@@ -29,7 +29,7 @@
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     scratch: $$.define.data({

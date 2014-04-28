@@ -256,7 +256,7 @@
 
             {
               "name": "cy.autoungrabifyNodes",
-              "descr": "Get or set whether nodes are automatically ungrabifies (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+              "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
               "formats": [
                 {
                   "descr": "Get whether autoungrabbifying is enabled."
@@ -1191,18 +1191,12 @@
 
             {
               "name": "ele.effectiveOpacity",
-              "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.",
-              "formats": [
-                { "descr": "Get the effective opacity of the element, which takes into consideration parent node opacity." }
-              ]
+              "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity."
             },
 
             {
               "name": "ele.transparent",
-              "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.",
-              "formats": [
-                { "name": "ele.transparent", "descr": "Get whether the element is transparent." }
-              ]
+              "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
             },
 
             {
@@ -1403,7 +1397,7 @@
               "descr": "Get whether the collection is empty, meaning it has no elements.",
               "formats": [
                 { "name": "eles.empty", "descr": "Get whether the collection is empty." },
-                { "name": "eles.nonempty", "descr": "Get whether the collection is non-empty." }
+                { "name": "eles.nonempty", "descr": "Get whether the collection is nonempty." }
               ]
             },
 
@@ -1436,7 +1430,8 @@
                     { "name": "index", "descr": "The index of the element to get." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/eq"
             },
 
             {
@@ -1654,7 +1649,7 @@
             },
 
             {
-              "name": "edges.source",
+              "name": "edge.source",
               "descr": "Get source node of this edge.",
               "formats": [
                 {
@@ -1678,7 +1673,7 @@
             },
 
             {
-              "name": "edges.target",
+              "name": "edge.target",
               "descr": "Get target node of this edge.",
               "formats": [
                 {
@@ -1743,7 +1738,7 @@
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                       { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
                     ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default false).", "optional": true }
+                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -1761,7 +1756,7 @@
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                       { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
                     ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default false).", "optional": true }
+                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -1776,7 +1771,7 @@
                   "args": [
                     { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
                     { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default false).", "optional": true }
+                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],

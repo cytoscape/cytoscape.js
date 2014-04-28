@@ -24,7 +24,7 @@
         settingTriggersEvent: false,
         triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
-        updateMappers: false,
+        updateStyle: false,
         onSet: function( self ){},
         canSet: function( self ){ return true }
       };
@@ -60,7 +60,7 @@
               }
 
               // update mappers if asked
-              if( p.updateMappers ){ self.updateMappers(); }
+              if( p.updateStyle ){ self.updateStyle(); }
 
               // call onSet callback
               p.onSet( self );
@@ -90,7 +90,7 @@
           }
           
           // update mappers if asked
-          if( p.updateMappers ){ self.updateMappers(); }
+          if( p.updateStyle ){ self.updateStyle(); }
 
           // call onSet callback
           p.onSet( self );
@@ -123,7 +123,7 @@
         event: 'data',
         triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
-        updateMappers: false
+        updateStyle: false
       };
       var p = params = $$.util.extend({}, defaults, params);
 
@@ -158,7 +158,7 @@
 
         // update mappers if asked
         var coln = new $$.Collection(cy, eles);
-        if( p.updateMappers ){ coln.updateMappers(); }
+        if( p.updateStyle ){ coln.updateStyle(); }
 
         coln[ p.triggerFnName ]( p.event );
 

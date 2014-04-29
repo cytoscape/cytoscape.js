@@ -23,7 +23,7 @@
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
 
-    return [bb.left, bb.top];
+    return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   }
 
   // Find nearest element

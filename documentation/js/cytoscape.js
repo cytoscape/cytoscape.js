@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.4.
+ * This file is part of cytoscape.js 2.2.5.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2990,7 +2990,7 @@ var cytoscape;
         settingTriggersEvent: false,
         triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
-        updateMappers: false,
+        updateStyle: false,
         onSet: function( self ){},
         canSet: function( self ){ return true }
       };
@@ -3026,7 +3026,7 @@ var cytoscape;
               }
 
               // update mappers if asked
-              if( p.updateMappers ){ self.updateMappers(); }
+              if( p.updateStyle ){ self.updateStyle(); }
 
               // call onSet callback
               p.onSet( self );
@@ -3056,7 +3056,7 @@ var cytoscape;
           }
           
           // update mappers if asked
-          if( p.updateMappers ){ self.updateMappers(); }
+          if( p.updateStyle ){ self.updateStyle(); }
 
           // call onSet callback
           p.onSet( self );
@@ -3089,7 +3089,7 @@ var cytoscape;
         event: 'data',
         triggerFnName: 'trigger',
         immutableKeys: {}, // key => true if immutable
-        updateMappers: false
+        updateStyle: false
       };
       var p = params = $$.util.extend({}, defaults, params);
 
@@ -3124,7 +3124,7 @@ var cytoscape;
 
         // update mappers if asked
         var coln = new $$.Collection(cy, eles);
-        if( p.updateMappers ){ coln.updateMappers(); }
+        if( p.updateStyle ){ coln.updateStyle(); }
 
         coln[ p.triggerFnName ]( p.event );
 
@@ -6794,7 +6794,7 @@ var cytoscape;
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     scratch: $$.define.data({
@@ -8809,7 +8809,7 @@ var cytoscape;
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     removeData: $$.define.removeData({
@@ -8823,7 +8823,7 @@ var cytoscape;
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     batchData: $$.define.batchData({
@@ -8836,7 +8836,7 @@ var cytoscape;
         'target': true,
         'parent': true
       },
-      updateMappers: true
+      updateStyle: true
     }),
 
     scratch: $$.define.data({
@@ -11293,65 +11293,27 @@ var cytoscape;
   var CanvasRenderer = $$('renderer', 'canvas');
 
   // Project mouse
-  CanvasRenderer.prototype.projectIntoViewport = function(pageX, pageY) {
+  CanvasRenderer.prototype.projectIntoViewport = function(clientX, clientY) {
     
     var n = this.data.container;
       
-    var offsets = this.findContainerPageCoords();
+    var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
     
-//    console.log('calce');
-    
-    // By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div. So, do subtraction to find relative position.
-    var x = pageX - offsetLeft; 
-    var y = pageY - offsetTop;
+    var x = clientX - offsetLeft; 
+    var y = clientY - offsetTop;
     
     x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
     return [x, y];
   }
 
-  CanvasRenderer.prototype.findContainerPageCoords = function() {
-    var offsetLeft = 0;
-    var offsetTop = 0;
+  CanvasRenderer.prototype.findContainerClientCoords = function() {
     var container = this.data.container;
-    var n = container;
-        
-    while (n != null) {
-      var style = window.getComputedStyle(n); 
-      if (typeof(n.offsetLeft) === 'number') {
-        var position = style.getPropertyValue('position').toLowerCase();
-        var borderLeft = parseFloat( style.getPropertyValue('border-left-width') );
-        var borderTop = parseFloat( style.getPropertyValue('border-top-width') );
 
-        offsetLeft += n.offsetLeft;
-        offsetTop += n.offsetTop;
+    var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
 
-        if( position !== 'static' || n === container ){
-          offsetLeft += borderLeft;
-          offsetTop += borderTop;
-        }
-
-        if( position === 'fixed' ){
-          offsetLeft += window.scrollX;
-          offsetTop += window.scrollY;
-          
-          break; // don't want to check any more parents after position:fixed
-        }
-        
-        if (n == document.body || n == document.header) {
-          // offsetLeft -= n.scrollLeft;
-          // offsetTop -= n.scrollTop;
-
-          break;
-        }
-      }
-
-      if( n ){ n = n.offsetParent };
-    }
-    
-    // By here, offsetLeft and offsetTop represent the "pageX/pageY" of the top-left corner of the div.
-    return [offsetLeft, offsetTop];
+    return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   }
 
   // Find nearest element
@@ -14537,10 +14499,32 @@ var cytoscape;
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
+      r.containerBB = null; // invalidate bb cache
+
       r.matchCanvasSize(r.data.container);
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.redraw();
     }, 100 ) );
+
+    var invalCtnrBBOnScroll = function(domEle){
+      r.registerBinding(domEle, 'scroll', function(e){
+        r.containerBB = null; // invalidate bb cache
+      } );
+    };
+
+    var bbCtnr = r.data.cy.container();
+
+    for( ;; ){
+      
+      invalCtnrBBOnScroll( bbCtnr );
+
+      if( bbCtnr.parentNode ){
+        bbCtnr = bbCtnr.parentNode;
+      } else {
+        break;
+      }
+      
+    }
 
     // stop right click menu from appearing on cy
     r.registerBinding(r.data.container, 'contextmenu', function(e){
@@ -14557,7 +14541,7 @@ var cytoscape;
       r.hoverData.capture = true;
       r.hoverData.which = e.which;
       
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
       var down = r.hoverData.down;
@@ -14735,10 +14719,10 @@ var cytoscape;
 
       if (!capture) {
         
-        var containerPageCoords = r.findContainerPageCoords();
+        var containerPageCoords = r.findContainerClientCoords();
         
-        if (e.pageX > containerPageCoords[0] && e.pageX < containerPageCoords[0] + r.data.container.clientWidth
-          && e.pageY > containerPageCoords[1] && e.pageY < containerPageCoords[1] + r.data.container.clientHeight) {
+        if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
           
         } else {
           return;
@@ -14746,7 +14730,7 @@ var cytoscape;
       }
 
       var cy = r.data.cy;
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       
       var near = null;
@@ -14856,7 +14840,7 @@ var cytoscape;
         }
         
         // Needs reproject due to pan changing viewport
-        pos = r.projectIntoViewport(e.pageX, e.pageY);
+        pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       // Checks primary button down & out of time & mouse not moved much
       } else if (select[4] == 1 && (down == null || down.isEdge())
@@ -14964,7 +14948,7 @@ var cytoscape;
 
       var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
     
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
+      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
@@ -15217,10 +15201,11 @@ var cytoscape;
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
-          for (var i=0;i<draggedElements.length;i++) {
+          for (var i=0; i<draggedElements.length; i++) {
             
             if (draggedElements[i]._private.group == 'nodes') { 
               draggedElements[i]._private.rscratch.inDragLayer = false;
+              draggedElements[i]._private.grabbed = false;
               
               var sEdges = draggedElements[i]._private.edges;
               for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
@@ -15255,7 +15240,7 @@ var cytoscape;
     
     var wheelHandler = function(e) { 
       var cy = r.data.cy;
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var rpos = [pos[0] * cy.zoom() + cy.pan().x,
                     pos[1] * cy.zoom() + cy.pan().y];
       
@@ -15297,7 +15282,7 @@ var cytoscape;
     // Functions to help with handling mouseout/mouseover on the Cytoscape container
           // Handle mouseout on Cytoscape container
     r.registerBinding(r.data.container, 'mouseout', function(e) { 
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       r.data.cy.trigger(new $$.Event(e, {
         type: 'mouseout',
@@ -15306,7 +15291,7 @@ var cytoscape;
     }, false);
     
     r.registerBinding(r.data.container, 'mouseover', function(e) { 
-      var pos = r.projectIntoViewport(e.pageX, e.pageY);
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       r.data.cy.trigger(new $$.Event(e, {
         type: 'mouseover',
@@ -15318,7 +15303,7 @@ var cytoscape;
     var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
     var center1, modelCenter1; // center point on start pinch to zoom
     var offsetLeft, offsetTop;
-    var containerWidth = r.data.container.clientWidth, containerHeight = r.data.container.clientHeight;
+    var containerWidth, containerHeight;
     var twoFingersStartInside;
 
     var distance = function(x1, y1, x2, y2){
@@ -15340,9 +15325,9 @@ var cytoscape;
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       
       // record starting points for pinch-to-zoom
       if( e.touches[1] ){
@@ -15358,15 +15343,17 @@ var cytoscape;
         release(nodes);
         release(edges);
 
-        var offsets = r.findContainerPageCoords();
-        offsetTop = offsets[1];
+        var offsets = r.findContainerClientCoords();
         offsetLeft = offsets[0];
+        offsetTop = offsets[1];
+        containerWidth = offsets[2];
+        containerHeight = offsets[3];
 
-        f1x1 = e.touches[0].pageX - offsetLeft;
-        f1y1 = e.touches[0].pageY - offsetTop;
+        f1x1 = e.touches[0].clientX - offsetLeft;
+        f1y1 = e.touches[0].clientY - offsetTop;
         
-        f2x1 = e.touches[1].pageX - offsetLeft;
-        f2y1 = e.touches[1].pageY - offsetTop;
+        f2x1 = e.touches[1].clientX - offsetLeft;
+        f2y1 = e.touches[1].clientY - offsetTop;
 
         twoFingersStartInside = 
              0 <= f1x1 && f1x1 <= containerWidth
@@ -15598,15 +15585,15 @@ var cytoscape;
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
       
 
       if( capture && r.touchData.cxt ){
-        var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
-        var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
+        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
         var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
         var factor = distance2 / distance1;
 
@@ -15705,8 +15692,8 @@ var cytoscape;
         // console.log('touchmove ptz');
 
         // (x2, y2) for fingers 1 and 2
-        var f1x2 = e.touches[0].pageX - offsetLeft, f1y2 = e.touches[0].pageY - offsetTop;
-        var f2x2 = e.touches[1].pageX - offsetLeft, f2y2 = e.touches[1].pageY - offsetTop;
+        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
 
         // console.log( f1x2, f1y2 )
         // console.log( f2x2, f2y2 )
@@ -15761,6 +15748,27 @@ var cytoscape;
           // console.log(pan2);
           // console.log(zoom2);
 
+          // remove dragged eles
+          if( r.touchData.start ){
+            var draggedEles = r.dragData.touchDragEles;
+
+            if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
+              draggedEles[i]._private.grabbed = false;
+              draggedEles[i]._private.rscratch.inDragLayer = false;
+            } }
+
+            r.touchData.start._private.active = false;
+            r.touchData.start._private.grabbed = false;
+            r.touchData.start._private.rscratch.inDragLayer = false;
+
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+            r.touchData.start
+              .trigger('free')
+              .trigger('unactivate')
+            ;
+          }
+
           cy._private.zoom = zoom2;
           cy._private.pan = pan2;
           cy
@@ -15778,9 +15786,9 @@ var cytoscape;
         }
         
         // Re-project
-        if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-        if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-        if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+        if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+        if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+        if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
 
       } else if (e.touches[0]) {
         var start = r.touchData.start;
@@ -15917,7 +15925,7 @@ var cytoscape;
           r.swipePanning = true;
           
           // Re-project
-          var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY);
+          var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
           now[0] = pos[0]; now[1] = pos[1];
         }
       }
@@ -15958,9 +15966,9 @@ var cytoscape;
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
 
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].pageX, e.touches[0].pageY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].pageX, e.touches[1].pageY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].pageX, e.touches[2].pageY); now[4] = pos[0]; now[5] = pos[1]; }
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       
       if( start ){
         start.unactivate();
@@ -16089,6 +16097,7 @@ var cytoscape;
 
               var selectedNode = selectedNodes[k];
               selectedNode._private.rscratch.inDragLayer = false;
+              selectedNode._private.grabbed = false;
 
               var sEdges = selectedNode._private.edges;
               for (var j=0; j<sEdges.length; j++) {
@@ -17754,7 +17763,7 @@ var cytoscape;
     }
 
     // in case we used the `concentric` in style
-    nodes.updateMappers();
+    nodes.updateStyle();
 
     // calculate max size now based on potentially updated mappers
     for( var i = 0; i < nodes.length; i++ ){
@@ -18025,7 +18034,9 @@ var cytoscape;
       indexToGraph : [], 
       layoutEdges  : [],
       edgeSize     : cy.edges().size(),
-      temperature  : options.initialTemp
+      temperature  : options.initialTemp,
+      clientWidth  : cy.container().clientWidth,
+      clientHeight : cy.container().clientHeight
     }; 
     
     // Shortcut
@@ -18317,8 +18328,8 @@ var cytoscape;
    */
   var randomizePositions = function(layoutInfo, cy) {
     var container = cy.container();
-    var width     = container.clientWidth;
-    var height    = container.clientHeight;
+    var width     = layoutInfo.clientWidth;
+    var height    = layoutInfo.clientHeight;
 
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
@@ -18339,8 +18350,8 @@ var cytoscape;
    */
   var refreshPositions = function(layoutInfo, cy, options) {
     var container = cy.container();
-    var width     = container.clientWidth;
-    var height    = container.clientHeight;
+    var width     = layoutInfo.clientWidth;
+    var height    = layoutInfo.clientHeight;
     
     var s = 'Refreshing positions';
     logDebug(s);
@@ -18670,8 +18681,8 @@ var cytoscape;
       // Compute graph center
       if (0 == i) {
       var container = cy.container();    
-      var centerX   = container.clientHeight / 2;
-      var centerY   = container.clientWidth  / 2;    
+      var centerX   = layoutInfo.clientHeight / 2;
+      var centerY   = layoutInfo.clientWidth  / 2;    
       } else {
       // Get Parent node for this graph, and use its position as center
       var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];

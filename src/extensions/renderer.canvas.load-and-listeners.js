@@ -841,10 +841,11 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
-          for (var i=0;i<draggedElements.length;i++) {
+          for (var i=0; i<draggedElements.length; i++) {
             
             if (draggedElements[i]._private.group == 'nodes') { 
               draggedElements[i]._private.rscratch.inDragLayer = false;
+              draggedElements[i]._private.grabbed = false;
               
               var sEdges = draggedElements[i]._private.edges;
               for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
@@ -1713,6 +1714,7 @@
 
               var selectedNode = selectedNodes[k];
               selectedNode._private.rscratch.inDragLayer = false;
+              selectedNode._private.grabbed = false;
 
               var sEdges = selectedNode._private.edges;
               for (var j=0; j<sEdges.length; j++) {

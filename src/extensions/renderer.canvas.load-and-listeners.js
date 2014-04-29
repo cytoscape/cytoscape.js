@@ -943,7 +943,7 @@
     var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
     var center1, modelCenter1; // center point on start pinch to zoom
     var offsetLeft, offsetTop;
-    var containerWidth = r.canvasWidth, containerHeight = r.canvasHeight;
+    var containerWidth, containerHeight;
     var twoFingersStartInside;
 
     var distance = function(x1, y1, x2, y2){
@@ -984,8 +984,10 @@
         release(edges);
 
         var offsets = r.findContainerClientCoords();
-        offsetTop = offsets[1];
         offsetLeft = offsets[0];
+        offsetTop = offsets[1];
+        containerWidth = offsets[2];
+        containerHeight = offsets[3];
 
         f1x1 = e.touches[0].clientX - offsetLeft;
         f1y1 = e.touches[0].clientY - offsetTop;
@@ -1385,6 +1387,27 @@
 
           // console.log(pan2);
           // console.log(zoom2);
+
+          // remove dragged eles
+          if( r.touchData.start ){
+            var draggedEles = r.dragData.touchDragEles;
+
+            if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
+              draggedEles[i]._private.grabbed = false;
+              draggedEles[i]._private.rscratch.inDragLayer = false;
+            } }
+
+            r.touchData.start._private.active = false;
+            r.touchData.start._private.grabbed = false;
+            r.touchData.start._private.rscratch.inDragLayer = false;
+
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+            r.touchData.start
+              .trigger('free')
+              .trigger('unactivate')
+            ;
+          }
 
           cy._private.zoom = zoom2;
           cy._private.pan = pan2;

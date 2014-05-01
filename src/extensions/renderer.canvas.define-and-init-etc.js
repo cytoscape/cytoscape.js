@@ -109,31 +109,43 @@
   };
 
   CanvasRenderer.prototype.notify = function(params) {
-    switch( params.type ){
+    var types;
 
-    case 'destroy':
-      this.destroy();
-      return;
+    if( $$.is.array( params.type ) ){
+      types = params.type;
 
-    case 'add':
-    case 'remove':
-    case 'load':
-      this.updateNodesCache();
-      this.updateEdgesCache();
-      break;
-
-    case 'viewport':
-      this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-      break;
-
-    case 'style':
-      this.updateCachedZSortedEles();
-      break;
+    } else {
+      types = [ params.type ];
     }
 
-    if( params.type === 'load' || params.type === 'resize' ){
-      this.matchCanvasSize(this.data.container);
-    }
+    for( var i = 0; i < types.length; i++ ){
+      var type = types[i];
+
+      switch( type ){
+        case 'destroy':
+          this.destroy();
+          return;
+
+        case 'add':
+        case 'remove':
+        case 'load':
+          this.updateNodesCache();
+          this.updateEdgesCache();
+          break;
+
+        case 'viewport':
+          this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          break;
+
+        case 'style':
+          this.updateCachedZSortedEles();
+          break;
+      }
+
+      if( type === 'load' || type === 'resize' ){
+        this.matchCanvasSize(this.data.container);
+      }
+    } // for
     
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
 

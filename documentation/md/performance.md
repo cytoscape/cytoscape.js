@@ -13,6 +13,7 @@ You may notice that performance starts to degrade on graphs with large numbers o
 You can get much better performance out of Cytoscape.js by tuning your options, in descending order of significance:
 
 * **Haystacks make fast edges** : Set your edges `curve-style` to `haystack` in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than `bezier` edges.
+* **Batch element modifications** : Use [`cy.batch()`](#core/graph-manipulation/cy.batch) to modify many elements at once.
 * **Hide edges during interactivity** : Set `hideEdgesOnViewport` to `true` in your [initialisation options](#core/initialisation).  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.
 * **Hide labels during interactivity** : Set `hideLabelsOnViewport` to `true` in your [initialisation options](#core/initialisation).  This works similarly to hiding edges on viewport operations.
 * **Use textured zoom & pan** : Set `textureOnViewport` to `true` in your [initialisation options](#core/initialisation).  Rather than rerendering the entire scene, this makes a texture cache of the viewport at the start of pan and zoom operations, and manipulates that instead.  Makes panning and zooming much smoother for large graphs.

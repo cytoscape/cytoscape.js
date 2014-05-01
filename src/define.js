@@ -117,6 +117,7 @@
       }; // function
     }, // data
 
+<<<<<<< HEAD
     batchData: function( params ){
       var defaults = {
         field: 'data',
@@ -166,6 +167,8 @@
       };
     },
 
+=======
+>>>>>>> cy.batch()
     // remove data field
     removeData: function( params ){
       var defaults = { 

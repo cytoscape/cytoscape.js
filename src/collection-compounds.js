@@ -36,6 +36,21 @@
       return new $$.Collection( this.cy(), parents ).filter( selector );
     },
 
+    commonAncestors: function( selector ){
+      var ancestors;
+
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var parents = ele.parents();
+        
+        ancestors = ancestors || parents;
+
+        ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
+      }
+
+      return ancestors.filter( selector );
+    },
+
     children: function( selector ){
       var children = [];
 

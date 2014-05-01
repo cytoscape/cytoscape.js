@@ -61,6 +61,14 @@
       return this[i];
     },
 
+    first: function(){
+      return this[0];
+    },
+
+    last: function(){
+      return this[ this.length - 1 ];
+    },
+
     empty: function(){
       return this.length === 0;
     },

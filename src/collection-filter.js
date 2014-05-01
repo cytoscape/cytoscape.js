@@ -69,7 +69,7 @@
     intersect: function( other ){
       var cy = this._private.cy;
       
-      // if a selector is specified, then filter by it
+      // if a selector is specified, then filter by it instead
       if( $$.is.string(other) ){
         var selector = other;
         return this.filter( selector );
@@ -81,8 +81,10 @@
       var col1Smaller = this.length < other.length;
       var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
       var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
+      var col = col1Smaller ? col1 : col2;
       
-      for( var id in ids1 ){
+      for( var i = 0; i < col.length; i++ ){
+        var id = col[i]._private.data.id;
         var ele = ids2[ id ];
 
         if( ele ){

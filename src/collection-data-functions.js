@@ -37,19 +37,6 @@
       updateStyle: true
     }),
 
-    batchData: $$.define.batchData({
-      field: 'data',
-      event: 'data',
-      triggerFnName: 'trigger',
-      immutableKeys: {
-        'id': true,
-        'source': true,
-        'target': true,
-        'parent': true
-      },
-      updateStyle: true
-    }),
-
     scratch: $$.define.data({
       field: 'scratch',
       allowBinding: false,
@@ -101,12 +88,6 @@
       canSet: function( ele ){
         return !ele.locked();
       }
-    }),
-
-    batchPosition: $$.define.batchData({
-      field: 'position',
-      event: 'position',
-      triggerFnName: 'rtrigger'
     }),
 
     // position but no notification to renderer

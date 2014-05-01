@@ -5,13 +5,16 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all"/>
+		<meta name="robots" content="all" />
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/all.min.css">
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
 		
 	</head>
@@ -20,13 +23,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.5</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.4</span></h1>
 			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.5.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.4.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -350,7 +353,7 @@
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -1548,6 +1551,63 @@ cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span cl
 						</div>
 					
 						<div class="function">
+							<div class="name" id="core/graph-manipulation/cy.batchMove"><span class="fn-name">cy.batchMove()</span>  <a href="#core/graph-manipulation/cy.batchMove"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="core/graph-manipulation/cy.batchMove"><p>Effectively moves several nodes and edges at once (in batch).</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.batchMove( <span class="comma">, </span>map )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">map</span>
+													<span class="descr"><p>Element IDs mapped to location.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">location.parent</span>
+															<span class="descr">The new parent ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">location.source</span>
+															<span class="descr">The new source ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">location.target</span>
+															<span class="descr">The new target ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function moves elements in batch, making it a more performant option to <a href="#collection/graph-manipulation/eles.move"><code>eles.move()</code></a> when moving multiple elements to multiple locations.</p>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.batchData"><span class="fn-name">cy.batchData()</span>  <a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="core/graph-manipulation/cy.batchData"><p>Update several data fields for several elements all at once (in batch).</p>
 </div>
@@ -2641,7 +2701,7 @@ cy.zoom({
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>This function forces the renderer to draw a new frame.  It is useful for very specific edgecases, such as in certain UI plugins, but it should not be needed for most developers.</p>
+<p>This function is useful where manually causing the graph to visually update is required.  For example, if your code resizes the graph&#39;s dimensions (i.e. by changing the size of the HTML DOM element that holds the graph), you will want to call <code>cy.forceRender()</code> to have the graph resize and redraw itself.</p>
 
 								
 							</div>		
@@ -2655,11 +2715,6 @@ cy.zoom({
 							
 
 							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>If your code resizes the graph&#39;s dimensions (i.e. by changing the size of the HTML DOM element that holds the graph), you will want to call <code>cy.resize()</code> to have the graph resize and redraw itself.</p>
-<p>Cytoscape.js can not automatically monitor the size of the viewport, as querying the DOM for those dimensions can be expensive.  Although <code>cy.resize()</code> is automatically called for you on the <code>window</code>&#39;s <code>resize</code> event, there is no <code>resize</code> event for arbitrary DOM elements.</p>
-
 								
 							</div>		
 						</div>
@@ -3336,6 +3391,94 @@ console.log( cy.nodes()[<span class="hljs-number">0</span>].data(<span class="hl
 <span class="hljs-comment">// ... then some time later put them back</span>
 eles.restore();
 </code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/graph-manipulation/eles.move"><span class="fn-name">eles.move()</span> et al <a href="#collection/graph-manipulation/eles.move"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/graph-manipulation/eles.move"><p>Effectively move edges to different nodes or move nodes to different parent node.  The modified (actually new) elements are returned.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">edges.move( <span class="comma">, </span>location )</div>
+										
+										<div class="descr"><p>Move edges to different nodes.</p>
+</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">location</span>
+													<span class="descr"><p>Where the edges are moved.  You can specify a new source, a new target, or both.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">source</span>
+															<span class="descr">The new source node ID.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">target</span>
+															<span class="descr">The new target node ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">nodes.move( <span class="comma">, </span>location )</div>
+										
+										<div class="descr"><p>Move nodes to different parent node.</p>
+</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">location</span>
+													<span class="descr"><p>Where the nodes are moved.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">parent</span>
+															<span class="descr">The new parent node ID.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>Note that this function does not really move the elements.  That&#39;s not possible in the semantics of a graph.  Instead, this function</p>
+<ul>
+<li>gets JSON copies of the elements,</li>
+<li>removes the original elements,</li>
+<li>modifies the JSON copies as specified, and</li>
+<li>adds new elements from the JSON copies.</li>
+</ul>
+<p>This creates the same effect as though the elements have been moved.</p>
 
 								
 							</div>		
@@ -5355,6 +5498,59 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/style/eles.classes"><span class="fn-name">eles.classes()</span>  <a href="#collection/style/eles.classes"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/style/eles.classes"><p>Add, remove, and toggle classes for several elements all at once.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.classes( <span class="comma">, </span>options )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													<span class="descr"><p>A space-separated list of class names to toggle on the elements.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+														<li>&ndash;
+															<span class="name">add</span>
+															<span class="descr">An array of class names to add.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">remove</span>
+															<span class="descr">An array of class names to remove.</span>
+														</li>
+														
+														<li>&ndash;
+															<span class="name">toggle</span>
+															<span class="descr">An array of class names to toggle.</span>
+														</li>
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/style/ele.hasClass"><span class="fn-name">ele.hasClass()</span>  <a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/style/ele.hasClass"><p>Get whether an element has a particular class.</p>
 </div>
@@ -5909,7 +6105,7 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/iteration/eles.eq"><span class="fn-name">eles.eq()</span>  <a href="#collection/iteration/eles.eq"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/iteration/eles.eq"><span class="fn-name">eles.eq()</span> et al <a href="#collection/iteration/eles.eq"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/iteration/eles.eq"><p>Get an element at a particular index in the collection.</p>
 </div>
 
@@ -5930,6 +6126,28 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 
 													
 												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.first()</div>
+										
+										<div class="descr"><p>Get the first element in the collection.</p>
+</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.last()</div>
+										
+										<div class="descr"><p>Get the last element in the collection.</p>
+</div>
+										<ul class="args">
 											
 										</ul>
 									</div>
@@ -6243,6 +6461,40 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 												<li>
 													<span class="name">selector</span>
 													<span class="descr"><p>The selector to match against.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/building--filtering/eles.sort"><span class="fn-name">eles.sort()</span>  <a href="#collection/building--filtering/eles.sort"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/building--filtering/eles.sort"><p>Get a new collection containing the elements sorted by the specified comparison function.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.sort( <span class="comma">, </span>function(ele1, ele2) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(ele1, ele2)</span>
+													<span class="descr"><p>The sorting comparison function that returns a negative number for <code>ele1 &lt; ele2</code>, 0 for <code>ele1 === ele2</code>, or a positive number for <code>ele1 &gt; ele2</code>.</p>
 </span>
 
 													
@@ -7166,6 +7418,44 @@ path.select();
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/compound-nodes/nodes.commonAncestors"><span class="fn-name">nodes.commonAncestors()</span>  <a href="#collection/compound-nodes/nodes.commonAncestors"><span class="icon-bookmark"></span></a></div>
+							<div class="descr" id="collection/compound-nodes/nodes.commonAncestors"><p>Get all ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">nodes.commonAncestors(  [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">selector</span>
+													<span class="descr"><p>A selector used to filter the resultant collection.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>You can get the closest common ancestor via <code>nodes.commonAncestor().first()</code> and the farthest via <code>nodes.commonAncestor().last()</code>, because the common ancestors are sorted in order of closeness.</p>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/compound-nodes/nodes.children"><span class="fn-name">nodes.children()</span>  <a href="#collection/compound-nodes/nodes.children"><span class="icon-bookmark"></span></a></div>
 							<div class="descr" id="collection/compound-nodes/nodes.children"><p>Get all child (direct descendant) nodes of each node in the collection.</p>
 </div>
@@ -7708,6 +7998,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark bookmark-icon"></span> cy.load() </a></div>
 					
+						<div class="section lvl3"><a href="#core/graph-manipulation/cy.batchMove"><span class="icon-bookmark bookmark-icon"></span> cy.batchMove() </a></div>
+					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.batchData"><span class="icon-bookmark bookmark-icon"></span> cy.batchData() </a></div>
 					
 						<div class="section lvl3"><a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark bookmark-icon"></span> cy.collection() </a></div>
@@ -7835,6 +8127,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#collection/graph-manipulation/ele.inside"><span class="icon-bookmark bookmark-icon"></span> ele.inside() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark bookmark-icon"></span> eles.restore() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.move"><span class="icon-bookmark bookmark-icon"></span> eles.move() et al</a></div>
 					
 				
 					<div class="section lvl2">
@@ -7988,6 +8282,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 					
 						<div class="section lvl3"><a href="#collection/style/eles.toggleClass"><span class="icon-bookmark bookmark-icon"></span> eles.toggleClass() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/style/eles.classes"><span class="icon-bookmark bookmark-icon"></span> eles.classes() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/style/ele.hasClass"><span class="icon-bookmark bookmark-icon"></span> ele.hasClass() </a></div>
 					
 				
@@ -8046,7 +8342,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 					
 						<div class="section lvl3"><a href="#collection/iteration/eles.each"><span class="icon-bookmark bookmark-icon"></span> eles.each() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/iteration/eles.eq"><span class="icon-bookmark bookmark-icon"></span> eles.eq() </a></div>
+						<div class="section lvl3"><a href="#collection/iteration/eles.eq"><span class="icon-bookmark bookmark-icon"></span> eles.eq() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/iteration/eles.slice"><span class="icon-bookmark bookmark-icon"></span> eles.slice() </a></div>
 					
@@ -8067,6 +8363,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark bookmark-icon"></span> eles.intersect() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/building--filtering/eles.filter"><span class="icon-bookmark bookmark-icon"></span> eles.filter() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/building--filtering/eles.sort"><span class="icon-bookmark bookmark-icon"></span> eles.sort() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -8135,6 +8433,8 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.parent"><span class="icon-bookmark bookmark-icon"></span> nodes.parent() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.parents"><span class="icon-bookmark bookmark-icon"></span> nodes.parents() et al</a></div>
+					
+						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.commonAncestors"><span class="icon-bookmark bookmark-icon"></span> nodes.commonAncestors() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/compound-nodes/nodes.children"><span class="icon-bookmark bookmark-icon"></span> nodes.children() </a></div>
 					
@@ -8209,7 +8509,11 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/all.min.js"></script>
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

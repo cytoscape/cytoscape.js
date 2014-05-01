@@ -5,6 +5,21 @@
     // fully updates (recalculates) the style for the elements
     updateStyle: function( notifyRenderer ){
       var cy = this._private.cy;
+
+      if( cy._private.batchingStyle ){
+        var bEles = cy._private.batchStyleEles;
+
+        for( var i = 0; i < this.length; i++ ){
+          var ele = this[i];
+
+          if( !bEles.ids[ ele._private.id ] ){
+            bEles.push( ele );
+          }
+        }
+
+        return this; // chaining and exit early when batching
+      }
+
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 

@@ -19,25 +19,6 @@
       triggerEvent: true
     }),
 
-    batchData: $$.define.batchData({
-      field: 'data',
-      event: 'data',
-      triggerFnName: 'trigger',
-      immutableKeys: {
-        'id': true,
-        'source': true,
-        'target': true,
-        'parent': true
-      },
-      updateStyle: true
-    }),
-
-    batchPosition: $$.define.batchData({
-      field: 'position',
-      event: 'position',
-      triggerFnName: 'rtrigger'
-    }),
-
     scratch: $$.define.data({
       field: 'scratch',
       allowBinding: false,

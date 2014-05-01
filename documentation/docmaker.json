@@ -68,36 +68,6 @@
             },
 
             {
-              "name": "cy.batchMove",
-              "descr": "Effectively moves several nodes and edges at once (in batch).",
-              "formats": [ {
-                "args": [
-                  {
-                    "name": "map",
-                    "descr": "Element IDs mapped to location.",
-                    "fields": [
-                      { "name": "location.parent", "descr": "The new parent ID." },
-                      { "name": "location.source", "descr": "The new source ID." },
-                      { "name": "location.target", "descr": "The new target ID." }
-                    ]
-                  }
-                ]
-              } ],
-              "md": "core/batchMove"
-            },
-
-            {
-              "name": "cy.batchData",
-              "descr": "Update several data fields for several elements all at once (in batch).",
-              "formats": [
-                { "args": [
-                  { "name": "map", "descr": "Element IDs mapped to data to set." }
-                ] }
-              ],
-              "md": "core/batchData"
-            },
-
-            {
               "name": "cy.collection",
               "descr": "Return a new, empty collection.",
               "md": "core/collection"
@@ -163,6 +133,19 @@
                 }
               ],
               "md": "core/elements"
+            },
+
+            {
+              "name": "cy.batch",
+              "descr": "Allow for manipulation of elements without triggering multiple style calculations or multiple redraws.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function()", "descr": "A callback within which you can make batch updates to elements." }
+                  ]
+                }
+              ],
+              "md": "core/batch"
             }
           ]
         },
@@ -872,7 +855,7 @@
                 {
                   "args": [
                     { 
-                      "name": "fn(i, ele)", 
+                      "name": "function(i, ele)", 
                       "descr": "A callback function that returns the position to set for each element.",
                       "fields": [
                         { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." },
@@ -1296,7 +1279,6 @@
                   "args": [
                     { 
                       "name": "options", 
-                      "descr": "A space-separated list of class names to toggle on the elements.",
                       "fields": [
                         { "name": "add", "descr": "An array of class names to add." },
                         { "name": "remove", "descr": "An array of class names to remove." },

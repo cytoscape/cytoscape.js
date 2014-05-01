@@ -127,56 +127,56 @@
       }
 
       return this;
-    },
-
-    batchMove: function( id2struct ){
-      var cy = this;
-      var eles = this._private.elements;
-      
-      // get eles to move as collection
-      var bEles = [];
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        var id = ele._private.data.id;
-
-        if( id2struct[ id ] ){
-          bEles.push( ele );
-        }
-      }
-      eles = new $$.Collection(cy, bEles);
-
-      // get jsons and remove
-      var jsons = eles.jsons();
-      eles.remove();
-
-      // modify jsons as per structs
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        var json = jsons[i];
-        var id = ele._private.data.id;
-        var ms = id2struct[ id ];
-        var isNode = ele._private.group === 'nodes';
-        var isEdge = !isNode;
-
-        if( ms ){
-          if( isEdge ){
-            if( ms.source && cy.getElementById(ms.source).length > 0 ){
-              json.data.source = ms.source;
-            }
-            
-            if( ms.target && cy.getElementById(ms.target).length > 0 ){
-              json.data.target = ms.target;
-            }
-
-          } else if( isNode && ms.parent ){
-            json.data.parent = ms.parent;
-          }
-        }
-      }
-
-      // add modified eles back in
-      return cy.add( jsons );
     }
+
+    // batchMove: function( id2struct ){
+    //   var cy = this;
+    //   var eles = this._private.elements;
+      
+    //   // get eles to move as collection
+    //   var bEles = [];
+    //   for( var i = 0; i < eles.length; i++ ){
+    //     var ele = eles[i];
+    //     var id = ele._private.data.id;
+
+    //     if( id2struct[ id ] ){
+    //       bEles.push( ele );
+    //     }
+    //   }
+    //   eles = new $$.Collection(cy, bEles);
+
+    //   // get jsons and remove
+    //   var jsons = eles.jsons();
+    //   eles.remove();
+
+    //   // modify jsons as per structs
+    //   for( var i = 0; i < eles.length; i++ ){
+    //     var ele = eles[i];
+    //     var json = jsons[i];
+    //     var id = ele._private.data.id;
+    //     var ms = id2struct[ id ];
+    //     var isNode = ele._private.group === 'nodes';
+    //     var isEdge = !isNode;
+
+    //     if( ms ){
+    //       if( isEdge ){
+    //         if( ms.source && cy.getElementById(ms.source).length > 0 ){
+    //           json.data.source = ms.source;
+    //         }
+            
+    //         if( ms.target && cy.getElementById(ms.target).length > 0 ){
+    //           json.data.target = ms.target;
+    //         }
+
+    //       } else if( isNode && ms.parent ){
+    //         json.data.parent = ms.parent;
+    //       }
+    //     }
+    //   }
+
+    //   // add modified eles back in
+    //   return cy.add( jsons );
+    // }
   });
   
 })( cytoscape, typeof window === 'undefined' ? null : window );

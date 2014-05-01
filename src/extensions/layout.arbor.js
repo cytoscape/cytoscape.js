@@ -46,13 +46,13 @@
     var width = container.clientWidth;
     var height = container.clientHeight;
 
-    var sampleNodeArea(){
-      var i = Math.round( (nodes.length - 1) * Math.random() );
-      node = nodes[i];
-    };
+    // var sampleNodeArea(){
+    //   var i = Math.round( (nodes.length - 1) * Math.random() );
+    //   node = nodes[i];
+    // };
 
     if( options.simulationBounds === 'auto' ){
-      var nodeAvgArea = 
+      var nodeAvgArea = 100; // TODO
       var autoSize = Math.sqrt( nodes.length * nodeAvgArea );
       options.simulationBounds = [0, 0, autoSize, autoSize];
 

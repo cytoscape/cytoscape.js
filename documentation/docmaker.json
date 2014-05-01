@@ -727,6 +727,11 @@
             {
               "name": "edge.isLoop",
               "descr": "Get whether the edge is a loop (i.e. source same as target)."
+            },
+
+            {
+              "name": "edge.isSimple",
+              "descr": "Get whether the edge is simple (i.e. source different than target)."
             }
 
           ]

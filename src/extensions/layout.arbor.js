@@ -191,7 +191,6 @@
     }
     
     var grabHandler = function(e){
-      grabbed = this;
       var pos = sys.fromScreen( this.position() );
       var p = arbor.Point(pos.x, pos.y);
       this.scratch().arbor.p = p;
@@ -200,13 +199,13 @@
       case 'grab':
         this.scratch().arbor.fixed = true;
         break;
-      case 'dragstop':
+      case 'free':
         this.scratch().arbor.fixed = false;
         this.scratch().arbor.tempMass = 1000
         break;
       }
     };
-    nodes.bind('grab drag dragstop', grabHandler);
+    nodes.bind('grab drag free', grabHandler);
           
     nodes.each(function(i, node){
       if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
@@ -295,9 +294,11 @@
     };
     
     sys.start();
-    setTimeout(function(){
-      sys.stop();
-    }, options.maxSimulationTime);
+    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 ){
+      setTimeout(function(){
+        sys.stop();
+      }, options.maxSimulationTime);
+    }
     
   };
 

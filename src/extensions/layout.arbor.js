@@ -201,7 +201,7 @@
         break;
       case 'free':
         this.scratch().arbor.fixed = false;
-        this.scratch().arbor.tempMass = 1000
+        this.scratch().arbor.tempMass = 1000;
         break;
       }
     };
@@ -281,7 +281,7 @@
         }
 
         // unbind handlers
-        nodes.unbind('grab drag dragstop', grabHandler);
+        nodes.unbind('grab drag free', grabHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){

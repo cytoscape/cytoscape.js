@@ -201,7 +201,7 @@
         break;
       case 'free':
         this.scratch().arbor.fixed = false;
-        this.scratch().arbor.tempMass = 1000;
+        //this.scratch().arbor.tempMass = 1000;
         break;
       }
     };

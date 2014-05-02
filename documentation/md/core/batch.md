@@ -20,5 +20,5 @@ Thus, this function is useful for making many changes to elements at once.  When
 
 This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback, 
 
-* you can not reliably read element style or dimensions (it may have changed, or computed values may be outofdate),
+* you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),
 * you probably do not want to use `eles.css()`, `eles.show()`, et cetera because they force a style bypass rather than a recalculation.

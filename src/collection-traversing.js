@@ -11,7 +11,9 @@
           continue;
         }
 
-        var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"][source != "' + ele.id() + '"]').length > 0;
+        var hasEdgesPointingIn = ele.connectedEdges(function(){
+          this.data('target') === ele.id() && this.data('source') !== ele.id()
+        }).length > 0;
 
         if( !hasEdgesPointingIn ){
           roots.push( ele );

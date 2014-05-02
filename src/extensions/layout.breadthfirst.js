@@ -49,7 +49,9 @@
         roots = nodes.roots();
       } else {
         var maxDegree = nodes.maxDegree( false );
-        roots = nodes.filter('[[degree = ' + maxDegree + ']]');
+        roots = nodes.filter(function(){
+          return this.degree() === maxDegree;
+        });
       }
     }
 
@@ -152,7 +154,9 @@
 
 
     var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-      var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+      var edges = node.connectedEdges(function(){
+        return this.data('target') === node.id()
+      });
       var thisInfo = node._private.scratch.BreadthFirstLayout;
       var highestDepthOfOther = 0;
       var highestOther;

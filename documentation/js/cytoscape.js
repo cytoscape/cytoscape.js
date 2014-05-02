@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.5.
+ * This file is part of cytoscape.js 2.2.6.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -3627,8 +3627,7 @@ var cytoscape;
 
       // tokens in the query language
       var tokens = {
-        metaChar: '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
-        variable: '(?:[\\w-]|(?:\\\\"+ metaChar +"))+', // a variable name
+        metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
         comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
         boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
         string: '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'", // string literals (used in data selectors) -- doublequotes | singlequotes
@@ -3639,6 +3638,7 @@ var cytoscape;
         child: '\\s+>\\s+',
         subject: '\\$'
       };
+      tokens.variable = '(?:[\\w-]|(?:\\\\'+ tokens.metaChar +'))+'; // a variable name
       tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
       tokens.className = tokens.variable; // a class name (follows variable conventions)
       tokens.id = tokens.variable; // an element id (follows variable conventions)
@@ -8131,10 +8131,10 @@ var cytoscape;
           break;
         }
 
-        var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+        var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
         for( var i = 0; i < vwEdges.length; i++ ){
           var e = vwEdges[i];
-          var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+          var w = e.connectedNodes(function(){ return this.id() !== v.id() }).intersect( nodes );
 
           if( w.length !== 0 && !V[ w.id() ] ){
             w = w[0];
@@ -8203,11 +8203,11 @@ var cytoscape;
             break;
           }
 
-          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+          var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
           
           for( var i = 0; i < vwEdges.length; i++ ){
             var e = vwEdges[i];
-            var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+            var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
 
             if( w.length !== 0 && !discovered[ w.id() ] ){
               w = w[0];
@@ -8306,7 +8306,7 @@ var cytoscape;
       var prev = {};
       var knownDist = {};
 
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().filter(function(){ return !this.isLoop(); });
       var nodes = this.nodes();
       var Q = [];
 
@@ -10165,7 +10165,9 @@ var cytoscape;
           continue;
         }
 
-        var hasEdgesPointingIn = ele.connectedEdges('[target = "' + ele.id() + '"][source != "' + ele.id() + '"]').length > 0;
+        var hasEdgesPointingIn = ele.connectedEdges(function(){
+          this.data('target') === ele.id() && this.data('source') !== ele.id()
+        }).length > 0;
 
         if( !hasEdgesPointingIn ){
           roots.push( ele );
@@ -17135,7 +17137,6 @@ var cytoscape;
     }
     
     var grabHandler = function(e){
-      grabbed = this;
       var pos = sys.fromScreen( this.position() );
       var p = arbor.Point(pos.x, pos.y);
       this.scratch().arbor.p = p;
@@ -17144,13 +17145,13 @@ var cytoscape;
       case 'grab':
         this.scratch().arbor.fixed = true;
         break;
-      case 'dragstop':
+      case 'free':
         this.scratch().arbor.fixed = false;
-        this.scratch().arbor.tempMass = 1000
+        //this.scratch().arbor.tempMass = 1000;
         break;
       }
     };
-    nodes.bind('grab drag dragstop', grabHandler);
+    nodes.bind('grab drag free', grabHandler);
           
     nodes.each(function(i, node){
       if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
@@ -17226,7 +17227,7 @@ var cytoscape;
         }
 
         // unbind handlers
-        nodes.unbind('grab drag dragstop', grabHandler);
+        nodes.unbind('grab drag free', grabHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
@@ -17239,9 +17240,11 @@ var cytoscape;
     };
     
     sys.start();
-    setTimeout(function(){
-      sys.stop();
-    }, options.maxSimulationTime);
+    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
+      setTimeout(function(){
+        sys.stop();
+      }, options.maxSimulationTime);
+    }
     
   };
 
@@ -17307,7 +17310,9 @@ var cytoscape;
         roots = nodes.roots();
       } else {
         var maxDegree = nodes.maxDegree( false );
-        roots = nodes.filter('[[degree = ' + maxDegree + ']]');
+        roots = nodes.filter(function(){
+          return this.degree() === maxDegree;
+        });
       }
     }
 
@@ -17410,7 +17415,9 @@ var cytoscape;
 
 
     var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-      var edges = node.connectedEdges('[target = "' + node.id() + '"]');
+      var edges = node.connectedEdges(function(){
+        return this.data('target') === node.id()
+      });
       var thisInfo = node._private.scratch.BreadthFirstLayout;
       var highestDepthOfOther = 0;
       var highestOther;
@@ -17419,7 +17426,7 @@ var cytoscape;
         var otherNode = edge.source()[0];
         var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
 
-        if( thisInfo.depth < otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
+        if( thisInfo.depth <= otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
           highestDepthOfOther = otherInfo.depth;
           highestOther = otherNode;
         }

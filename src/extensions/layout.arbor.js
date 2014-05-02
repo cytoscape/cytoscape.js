@@ -310,7 +310,7 @@
     };
     
     sys.start();
-    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 ){
+    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
       setTimeout(function(){
         sys.stop();
       }, options.maxSimulationTime);

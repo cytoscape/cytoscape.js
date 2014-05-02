@@ -13,15 +13,21 @@ Selectors can be joined together (effectively creating a logical OR) with commas
 
 ```js
 // get node j and the edges coming out from it
-cy.elements("node#j, edge[source = 'j']");
+cy.elements('node#j, edge[source = "j"]');
 ```
 
 It is important to note that strings need to be enclosed by quotation marks:
 
 ```js
-//cy.filter("node[name = Jerry]"); // this doesn't work
-cy.filter("node[name = 'Jerry']"); // but this does
+//cy.filter('node[name = Jerry]'); // this doesn't work
+cy.filter('node[name = "Jerry"]'); // but this does
 ``` 
+
+Note that metacharacters need to be escaped:
+
+```js
+cy.filter('#some\\$funky\\@id');
+```
 
 
 

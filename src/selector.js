@@ -86,8 +86,7 @@
 
       // tokens in the query language
       var tokens = {
-        metaChar: '[\\!\\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
-        variable: '(?:[\\w-]|(?:\\\\"+ metaChar +"))+', // a variable name
+        metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
         comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
         boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
         string: '"(?:\\\\"|[^"])+"' + '|' + "'(?:\\\\'|[^'])+'", // string literals (used in data selectors) -- doublequotes | singlequotes
@@ -98,6 +97,7 @@
         child: '\\s+>\\s+',
         subject: '\\$'
       };
+      tokens.variable = '(?:[\\w-]|(?:\\\\'+ tokens.metaChar +'))+'; // a variable name
       tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
       tokens.className = tokens.variable; // a class name (follows variable conventions)
       tokens.id = tokens.variable; // an element id (follows variable conventions)

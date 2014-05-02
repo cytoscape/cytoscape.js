@@ -45,10 +45,10 @@
           break;
         }
 
-        var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+        var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
         for( var i = 0; i < vwEdges.length; i++ ){
           var e = vwEdges[i];
-          var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+          var w = e.connectedNodes(function(){ return this.id() !== v.id() }).intersect( nodes );
 
           if( w.length !== 0 && !V[ w.id() ] ){
             w = w[0];
@@ -117,11 +117,11 @@
             break;
           }
 
-          var vwEdges = v.connectedEdges(directed ? '[source = "' + v.id() + '"]' : undefined).intersect( edges );
+          var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
           
           for( var i = 0; i < vwEdges.length; i++ ){
             var e = vwEdges[i];
-            var w = e.connectedNodes('[id != "' + v.id() + '"]').intersect( nodes );
+            var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
 
             if( w.length !== 0 && !discovered[ w.id() ] ){
               w = w[0];
@@ -220,7 +220,7 @@
       var prev = {};
       var knownDist = {};
 
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().filter(function(){ return !this.isLoop(); });
       var nodes = this.nodes();
       var Q = [];
 

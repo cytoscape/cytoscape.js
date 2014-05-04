@@ -43,7 +43,7 @@
     removeScratch: $$.define.removeData({
       field: 'scratch',
       triggerEvent: false
-    }),
+    })
   });
   
 })( cytoscape );

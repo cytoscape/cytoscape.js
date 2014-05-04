@@ -5,7 +5,7 @@
     one: $$.define.on({ unbindSelfOnTrigger: true }),
     once: $$.define.on({ unbindAllBindersOnTrigger: true }),
     off: $$.define.off(), // .off( events [, selector] [, handler] )
-    trigger: $$.define.trigger(), // .trigger( events [, extraParams] )
+    trigger: $$.define.trigger() // .trigger( events [, extraParams] )
   });
 
   // aliases for those folks who like old stuff:

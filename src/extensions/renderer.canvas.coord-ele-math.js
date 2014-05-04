@@ -903,7 +903,7 @@
           
           var adjustedMidpt = {
             x: midptSrcPts.x1 * (1 - stepWeight) + midptSrcPts.x2 * stepWeight,
-            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight,
+            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight
           };
 
           rs.edgeType = 'bezier';

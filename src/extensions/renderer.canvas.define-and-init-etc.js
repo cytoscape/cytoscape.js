@@ -27,7 +27,7 @@
       canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
       
       bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT),
-      bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS),
+      bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS)
 
     };
     

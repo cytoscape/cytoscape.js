@@ -337,7 +337,7 @@
         })
       .selector('edge') // just edge properties
         .css({
-          'width': 1,
+          'width': 1
         })
       .selector(':active')
         .css({

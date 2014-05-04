@@ -257,7 +257,7 @@
 
             currentSubject = this;
             this.subject = this;
-          },
+          }
 
         }
       };

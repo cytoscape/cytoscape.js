@@ -175,13 +175,7 @@
     
     return pz;
   }
-  
-  var _genEvenOddpts = function(pt, evenspac, oddspac) {
-    
-    pt1 = _genpts(pt, evenspac);
-    pt2 = _genpts(pt, oddspac);
-  }
-  
+
   var calls = 0;
   var time = 0;
   var avg = 0;

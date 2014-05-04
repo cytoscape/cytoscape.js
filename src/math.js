@@ -688,7 +688,7 @@
     }
     
     var displacementX, displacementY, offsetX, offsetY;
-    var dotProduct, dotSquared, hypSquared;
+    var dotProduct, dotSquared, sideSquared;
     var outside = function(x, y, startX, startY, endX, endY,
         toleranceSquared, counterClockwise) {
 

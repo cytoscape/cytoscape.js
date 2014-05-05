@@ -26,7 +26,7 @@
         immutableKeys: {}, // key => true if immutable
         updateStyle: false,
         onSet: function( self ){},
-        canSet: function( self ){ return true }
+        canSet: function( self ){ return true; }
       };
       params = $$.util.extend({}, defaults, params);
 
@@ -125,7 +125,7 @@
         immutableKeys: {}, // key => true if immutable
         updateStyle: false
       };
-      var p = params = $$.util.extend({}, defaults, params);
+      var p = $$.util.extend({}, defaults, params);
 
       return function batchDataImpl( map ){
         var self = this;
@@ -182,7 +182,6 @@
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-        var single = selfIsArrayLike ? self[0] : self;
         
         // .removeData('foo bar')
         if( $$.is.string(names) ){ // then get the list of keys, and delete them
@@ -248,7 +247,6 @@
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-        var single = selfIsArrayLike ? self[0] : self;
         var eventsIsString = $$.is.string(events);
         var p = params;
 
@@ -333,7 +331,6 @@
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
         var single = selfIsArrayLike ? self[0] : self;
         var eventsIsString = $$.is.string(events);
-        var p = params;
 
         if( arguments.length === 0 ){ // then unbind all
 
@@ -410,7 +407,6 @@
         var eventsIsString = $$.is.string(events);
         var eventsIsObject = $$.is.plainObject(events);
         var eventsIsEvent = $$.is.event(events);
-        var p = params;
         var cy = this._private.cy || this;
 
         if( eventsIsString ){ // then make a plain event object for each event name

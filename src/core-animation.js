@@ -41,7 +41,7 @@
       if( requestAnimationFrame == null || !useRequestAnimationFrame ){
         requestAnimationFrame = function(fn){
           window.setTimeout(function(){
-            fn(+new Date);
+            fn(+new Date());
           }, stepDelay);
         };
       }
@@ -68,7 +68,7 @@
       globalAnimationStep(); // first call
       
       function handleElements(now){
-        now = +new Date;
+        now = +new Date();
 
         var eles = cy._private.aniEles;
         for( var e = 0; e < eles.length; e++ ){
@@ -87,7 +87,7 @@
               var next = q.length > 0 ? q.shift() : null;
               
               if( next != null ){
-                next.callTime = +new Date; // was queued, so update call time
+                next.callTime = +new Date(); // was queued, so update call time
                 current.push( next );
               }
             }

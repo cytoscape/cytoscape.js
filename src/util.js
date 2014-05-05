@@ -90,7 +90,7 @@
     },
 
     now: function(){
-      return +new Date;
+      return +new Date();
     },
 
     // ported lodash debounce function

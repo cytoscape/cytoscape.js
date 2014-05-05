@@ -74,9 +74,7 @@
         return this;
       }
 
-      var cy = this.cy();
-      var coln = new $$.Collection( cy );
-      
+      var cy = this.cy();      
       var sorted = this.toArray().sort( sortFn );
 
       return new $$.Collection(cy, sorted);

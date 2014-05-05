@@ -12,7 +12,6 @@
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
       var connectedEles = [];
-      var connectedFrom = {};
       var id2depth = {};
       var V = {};
       var j = 0;
@@ -48,7 +47,7 @@
         var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
         for( var i = 0; i < vwEdges.length; i++ ){
           var e = vwEdges[i];
-          var w = e.connectedNodes(function(){ return this.id() !== v.id() }).intersect( nodes );
+          var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
 
           if( w.length !== 0 && !V[ w.id() ] ){
             w = w[0];
@@ -153,7 +152,7 @@
       return {
         path: new $$.Collection( cy, connectedEles ),
         found: new $$.Collection( cy, found )
-      }
+      };
     },
 
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)

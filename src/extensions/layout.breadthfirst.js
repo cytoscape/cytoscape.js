@@ -155,7 +155,7 @@
 
     var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
       var edges = node.connectedEdges(function(){
-        return this.data('target') === node.id()
+        return this.data('target') === node.id();
       });
       var thisInfo = node._private.scratch.BreadthFirstLayout;
       var highestDepthOfOther = 0;
@@ -241,7 +241,6 @@
 
       for( var i = 0; i < neighbors.length; i++ ){
         var neighbor = neighbors[i];
-        var nEdges = neighbor.edgesWith( ele );
         var index = neighbor._private.scratch.BreadthFirstLayout.index;
         var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
         var nDepth = depths[depth].length;
@@ -263,20 +262,20 @@
       return percent;
     };
 
+
     // rearrange the indices in each depth level based on connectivity
+
+    var sortFn = function(a, b){
+      var apct = getWeightedPercent( a );
+      var bpct = getWeightedPercent( b );
+
+      return apct - bpct;
+    };
+
     for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
 
       for( var i = 0; i < depths.length; i++ ){
-        var depth = i;
-        var newDepths = [];
-
-        depths[i] = depths[i].sort(function(a, b){
-          var apct = getWeightedPercent( a );
-          var bpct = getWeightedPercent( b );
-
-
-          return apct - bpct;
-        });
+        depths[i] = depths[i].sort( sortFn );
       }
       assignDepthsToEles(); // and update
 

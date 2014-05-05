@@ -11,23 +11,15 @@
     this.options = $$.util.extend(true, {}, defaults, options);
   }
   
-  function exec(fn){
-    if( fn != null && typeof fn == typeof function(){} ){
-      fn();
-    }
-  }
-  
   SpringyLayout.prototype.run = function(){
     var self = this;
     var options = this.options;
-    var params = options;
-  
+
     var cy = options.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
 
-    var container = cy.container();
-    
+    var container = cy.container();    
     var width = container.clientWidth;
     var height = container.clientHeight;
     
@@ -58,7 +50,7 @@
     var layout = new Springy.Layout.ForceDirected(graph, 400.0, 400.0, 0.5);
     
     var currentBB = layout.getBoundingBox();
-    var targetBB = {bottomleft: new Springy.Vector(-2, -2), topright: new Springy.Vector(2, 2)};
+    // var targetBB = {bottomleft: new Springy.Vector(-2, -2), topright: new Springy.Vector(2, 2)};
     
     // convert to/from screen coordinates
     var toScreen = function(p) {

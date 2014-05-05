@@ -9,7 +9,7 @@
     var halfW = width / 2;
     var halfH = height / 2;
 
-    context.beginPath && context.beginPath();
+    if( context.beginPath ){ context.beginPath(); }
 
     context.moveTo( x + halfW * points[0], y + halfH * points[1] );
 
@@ -18,7 +18,7 @@
     }
     
     context.closePath();
-  }
+  };
   
   CanvasRenderer.prototype.drawPolygon = function(
     context, x, y, width, height, points) {
@@ -28,7 +28,7 @@
     
     // Fill path
     context.fill();
-  }
+  };
   
   // Round rectangle drawing
   CanvasRenderer.prototype.drawRoundRectanglePath = function(
@@ -38,7 +38,7 @@
     var halfHeight = height / 2;
     var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
     
-    context.beginPath && context.beginPath();
+    if( context.beginPath ){ context.beginPath(); }
     
     // Start at top middle
     context.moveTo(x, y - halfHeight);
@@ -55,7 +55,7 @@
     
     
     context.closePath();
-  }
+  };
   
   CanvasRenderer.prototype.drawRoundRectangle = function(
     context, x, y, width, height, radius) {
@@ -63,7 +63,7 @@
     this.drawRoundRectanglePath(context, x, y, width, height, radius);
     
     context.fill();
-  }
+  };
 
 
 })( cytoscape );

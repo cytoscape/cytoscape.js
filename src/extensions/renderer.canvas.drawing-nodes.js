@@ -220,10 +220,6 @@
       var angleDelta = 2 * Math.PI * percent;
       var angleEnd = angleStart + angleDelta;
 
-      // slice start and end points
-      var sx1 = x + radius * Math.cos( angleStart );
-      var sy1 = y + radius * Math.sin( angleStart );
-
       // ignore if
       // - zero size
       // - we're already beyond the full circle

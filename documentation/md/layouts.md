@@ -65,7 +65,7 @@ cy.layout( options );
 The `grid` layout puts nodes in a well-spaced grid.
 
 ```js
-{
+options = {
 	name: 'grid',
 
 	fit: true, // whether to fit the viewport to the graph
@@ -107,6 +107,7 @@ cy.layout( options );
 The `concentric` layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the `concentric` layout value based on your metric, which can be used with `mapLayoutData()`.
 
 ```js
+options = {
 	name: 'concentric',
 
 	fit: true, // whether to fit the viewport to the graph

@@ -67,7 +67,7 @@ Run `gulp` in the console.  The main targets are:
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via jshint
 
- **Documenation:**
+**Documenation:**
  * `docs` : build the documentation template
  * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)

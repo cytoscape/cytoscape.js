@@ -1,6 +1,6 @@
 ;(function($, $$){ 'use strict';
   
-  if( !$ ){ return } // no jquery => don't need this
+  if( !$ ){ return; } // no jquery => don't need this
 
   // allow calls on a jQuery selector by proxying calls to $.cytoscape
   // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
@@ -71,7 +71,7 @@
       // if only one instance, don't need to return array
       if( rets.length === 1 ){
         rets = rets[0];
-      } else if( rets.length == 0 ){
+      } else if( rets.length === 0 ){
         rets = $(this);
       }
       

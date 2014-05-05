@@ -30,7 +30,7 @@
     },
 
     animate: function( properties, params ){
-      var callTime = +new Date;
+      var callTime = +new Date();
       var cy = this._private.cy;
       var style = cy.style();
       var q;

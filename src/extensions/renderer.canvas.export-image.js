@@ -8,7 +8,7 @@
     buffer.height = h;
     
     return [buffer, buffer.getContext('2d')];
-  }
+  };
 
   CanvasRenderer.prototype.bufferCanvasImage = function( options ){
     var data = this.data;

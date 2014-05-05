@@ -1,7 +1,4 @@
 ;(function($$){ 'use strict';
-  
-  var borderWidthMultiplier = 2 * 0.5;
-  var borderWidthAdjustment = 0;
 
   $$.fn.eles({
 
@@ -125,7 +122,6 @@
 
     visible: function(){
       var ele = this[0];
-      var cy = this._private.cy;
 
       if( ele ){
         var style = ele._private.style;

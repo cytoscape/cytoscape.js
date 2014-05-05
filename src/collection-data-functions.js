@@ -271,7 +271,7 @@
 
       if( ele ){
         var style = ele._private.style;
-        var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;;
+        var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
         var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
         return width + border;
@@ -470,7 +470,7 @@
         var labelX = rstyle.labelX;
         var labelY = rstyle.labelY;
 
-        if( includedEle && options.includeLabels && label && fontSize && labelHeight != undefined && labelWidth != undefined && labelX != undefined && labelY != undefined && halign && valign ){
+        if( includedEle && options.includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
           var lh = labelHeight;
           var lw = labelWidth;
           var lx1, lx2, ly1, ly2;

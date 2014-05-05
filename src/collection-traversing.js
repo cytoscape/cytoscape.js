@@ -11,9 +11,13 @@
           continue;
         }
 
-        var hasEdgesPointingIn = ele.connectedEdges(function(){
-          this.data('target') === ele.id() && this.data('source') !== ele.id()
-        }).length > 0;
+        var hasEdgesPointingIn;
+
+        (function(){
+          hasEdgesPointingIn = ele.connectedEdges(function(){
+            return this.data('target') === ele.id() && this.data('source') !== ele.id();
+          }).length > 0;
+        })();
 
         if( !hasEdgesPointingIn ){
           roots.push( ele );
@@ -171,7 +175,7 @@
       }
       
       return new $$.Collection( cy, sources ).filter( selector );
-    }
+    };
   }
 
   $$.fn.eles({
@@ -293,8 +297,7 @@
           var codirected = tgtid2 === tgtid1 && srcid2 === srcid1;
           var oppdirected = srcid1 === tgtid2 && tgtid1 === srcid2;
           
-          if( (p.codirected && codirected)
-          || (!p.codirected && (codirected || oppdirected)) ){
+          if( (p.codirected && codirected) || (!p.codirected && (codirected || oppdirected)) ){
             elements.push( edge2 );
           }
         }

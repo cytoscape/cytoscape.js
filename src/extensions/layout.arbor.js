@@ -91,14 +91,14 @@
 
     if( options.liveUpdate && options.fit ){
       cy.reset();
-    };
+    }
     
     var doneTime = 250;
     var doneTimeout;
     
     var ready = false;
     
-    var lastDraw = +new Date;
+    var lastDraw = +new Date();
     var sysRenderer = {
       init: function(system){
       },
@@ -117,7 +117,6 @@
         var movedNodes = [];
         
         sys.eachNode(function(n, point){ 
-          var id = n.name;
           var data = n.data;
           var node = data.element;
           
@@ -136,10 +135,10 @@
         });
         
 
-        var timeToDraw = (+new Date - lastDraw) >= 16;
+        var timeToDraw = (+new Date() - lastDraw) >= 16;
         if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
           new $$.Collection(cy, movedNodes).rtrigger('position');
-          lastDraw = +new Date;
+          lastDraw = +new Date();
         }
 
         
@@ -179,8 +178,6 @@
       
       var left = -2;
       var right = 2;
-      var top = -2;
-      var bottom = 2;
       
       var d = 4;
       
@@ -237,7 +234,6 @@
     });
     
     edges.each(function(){
-      var id = this.id();
       var src = this.source().id();
       var tgt = this.target().id();
       var length = calculateValueForElement(this, options.edgeLength);
@@ -254,7 +250,7 @@
         cy.fit();
       }
       callback();
-    };
+    }
     
     var grabbableNodes = nodes.filter(":grabbable");
     // disable grabbing if so set

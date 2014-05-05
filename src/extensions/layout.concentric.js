@@ -30,7 +30,6 @@
     var nodes = cy.nodes().filter(function(){
       return !this.isFullAutoParent();
     });
-    var edges = cy.edges();
     var container = cy.container();
     
     var width = options.width !== undefined ? options.width : container.clientWidth;

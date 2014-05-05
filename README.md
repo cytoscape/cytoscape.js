@@ -50,19 +50,28 @@ Install `npm` and `gulp`.  Of course, `npm install` before using `gulp`.
 
 Run `gulp` in the console.  The main targets are:
 
+**Building:**
  * `build` : build the library
  * `zip` : build the release ZIP
  * `clean` : clean the `build` directory
+ * `dist` : update the distribution JS for npm, bower, etc.
+ * `pub` : prepare to publish a new version of Cytoscape.js
+ * `watch` : update JS refs in HTML files automatically when JS files are added or deleted
+
+**File references:**
  * `testrefs` : update JS lib file refs in the tests page
  * `testlist` : update list of test JS files in tests page
  * `debugrefs` : update JS lib file refs in debug page
+
+**Testing:**
  * `test` : run the Mocha unit tests
+ * `lint` : lint the JS sources via jshint
+
+ **Documenation:**
  * `docs` : build the documentation template
  * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
- * `dist` : update the distribution JS for npm, bower, etc.
- * `pub` : publish a new version of Cytoscape.js
- * `watch` : update JS refs in HTML files automatically when JS files are added or deleted
+
 
 
 
@@ -71,6 +80,8 @@ Run `gulp` in the console.  The main targets are:
 
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`.
  1. Confirm `VERSION` is picked up by gulp: `gulp version`.
+ 1. Confirm JS files pass linting: `gulp lint`
+ 1. Confirm all tests passing: `gulp test`
  1. Build and publish the release: `gulp pub`, and then...
   1. Make sure all your changes are pushed.
   1. Create a tag for this version in `git` (e.g. `gulp tag`)

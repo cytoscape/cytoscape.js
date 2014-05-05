@@ -75,7 +75,7 @@
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
-        y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0,
+        y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0
       },
       hasCompoundNodes: false
     };

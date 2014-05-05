@@ -45,8 +45,8 @@
 
     // connect them with edges
     edges.each(function(i, edge){
-      fdSrc = edge.source().scratch('springy').model;
-      fdTgt = edge.target().scratch('springy').model;
+      var fdSrc = edge.source().scratch('springy').model;
+      var fdTgt = edge.target().scratch('springy').model;
       
       edge.scratch('springy', {
         model: graph.newEdge(fdSrc, fdTgt, {

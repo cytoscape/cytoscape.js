@@ -38,7 +38,7 @@
 
       var hasNonAutoParent = function(ele){
         while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
-          parent = ele.parent()[0];
+          var parent = ele.parent()[0];
           var pstyle = parent._private.style;
 
           if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){

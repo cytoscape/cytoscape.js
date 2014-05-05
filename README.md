@@ -58,9 +58,9 @@ Run `gulp` in the console.  The main targets are:
 
 **File references:**
  * `refs` : update all refs
- * `testrefs` : update JS lib file refs in the tests page
- * `testlist` : update list of test JS files in tests page
- * `debugrefs` : update JS lib file refs in debug page
+  * `testrefs` : update JS lib file refs in the tests page
+  * `testlist` : update list of test JS files in tests page
+  * `debugrefs` : update JS lib file refs in debug page
 
 **Testing:**
  * `test` : run the Mocha unit tests

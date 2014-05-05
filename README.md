@@ -55,9 +55,9 @@ Run `gulp` in the console.  The main targets are:
  * `zip` : build the release ZIP
  * `clean` : clean the `build` directory
  * `dist` : update the distribution JS for npm, bower, etc.
- * `pub` : prepare to publish a new version of Cytoscape.js
 
 **File references:**
+ * `refs` : update all refs
  * `testrefs` : update JS lib file refs in the tests page
  * `testlist` : update list of test JS files in tests page
  * `debugrefs` : update JS lib file refs in debug page

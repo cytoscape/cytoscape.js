@@ -56,7 +56,6 @@ Run `gulp` in the console.  The main targets are:
  * `clean` : clean the `build` directory
  * `dist` : update the distribution JS for npm, bower, etc.
  * `pub` : prepare to publish a new version of Cytoscape.js
- * `watch` : update JS refs in HTML files automatically when JS files are added or deleted
 
 **File references:**
  * `testrefs` : update JS lib file refs in the tests page
@@ -66,6 +65,7 @@ Run `gulp` in the console.  The main targets are:
 **Testing:**
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via jshint
+ * `watch` : update JS refs in HTML files (debug page, test page) automatically when JS files are added or deleted
 
 **Documenation:**
  * `docs` : build the documentation template

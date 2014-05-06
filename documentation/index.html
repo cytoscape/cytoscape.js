@@ -5,13 +5,16 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all"/>
+		<meta name="robots" content="all" />
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/all.min.css">
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
 		
 	</head>
@@ -35,7 +38,9 @@
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js-demos"><span class="icon-user"></span> User-submitted demos</a> |
+				<a target="_blank" href="http://cytoscape.org"><span class="icon-desktop"></span> Cytoscape desktop</a>
 			</div>
 
 			<p>This is how easy it is to get started with Cytoscape.js (this code creates the instance you see on the bottom-right:</p>
@@ -659,7 +664,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
 <p><strong><code>data()</code></strong> specifies a direct mapping to an element&#39;s data field.  For example, <code>data(descr)</code> would map a property to the value in an element&#39;s <code>descr</code> field in its data (i.e. <code>ele.data(&quot;descr&quot;)</code>).  This is useful for mapping to properties like label text content (the <code>content</code> property).</p>
 <p><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</p>
-<p><strong><code>mapLayout()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</p>
+<p><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</p>
 
 				
 
@@ -820,7 +825,7 @@ cy.layout( options );
 </code></pre>
 <h2 id="layouts/grid">Grid <a href="#layouts/grid"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>grid</code> layout puts nodes in a well-spaced grid.</p>
-<pre><code class="lang-js">{
+<pre><code class="lang-js">options = {
     name: <span class="hljs-string">'grid'</span>,
 
     fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
@@ -852,7 +857,8 @@ cy.layout( options );
 </code></pre>
 <h2 id="layouts/concentric">Concentric <a href="#layouts/concentric"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>concentric</code> layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the <code>concentric</code> layout value based on your metric, which can be used with <code>mapLayoutData()</code>.</p>
-<pre><code class="lang-js">    name: <span class="hljs-string">'concentric'</span>,
+<pre><code class="lang-js">options = {
+    name: <span class="hljs-string">'concentric'</span>,
 
     fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
     ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
@@ -8212,7 +8218,11 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/all.min.js"></script>
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

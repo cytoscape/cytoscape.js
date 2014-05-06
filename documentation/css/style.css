@@ -190,6 +190,22 @@ button:active {
 	margin-left: 16em;
 }
 
+#content:before {
+	content : '';
+	display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+	width: 10em;
+	height: 10em;
+	background-image: url('../img/cytoscape-logo.svg');
+	background-size: 100% 100%;
+	background-position: top left;
+	background-repeat: no-repeat;
+	opacity: 0.04;
+	z-index: -1;
+}
+
 #demo, #demo-source {
 	border: 1px solid #ddd;
 	margin: 1em 0;
@@ -300,7 +316,7 @@ button:active {
 }
 
 .links {
-	color: #ccc;
+	color: #eee;
 }
 
 .links a {

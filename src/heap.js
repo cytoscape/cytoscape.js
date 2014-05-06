@@ -163,12 +163,10 @@
     var treeLen = 0,
       condHeap = false,
       array,
-      pointers,
       current,
       left,
       right,
       best,
-      tmp,
       comparator,
       parent;
     

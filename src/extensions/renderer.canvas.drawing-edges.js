@@ -49,7 +49,6 @@
       context.lineCap = 'butt'; 
     }
     
-    var cy = edge._private.cy;
     var startNode, endNode, source, target;
     source = startNode = edge._private.source;
     target = endNode = edge._private.target;
@@ -128,14 +127,14 @@
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
 
-  }
+  };
   
   var _genPoints = function(pt, spacing, even) {
     
     var approxLen = Math.sqrt(Math.pow(pt[4] - pt[0], 2) + Math.pow(pt[5] - pt[1], 2));
     approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3], 2));
 
-    var pts = Math.ceil(approxLen / spacing); var inc = approxLen / spacing;
+    var pts = Math.ceil(approxLen / spacing); 
     var pz;
     
     if (pts > 0) {
@@ -151,7 +150,7 @@
     }
     
     return pz;
-  }
+  };
   
   var _genStraightLinePoints = function(pt, spacing, even) {
     
@@ -174,16 +173,12 @@
     }
     
     return pz;
-  }
+  };
 
   var calls = 0;
   var time = 0;
   var avg = 0;
   
-  function edgeCacheKey(edge, pts){
-
-  }
-
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
     
@@ -234,7 +229,7 @@
       }
 
       if( !pathCacheHit ){
-        context.beginPath && context.beginPath();
+        if( context.beginPath ){ context.beginPath(); }
         context.moveTo(pts[0], pts[1]);
         if (pts.length == 3 * 2) {
           context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
@@ -316,7 +311,7 @@
 //      dashSize = Math.min(dashSize)
       
       //var bufW = width * 2 * zoom, bufH = width * 2.5 * zoom;
-      var bufW = width * 2 * zoom
+      var bufW = width * 2 * zoom;
       var bufH = 7.8 * zoom;
       bufW = Math.max(bufW, 1);
       bufH = Math.max(bufH, 1);
@@ -485,7 +480,7 @@
       this.drawArrowShape(context, style['target-arrow-fill'].value, style['target-arrow-shape'].value,
         endX, endY, dispX, dispY);
     }
-  }
+  };
   
   // Draw arrowshape
   CanvasRenderer.prototype.drawArrowShape = function(context, fill, shape, x, y, dispX, dispY) {
@@ -529,6 +524,6 @@
     context.rotate(angle);
     context.translate(-x, -y);
     //context.restore();
-  }
+  };
 
 })( cytoscape );

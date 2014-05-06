@@ -5,7 +5,6 @@
   var isFirefox = typeof InstallTrigger !== 'undefined';
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
-    var canvas = this.data.canvases[0];
     var context = this.data.contexts[0];
 
     var backingStore = context.backingStorePixelRatio ||
@@ -22,7 +21,7 @@
     }
 
     return (window.devicePixelRatio || 1) / backingStore;
-  }
+  };
 
   CanvasRenderer.prototype.paintCache = function(context){
     var caches = this.paintCaches = this.paintCaches || [];
@@ -50,28 +49,30 @@
 
   CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
     context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-    return; // turn off for now, seems context does its own caching
+    
+    // turn off for now, seems context does its own caching
 
-    var cache = this.paintCache(context);
+    // var cache = this.paintCache(context);
 
-    var fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    // var fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 
-    if( cache.fillStyle !== fillStyle ){
-      context.fillStyle = cache.fillStyle = fillStyle;
-    }
+    // if( cache.fillStyle !== fillStyle ){
+    //   context.fillStyle = cache.fillStyle = fillStyle;
+    // }
   };
 
   CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-    return; // turn off for now, seems context does its own caching
+    
+    // turn off for now, seems context does its own caching
 
-    var cache = this.paintCache(context);
+    // var cache = this.paintCache(context);
 
-    var strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    // var strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 
-    if( cache.strokeStyle !== strokeStyle ){
-      context.strokeStyle = cache.strokeStyle = strokeStyle;
-    }
+    // if( cache.strokeStyle !== strokeStyle ){
+    //   context.strokeStyle = cache.strokeStyle = strokeStyle;
+    // }
   };
 
   // Resize canvas
@@ -134,7 +135,7 @@
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
 
-  }
+  };
 
   CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan, pxRatio ){
     this.redraw({
@@ -209,23 +210,14 @@
 
     var startTime;
 
-    var looperMax = 100;
     //console.log('-- redraw --')
 
-    // console.time('init'); for( var looper = 0; looper <= looperMax; looper++ ){
-  
-
-    // } console.timeEnd('init')
 
     function drawToContext(){
       startTime = +new Date();
-      var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+      var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
-      // if( !forcedContext ){
-      //   r.matchCanvasSize(data.container);
-      // }
-
       var zoom = cy.zoom();
       var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
       var pan = cy.pan();
@@ -257,7 +249,10 @@
 
       function setContextTransform(context, clear){
         context.setTransform(1, 0, 0, 1, 0, 0);
-        !forcedContext && (clear === undefined || clear) && context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+        
+        if( !forcedContext && (clear === undefined || clear) ){
+          context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+        }
         
         if( !drawAllLayers ){
           context.translate(effectivePan.x, effectivePan.y);
@@ -272,7 +267,6 @@
       }
 
       var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
-      var scale;
 
       if( textureDraw ){
 
@@ -283,7 +277,7 @@
 
           bb = r.textureCache.bb = cy.boundingBox();
 
-          var canvas = r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
+          r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 
           var cxt = r.data.bufferContexts[ CanvasRenderer.TEXTURE_BUFFER ];
 
@@ -315,10 +309,6 @@
         var context = data.contexts[CanvasRenderer.NODE];
 
         var texture = r.textureCache.texture;
-        var z = cy.zoom();
-        var p = cy.pan();
-        var buffCanvas = r.textureCache.buffCanvas;
-        var buffCxt = r.textureCache.buffCxt;
         var texture = r.textureCache.texture;
         var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
@@ -331,7 +321,6 @@
         r.fillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
         context.fillRect( 0, 0, vp.width, vp.height );
 
-        var pan = cy.pan();
         var zoom = cy.zoom();
         
         setContextTransform( context, false );
@@ -349,18 +338,13 @@
 
       if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         //NB : VERY EXPENSIVE
-        //console.time('edgectlpts'); for( var looper = 0; looper <= looperMax; looper++ ){
 
         if( hideEdges ){ 
         } else {
           r.findEdgeControlPoints(edges);
         }
 
-        //} console.timeEnd('edgectlpts')
-
-        // console.time('sort'); for( var looper = 0; looper <= looperMax; looper++ ){
         var zEles = r.getCachedZSortedEles();
-        // } console.timeEnd('sort')
 
         for (var i = 0; i < zEles.length; i++) {
           var ele = zEles[i];
@@ -375,13 +359,6 @@
           list[ ele._private.group ].push( ele );
         }
 
-        // console.time('updatecompounds'); for( var looper = 0; looper <= looperMax; looper++ ){
-        // no need to update graph if there is no compound node
-        // if ( cy.hasCompoundNodes() )
-        // {
-        //   r.updateAllCompounds(elements);
-        // }
-        // } console.timeEnd('updatecompounds')
       }
       
       
@@ -422,7 +399,6 @@
       }
 
 
-      // console.time('drawing'); for( var looper = 0; looper <= looperMax; looper++ ){
       if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         // console.log('redrawing node layer');
         
@@ -507,7 +483,6 @@
         }
       }
 
-      // } console.timeEnd('drawing')
 
       var endTime = +new Date();
 

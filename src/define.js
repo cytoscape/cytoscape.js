@@ -117,7 +117,6 @@
       }; // function
     }, // data
 
-
     // remove data field
     removeData: function( params ){
       var defaults = { 

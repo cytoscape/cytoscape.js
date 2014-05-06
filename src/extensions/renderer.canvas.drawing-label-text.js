@@ -60,8 +60,7 @@
         context.textAlign = 'left';
         break;
 
-      case 'center':
-      default:
+      default: // e.g. center
         context.textAlign = 'center';
     }
 
@@ -74,8 +73,7 @@
         context.textBaseline = 'top';
         break;
 
-      case 'center':
-      default:
+      default: // e.g. center
         context.textBaseline = 'middle';
     }
 
@@ -83,10 +81,12 @@
   };
   
   CanvasRenderer.prototype.getFontCache = function(context){
+    var cache;
+
     this.fontCaches = this.fontCaches || [];
 
     for( var i = 0; i < this.fontCaches.length; i++ ){
-      var cache = this.fontCaches[i];
+      cache = this.fontCaches[i];
 
       if( cache.context === context ){
         return cache;
@@ -110,7 +110,6 @@
     var labelStyle = style['font-style'].strValue;
     var labelSize = style['font-size'].pxValue + 'px';
     var labelFamily = style['font-family'].strValue;
-    var labelVariant = style['font-variant'].strValue;
     var labelWeight = style['font-weight'].strValue;
     var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
     var color = style['color'].value;
@@ -145,7 +144,7 @@
     this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], opacity);
 
     return text;
-  }
+  };
 
   // Draw text
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
@@ -155,7 +154,7 @@
 
     var text = this.setupTextStyle( context, element );
 
-    if ( text != undefined && !isNaN(textX) && !isNaN(textY) ) {
+    if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
       var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;

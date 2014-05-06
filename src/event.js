@@ -30,7 +30,7 @@
     }
 
     // Create a timestamp if incoming event doesn't have one
-    this.timeStamp = src && src.timeStamp || +new Date;
+    this.timeStamp = src && src.timeStamp || +new Date();
   };
 
   function returnFalse() {

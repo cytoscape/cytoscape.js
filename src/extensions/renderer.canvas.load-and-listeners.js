@@ -1183,13 +1183,13 @@
         };
         
         r.touchData.singleTouchMoved = false;
-        r.touchData.singleTouchStartTime = +new Date;
+        r.touchData.singleTouchStartTime = +new Date();
         
         var tapHoldTimeout = setTimeout(function() {
           if (r.touchData.singleTouchMoved == false
               // This time double constraint prevents multiple quick taps
               // followed by a taphold triggering multiple taphold events
-              && (+new Date) - r.touchData.singleTouchStartTime > 250) {
+              && (+new Date()) - r.touchData.singleTouchStartTime > 250) {
             if (r.touchData.start) {
               r.touchData.start.trigger( new $$.Event(e, {
                 type: 'taphold',
@@ -1307,7 +1307,7 @@
       } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
-        this.lastThreeTouch = +new Date;
+        this.lastThreeTouch = +new Date();
 
         r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
@@ -1652,7 +1652,7 @@
         return;
       }
 
-      var nowTime = +new Date;
+      var nowTime = +new Date();
       // no more box selection if we don't have three fingers
       if( !e.touches[2] && cy.boxSelectionEnabled() ){
         clearTimeout( this.threeFingerSelectTimeout );

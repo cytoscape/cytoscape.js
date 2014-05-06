@@ -23,7 +23,7 @@
     self._private = {
       selectorText: null,
       invalid: true
-    }
+    };
     
     if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
       
@@ -174,7 +174,7 @@
             if( valueIsString ){
               value = value.substring(1, value.length - 1);
             } else {
-              value = parseFloat(value)
+              value = parseFloat(value);
             }
 
             this.data.push({
@@ -286,7 +286,7 @@
           var n = e.name;
 
           // ignore this expression if it doesn't meet the expectation function
-          if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue }
+          if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue; }
 
           var m = remaining.match(new RegExp( '^' + e.regex ));
           
@@ -337,7 +337,7 @@
           // let the token populate the selector object (i.e. in self[i])
           var ret = check.expr.populate.apply( self[i], args );
 
-          if( ret === false ){ return } // exit if population failed
+          if( ret === false ){ return; } // exit if population failed
         }
         
         // we're done when there's nothing left to parse
@@ -355,7 +355,7 @@
         if( query.subject != null ){
           // go up the tree until we reach the subject
           for(;;){
-            if( query.subject == query ){ break } // done if subject is self
+            if( query.subject == query ){ break; } // done if subject is self
 
             if( query.parent != null ){ // swap parent/child reference
               var parent = query.parent;
@@ -666,7 +666,7 @@
           return 'element.' + field + '()';
         },
         fieldUndefined: function(field){
-          return element[field]() == undefined;
+          return element[field]() == null;
         },
         fieldTruthy: function(field){
           if( element[field]() ){
@@ -690,7 +690,7 @@
       }
       
       // check filter function
-      if( query.filter != null && element.collection().filter( query.filter ).size() == 0 ){
+      if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
         return false;
       }
       
@@ -716,20 +716,20 @@
       };
 
       if (! confirmRelations(query.parent, function(){
-        return element.parent()
-      }) ){ return false }
+        return element.parent();
+      }) ){ return false; }
 
       if (! confirmRelations(query.ancestor, function(){
-        return element.parents()
-      }) ){ return false }
+        return element.parents();
+      }) ){ return false; }
 
       if (! confirmRelations(query.child, function(){
-        return element.children()
-      }) ){ return false }
+        return element.children();
+      }) ){ return false; }
 
       if (! confirmRelations(query.descendant, function(){
-        return element.descendants()
-      }) ){ return false }
+        return element.descendants();
+      }) ){ return false; }
 
       // we've reached the end, so we've matched everything for this query
       return true;

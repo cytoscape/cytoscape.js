@@ -187,7 +187,7 @@
 
     if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
 
-    var nowTime = +new Date;
+    var nowTime = +new Date();
     var timeElapsed = nowTime - this.lastDrawTime;
     var callAfterLimit = timeElapsed >= redrawLimit;
 
@@ -218,7 +218,7 @@
     // } console.timeEnd('init')
 
     function drawToContext(){
-      startTime = +new Date;
+      startTime = +new Date();
       var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -509,7 +509,7 @@
 
       // } console.timeEnd('drawing')
 
-      var endTime = +new Date;
+      var endTime = +new Date();
 
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;

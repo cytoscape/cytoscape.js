@@ -5,7 +5,7 @@
   // list of ids with other metadata assoc'd with it
   $$.instances = [];
   $$.instanceCounter = 0;
-  $$.lastInstanceTime;
+  $$.lastInstanceTime = undefined;
 
   $$.registerInstance = function( instance, domElement ){
     var cy;
@@ -30,7 +30,7 @@
 
     // otherwise, just make a new registration
     } else {
-      var time = +new Date;
+      var time = +new Date();
       var suffix;
 
       // add a suffix in case instances collide on the same time
@@ -85,7 +85,7 @@
         }
       }
     }
-  }
+  };
 
   $$.getRegistrationForInstance = function( instance, domElement ){
     var cy;

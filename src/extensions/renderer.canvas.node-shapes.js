@@ -38,7 +38,7 @@
     drawPath: function(context, centerX, centerY, width, height) {
       
       if( usePaths ){
-        context.beginPath && context.beginPath();
+        if( context.beginPath ){ context.beginPath(); }
 
         var xPos, yPos;
         var rw = width/2;
@@ -57,7 +57,7 @@
 
       } else {
 
-        context.beginPath && context.beginPath();
+        if( context.beginPath ){ context.beginPath(); }
         context.translate(centerX, centerY);
         context.scale(width / 2, height / 2);
         // At origin, radius 1, 0 to 2pi
@@ -108,7 +108,7 @@
       
       return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
     }
-  }
+  };
   
   nodeShapes['triangle'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(3, 0),
@@ -175,7 +175,7 @@
         centerX, centerY, width, height,
         [0, -1], padding);
     }
-  }
+  };
   
   nodeShapes['square'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
@@ -232,7 +232,7 @@
       return $$.math.pointInsidePolygon(x, y, nodeShapes['square'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
-  }
+  };
   
   nodeShapes['rectangle'] = nodeShapes['square'];
   
@@ -311,7 +311,7 @@
         y /= (height / 2 + padding);
         
         return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
-      }
+      };
       
       
       // Check top left quarter circle
@@ -363,50 +363,6 @@
     }
   };
   
-  nodeShapes['roundrectangle2'] = {
-    roundness: 4.99,
-    
-    draw: function(node, width, height) {
-      if (width <= roundness * 2) {
-        return;
-      }
-    
-      renderer.drawPolygon(node._private.position.x,
-        node._private.position.y, width, height, nodeSapes['roundrectangle2'].points);
-    },
-
-    intersectLine: function(node, width, height, x, y) {
-      return $$.math.findPolygonIntersection(
-        node, width, height, x, y, nodeShapes['square'].points);
-    },
-    
-    // TODO: Treat rectangle as sharp-cornered for now. This is a not-large approximation.
-    intersectBox: function(x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-      var points = nodeShapes['square'].points;
-      
-      /*
-      return renderer.boxIntersectPolygon(
-        x1, y1, x2, y2,
-        points, 
-      */
-    }  
-  }
-  
-  /*
-  function PolygonNodeShape(points) {
-    this.points = points;
-    
-    this.draw = function(context, node, width, height) {
-      renderer.drawPolygon(context,
-          node._private.position.x,
-          node._private.position.y,
-          width, height, nodeShapes['pentagon'].points);
-    };
-    
-    this.drawPath = 
-  }
-  */
-  
   nodeShapes['pentagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(5, 0),
     
@@ -456,7 +412,7 @@
       return $$.math.pointInsidePolygon(x, y, nodeShapes['pentagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
-  }
+  };
   
   nodeShapes['hexagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(6, 0),
@@ -509,7 +465,7 @@
       return $$.math.pointInsidePolygon(x, y, nodeShapes['hexagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
-  }
+  };
   
   nodeShapes['heptagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(7, 0),
@@ -562,7 +518,7 @@
       return $$.math.pointInsidePolygon(x, y, nodeShapes['heptagon'].points,
         centerX, centerY, width, height, [0, -1], padding);
     }
-  }
+  };
   
   nodeShapes['octagon'] = {
     points: $$.math.generateUnitNgonPointsFitToSquare(8, 0),

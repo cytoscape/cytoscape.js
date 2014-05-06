@@ -67,7 +67,7 @@
   
   function defineDegreeBoundsFunction(degreeFn, callback){
     return function( includeLoops ){
-      var ret = undefined;
+      var ret;
       var nodes = this.nodes();
 
       for( var i = 0; i < nodes.length; i++ ){

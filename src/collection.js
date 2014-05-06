@@ -179,7 +179,7 @@
         // make sure newly created elements have valid ids
         if( data.id == null ){
           data.id = idFactory.generate( cy, json );
-        } else if( cy.getElementById( data.id ).length != 0 || elesIds[ data.id ] ){
+        } else if( cy.getElementById( data.id ).length !== 0 || elesIds[ data.id ] ){
           continue; // can't create element if prior id already exists
         }
 
@@ -242,7 +242,7 @@
 
   $$.elesfn.json = function(){
     var ele = this.element();
-    if( ele == null ){ return undefined }
+    if( ele == null ){ return undefined; }
 
     var p = ele._private;
     
@@ -336,7 +336,7 @@
         
         // can't create element if it has empty string as id or non-string id
         continue;
-      } else if( cy.getElementById( data.id ).length != 0 ){
+      } else if( cy.getElementById( data.id ).length !== 0 ){
         $$.util.error('Can not create second element with ID `' + data.id + '`');
         
         // can't create element if one already has that id
@@ -394,7 +394,6 @@
     for( var i = 0; i < numNodes; i++ ){ // each node 
       var node = elements[i];
       var data = node._private.data;
-      var id = data.id;
 
       var parentId = node._private.data.parent;
       var specifiedParent = parentId != null;

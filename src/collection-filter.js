@@ -67,7 +67,6 @@
     },
 
     intersect: function( other ){
-      var self = this;
       var cy = this._private.cy;
       
       // if a selector is specified, then filter by it instead
@@ -97,7 +96,6 @@
     },
 
     add: function(toAdd){
-      var self = this;
       var cy = this._private.cy;    
       
       if( !toAdd ){

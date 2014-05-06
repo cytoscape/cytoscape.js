@@ -22,7 +22,6 @@
     var nodes = cy.nodes().filter(function(){
       return !this.isFullAutoParent();
     });
-    var edges = cy.edges();
     var container = cy.container();
     
     var width = container.clientWidth;
@@ -32,8 +31,6 @@
       x: width/2,
       y: height/2
     };
-
-    var padding = 50;
     
     var theta = options.startAngle;
     var dTheta = 2 * Math.PI / nodes.length;
@@ -66,14 +63,13 @@
       return dist;
     }
 
-    while( distanceBetweenNodes() < maxNodeSize && !(nodes.length < 2) ){
+    while( distanceBetweenNodes() < maxNodeSize && nodes.length >= 2 ){
       r += options.rStepSize;
     }
 
 
     var i = 0;
     nodes.positions(function(){
-      var node = this;
       var rx = r * Math.cos( theta );
       var ry = r * Math.sin( theta );
       var pos = {

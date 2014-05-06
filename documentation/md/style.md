@@ -215,4 +215,4 @@ In addition to specifying the value of a property outright, the developer may al
 
 **`mapData()`** specifies a linear mapping to an element's data field.  For example, `data(weight, 0, 100, blue, red)` maps an element's weight to gradients between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
 
-**`mapLayout()`** specifies a linear mapping like `mapData()` but uses special layout defined values (only supported for some layouts).
+**`mapLayoutData()`** specifies a linear mapping like `mapData()` but uses special layout defined values (only supported for some layouts).

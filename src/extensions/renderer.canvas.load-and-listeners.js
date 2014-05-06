@@ -36,21 +36,6 @@
 
       var innerNodes = node.descendants();
 
-      var hasNonAutoParent = function(ele){
-        while( ele.parent().nonempty() && ele.parent().id() !== node.id() ){
-          var parent = ele.parent()[0];
-          var pstyle = parent._private.style;
-
-          if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
-            return true;
-          }
-
-          ele = ele.parent();
-        }
-
-        return false;
-      };
-
       // TODO do not drag hidden children & children of hidden children?
       for (var i=0; i < innerNodes.size(); i++)
       {
@@ -125,7 +110,7 @@
     };
 
     CanvasRenderer.prototype.nodeIsDraggable = function(node) {
-      if (node._private.style['opacity'].value != 0
+      if (node._private.style['opacity'].value !== 0
         && node._private.style['visibility'].value == 'visible'
         && node._private.style['display'].value == 'element'
         && !node.locked()
@@ -135,7 +120,7 @@
       }
       
       return false;
-    }
+    };
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
@@ -184,7 +169,6 @@
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
-      var down = r.hoverData.down;
       var draggedElements = r.dragData.possibleDragElements;
       var grabEvent = new $$.Event('grab');
 
@@ -324,7 +308,7 @@
         // Selection box
         if ( near == null || near.isEdge() ) {
           select[4] = 1;
-          var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date - r.hoverData.downTime) );
+          var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
 
           clearTimeout( r.bgActiveTimeout );
           r.bgActiveTimeout = setTimeout(function(){
@@ -381,13 +365,8 @@
       var down = r.hoverData.down;
       
       var disp = [pos[0] - select[2], pos[1] - select[3]];
-      var nodes = r.getCachedNodes();
-      var edges = r.getCachedEdges();
-    
-      var draggedElements = r.dragData.possibleDragElements;
-    
 
-      var shiftDown = e.shiftKey;
+      var draggedElements = r.dragData.possibleDragElements;
       
 
       preventDefault = true;
@@ -484,7 +463,7 @@
 
       // Checks primary button down & out of time & mouse not moved much
       } else if (select[4] == 1 && (down == null || down.isEdge())
-          && ( !cy.boxSelectionEnabled() || +new Date - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
+          && ( !cy.boxSelectionEnabled() || +new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
           && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
           && cy.panningEnabled() && cy.userPanningEnabled() ) {
         
@@ -586,11 +565,12 @@
     r.registerBinding(window, 'mouseup', function(e) {
       // console.log('--\nmouseup', e)
 
-      var capture = r.hoverData.capture; if (!capture) { return; }; r.hoverData.capture = false;
+      var capture = r.hoverData.capture;
+      if (!capture) { return; }
+      r.hoverData.capture = false;
     
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
-      var nodes = r.getCachedNodes(); var edges = r.getCachedEdges(); 
+      var near = r.findNearestElement(pos[0], pos[1], true); 
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var shiftDown = e.shiftKey;
       
@@ -705,7 +685,7 @@
         {
           // console.log('trigger click et al');
 
-          if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) == 0) {
+          if (Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0) {
             if (near != null) {
               near
                 .trigger( new $$.Event(e, {
@@ -801,7 +781,6 @@
           }
 
           // console.log(box);
-          var event = new $$.Event(e, {type: 'select'});
           for (var i=0;i<box.length;i++) { 
             if (box[i]._private.selectable) {
               draggedElements.push( box[i] ); 
@@ -903,10 +882,13 @@
       
         var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
 
-        cy.zoom({level: cy.zoom() * Math.pow(10, diff), renderedPosition: {x: rpos[0], y: rpos[1]}});
+        cy.zoom({
+          level: cy.zoom() * Math.pow(10, diff),
+          renderedPosition: { x: rpos[0], y: rpos[1] }
+        });
       }
 
-    }
+    };
     
     // Functions to help with whether mouse wheel should trigger zooming
     // --
@@ -979,7 +961,7 @@
             eles[i]._private.rscratch.inDragLayer = false;
             if( eles[i].active() ){ eles[i].unactivate(); }
           }
-        }
+        };
         release(nodes);
         release(edges);
 
@@ -1177,16 +1159,16 @@
         // Tap, taphold
         // -----
         
-        for (var i=0;i<now.length;i++) {
+        for (var i=0; i<now.length; i++) {
           earlier[i] = now[i];
           r.touchData.startPosition[i] = now[i];
-        };
+        }
         
         r.touchData.singleTouchMoved = false;
         r.touchData.singleTouchStartTime = +new Date();
         
-        var tapHoldTimeout = setTimeout(function() {
-          if (r.touchData.singleTouchMoved == false
+        setTimeout(function() {
+          if (r.touchData.singleTouchMoved === false
               // This time double constraint prevents multiple quick taps
               // followed by a taphold triggering multiple taphold events
               && (+new Date()) - r.touchData.singleTouchStartTime > 250) {
@@ -1219,10 +1201,9 @@
     
       var select = r.data.select;
       var capture = r.touchData.capture; //if (!capture) { return; }; 
-      capture && e.preventDefault();
+      if( capture ){ e.preventDefault(); }
     
       var cy = r.data.cy; 
-      var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -1570,7 +1551,7 @@
         }
       }
 
-      for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+      for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
       //r.redraw();
       
     }, 1000/30), false);
@@ -1603,8 +1584,8 @@
       r.hoverData.draggingEles = false;
       
       var cy = r.data.cy; 
-      var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
-      var now = r.touchData.now; var earlier = r.touchData.earlier;
+      var now = r.touchData.now;
+      var earlier = r.touchData.earlier;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1652,7 +1633,6 @@
         return;
       }
 
-      var nowTime = +new Date();
       // no more box selection if we don't have three fingers
       if( !e.touches[2] && cy.boxSelectionEnabled() ){
         clearTimeout( this.threeFingerSelectTimeout );
@@ -1669,7 +1649,6 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
           // console.log(box);
-          var event = new $$.Event('select');
           for (var i=0;i<box.length;i++) { 
             if (box[i]._private.selectable) {
               newlySelected.push( box[i] );
@@ -1720,7 +1699,7 @@
 
         if (start != null ) {
 
-          if (start._private.grabbed == true) {
+          if( start._private.grabbed ){
             start._private.grabbed = false;
             start.trigger('free');
             start._private.rscratch.inDragLayer = false;
@@ -1832,7 +1811,7 @@
         }
         
         // Tap event, roughly same as mouse click event for touch
-        if (r.touchData.singleTouchMoved == false) {
+        if ( r.touchData.singleTouchMoved === false ) {
 
           if (start) {
             start
@@ -1864,7 +1843,7 @@
         r.touchData.singleTouchMoved = true;
       }
       
-      for (var j=0;j<now.length;j++) { earlier[j] = now[j]; };
+      for( var j = 0; j < now.length; j++ ){ earlier[j] = now[j]; }
 
       r.dragData.didDrag = false; // reset for next mousedown
 

@@ -237,7 +237,7 @@
       var empty = true;
 
       if( map != null ){
-        for(var i in map){
+        for(var i in map){ // jshint ignore:line
           empty = false;
           break;
         }
@@ -369,7 +369,7 @@
       }
 
       var noUpperCases = ret.length === str.length;
-      if( noUpperCases ){ return str } // cheaper than .join()
+      if( noUpperCases ){ return str; } // cheaper than .join()
 
       return ret.join('');
     },
@@ -435,7 +435,6 @@
     // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
     hsl2tuple: function( hsl ){
       var ret;
-      var number = $$.util.regex.number;
       var h, s, l, a, r, g, b;
       function hue2rgb(p, q, t){
         if(t < 0) t += 1;
@@ -494,7 +493,6 @@
     // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
     rgb2tuple: function( rgb ){
       var ret;
-      var number = $$.util.regex.number;
 
       var m = new RegExp("^" + $$.util.regex.rgba + "$").exec(rgb);
       if( m ){
@@ -733,7 +731,7 @@
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
-  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ fn && fn() } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ if(fn){ fn(); } } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
   $$.util.requestAnimationFrame = function(fn){

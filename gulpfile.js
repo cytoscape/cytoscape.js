@@ -323,14 +323,14 @@ gulp.task('watch', function(next){
 gulp.task('lint', function(){
   return gulp.src( paths.sources )
     .pipe( jshint({
+      funcscope: true,
       laxbreak: true,
       loopfunc: true,
       strict: true,
       unused: 'vars',
       eqnull: true,
       sub: true,
-      shadow: true,
-      predef: [ 'cytoscape' ]
+      shadow: true
     }) )
 
     .pipe( jshint.reporter(jshStylish) )

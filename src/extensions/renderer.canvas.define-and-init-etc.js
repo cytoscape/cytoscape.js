@@ -162,7 +162,6 @@
   }
   
   
-  var debug = function(){};
   $$('renderer', 'canvas', CanvasRenderer);
   
 })( cytoscape );

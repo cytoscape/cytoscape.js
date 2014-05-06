@@ -21,7 +21,7 @@ If your pull request is a bugfix, please make changes to the master branch.  Oth
 
 ## Acknowledgements
 
-Arbor was used in one of Cytoscape.js's included layouts.  We made some modifications to the library, written by Samizdat Drafting Co., so that it would work with multiple instances of Cytoscape.js and that it would work on lesser browsers, like IE.  Information about this library can be found at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
+Arbor was used in one of Cytoscape.js' included layouts.  We made some modifications to the library, written by Samizdat Drafting Co., so that it would work with multiple instances of Cytoscape.js and that it would work on lesser browsers, like IE.  Information about this library can be found at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
 
 
 

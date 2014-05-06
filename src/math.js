@@ -22,14 +22,14 @@
   // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
   $$.math.qbezierAt = function(p0, p1, p2, t){
     return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
-  }
+  };
 
   $$.math.qbezierPtAt = function(p0, p1, p2, t){
     return {
       x: $$.math.qbezierAt( p0.x, p1.x, p2.x, t ),
       y: $$.math.qbezierAt( p0.y, p1.y, p2.y, t )
     };
-  }
+  };
 
   $$.math.roundRectangleIntersectLine = function(
     x, y, nodeX, nodeY, width, height, padding) {
@@ -108,7 +108,7 @@
     // Top Left
     {
       var topLeftCenterX = nodeX - halfWidth + cornerRadius;
-      var topLeftCenterY = nodeY - halfHeight + cornerRadius
+      var topLeftCenterY = nodeY - halfHeight + cornerRadius;
       arcIntersections = this.intersectLineCircle(
         x, y, nodeX, nodeY, 
         topLeftCenterX, topLeftCenterY, cornerRadius + padding);
@@ -124,7 +124,7 @@
     // Top Right
     {
       var topRightCenterX = nodeX + halfWidth - cornerRadius;
-      var topRightCenterY = nodeY - halfHeight + cornerRadius
+      var topRightCenterY = nodeY - halfHeight + cornerRadius;
       arcIntersections = this.intersectLineCircle(
         x, y, nodeX, nodeY, 
         topRightCenterX, topRightCenterY, cornerRadius + padding);
@@ -140,7 +140,7 @@
     // Bottom Right
     {
       var bottomRightCenterX = nodeX + halfWidth - cornerRadius;
-      var bottomRightCenterY = nodeY + halfHeight - cornerRadius
+      var bottomRightCenterY = nodeY + halfHeight - cornerRadius;
       arcIntersections = this.intersectLineCircle(
         x, y, nodeX, nodeY, 
         bottomRightCenterX, bottomRightCenterY, cornerRadius + padding);
@@ -156,7 +156,7 @@
     // Bottom Left
     {
       var bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
-      var bottomLeftCenterY = nodeY + halfHeight - cornerRadius
+      var bottomLeftCenterY = nodeY + halfHeight - cornerRadius;
       arcIntersections = this.intersectLineCircle(
         x, y, nodeX, nodeY, 
         bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding);
@@ -644,9 +644,6 @@
   $$.math.inBezierVicinity = function(
     x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
 
-    // unfortunately yue's function makes several assumptions about the beziers
-    // and is not generic enough to be used properly
-    // a rough bounding box of the bezier curve
     var bb = {
       x1: Math.min( x1, x3, x2 ),
       x2: Math.max( x1, x3, x2 ),
@@ -663,79 +660,6 @@
       return true;
     }
 
-    /// END STOP USING YUE'S IMPL
-    
-    // Middle point occurs when t = 0.5, this is when the Bezier
-    // is closest to (x2, y2)
-    var middlePointX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
-    var middlePointY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
-
-    // a rough bounding box of the bezier curve
-    var bb = {
-      x1: Math.min( x1, x3, middlePointX ),
-      x2: Math.max( x1, x3, middlePointX ),
-      y1: Math.min( y1, y3, middlePointY ),
-      y2: Math.max( y1, y3, middlePointY )
-    };
-
-    // if outside the rough bounding box for the bezier, then it can't be a hit
-    if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
-      // console.log('bezier out of rough bb')
-      return false;
-    } else {
-      // console.log('do more expensive check');
-      return true;
-    }
-    
-    var displacementX, displacementY, offsetX, offsetY;
-    var dotProduct, dotSquared, sideSquared;
-    var outside = function(x, y, startX, startY, endX, endY,
-        toleranceSquared, counterClockwise) {
-
-      dotProduct = (endY - startY) * (x - startX) + (startX - endX) * (y - startY);
-      dotSquared = dotProduct * dotProduct;
-      sideSquared = (endY - startY) * (endY - startY) 
-        + (startX - endX) * (startX - endX);
-
-      if (counterClockwise) {
-        if (dotProduct > 0) {
-          return false;
-        }
-      } else {
-        if (dotProduct < 0) {
-          return false;
-        }
-      }
-      
-      return (dotSquared / sideSquared > toleranceSquared);
-    };
-    
-    // Used to check if the test polygon winding is clockwise or counterclockwise
-    var testPointX = (middlePointX + x2) / 2.0;
-    var testPointY = (middlePointY + y2) / 2.0;
-    
-    var counterClockwise = true;
-    
-    // The test point is always inside
-    if (outside(testPointX, testPointY, x1, y1, x2, y2, 0, counterClockwise)) {
-      counterClockwise = !counterClockwise;
-    }
-    
-    /*
-    return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
-      && !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
-      && !outside(x, y, x3, y3, middlePointX, middlePointY, toleranceSquared,
-        counterClockwise)
-      && !outside(x, y, middlePointX, middlePointY, x1, y1, toleranceSquared,
-        counterClockwise)
-    );
-    */
-    
-    return (!outside(x, y, x1, y1, x2, y2, toleranceSquared, counterClockwise)
-      && !outside(x, y, x2, y2, x3, y3, toleranceSquared, counterClockwise)
-      && !outside(x, y, x3, y3, x1, y1, toleranceSquared,
-        counterClockwise)
-    );
   };
   
   $$.math.solveCubic = function(a, b, c, d, result) {
@@ -776,7 +700,7 @@
     
     result[5] = result[3] = 0;
     
-    if (discriminant == 0) {
+    if (discriminant === 0) {
       r13 = ((r < 0) ? -Math.pow(-r, (1.0 / 3.0)) : Math.pow(r, (1.0 / 3.0)));
       result[0] = -term1 + 2.0 * r13;
       result[4] = result[2] = -(r13 + term1);
@@ -908,14 +832,14 @@
       return (x - x2) * (x - x2) + (y - y2) * (y - y2);
     }
     
-    return (hypSq - adjSq)
+    return hypSq - adjSq;
   };
 
   $$.math.pointInsidePolygon = function(
     x, y, basePoints, centerX, centerY, width, height, direction, padding) {
 
     //var direction = arguments[6];
-    var transformedPoints = new Array(basePoints.length)
+    var transformedPoints = new Array(basePoints.length);
 
     // Gives negative angle
     var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
@@ -1005,7 +929,7 @@
     
 //*    console.log("up: " + up + ", down: " + down);
     
-    if (up % 2 == 0) {
+    if (up % 2 === 0) {
       return false;
     } else {
       return true;
@@ -1128,19 +1052,12 @@
     
     // Calculate d, direction vector of line
     var d = [x2 - x1, y2 - y1]; // Direction vector of line
-    var s = [x1, y1]; // Start of line
     var c = [centerX, centerY]; // Center of circle
-    var f = [x1 - centerX, y1 - centerY]
+    var f = [x1 - centerX, y1 - centerY];
     
     var a = d[0] * d[0] + d[1] * d[1];
     var b = 2 * (f[0] * d[0] + f[1] * d[1]);
     var c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
-    
-    /*
-    var a = this.dotProduct(d, d);
-    var b = 2 * this.dotProduct(s, d) - this.dotProduct(d, c);
-    var c = this.dotProduct(s, s) - 2 * this.dotProduct(s, c) + this.dotProduct(c, c) - radius * radius ;
-    */
     
     var discriminant = b*b-4*a*c;
     
@@ -1163,7 +1080,7 @@
       inRangeParams.push(tMax);
     }
     
-    if (inRangeParams.length == 0) {
+    if (inRangeParams.length === 0) {
       return [];
     }
     
@@ -1183,7 +1100,7 @@
       }
       
     } else {
-      return [nearIntersectionX, nearIntersectionY]
+      return [nearIntersectionX, nearIntersectionY];
     }
     
   };
@@ -1227,7 +1144,7 @@
     var ub_t = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3);
     var u_b = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
 
-    if (u_b != 0) {
+    if (u_b !== 0) {
       var ua = ua_t / u_b;
       var ub = ub_t / u_b;
       
@@ -1242,22 +1159,22 @@
         }
       }
     } else {
-      if (ua_t == 0 || ub_t == 0) {
+      if (ua_t === 0 || ub_t === 0) {
 
         // Parallel, coincident lines. Check if overlap
 
         // Check endpoint of second line
-        if ([x1, x2, x4].sort()[1] == x4) {
+        if ([x1, x2, x4].sort()[1] === x4) {
           return [x4, y4];
         }
         
         // Check start point of second line
-        if ([x1, x2, x3].sort()[1] == x3) {
+        if ([x1, x2, x3].sort()[1] === x3) {
           return [x3, y3];
         }
         
         // Endpoint of first line
-        if ([x3, x4, x2].sort()[1] == x2) {
+        if ([x3, x4, x2].sort()[1] === x2) {
           return [x2, y2];
         }
         
@@ -1375,7 +1292,7 @@
       y2 = oldY1;
     }
     
-    var transformedPoints = new Array(basePoints.length)
+    var transformedPoints = new Array(basePoints.length);
     
     // Gives negative of angle
     var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0] 
@@ -1480,7 +1397,7 @@
       
       if (i < points.length / 2 - 1) {
         nextX = points[(i + 1) * 2];
-        nextY = points[(i + 1) * 2 + 1]
+        nextY = points[(i + 1) * 2 + 1];
       } else {
         nextX = points[0];
         nextY = points[1];
@@ -1576,7 +1493,7 @@
         currentX, currentY,
         nextX, nextY);
       
-      if (intersection.length != 0) {
+      if (intersection.length !== 0) {
         intersections.push(intersection[0], intersection[1]);
       }
     }
@@ -1648,7 +1565,7 @@
   $$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
     
     var increment = 1.0 / sides * 2 * Math.PI;
-    var startAngle = sides % 2 == 0 ? 
+    var startAngle = sides % 2 === 0 ? 
       Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
 //    console.log(nodeShapes['square']);
     startAngle += rotationRadians;

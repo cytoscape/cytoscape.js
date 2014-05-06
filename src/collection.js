@@ -358,11 +358,11 @@
           
           if( val == null || val === '' ){
             // can't create if source or target is not defined properly
-            $$.util.error('Can not create edge `' + data.id + '` with unspecified ' + field);
+            $$.util.error('Can not create edge `' + id + '` with unspecified ' + field);
             badSourceOrTarget = true;
           } else if( cy.getElementById(val).empty() ){ 
             // can't create edge if one of its nodes doesn't exist
-            $$.util.error('Can not create edge `' + data.id + '` with nonexistant ' + field + ' `' + val + '`');
+            $$.util.error('Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`');
             badSourceOrTarget = true;
           }
         }
@@ -382,7 +382,7 @@
        
       // create mock ids map for element so it can be used like collections
       _private.ids = {};
-      _private.ids[ data.id ] = ele;
+      _private.ids[ id ] = ele;
 
       _private.removed = false;
       cy.addToPool( ele );

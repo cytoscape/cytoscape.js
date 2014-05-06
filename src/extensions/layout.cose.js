@@ -84,7 +84,7 @@
     var cy      = options.cy;
 
     // Set DEBUG - Global variable
-    if (true == options.debug) {
+    if (true === options.debug) {
       DEBUG = true;
     } else {
       DEBUG = false;
@@ -102,7 +102,7 @@
     }
 
     // If required, randomize node positions
-    if (true == options.randomize) {
+    if (true === options.randomize) {
       randomizePositions(layoutInfo, cy);
 
       if (0 < options.refresh) {
@@ -116,6 +116,14 @@
     raf(function onFrame(){
       // Do one step in the phisical simulation
       step(layoutInfo, cy, options, i);
+<<<<<<< HEAD
+=======
+
+      // If required, update positions
+      if (0 < options.refresh && 0 === (i % options.refresh)) {
+        refreshPositions(layoutInfo, cy, options);
+      }
+>>>>>>> cdba268... clean lint; closes #541
       
       // Update temperature
       layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
@@ -126,7 +134,12 @@
         return;
       }
 
+<<<<<<< HEAD
       refreshPositions(layoutInfo, cy, options);
+=======
+    // Fit the graph if necessary
+    if (true === options.fit) {
+>>>>>>> cdba268... clean lint; closes #541
       cy.fit( options.padding );
 
       i++;
@@ -229,7 +242,7 @@
       var n = layoutInfo.layoutNodes[i];
       var p_id = n.parentId;
       // Check if node n has a parent node
-      if (undefined != p_id) {
+      if (null != p_id) {
       // Add node Id to parent's list of children
       layoutInfo.layoutNodes[layoutInfo.idToIndex[p_id]].children.push(n.id);
       } else {
@@ -298,14 +311,14 @@
 
       // Source depth
       var tempNode = layoutInfo.layoutNodes[sourceIx];
-      while (-1 == $.inArray(tempNode.id, lcaGraph)) {
+      while (-1 === $.inArray(tempNode.id, lcaGraph)) {
         tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
         depth++;
       }
 
       // Target depth
       tempNode = layoutInfo.layoutNodes[targetIx];
-      while (-1 == $.inArray(tempNode.id, lcaGraph)) {
+      while (-1 === $.inArray(tempNode.id, lcaGraph)) {
         tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
         depth++;
       }
@@ -381,19 +394,19 @@
       var children = layoutInfo.layoutNodes[nodeIx].children;
 
       // If the node has no child, skip it
-      if (0 == children.length) {
+      if (0 === children.length) {
       continue;
       }
 
       var childGraphIx = layoutInfo.indexToGraph[layoutInfo.idToIndex[children[0]]];
       var result = findLCA_aux(node1, node2, childGraphIx, layoutInfo);
-      if (0 == result.count) {
+      if (0 === result.count) {
       // Neither node1 nor node2 are present in this subgraph
       continue;
-      } else if (1 == result.count) {
+      } else if (1 === result.count) {
       // One of (node1, node2) is present in this subgraph
       c++;
-      if (2 == c) {
+      if (2 === c) {
         // We've already found both nodes, no need to keep searching
         break;
       }
@@ -474,19 +487,18 @@
    * @brief : Randomizes the position of all nodes
    */
   var randomizePositions = function(layoutInfo, cy) {
-    var container = cy.container();
     var width     = layoutInfo.clientWidth;
     var height    = layoutInfo.clientHeight;
 
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       // No need to randomize compound nodes
-      if (true || 0 == n.children.length) {
+      if (true || 0 === n.children.length) {
         n.positionX = Math.random() * width;
         n.positionY = Math.random() * height;
       }
     }
-  }
+  };
 
   
   /**
@@ -495,11 +507,7 @@
    * @arg cy         : Cytoscape object
    * @arg options    : Layout options
    */
-  var refreshPositions = function(layoutInfo, cy, options) {
-    var container = cy.container();
-    var width     = layoutInfo.clientWidth;
-    var height    = layoutInfo.clientHeight;
-    
+  var refreshPositions = function(layoutInfo, cy, options) {  
     var s = 'Refreshing positions';
     logDebug(s);
 
@@ -515,7 +523,7 @@
     });
 
     // Trigger layoutReady only on first call
-    if (true != layoutInfo.ready) {
+    if (true !== layoutInfo.ready) {
       s = 'Triggering layoutready';
       logDebug(s);
       layoutInfo.ready = true;
@@ -590,7 +598,7 @@
     s += "\ndirectionX: " + directionX + ", directionY: " + directionY;
 
     // If both centers are the same, apply a random force
-    if (0 == directionX && 0 == directionY) {
+    if (0 === directionX && 0 === directionY) {
       s += "\nNodes have the same position.";
       return; // TODO
     }
@@ -658,7 +666,6 @@
     var W = node.width;
     var dirSlope     = dY / dX;
     var nodeSlope    = H / W;
-    var nodeinvSlope = W / H;
 
     var s = 'Computing clipping point of node ' + node.id + 
       " . Height:  " + H + ", Width: " + W + 
@@ -668,7 +675,7 @@
     var res = {};
     do {
       // Case: Vertical direction (up)
-      if (0 == dX && 0 < dY) {
+      if (0 === dX && 0 < dY) {
         res.x = X;
         s += "\nUp direction";
         res.y = Y + H / 2;
@@ -676,7 +683,7 @@
       }
 
       // Case: Vertical direction (down)
-      if (0 == dX && 0 > dY) {
+      if (0 === dX && 0 > dY) {
         res.x = X;
         res.y = Y + H / 2;
         s += "\nDown direction";
@@ -776,7 +783,7 @@
       
       // If both centers are the same, do nothing.
       // A random force has already been applied as node repulsion
-      if (0 == directionX && 0 == directionY) {
+      if (0 === directionX && 0 === directionY) {
       return;
       }
 
@@ -791,12 +798,12 @@
 
       var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity; 
 
-      if (0 != l) {
-      var forceX = force * lx / l;
-      var forceY = force * ly / l;
+      if (0 !== l) {
+        var forceX = force * lx / l;
+        var forceY = force * ly / l;
       } else {
-      var forceX = 0;
-      var forceY = 0;
+        var forceX = 0;
+        var forceY = 0;
       }
 
       // Add this force to target and source nodes
@@ -826,37 +833,36 @@
       logDebug(s);
           
       // Compute graph center
-      if (0 == i) {
-      var container = cy.container();    
-      var centerX   = layoutInfo.clientHeight / 2;
-      var centerY   = layoutInfo.clientWidth  / 2;    
+      if (0 === i) {
+        var centerX   = layoutInfo.clientHeight / 2;
+        var centerY   = layoutInfo.clientWidth  / 2;    
       } else {
-      // Get Parent node for this graph, and use its position as center
-      var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
-      var parent  = layoutInfo.layoutNodes[layoutInfo.idToIndex[temp.parentId]];
-      var centerX = parent.positionX;
-      var centerY = parent.positionY;
+        // Get Parent node for this graph, and use its position as center
+        var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
+        var parent  = layoutInfo.layoutNodes[layoutInfo.idToIndex[temp.parentId]];
+        var centerX = parent.positionX;
+        var centerY = parent.positionY;
       }
       s = "Center found at: " + centerX + ", " + centerY;
       logDebug(s);
 
       // Apply force to all nodes in graph
       for (var j = 0; j < numNodes; j++) {
-      var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
-      s = "Node: " + node.id;
-      var dx = centerX - node.positionX;
-      var dy = centerY - node.positionY;
-      var d  = Math.sqrt(dx * dx + dy * dy);
-      if (d > 1.0) { // TODO: Use global variable for distance threshold
-        var fx = options.gravity * dx / d;
-        var fy = options.gravity * dy / d;
-        node.offsetX += fx;
-        node.offsetY += fy;
-        s += ": Applied force: " + fx + ", " + fy;
-      } else {
-        s += ": skypped since it's too close to center";
-      }
-      logDebug(s);
+        var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
+        s = "Node: " + node.id;
+        var dx = centerX - node.positionX;
+        var dy = centerY - node.positionY;
+        var d  = Math.sqrt(dx * dx + dy * dy);
+        if (d > 1.0) { // TODO: Use global variable for distance threshold
+          var fx = options.gravity * dx / d;
+          var fy = options.gravity * dy / d;
+          node.offsetX += fx;
+          node.offsetY += fy;
+          s += ": Applied force: " + fx + ", " + fy;
+        } else {
+          s += ": skypped since it's too close to center";
+        }
+        logDebug(s);
       }
     }
   };
@@ -1017,7 +1023,7 @@
   var updateAncestryBoundaries = function(node, layoutInfo) {
     var s = "Propagating new position/size of node " + node.id;
     var parentId = node.parentId;
-    if (undefined == parentId) {
+    if (null == parentId) {
       // If there's no parent, we are done
       s += ". No parent node.";
       logDebug(s);
@@ -1029,28 +1035,28 @@
     var flag = false;
 
     // MaxX
-    if (undefined == p.maxX || node.maxX + p.padRight > p.maxX) {
+    if (null == p.maxX || node.maxX + p.padRight > p.maxX) {
       p.maxX = node.maxX + p.padRight;
       flag = true;
       s += "\nNew maxX for parent node " + p.id + ": " + p.maxX;
     }
 
     // MinX
-    if (undefined == p.minX || node.minX - p.padLeft < p.minX) {
+    if (null == p.minX || node.minX - p.padLeft < p.minX) {
       p.minX = node.minX - p.padLeft;
       flag = true;
       s += "\nNew minX for parent node " + p.id + ": " + p.minX;
     }
 
     // MaxY
-    if (undefined == p.maxY || node.maxY + p.padBottom > p.maxY) {
+    if (null == p.maxY || node.maxY + p.padBottom > p.maxY) {
       p.maxY = node.maxY + p.padBottom;
       flag = true;
       s += "\nNew maxY for parent node " + p.id + ": " + p.maxY;
     }
 
     // MinY
-    if (undefined == p.minY || node.minY - p.padTop < p.minY) {
+    if (null == p.minY || node.minY - p.padTop < p.minY) {
       p.minY = node.minY - p.padTop;
       flag = true;
       s += "\nNew minY for parent node " + p.id + ": " + p.minY;

@@ -1,11 +1,13 @@
 // this is put as a global var in the browser
 // or it's just a global to this module if commonjs
+
 var cytoscape;
 
 (function(window){ 'use strict';
 
   // the object iteself is a function that init's an instance of cytoscape
-  var $$ = cytoscape = function(){
+
+  var $$ = cytoscape = function(){ // jshint ignore:line
     return cytoscape.init.apply(cytoscape, arguments);
   };
   

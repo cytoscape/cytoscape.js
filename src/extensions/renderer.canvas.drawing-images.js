@@ -1,8 +1,6 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
-  
-  var imageCache
 
   CanvasRenderer.prototype.getCachedImage = function(url, onLoad) {
     var r = this;
@@ -19,11 +17,10 @@
     image.src = url;
     
     return image;
-  }
+  };
     
   CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
     var r = this;
-    var zoom = this.data.cy._private.zoom;
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;
     var style = node._private.style;

@@ -12,7 +12,9 @@ var child_process = require('child_process');
 var fs = require('fs');
 var htmlmin = require('gulp-htmlmin');
 var cssmin = require('gulp-cssmin');
-var shell = require('gulp-shell')
+var shell = require('gulp-shell');
+var jshint = require('gulp-jshint');
+var jshStylish = require('jshint-stylish');
 
 var now = new Date();
 var version = process.env['VERSION'] || ['snapshot', +now].join('-');
@@ -307,13 +309,30 @@ gulp.task('npm', shell.task([
 gulp.task('watch', function(next){
   var watcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
   watcher.on('added deleted', function(event){
-    console.log('File '+ event.path+ ' was ' + event.type + ', updating lib refs in pages...');
+    console.log('File ' + event.path + ' was ' + event.type + ', updating lib refs in pages...');
   });
 
   var testWatcher = gulp.watch('test/*.js', ['testlist']);
   testWatcher.on('added deleted', function(event){
-    console.log('File '+ event.path+ ' was ' + event.type + ', updating test refs in pages...');
+    console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
   });
 
   next();
+});
+
+gulp.task('lint', function(){
+  return gulp.src( paths.sources )
+    .pipe( jshint({
+      laxbreak: true,
+      loopfunc: true,
+      strict: true,
+      unused: 'vars',
+      eqnull: true,
+      sub: true,
+      shadow: true,
+      predef: [ 'cytoscape' ]
+    }) )
+
+    .pipe( jshint.reporter(jshStylish) )
+  ;
 });

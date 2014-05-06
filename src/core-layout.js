@@ -41,14 +41,14 @@
       }
       
       var name = options.name;
-      var layoutProto = $$.extension('layout', name);
+      var LayoutProto = $$.extension('layout', name);
       
-      if( layoutProto == null ){
+      if( LayoutProto == null ){
         $$.util.error('Can not apply layout: No such layout `%s` found; did you include its JS file?', name);
         return;
       }
       
-      this._private.layout = new layoutProto( $$.util.extend({}, options, {
+      this._private.layout = new LayoutProto( $$.util.extend({}, options, {
         renderer: this._private.renderer,
         cy: this
       }) );

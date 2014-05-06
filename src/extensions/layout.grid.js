@@ -20,13 +20,12 @@
     
     var cy = params.cy;
     var nodes = cy.nodes();
-    var edges = cy.edges();
     var container = cy.container();
     
     var width = container.clientWidth;
     var height = container.clientHeight;
 
-    if( height == 0 || width == 0){
+    if( height === 0 || width === 0){
       nodes.positions(function(){
         return { x: 0, y: 0 };
       });
@@ -40,7 +39,7 @@
       var cols = Math.round( width/height * splits );
 
       var small = function(val){
-        if( val == undefined ){
+        if( val == null ){
           return Math.min(rows, cols);
         } else {
           var min = Math.min(rows, cols);
@@ -53,7 +52,7 @@
       };
       
       var large = function(val){
-        if( val == undefined ){
+        if( val == null ){
           return Math.max(rows, cols);
         } else {
           var max = Math.max(rows, cols);
@@ -170,8 +169,6 @@
         }
       }
 
-
-      var atLeastOneManSet = false;
       nodes.positions(function(i, element){
         var x, y;
 

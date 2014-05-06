@@ -15,7 +15,6 @@
     var options = this.options;
     var cy = options.cy;
     var nodes = cy.nodes();
-    var edges = cy.edges();
     var container = cy.container();
     
     var width = container.clientWidth;

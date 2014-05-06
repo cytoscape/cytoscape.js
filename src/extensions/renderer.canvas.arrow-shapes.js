@@ -91,19 +91,7 @@
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       // Transform x, y to get non-rotated ellipse
       
-      if (width != height) {
-        // This gives negative of the angle
-        var angle = Math.asin(direction[1] / 
-          (Math.sqrt(direction[0] * direction[0] 
-            + direction[1] * direction[1])));
-      
-        var cos = Math.cos(-angle);
-        var sin = Math.sin(-angle);
-        
-        var rotatedPoint = 
-          [x * cos - y * sin,
-            y * cos + x * sin];
-        
+      if (width != height) {                  
         var aspectRatio = (height + padding) / (width + padding);
         y /= aspectRatio;
         centerY /= aspectRatio;

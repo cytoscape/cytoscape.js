@@ -329,7 +329,6 @@
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-        var single = selfIsArrayLike ? self[0] : self;
         var eventsIsString = $$.is.string(events);
 
         if( arguments.length === 0 ){ // then unbind all
@@ -403,7 +402,6 @@
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-        var single = selfIsArrayLike ? self[0] : self;
         var eventsIsString = $$.is.string(events);
         var eventsIsObject = $$.is.plainObject(events);
         var eventsIsEvent = $$.is.event(events);

@@ -4,9 +4,6 @@
 
   // Project mouse
   CanvasRenderer.prototype.projectIntoViewport = function(clientX, clientY) {
-    
-    var n = this.data.container;
-      
     var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
@@ -16,7 +13,7 @@
     
     x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
     return [x, y];
-  }
+  };
 
   CanvasRenderer.prototype.findContainerClientCoords = function() {
     var container = this.data.container;
@@ -24,12 +21,11 @@
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
 
     return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
-  }
+  };
 
   // Find nearest element
   CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly){
     var self = this;
-    var data = this.data; 
     var eles = this.getCachedZSortedEles();
     var near = [];
     var isTouch = CanvasRenderer.isTouch;
@@ -46,7 +42,6 @@
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
-      var style = node._private.style;
       var visible = node.visible() && !node.transparent();
 
       // exit early if invisible edge and must be visible
@@ -76,8 +71,6 @@
       var visible = edge.visible() && !edge.transparent();
       var src = edge._private.source;
       var tgt = edge._private.target;
-      var srcStyle = src._private.style;
-      var tgtStyle = tgt._private.style;
 
       // exit early if invisible edge and must be visible
       if( visibleElementsOnly && !visible ){
@@ -201,11 +194,10 @@
     } else {
       return null;
     }
-  }
+  }; 
 
   // 'Give me everything from this box'
   CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
-    var data = this.data;
     var nodes = this.getCachedNodes();
     var edges = this.getCachedEdges();
     var box = [];
@@ -309,7 +301,7 @@
     }
     
     return box;
-  }
+  };
 
 
   /**
@@ -511,8 +503,7 @@
         textX = nodePos.x + nodeWidth / 2;
         break;
 
-      case 'center':
-      default:
+      default: // e.g. center
         textX = nodePos.x;
     }
 
@@ -525,8 +516,7 @@
         textY = nodePos.y + nodeHeight / 2;
         break;
 
-      case 'middle':
-      default:
+      default: // e.g. middle
         textY = nodePos.y;
     }
   
@@ -649,10 +639,12 @@
     // put label content in div
     div.innerText = text;
 
-    return cache[cacheKey] = {
+    cache[cacheKey] = {
       width: div.clientWidth,
       height: div.clientHeight
     };
+
+    return cache[cacheKey];
   };  
 
   CanvasRenderer.prototype.recalculateRenderedStyle = function(){
@@ -709,7 +701,7 @@
         tgtId + '-' + srcId :
         srcId + '-' + tgtId ;
 
-      if (hashTable[pairId] == undefined) {
+      if (hashTable[pairId] == null) {
         hashTable[pairId] = [];
       }
       
@@ -718,7 +710,6 @@
     }
 
     var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
-    var midpt;
     var vectorNormInverse;
     var badBezier;
     
@@ -771,11 +762,6 @@
           srcPos.y,
           tgtBorder / 2
         );
-
-        var midpt = {
-          x: ( srcOutside[0] + tgtOutside[0] )/2,
-          y: ( srcOutside[1] + tgtOutside[1] )/2
-        };
 
         var midptSrcPts = {
           x1: srcOutside[0],
@@ -965,7 +951,7 @@
 
             if( closeStartACp ){
               rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist); 
-              rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist)
+              rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist);
             } else {
               rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist; 
               rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
@@ -1030,8 +1016,6 @@
       var rFactor = 0.8;
 
       if( !rscratch.haystack ){
-        var src = edge.source()[0];
-        var srcPos = src.position();
         var srcR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
@@ -1040,10 +1024,6 @@
           y: srcR * Math.sin(angle)
         };
 
-        var tgt = edge.target()[0];
-        var tgtPos = tgt.position();
-        var tgtW = tgt.width();
-        var tgtH = tgt.height();
         var tgtR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
@@ -1058,7 +1038,7 @@
     }
 
     return hashTable;
-  }
+  };
 
   CanvasRenderer.prototype.findEndpoints = function(edge) {
     var intersect;
@@ -1066,9 +1046,6 @@
     var source = edge.source()[0];
     var target = edge.target()[0];
     
-    var srcPos = source._private.position;
-    var tgtPos = target._private.position;
-
     var tgtArShape = edge._private.style['target-arrow-shape'].value;
     var srcArShape = edge._private.style['source-arrow-shape'].value;
 
@@ -1137,7 +1114,7 @@
         source.position().y,
         tgtBorderW / 2);
         
-      if (intersect.length == 0) {
+      if (intersect.length === 0) {
         rs.noArrowPlacement = true;
   //      return;
       } else {
@@ -1166,7 +1143,7 @@
         target.position().y,
         srcBorderW / 2);
       
-      if (intersect.length == 0) {
+      if (intersect.length === 0) {
         rs.noArrowPlacement = true;
   //      return;
       } else {
@@ -1257,7 +1234,7 @@
     } else if (rs.isArcEdge) {
       return;
     }
-  }
+  };
 
   // Find adjacent edges
   CanvasRenderer.prototype.findEdges = function(nodeSet) {
@@ -1280,15 +1257,15 @@
     }
     
     return adjacentEdges;
-  }
+  };
 
   CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
     return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-  }
+  };
   
   CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
     return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-  }
+  };
 
 
 })( cytoscape );

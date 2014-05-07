@@ -132,6 +132,7 @@
     }
 
     if( params.type === 'load' || params.type === 'resize' ){
+      this.invalidateContainerClientCoordsCache();
       this.matchCanvasSize(this.data.container);
     }
     

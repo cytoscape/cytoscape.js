@@ -23,6 +23,10 @@
     return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   };
 
+  CanvasRenderer.prototype.invalidateContainerClientCoordsCache = function(){
+    this.containerBB = null;
+  };
+
   // Find nearest element
   CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly){
     var self = this;

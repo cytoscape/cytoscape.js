@@ -89,7 +89,7 @@
       return; // save cycles if same
     }
 
-    this.fontCaches = null; // because resizing resets the style
+    this.fontCaches = null; // resizing resets the style
 
     var canvasContainer = data.canvasContainer;
     canvasContainer.style.width = width + 'px';

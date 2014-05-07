@@ -10,9 +10,9 @@ describe('Collection building and filtering', function(){
     cytoscape({
       elements: {
         nodes: [
-            { data: { id: 'n1' } },
-            { data: { id: 'n2' } },
-            { data: { id: 'n3' } }
+            { data: { id: 'n1', val: 1 } },
+            { data: { id: 'n2', val: 2 } },
+            { data: { id: 'n3', val: 3 } }
         ],
         
         edges: [
@@ -54,6 +54,35 @@ describe('Collection building and filtering', function(){
       return this.id() === 'n1';
     }).same(n1) ).to.be.true;
 
+  });
+
+  it('eles.map()', function(){
+    var ids = [];
+    var nodes = cy.nodes();
+
+    for( var i = 0; i < nodes.length; i++ ){
+      ids.push( nodes[i].id() );
+    }
+
+    var arr = cy.nodes().map(function(){
+      return this.id();
+    });
+
+    expect( arr ).to.deep.equal( ids );
+  });
+
+  it('eles.max()', function(){
+    var max = cy.nodes().max(function(){ return this.data('val'); });
+    
+    expect( max.value ).to.equal( 3 );
+    expect( max.ele.same(n3) ).to.be.true;
+  });
+
+  it('eles.min()', function(){
+    var min = cy.nodes().min(function(){ return this.data('val'); });
+    
+    expect( min.value ).to.equal( 1 );
+    expect( min.ele.same(n1) ).to.be.true;
   });
 
 });

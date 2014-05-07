@@ -1,19 +1,19 @@
 ;(function($$){ 'use strict';
 
   $$.fn.eles({
-    nodes: function(selector){
+    nodes: function( selector ){
       return this.filter(function(i, element){
         return element.isNode();
       }).filter(selector);
     },
 
-    edges: function(selector){
+    edges: function( selector ){
       return this.filter(function(i, element){
         return element.isEdge();
       }).filter(selector);
     },
 
-    filter: function(filter){
+    filter: function( filter ){
       var cy = this._private.cy;
       
       if( $$.is.fn(filter) ){
@@ -39,7 +39,7 @@
       return new $$.Collection( cy ); // if not handled by above, give 'em an empty collection
     },
 
-    not: function(toRemove){
+    not: function( toRemove ){
       var cy = this._private.cy;
 
       if( !toRemove ){
@@ -95,7 +95,7 @@
       return new $$.Collection( cy, elements );
     },
 
-    add: function(toAdd){
+    add: function( toAdd ){
       var cy = this._private.cy;    
       
       if( !toAdd ){
@@ -122,6 +122,59 @@
       }
       
       return new $$.Collection(cy, elements);
+    },
+
+    map: function( mapFn ){
+      var arr = [];
+
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var ret = mapFn.apply( ele, [i, ele] );
+
+        arr.push( ret );
+      }
+
+      return arr;
+    },
+
+    max: function( valFn ){
+      var max = -Infinity;
+      var maxEle;
+
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var val = valFn.apply( ele, [ i, ele ] );
+
+        if( val > max ){
+          max = val;
+          maxEle = ele;
+        }
+      }
+
+      return {
+        value: max,
+        ele: maxEle
+      };
+    },
+
+    min: function( valFn ){
+      var min = Infinity;
+      var minEle;
+
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var val = valFn.apply( ele, [ i, ele ] );
+
+        if( val < min ){
+          min = val;
+          minEle = ele;
+        }
+      }
+
+      return {
+        value: min,
+        ele: minEle
+      };
     }
   });
   

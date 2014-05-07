@@ -69,7 +69,26 @@
 
             {
               "name": "cy.collection",
-              "descr": "Return a new, empty collection.",
+              "descr": "Return a new collection.",
+              "formats": [
+                { 
+                  "descr": "Get an empty collection."
+                },
+
+                { 
+                  "descr": "Get a collection from elements in the graph matching the specified selector.",
+                  "args": [
+                    { "name": "selector", "descr": "Elements matching this selector are in the returned collection." }
+                  ] 
+                },
+
+                { 
+                  "descr": "Get a collection from an array of elements.",
+                  "args": [
+                    { "name": "elesArray", "descr": "The elements in this array are in the returned collection." }
+                  ]
+                }
+              ],
               "md": "core/collection"
             },
 
@@ -1629,6 +1648,45 @@
                   ]
                 }
               ]
+            },
+
+            {
+              "name": "eles.map",
+              "descr": "Get an array containing values mapped from the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function(i, ele)", "descr": "The mapping function that returns the value to be mapped from `this` element." }
+                  ]
+                }
+              ],
+              "md": "collection/map"
+            },
+
+            {
+              "name": "eles.min",
+              "descr": "Find a minimum value and the corresponding element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function(i, ele)", "descr": "The function that returns the value to be used for `this` element." }
+                  ]
+                }
+              ],
+              "md": "collection/min"
+            },
+
+            {
+              "name": "eles.max",
+              "descr": "Find a maximum value and the corresponding element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function(i, ele)", "descr": "The function that returns the value to be used for `this` element." }
+                  ]
+                }
+              ],
+              "md": "collection/max"
             }
             
           ]
@@ -1800,6 +1858,58 @@
                 }
               ],
               "md": "collection/codirectedEdges"
+            },
+
+            {
+              "name": "nodes.outgoers",
+              "descr": "Get edges (and their targets) coming out of the nodes in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/outgoers"
+            },
+
+            {
+              "name": "nodes.successors",
+              "descr": "Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/successors"
+            },
+
+            {
+              "name": "nodes.incomers",
+              "descr": "Get edges (and their sources) coming into the nodes in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/incomers"
+            },
+
+            {
+              "name": "nodes.predecessors",
+              "descr": "Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/predecessors"
             }
           ]
         },

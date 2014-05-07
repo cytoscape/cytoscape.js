@@ -65,8 +65,8 @@
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles ),
-        found: new $$.Collection( cy, found )
+        path: new $$.Collection( cy, connectedEles, { unique: true } ),
+        found: new $$.Collection( cy, found, { unique: true } )
       };
     },
 
@@ -150,8 +150,8 @@
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles ),
-        found: new $$.Collection( cy, found )
+        path: new $$.Collection( cy, connectedEles, { unique: true } ),
+        found: new $$.Collection( cy, found, { unique: true } )
       };
     },
 

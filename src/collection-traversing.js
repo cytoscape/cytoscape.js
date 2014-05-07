@@ -1,5 +1,8 @@
 ;(function($$){ 'use strict';
 
+  // DAG functions
+  //////////////////////////
+
   $$.fn.eles({
     // get the root nodes in the DAG
     roots: function( selector ){
@@ -11,27 +14,23 @@
           continue;
         }
 
-        var hasEdgesPointingIn;
-
-        (function(){
-          hasEdgesPointingIn = ele.connectedEdges(function(){
-            return this.data('target') === ele.id() && this.data('source') !== ele.id();
-          }).length > 0;
-        })();
+        var hasEdgesPointingIn = ele.connectedEdges(function(){
+          return this.data('target') === ele.id() && this.data('source') !== ele.id();
+        }).length > 0;
 
         if( !hasEdgesPointingIn ){
           roots.push( ele );
         }
       }
 
-      return new $$.Collection( this._private.cy, roots ).filter( selector );
+      return new $$.Collection( this._private.cy, roots, { unique: true } ).filter( selector );
     },
 
     // normally called children in graph theory
-    // these nodes =edges=> forward nodes
-    forwardNodes: function( selector ){
+    // these nodes =edges=> outgoing nodes
+    outgoers: function( selector ){
       var eles = this;
-      var fNodes = [];
+      var oEles = [];
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
@@ -46,19 +45,51 @@
           var tgtId = edge._private.data.target;
 
           if( srcId === eleId && tgtId !== eleId ){
-            fNodes.push( edge.target()[0] );
+            oEles.push( edge );
+            oEles.push( edge.target()[0] );
           }
         }
       }
 
-      return new $$.Collection( this._private.cy, fNodes ).filter( selector );
+      return new $$.Collection( this._private.cy, oEles, { unique: true } ).filter( selector );
+    },
+
+    // aka DAG descendants
+    successors: function( selector ){
+      var eles = this;
+      var sEles = [];
+      var sElesIds = {};
+
+      for(;;){
+        var outgoers = eles.outgoers();
+
+        if( outgoers.length === 0 ){ break; } // done if no outgoers left
+
+        var newOutgoers = false;
+        for( var i = 0; i < outgoers.length; i++ ){
+          var outgoer = outgoers[i];
+          var outgoerId = outgoer.id();
+
+          if( !sElesIds[ outgoerId ] ){
+            sElesIds[ outgoerId ] = true;
+            sEles.push( outgoer );
+            newOutgoers = true;
+          }
+        }
+
+        if( !newOutgoers ){ break; } // done if touched all outgoers already
+
+        eles = outgoers;
+      }
+
+      return new $$.Collection( this._private.cy, sEles ).filter( selector );
     },
 
     // normally called parents in graph theory
-    // these nodes <=edges= backward nodes
-    backwardNodes: function( selector ){
+    // these nodes <=edges= incoming nodes
+    incomers: function( selector ){
       var eles = this;
-      var bNodes = [];
+      var oEles = [];
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
@@ -73,12 +104,44 @@
           var tgtId = edge._private.data.target;
 
           if( tgtId === eleId && srcId !== eleId ){
-            bNodes.push( edge.source()[0] );
+            oEles.push( edge );
+            oEles.push( edge.source()[0] );
           }
         }
       }
 
-      return new $$.Collection( this._private.cy, bNodes ).filter( selector );
+      return new $$.Collection( this._private.cy, oEles, { unique: true } ).filter( selector );
+    },
+
+    // aka DAG ancestors
+    predecessors: function( selector ){
+      var eles = this;
+      var pEles = [];
+      var pElesIds = {};
+
+      for(;;){
+        var incomers = eles.incomers();
+
+        if( incomers.length === 0 ){ break; } // done if no incomers left
+
+        var newIncomers = false;
+        for( var i = 0; i < incomers.length; i++ ){
+          var incomer = incomers[i];
+          var incomerId = incomer.id();
+
+          if( !pElesIds[ incomerId ] ){
+            pElesIds[ incomerId ] = true;
+            pEles.push( incomer );
+            newIncomers = true;
+          }
+        }
+
+        if( !newIncomers ){ break; } // done if touched all incomers already
+
+        eles = incomers;
+      }
+
+      return new $$.Collection( this._private.cy, pEles ).filter( selector );
     }
   });
 
@@ -112,15 +175,15 @@
 
       }
       
-      return ( new $$.Collection( cy, elements ) ).filter( selector );
+      return ( new $$.Collection( cy, elements, { unique: true } ) ).filter( selector );
     },
 
     closedNeighborhood: function(selector){
-      return this.neighborhood().add(this).filter(selector);
+      return this.neighborhood().add( this ).filter( selector );
     },
 
     openNeighborhood: function(selector){
-      return this.neighborhood(selector);
+      return this.neighborhood( selector );
     }
   });  
 
@@ -174,7 +237,7 @@
         }
       }
       
-      return new $$.Collection( cy, sources ).filter( selector );
+      return new $$.Collection( cy, sources, { unique: true } ).filter( selector );
     };
   }
 
@@ -218,7 +281,7 @@
         }
       }
       
-      return new $$.Collection( cy, elements );
+      return new $$.Collection( cy, elements, { unique: true } );
     };
   }
   
@@ -240,7 +303,7 @@
         }
       }
       
-      return new $$.Collection( cy, retEles ).filter( selector );
+      return new $$.Collection( cy, retEles, { unique: true } ).filter( selector );
     },
 
     connectedNodes: function( selector ){
@@ -256,7 +319,7 @@
         retEles.push( edge.target()[0] );
       }
 
-      return new $$.Collection( cy, retEles ).filter( selector );
+      return new $$.Collection( cy, retEles, { unique: true } ).filter( selector );
     },
 
     parallelEdges: defineParallelEdgesFunction(),
@@ -303,7 +366,7 @@
         }
       }
       
-      return new $$.Collection( cy, elements ).filter( selector );
+      return new $$.Collection( cy, elements, { unique: true } ).filter( selector );
     };
   
   }

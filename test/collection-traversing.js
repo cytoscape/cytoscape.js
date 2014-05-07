@@ -72,6 +72,11 @@ describe('Collection traversing', function(){
     expect( n2n3.target().same(n3) ).to.be.true;
   });
 
+  it('eles.sources(), eles.targets()', function(){
+    expect( cy.elements().sources().same( n1.add(n2) ) ).to.be.true;
+    expect( cy.elements().targets().same( n2.add(n3) ) ).to.be.true;
+  });
+
   it('edges.parallelEdges()', function(){
     var e = cy.add({
       group: 'edges',
@@ -88,6 +93,34 @@ describe('Collection traversing', function(){
     });
 
     expect( n1n2.codirectedEdges().same( e.add(n1n2) ) ).to.be.true;
+  });
+
+  it('nodes.incomers()', function(){
+    expect( n2.incomers().same( n1.add(n1n2) ) ).to.be.true;
+  });
+
+  it('nodes.outgoers()', function(){
+    expect( n2.outgoers().same( n2n3.add(n3) ) ).to.be.true;
+  });
+
+  it('nodes.predecessors()', function(){
+    expect( n2.predecessors().same( n1.add(n1n2) ) ).to.be.true;
+
+    // now check if it works w/ loops
+    var loop = cy.add({ group: 'edges', data: { id: 'loop', source: 'n2', target: 'n2' } });
+    var dagbreaker = cy.add({ group: 'edges', data: { id: 'dagbreaker', source: 'n3', target: 'n1' } });
+
+    expect( n2.predecessors().same( cy.elements().not(loop) ) ).to.be.true;
+  });
+
+  it('nodes.successors()', function(){
+    expect( n2.successors().same( n2n3.add(n3) ) ).to.be.true;
+
+    // now check if it works w/ loops
+    var loop = cy.add({ group: 'edges', data: { id: 'loop', source: 'n2', target: 'n2' } });
+    var dagbreaker = cy.add({ group: 'edges', data: { id: 'dagbreaker', source: 'n3', target: 'n1' } });
+
+    expect( n2.successors().same( cy.elements().not(loop) ) ).to.be.true;
   });
 
 });

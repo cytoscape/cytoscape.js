@@ -17,7 +17,7 @@
         }
       }
       
-      return new $$.Collection( cy, parents ).filter( selector );
+      return new $$.Collection( cy, parents, { unique: true } ).filter( selector );
     },
 
     parents: function( selector ){
@@ -33,7 +33,7 @@
         eles = eles.parent();
       }
 
-      return new $$.Collection( this.cy(), parents ).filter( selector );
+      return new $$.Collection( this.cy(), parents, { unique: true } ).filter( selector );
     },
 
     commonAncestors: function( selector ){
@@ -59,7 +59,7 @@
         children = children.concat( ele._private.children );
       }
 
-      return new $$.Collection( this.cy(), children ).filter( selector );
+      return new $$.Collection( this.cy(), children, { unique: true } ).filter( selector );
     },
 
     siblings: function( selector ){
@@ -99,7 +99,7 @@
 
       add( this.children() );
 
-      return new $$.Collection( this.cy(), elements ).filter( selector );
+      return new $$.Collection( this.cy(), elements, { unique: true } ).filter( selector );
     }
   });
 

@@ -145,7 +145,7 @@
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   // represents a set of nodes, edges, or both together
-  $$.Collection = function(cy, elements){
+  $$.Collection = function(cy, elements, options){
     if( !(this instanceof $$.Collection) ){
       return new $$.Collection(cy, elements);
     }
@@ -199,10 +199,12 @@
       
       var id = element._private.data.id;
       
-      ids[ id ] = element;
+      if( !options || (options.unique && !ids[ id ] ) ){
+        ids[ id ] = element;
 
-      this[ this.length ] = element;
-      this.length++;
+        this[ this.length ] = element;
+        this.length++;
+      }
     }
     
     this._private = {
@@ -238,6 +240,10 @@
     } else { // an element
       return new $$.Collection( this._private.cy, [this] );
     }
+  };
+
+  $$.elesfn.unique = function(){
+    return new $$.Collection( this._private.cy, this, { unique: true } );
   };
 
   $$.elesfn.json = function(){

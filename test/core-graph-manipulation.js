@@ -173,25 +173,6 @@ describe('Core graph manipulation', function(){
 
   });
 
-  describe('cy.batchData()', function(){
-
-    it('changes specified nodes with unspecified nodes unchanged', function(){
-      cy.batchData({
-        'n1': { foo: 1 },
-        'n2': { foo: 2 }
-      });
-
-      expect( cy.$('#n1').data('foo') ).to.equal(1);
-      expect( cy.$('#n2').data('foo') ).to.equal(2);
-      expect( cy.$('#n3').data('foo') ).to.equal('three');
-
-      expect( cy.$('#n1').data('weight') ).to.equal(0.25);
-      expect( cy.$('#n2').data('weight') ).to.equal(0.5);
-      expect( cy.$('#n3').data('weight') ).to.equal(0.75);
-    });
-
-  });
-
   describe('cy.collection()', function(){
 
     it('gets an empty collection', function(){
@@ -229,33 +210,6 @@ describe('Core graph manipulation', function(){
       expect( cy.filter(function(i, ele){
         return ele.id() === 'n1';
       }) ).to.have.length(1);
-    });
-
-  });
-
-  describe('cy.batchMove()', function(){
-
-    it('should move edges', function(){
-      cy.batchMove({
-        'n1n2': { source: 'n2', target: 'n1' },
-        'n2n3': { source: 'n3', target: 'n2' }
-      });
-
-      expect( cy.$('#n1n2').source().id() ).to.equal('n2');
-      expect( cy.$('#n1n2').target().id() ).to.equal('n1');
-
-      expect( cy.$('#n2n3').source().id() ).to.equal('n3');
-      expect( cy.$('#n2n3').target().id() ).to.equal('n2');
-    });
-
-    it('should move nodes', function(){
-      cy.batchMove({
-        'n2': { parent: 'n1' },
-        'n3': { parent: 'n1' }
-      });
-
-      expect( cy.$('#n2').parent().id() ).to.equal('n1');
-      expect( cy.$('#n3').parent().id() ).to.equal('n1');
     });
 
   });

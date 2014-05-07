@@ -143,6 +143,7 @@
       }
 
       if( type === 'load' || type === 'resize' ){
+        this.invalidateContainerClientCoordsCache();
         this.matchCanvasSize(this.data.container);
       }
     } // for

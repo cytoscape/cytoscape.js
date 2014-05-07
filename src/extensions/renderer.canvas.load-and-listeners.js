@@ -124,7 +124,7 @@
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
-      r.containerBB = null; // invalidate bb cache
+      r.invalidateContainerClientCoordsCache();
 
       r.matchCanvasSize(r.data.container);
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -133,7 +133,7 @@
 
     var invalCtnrBBOnScroll = function(domEle){
       r.registerBinding(domEle, 'scroll', function(e){
-        r.containerBB = null; // invalidate bb cache
+        r.invalidateContainerClientCoordsCache();
       } );
     };
 

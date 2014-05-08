@@ -1,6 +1,12 @@
 ## Notes & caveats
 
-A selector functions similar to a [jQuery selector](http://api.jquery.com/category/selectors/) on DOM elements, but selectors in Cytoscape.js instead work on collections.
+A selector functions similar to a [jQuery selector](http://api.jquery.com/category/selectors/) on DOM elements, but selectors in Cytoscape.js instead work on collections.  Note that wherever a selector may be specified as the argument to a function, a filter function may be used in place of the selector.  For example:
+
+```js
+var neighborhoodEdges = cy.neighborhood(function(){
+  return this.isEdge();
+});
+```
 
 The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 

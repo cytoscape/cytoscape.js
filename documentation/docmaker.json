@@ -630,7 +630,7 @@
                     "name": "location",
                     "descr": "Where the nodes are moved.",
                     "fields": [
-                      { "name": "parent", "descr": "The new parent node ID." }
+                      { "name": "parent", "descr": "The new parent node ID (use `null` for no parent)." }
                     ]
                   } ]
                 }

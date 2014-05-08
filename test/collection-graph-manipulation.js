@@ -127,6 +127,12 @@ describe('Collection graph manipulation', function(){
       expect( cy.$('#n1').children().id() ).to.equal('child');
     });
 
+    it('should move to no parent', function(){
+      cy.$('#child').move({ parent: null });
+      
+      expect( cy.$('#child').parent().length ).to.equal(0);
+    });
+
   });
 
 

@@ -165,8 +165,32 @@
   // for parsedProp:{ bypass: true }
   // the generated flattenedProp:{ bypassed: parsedProp } 
   $$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
-    parsedProp = $$.util.clone( parsedProp ); // copy b/c the same parsedProp may be applied to many elements, BUT
+    var pp = parsedProp;
+
+    // copy b/c the same parsedProp may be applied to many elements, BUT
     // the instances put in each element should be unique to avoid overwriting other the lists of other elements
+
+    if( context ){ // only need to copy if came from stylesheet
+      parsedProp = {
+        name: pp.name,
+        value: pp.value,
+        strValue: pp.strValue,
+        pxValue: pp.pxValue,
+        units: pp.units,
+        bypass: pp.bypass,
+        bypassed: pp.bypassed,
+        deleteBypass: pp.deleteBypass,
+        mapped: pp.mapped,
+        mapping: pp.mapping,
+        field: pp.field,
+        fieldMin: pp.fieldMin,
+        fieldMax: pp.fieldMax,
+        valueMin: pp.valueMin,
+        valueMax: pp.valueMax,
+        context: pp.context,
+        prev: pp.prev
+      };
+    }
 
     var prop = parsedProp;
     var style = ele._private.style;

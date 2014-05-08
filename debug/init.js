@@ -246,12 +246,8 @@ $(function(){
       }
       numNodes += n;
       
-      cy.add(nodes);
-      
-      var nodesCollection = cy.nodes();
       function nodeId(){
-        var index = Math.round((nodesCollection.size() - 1) * Math.random());
-        return nodesCollection.eq(index).data('id');
+        return randNodeId( Math.round( Math.random() * (cliques - 1) ) );
       }
       
       var edges = [];
@@ -269,7 +265,7 @@ $(function(){
       numEdges += e;
       
       time(function(){
-        cy.add(edges);
+        cy.add( nodes.concat(edges) );
       });
     });
 

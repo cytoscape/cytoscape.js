@@ -108,8 +108,8 @@
 	</head>
 
 	<body>
-		<h1>cytoscape.js debug page</h1>
-	    
+    
+    	<button id="goto-cy2">\ down /</button>
 	    <div id="cytoscape"></div>
 
 <!--
@@ -118,14 +118,20 @@
 	    <canvas style="border: 1px solid red;" width="600" height="600" id="dummy-canvas"></canvas>
 -->
 
-	    <div>Second instance to test multiple instances:</div>
+	    <div><button id="goto-cy">/ up \</button> Second instance:</div>
 	    
 	    <div id="cytoscape2"></div>
 
 	    <div id="console"></div>
 	    
+	    <div id="commands-show-area">
+	    	<button id="show-commands">+</button>
+		</div>
+
 	    <div id="commands">
 	    	
+	    	<button id="hide-commands">-</button>
+
 	    	<h2>Testing</h2>
 	    	<select id="test-type-select">
 	    	</select>

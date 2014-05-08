@@ -646,7 +646,7 @@
  
     } else if( struct.parent !== undefined ){ // move node to new parent
       var parentId = struct.parent;
-      var parentExists = cy.getElementById( parentId ).length > 0;
+      var parentExists = struct.parent === null || cy.getElementById( parentId ).length > 0;
     
       if( parentExists ){
         var jsons = this.jsons();
@@ -657,7 +657,7 @@
           var json = jsons[i];
 
           if( json.group === 'nodes' ){
-            json.data.parent = parentId;
+            json.data.parent = parentId === null ? undefined : parentId;
           }
         }
       }

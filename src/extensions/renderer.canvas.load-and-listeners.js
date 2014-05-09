@@ -16,6 +16,26 @@
   CanvasRenderer.prototype.load = function() {
     var r = this;
 
+    var getDragListIds = function(opts){
+      var listHasId;
+
+      if( opts.addToList && r.data.cy.hasCompoundNodes() ){ // only needed for compound graphs
+        if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
+          opts.addToList.hasId = {};
+
+          for( var i = 0; i < opts.addToList.length; i++ ){
+            var ele = opts.addToList[i];
+
+            opts.addToList.hasId[ ele.id() ] = true;
+          }
+        }
+
+        listHasId = opts.addToList.hasId;
+      }
+
+      return listHasId || {};
+    };
+
     // helper function to determine which child nodes and inner edges
     // of a compound node to be dragged as well as the grabbed and selected nodes
     var addDescendantsToDrag = function(node, opts){
@@ -23,41 +43,29 @@
         return;
       }
 
-      // if( !opts.addSelected ){
-      //   var parents = node.parents();
-
-      //   // do not process descendants for this node,
-      //   // because those will be handled for the topmost selected parent
-      //   for( var i = 0; i < parents.length; i++ ){
-      //     if ( parents[i]._private.selected ){
-      //       return;
-      //     }
-      //   }
-      // }
+      var listHasId = getDragListIds( opts );
 
       var innerNodes = node.descendants();
 
       // TODO do not drag hidden children & children of hidden children?
       for( var i = 0; i < innerNodes.size(); i++ ){
+        var iNode = innerNodes[i];
+        var _p = iNode._private;
 
-        // if addSelected is true, then add node in any case,
-        // if not, then add only non-selected nodes
-        if( true ){ //(opts.addSelected || !innerNodes[i]._private.selected) ){
+        if( opts.inDragLayer ){
+          _p.rscratch.inDragLayer = true;
+        }
 
-          if( opts.inDragLayer ){
-            innerNodes[i]._private.rscratch.inDragLayer = true;
-          }
+        if( opts.addToList && !listHasId[ iNode.id() ] ){
+          opts.addToList.push( iNode );
+          listHasId[ iNode.id() ] = true;
 
-          if( opts.addToList ){
-            opts.addToList.push( innerNodes[i] );
+          _p.grabbed = true; 
+        }
 
-            innerNodes[i]._private.grabbed = true; 
-          }
-
-          var edges = innerNodes[i]._private.edges;
-          for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
-            edges[j]._private.rscratch.inDragLayer = true;
-          }
+        var edges = _p.edges;
+        for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
+          edges[j]._private.rscratch.inDragLayer = true;
         }
       }
     };
@@ -65,22 +73,28 @@
     // adds the given nodes, and its edges to the drag layer
     var addNodeToDrag = function(node, opts){
 
+      var _p = node._private;
+      var listHasId = getDragListIds( opts );
+
       if( opts.inDragLayer ){
-        node._private.rscratch.inDragLayer = true;
+        _p.rscratch.inDragLayer = true;
       }
 
-      if( opts.addToList ){
+      if( opts.addToList && !listHasId[ node.id() ] ){
         opts.addToList.push( node );
+        listHasId[ node.id() ] = true;
 
-        node._private.grabbed = true; 
+        _p.grabbed = true; 
       }
 
-      for( var i = 0; opts.inDragLayer && i < node._private.edges.length; i++ ){
-        node._private.edges[i]._private.rscratch.inDragLayer = true;
+      var edges = _p.edges;
+      for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
+        edges[i]._private.rscratch.inDragLayer = true;
       }
 
       // add descendant nodes only if the compound size is set to auto
-      if( node._private.style['width'].value == 'auto' || node._private.style['height'].value == 'auto' ){
+      var style = _p.style;
+      if( style['width'].value === 'auto' || style['height'].value === 'auto' ){
         addDescendantsToDrag( node, opts );
       }
 
@@ -116,23 +130,25 @@
         .not( node.descendants() )
       ;
 
-      for( var i = 0; i < nodes.size(); i++ ){
+      var edges = nodes.connectedEdges();
 
+      var listHasId = getDragListIds( opts );
+
+      for( var i = 0; i < nodes.size(); i++ ){
         if( opts.inDragLayer !== undefined ){
           nodes[i]._private.rscratch.inDragLayer = opts.inDragLayer;
         }
 
-        if( opts.addToList !== undefined ){
+        if( opts.addToList && !listHasId[ nodes[i].id() ] ){
           opts.addToList.push( nodes[i] );
-        }
+          listHasId[ nodes[i].id() ] = true;
 
-        // TODO when calling this function for a set of nodes, we visit same edges over and over again,
-        // instead of adding edges for each node, it may be better to iterate all edges at once
-        // or another solution is to find out the common ancestors and process only those nodes for edges
-        var edges = nodes[i]._private.edges;
-        for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
-          edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
+          nodes[i]._private.grabbed = true;
         }
+      }
+
+      for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
+        edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
       }
     };
 

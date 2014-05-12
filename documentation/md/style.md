@@ -137,7 +137,7 @@ Body:
 
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
- * **`background-opacity`** : The opacity level of the node's body.
+ * **`background-opacity`** : The opacity level of the node's background colour.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
  * **`border-width`** : The size of the node's border.

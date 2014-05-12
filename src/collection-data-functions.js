@@ -145,7 +145,7 @@
     updateCompoundBounds: function(){
       var cy = this.cy();
 
-      if( !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs
+      if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
 
       var updated = [];
 

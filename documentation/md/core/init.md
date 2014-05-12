@@ -137,6 +137,7 @@ $('#cy').cytoscape({
   textureOnViewport: false,
   renderer: { /* ... */ },
   style: undefined /* ... */,
+  styleEnabled: isHeadless ? false : true,
   ready: function(evt){ /* ... */ },
   initrender: function(evt){ /* ... */ },
   elements: [ /* ... */ ]
@@ -193,6 +194,8 @@ $('#cy').cytoscape({
   /* ... */
 });
 ```
+
+**`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary &mdash; thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.
 
 **`ready`** : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the `cy` object before this function executes.
 

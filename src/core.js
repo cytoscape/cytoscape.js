@@ -39,16 +39,10 @@
     reg = $$.registerInstance( cy, container );
     var readies = reg.readies;
 
+    var head = window !== undefined && container !== undefined;
     var options = opts;
-    options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
-    options.renderer = $$.util.extend( { name: window && container ? 'canvas' : 'null' }, options.renderer );
-    
-    // TODO determine whether we need a check like this even though we allow running headless now
-    // 
-    // if( !$$.is.domElement(options.container) ){
-    //   $$.util.error("Cytoscape.js must be called on an element");
-    //   return;
-    // }
+    options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
+    options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
     
     var _p = this._private = {
       ready: false, // whether ready has been triggered
@@ -72,6 +66,7 @@
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
       autolockNodes: false,
       autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
+      styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
@@ -105,15 +100,16 @@
     }
 
     // init style
-
-    if( $$.is.stylesheet(options.style) ){
-      _p.style = options.style.generateStyle(this);
-    } else if( $$.is.array(options.style) ) {
-      _p.style = $$.style.fromJson(this, options.style);
-    } else if( $$.is.string(options.style) ){
-      _p.style = $$.style.fromString(this, options.style);
-    } else {
-      _p.style = new $$.Style( cy );
+    if( _p.styleEnabled ){
+      if( $$.is.stylesheet(options.style) ){
+        _p.style = options.style.generateStyle(this);
+      } else if( $$.is.array(options.style) ) {
+        _p.style = $$.style.fromJson(this, options.style);
+      } else if( $$.is.string(options.style) ){
+        _p.style = $$.style.fromString(this, options.style);
+      } else {
+        _p.style = new $$.Style( cy );
+      }
     }
 
     // create the renderer
@@ -192,6 +188,10 @@
 
     hasCompoundNodes: function(){
       return this._private.hasCompoundNodes;
+    },
+
+    styleEnabled: function(){
+      return this._private.styleEnabled;
     },
 
     addToPool: function( eles ){

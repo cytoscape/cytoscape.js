@@ -2,6 +2,9 @@
 
   $$.fn.eles({
     animated: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
       var ele = this[0];
 
       if( ele ){
@@ -10,6 +13,9 @@
     },
 
     clearQueue: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       for( var i = 0; i < this.length; i++ ){
         var ele = this[i];
         ele._private.animation.queue = [];
@@ -19,6 +25,9 @@
     },
 
     delay: function( time, complete ){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       this.animate({
         delay: time
       }, {
@@ -30,8 +39,10 @@
     },
 
     animate: function( properties, params ){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       var callTime = +new Date();
-      var cy = this._private.cy;
       var style = cy.style();
       var q;
       
@@ -103,6 +114,9 @@
     }, // animate
 
     stop: function(clearQueue, jumpToEnd){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       for( var i = 0; i < this.length; i++ ){
         var self = this[i];
         var anis = self._private.animation.current;

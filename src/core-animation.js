@@ -4,6 +4,9 @@
     
     addToAnimationPool: function( eles ){
       var cy = this;
+
+      if( !cy.styleEnabled() ){ return; } // save cycles when no style used
+      
       var aniEles = cy._private.aniEles;
       var aniElesHas = [];
 
@@ -24,6 +27,9 @@
 
     startAnimationLoop: function(){
       var cy = this;
+
+      if( !cy.styleEnabled() ){ return; } // save cycles when no style used
+
       var stepDelay = 1000/60;
       var useTimeout = false;
       var useRequestAnimationFrame = true;

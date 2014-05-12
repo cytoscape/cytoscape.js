@@ -6,6 +6,8 @@
     updateStyle: function( notifyRenderer ){
       var cy = this._private.cy;
 
+      if( !cy.styleEnabled() ){ return this; }
+
       if( cy._private.batchingStyle ){
         var bEles = cy._private.batchStyleEles;
 
@@ -41,6 +43,8 @@
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
+      if( !cy.styleEnabled() ){ return this; }
+
       style.updateMappers( this );
 
       var updatedCompounds = this.updateCompoundBounds();
@@ -56,6 +60,9 @@
     // get the specified css property as a rendered value (i.e. on-screen value)
     // or get the whole rendered style if no property specified (NB doesn't allow setting)
     renderedCss: function( property ){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       var ele = this[0];
 
       if( ele ){
@@ -71,7 +78,10 @@
 
     // read the calculated css style of the element or override the style (via a bypass)
     css: function( name, value ){
-      var style = this.cy().style();
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
+      var style = cy.style();
 
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
@@ -112,7 +122,10 @@
     },
 
     removeCss: function(){
-      var style = this.cy().style();
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
+      var style = cy.style();
       var eles = this;
 
       for( var i = 0; i < eles.length; i++ ){
@@ -136,6 +149,9 @@
     },
 
     visible: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return true; }
+
       var ele = this[0];
 
       if( ele ){
@@ -184,6 +200,9 @@
     },
 
     effectiveOpacity: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return 1; }
+
       var ele = this[0];
 
       if( ele ){
@@ -212,6 +231,9 @@
     },
 
     isFullAutoParent: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
       var ele = this[0];
 
       if( ele ){

@@ -701,6 +701,11 @@
           var matches = false;
           elements = elements(); // make elements functional so we save cycles if query == null
 
+          var cy = elements.cy();
+          if( !cy.hasCompoundNodes() ){
+            return false;
+          }
+
           // query must match for at least one element (may be recursive)
           for(var i = 0; i < elements.size(); i++){
             if( queryMatches( query, elements.eq(i) ) ){

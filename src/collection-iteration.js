@@ -58,7 +58,7 @@
     },
 
     eq: function(i){
-      return this[i];
+      return this[i] || new $$.Collection( this.cy() );
     },
 
     empty: function(){

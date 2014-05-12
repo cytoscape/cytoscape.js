@@ -214,7 +214,7 @@
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
-      var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
+      var source = $$.is.string(root) ? this.filter(root).eq(0) : root.eq(0);
       var dist = {};
       var prev = {};
       var knownDist = {};
@@ -224,7 +224,7 @@
       var Q = [];
 
       for( var i = 0; i < nodes.length; i++ ){
-        dist[ nodes[i].id() ] = nodes[i].id() === source.id() ? 0 : Infinity;
+        dist[ nodes[i].id() ] = nodes[i].same( source ) ? 0 : Infinity;
         Q.push( nodes[i] );
       }
 
@@ -289,25 +289,27 @@
 
       return {
         distanceTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
 
           return knownDist[ target.id() ];
         },
 
         pathTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
+          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
           var S = [];
           var u = target;
 
-          S.unshift( target );
+          if( target.length > 0 ){
+            S.unshift( target );
 
-          while( prev[ u.id() ] ){
-            var p = prev[ u.id() ];
+            while( prev[ u.id() ] ){
+              var p = prev[ u.id() ];
 
-            S.unshift( p.edge );
-            S.unshift( p.node );
+              S.unshift( p.edge );
+              S.unshift( p.node );
 
-            u = p.node;
+              u = p.node;
+            }
           }
 
           return new $$.Collection( cy, S );

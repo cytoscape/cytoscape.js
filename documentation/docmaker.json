@@ -872,6 +872,7 @@
               "descr": "Set the positions of several nodes with a function.",
               "formats": [
                 {
+                  "descr": "Set the positions functionally.",
                   "args": [
                     { 
                       "name": "function(i, ele)", 
@@ -881,6 +882,13 @@
                         { "name": "ele", "descr": "The element being iterated over for which the function should return a position to set." }
                       ]
                     }
+                  ]
+                },
+
+                {
+                  "descr": "Set positions for all nodes based on a single position object.",
+                  "args": [
+                    { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to set." }
                   ]
                 }
               ]

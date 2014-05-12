@@ -58,15 +58,15 @@
     },
 
     eq: function(i){
-      return this[i];
+      return this[i] || new $$.Collection( this.cy() );
     },
 
     first: function(){
-      return this[0];
+      return this[0] || new $$.Collection( this.cy() );
     },
 
     last: function(){
-      return this[ this.length - 1 ];
+      return this[ this.length - 1 ] || new $$.Collection( this.cy() );
     },
 
     empty: function(){

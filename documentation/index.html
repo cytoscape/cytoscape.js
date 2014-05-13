@@ -5,16 +5,13 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all" />
+		<meta name="robots" content="all"/>
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/reset.css">
-		<link rel="stylesheet" href="css/font-awesome.css">
-		<link rel="stylesheet" href="css/highlight/github.css">
-		<link rel="stylesheet" href="css/style.css">
+		<link rel="stylesheet" href="css/all.min.css">
 		<!-- endinject -->
 		
 	</head>
@@ -23,13 +20,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.6</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.7</span></h1>
 			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.6.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.7.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -2658,7 +2655,7 @@ cy.zoom({
 					
 						<div class="function">
 							<div class="name" id="core/viewport-manipulation/cy.resize"><span class="fn-name">cy.resize()</span>  <a href="#core/viewport-manipulation/cy.resize"><span class="icon-bookmark"></span></a></div>
-							<div class="descr" id="core/viewport-manipulation/cy.resize"><p>Force the renderer to resize the viewport based on its container size.</p>
+							<div class="descr" id="core/viewport-manipulation/cy.resize"><p>Force the renderer to recalculate the viewport bounds.</p>
 </div>
 
 							
@@ -2666,8 +2663,8 @@ cy.zoom({
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>If your code resizes the graph&#39;s dimensions (i.e. by changing the size of the HTML DOM element that holds the graph), you will want to call <code>cy.resize()</code> to have the graph resize and redraw itself.</p>
-<p>Cytoscape.js can not automatically monitor the size of the viewport, as querying the DOM for those dimensions can be expensive.  Although <code>cy.resize()</code> is automatically called for you on the <code>window</code>&#39;s <code>resize</code> event, there is no <code>resize</code> event for arbitrary DOM elements.</p>
+<p>If your code resizes the graph&#39;s dimensions or position (i.e. by changing the style of the HTML DOM element that holds the graph), you will want to call <code>cy.resize()</code> to have the graph resize and redraw itself.</p>
+<p>Cytoscape.js can not automatically monitor the bounding box of the viewport, as querying the DOM for those dimensions can be expensive.  Although <code>cy.resize()</code> is automatically called for you on the <code>window</code>&#39;s <code>resize</code> event, there is no <code>resize</code> or <code>style</code> event for arbitrary DOM elements.</p>
 
 								
 							</div>		
@@ -8218,11 +8215,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/fastclick.js"></script>
-		<script src="js/jquery.js"></script>
-		<script src="js/cytoscape.js"></script>
-		<script src="js/load.js"></script>
-		<script src="js/script.js"></script>
+		<script src="js/all.min.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

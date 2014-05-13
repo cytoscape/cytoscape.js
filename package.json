@@ -1,7 +1,7 @@
 {
   "name": "cytoscape",
   "description": "A JavaScript graph library for analysis and visualisation",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "license": "LGPL",
   "engines": {
     "node": ">=0.6"

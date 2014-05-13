@@ -94,24 +94,24 @@
   });
 
 
-  $$.Collection.zIndexSort = function(a, b) {
+  $$.Collection.zIndexSort = function(a, b){
+    var cy = a._private.cy;
+    var hasCompoundNodes = cy._private.hasCompoundNodes;
+
     var elementDepth = function(ele) {
-      if (ele._private.group === 'nodes')
-      {
-        return ele._private.data.parent ? ele.parents().size() : 0;
-      }
-      else if (ele._private.group === 'edges')
-      {
+      if( ele._private.group === 'nodes' ){
+        return ele._private.data.parent ? ele.parents().length : 0;
+        
+      } else if( ele._private.group === 'edges' ){
         var source = ele._private.source;
         var target = ele._private.target;
 
-        var sourceDepth = source._private.data.parent ? source.parents().size() : 0;
-        var targetDepth = target._private.data.parent ? target.parents().size() : 0;
+        var sourceDepth = source._private.data.parent ? source.parents().length : 0;
+        var targetDepth = target._private.data.parent ? target.parents().length : 0;
 
-        return Math.max(sourceDepth, targetDepth);
-      }
-      else
-      {
+        return Math.max( sourceDepth, targetDepth );
+
+      } else {
         return 0;
       }
     };
@@ -122,33 +122,28 @@
     var depthB = 0;
 
     // no need to calculate element depth if there is no compound node
-    if ( a.cy().hasCompoundNodes() )
-    {
+    if( hasCompoundNodes ){
       depthA = elementDepth(a);
       depthB = elementDepth(b);
     }
 
     // if both elements has same depth,
     // then edges should be drawn first
-    if (depthA - depthB === 0)
-    {
+    if( depthA - depthB === 0 ){
       // 'a' is a node, it should be drawn later
-      if (a._private.group === 'nodes'
-        && b._private.group === 'edges')
-      {
+      if( a._private.group === 'nodes'
+        && b._private.group === 'edges' ){
         return 1;
       }
       
       // 'a' is an edge, it should be drawn first
-      else if (a._private.group === 'edges'
-        && b._private.group === 'nodes')
-      {
+      else if( a._private.group === 'edges'
+        && b._private.group === 'nodes' ){
         return -1;
       }
 
       // both nodes or both edges
-      else
-      {
+      else {
         if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
           return a._private.index - b._private.index;
         } else {
@@ -158,8 +153,7 @@
     }
 
     // elements on different level
-    else
-    {
+    else {
       // deeper element should be drawn later
       return depthA - depthB;
     }

@@ -287,7 +287,7 @@
     height: function(){ 
       var ele = this[0];
 
-      if( ele && ele.isNode() ){
+      if( ele && ele._private.group === 'nodes' ){
         var h = ele._private.style.height;
         return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
       }
@@ -296,7 +296,7 @@
     outerHeight: function(){
       var ele = this[0];
 
-      if( ele ){
+      if( ele && ele._private.group === 'nodes' ){
         var style = ele._private.style;
         var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
         var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
@@ -308,7 +308,7 @@
     renderedHeight: function(){
       var ele = this[0];
 
-      if( ele ){
+      if( ele && ele._private.group === 'nodes' ){
         var height = ele.height();
         return height * this.cy().zoom();
       }
@@ -317,7 +317,7 @@
     renderedOuterHeight: function(){
       var ele = this[0];
 
-      if( ele ){
+      if( ele && ele._private.group === 'nodes' ){
         var oheight = ele.outerHeight();
         return oheight * this.cy().zoom();
       }

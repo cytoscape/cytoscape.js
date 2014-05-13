@@ -412,11 +412,17 @@
       //console.time('cachezorder')
       
       for( var i = 0; i < nodes.length; i++ ){
-        eles.push( nodes[i] );
+        var rs = nodes[i]._private.rscratch;
+
+        if( nodes[i].visible() && !nodes[i].transparent() ){
+          eles.push( nodes[i] );
+        }
       }
 
       for( var i = 0; i < edges.length; i++ ){
-        eles.push( edges[i] );
+        if( edges[i].visible() && !edges[i].transparent() ){
+          eles.push( edges[i] );
+        }
       }
 
       eles.sort( this.zOrderSort );

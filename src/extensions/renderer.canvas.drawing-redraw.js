@@ -213,8 +213,9 @@
     //console.log('-- redraw --')
 
 
-    function drawToContext(){
+    function drawToContext(){ 
       startTime = +new Date();
+      console.profile('draw' + startTime)
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -507,6 +508,8 @@
       //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
       r.currentlyDrawing = false;
+
+      console.profileEnd('draw' + startTime)
     } // draw to context
 
     if( !forcedContext ){

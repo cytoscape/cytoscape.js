@@ -6,7 +6,7 @@
   CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
     var text = edge._private.style['content'].strValue;
 
-    if( !edge.visible() || !text || text.match(/^\s+$/) ){
+    if( !text || text.match(/^\s+$/) ){
       return;
     }
 
@@ -34,7 +34,7 @@
   CanvasRenderer.prototype.drawNodeText = function(context, node) {
     var text = node._private.style['content'].strValue;
 
-    if ( !node.visible() || !text || text.match(/^\s+$/) ) {
+    if ( !text || text.match(/^\s+$/) ) {
       return;
     }
 

@@ -10,10 +10,6 @@
     var style = node._private.style;
     var rs = node._private.rscratch;
     
-    if ( !node.visible() ) {
-      return;
-    }
-
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;

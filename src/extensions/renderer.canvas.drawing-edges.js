@@ -4,11 +4,6 @@
 
 // Draw edge
   CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
-
-    if( !edge.visible() ){
-      return;
-    }
-
     var rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die
@@ -181,8 +176,6 @@
   
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
-    
-    var start = +new Date();
 
     // 3 points given -> assume Bezier
     // 2 -> assume straight
@@ -407,11 +400,7 @@
     } else {
       this.drawStyledEdge(edge, context, pts, 'solid', width);
     }
-    
-    var end = +new Date();
-    time += end - start;
-    avg = time / (++calls);
-    window.avg = avg;
+  
 
   };
 

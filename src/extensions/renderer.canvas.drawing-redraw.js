@@ -215,7 +215,7 @@
 
     function drawToContext(){ 
       startTime = +new Date();
-      console.profile('draw' + startTime)
+      // console.profile('draw' + startTime)
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -509,7 +509,7 @@
 
       r.currentlyDrawing = false;
 
-      console.profileEnd('draw' + startTime)
+      // console.profileEnd('draw' + startTime)
     } // draw to context
 
     if( !forcedContext ){

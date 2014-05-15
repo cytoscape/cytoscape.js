@@ -33,17 +33,16 @@
 			</div>
 
 			<div class="links">
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Version milestones/changelogs</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js-demos"><span class="icon-user"></span> User-submitted demos</a> |
 				<a target="_blank" href="http://cytoscape.org"><span class="icon-desktop"></span> Cytoscape desktop</a>
 			</div>
 
-			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right:</p>
+			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right, which is used for API examples throughout the documentation:</p>
 
 			<div id="demo-source" class="collapsed">
 				<div class="expander">
@@ -59,16 +58,18 @@
 				</div>
 
 
-				<pre><code>$(loadCy = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+				<pre><code>cytoscape( options = {
+    container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
-  options = {
-    showOverlay: <span class="hljs-literal">false</span>,
     minZoom: <span class="hljs-number">0.5</span>,
     maxZoom: <span class="hljs-number">2</span>,
 
-    style: cytoscape.stylesheet()
-      .selector(<span class="hljs-string">'node'</span>)
-        .css({
+    <span class="hljs-comment">// style can be specified as plain JSON, a stylesheet string (probably a CSS-like</span>
+    <span class="hljs-comment">// file pulled from the server), or in a functional format</span>
+    style: [
+      {
+        selector: <span class="hljs-string">'node'</span>,
+        css: {
           <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(name)'</span>,
           <span class="hljs-string">'font-family'</span>: <span class="hljs-string">'helvetica'</span>,
           <span class="hljs-string">'font-size'</span>: <span class="hljs-number">14</span>,
@@ -79,38 +80,35 @@
           <span class="hljs-string">'width'</span>: <span class="hljs-string">'mapData(weight, 30, 80, 20, 50)'</span>,
           <span class="hljs-string">'height'</span>: <span class="hljs-string">'mapData(height, 0, 200, 10, 45)'</span>,
           <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#fff'</span>
-        })
-      .selector(<span class="hljs-string">':selected'</span>)
-        .css({
+        }
+      },
+
+      {
+        selector: <span class="hljs-string">':selected'</span>,
+        css: {
           <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#000'</span>,
           <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#000'</span>,
           <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#000'</span>,
           <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#000'</span>
-        })
-      .selector(<span class="hljs-string">'edge'</span>)
-        .css({
+        }
+      },
+
+      {
+        selector: <span class="hljs-string">'edge'</span>,
+        css: {
           <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
           <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
-        })
-    ,
+        }
+      }
+    ],
 
+    <span class="hljs-comment">// specify the elements in the graph</span>
     elements: {
       nodes: [
-        {
-          data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> }
-        },
-
-        {
-          data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> }
-        },
-
-        {
-          data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> }
-        },
-
-        {
-          data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> }
-        }
+        { data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> } },
+        { data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> } },
+        { data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> } },
+        { data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> } }
       ],
 
       edges: [
@@ -129,17 +127,63 @@
       ],
     },
 
+    <span class="hljs-comment">// wait for the data to load &amp; the layout to run before using the api...</span>
     ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
       cy = <span class="hljs-keyword">this</span>;
     }
-  };
-
-  $(<span class="hljs-string">'#cy'</span>).cytoscape(options);
-
-});</code></pre>
+  } );</code></pre>
 			</div>
 
 			<div id="documentation">
+			
+				<h1 id="demos">Demos <a href="#demos"><span class="icon-bookmark"></span></a></h1>
+
+				
+
+
+				
+
+				<div class="gallery-demos">
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">Initialisation</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-urabis" class="gallery-embed" src="http://jsbin.com/urabis/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-urabis"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">Visual style</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-aqupun" class="gallery-embed" src="http://jsbin.com/aqupun/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-aqupun"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+				</div>
+
+				
+
+				
 			
 				<h1 id="introduction">Introduction <a href="#introduction"><span class="icon-bookmark"></span></a></h1>
 
@@ -166,6 +210,9 @@
 <a href="http://www.utoronto.ca">Toronto</a> |
 <a href="http://portal.ncibi.org/gateway/index.html">NCIBI</a> |
 <a href="http://nrnb.org">NRNB</a></p>
+
+				
+
 
 				
 
@@ -197,31 +244,31 @@
 </thead>
 <tbody>
 <tr>
-<td>cy</td>
+<td><code>cy</code></td>
 <td>the core</td>
 </tr>
 <tr>
-<td>eles</td>
+<td><code>eles</code></td>
 <td>a collection of one or more elements (nodes and edges)</td>
 </tr>
 <tr>
-<td>ele</td>
+<td><code>ele</code></td>
 <td>a collection of a single element (node or edge)</td>
 </tr>
 <tr>
-<td>nodes</td>
+<td><code>nodes</code></td>
 <td>a collection of one or more nodes</td>
 </tr>
 <tr>
-<td>node</td>
+<td><code>node</code></td>
 <td>a collection of a single node</td>
 </tr>
 <tr>
-<td>edges</td>
+<td><code>edges</code></td>
 <td>a collection of one or more edges</td>
 </tr>
 <tr>
-<td>edge</td>
+<td><code>edge</code></td>
 <td>a collection of a single edge</td>
 </tr>
 </tbody>
@@ -309,6 +356,9 @@
 
 				
 
+
+				
+
 				
 				
 				
@@ -355,7 +405,7 @@
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -363,6 +413,9 @@
 <li><strong>Concise stylsheets are fast stylesheets</strong> : Try to keep your stylesheets from getting overly long.  Cut out unused blocks and try to limit the number of blocks &mdash; and therefore selectors &mdash; you have.  Each time style needs to be recalculated, each block&#39;s selector needs to be compared to each element.  Note that usually stylesheet length has a much lesser effect on performance than other factors.</li>
 </ul>
 <p>By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.</p>
+
+				
+
 
 				
 
@@ -467,6 +520,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>:loop</code></strong> : Matches loop edges (same source as target).</li>
 <li><strong><code>:simple</code></strong> : Matches simple edges (i.e. as would be in a <em>simple</em> graph, different source as target).</li>
 </ul>
+
+				
+
 
 				
 
@@ -665,6 +721,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 				
 
+
+				
+
 				
 				
 				
@@ -756,6 +815,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><code>pan</code> : when the viewport is panned</li>
 <li><code>zoom</code> : when the viewport is zoomed</li>
 </ul>
+
+				
+
 
 				
 
@@ -1010,6 +1072,9 @@ cy.layout( options );
 
 				
 
+
+				
+
 				
 				
 				
@@ -1059,6 +1124,9 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 
 				
 
+
+				
+
 				
 				
 				
@@ -1074,6 +1142,9 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 
 				
 					<p>The core object is your interface to the Cytoscape.js visualisation.  It is your entry point to Cytoscape.js:  All of the library&#39;s features are accessed through this object.</p>
+
+				
+
 
 				
 
@@ -3256,6 +3327,9 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 console.log( cy.nodes()[<span class="hljs-number">0</span>].data(<span class="hljs-string">"weight"</span>) + <span class="hljs-string">' == '</span> + weight ); <span class="hljs-comment">// weight is the first ele's weight</span>
 </code></pre>
 <p>You can insure that you&#39;re reading from the element you want by using a <a href="#selectors">selector</a> to narrow down the collection to one element (i.e. <code>eles.size() === 1</code>) or the <a href="#collection/iteration/eles.eq"><code>eles.eq()</code></a> function.</p>
+
+				
+
 
 				
 
@@ -7521,6 +7595,9 @@ path.select();
 
 				
 
+
+				
+
 				
 			
 				<h1 id="extensions">Extensions <a href="#extensions"><span class="icon-bookmark"></span></a></h1>
@@ -7574,6 +7651,9 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 				
 
+
+				
+
 				
 				
 				
@@ -7598,6 +7678,13 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 		<div id="navigation">
 			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
 
+			
+				<div class="section lvl1">
+					
+					<a href="#demos"><span class="icon-bookmark bookmark-icon"></span> Demos</a>
+				</div>
+
+				
 			
 				<div class="section lvl1">
 					<span class="expander">

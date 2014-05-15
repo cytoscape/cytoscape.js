@@ -13,16 +13,18 @@ var demoFile = './js/load.js';
 try {
   config = require(configFile);
 } catch(e){
-  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/';
+  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/ : ' + e;
 }
 
 // load the demo file
 try {
   config.demojs = fs.readFileSync(demoFile, 'utf8');
 
+  config.demojs = config.demojs.match(/\/\/\<demo\>\s*((?:\s|.)+?)\s*\/\/\<\/demo\>/)[1];
+
   config.demojs = hljs.highlight('js', config.demojs).value;
 } catch(e){
-  throw '`' + demoFile + '` could not be read';
+  throw '`' + demoFile + '` could not be read and parsed: ' + e;
 }
 
 // var html = converter.makeHtml("**I am bold!**");
@@ -113,6 +115,17 @@ function compileConfig( config ){
 
     if( section.mddescr ){
       section.descr = md2html( section.mddescr );
+    }
+
+    if( section.demos ){
+      var demos = section.demos;
+
+      for( var j = 0; j < demos.length; j++ ){
+        var demo = demos[j];
+
+        demo.embedUrl = 'http://jsbin.com/' + demo.id + '/latest';
+        demo.srcUrl = 'http://jsbin.com/' + demo.id + '/latest/edit?js,output';
+      }
     }
 
     if( section.fns ){

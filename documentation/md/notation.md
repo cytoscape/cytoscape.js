@@ -11,13 +11,13 @@ There are several types that different functions can be executed on, and the var
 
 | Shorthand     | Works on                                                |
 | ------------- | ------------------------------------------------------- |
-| cy            | the core                                                |
-| eles          | a collection of one or more elements (nodes and edges)  |
-| ele           | a collection of a single element (node or edge)         |
-| nodes         | a collection of one or more nodes                       |
-| node          | a collection of a single node                           |
-| edges         | a collection of one or more edges                       |
-| edge          | a collection of a single edge                           |
+| `cy`          | the core                                                |
+| `eles`        | a collection of one or more elements (nodes and edges)  |
+| `ele`         | a collection of a single element (node or edge)         |
+| `nodes`       | a collection of one or more nodes                       |
+| `node`        | a collection of a single node                           |
+| `edges`       | a collection of one or more edges                       |
+| `edge`        | a collection of a single edge                           |
 
 By default, a function returns a reference back to the calling object to allow for jQuery-like chaining (e.g. `obj.fn1().fn2().fn3()`).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
 

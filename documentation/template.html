@@ -33,17 +33,16 @@
 			</div>
 
 			<div class="links">
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/wiki/Live-code-examples"><span class="icon-star"></span> Live code examples</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Future version milestones</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Version milestones/changelogs</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js-demos"><span class="icon-user"></span> User-submitted demos</a> |
 				<a target="_blank" href="http://cytoscape.org"><span class="icon-desktop"></span> Cytoscape desktop</a>
 			</div>
 
-			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right:</p>
+			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right, which is used for API examples throughout the documentation:</p>
 
 			<div id="demo-source" class="collapsed">
 				<div class="expander">
@@ -68,6 +67,32 @@
 
 				{{#if html}}
 					{{{html}}}
+				{{/if}}
+
+
+				{{#if demos}}
+
+				<div class="gallery-demos">
+				{{#each demos}}
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">{{name}}</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="{{srcUrl}}"></a>
+						<iframe id="gallery-embed-{{id}}" class="gallery-embed" src="{{embedUrl}}"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-{{id}}"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="{{srcUrl}}"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				{{/each}}
+				</div>
+
 				{{/if}}
 
 				{{#each sections}}

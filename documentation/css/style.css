@@ -466,8 +466,13 @@ a.button.green {
 	background: #41C483;
 }
 
-a:active {
+a:active,
+.link:active {
 	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.plain-link {
+	color: #000;
 }
 
 em {

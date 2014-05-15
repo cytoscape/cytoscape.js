@@ -25,6 +25,19 @@ $(function(){
 
   loadCy();
 
+  $(document).on('click', '.gallery-refresh', function(){
+    var embedId = $(this).attr('data-embed-id');
+    var embed = document.getElementById(embedId);
+
+    embed.classList.remove('loaded');
+
+    embed.src = embed.src;
+  });
+
+  $('.gallery-embed').on('load', function(){
+    $(this).addClass('loaded');
+  });
+
   $('#cy-refresh').on('click', function(){
     loadCy();
 

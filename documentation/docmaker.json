@@ -7,6 +7,14 @@
   },
 
   "sections": [
+    {
+      "name": "Demos",
+      "demos": [
+        { "name": "Initialisation", "id": "urabis" },
+        { "name": "Visual style", "id": "aqupun" }
+      ]
+    },
+
     { "name": "Introduction", "md": "intro" },
 
     { "name": "Notation", "md": "notation" },

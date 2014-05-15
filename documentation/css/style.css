@@ -185,6 +185,74 @@ button:active {
 	display: none;
 }
 
+.gallery-demos:after {
+	display: block;
+	content: ' ';
+	height: 0;
+	clear: both;
+}
+
+.gallery-demo {
+	position: relative;
+	float: left;
+	margin: 0 1em 1em 0;
+}
+
+.gallery-title {
+	font-size: 0.8em;
+}
+
+.gallery-name {
+	
+}
+
+.gallery-embed,
+.gallery-link-overlay {
+	display: block;
+	width: 10em;
+	height: 10em;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+}
+
+.gallery-link-overlay {
+	position: absolute;
+}
+
+.gallery-embed {
+	pointer-events: none;
+	background: #fafafa;
+}
+
+.gallery-embed + .gallery-loader {
+	display: block;
+	position: absolute;
+	left: 0;
+	width: 100%;
+	text-align: center;
+	top: 50%;
+	font-size: 3em;
+	margin-top: -0.5em;
+	color: #888;
+}
+
+.gallery-footer {
+	font-size: 0.8em;
+	display: none;
+}
+
+.gallery-embed.loaded + .gallery-loader {
+	display: none;
+}
+
+.gallery-link {
+	float: right;
+}
+
+.gallery-footer {
+	margin-top: -0.5em;
+}
+
 #content {
 	margin: 0 0.25em;
 	margin-left: 16em;
@@ -373,10 +441,12 @@ th, td {
 	border: 1px solid #ddd;
 }
 
-a {
+a,
+.link {
 	color: #4183C4;
 	text-decoration: none;
 	border-radius: 0.125em;
+	cursor: pointer;
 }
 
 a.button {

@@ -11,7 +11,10 @@
       "name": "Demos",
       "demos": [
         { "name": "Initialisation", "id": "urabis" },
-        { "name": "Visual style", "id": "aqupun" }
+        { "name": "Visual style", "id": "aqupun" },
+        { "name": "Compound nodes", "id": "domek" },
+        { "name": "Animated BFS", "id": "qohop" },
+        { "name": "GeneMANIA export", "id": "wuvac" }
       ]
     },
 

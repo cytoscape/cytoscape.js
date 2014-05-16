@@ -2,6 +2,7 @@ $( loadCy = function(){
 
   //<demo>
 
+  // initialise cytoscape.js on a html dom element with some options:
   cytoscape( options = {
     container: document.getElementById('cy'),
 

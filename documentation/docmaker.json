@@ -2,10 +2,6 @@
   "version": "2.2.7",
   "jqueryVersion": "1.4",
 
-  "templates": {
-    "TODO": "we are not using function templates yet but it might be nice"
-  },
-
   "sections": [
     {
       "name": "Demos",
@@ -14,7 +10,10 @@
         { "name": "Visual style", "id": "aqupun" },
         { "name": "Compound nodes", "id": "domek" },
         { "name": "Animated BFS", "id": "qohop" },
-        { "name": "GeneMANIA export", "id": "wuvac" }
+        { "name": "GeneMANIA export", "id": "wuvac" },
+        { "name": "Images", "id": "kahar" },
+        { "name": "qTip plugin", "id": "royel" },
+        { "name": "Performance tuning", "id": "yeqom" }
       ]
     },
 

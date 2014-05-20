@@ -6,12 +6,13 @@
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
     breadthFirstSearch: function( roots, fn, directed ){
-      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
-      var connectedEles = [];
+      var connectedNodes = [];
+      var connectedBy = {};
       var id2depth = {};
       var V = {};
       var j = 0;
@@ -25,7 +26,7 @@
           Q.unshift( v[i] );
           V[ v[i].id() ] = true; 
 
-          connectedEles.push( v[i] );
+          connectedNodes.push( v[i] );
           id2depth[ v[i].id() ] = 0;
         }
       }
@@ -57,11 +58,24 @@
 
             id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
 
-            connectedEles.push( w );
-            connectedEles.push( e );
+            connectedNodes.push( w );
+            connectedBy[ w.id() ] = e;
           }
         }
         
+      }
+
+      var connectedEles = [];
+
+      for( var i = 0; i < connectedNodes.length; i++ ){
+        var node = connectedNodes[i];
+        var edge = connectedBy[ node.id() ];
+
+        if( edge ){
+          connectedEles.push( edge );
+        }
+
+        connectedEles.push( node );
       }
 
       return {
@@ -73,7 +87,7 @@
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)
     depthFirstSearch: function( roots, fn, directed ){
-      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;

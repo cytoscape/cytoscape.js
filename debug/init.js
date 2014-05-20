@@ -106,7 +106,7 @@ $(function(){
       ], 
       
       edges: [
-        { data: { id: 'a"e', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
         { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
         { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },

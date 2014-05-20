@@ -59,80 +59,80 @@
 
 
 				<pre><code><span class="hljs-comment">// initialise cytoscape.js on a html dom element with some options:</span>
-  cytoscape( options = {
-    container: document.getElementById(<span class="hljs-string">'cy'</span>),
+cytoscape( options = {
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
-    minZoom: <span class="hljs-number">0.5</span>,
-    maxZoom: <span class="hljs-number">2</span>,
+  minZoom: <span class="hljs-number">0.5</span>,
+  maxZoom: <span class="hljs-number">2</span>,
 
-    <span class="hljs-comment">// style can be specified as plain JSON, a stylesheet string (probably a CSS-like</span>
-    <span class="hljs-comment">// file pulled from the server), or in a functional format</span>
-    style: [
-      {
-        selector: <span class="hljs-string">'node'</span>,
-        css: {
-          <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(name)'</span>,
-          <span class="hljs-string">'font-family'</span>: <span class="hljs-string">'helvetica'</span>,
-          <span class="hljs-string">'font-size'</span>: <span class="hljs-number">14</span>,
-          <span class="hljs-string">'text-outline-width'</span>: <span class="hljs-number">3</span>,
-          <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#888'</span>,
-          <span class="hljs-string">'text-valign'</span>: <span class="hljs-string">'center'</span>,
-          <span class="hljs-string">'color'</span>: <span class="hljs-string">'#fff'</span>,
-          <span class="hljs-string">'width'</span>: <span class="hljs-string">'mapData(weight, 30, 80, 20, 50)'</span>,
-          <span class="hljs-string">'height'</span>: <span class="hljs-string">'mapData(height, 0, 200, 10, 45)'</span>,
-          <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#fff'</span>
-        }
-      },
-
-      {
-        selector: <span class="hljs-string">':selected'</span>,
-        css: {
-          <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#000'</span>,
-          <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#000'</span>,
-          <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#000'</span>,
-          <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#000'</span>
-        }
-      },
-
-      {
-        selector: <span class="hljs-string">'edge'</span>,
-        css: {
-          <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
-          <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
-        }
+  <span class="hljs-comment">// style can be specified as plain JSON, a stylesheet string (probably a CSS-like</span>
+  <span class="hljs-comment">// file pulled from the server), or in a functional format</span>
+  style: [
+    {
+      selector: <span class="hljs-string">'node'</span>,
+      css: {
+        <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(name)'</span>,
+        <span class="hljs-string">'font-family'</span>: <span class="hljs-string">'helvetica'</span>,
+        <span class="hljs-string">'font-size'</span>: <span class="hljs-number">14</span>,
+        <span class="hljs-string">'text-outline-width'</span>: <span class="hljs-number">3</span>,
+        <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#888'</span>,
+        <span class="hljs-string">'text-valign'</span>: <span class="hljs-string">'center'</span>,
+        <span class="hljs-string">'color'</span>: <span class="hljs-string">'#fff'</span>,
+        <span class="hljs-string">'width'</span>: <span class="hljs-string">'mapData(weight, 30, 80, 20, 50)'</span>,
+        <span class="hljs-string">'height'</span>: <span class="hljs-string">'mapData(height, 0, 200, 10, 45)'</span>,
+        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#fff'</span>
       }
-    ],
-
-    <span class="hljs-comment">// specify the elements in the graph</span>
-    elements: {
-      nodes: [
-        { data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> } },
-        { data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> } },
-        { data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> } },
-        { data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> } }
-      ],
-
-      edges: [
-        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'e'</span> } },
-        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'k'</span> } },
-        { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'g'</span> } },
-
-        { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'j'</span> } },
-        { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'k'</span> } },
-
-        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'j'</span> } },
-        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'e'</span> } },
-        { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'g'</span> } },
-
-        { data: { source: <span class="hljs-string">'g'</span>, target: <span class="hljs-string">'j'</span> } }
-      ],
     },
 
-    <span class="hljs-comment">// wait for the data to load &amp; the layout to run before using the api...</span>
-    ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-      cy = <span class="hljs-keyword">this</span>;
+    {
+      selector: <span class="hljs-string">':selected'</span>,
+      css: {
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#000'</span>,
+        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#000'</span>,
+        <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#000'</span>,
+        <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#000'</span>
+      }
+    },
+
+    {
+      selector: <span class="hljs-string">'edge'</span>,
+      css: {
+        <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
+        <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
+      }
     }
-  } );</code></pre>
+  ],
+
+  <span class="hljs-comment">// specify the elements in the graph</span>
+  elements: {
+    nodes: [
+      { data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> } },
+      { data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> } },
+      { data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> } },
+      { data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> } }
+    ],
+
+    edges: [
+      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'e'</span> } },
+      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'k'</span> } },
+      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'g'</span> } },
+
+      { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'j'</span> } },
+      { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'k'</span> } },
+
+      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'j'</span> } },
+      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'e'</span> } },
+      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'g'</span> } },
+
+      { data: { source: <span class="hljs-string">'g'</span>, target: <span class="hljs-string">'j'</span> } }
+    ],
+  },
+
+  <span class="hljs-comment">// wait for the data to load &amp; the layout to run before using the api...</span>
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+    cy = <span class="hljs-keyword">this</span>;
+  }
+} );</code></pre>
 			</div>
 
 			<div id="documentation">
@@ -228,6 +228,57 @@
 						<div class="gallery-footer">
 							<span class="link gallery-refresh" data-embed-id="gallery-embed-wuvac"><span class="icon-refresh"></span> Refresh</span>
 							<a class="gallery-link" target="_blank" href="http://jsbin.com/wuvac/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">Images</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-kahar" class="gallery-embed" src="http://jsbin.com/kahar/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-kahar"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">qTip plugin</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-royel" class="gallery-embed" src="http://jsbin.com/royel/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-royel"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">Performance tuning</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-yeqom" class="gallery-embed" src="http://jsbin.com/yeqom/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-yeqom"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
 						</div>
 					</div>
 				
@@ -457,7 +508,7 @@
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>

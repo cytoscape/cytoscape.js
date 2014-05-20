@@ -80,6 +80,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( depths ).to.deep.equal( expectedDepths );
     expect( bfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( bfs.path.edges().length ).to.equal( 4 );
+
+    for( var i = 0; i < bfs.path.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( bfs.path[i].isNode() ).to.be.true;
+      } else {
+        expect( bfs.path[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.bfs() directed from `a`', function(){
@@ -100,6 +108,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( depths ).to.deep.equal( expectedDepths );
     expect( bfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( bfs.path.edges().length ).to.equal( 4 );
+
+    for( var i = 0; i < bfs.path.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( bfs.path[i].isNode() ).to.be.true;
+      } else {
+        expect( bfs.path[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.dfs() undirected from `a`', function(){
@@ -107,6 +123,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( dfs.path.edges().length ).to.equal( 4 );
+
+    for( var i = 0; i < dfs.path.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( dfs.path[i].isNode() ).to.be.true;
+      } else {
+        expect( dfs.path[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.dfs() directed from `a`', function(){
@@ -114,6 +138,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( dfs.path.edges().length ).to.equal( 4 );
+
+    for( var i = 0; i < dfs.path.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( dfs.path[i].isNode() ).to.be.true;
+      } else {
+        expect( dfs.path[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.dijkstra() undirected', function(){
@@ -132,6 +164,15 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     expect( di.distanceTo(d) ).to.equal(8);
     expect( di.pathTo(d).same( eles(a, ae, e, de, d) ) ).to.be.true;
+
+    var adPath = di.pathTo(d);
+    for( var i = 0; i < adPath.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( adPath[i].isNode() ).to.be.true;
+      } else {
+        expect( adPath[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.dijkstra() directed', function(){
@@ -151,6 +192,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( di.distanceTo(d) ).to.equal(10);
     expect( di.pathTo(d).same( eles(a, ab, b, bc, c, cd, d) ) ).to.be.true;
 
+    var adPath = di.pathTo(d);
+    for( var i = 0; i < adPath.length; i++ ){
+      if( i % 2 === 0 ){
+        expect( adPath[i].isNode() ).to.be.true;
+      } else {
+        expect( adPath[i].isEdge() ).to.be.true;
+      }
+    }
   });
 
   it('eles.kruskal()', function(){

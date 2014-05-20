@@ -221,6 +221,13 @@
         percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
       }
 
+      // make sure to bound percent value
+      if( percent < 0 ){
+        percent = 0;
+      } else if( percent > 1 ){
+        percent = 1;
+      }
+
       if( type.color ){
         var r1 = prop.valueMin[0];
         var r2 = prop.valueMax[0];

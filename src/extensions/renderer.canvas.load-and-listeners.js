@@ -768,22 +768,18 @@
           }
         }
         
-        if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
-          // console.log('box selection');
-          
+        if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {         
           var newlySelected = [];
-          var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
-          if (box.length > 0) { 
+          if( box.length > 0 ) { 
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           }
 
-          // console.log(box);
-          for (var i=0;i<box.length;i++) { 
-            if (box[i]._private.selectable) {
-              draggedElements.push( box[i] ); 
+          for( var i = 0; i < box.length; i++ ){ 
+            if( box[i]._private.selectable ){
               newlySelected.push( box[i] );
             }
           }
@@ -800,7 +796,7 @@
             newlySelCol.select();
           }
 
-          if (box.length === 0) { 
+          if( newlySelected.length === 0 ){
             r.redraw();
           }
           
@@ -1638,7 +1634,7 @@
         clearTimeout( this.threeFingerSelectTimeout );
         //this.threeFingerSelectTimeout = setTimeout(function(){
           var newlySelected = [];
-          var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
           select[0] = undefined;
           select[1] = undefined;
@@ -1649,13 +1645,13 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
           // console.log(box);
-          for (var i=0;i<box.length;i++) { 
-            if (box[i]._private.selectable) {
+          for( var i = 0; i< box.length; i++ ) { 
+            if( box[i]._private.selectable ){
               newlySelected.push( box[i] );
             }
           }
 
-          var newlySelCol = (new $$.Collection( cy, newlySelected ));
+          var newlySelCol = new $$.Collection( cy, newlySelected );
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').not( newlySelCol ).unselect();
@@ -1663,8 +1659,10 @@
 
           newlySelCol.select();
           
-          if (box.length > 0) { 
+          if( newlySelCol.length > 0 ) { 
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          } else {
+            r.redraw();
           }
 
         //}, 100);

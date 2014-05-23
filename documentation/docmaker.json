@@ -13,7 +13,10 @@
         { "name": "GeneMANIA export", "id": "wuvac" },
         { "name": "Images", "id": "kahar" },
         { "name": "qTip plugin", "id": "royel" },
-        { "name": "Performance tuning", "id": "yeqom" }
+        { "name": "Pie style", "id": "yozazu" },
+        { "name": "Multiple instances", "id": "zurup" },
+        { "name": "Performance tuning", "id": "yeqom" },
+        { "name": "AngularJS example", "id": "kewem" }
       ]
     },
 

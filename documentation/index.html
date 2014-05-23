@@ -267,6 +267,40 @@ cytoscape( options = {
 				
 					<div class="gallery-demo">
 						<div class="gallery-title">
+							<span class="gallery-name">Pie style</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-yozazu" class="gallery-embed" src="http://jsbin.com/yozazu/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-yozazu"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">Multiple instances</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-zurup" class="gallery-embed" src="http://jsbin.com/zurup/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-zurup"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
 							<span class="gallery-name">Performance tuning</span>
 						</div>
 						
@@ -279,6 +313,23 @@ cytoscape( options = {
 						<div class="gallery-footer">
 							<span class="link gallery-refresh" data-embed-id="gallery-embed-yeqom"><span class="icon-refresh"></span> Refresh</span>
 							<a class="gallery-link" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+						</div>
+					</div>
+				
+					<div class="gallery-demo">
+						<div class="gallery-title">
+							<span class="gallery-name">AngularJS integration</span>
+						</div>
+						
+						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"></a>
+						<iframe id="gallery-embed-kewem" class="gallery-embed" src="http://jsbin.com/kewem/latest"></iframe>
+						
+						<div class="gallery-loader">
+							<span class="icon-refresh icon-spin"></span>
+						</div>
+						<div class="gallery-footer">
+							<span class="link gallery-refresh" data-embed-id="gallery-embed-kewem"><span class="icon-refresh"></span> Refresh</span>
+							<a class="gallery-link" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
 						</div>
 					</div>
 				
@@ -508,7 +559,7 @@ cytoscape( options = {
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>

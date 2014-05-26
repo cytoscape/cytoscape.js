@@ -5,16 +5,13 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all" />
+		<meta name="robots" content="all"/>
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/reset.css">
-		<link rel="stylesheet" href="css/font-awesome.css">
-		<link rel="stylesheet" href="css/highlight/github.css">
-		<link rel="stylesheet" href="css/style.css">
+		<link rel="stylesheet" href="css/all.min.css">
 		<!-- endinject -->
 		
 	</head>
@@ -23,13 +20,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.7</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">2.2.8</span></h1>
 			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.7.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.2.8.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -318,7 +315,7 @@ cytoscape( options = {
 				
 					<div class="gallery-demo">
 						<div class="gallery-title">
-							<span class="gallery-name">AngularJS integration</span>
+							<span class="gallery-name">AngularJS example</span>
 						</div>
 						
 						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"></a>
@@ -559,7 +556,7 @@ cytoscape( options = {
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -8459,11 +8456,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/fastclick.js"></script>
-		<script src="js/jquery.js"></script>
-		<script src="js/cytoscape.js"></script>
-		<script src="js/load.js"></script>
-		<script src="js/script.js"></script>
+		<script src="js/all.min.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

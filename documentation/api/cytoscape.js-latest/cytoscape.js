@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.7.
+ * This file is part of cytoscape.js 2.2.8.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -5245,6 +5245,13 @@ var cytoscape;
         percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
       }
 
+      // make sure to bound percent value
+      if( percent < 0 ){
+        percent = 0;
+      } else if( percent > 1 ){
+        percent = 1;
+      }
+
       if( type.color ){
         var r1 = prop.valueMin[0];
         var r2 = prop.valueMax[0];
@@ -8000,12 +8007,13 @@ var cytoscape;
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
     breadthFirstSearch: function( roots, fn, directed ){
-      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
-      var connectedEles = [];
+      var connectedNodes = [];
+      var connectedBy = {};
       var id2depth = {};
       var V = {};
       var j = 0;
@@ -8019,7 +8027,7 @@ var cytoscape;
           Q.unshift( v[i] );
           V[ v[i].id() ] = true; 
 
-          connectedEles.push( v[i] );
+          connectedNodes.push( v[i] );
           id2depth[ v[i].id() ] = 0;
         }
       }
@@ -8051,11 +8059,24 @@ var cytoscape;
 
             id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
 
-            connectedEles.push( w );
-            connectedEles.push( e );
+            connectedNodes.push( w );
+            connectedBy[ w.id() ] = e;
           }
         }
         
+      }
+
+      var connectedEles = [];
+
+      for( var i = 0; i < connectedNodes.length; i++ ){
+        var node = connectedNodes[i];
+        var edge = connectedBy[ node.id() ];
+
+        if( edge ){
+          connectedEles.push( edge );
+        }
+
+        connectedEles.push( node );
       }
 
       return {
@@ -8067,7 +8088,7 @@ var cytoscape;
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)
     depthFirstSearch: function( roots, fn, directed ){
-      directed = arguments.length === 1 && !$$.is.fn(fn) ? fn : directed;
+      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
@@ -14957,22 +14978,18 @@ var cytoscape;
           }
         }
         
-        if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
-          // console.log('box selection');
-          
+        if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {         
           var newlySelected = [];
-          var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
-          if (box.length > 0) { 
+          if( box.length > 0 ) { 
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           }
 
-          // console.log(box);
-          for (var i=0;i<box.length;i++) { 
-            if (box[i]._private.selectable) {
-              draggedElements.push( box[i] ); 
+          for( var i = 0; i < box.length; i++ ){ 
+            if( box[i]._private.selectable ){
               newlySelected.push( box[i] );
             }
           }
@@ -14989,7 +15006,7 @@ var cytoscape;
             newlySelCol.select();
           }
 
-          if (box.length === 0) { 
+          if( newlySelected.length === 0 ){
             r.redraw();
           }
           
@@ -15827,7 +15844,7 @@ var cytoscape;
         clearTimeout( this.threeFingerSelectTimeout );
         //this.threeFingerSelectTimeout = setTimeout(function(){
           var newlySelected = [];
-          var box = r.getAllInBox(select[0], select[1], select[2], select[3]);
+          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
           select[0] = undefined;
           select[1] = undefined;
@@ -15838,13 +15855,13 @@ var cytoscape;
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
           // console.log(box);
-          for (var i=0;i<box.length;i++) { 
-            if (box[i]._private.selectable) {
+          for( var i = 0; i< box.length; i++ ) { 
+            if( box[i]._private.selectable ){
               newlySelected.push( box[i] );
             }
           }
 
-          var newlySelCol = (new $$.Collection( cy, newlySelected ));
+          var newlySelCol = new $$.Collection( cy, newlySelected );
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').not( newlySelCol ).unselect();
@@ -15852,8 +15869,10 @@ var cytoscape;
 
           newlySelCol.select();
           
-          if (box.length > 0) { 
+          if( newlySelCol.length > 0 ) { 
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+          } else {
+            r.redraw();
           }
 
         //}, 100);

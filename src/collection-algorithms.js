@@ -6,8 +6,17 @@
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
     breadthFirstSearch: function( roots, fn, directed ){
+      var options;
+      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+        options = roots;
+        roots = options.roots;
+        fn = options.visit;
+        directed = options.directed;
+      }
+
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
+      
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
@@ -87,6 +96,14 @@
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)
     depthFirstSearch: function( roots, fn, directed ){
+      var options;
+      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+        options = roots;
+        roots = options.roots;
+        fn = options.visit;
+        directed = options.directed;
+      }
+      
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
@@ -224,6 +241,14 @@
     },
 
     dijkstra: function( root, weightFn, directed ){
+      var options;
+      if( $$.is.plainObject(root) && !$$.is.elementOrCollection(root) ){
+        options = root;
+        root = options.root;
+        weightFn = options.weight;
+        directed = options.directed;
+      }
+
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
@@ -257,7 +282,7 @@
 
         for( var i = 0; i < uvs.length; i++ ){
           var edge = uvs[i];
-          var weight = weightFn.call(edge);
+          var weight = weightFn.apply( edge, [edge] );
 
           if( weight < smallestDistance || !smallestEdge ){
             smallestDistance = weight;

@@ -1,5 +1,5 @@
 {
-  "version": "2.2.6",
+  "version": "snapshot-1236003370-1401398986679",
   "jqueryVersion": "1.4",
 
   "sections": [
@@ -515,6 +515,24 @@
                 }
               ],
               "md": "core/trigger"
+            },
+
+            {
+              "name": "cy.initrender",
+              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "md": "core/initrender"
+            },
+
+            {
+              "name": "cy.ready",
+              "descr": "Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function()", "descr": "The callback run as soon as the graph is ready, inside which `this` refers to the core (`cy`)." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -1980,8 +1998,17 @@
               "formats": [
                 {
                   "args": [
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
+                  ]
+                },
+                {
+                  "args": [
                     { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
-                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
                     { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }

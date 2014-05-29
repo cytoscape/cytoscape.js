@@ -5,7 +5,7 @@
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // reset viewport to fit default simulationBounds
+    fit: true, // reset viewport to fit default simulation width & height
     padding: 30, // padding around the simulation
     simulationWidth: undefined, // uses viewport width by default
     simulationHeight: undefined, // uses viewport height by default
@@ -33,8 +33,9 @@
       return (e.max <= 0.5) || (e.mean <= 0.3);
     },
 
-    // overrides all other options for a forces-all-the-time mode
-    infinite: false
+    // infinite layout options
+    infinite: false, // overrides all other options for a forces-all-the-time mode
+    infiniteFit: true // on every layout reposition of nodes, fit the viewport
   };
   
   function ArborLayout(options){
@@ -153,12 +154,13 @@
         
 
         var timeToDraw = (+new Date() - lastDraw) >= 16;
-        if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
+        if( options.liveUpdate && movedNodes.length > 0 ){
           simUpdatingPos = true;
 
           new $$.Collection(cy, movedNodes).rtrigger('position');
-          lastDraw = +new Date();
+          cy.fit( options.padding );
 
+          lastDraw = +new Date();
           simUpdatingPos = false;
         }
 

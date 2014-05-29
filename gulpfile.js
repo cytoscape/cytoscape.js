@@ -15,9 +15,9 @@ var cssmin = require('gulp-cssmin');
 var shell = require('gulp-shell');
 var jshint = require('gulp-jshint');
 var jshStylish = require('jshint-stylish');
+var exec = require('child_process').exec;
 
-var now = new Date();
-var version = process.env['VERSION'] || ['snapshot', +now].join('-');
+var version; // used for marking builds w/ version etc
 
 var paths = {
   sources: [
@@ -67,8 +67,26 @@ gulp.task('default', ['build'], function(){
   
 });
 
-gulp.task('version', function(){
-  console.log('Using version number `%s` for building', version);
+gulp.task('version', function( next ){
+  var now = new Date();
+  version = process.env['VERSION'];
+
+  if( version ){
+    done();
+  } else {
+    exec('git rev-parse HEAD', function( error, stdout, stderr ){
+      var sha = stdout;
+
+      version = [ 'snapshot', sha, +now ].join('-');
+      done();
+    });
+  }
+
+  function done(){
+    console.log('Using version number `%s` for building', version);
+    next();
+  }
+  
 });
 
 gulp.task('clean', function(){
@@ -77,7 +95,7 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('concat', function(){
+gulp.task('concat', ['version'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
     
@@ -87,7 +105,7 @@ gulp.task('concat', function(){
   ;
 });
 
-gulp.task('build', function(){
+gulp.task('build', ['version'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
     
@@ -146,7 +164,7 @@ gulp.task('refs', ['debugrefs', 'testrefs', 'testlist'], function(next){
   next();
 });
 
-gulp.task('zip', ['build'], function(){
+gulp.task('zip', ['version', 'build'], function(){
   return gulp.src(['build/cytoscape.js', 'build/cytoscape.min.js', 'LGPL-LICENSE.txt', 'lib/arbor.js'])
     .pipe( zip('cytoscape.js-' + version + '.zip') )
 
@@ -162,7 +180,7 @@ gulp.task('test', ['concat'], function(){
   ;
 });
 
-gulp.task('docsver', function(){
+gulp.task('docsver', ['version'], function(){
   return gulp.src('documentation/docmaker.json')
     .pipe( replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
 
@@ -170,7 +188,7 @@ gulp.task('docsver', function(){
   ;
 });
 
-gulp.task('docsjs', ['build'], function(){
+gulp.task('docsjs', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js',
@@ -184,11 +202,25 @@ gulp.task('docsjs', ['build'], function(){
   ;
 });
 
-gulp.task('docsdl', ['zip'], function(){
+gulp.task('docsdl', ['version', 'zip'], function(){
   return gulp.src('build/cytoscape.js-' + version + '.zip')
     .pipe( gulp.dest('documentation/download') )
   ;
 });
+
+gulp.task('docsbuildlist', ['docsdl'], function(next){
+  var cwd = process.cwd();
+
+  process.chdir('./documentation/download');
+  require('./documentation/download/dlmaker');
+  process.chdir( cwd );
+
+  next();
+});
+
+gulp.task('snapshotpush', ['docsbuildlist'], shell.task([
+  './publish-buildlist.sh'
+]));
 
 gulp.task('docs', function(next){
   var cwd = process.cwd();
@@ -265,7 +297,7 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docspub', ['docsver', 'docsjs', 'docsdl'], function(){
+gulp.task('docspub', ['version', 'docsver', 'docsjs', 'docsbuildlist'], function(){
   return gulp.start('docsmin');
 });
 

@@ -586,7 +586,9 @@ pre code {
 	margin-left: 0.5em;
 }
 
-
+.build-list {
+	margin: 0.25em;
+}
 
 
 @media only screen 

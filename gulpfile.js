@@ -245,7 +245,7 @@ gulp.task('docsclean', function(next){
 gulp.task('docshtmlmin', ['docsminrefs'], function(){
   return gulp.src('documentation/index.html')
     .pipe( htmlmin({
-      collapseWhitespace: false,
+      collapseWhitespace: true,
       keepClosingSlash: true
     }) )
 
@@ -297,7 +297,7 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docspub', ['version', 'docsver', 'docsjs', 'docsbuildlist'], function(){
+gulp.task('docspub', ['version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdl'], function(){
   return gulp.start('docsmin');
 });
 

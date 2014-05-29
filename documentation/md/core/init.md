@@ -92,11 +92,12 @@ Because the `ready` event may occur before you can bind to the core, you can use
 
 <span class="important-indicator"></span> You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can't modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.
 
+This ready example uses jQuery, but you could use plain JS and `cy.ready()` instead:
 ```js
 // in foo.js
-$(function(){ // on jquery ready
+$(function(){ // on dom ready
 
-  $('#cy').cytoscape(function(eventObject){ // on Cytoscape.js ready on the `cy` div
+  $('#cy').cytoscape(function(){ // on Cytoscape.js ready on the `cy` div
     // this code executes when Cytoscape.js is ready even though we
     // don't actually initialise Cytoscape.js on the `cy` div until
     // bar.js is loaded
@@ -108,8 +109,8 @@ $(function(){ // on jquery ready
 
 });
 
-// in bar.js (should be after foo.js in your js includes)
-$(function(){ // on jquery ready
+// in bar.js
+$(function(){ // on dom ready
   $('#cy').cytoscape(options);
 });
 ```

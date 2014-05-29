@@ -25,7 +25,7 @@
         reg = $$.registerInstance( domEle );
       }
       
-      if( reg && reg.cy && reg.cy.ready() ){
+      if( reg && reg.cy && reg.cy.isReady() ){
         // already ready so just trigger now
         reg.cy.trigger('ready', [], ready);
 

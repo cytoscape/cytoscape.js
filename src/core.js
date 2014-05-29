@@ -135,13 +135,13 @@
 
       // if a ready callback is specified as an option, the bind it
       if( $$.is.fn( options.ready ) ){
-        cy.bind('ready', options.ready);
+        cy.on('ready', options.ready);
       }
 
       // bind all the ready handlers registered before creating this instance
       for( var i = 0; i < readies.length; i++ ){
         var fn = readies[i];
-        cy.bind('ready', fn);
+        cy.on('ready', fn);
       }
       reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
@@ -153,8 +153,16 @@
   
 
   $$.fn.core({
-    ready: function(){
+    isReady: function(){
       return this._private.ready;
+    },
+
+    ready: function( fn ){
+      if( this.isReady() ){
+        this.trigger('ready', [], fn); // just calls fn as though triggered via ready event
+      } else {
+        this.on('ready', fn);
+      }
     },
 
     initrender: function(){

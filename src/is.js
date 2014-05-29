@@ -89,12 +89,17 @@
       } else {
         return obj instanceof HTMLElement;
       }
-
-      
     },
 
     touch: function(){
       return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
+    },
+
+    boundingBox: function(obj){
+      return $$.is.plainObject(obj) && 
+        $$.is.number(obj.x1) && $$.is.number(obj.x2) &&
+        $$.is.number(obj.y1) && $$.is.number(obj.y2)
+      ;
     }
   };  
   

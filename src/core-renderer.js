@@ -22,6 +22,8 @@
     },
 
     resize: function(){
+      this._private.layout().resize();
+
       this.notify({
         type: 'resize'
       });

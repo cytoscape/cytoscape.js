@@ -21,8 +21,8 @@ $(function(){
           'border-color': '#555',
           'shape': 'ellipse',
           //'shape': 'data(shape)',
-          'width': 'mapData(weight, 0, 100, 10, 100)',
-          'height': 'mapData(weight, 0, 100, 10, 100)',
+          'width': 'mapData(weight, 0, 100, 5, 15)',
+          'height': 'mapData(weight, 0, 100, 5, 15)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -66,8 +66,8 @@ $(function(){
           'width': 'mapData(weight, 0, 100, 1, 4)',
           // 'target-arrow-shape': 'data(tgtShape)',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack'
-          //'opacity': 0.5
+          'curve-style': 'haystack',
+          'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')
@@ -92,7 +92,8 @@ $(function(){
       name: 'canvas'
     },
     layout: {
-      name: 'grid'
+      name: 'arbor',
+      infinite: true
     },
     style: defaultSty,
     

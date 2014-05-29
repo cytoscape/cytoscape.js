@@ -10,6 +10,8 @@ var cytoscape;
   var $$ = cytoscape = function(){ // jshint ignore:line
     return cytoscape.init.apply(cytoscape, arguments);
   };
+
+  $$.version = '{{VERSION}}';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });

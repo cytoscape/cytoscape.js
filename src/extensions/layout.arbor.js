@@ -6,9 +6,10 @@
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
     fit: true, // reset viewport to fit default simulationBounds
-    padding: 20, // around elements bounds
-    simulationBounds: 'auto', // [x1, y1, x2, y2]; [0, 0, width, height] by default
-    ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+    padding: 30, // padding around the simulation
+    simulationWidth: undefined, // uses viewport width by default
+    simulationHeight: undefined, // uses viewport height by default
+    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
 
     // forces used by arbor (use arbor default on undefined)
     repulsion: undefined,
@@ -23,63 +24,49 @@
     nodeMass: undefined, 
     edgeLength: undefined,
 
-    stepSize: 1, // size of timestep in simulation
+    stepSize: 0.1, // smoothing of arbor bounding box
 
     // function that returns true if the system is stable to indicate
     // that the layout can be stopped
     stableEnergy: function( energy ){
       var e = energy; 
       return (e.max <= 0.5) || (e.mean <= 0.3);
-    }
+    },
+
+    // overrides all other options for a forces-all-the-time mode
+    infinite: false
   };
   
   function ArborLayout(options){
-    this.options = $$.util.extend({}, defaults, options);
+    this._private = {};
+
+    this._private.options = $$.util.extend({}, defaults, options);
   }
     
   ArborLayout.prototype.run = function(){
-    var options = this.options;
+    var options = this._private.options;
     var cy = options.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
+    var eles = nodes.add( edges );
     var container = cy.container();
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    this._private.width = container.clientWidth;
+    this._private.height = container.clientHeight;
+    var simUpdatingPos = false;
+    var layout = this;
 
-    // var sampleNodeArea(){
-    //   var i = Math.round( (nodes.length - 1) * Math.random() );
-    //   node = nodes[i];
-    // };
-
-    if( options.simulationBounds === 'auto' ){
-      var nodeAvgArea = 100; // TODO
-      var autoSize = Math.sqrt( nodes.length * nodeAvgArea );
-      options.simulationBounds = [0, 0, autoSize, autoSize];
-
+    if( options.simulationWidth != null && options.simulationHeight != null ){
+      this._private.width = options.simulationWidth; 
+      this._private.height = options.simulationHeight;
     }
-
-    if( options.simulationBounds ){
-      var simBB = options.simulationBounds;
-      width = simBB[2] -  simBB[0]; // x2 - x1
-      height = simBB[3] - simBB[1]; // y2 - y1
-
-    } else {
-      options.simulationBounds = [
-        0,
-        0, 
-        width,
-        height
-      ];
-    }
-
-    console.log(options.simulationBounds);
 
     // make nice x & y fields
-    var simBB = options.simulationBounds;
-    simBB.x1 = simBB[0];
-    simBB.y1 = simBB[1];
-    simBB.x2 = simBB[2];
-    simBB.y2 = simBB[3];
+    this._private.simBB = {
+      x1: 0,
+      y1: 0,
+      x2: this._private.width,
+      y2: this._private.height
+    };
 
     // arbor doesn't work with just 1 node 
     if( cy.nodes().size() <= 1 ){
@@ -87,9 +74,11 @@
         cy.reset();
       }
 
+      var bb = this._private.simBB;
+
       cy.nodes().position({
-        x: Math.round( (simBB.x1 + simBB.x2)/2 ),
-        y: Math.round( (simBB.y1 + simBB.y2)/2 )
+        x: Math.round( (bb.x1 + bb.x2)/2 ),
+        y: Math.round( (bb.y1 + bb.y2)/2 )
       });
 
       cy.one('layoutready', options.ready);
@@ -101,11 +90,20 @@
       return;
     }
 
-    var sys = this.system = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
-    this.system = sys;
+    var sys = this._private.system = arbor.ParticleSystem();
+
+    sys.parameters({
+      repulsion: options.repulsion,
+      stiffness: options.stiffness, 
+      friction: options.friction, 
+      gravity: options.gravity, 
+      fps: options.fps, 
+      dt: options.dt, 
+      precision: options.precision
+    });
 
     if( options.liveUpdate && options.fit ){
-      cy.reset();
+      cy.fit( this._private.simBB );
     }
     
     var doneTime = 250;
@@ -121,13 +119,15 @@
         var energy = sys.energy();
 
         // if we're stable (according to the client), we're done
-        if( options.stableEnergy != null && energy != null && energy.n > 0 && options.stableEnergy(energy) ){
-          sys.stop();
+        if( !options.infinite && options.stableEnergy != null && energy != null && energy.n > 0 && options.stableEnergy(energy) ){
+          layout.stop();
           return;
         }
 
-        clearTimeout(doneTimeout);
-        doneTimeout = setTimeout(doneHandler, doneTime);
+        if( !options.infinite && doneTime != Infinity ){
+          clearTimeout(doneTimeout);
+          doneTimeout = setTimeout(doneHandler, doneTime);
+        }
         
         var movedNodes = [];
         
@@ -139,10 +139,12 @@
             return;
           }
           
+          var bb = layout._private.simBB;
+
           if( !node.locked() && !node.grabbed() ){
             node.silentPosition({
-              x: simBB.x1 + point.x,
-              y: simBB.y1 + point.y
+              x: bb.x1 + point.x,
+              y: bb.y1 + point.y
             });
 
             movedNodes.push( node );
@@ -152,9 +154,12 @@
 
         var timeToDraw = (+new Date() - lastDraw) >= 16;
         if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
-          cy.fit( options.padding );
+          simUpdatingPos = true;
 
-          lastDraw = +new Date;
+          new $$.Collection(cy, movedNodes).rtrigger('position');
+          lastDraw = +new Date();
+
+          simUpdatingPos = false;
         }
 
         
@@ -167,7 +172,7 @@
       
     };
     sys.renderer = sysRenderer;
-    sys.screenSize( width, height );
+    sys.screenSize( this._private.width, this._private.height );
     sys.screenPadding( options.padding, options.padding, options.padding, options.padding );
     sys.screenStep( options.stepSize );
 
@@ -189,8 +194,8 @@
     function fromScreen(pos){
       var x = pos.x;
       var y = pos.y;
-      var w = width;
-      var h = height;
+      var w = this._private.width;
+      var h = this._private.height;
       
       var left = -2;
       var right = 2;
@@ -202,11 +207,23 @@
         y: y/h * d + right
       };
     }
-    
-    var grabHandler = function(e){
-      var pos = sys.fromScreen( this.position() );
-      var p = arbor.Point(pos.x, pos.y);
-      this.scratch().arbor.p = p;
+
+    var grabHandler;
+    nodes.on('grab free position', grabHandler = function(e){
+      if( simUpdatingPos ){ return; }
+
+      var pos = this.position();
+      var apos = sys.fromScreen( pos );
+      var p = arbor.Point(apos.x, apos.y);
+      var padding = options.padding;
+      var bb = layout._private.simBB;
+
+      if(
+        bb.x1 + padding <= pos.x && pos.x <= bb.x2 - padding &&
+        bb.y1 + padding <= pos.y && pos.y <= bb.y2 - padding
+      ){
+        this.scratch().arbor.p = p;
+      }
       
       switch( e.type ){
       case 'grab':
@@ -217,46 +234,75 @@
         //this.scratch().arbor.tempMass = 1000;
         break;
       }
-    };
-    nodes.bind('grab drag free', grabHandler);
+    });
+
+    var lockHandler;
+    nodes.on('lock unlock', lockHandler = function(e){
+      node.scratch().arbor.fixed = node.locked();
+    });
           
-    nodes.each(function(i, node){
-      if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
+    var removeHandler;
+    eles.on('remove', removeHandler = function(e){
+      var ele = this;
+      var arborEle = ele.scratch().arbor;
 
-      var id = this._private.data.id;
-      var mass = calculateValueForElement(this, options.nodeMass);
-      var locked = this._private.locked;
+      if( !arborEle ){ return; }
 
-      if( node.isFullAutoParent() ){
-        return;
+      if( ele.isNode() ){
+        sys.pruneNode( arborEle );
+      } else {
+        sys.pruneEdge( arborEle );
       }
+    });
+
+    var addHandler;
+    cy.on('add', '*', addHandler = function(){
+      var ele = this;
+
+      if( ele.isNode() ){
+        addNode( ele );
+      } else {
+        addEdge( ele );
+      }
+    });
+
+    function addNode( node ){
+      if( node.isFullAutoParent() ){ return; } // they don't exist in the sim
+
+      var id = node._private.data.id;
+      var mass = calculateValueForElement(node, options.nodeMass);
+      var locked = node._private.locked;
       
-      var pos = fromScreen({
+      var pos = sys.fromScreen({
         x: node.position().x,
         y: node.position().y
       });
 
-      if( node.locked() ){
-        return;
-      }
-
-      this.scratch().arbor = sys.addNode(id, {
-        element: this,
+      node.scratch().arbor = sys.addNode(id, {
+        element: node,
         mass: mass,
         fixed: locked,
         x: locked ? pos.x : undefined,
         y: locked ? pos.y : undefined
       });
+    }
+
+    function addEdge( edge ){
+      var src = edge.source().id();
+      var tgt = edge.target().id();
+      var length = calculateValueForElement(edge, options.edgeLength);
+      
+      edge.scratch().arbor = sys.addEdge(src, tgt, {
+        length: length
+      }); 
+    }
+
+    nodes.each(function(i, node){
+      addNode( node );
     });
     
-    edges.each(function(){
-      var src = this.source().id();
-      var tgt = this.target().id();
-      var length = calculateValueForElement(this, options.edgeLength);
-      
-      this.scratch().arbor = sys.addEdge(src, tgt, {
-        length: length
-      });
+    edges.each(function(i, edge){
+      addEdge( edge );
     });
     
     function packToCenter(callback){
@@ -274,7 +320,9 @@
       grabbableNodes.ungrabify();
     }
     
-    var doneHandler = function(){
+    var doneHandler = layout._private.doneHandler = function(){
+      layout._private.doneHandler = null;
+
       if( window.isIE ){
         packToCenter(function(){
           done();
@@ -293,7 +341,10 @@
         }
 
         // unbind handlers
-        nodes.unbind('grab drag free', grabHandler);
+        nodes.off('grab free drag', grabHandler);
+        nodes.off('lock unlock', lockHandler);
+        eles.off('remove', removeHandler);
+        cy.off('add', '*', addHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
@@ -306,17 +357,44 @@
     };
     
     sys.start();
-    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
+    if( !options.infinite && options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
       setTimeout(function(){
-        sys.stop();
+        layout.stop();
       }, options.maxSimulationTime);
     }
     
   };
 
+  ArborLayout.prototype.pause = function(){
+    if( this._private.system != null ){
+      this._private.system.stop();
+    }
+  };
+
+  ArborLayout.prototype.resume = function(){
+    if( this._private.system != null ){
+      this._private.system.start();
+    }
+  };
+
   ArborLayout.prototype.stop = function(){
-    if( this.system != null ){
-      system.stop();
+    if( this._private.system != null ){
+      this._private.system.stop();
+    }
+
+    if( this._private.doneHandler ){
+      this._private.doneHandler();
+    }
+  };
+
+  ArborLayout.prototype.resize = function(){
+    if( this._private.system != null ){
+      var cy = this._private.options.cy;
+
+      var w = this._private.width = cy.width();
+      var h = this._private.height = cy.height();
+
+      this._private.system.screenSize( w, h );
     }
   };
   

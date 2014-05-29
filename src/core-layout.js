@@ -6,12 +6,12 @@
       var cy = this;
       
       if( this._private.layoutRunning ){ // don't run another layout if one's already going
-        return this;
+        return this._private.layout;
       }
 
-      // if no params, use the previous ones
+      // if no params, return layout
       if( params == null ){
-        params = this._private.options.layout;
+        return this._private.layout;
       }
       
       this.initLayout( params );
@@ -25,7 +25,7 @@
 
       this._private.layout.run();
       
-      return this;
+      return this._private.layout;
       
     },
     

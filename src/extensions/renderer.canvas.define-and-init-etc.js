@@ -149,6 +149,7 @@
     } // for
     
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+    this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
     this.redraw();
   };

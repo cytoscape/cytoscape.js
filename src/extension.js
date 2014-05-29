@@ -18,6 +18,18 @@
       $$.fn[type]( impl );
     }
     
+    // fill in missing (optional) layout functions in the prototype
+    if( type === 'layout' ){
+      var layoutProto = registrant.prototype;
+      var optLayoutFns = ['stop', 'resume', 'pause', 'resize'];
+
+      for( var i = 0; i < optLayoutFns.length; i++ ){
+        var fnName = optLayoutFns[i];
+
+        layoutProto[fnName] = layoutProto[fnName] || function(){};
+      }
+    }
+
     return $$.util.setMap({
       map: extensions,
       keys: [ type, name ],
@@ -69,7 +81,7 @@
     }
     
     else {
-      $.error('Invalid extension access syntax');
+      $$.util.error('Invalid extension access syntax');
     }
   
   };

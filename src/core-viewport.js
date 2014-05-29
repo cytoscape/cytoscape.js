@@ -194,14 +194,29 @@
         return this;
       }
 
+      var bb;
+
       if( $$.is.string(elements) ){
         var sel = elements;
         elements = this.$( sel );
+
+      } else if( $$.is.boundingBox(elements) ){ // assume bb
+        var bbe = elements;
+        bb = {
+          x1: bbe.x1,
+          y1: bbe.y1,
+          x2: bbe.x2,
+          y2: bbe.y2
+        };
+
+        bb.w = bb.x2 - bb.x1;
+        bb.h = bb.y2 - bb.y1;
+
       } else if( !$$.is.elementOrCollection(elements) ){
         elements = this.elements();
       }
 
-      var bb = elements.boundingBox();
+      bb = bb || elements.boundingBox();
       var style = this.style();
 
       var w = parseFloat( style.containerCss('width') );
@@ -209,7 +224,7 @@
       var zoom;
       padding = $$.is.number(padding) ? padding : 0;
 
-      if( !isNaN(w) && !isNaN(h) && elements.length > 0 ){
+      if( !isNaN(w) && !isNaN(h) && w > 0 && h > 0 && !isNaN(bb.w) && !isNaN(bb.h) &&  bb.w > 0 && bb.h > 0 ){
         zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
         // crop zoom
@@ -383,6 +398,58 @@
       });
       
       return this; // chaining
+    },
+
+    width: function(){
+      var container = this._private.container;
+
+      if( container ){
+        return container.clientWidth;
+      }
+
+      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    },
+
+    height: function(){
+      var container = this._private.container;
+
+      if( container ){
+        return container.clientHeight;
+      }
+
+      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    },
+
+    bounds: function(){
+      var pan = this._private.pan;
+      var zoom = this._private.zoom;
+      var rb = this.renderedBounds();
+
+      var b = {
+        x1: ( rb.x1 - pan.x )/zoom,
+        x2: ( rb.x2 - pan.x )/zoom,
+        y1: ( rb.y1 - pan.y )/zoom,
+        y2: ( rb.y2 - pan.y )/zoom,
+      };
+
+      b.w = b.x2 - b.x1;
+      b.h = b.y2 - b.y1;
+
+      return b;
+    },
+
+    renderedBounds: function(){
+      var width = this.width();
+      var height = this.height();
+
+      return {
+        x1: 0,
+        y1: 0,
+        x2: width,
+        y2: height,
+        w: width,
+        h: height
+      };
     }
   });  
   

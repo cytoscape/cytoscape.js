@@ -45,6 +45,7 @@
     options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
     
     var _p = this._private = {
+      container: options.container, // html dom ele container
       ready: false, // whether ready has been triggered
       initrender: false, // has initrender has been triggered
       instanceId: reg.id, // the registered instance id
@@ -241,7 +242,7 @@
     },
 
     container: function(){
-      return this._private.options.container;
+      return this._private.container;
     },
 
     options: function(){

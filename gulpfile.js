@@ -75,7 +75,7 @@ gulp.task('version', function( next ){
     done();
   } else {
     exec('git rev-parse HEAD', function( error, stdout, stderr ){
-      var sha = stdout;
+      var sha = stdout.substring(0, 10); // shorten so not huge filename
 
       version = [ 'snapshot', sha, +now ].join('-');
       done();

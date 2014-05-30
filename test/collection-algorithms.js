@@ -73,8 +73,11 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     var depths = {};
 
-    var bfs = cy.elements().bfs(a, function(i, depth){
-      depths[ this.id() ] = depth;
+    var bfs = cy.elements().bfs({
+      roots: a, 
+      visit: function(i, depth){
+        depths[ this.id() ] = depth;
+      }
     });
 
     expect( depths ).to.deep.equal( expectedDepths );
@@ -101,9 +104,13 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     var depths = {};
 
-    var bfs = cy.elements().bfs(a, function(i, depth){
-      depths[ this.id() ] = depth;
-    }, true);
+    var bfs = cy.elements().bfs({
+      roots: a,
+      visit: function(i, depth){
+        depths[ this.id() ] = depth;
+      }, 
+      directed: true
+    });
 
     expect( depths ).to.deep.equal( expectedDepths );
     expect( bfs.path.nodes().same( cy.nodes() ) ).to.be.true;
@@ -119,7 +126,9 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   });
 
   it('eles.dfs() undirected from `a`', function(){
-    var dfs = cy.elements().dfs(a);
+    var dfs = cy.elements().dfs({
+      roots: a
+    });
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( dfs.path.edges().length ).to.equal( 4 );
@@ -134,7 +143,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   });
 
   it('eles.dfs() directed from `a`', function(){
-    var dfs = cy.elements().dfs(a, true);
+    var dfs = cy.elements().dfs({ roots: a, directed: true });
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
     expect( dfs.path.edges().length ).to.equal( 4 );
@@ -149,8 +158,11 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   });
 
   it('eles.dijkstra() undirected', function(){
-    var di = cy.elements().dijkstra(a, function(){
-      return this.data('weight');
+    var di = cy.elements().dijkstra({
+      root: a, 
+      weight: function(){
+        return this.data('weight');
+      }
     });
 
     expect( di.distanceTo(b) ).to.equal(3);
@@ -176,9 +188,13 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   });
 
   it('eles.dijkstra() directed', function(){
-    var di = cy.elements().dijkstra(a, function(){
-      return this.data('weight');
-    }, true);
+    var di = cy.elements().dijkstra({
+      root: a,
+      weight: function(){
+        return this.data('weight');
+      },
+      directed: true
+    });
 
     expect( di.distanceTo(b) ).to.equal(3);
     expect( di.pathTo(b).same( eles(a, ab, b) ) ).to.be.true;

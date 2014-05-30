@@ -17,8 +17,8 @@
     var nodes = cy.nodes();
     var container = cy.container();
     
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    var width = cy.width();
+    var height = cy.width();
     
 
     nodes.positions(function(i, element){

@@ -64,6 +64,7 @@
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
     containerStyle.zIndex = '0';
+    containerStyle.overflow = 'hidden';
 
     this.data.container.appendChild( this.data.canvasContainer );
 
@@ -89,7 +90,7 @@
       this.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
       this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
       this.data.bufferCanvases[i].style.visibility = 'hidden';
-      this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
+      //this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
     }
 
     this.hideEdgesOnViewport = options.hideEdgesOnViewport;

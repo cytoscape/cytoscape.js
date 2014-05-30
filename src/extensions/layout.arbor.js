@@ -35,7 +35,7 @@
 
     // infinite layout options
     infinite: false, // overrides all other options for a forces-all-the-time mode
-    infiniteFit: true // on every layout reposition of nodes, fit the viewport
+    infiniteFit: false // on every layout reposition of nodes, fit the viewport
   };
   
   function ArborLayout(options){
@@ -51,8 +51,8 @@
     var edges = cy.edges();
     var eles = nodes.add( edges );
     var container = cy.container();
-    this._private.width = container.clientWidth;
-    this._private.height = container.clientHeight;
+    this._private.width = cy.width();
+    this._private.height = cy.height();
     var simUpdatingPos = false;
     var layout = this;
 
@@ -158,7 +158,10 @@
           simUpdatingPos = true;
 
           new $$.Collection(cy, movedNodes).rtrigger('position');
-          cy.fit( options.padding );
+
+          if( options.infiniteFit ){
+            cy.fit( options.padding );
+          }
 
           lastDraw = +new Date();
           simUpdatingPos = false;

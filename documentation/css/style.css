@@ -510,10 +510,6 @@ pre code {
 	overflow: auto;
 }
 
-.function .formats ul {
-	list-style-type: none;
-}
-
 .function pre {
 	
 }
@@ -562,7 +558,7 @@ pre code {
 }
 
 .function ul.args {
-	margin-left: 1em;
+	margin-left: 2em;
 	font-size: 0.8em;
 }
 
@@ -579,11 +575,15 @@ pre code {
 }
 
 .args .fields {
-	margin-left: 1em;
+	margin-left: 2em;
+}
+
+.args .optional {
+	
 }
 
 .args .fields .name {
-	margin-left: 0.5em;
+	
 }
 
 .build-list {

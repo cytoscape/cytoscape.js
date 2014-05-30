@@ -272,40 +272,6 @@
             },
 
             {
-              "name": "cy.autolockNodes",
-              "descr": "Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).",
-              "formats": [
-                {
-                  "descr": "Get whether autolocking is enabled."
-                },
-
-                {
-                  "descr": "Set whether autolocking is enabled.",
-                  "args": [
-                    { "name": "bool", "descr": "A truthy value enables autolocking; a falsey value disables it." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "cy.autoungrabifyNodes",
-              "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
-              "formats": [
-                {
-                  "descr": "Get whether autoungrabbifying is enabled."
-                },
-
-                {
-                  "descr": "Set whether autoungrabbifying is enabled.",
-                  "args": [
-                    { "name": "bool", "descr": "A truthy value enables autoungrabbifying; a falsey value disables it." }
-                  ]
-                }
-              ]
-            },
-
-            {
               "name": "cy.zoom", 
               "descr": "Get or set the zoom level of the graph.",
               "formats": [
@@ -409,6 +375,56 @@
                   "descr": "Set whether box selection is enabled.",
                   "args": [
                     { "name": "bool", "descr": "A truthy value enables box selection; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.width",
+              "descr": "Get the on-screen width of the viewport in pixels."
+            },
+
+            {
+              "name": "cy.height",
+              "descr": "Get the on-screen height of the viewport in pixels."
+            },
+
+            {
+              "name": "cy.extent",
+              "descr": "Get the extent of the viewport, a bounding box in model coordinates that lets you know what model positions are visible in the viewport.",
+              "md": "core/extent"
+            },
+
+            {
+              "name": "cy.autolockNodes",
+              "descr": "Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).",
+              "formats": [
+                {
+                  "descr": "Get whether autolocking is enabled."
+                },
+
+                {
+                  "descr": "Set whether autolocking is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables autolocking; a falsey value disables it." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.autoungrabifyNodes",
+              "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+              "formats": [
+                {
+                  "descr": "Get whether autoungrabbifying is enabled."
+                },
+
+                {
+                  "descr": "Set whether autoungrabbifying is enabled.",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables autoungrabbifying; a falsey value disables it." }
                   ]
                 }
               ]
@@ -1962,6 +1978,18 @@
               "formats": [
                 {
                   "args": [
+                    { "name": "options", "fields": [
+                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "visit: function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                      ] },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
+                  ]
+                },
+                {
+                  "args": [
                     { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
                     { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
@@ -1978,6 +2006,18 @@
               "name": "eles.depthFirstSearch",
               "descr": "Perform a depth-first search within the elements in the collection.",
               "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "visit: function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                      ] },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
+                  ]
+                },
                 {
                   "args": [
                     { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },

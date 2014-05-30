@@ -8,6 +8,8 @@ describe('Core export', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      styleEnabled: true,
+
       elements: {
         nodes: [
             { data: { id: "n1", foo: "bar" }, classes: "odd one" },

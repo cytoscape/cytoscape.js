@@ -8,6 +8,8 @@ describe('Collection style', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      styleEnabled: true,
+
       elements: {
         nodes: [
             { data: { id: 'n1' } },

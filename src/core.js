@@ -272,7 +272,10 @@
         json.elements[group].push( ele.json() );
       });
 
-      json.style = cy.style().json();
+      if( this._private.styleEnabled ){
+        json.style = cy.style().json();
+      }
+
       json.scratch = cy.scratch();
       json.zoomingEnabled = cy._private.zoomingEnabled;
       json.userZoomingEnabled = cy._private.userZoomingEnabled;

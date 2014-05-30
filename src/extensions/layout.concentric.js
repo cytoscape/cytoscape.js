@@ -32,8 +32,8 @@
     });
     var container = cy.container();
     
-    var width = options.width !== undefined ? options.width : container.clientWidth;
-    var height = options.height !== undefined ? options.height : container.clientHeight;
+    var width = options.width !== undefined ? options.width : cy.width();
+    var height = options.height !== undefined ? options.height : cy.height();
 
     var center = {
       x: width/2,

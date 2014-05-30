@@ -246,22 +246,34 @@
     // convenience function to get a numerical value for the width of the node/edge
     width: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
-        var w = ele._private.style.width;
-        return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
+        if( styleEnabled ){
+          var w = ele._private.style.width;
+          return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
+        } else {
+          return 1;
+        }
       }
     },
 
     outerWidth: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
-        var style = ele._private.style;
-        var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
-        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        if( styleEnabled ){
+          var style = ele._private.style;
+          var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
+          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
-        return width + border;
+          return width + border;
+        } else {
+          return 1;
+        }
       }
     },
 
@@ -286,20 +298,32 @@
     // convenience function to get a numerical value for the height of the node
     height: function(){ 
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele && ele._private.group === 'nodes' ){
-        var h = ele._private.style.height;
-        return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
+        if( styleEnabled ){
+          var h = ele._private.style.height;
+          return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
+        } else {
+          return 1;
+        }
       }
     },
 
     outerHeight: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele && ele._private.group === 'nodes' ){
-        var style = ele._private.style;
-        var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
-        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        if( styleEnabled ){
+          var style = ele._private.style;
+          var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
+          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        } else {
+          return 1;
+        }
 
         return height + border;
       }
@@ -347,6 +371,8 @@
     // get the bounding box of the elements (in raw model position)
     boundingBox: function( options ){
       var eles = this;
+      var cy = eles._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       options = $$.util.extend({
         includeNodes: true,
@@ -430,84 +456,89 @@
           // handle points along edge (sanity check)
           //////////////////////////////////////////
 
-          var bpts = rstyle.bezierPts || [];
-          var w = ele._private.style['width'].pxValue;
-          for( var j = 0; j < bpts.length; j++ ){
-            var bpt = bpts[j];
+          if( styleEnabled ){
+            var bpts = rstyle.bezierPts || [];
+            var w = ele._private.style['width'].pxValue;
+            for( var j = 0; j < bpts.length; j++ ){
+              var bpt = bpts[j];
 
-            x1 = bpt.x - w < x1 ? bpt.x - w : x1;
-            x2 = bpt.x + w > x2 ? bpt.x + w : x2;
-            y1 = bpt.y - w < y1 ? bpt.y - w : y1;
-            y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+              x1 = bpt.x - w < x1 ? bpt.x - w : x1;
+              x2 = bpt.x + w > x2 ? bpt.x + w : x2;
+              y1 = bpt.y - w < y1 ? bpt.y - w : y1;
+              y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+            }
           }
 
-        }
+        } // edges
 
         // handle label dimensions
         //////////////////////////
 
-        var style = ele._private.style;
-        var rstyle = ele._private.rstyle;
-        var label = style['content'].strValue;
-        var fontSize = style['font-size'];
-        var halign = style['text-halign'];
-        var valign = style['text-valign'];
-        var labelWidth = rstyle.labelWidth;
-        var labelHeight = rstyle.labelHeight;
-        var labelX = rstyle.labelX;
-        var labelY = rstyle.labelY;
+        if( styleEnabled ){
 
-        if( includedEle && options.includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
-          var lh = labelHeight;
-          var lw = labelWidth;
-          var lx1, lx2, ly1, ly2;
+          var style = ele._private.style;
+          var rstyle = ele._private.rstyle;
+          var label = style['content'].strValue;
+          var fontSize = style['font-size'];
+          var halign = style['text-halign'];
+          var valign = style['text-valign'];
+          var labelWidth = rstyle.labelWidth;
+          var labelHeight = rstyle.labelHeight;
+          var labelX = rstyle.labelX;
+          var labelY = rstyle.labelY;
 
-          if( ele.isEdge() ){
-            lx1 = labelX - lw/2;
-            lx2 = labelX + lw/2;
-            ly1 = labelY - lh/2;
-            ly2 = labelY + lh/2;
-          } else {
-            switch( halign.value ){
-              case 'left':
-                lx1 = labelX - lw;
-                lx2 = labelX;
-                break;
+          if( includedEle && options.includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+            var lh = labelHeight;
+            var lw = labelWidth;
+            var lx1, lx2, ly1, ly2;
 
-              case 'center':
-                lx1 = labelX - lw/2;
-                lx2 = labelX + lw/2;
-                break;
+            if( ele.isEdge() ){
+              lx1 = labelX - lw/2;
+              lx2 = labelX + lw/2;
+              ly1 = labelY - lh/2;
+              ly2 = labelY + lh/2;
+            } else {
+              switch( halign.value ){
+                case 'left':
+                  lx1 = labelX - lw;
+                  lx2 = labelX;
+                  break;
 
-              case 'right':
-                lx1 = labelX;
-                lx2 = labelX + lw;
-                break;
+                case 'center':
+                  lx1 = labelX - lw/2;
+                  lx2 = labelX + lw/2;
+                  break;
+
+                case 'right':
+                  lx1 = labelX;
+                  lx2 = labelX + lw;
+                  break;
+              }
+
+              switch( valign.value ){
+                case 'top':
+                  ly1 = labelY - lh;
+                  ly2 = labelY;
+                  break;
+
+                case 'center':
+                  ly1 = labelY - lh/2;
+                  ly2 = labelY + lh/2;
+                  break;
+
+                case 'bottom':
+                  ly1 = labelY;
+                  ly2 = labelY + lh;
+                  break;
+              }
             }
 
-            switch( valign.value ){
-              case 'top':
-                ly1 = labelY - lh;
-                ly2 = labelY;
-                break;
-
-              case 'center':
-                ly1 = labelY - lh/2;
-                ly2 = labelY + lh/2;
-                break;
-
-              case 'bottom':
-                ly1 = labelY;
-                ly2 = labelY + lh;
-                break;
-            }
+            x1 = lx1 < x1 ? lx1 : x1;
+            x2 = lx2 > x2 ? lx2 : x2;
+            y1 = ly1 < y1 ? ly1 : y1;
+            y2 = ly2 > y2 ? ly2 : y2;
           }
-
-          x1 = lx1 < x1 ? lx1 : x1;
-          x2 = lx2 > x2 ? lx2 : x2;
-          y1 = ly1 < y1 ? ly1 : y1;
-          y2 = ly2 > y2 ? ly2 : y2;
-        }
+        } // style enabled
       } // for
 
       return {
@@ -519,7 +550,6 @@
         h: y2 - y1
       };
     }
-  });
-
+  }); 
   
 })( cytoscape );

@@ -87,7 +87,7 @@ $(function(){
   window.options = {
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
-    //textureOnViewport: true,
+    // textureOnViewport: true,
     renderer: {
       name: 'canvas'
     },

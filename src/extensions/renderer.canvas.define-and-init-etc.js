@@ -64,6 +64,7 @@
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
     containerStyle.zIndex = '0';
+    containerStyle.overflow = 'hidden';
 
     this.data.container.appendChild( this.data.canvasContainer );
 

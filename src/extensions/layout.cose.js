@@ -176,8 +176,8 @@
       layoutEdges  : [],
       edgeSize     : cy.edges().size(),
       temperature  : options.initialTemp,
-      clientWidth  : cy.container().clientWidth,
-      clientHeight : cy.container().clientHeight
+      clientWidth  : cy.width(),
+      clientHeight : cy.width()
     }; 
     
     // Shortcut

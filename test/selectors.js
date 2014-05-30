@@ -9,6 +9,8 @@ describe('Selectors', function(){
 
   before(function(next){
     cytoscape({
+      styleEnabled: true,
+      
       elements: {
         nodes: [
           { data: { id: 'n1', foo: 'one', weight: 1 }, classes: 'cls1 cls2' },

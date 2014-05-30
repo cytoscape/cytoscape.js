@@ -25,8 +25,8 @@
     var graph = nodes.add(edges);
     var container = cy.container();
     
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    var width = cy.width();
+    var height = cy.height();
 
     var roots;
     if( $$.is.elementOrCollection(options.roots) ){

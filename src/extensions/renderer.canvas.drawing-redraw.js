@@ -276,7 +276,7 @@
         if( !r.textureCache ){
           r.textureCache = {};
 
-          bb = r.textureCache.bb = cy.boundingBox();
+          bb = r.textureCache.bb = cy.elements().boundingBox();
 
           r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 

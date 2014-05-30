@@ -24,8 +24,8 @@
     });
     var container = cy.container();
     
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    var width = cy.width();
+    var height = cy.height();
 
     var center = {
       x: width/2,

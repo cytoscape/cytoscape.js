@@ -219,8 +219,8 @@
       bb = bb || elements.boundingBox();
       var style = this.style();
 
-      var w = parseFloat( style.containerCss('width') );
-      var h = parseFloat( style.containerCss('height') );
+      var w = this.width();
+      var h = this.height();
       var zoom;
       padding = $$.is.number(padding) ? padding : 0;
 
@@ -336,19 +336,6 @@
 
       return this; // chaining
     },
-    
-    // get the bounding box of the elements (in raw model position)
-    boundingBox: function( selector ){
-      var eles = this.$( selector );
-
-      return eles.boundingBox();
-    },
-
-    renderedBoundingBox: function( selector ){
-      var eles = this.$( selector );
-
-      return eles.renderedBoundingBox();
-    },
 
     center: function(elements){
       if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
@@ -420,10 +407,10 @@
       return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
     },
 
-    bounds: function(){
+    extent: function(){
       var pan = this._private.pan;
       var zoom = this._private.zoom;
-      var rb = this.renderedBounds();
+      var rb = this.renderedExtent();
 
       var b = {
         x1: ( rb.x1 - pan.x )/zoom,
@@ -438,7 +425,7 @@
       return b;
     },
 
-    renderedBounds: function(){
+    renderedExtent: function(){
       var width = this.width();
       var height = this.height();
 
@@ -451,6 +438,6 @@
         h: height
       };
     }
-  });  
+  });
   
 })( cytoscape );

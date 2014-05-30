@@ -123,15 +123,29 @@
 											{{#each args}}
 												<li>
 													<span class="name">{{name}}</span>
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
 													<span class="descr">{{{descr}}}</span>
 
 													{{#if fields}}
 													<ul class="fields">
 														{{#each fields}}
-														<li>&ndash;
-															<span class="name">{{name}}</span>
-															<span class="descr">{{{descr}}}</span>
-														</li>
+															<li>
+																<span class="name">{{name}}</span>
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																<span class="descr">{{{descr}}}</span>
+															</li>
+
+															{{#if fields}}
+															<ul class="fields">
+																{{#each fields}}
+																<li>
+																	<span class="name">{{name}}</span>
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																	<span class="descr">{{{descr}}}</span>
+																</li>
+																{{/each}}
+															</ul>
+															{{/if}}
 														{{/each}}
 													</ul>
 													{{/if}}

@@ -128,6 +128,18 @@ function compileConfig( config ){
       }
     }
 
+    function processFields( fields ){
+      for( var i = 0; fields && i < fields.length; i++ ){
+        var field = fields[i];
+
+        field.descr = marked( field.descr  || '' );
+
+        if( field.fields ){
+          processFields( field.fields );
+        }
+      }
+    }
+
     if( section.fns ){
       var fns = section.fns;
       for( var j = 0; j < fns.length; j++ ){
@@ -159,7 +171,11 @@ function compileConfig( config ){
 
             if( format.args ){
               for( var m = 0; m < format.args.length; m++ ){
-                format.args[m].descr = marked( format.args[m].descr || '' );
+                var arg = format.args[m];
+
+                arg.descr = marked( arg.descr || '' );
+
+                processFields( arg.fields );
               }
             }
 

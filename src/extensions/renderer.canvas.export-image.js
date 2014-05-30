@@ -13,7 +13,7 @@
   CanvasRenderer.prototype.bufferCanvasImage = function( options ){
     var data = this.data;
     var cy = data.cy;
-    var bb = cy.boundingBox();
+    var bb = cy.elements().boundingBox();
     var width = options.full ? Math.ceil(bb.w) : this.data.container.clientWidth;
     var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
     var scale = 1;

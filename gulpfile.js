@@ -16,6 +16,7 @@ var shell = require('gulp-shell');
 var jshint = require('gulp-jshint');
 var jshStylish = require('jshint-stylish');
 var exec = require('child_process').exec;
+var docsConf = require('./documentation/docmaker.json');
 
 var version; // used for marking builds w/ version etc
 
@@ -297,7 +298,17 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docspub', ['version', 'docsver', 'docsjs', 'docsbuildlist'], function(){
+gulp.task('docsdemoshots', function(next){
+  var cwd = process.cwd();
+
+  process.chdir('./documentation');
+  require('./documentation/demoshots');
+  process.chdir( cwd );
+
+  next();
+});
+
+gulp.task('docspub', ['version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots'], function(){
   return gulp.start('docsmin');
 });
 

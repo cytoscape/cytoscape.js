@@ -61,9 +61,9 @@
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
             removedCxts.push( context );
-          }
 
-          delete _p.styleCxts[i];
+            delete _p.styleCxts[i];
+          }
         }
       } // for context
 

@@ -1,4 +1,4 @@
-;(function($$){ 'use strict';
+;(function($$, window){ 'use strict';
   
   // utility functions only for internal use
 
@@ -731,11 +731,13 @@
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
-  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ if(fn){ fn(); } } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+  var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
+  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60) } };
+
   $$.util.requestAnimationFrame = function(fn){
-    requestAnimationFrame(fn);
+    raf( fn );
   };
 
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window  );

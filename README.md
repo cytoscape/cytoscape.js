@@ -69,6 +69,7 @@ Run `gulp` in the console.  The main targets are:
 
 **Documenation:**
  * `docs` : build the documentation template
+ * `docsdemoshots` : get snapshots of demos referenced in the docs (requires PhantomJS, e.g. `brew update && brew install phantomjs`)
  * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
 

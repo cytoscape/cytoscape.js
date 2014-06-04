@@ -6,7 +6,7 @@
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery {{jqueryVersion}}+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
 
 		<title>Cytoscape.js</title>
 
@@ -65,6 +65,14 @@
 			{{#each sections}}
 				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
 
+				{{#if extensions}}
+					<ul>
+					{{#each extensions}}
+						<li><a href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+					{{/each}}
+					</ul>
+				{{/if}}
+
 				{{#if html}}
 					{{{html}}}
 				{{/if}}
@@ -72,26 +80,26 @@
 
 				{{#if demos}}
 
-				<div class="gallery-demos">
-				{{#each demos}}
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">{{name}}</span>
+					<div class="gallery-demos">
+					{{#each demos}}
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">{{name}}</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="{{srcUrl}}"></a>
+							<iframe id="gallery-embed-{{id}}" class="gallery-embed" src="{{embedUrl}}"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-{{id}}"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="{{srcUrl}}"><span class="icon-eye-open"></span> View source</a>
+							</div>
 						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="{{srcUrl}}"></a>
-						<iframe id="gallery-embed-{{id}}" class="gallery-embed" src="{{embedUrl}}"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-{{id}}"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="{{srcUrl}}"><span class="icon-eye-open"></span> View source</a>
-						</div>
+					{{/each}}
 					</div>
-				{{/each}}
-				</div>
 
 				{{/if}}
 

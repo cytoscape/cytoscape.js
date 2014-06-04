@@ -35,7 +35,41 @@
 
     { "name": "Layouts", "md": "layouts" },
 
-    { "name": "Plugins", "md": "plugins" },
+    {
+      "name": "Extensions",
+      "extensions": [
+        { 
+          "name": "panzoom", 
+          "github": "cytoscape/cytoscape.js-panzoom",
+          "descr": "A panzoom UI widget."
+        },
+        
+        { 
+          "name": "cxtmenu",
+          "github": "cytoscape/cytoscape.js-cxtmenu",
+          "descr": "A circular context menu."
+        },
+
+        {
+          "name": "edgehandles",
+          "github": "cytoscape/cytoscape.js-edgehandles",
+          "descr": "UI for connecting nodes with edges." 
+        },
+
+        { 
+          "name": "navigator",
+          "github": "cytoscape/cytoscape.js-navigator",
+          "descr": "A bird's eye view widget of the graph."
+        },
+
+        { 
+          "name": "qtip", 
+          "github": "cytoscape/cytoscape.js-qtip",
+          "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
+        }
+      ],
+      "md": "extensions"
+    },
 
     {
       "name": "Core",
@@ -2174,11 +2208,6 @@
     {
       "name": "Architecture",
       "md": "architecture"
-    },
-
-    {
-      "name": "Extensions",
-      "md": "extensions"
     }
 
   ]

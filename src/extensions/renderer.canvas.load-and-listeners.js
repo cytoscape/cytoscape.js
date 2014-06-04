@@ -980,7 +980,7 @@
         ];
 
         // consider context tap
-        if( distance1 < 200 ){
+        if( distance1 < 200 && !e.touches[2] ){
 
           var near1 = r.findNearestElement(now[0], now[1], true);
           var near2 = r.findNearestElement(now[2], now[3], true);
@@ -1197,7 +1197,7 @@
 
       }  
 
-      if( capture && r.touchData.cxt ){
+      if( capture && r.touchData.cxt ){ 
         var cxtEvt = new $$.Event(e, {
           type: 'cxtdrag',
           cyPosition: { x: now[0], y: now[1] }
@@ -1242,7 +1242,7 @@
 
         }
 
-      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){ 
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
         this.lastThreeTouch = +new Date();
@@ -1266,6 +1266,16 @@
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
         r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+        var draggedEles = r.dragData.touchDragEles;
+        if( draggedEles ){ 
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+          for( var i = 0; i < draggedEles.length; i++ ){
+            draggedEles[i]._private.grabbed = false;
+            draggedEles[i]._private.rscratch.inDragLayer = false;
+          }
+        }
 
         // console.log('touchmove ptz');
 
@@ -1347,12 +1357,10 @@
             ;
           }
 
-          cy._private.zoom = zoom2;
-          cy._private.pan = pan2;
-          cy
-            .trigger('pan zoom')
-            .notify('viewport')
-          ;
+          cy.viewport({
+            zoom: zoom2,
+            pan: pan2
+          });
 
           distance1 = distance2;  
           f1x1 = f1x2;
@@ -1499,6 +1507,8 @@
             }
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+            r.touchData.start = null;
           }
 
           cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});

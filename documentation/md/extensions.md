@@ -1,6 +1,8 @@
+The above extensions are a curated list.  To add your extension, please submit a pull request that adds your extension to [the documentation configuration JSON file](https://github.com/cytoscape/cytoscape.js/blob/master/documentation/docmaker.json).  Once pulled in, your extension will be listed with the next publish of the documentation.
+
 ## API
 
-The extensions API is very simple, following this format:
+The API makes it very easy to write an extension, following this format:
 
 ```
 cytoscape( type, name, extension );

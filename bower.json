@@ -1,6 +1,6 @@
 {
   "name": "cytoscape",
-  "version": "undefined",
+  "version": "2.2.9",
   "main": "dist/cytoscape.js",
   "ignore": [
   ]

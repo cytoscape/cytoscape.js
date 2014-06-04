@@ -5,13 +5,16 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all"/>
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+		<meta name="robots" content="all" />
+		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/all.min.css">
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
 		
 	</head>
@@ -138,205 +141,226 @@ cytoscape( options = {
 
 				
 
+				
+
 
 				
 
-				<div class="gallery-demos">
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Initialisation</span>
+					<div class="gallery-demos">
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Initialisation</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-urabis" class="gallery-embed" src="http://jsbin.com/urabis/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-urabis"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
 						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-urabis" class="gallery-embed" src="http://jsbin.com/urabis/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Visual style</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-aqupun" class="gallery-embed" src="http://jsbin.com/aqupun/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-aqupun"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
 						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-urabis"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/urabis/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Compound nodes</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/domek/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-domek" class="gallery-embed" src="http://jsbin.com/domek/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-domek"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/domek/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
 						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Animated BFS</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/qohop/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-qohop" class="gallery-embed" src="http://jsbin.com/qohop/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-qohop"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/qohop/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">GeneMANIA export</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/wuvac/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-wuvac" class="gallery-embed" src="http://jsbin.com/wuvac/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-wuvac"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/wuvac/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Images</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-kahar" class="gallery-embed" src="http://jsbin.com/kahar/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-kahar"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">qTip plugin</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-royel" class="gallery-embed" src="http://jsbin.com/royel/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-royel"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Pie style</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-yozazu" class="gallery-embed" src="http://jsbin.com/yozazu/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-yozazu"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Multiple instances</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-zurup" class="gallery-embed" src="http://jsbin.com/zurup/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-zurup"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Performance tuning</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-yeqom" class="gallery-embed" src="http://jsbin.com/yeqom/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-yeqom"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">AngularJS example</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-kewem" class="gallery-embed" src="http://jsbin.com/kewem/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-kewem"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
+						<div class="gallery-demo">
+							<div class="gallery-title">
+								<span class="gallery-name">Linkout example</span>
+							</div>
+							
+							<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/pajoc/latest/edit?js,output"></a>
+							<iframe id="gallery-embed-pajoc" class="gallery-embed" src="http://jsbin.com/pajoc/latest"></iframe>
+							
+							<div class="gallery-loader">
+								<span class="icon-refresh icon-spin"></span>
+							</div>
+							<div class="gallery-footer">
+								<span class="link gallery-refresh" data-embed-id="gallery-embed-pajoc"><span class="icon-refresh"></span> Refresh</span>
+								<a class="gallery-link" target="_blank" href="http://jsbin.com/pajoc/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
+							</div>
+						</div>
+					
 					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Visual style</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-aqupun" class="gallery-embed" src="http://jsbin.com/aqupun/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-aqupun"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/aqupun/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Compound nodes</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/domek/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-domek" class="gallery-embed" src="http://jsbin.com/domek/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-domek"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/domek/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Animated BFS</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/qohop/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-qohop" class="gallery-embed" src="http://jsbin.com/qohop/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-qohop"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/qohop/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">GeneMANIA export</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/wuvac/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-wuvac" class="gallery-embed" src="http://jsbin.com/wuvac/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-wuvac"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/wuvac/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Images</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-kahar" class="gallery-embed" src="http://jsbin.com/kahar/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-kahar"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/kahar/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">qTip plugin</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-royel" class="gallery-embed" src="http://jsbin.com/royel/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-royel"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/royel/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Pie style</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-yozazu" class="gallery-embed" src="http://jsbin.com/yozazu/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-yozazu"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/yozazu/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Multiple instances</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-zurup" class="gallery-embed" src="http://jsbin.com/zurup/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-zurup"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/zurup/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">Performance tuning</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-yeqom" class="gallery-embed" src="http://jsbin.com/yeqom/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-yeqom"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/yeqom/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-					<div class="gallery-demo">
-						<div class="gallery-title">
-							<span class="gallery-name">AngularJS example</span>
-						</div>
-						
-						<a class="gallery-link-overlay" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"></a>
-						<iframe id="gallery-embed-kewem" class="gallery-embed" src="http://jsbin.com/kewem/latest"></iframe>
-						
-						<div class="gallery-loader">
-							<span class="icon-refresh icon-spin"></span>
-						</div>
-						<div class="gallery-footer">
-							<span class="link gallery-refresh" data-embed-id="gallery-embed-kewem"><span class="icon-refresh"></span> Refresh</span>
-							<a class="gallery-link" target="_blank" href="http://jsbin.com/kewem/latest/edit?js,output"><span class="icon-eye-open"></span> View source</a>
-						</div>
-					</div>
-				
-				</div>
 
 				
 
 				
 			
 				<h1 id="introduction">Introduction <a href="#introduction"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<h2 id="introduction/about">About <a href="#introduction/about"><span class="icon-bookmark"></span></a></h2>
@@ -379,6 +403,8 @@ cytoscape( options = {
 				
 			
 				<h1 id="notation">Notation <a href="#notation"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<h2 id="notation/architecture-amp-api">Architecture &amp; API <a href="#notation/architecture-amp-api"><span class="icon-bookmark"></span></a></h2>
@@ -527,6 +553,8 @@ cytoscape( options = {
 				<h1 id="performance">Performance <a href="#performance"><span class="icon-bookmark"></span></a></h1>
 
 				
+
+				
 					<h2 id="performance/background">Background <a href="#performance/background"><span class="icon-bookmark"></span></a></h2>
 <p>You may notice that performance starts to degrade on graphs with large numbers of elements.  This happens for several reasons:</p>
 <ul>
@@ -579,6 +607,8 @@ cytoscape( options = {
 				
 			
 				<h1 id="selectors">Selectors <a href="#selectors"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<h2 id="selectors/notes-amp-caveats">Notes &amp; caveats <a href="#selectors/notes-amp-caveats"><span class="icon-bookmark"></span></a></h2>
@@ -698,6 +728,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 				
 			
 				<h1 id="style">Style <a href="#style"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<p>Style in Cytoscape.js follows CSS conventions as closely as possible.  In most cases, a property has the same name and behaviour as its corresponding CSS namesake.  However, the properties in CSS are not sufficient to specify the style of some parts of the graph.  In that case, additional properties are introduced that are unique to Cytoscape.js.</p>
@@ -892,6 +924,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 				<h1 id="events">Events <a href="#events"><span class="icon-bookmark"></span></a></h1>
 
 				
+
+				
 					<h2 id="events/event-object">Event object <a href="#events/event-object"><span class="icon-bookmark"></span></a></h2>
 <p>Events passed to handler callbacks are similar to <a href="http://api.jquery.com/category/events/event-object/">jQuery event objects</a> in that they wrap native event objects, mimicking their API.</p>
 <p>Fields:</p>
@@ -993,6 +1027,8 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 				
 			
 				<h1 id="layouts">Layouts <a href="#layouts"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<p>The function of a layout is to set the positions on the nodes in the graph.  Layouts are <a href="#extensions/layouts">extensions</a> of Cytoscape.js such that it is possible for anyone to write a layout without modifying the library itself.</p>
@@ -1258,29 +1294,80 @@ cy.layout( options );
 				
 				
 			
-				<h1 id="plugins">Plugins <a href="#plugins"><span class="icon-bookmark"></span></a></h1>
+				<h1 id="extensions">Extensions <a href="#extensions"><span class="icon-bookmark"></span></a></h1>
 
 				
-					<h2 id="plugins/about-plugins">About plugins <a href="#plugins/about-plugins"><span class="icon-bookmark"></span></a></h2>
-<p>Plugins are reusable UI widgets that can be used with Cytoscape.js in your webapps.  Though Cytoscape.js does not require jQuery as a dependency, it has out-of-the-box compatibility with jQuery, and so it is natural that jQuery plugins be used in this manner.</p>
-<p>Thus, a Cytoscape.js plugin is simply a jQuery plugin that is called on Cytoscape.js container and interacts with Cytoscape.js via its API.</p>
-<h2 id="plugins/writing-a-plugin">Writing a plugin <a href="#plugins/writing-a-plugin"><span class="icon-bookmark"></span></a></h2>
-<p>Writing a jQuery plugin is a straightforward process, outlined in the <a href="http://learn.jquery.com/plugins/">jQuery plugin documentation</a>.  You can use the <code>ready</code> callback to get an instance of Cytoscape.js in your plugin code, assuming that the plugin is called on the Cytoscape.js container:</p>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> $container = $(<span class="hljs-keyword">this</span>); <span class="hljs-comment">// `this` points to container inside plugin code</span>
-$container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-    <span class="hljs-keyword">var</span> cy = <span class="hljs-keyword">this</span>; <span class="hljs-comment">// now we have a reference to the core</span>
+					<ul>
+					
+						<li><a href="https://github.com/cytoscape/cytoscape.js-cxtmenu"><code>cxtmenu</code></a> : A circular context menu.</li>
+					
+						<li><a href="https://github.com/cytoscape/cytoscape.js-edgehandles"><code>edgehandles</code></a> : UI for connecting nodes with edges.</li>
+					
+						<li><a href="https://github.com/cytoscape/cytoscape.js-navigator"><code>navigator</code></a> : A bird&#x27;s eye view widget of the graph.</li>
+					
+						<li><a href="https://github.com/cytoscape/cytoscape.js-panzoom"><code>panzoom</code></a> : A panzoom UI widget.</li>
+					
+						<li><a href="https://github.com/cytoscape/cytoscape.js-qtip"><code>qtip</code></a> : A wrapper that lets you use qTips on graph elements or the graph background.</li>
+					
+					</ul>
+				
+
+				
+					<p>The above extensions are a curated list.  To add your extension, please submit a pull request that adds your extension to <a href="https://github.com/cytoscape/cytoscape.js/blob/master/documentation/docmaker.json">the documentation configuration JSON file</a>.  Once pulled in, your extension will be listed with the next publish of the documentation.</p>
+<h2 id="extensions/api">API <a href="#extensions/api"><span class="icon-bookmark"></span></a></h2>
+<p>The API makes it very easy to write an extension, following this format:</p>
+<pre><code>cytoscape( <span class="hljs-class"><span class="hljs-keyword">type</span>, <span class="hljs-title">name</span>, <span class="hljs-title">extension</span> );</span>
+</code></pre><p>The value of <code>type</code> can take on the following values:</p>
+<ul>
+<li><code>core</code> : The extension adds a core function.</li>
+<li><code>collection</code> : The extension adds a collection function.</li>
+<li><code>layout</code> : The extension registers a layout prototype.</li>
+<li><code>renderer</code> : The extension registers a renderer prototype.</li>
+</ul>
+<p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.</p>
+<h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
+<p>Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to <code>return this;</code> at the end of your function.</p>
+<p>Here is an example collection function:</p>
+<pre><code class="lang-js">cytoscape(<span class="hljs-string">'collection'</span>, <span class="hljs-string">'forEach'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( fn )</span>{</span>
+  <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-keyword">this</span>.length; i++ ){
+    fn.apply( <span class="hljs-keyword">this</span>[i], [ i, <span class="hljs-keyword">this</span>[i] ] );
+  }
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>; <span class="hljs-comment">// chainability</span>
+});
+
+cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log( <span class="hljs-string">'forEach '</span> + <span class="hljs-keyword">this</span>.id() );
 });
 </code></pre>
-<p>You can then interact with the instance of Cytoscape.js in your plugin.</p>
-<p>The <a href="http://plugins.jquery.com">jQuery Plugin Registry</a> is where you will make your plugin available.  You will probably want to prefix your plugin&#39;s name with &quot;cytoscape&quot; so it is clear that the plugin is for Cytoscape.js, rather than a generic jQuery plugin.  Make sure to tag your plugin with &quot;cytoscape.js&quot; using the <code>keywords</code> field in your manifest file.</p>
-<h2 id="plugins/downloads">Downloads <a href="#plugins/downloads"><span class="icon-bookmark"></span></a></h2>
-<p>Cytoscape.js plugins are available on <a href="http://plugins.jquery.com/tag/cytoscape.js/">the jQuery Plugin Registry under the &quot;cytoscape.js&quot; tag</a>.</p>
+<h2 id="extensions/layouts">Layouts <a href="#extensions/layouts"><span class="icon-bookmark"></span></a></h2>
+<p>A layout modifies the positions of nodes in the graph.  A layout has number of options, which are specific to the particular layout.</p>
+<p>Layouts may be blocking if they are fast &mdash; meaning you can execute your code to run after the layout on the line following the layout call.  Layouts may also be continuous, in which case, callback functions are provided to know when the layout finishes.</p>
+<p>A layout has two events that must be triggereed on the core, including <code>layoutready</code> and <code>layoutstop</code>:</p>
+<ul>
+<li><p><code>layoutready</code> : This is triggered on the core (via <code>cy.trigger(&#39;layoutready&#39;)</code>) when the layout has set the positions on every node at least once.  This lets the core know that the nodes now have valid positions and can be rendered.  It is important to trigger <code>layoutready</code> on continuous layouts so that the nodes are shown moving.  For blocking (non-continous) layouts, <code>layoutready</code> can just be triggered after the layout is done but before <code>layoutstop</code>.</p>
+</li>
+<li><p><code>layoutstop</code> : This is triggered on the core (via <code>cy.trigger(&#39;layoutstop&#39;)</code>) when the layout has finished.  It should be triggered after <code>layoutready</code>.  The layout should not change node positions after triggering <code>layoutstop</code>.</p>
+</li>
+</ul>
+<p>For an example layout, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js">null layout source code</a>.  The layout just sets each node to position (0, 0), and it is well documented.  The <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.arbor.js">Arbor layout</a> is a good example of a continuous layout.</p>
+<h2 id="extensions/renderers">Renderers <a href="#extensions/renderers"><span class="icon-bookmark"></span></a></h2>
+<p>For an example renderer, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/tree/master/src/extensions">canvas renderer</a>.</p>
+<p>The API of the renderer follows the actor model, and so it has a single main entry point, the <code>notify()</code> function.  The core uses the <code>notify()</code> function to send event objects to the renderer.  The format of the event object is as follows:</p>
+<ul>
+<li><code>event.type</code> : A string containing the name of the event that has occured.</li>
+<li><code>event.collection</code> : A collection of elements associated with the event.</li>
+</ul>
+<p>If you&#39;re interested in writing a custom renderer for Cytoscape.js, please <a href="https://github.com/cytoscape/cytoscape.js/issues">file an issue</a> for more help if needed.</p>
 
 				
 
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -1293,6 +1380,8 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 				
 			
 				<h1 id="core">Core <a href="#core"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<p>The core object is your interface to the Cytoscape.js visualisation.  It is your entry point to Cytoscape.js:  All of the library&#39;s features are accessed through this object.</p>
@@ -1332,7 +1421,7 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 });
 </code></pre>
 <p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.</p>
-<p>If you&#39;ve included jQuery on a HTML document, you can alternatively initialise Cytoscape.js on a HTML DOM element using the traditional jQuery style: </p>
+<p>You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery: </p>
 <pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
     <span class="hljs-comment">// you can access the core object API through cy</span>
@@ -1354,32 +1443,11 @@ $container.cytoscape(<span class="hljs-function"><span class="hljs-keyword">func
 <span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-string">'get'</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
 </code></pre>
 <h3 id="the-ready-callback">The ready callback</h3>
-<p>All of your code that uses the core object API, i.e. through the <code>cy</code> object in the examples above, must do so after the <code>ready</code> callback function has executed.  You can specify the <code>ready</code> callback in the initialisation options, outlined in the following section.</p>
-<p>Because the <code>ready</code> event may occur before you can bind to the core, you can use this shortcut to spread your code among several JavaScript files without having to call a bunch of global functions in <code>options.ready</code>.</p>
-<p><span class="important-indicator"></span> You should never call layouts, load elements into the graph, etc on ready.  The graph is still performing the initial load at that point, so you can&#39;t modify things like that.  You should use the initialisation options to properly set the elements and layout you want to use.</p>
-<pre><code class="lang-js"><span class="hljs-comment">// in foo.js</span>
-$(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
-
-  $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventObject)</span>{</span> <span class="hljs-comment">// on Cytoscape.js ready on the `cy` div</span>
-    <span class="hljs-comment">// this code executes when Cytoscape.js is ready even though we</span>
-    <span class="hljs-comment">// don't actually initialise Cytoscape.js on the `cy` div until</span>
-    <span class="hljs-comment">// bar.js is loaded</span>
-
-    <span class="hljs-keyword">var</span> cy = <span class="hljs-keyword">this</span>; <span class="hljs-comment">// `this` holds the reference to the core object</span>
-
-    console.log(<span class="hljs-string">'Ready, Freddie!'</span>);
-  });
-
-});
-
-<span class="hljs-comment">// in bar.js (should be after foo.js in your js includes)</span>
-$(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">// on jquery ready</span>
-  $(<span class="hljs-string">'#cy'</span>).cytoscape(options);
-});
-</code></pre>
+<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use <code>ready</code>.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.</p>
+<pre><code class="lang-js">cytoscape({
   selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
   layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
   zoom: <span class="hljs-number">1</span>,
@@ -1402,7 +1470,7 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 });
 </code></pre>
 <p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&#39;additive&#39;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&#39;single&#39;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
-<p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a layout&#39;s documentation for the options it supports, as described in <a href="#core/visuals/cy.layout"><code>cy.layout()</code></a>.</p>
+<p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout&#39;s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in <code>options.elements</code> at initialisation time).</p>
 <p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
 <p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.</p>
 <p><strong><code>userZoomingEnabled</code></strong> : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.</p>
@@ -1422,21 +1490,28 @@ $(<span class="hljs-function"><span class="hljs-keyword">function</span><span cl
 <pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
   <span class="hljs-comment">/* ... */</span>
 
-  style: cytoscape.stylesheet()
-    .selector(<span class="hljs-string">'node'</span>)
-      .css({
+  <span class="hljs-comment">// could be JSON, functional style, or string (probably pulled from a file)</span>
+  style: [
+    { 
+      selector: <span class="hljs-string">'node'</span>,
+      css: {
         <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>,
         <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#ffff00'</span>
-      })
-    .selector(<span class="hljs-string">'edge'</span>)
-      .css({
+      }
+    },  
+
+    { 
+      selector: <span class="hljs-string">'edge'</span>,
+      css: {
         <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'blue'</span>
-      })
+      }
+    }
+  ]
 
   <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
-<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js is ready to be interacted with.  You can not call functions on the <code>cy</code> object before this function executes.</p>
+<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.</p>
 <p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.</p>
 <p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.</p>
 <p>For example:</p>
@@ -3485,6 +3560,8 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 				
 			
 				<h1 id="collection">Collection <a href="#collection"><span class="icon-bookmark"></span></a></h1>
+
+				
 
 				
 					<p>A collection contains a set of nodes and edges.  Calling a function applies the function to all elements in the collection.  When reading values from a collection, <a href="#collection/data/eles.data"><code>eles.data()</code></a> for example, the value of the first element in the collection is returned.  This follows the jQuery convention.  For example:</p>
@@ -7508,6 +7585,8 @@ path.select();
 				<h1 id="architecture">Architecture <a href="#architecture"><span class="icon-bookmark"></span></a></h1>
 
 				
+
+				
 					<p>Cytoscape.js uses an event-driven model with a core API.  The core has several extensions, each of which is notified of events by the core, as needed.  Extensions modify the elements in the graph and notify the core of any changes.</p>
 <p>The client application accesses Cytoscape.js solely through the <a href="#core">core</a>.  Clients do not access extensions directly, apart from the case where a client wishes to write his own custom extension.</p>
 <p>The following diagram summarises the extensions of Cytoscape.js, which are discussed in further detail <a href="#extensions">later in this documentation</a>.</p>
@@ -7518,74 +7597,6 @@ path.select();
 
 				
 
-				
-			
-				<h1 id="extensions">Extensions <a href="#extensions"><span class="icon-bookmark"></span></a></h1>
-
-				
-					<h2 id="extensions/api">API <a href="#extensions/api"><span class="icon-bookmark"></span></a></h2>
-<p>The extensions API is very simple, following this format:</p>
-<pre><code>cytoscape( <span class="hljs-class"><span class="hljs-keyword">type</span>, <span class="hljs-title">name</span>, <span class="hljs-title">extension</span> );</span>
-</code></pre><p>The value of <code>type</code> can take on the following values:</p>
-<ul>
-<li><code>core</code> : The extension adds a core function.</li>
-<li><code>collection</code> : The extension adds a collection function.</li>
-<li><code>layout</code> : The extension registers a layout prototype.</li>
-<li><code>renderer</code> : The extension registers a renderer prototype.</li>
-</ul>
-<p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.</p>
-<h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
-<p>Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to <code>return this;</code> at the end of your function.</p>
-<p>Here is an example collection function:</p>
-<pre><code class="lang-js">cytoscape(<span class="hljs-string">'collection'</span>, <span class="hljs-string">'forEach'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( fn )</span>{</span>
-  <span class="hljs-keyword">for</span>( <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-keyword">this</span>.length; i++ ){
-    fn.apply( <span class="hljs-keyword">this</span>[i], [ i, <span class="hljs-keyword">this</span>[i] ] );
-  }
-
-  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>; <span class="hljs-comment">// chainability</span>
-});
-
-cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log( <span class="hljs-string">'forEach '</span> + <span class="hljs-keyword">this</span>.id() );
-});
-</code></pre>
-<h2 id="extensions/layouts">Layouts <a href="#extensions/layouts"><span class="icon-bookmark"></span></a></h2>
-<p>A layout modifies the positions of nodes in the graph.  A layout has number of options, which are specific to the particular layout.</p>
-<p>Layouts may be blocking if they are fast &mdash; meaning you can execute your code to run after the layout on the line following the layout call.  Layouts may also be continuous, in which case, callback functions are provided to know when the layout finishes.</p>
-<p>A layout has two events that must be triggereed on the core, including <code>layoutready</code> and <code>layoutstop</code>:</p>
-<ul>
-<li><p><code>layoutready</code> : This is triggered on the core (via <code>cy.trigger(&#39;layoutready&#39;)</code>) when the layout has set the positions on every node at least once.  This lets the core know that the nodes now have valid positions and can be rendered.  It is important to trigger <code>layoutready</code> on continuous layouts so that the nodes are shown moving.  For blocking (non-continous) layouts, <code>layoutready</code> can just be triggered after the layout is done but before <code>layoutstop</code>.</p>
-</li>
-<li><p><code>layoutstop</code> : This is triggered on the core (via <code>cy.trigger(&#39;layoutstop&#39;)</code>) when the layout has finished.  It should be triggered after <code>layoutready</code>.  The layout should not change node positions after triggering <code>layoutstop</code>.</p>
-</li>
-</ul>
-<p>For an example layout, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js">null layout source code</a>.  The layout just sets each node to position (0, 0), and it is well documented.  The <a href="https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.arbor.js">Arbor layout</a> is a good example of a continuous layout.</p>
-<h2 id="extensions/renderers">Renderers <a href="#extensions/renderers"><span class="icon-bookmark"></span></a></h2>
-<p>For an example renderer, please refer to the <a href="https://github.com/cytoscape/cytoscape.js/tree/master/src/extensions">canvas renderer</a>.</p>
-<p>The API of the renderer follows the actor model, and so it has a single main entry point, the <code>notify()</code> function.  The core uses the <code>notify()</code> function to send event objects to the renderer.  The format of the event object is as follows:</p>
-<ul>
-<li><code>event.type</code> : A string containing the name of the event that has occured.</li>
-<li><code>event.collection</code> : A collection of elements associated with the event.</li>
-</ul>
-<p>If you&#39;re interested in writing a custom renderer for Cytoscape.js, please <a href="https://github.com/cytoscape/cytoscape.js/issues">file an issue</a> for more help if needed.</p>
-
-				
-
-
-				
-
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
 				
 			
 			</div>
@@ -7898,27 +7909,34 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 						<span class="icon-caret-down expanded-icon"></span>
 						<span class="icon-caret-right collapsed-icon"></span>
 					</span>
-					<a href="#plugins"><span class="icon-bookmark bookmark-icon"></span> Plugins</a>
+					<a href="#extensions"><span class="icon-bookmark bookmark-icon"></span> Extensions</a>
 				</div>
 
 				
 					<div class="section lvl2">
 						
-						<a href="#plugins/about-plugins"><span class="icon-bookmark bookmark-icon"></span> About plugins</a>
+						<a href="#extensions/api"><span class="icon-bookmark bookmark-icon"></span> API</a>
 					</div>
 
 					
 				
 					<div class="section lvl2">
 						
-						<a href="#plugins/writing-a-plugin"><span class="icon-bookmark bookmark-icon"></span> Writing a plugin</a>
+						<a href="#extensions/functions"><span class="icon-bookmark bookmark-icon"></span> Functions</a>
 					</div>
 
 					
 				
 					<div class="section lvl2">
 						
-						<a href="#plugins/downloads"><span class="icon-bookmark bookmark-icon"></span> Downloads</a>
+						<a href="#extensions/layouts"><span class="icon-bookmark bookmark-icon"></span> Layouts</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#extensions/renderers"><span class="icon-bookmark bookmark-icon"></span> Renderers</a>
 					</div>
 
 					
@@ -8398,44 +8416,6 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 				
 			
-				<div class="section lvl1">
-					<span class="expander">
-						<span class="icon-caret-down expanded-icon"></span>
-						<span class="icon-caret-right collapsed-icon"></span>
-					</span>
-					<a href="#extensions"><span class="icon-bookmark bookmark-icon"></span> Extensions</a>
-				</div>
-
-				
-					<div class="section lvl2">
-						
-						<a href="#extensions/api"><span class="icon-bookmark bookmark-icon"></span> API</a>
-					</div>
-
-					
-				
-					<div class="section lvl2">
-						
-						<a href="#extensions/functions"><span class="icon-bookmark bookmark-icon"></span> Functions</a>
-					</div>
-
-					
-				
-					<div class="section lvl2">
-						
-						<a href="#extensions/layouts"><span class="icon-bookmark bookmark-icon"></span> Layouts</a>
-					</div>
-
-					
-				
-					<div class="section lvl2">
-						
-						<a href="#extensions/renderers"><span class="icon-bookmark bookmark-icon"></span> Renderers</a>
-					</div>
-
-					
-				
-			
 
 			<p><span class="icon-sign-blank"></span></p>
 		</div>
@@ -8456,7 +8436,11 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 
 
 		<!-- inject:js -->
-		<script src="js/all.min.js"></script>
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

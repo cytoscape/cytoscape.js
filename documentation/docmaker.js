@@ -125,6 +125,7 @@ function compileConfig( config ){
 
         demo.embedUrl = 'http://jsbin.com/' + demo.id + '/latest';
         demo.srcUrl = 'http://jsbin.com/' + demo.id + '/latest/edit?js,output';
+        demo.imgUrl = 'img/demos/' + demo.id + '.png';
       }
     }
 
@@ -223,11 +224,17 @@ function compileConfig( config ){
   }
 }
 
-compileConfig( config );
+module.exports = function( next ){
+  compileConfig( config );
 
-var htmlTemplate = fs.readFileSync('./template.html', encoding);
-var template = Handlebars.compile( htmlTemplate );
-var context = config;
-var html = template( context );
+  var htmlTemplate = fs.readFileSync('./template.html', encoding);
+  var template = Handlebars.compile( htmlTemplate );
+  var context = config;
+  var html = template( context );
 
-fs.writeFileSync('index.html', html, encoding);
+  fs.writeFileSync('index.html', html, encoding);
+
+  next && next();
+};
+
+

@@ -1,4 +1,6 @@
-var exec = require('child_process').exec;
+var Promise = require("bluebird");
+var bluebird = require("bluebird");
+var pexec = bluebird.promisify( require('child_process').exec );
 var configFile = './docmaker.json';
 var config;
 var delay = 3000;
@@ -33,13 +35,23 @@ function parseSections( sections ){
   }
 }
 
-parseSections( config.sections );
+module.exports = function( next ){
+  parseSections( config.sections );
 
-var wh = width + '*' + height;
-for( var i = 0; i < demoIds.length; i++ ){
-  var id = demoIds[i];
-  var url = 'http://jsbin.com/' + id + '/latest';
-  var filename = 'img/demos/' + id + '.png';
+  var wh = width + '*' + height;
+  var execs = [];
 
-  exec('phantomjs screencapture.js ' + url + ' ' + filename + ' ' + delay + ' ' + wh);
-}
+  for( var i = 0; i < demoIds.length; i++ ){
+    var id = demoIds[i];
+    var url = 'http://jsbin.com/' + id + '/latest';
+    var filename = 'img/demos/' + id + '.png';
+
+    execs.push( pexec('phantomjs screencapture.js ' + url + ' ' + filename + ' ' + delay + ' ' + wh) );
+  }
+
+  Promise.all( execs ).then(function(){
+    next && next();
+  }).catch(function( err ){
+    throw err;
+  });
+};

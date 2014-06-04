@@ -87,16 +87,10 @@
 								<span class="gallery-name">{{name}}</span>
 							</div>
 							
-							<a class="gallery-link-overlay" target="_blank" href="{{srcUrl}}"></a>
-							<iframe id="gallery-embed-{{id}}" class="gallery-embed" src="{{embedUrl}}"></iframe>
+							<a class="gallery-link" target="_blank" href="{{srcUrl}}">
+								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+							</a>
 							
-							<div class="gallery-loader">
-								<span class="icon-refresh icon-spin"></span>
-							</div>
-							<div class="gallery-footer">
-								<span class="link gallery-refresh" data-embed-id="gallery-embed-{{id}}"><span class="icon-refresh"></span> Refresh</span>
-								<a class="gallery-link" target="_blank" href="{{srcUrl}}"><span class="icon-eye-open"></span> View source</a>
-							</div>
 						</div>
 					{{/each}}
 					</div>

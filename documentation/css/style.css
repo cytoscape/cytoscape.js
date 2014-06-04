@@ -215,6 +215,7 @@ button:active {
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	background-size: cover;
+	background-color: #fafafa;
 }
 
 .gallery-link-overlay {

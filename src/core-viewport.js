@@ -321,6 +321,61 @@
 
       return this; // chaining
     },
+
+    viewport: function( opts ){ 
+      var _p = this._private;
+      var zoomDefd = true;
+      var panDefd = true;
+      var events = []; // to trigger
+      var zoomFailed = false;
+      var panFailed = false;
+
+      if( !opts ){ return this; }
+      if( !$$.is.number(opts.zoom) ){ zoomDefd = false; }
+      if( !$$.is.plainObject(opts.pan) ){ panDefd = false; }
+      if( !zoomDefd && !panDefd ){ return this; }
+
+      if( zoomDefd ){
+        var z = opts.zoom;
+
+        if( z < _p.minZoom || z > _p.maxZoom || !_p.zoomingEnabled ){
+          zoomFailed = true;
+
+        } else {
+          _p.zoom = z;
+
+          events.push('zoom');
+        }
+      }
+
+      if( panDefd && !zoomFailed && _p.panningEnabled ){
+        var p = opts.pan;
+
+        if( $$.is.number(p.x) ){
+          _p.pan.x = p.x;
+          panFailed = false;
+        }
+
+        if( $$.is.number(p.y) ){
+          _p.pan.y = p.y;
+          panFailed = false;
+        }
+
+        if( !panFailed ){
+          events.push('pan');
+        }
+      }
+
+      if( events.length > 0 ){
+        this.trigger( events.join(' ') );
+      }
+
+      this.notify({
+        type: 'viewport'
+      });
+
+      return this; // chaining
+    },
     
     // get the bounding box of the elements (in raw model position)
     boundingBox: function( selector ){

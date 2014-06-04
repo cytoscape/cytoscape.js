@@ -128,6 +128,24 @@ function compileConfig( config ){
       }
     }
 
+    if( section.extensions ){
+      var exts = section.extensions;
+
+      for( var j = 0; j < exts.length; j++ ){
+        var ext = exts[j];
+
+        ext.url = 'https://github.com/' + ext.github;
+      }
+
+      section.extensions = exts.sort(function(a, b){
+        if( a.name < b.name ){
+          return -1;
+        } else {
+          return 1;
+        }
+      });
+    }
+
     if( section.fns ){
       var fns = section.fns;
       for( var j = 0; j < fns.length; j++ ){

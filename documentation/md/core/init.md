@@ -86,7 +86,7 @@ var cy = $('#cy').cytoscape('get'); // now we have a global reference to `cy`
 
 ### The ready callback
 
-<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use `ready`.
+<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use `ready`.  You can guarantee that the initial layout takes no time if you specify all node positions manually and use the `preset` layout &mdash; which does nothing unless you pass specific layout options to it.
 
 
 
@@ -179,7 +179,7 @@ $('#cy').cytoscape({
 });
 ```
 
-**`ready`** : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.
+**`ready`** : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.
 
 **`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
 

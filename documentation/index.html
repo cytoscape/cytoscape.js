@@ -5,16 +5,13 @@
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
-		<meta name="robots" content="all" />
+		<meta name="robots" content="all"/>
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
 
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
-		<link rel="stylesheet" href="css/reset.css">
-		<link rel="stylesheet" href="css/font-awesome.css">
-		<link rel="stylesheet" href="css/highlight/github.css">
-		<link rel="stylesheet" href="css/style.css">
+		<link rel="stylesheet" href="css/all.min.css">
 		<!-- endinject -->
 		
 	</head>
@@ -1443,7 +1440,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 <span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-string">'get'</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
 </code></pre>
 <h3 id="the-ready-callback">The ready callback</h3>
-<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use <code>ready</code>.</p>
+<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually and use the <code>preset</code> layout &mdash; which does nothing unless you pass specific layout options to it.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
 <p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.</p>
@@ -1511,7 +1508,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
   <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
-<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.</p>
+<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.</p>
 <p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.</p>
 <p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.</p>
 <p>For example:</p>
@@ -8436,11 +8433,7 @@ path.select();
 
 
 		<!-- inject:js -->
-		<script src="js/fastclick.js"></script>
-		<script src="js/jquery.js"></script>
-		<script src="js/cytoscape.js"></script>
-		<script src="js/load.js"></script>
-		<script src="js/script.js"></script>
+		<script src="js/all.min.js"></script>
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>

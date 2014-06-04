@@ -207,12 +207,14 @@ button:active {
 }
 
 .gallery-embed,
-.gallery-link-overlay {
+.gallery-link-overlay,
+.gallery-preview {
 	display: block;
 	width: 10em;
 	height: 10em;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
+	background-size: cover;
 }
 
 .gallery-link-overlay {

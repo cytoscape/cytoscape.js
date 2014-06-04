@@ -318,7 +318,7 @@ gulp.task('docspub', function(next){
   runSequence( ['version', 'docsver', 'docsjs', 'docsbuildlist'], 'docsdemoshots', 'docsmin', next );
 });
 
-gulp.task('pkgver', function(){
+gulp.task('pkgver', ['version'], function(){
   return gulp.src([
     'package.json',
     'bower.json'

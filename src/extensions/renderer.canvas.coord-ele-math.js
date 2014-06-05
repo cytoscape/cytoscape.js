@@ -658,8 +658,23 @@
   };  
 
   CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
-    var edges = eles.edges();
-    var nodes = eles.nodes();
+    var edges = [];
+    var nodes = [];
+
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var styleSame = ele._private.styleKey === ele._private.rscratch.styleKey;
+
+      if( !styleSame ){ // only need to recalc if diff style
+        if( ele._private.group === 'nodes' ){
+          nodes.push( ele );
+        } else {
+          edges.push( ele );
+        }
+      }
+
+      ele._private.rscratch.styleKey = ele._private.styleKey;
+    }
 
     this.recalculateEdgeProjections( edges );
     this.recalculateLabelProjections( nodes, edges );

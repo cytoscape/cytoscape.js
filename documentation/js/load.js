@@ -3,7 +3,7 @@ $( loadCy = function(){
 //<demo>
 
 // initialise cytoscape.js on a html dom element with some options:
-cytoscape( options = {
+cy = cytoscape( options = {
   container: document.getElementById('cy'),
 
   minZoom: 0.5,
@@ -72,9 +72,9 @@ cytoscape( options = {
     ],
   },
 
-  // wait for the data to load & the layout to run before using the api...
+  
   ready: function(){
-    cy = this;
+    // when layout has set initial node positions etc
   }
 } );
 

@@ -196,7 +196,7 @@ button:active {
 	position: relative;
 	float: left;
 	margin: 0 1em 1em 0;
-	width: 9em;
+	width: 200px;
 }
 
 .gallery-title {
@@ -211,8 +211,8 @@ button:active {
 .gallery-link-overlay,
 .gallery-preview {
 	display: block;
-	width: 9em;
-	height: 9em;
+	width: 200px;
+	height: 200px;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	background-size: cover;

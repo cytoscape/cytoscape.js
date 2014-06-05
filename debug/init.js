@@ -91,10 +91,10 @@ $(function(){
     renderer: {
       name: 'canvas'
     },
-    layout: {
-      name: 'arbor',
-      infinite: true
-    },
+    // layout: {
+    //   name: 'arbor',
+    //   infinite: true
+    // },
     style: defaultSty,
     
     elements: {
@@ -129,8 +129,8 @@ $(function(){
   };
   
   var cliques = 3;
-  var numNodes = 100;
-  var numEdges = 200;
+  var numNodes = 5000;
+  var numEdges = 5000;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

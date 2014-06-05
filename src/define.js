@@ -1,6 +1,4 @@
 ;(function($$){ 'use strict';
-  
-  // metaprogramming makes me happy
 
   // use this module to cherry pick functions into your prototype
   // (useful for functions shared between the core and collections, for example)

@@ -346,10 +346,15 @@
         }
 
         var zEles = r.getCachedZSortedEles();
+        var extent = cy.extent();
 
         for (var i = 0; i < zEles.length; i++) {
           var ele = zEles[i];
           var list;
+          var bb = ele.boundingBox();
+          var insideExtent = $$.math.boundingBoxesIntersect( extent, bb );
+
+          if( !insideExtent ){ continue; } // no need to render
 
           if ( ele._private.rscratch.inDragLayer ) {
             list = eles.drag;

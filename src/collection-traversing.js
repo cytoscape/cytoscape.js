@@ -200,7 +200,7 @@
         src = ele._private.source;
       }
 
-      return new $$.Collection( this.cy(), src ).filter( selector );
+      return src && selector ? src.filter( selector ) : src;
     },
 
     target: function( selector ){
@@ -211,7 +211,7 @@
         tgt = ele._private.target;
       }
 
-      return new $$.Collection( this.cy(), tgt ).filter( selector );
+      return tgt && selector ? tgt.filter( selector ) : tgt;
     },
 
     sources: defineSourceFunction({

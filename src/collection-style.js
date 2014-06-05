@@ -57,6 +57,11 @@
       return this; // chaining
     },
 
+    // let renderer recalc rendered style for these eles
+    recalculateRenderedStyle: function(){
+      this._private.cy.recalculateRenderedStyle( this );
+    },
+
     // get the specified css property as a rendered value (i.e. on-screen value)
     // or get the whole rendered style if no property specified (NB doesn't allow setting)
     renderedCss: function( property ){

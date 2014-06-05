@@ -381,7 +381,7 @@
       }, options);
 
       // recalculate projections etc
-      this.cy().recalculateRenderedStyle();
+      this.recalculateRenderedStyle();
 
       var x1 = Infinity;
       var x2 = -Infinity;

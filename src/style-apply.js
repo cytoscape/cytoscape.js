@@ -105,6 +105,15 @@
     var weight = _p.style['font-weight'].strValue;
     _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
+
+    _p.styleKey = '';
+    for( var i = 0; i < $$.style.properties.length; i++ ){
+      var prop = $$.style.properties[i];
+      var eleProp = _p.style[ prop.name ];
+      var val = eleProp && eleProp.strValue ? eleProp.strValue : 'undefined';
+
+      _p.styleKey += '$' + val;
+    }
   };
 
   // when a context's selector no longer matches the ele, roll back the context on the ele

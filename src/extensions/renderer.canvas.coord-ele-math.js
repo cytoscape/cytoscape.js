@@ -657,26 +657,25 @@
     return cache[cacheKey];
   };  
 
-  CanvasRenderer.prototype.recalculateRenderedStyle = function(){
-    this.recalculateEdgeProjections();
-    this.recalculateLabelProjections();
+  CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
+    var edges = eles.edges();
+    var nodes = eles.nodes();
+
+    this.recalculateEdgeProjections( edges );
+    this.recalculateLabelProjections( nodes, edges );
   };
 
-  CanvasRenderer.prototype.recalculateLabelProjections = function(){
-    var nodes = this.getCachedNodes();
+  CanvasRenderer.prototype.recalculateLabelProjections = function( nodes, edges ){
     for( var i = 0; i < nodes.length; i++ ){
       this.recalculateNodeLabelProjection( nodes[i] );
     }
 
-    var edges = this.getCachedEdges();
     for( var i = 0; i < edges.length; i++ ){
       this.recalculateEdgeLabelProjection( edges[i] );
     }
   };
 
-  CanvasRenderer.prototype.recalculateEdgeProjections = function(){
-    var edges = this.getCachedEdges();
-
+  CanvasRenderer.prototype.recalculateEdgeProjections = function( edges ){
     this.findEdgeControlPoints( edges );
   };
 

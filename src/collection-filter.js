@@ -124,6 +124,74 @@
       return new $$.Collection(cy, elements);
     },
 
+    merge: function( toAdd ){
+      var cy = this._private.cy;    
+      
+      if( !toAdd ){
+        return this;
+      }
+      
+      if( $$.is.string(toAdd) ){
+        var selector = toAdd;
+        toAdd = cy.elements(selector);
+      }
+
+      for( var i = 0; i < toAdd.length; i++ ){
+
+        var add = !this._private.ids[ toAdd[i].id() ];
+        if( add ){
+          this[ this.length++ ] = toAdd[i];
+          this._private.ids[ toAdd[i].id() ] = toAdd[i];
+        }
+      }
+      
+      return this; // chaining
+    },
+
+    unmergeOne: function( ele ){
+      ele = ele[0];
+
+      var i = this._private.indexes[ ele.id() ];
+
+      if( i == null ){
+        return this; // no need to remove
+      }
+
+      // remove ele
+      delete this[i];
+      delete this._private.ids[ this[i].id() ];
+      delete this._private.indexes[ this[i].id() ];
+
+      // replace empty spot with last ele in collection
+      if( this.length > 1 ){
+        this[i] = this[ this.length - 1 ];
+      }
+
+      // the collection is now 1 ele smaller
+      this.length--;
+
+      return this;
+    },
+
+    unmerge: function( toRemove ){
+      var cy = this._private.cy;    
+      
+      if( !toRemove ){
+        return this;
+      }
+
+      if( $$.is.string(toRemove) ){
+        var selector = toRemove;
+        toRemove = cy.elements(selector);
+      }
+
+      for( var i = 0; i < toRemove.length; i++ ){
+        this.unmergeOne( toRemove[i] );
+      }
+      
+      return this; // chaining
+    },
+
     map: function( mapFn ){
       var arr = [];
 

@@ -68,7 +68,7 @@
       }
 
       if( properties.css ){
-        properties.css = style.getValueStyle( properties.css );
+        properties.css = style.getValueStyle( properties.css, { array: true } );
       }
 
       if( properties.renderedPosition ){

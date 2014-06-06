@@ -69,6 +69,22 @@
     return ret;
   };
 
+  // only useful in specific cases like animation
+  $$.styfn.overrideBypass = function( eles, name, value ){
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var prop = ele._private.style[ $$.util.camel2dash(name) ];
+
+      if( !prop.bypass ){ // need a bypass if one doesn't exist
+        this.applyBypass( ele, name, value );
+        continue;
+      }
+
+      prop.value = value;
+      prop.pxValue = value;
+    }
+  };
+
   $$.styfn.removeAllBypasses = function( eles ){
     for( var i = 0; i < $$.style.properties.length; i++ ){
       var prop = $$.style.properties[i];

@@ -156,6 +156,7 @@
     }
     
     var ids = {};
+    var indexes = {};
     var createdElements = false;
     
     if( !elements ){
@@ -201,6 +202,7 @@
       
       if( !options || (options.unique && !ids[ id ] ) ){
         ids[ id ] = element;
+        indexes[ id ] = this.length;
 
         this[ this.length ] = element;
         this.length++;
@@ -209,7 +211,8 @@
     
     this._private = {
       cy: cy,
-      ids: ids
+      ids: ids,
+      indexes: indexes
     };
 
     // restore the elements if we created them from json
@@ -244,6 +247,13 @@
 
   $$.elesfn.unique = function(){
     return new $$.Collection( this._private.cy, this, { unique: true } );
+  };
+
+  $$.elesfn.getElementById = function( id ){
+    var cy = this._private.cy;
+    var ele = this._private.ids[ id ];
+
+    return ele ? ele : $$.Collection(cy); // get ele or empty collection
   };
 
   $$.elesfn.json = function(){

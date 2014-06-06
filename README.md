@@ -7,6 +7,8 @@
 
 You can find the documentation and downloads on the [project website](http://cytoscape.github.com/cytoscape.js).  This readme is mostly for developers of Cytoscape.js.
 
+If you're looking to get an old version of the library, you can build off the associated tag or you can [browse the list of old builds](http://cytoscape.github.io/cytoscape.js/download/).  We very strongly recommend you use the latest version.  If you run into a bug on the latest version, report it on [the issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  We'll try to fix the bug as soon as possible, and we'll give you a snapshot build that includes the fix for you to use until the next official bugfix release.
+
 
 
 
@@ -14,7 +16,7 @@ You can find the documentation and downloads on the [project website](http://cyt
 
 Cytoscape.js is an open source project, and anyone interested is encouraged to contribute to Cytoscape.js.  We gladly accept pull requests.  If you are interested in regular contributions to Cytoscape.js, then we can arrange granting you permission to the repository by [contacting us](mailto:cytoscape-discuss@googlegroups.com?subject=Granting permission to Cytoscape.js repository).
 
-If your pull request is a bugfix, please make changes to the master branch.  Otherwise, please make changes to the next version's branch.
+If your pull request is a bugfix, please make changes to the master branch.  Otherwise, please make changes to the next version's branch (i.e. unstable).
 
 
 

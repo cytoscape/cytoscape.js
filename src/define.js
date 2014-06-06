@@ -438,7 +438,7 @@
               var lis = listeners[k];
               var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
               var typeMatches = lis.type === evt.type;
-              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.filter(evt.cyTarget).length > 0 ) : (true); // we're not going to validate the hierarchy; that's too expensive
+              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.matches(evt.cyTarget) ) : (true); // we're not going to validate the hierarchy; that's too expensive
               var listenerMatches = nsMatches && typeMatches && targetMatches;
 
               if( listenerMatches ){ // then trigger it

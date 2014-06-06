@@ -538,7 +538,8 @@
     },
 
     color2tuple: function( color ){
-      return $$.util.colorname2tuple(color)
+      return ( $$.is.array(color) ? color : null ) 
+        || $$.util.colorname2tuple(color)
         || $$.util.hex2tuple(color)
         || $$.util.rgb2tuple(color)
         || $$.util.hsl2tuple(color);

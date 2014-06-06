@@ -26,16 +26,6 @@
       var renderer = this.renderer();
       var cy = this;
       
-      // normalise params.collection 
-      if( $$.is.element(params.collection) ){ // make collection from element
-        var element = params.collection;
-        params.collection = new $$.Collection(cy, [ element ]);  
-      
-      } else if( $$.is.array(params.collection) ){ // make collection from elements array
-        var elements = params.collection;
-        params.collection = new $$.Collection(cy, elements);  
-      } 
-      
       renderer.notify(params);
     },
     

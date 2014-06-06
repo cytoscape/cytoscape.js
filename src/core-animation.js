@@ -7,22 +7,7 @@
 
       if( !cy.styleEnabled() ){ return; } // save cycles when no style used
       
-      var aniEles = cy._private.aniEles;
-      var aniElesHas = [];
-
-      for( var i = 0; i < aniEles.length; i++ ){
-        var id = aniEles[i]._private.data.id;
-        aniElesHas[ id ] = true;
-      }
-
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        var id = ele._private.data.id;
-
-        if( !aniElesHas[id] ){
-          aniEles.push( ele );
-        } 
-      }
+      cy._private.aniEles.merge( eles );
     },
 
     startAnimationLoop: function(){
@@ -38,9 +23,6 @@
       if( !window ){
         return;
       }
-      
-      // initialise the list
-      cy._private.aniEles = [];
       
       var requestAnimationFrame = $$.util.requestAnimationFrame;
       
@@ -139,6 +121,7 @@
         }
         
         // remove elements from list of currently animating if its queues are empty
+        var elesToRemove = [];
         for( var i = 0; i < eles.length; i++ ){
           var ele = eles[i];
           var queue = ele._private.animation.queue;
@@ -146,10 +129,11 @@
           var keepEle = current.length > 0 || queue.length > 0;
           
           if( !keepEle ){ // then remove from the array
-            eles.splice(i, 1);
-            i--;
+            elesToRemove.push( ele );
           }
         }
+
+        cy._private.aniEles.unmerge( elesToRemove );
 
       } // handleElements
         
@@ -187,17 +171,16 @@
           }
 
           if( properties.css ){
-            var props = $$.style.properties;
+            var props = properties.css;
             for( var i = 0; i < props.length; i++ ){
               var name = props[i].name;
-              var end = properties.css[ name ];
+              var prop = props[i];
+              var end = prop;
 
-              if( end !== undefined ){
-                var start = animation.startStyle[ name ];
-                var easedVal = ease( start, end, percent );
-                
-                style.applyBypass( self, name, easedVal );
-              }
+              var start = animation.startStyle[ name ];
+              var easedVal = ease( start, end, percent );
+              
+              style.overrideBypass( self, name, easedVal );
             } // for props
           } // if 
         }
@@ -227,12 +210,15 @@
         return false;
       }
       
-      function ease(start, end, percent){
+      function ease(startProp, endProp, percent){
         if( percent < 0 ){
           percent = 0;
         } else if( percent > 1 ){
           percent = 1;
         }
+
+        var start = startProp.pxValue != null ? startProp.pxValue : startProp.value;
+        var end = endProp.pxValue != null ? endProp.pxValue : endProp.value;
 
         if( $$.is.number(start) && $$.is.number(end) ){
           return start + (end - start) * percent;
@@ -251,7 +237,7 @@
           var g = ch( c1[1], c2[1] );
           var b = ch( c1[2], c2[2] );
           
-          return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+          return [r, g, b];
         }
         
         return undefined;

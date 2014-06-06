@@ -99,6 +99,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 ```js
 cytoscape({
+  container: undefined, 
   selectionType: (isTouchDevice ? 'additive' : 'single'),
   layout: { name: 'grid' /* , ... */ },
   zoom: 1,
@@ -120,6 +121,7 @@ cytoscape({
   elements: [ /* ... */ ]
 });
 ```
+**`container`** : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).
 
 **`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `'additive'` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `'single'` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
 

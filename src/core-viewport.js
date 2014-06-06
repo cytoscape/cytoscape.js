@@ -397,9 +397,9 @@
 
       if( $$.is.string(elements) ){
         var selector = elements;
-        elements = cy.elements( selector );
+        elements = this.elements( selector );
       } else if( !$$.is.elementOrCollection(elements) ){
-        elements = cy.elements();
+        elements = this.elements();
       }
 
       var bb = elements.boundingBox();

@@ -52,6 +52,8 @@ $(function(){
   $('#cy-show').on('click', function(){
     $('#cy, #cy-hide, #cy-refresh').show();
     $('#cy-show').hide();
+
+    cy.resize();
   });
 
 

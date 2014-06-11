@@ -181,6 +181,7 @@
       { name: 'control-point-distance', type: t.size },
       { name: 'control-point-weight', type: t.zeroOneNumber },
       { name: 'curve-style', type: t.curveStyle },
+      { name: 'haystack-radius', type: t.zeroOneNumber },
 
       // these are just for the core
       { name: 'selection-box-color', type: t.color },
@@ -321,7 +322,8 @@
           'line-color': '#bbb',
           'control-point-step-size': 40,
           'control-point-weight': 0.5,
-          'curve-style': 'bezier'
+          'curve-style': 'bezier',
+          'haystack-radius': 0.8
         })
       .selector('$node > node') // compound (parent) node properties
         .css({

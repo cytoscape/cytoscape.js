@@ -141,6 +141,7 @@ Body:
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
  * **`border-width`** : The size of the node's border.
+ * **`border-style`** : The style of the node's border; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`height`** : The height of the node's body.
  * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
 

@@ -178,9 +178,6 @@
     return pz;
   };
 
-  var calls = 0;
-  var time = 0;
-  var avg = 0;
   
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
@@ -197,218 +194,63 @@
     var usePaths = CanvasRenderer.usePaths();
 
 
-    
+    if( usePaths ){
 
-    // Adjusted edge width for dotted
-//    width = Math.max(width * 1.6, 3.4) * zoom;
+      var pathCacheKey = pts;
+      var keyLengthMatches = rs.pathCacheKey && pathCacheKey.length === rs.pathCacheKey.length;
+      var keyMatches = keyLengthMatches;
 
-    //    console.log('w', width);
-
-    if (type === 'solid') {
-      
-      if( usePaths ){
-
-        var pathCacheKey = pts;
-        var keyLengthMatches = rs.pathCacheKey && pathCacheKey.length === rs.pathCacheKey.length;
-        var keyMatches = keyLengthMatches;
-
-        for( var i = 0; keyMatches && i < pathCacheKey.length; i++ ){
-          if( rs.pathCacheKey[i] !== pathCacheKey[i] ){
-            keyMatches = false;
-          }
-        }
-
-        if( keyMatches ){
-          path = context = rs.pathCache;
-          pathCacheHit = true;
-        } else {
-          path = context = new Path2D();
-          rs.pathCacheKey = pathCacheKey;
-          rs.pathCache = path;
-        }
-
-      }
-
-      if( !pathCacheHit ){
-        if( context.beginPath ){ context.beginPath(); }
-        context.moveTo(pts[0], pts[1]);
-        if (pts.length == 3 * 2) {
-          context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-        } else {
-          context.lineTo(pts[2], pts[3]);
+      for( var i = 0; keyMatches && i < pathCacheKey.length; i++ ){
+        if( rs.pathCacheKey[i] !== pathCacheKey[i] ){
+          keyMatches = false;
         }
       }
 
-      context = canvasCxt;
-      if( usePaths ){
-        context.stroke( path );
+      if( keyMatches ){
+        path = context = rs.pathCache;
+        pathCacheHit = true;
       } else {
-        context.stroke();
+        path = context = new Path2D();
+        rs.pathCacheKey = pathCacheKey;
+        rs.pathCache = path;
       }
-      
-    } else if (type === 'dotted') {
-      
-      var pt;
+
+    }
+
+    switch( type ){
+      case 'dotted':
+        context.setLineDash([ 1, 1 ]);
+        break;
+
+      case 'dashed':
+        context.setLineDash([ 6, 3 ]);
+        break;
+
+      case 'solid':
+      default:
+        context.setLineDash([ ]);
+        break;
+    }
+
+    if( !pathCacheHit ){
+      if( context.beginPath ){ context.beginPath(); }
+      context.moveTo(pts[0], pts[1]);
       if (pts.length == 3 * 2) {
-        pt = _genPoints(pts, 16, true);
+        context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
       } else {
-        pt = _genStraightLinePoints(pts, 16, true);
+        context.lineTo(pts[2], pts[3]);
       }
-      
-      if (!pt) { return; }
-      
-      var dotRadius = Math.max(width * 1.6, 3.4) * zoom;
-      var bufW = dotRadius * 2, bufH = dotRadius * 2;
-      bufW = Math.max(bufW, 1);
-      bufH = Math.max(bufH, 1);
-      
-      var buffer = this.createBuffer(bufW, bufH);
-      
-      var context2 = buffer[1];
-//      console.log(buffer);
-//      console.log(bufW, bufH);
-      
-      // Draw on buffer
-      context2.setTransform(1, 0, 0, 1, 0, 0);
-      context2.clearRect(0, 0, bufW, bufH);
-      
-      context2.fillStyle = context.strokeStyle;
-      context2.beginPath();
-      context2.arc(bufW/2, bufH/2, dotRadius * 0.5, 0, Math.PI * 2, false);
-      context2.fill();
-      
-      // Now use buffer
-      context.beginPath();
-      //context.save();
-      
-      for (var i=0; i<pt.length/2; i++) {
-        
-//        context.beginPath();
-//        context.arc(pt[i*2], pt[i*2+1], width * 0.5, 0, Math.PI * 2, false);
-//        context.fill();
-        
-        context.drawImage(
-            buffer[0],
-            pt[i*2] - bufW/2 / zoom,
-            pt[i*2+1] - bufH/2 / zoom,
-            bufW / zoom,
-            bufH / zoom);
-      }
+    }
 
-      context.closePath();
-      
-      //context.restore();
-      
-    } else if (type === 'dashed') {
-      var pt;
-      if (pts.length == 3 * 2) {
-        pt = _genPoints(pts, 14, true);
-      } else {
-        pt = _genStraightLinePoints(pts, 14, true);
-      }
-      if (!pt) { return; }
-      
-//      var dashSize = Math.max(width * 1.6, 3.4);
-//      dashSize = Math.min(dashSize)
-      
-      //var bufW = width * 2 * zoom, bufH = width * 2.5 * zoom;
-      var bufW = width * 2 * zoom;
-      var bufH = 7.8 * zoom;
-      bufW = Math.max(bufW, 1);
-      bufH = Math.max(bufH, 1);
-      
-      var buffer = this.createBuffer(bufW, bufH);
-      var context2 = buffer[1];
-
-      // Draw on buffer
-      context2.setTransform(1, 0, 0, 1, 0, 0);
-      context2.clearRect(0, 0, bufW, bufH);
-      
-      if (context.strokeStyle) {
-        context2.strokeStyle = context.strokeStyle;
-      }
-      
-      context2.lineWidth = width * cy.zoom();
-      
-  //    context2.fillStyle = context.strokeStyle;
-      
-      context2.beginPath();
-      context2.moveTo(bufW / 2, bufH * 0.2);
-      context2.lineTo(bufW / 2,  bufH * 0.8);
-      
-  //    context2.arc(bufH, dotRadius, dotRadius * 0.5, 0, Math.PI * 2, false);
-      
-  //    context2.fill();
-      context2.stroke();
-      
-      //context.save();
-      
-      // document.body.appendChild(buffer[0]);
-      
-      var quadraticBezierVaryingTangent = false;
-      var rotateVector, angle;
-      
-      // Straight line; constant tangent angle
-      if (pts.length == 2 * 2) {
-        rotateVector = [pts[2] - pts[0], pts[3] - pt[1]];
-        
-        angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1) / Math.sqrt(rotateVector[0] * rotateVector[0] 
-            + rotateVector[1] * rotateVector[1]));
-  
-        if (rotateVector[0] < 0) {
-          angle = -angle + 2 * Math.PI;
-        }
-      } else if (pts.length == 3 * 2) {
-        quadraticBezierVaryingTangent = true;
-      }
-      
-      for (var i=0; i<pt.length/2; i++) {
-        
-        var p = i / (Math.max(pt.length/2 - 1, 1));
-      
-        // Quadratic bezier; varying tangent
-        // So, use derivative of quadratic Bezier function to find tangents
-        if (quadraticBezierVaryingTangent) {
-          rotateVector = [2 * (1-p) * (pts[2] - pts[0]) 
-                            + 2 * p * (pts[4] - pts[2]),
-                              2 * (1-p) * (pts[3] - pts[1]) 
-                              + 2 * p * (pts[5] - pts[3])];
-  
-          angle = Math.acos((rotateVector[0] * 0 + rotateVector[1] * -1) / Math.sqrt(rotateVector[0] * rotateVector[0] 
-                + rotateVector[1] * rotateVector[1]));
-  
-          if (rotateVector[0] < 0) {
-            angle = -angle + 2 * Math.PI;
-          }
-        }
-        
-        context.translate(pt[i*2], pt[i*2+1]);
-        
-        context.rotate(angle);
-        context.translate(-bufW/2 / zoom, -bufH/2 / zoom);
-        
-        context.drawImage(
-            buffer[0],
-            0,
-            0,
-            bufW / zoom,
-            bufH / zoom);
-        
-        context.translate(bufW/2 / zoom, bufH/2 / zoom);
-        context.rotate(-angle);
-        
-        context.translate(-pt[i*2], -pt[i*2+1]);
-
-        context.closePath();
-        
-      }
-      
-      
-      //context.restore();
+    context = canvasCxt;
+    if( usePaths ){
+      context.stroke( path );
     } else {
-      this.drawStyledEdge(edge, context, pts, 'solid', width);
+      context.stroke();
     }
   
+    // reset any line dashes
+    context.setLineDash([ ]);
 
   };
 

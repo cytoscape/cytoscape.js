@@ -37,12 +37,29 @@
 
       var bgColor = style['background-color'].value;
       var borderColor = style['border-color'].value;
+      var borderStyle = style['border-style'].value;
 
       this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
       
       this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
+
+      switch( borderStyle ){
+        case 'dotted':
+          context.setLineDash([ 1, 1 ]);
+          break;
+
+        case 'dashed':
+          context.setLineDash([ 4, 2 ]);
+          break;
+
+        case 'solid':
+        case 'double':
+        default:
+          context.setLineDash([ ]);
+          break;
+      }
 
       //var image = this.getCachedImage('url');
       
@@ -158,11 +175,29 @@
           context.stroke();
         }
 
+        if( borderStyle === 'double' ){
+          context.lineWidth = style['border-width'].pxValue/3;
+
+          var gco = context.globalCompositeOperation;
+          context.globalCompositeOperation = 'destination-out';
+
+          if( usePaths ){
+            context.stroke( path );
+          } else {
+            context.stroke();
+          }
+
+          context.globalCompositeOperation = gco;
+        }
+
       }
 
       if( usePaths ){
         context.translate( -pos.x, -pos.y );
       }
+
+      // reset in case we changed the border style
+      context.setLineDash([ ]);
 
     // draw the overlay
     } else {

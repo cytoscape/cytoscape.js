@@ -660,16 +660,40 @@
   CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
     var edges = [];
     var nodes = [];
+    var handledEdge = {};
 
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
+      var id = ele._private.data.id;
       var styleSame = ele._private.styleKey === ele._private.rscratch.styleKey;
 
       if( !styleSame ){ // only need to recalc if diff style
         if( ele._private.group === 'nodes' ){
-          nodes.push( ele );
-        } else {
-          edges.push( ele );
+          if( !styleSame ){
+            nodes.push( ele );
+          }
+        } else { // edges
+          var curveType = ele._private.style['curve-style'].value;
+
+          if( curveType === 'bezier' ){
+            edges.push( ele );
+            handledEdge[ id ] = true;
+
+            var parallelEdges = ele.parallelEdges();
+            for( var i = 0; i < parallelEdges.length; i++ ){
+              var pEdge = parallelEdges[i];
+              var pId = pEdge._private.data.id;
+
+              if( !handledEdge[ pId ] ){
+                edges.push( pEdge );
+                handledEdge[ pId ] = true;
+              }
+              
+            }
+          } else {
+            edges.push( ele );
+          }
+
         }
       }
 

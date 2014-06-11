@@ -65,10 +65,18 @@
     }
     
     if( rs.edgeType === 'haystack' ){
+      var radius = style['haystack-radius'].value;
+      var halfRadius = radius/2; // b/c have to half width/height
+
       this.drawStyledEdge(
         edge, 
         context, 
-        [rs.source.x * sourceW + sourcePos.x, rs.source.y * sourceH + sourcePos.y, rs.target.x * targetW + targetPos.x, rs.target.y * targetH + targetPos.y],
+        [
+          rs.source.x * sourceW * halfRadius + sourcePos.x,
+          rs.source.y * sourceH * halfRadius + sourcePos.y,
+          rs.target.x * targetW * halfRadius + targetPos.x,
+          rs.target.y * targetH * halfRadius + targetPos.y
+        ],
         lineStyle,
         edgeWidth
       );

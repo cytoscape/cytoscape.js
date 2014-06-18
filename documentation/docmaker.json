@@ -399,6 +399,20 @@
             },
 
             {
+              "name": "cy.viewport",
+              "descr": "Set the viewport state (pan & zoom) in one call.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "zoom", "descr": "The zoom level to set." }
+                    { "name": "pan", "descr": "The pan to set (a rendered position)." }
+                  ]
+                }
+              ],
+              "md": "core/viewport"
+            },
+
+            {
               "name": "cy.boxSelectionEnabled",
               "descr": "Get or set whether box selection is enabled.",
               "formats": [
@@ -1035,7 +1049,7 @@
               "descr": "Get the bounding box of the elements.",
               "formats": [
                 { 
-                  "name": "ele.boundingBox", 
+                  "name": "eles.boundingBox", 
                   "descr": "Get the bounding box of the elements in model coordinates.",
                   "args": [
                     { 
@@ -1050,7 +1064,7 @@
                   ]
                 },
                 {
-                  "name": "ele.renderedBoundingBox",
+                  "name": "eles.renderedBoundingBox",
                   "descr": "Get the bounding box of the elements in rendered coordinates.",
                   "args": [
                     { 
@@ -1381,19 +1395,13 @@
             },
 
             {
-              "name": "eles.classes",
-              "descr": "Add, remove, and toggle classes for several elements all at once.",
+              "name": "eles.flashClass",
+              "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
               "formats": [
                 {
                   "args": [
-                    { 
-                      "name": "options", 
-                      "fields": [
-                        { "name": "add", "descr": "An array of class names to add." },
-                        { "name": "remove", "descr": "An array of class names to remove." },
-                        { "name": "toggle", "descr": "An array of class names to toggle." }
-                      ]
-                    }
+                    { "name": "classes", "descr": "A space-separated list of class names to flash on the elements." },
+                    { "name": "duration", "descr": "The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.", "optional": true }
                   ]
                 }
               ]

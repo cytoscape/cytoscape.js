@@ -89,7 +89,8 @@ $(function(){
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
     renderer: {
-      name: 'canvas'
+      name: 'canvas',
+      showFps: true
     },
     // layout: {
     //   name: 'arbor',

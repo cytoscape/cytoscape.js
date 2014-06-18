@@ -103,7 +103,7 @@
             pan.y = y;
           }
 
-          this.trigger('pan');
+          this.trigger('pan viewport');
         }
         break;
 
@@ -119,7 +119,7 @@
           pan[dim] = val;
         }
 
-        this.trigger('pan');
+        this.trigger('pan viewport');
         break;
 
       default:
@@ -158,7 +158,7 @@
             pan.y += y;
           }
 
-          this.trigger('pan');
+          this.trigger('pan viewport');
         }
         break;
 
@@ -170,7 +170,7 @@
           pan[dim] += val;
         }
 
-        this.trigger('pan');
+        this.trigger('pan viewport');
         break;
 
       default:
@@ -236,7 +236,7 @@
           y: (h - zoom*( bb.y1 + bb.y2 ))/2
         };
 
-        this.trigger('pan zoom');
+        this.trigger('pan zoom viewport');
 
         this.notify({ // notify the renderer that the viewport changed
           type: 'viewport'
@@ -323,11 +323,11 @@
         this._private.pan = pan2;
 
         var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-        this.trigger('zoom' + (posChanged ? ' pan' : '') );
+        this.trigger(' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
       
       } else { // just set the zoom
         this._private.zoom = zoom;
-        this.trigger('zoom');
+        this.trigger('zoom viewport');
       }
 
       this.notify({ // notify the renderer that the viewport changed
@@ -363,7 +363,7 @@
         }
       }
 
-      if( panDefd && !zoomFailed && _p.panningEnabled ){
+      if( panDefd && (!zoomFailed || !opts.cancelOnFailedZoom) && _p.panningEnabled ){
         var p = opts.pan;
 
         if( $$.is.number(p.x) ){
@@ -382,12 +382,13 @@
       }
 
       if( events.length > 0 ){
+        events.push('viewport');
         this.trigger( events.join(' ') );
-      }
 
-      this.notify({
-        type: 'viewport'
-      });
+        this.notify({
+          type: 'viewport'
+        });
+      }
 
       return this; // chaining
     },
@@ -415,7 +416,7 @@
         y: (h - zoom*( bb.y1 + bb.y2 ))/2
       });
       
-      this.trigger('pan');
+      this.trigger('pan viewport');
 
       this.notify({ // notify the renderer that the viewport changed
         type: 'viewport'
@@ -429,14 +430,9 @@
         return this;
       }
 
-      this.pan({ x: 0, y: 0 });
-
-      if( this._private.maxZoom > 1 && this._private.minZoom < 1 ){
-        this.zoom(1);
-      }
-
-      this.notify({ // notify the renderer that the viewport changed
-        type: 'viewport'
+      this.viewport({
+        pan: { x: 0, y: 0 },
+        zoom: 1
       });
       
       return this; // chaining

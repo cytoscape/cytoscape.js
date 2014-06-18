@@ -57,6 +57,7 @@
     //--
     
     this.redraws = 0;
+    this.showFps = options.showFps;
 
     this.bindings = [];
     

@@ -1359,7 +1359,8 @@
 
           cy.viewport({
             zoom: zoom2,
-            pan: pan2
+            pan: pan2,
+            cancelOnFailedZoom: true
           });
 
           distance1 = distance2;  

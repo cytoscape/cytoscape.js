@@ -173,6 +173,23 @@
 
       self.trigger('class');
       return self;
+    },
+
+    flashClass: function(classes, duration){
+      var self = this;
+
+      if( duration == null ){
+        duration = 250;
+      } else if( duration === 0 ){
+        return self; // nothing to do really
+      }
+
+      self.addClass( classes );
+      setTimeout(function(){
+        self.removeClass( classes );
+      }, duration);
+
+      return self;
     }
   });
   

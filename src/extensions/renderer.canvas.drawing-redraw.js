@@ -208,13 +208,13 @@
     }
 
 
-    var startTime;
+    var startTime = +new Date();
 
     //console.log('-- redraw --')
 
 
     function drawToContext(){ 
-      startTime = +new Date();
+      // startTime = +new Date();
       // console.profile('draw' + startTime)
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
@@ -430,11 +430,11 @@
         }
       }
       
-      if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) ) {
+      if( r.showFps || (!drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers)) ) {
         // console.log('redrawing selection box');
         
         var context = forcedContext || data.contexts[CanvasRenderer.SELECT_BOX];
-        
+
         setContextTransform( context );
 
         if (data.select[4] == 1) {
@@ -484,6 +484,24 @@
           context.fill();
         }
         
+        var timeToRender = r.averageRedrawTime;
+        if( r.showFps && timeToRender ){
+          timeToRender = Math.round( timeToRender );
+          var fps = Math.round(1000/timeToRender);
+
+          context.setTransform(1, 0, 0, 1, 0, 0);
+
+          context.font = '20px helvetica';
+          context.fillStyle = 'rgba(255, 0, 0, 0.75)';
+          context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
+          context.lineWidth = 1;
+          context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
+
+          var maxFps = 60;
+          context.strokeRect(0, 30, 250, 20);
+          context.fillRect(0, 30, 250 * Math.min(fps/maxFps, 1), 20);
+        }
+
         if( !drawAllLayers ){
           needDraw[CanvasRenderer.SELECT_BOX] = false; 
         }
@@ -507,6 +525,7 @@
       }
 
       r.redrawTotalTime += endTime - startTime;
+      r.lastRedrawTime = endTime - startTime;
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;

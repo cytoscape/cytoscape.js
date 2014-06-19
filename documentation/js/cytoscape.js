@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.9.
+ * This file is part of cytoscape.js 2.2.10.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -912,7 +912,7 @@ var cytoscape;
   var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
-  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60) } };
+  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };
 
   $$.util.requestAnimationFrame = function(fn){
     raf( fn );
@@ -7391,9 +7391,9 @@ var cytoscape;
 
       if( $$.is.string(elements) ){
         var selector = elements;
-        elements = cy.elements( selector );
+        elements = this.elements( selector );
       } else if( !$$.is.elementOrCollection(elements) ){
-        elements = cy.elements();
+        elements = this.elements();
       }
 
       var bb = elements.boundingBox();
@@ -15686,7 +15686,7 @@ var cytoscape;
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);;
+        var near = near || r.findNearestElement(now[0], now[1], true);
 
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;

@@ -35,7 +35,6 @@
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/milestones"><span class="icon-calendar"></span> Version milestones/changelogs</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js-demos"><span class="icon-user"></span> User-submitted demos</a> |
 				<a target="_blank" href="http://cytoscape.org"><span class="icon-desktop"></span> Cytoscape desktop</a>
 			</div>
 
@@ -56,7 +55,7 @@
 
 
 				<pre><code><span class="hljs-comment">// initialise cytoscape.js on a html dom element with some options:</span>
-cytoscape( options = {
+cy = cytoscape( options = {
   container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
   minZoom: <span class="hljs-number">0.5</span>,
@@ -125,9 +124,9 @@ cytoscape( options = {
     ],
   },
 
-  <span class="hljs-comment">// wait for the data to load &amp; the layout to run before using the api...</span>
+  
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-    cy = <span class="hljs-keyword">this</span>;
+    <span class="hljs-comment">// when layout has set initial node positions etc</span>
   }
 } );</code></pre>
 			</div>
@@ -385,7 +384,9 @@ cytoscape( options = {
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.</p>
 <h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
 <p>Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js">cytoscape({
+
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
   elements: [
     { <span class="hljs-comment">// node n1</span>
@@ -393,13 +394,13 @@ cytoscape( options = {
 
       <span class="hljs-comment">// NB: id fields must be strings</span>
       data: { <span class="hljs-comment">// element data (put dev data here)</span>
-          id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory for each element, assigned automatically on undefined</span>
-          parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
+        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory for each element, assigned automatically on undefined</span>
+        parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
       },
 
       position: { <span class="hljs-comment">// the model position of the node (optional on init, mandatory after)</span>
-          x: <span class="hljs-number">100</span>,
-          y: <span class="hljs-number">100</span>
+        x: <span class="hljs-number">100</span>,
+        y: <span class="hljs-number">100</span>
       },
 
       selected: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the element is selected (default false)</span>
@@ -410,10 +411,10 @@ cytoscape( options = {
 
       grabbable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
 
-      classes: <span class="hljs-string">'foo bar'</span> <span class="hljs-comment">// a space separated list of class names that the element has</span>
+      classes: <span class="hljs-string">'foo bar'</span>, <span class="hljs-comment">// a space separated list of class names that the element has</span>
 
       <span class="hljs-comment">// NB: you should only use `css` for very special cases; use classes instead</span>
-      css: { backgroundColor: red } <span class="hljs-comment">// overriden style properties</span>
+      css: { <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span> } <span class="hljs-comment">// overriden style properties</span>
     },
 
     { <span class="hljs-comment">// node n2</span>
@@ -430,18 +431,22 @@ cytoscape( options = {
 
     { <span class="hljs-comment">// node nparent</span>
       group: <span class="hljs-string">'nodes'</span>,
-      data: { id: <span class="hljs-string">'nparent'</span> }
+      data: { id: <span class="hljs-string">'nparent'</span>, position: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">100</span> } }
     },
 
     { <span class="hljs-comment">// edge e1</span>
       group: <span class="hljs-string">'edges'</span>,
       data: {
-          id: <span class="hljs-string">'e1'</span>,
-          source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
-          target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
+        id: <span class="hljs-string">'e1'</span>,
+        source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
+        target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
       }
     }
   ],
+
+  layout: {
+    name: <span class="hljs-string">'preset'</span>
+  },
 
   <span class="hljs-comment">// so we can see the ids</span>
   style: [
@@ -1373,6 +1378,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
 <p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.</p>
 <pre><code class="lang-js">cytoscape({
+  container: <span class="hljs-literal">undefined</span>, 
   selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
   layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
   zoom: <span class="hljs-number">1</span>,
@@ -1394,6 +1400,7 @@ cy.elements().forEach(<span class="hljs-function"><span class="hljs-keyword">fun
   elements: [ <span class="hljs-comment">/* ... */</span> ]
 });
 </code></pre>
+<p><strong><code>container</code></strong> : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).</p>
 <p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&#39;additive&#39;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&#39;single&#39;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
 <p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout&#39;s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in <code>options.elements</code> at initialisation time).</p>
 <p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>

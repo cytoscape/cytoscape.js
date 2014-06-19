@@ -1,6 +1,6 @@
 {
   "name": "cytoscape",
-  "description": "A JavaScript graph library for analysis and visualisation",
+  "description": "A JavaScript graph theory library for analysis and visualisation",
   "version": "2.2.10",
   "license": "LGPL",
   "engines": {

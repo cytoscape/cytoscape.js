@@ -1418,7 +1418,7 @@
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);;
+        var near = near || r.findNearestElement(now[0], now[1], true);
 
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;

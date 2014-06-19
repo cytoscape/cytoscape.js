@@ -41,7 +41,9 @@ In this documentation, "position" refers to model position unless otherwise stat
 Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:
 
 ```js
-$('#cy').cytoscape({
+cytoscape({
+
+  container: document.getElementById('cy'),
   
   elements: [
     { // node n1
@@ -49,13 +51,13 @@ $('#cy').cytoscape({
 
       // NB: id fields must be strings
       data: { // element data (put dev data here)
-      	id: 'n1', // mandatory for each element, assigned automatically on undefined
-      	parent: 'nparent', // indicates the compound node parent id; not defined => no parent
+        id: 'n1', // mandatory for each element, assigned automatically on undefined
+        parent: 'nparent', // indicates the compound node parent id; not defined => no parent
       },
 
       position: { // the model position of the node (optional on init, mandatory after)
-      	x: 100,
-      	y: 100
+        x: 100,
+        y: 100
       },
 
       selected: false, // whether the element is selected (default false)
@@ -66,10 +68,10 @@ $('#cy').cytoscape({
 
       grabbable: true, // whether the node can be grabbed and moved by the user
 
-      classes: 'foo bar' // a space separated list of class names that the element has
+      classes: 'foo bar', // a space separated list of class names that the element has
 
       // NB: you should only use `css` for very special cases; use classes instead
-      css: { backgroundColor: red } // overriden style properties
+      css: { 'background-color': 'red' } // overriden style properties
     },
 
     { // node n2
@@ -86,18 +88,22 @@ $('#cy').cytoscape({
 
     { // node nparent
       group: 'nodes',
-      data: { id: 'nparent' }
+      data: { id: 'nparent', position: { x: 200, y: 100 } }
     },
 
     { // edge e1
       group: 'edges',
       data: {
-      	id: 'e1',
-      	source: 'n1', // the source node id (edge comes from this node)
-      	target: 'n2'  // the target node id (edge goes to this node)
+        id: 'e1',
+        source: 'n1', // the source node id (edge comes from this node)
+        target: 'n2'  // the target node id (edge goes to this node)
       }
     }
   ],
+
+  layout: {
+    name: 'preset'
+  },
 
   // so we can see the ids
   style: [

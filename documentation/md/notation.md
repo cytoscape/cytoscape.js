@@ -1,3 +1,10 @@
+## Graph model
+
+Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs, and so on.  
+
+We are regularly making additions and enhancements to the library, and we gladly accept [feature requests](https://github.com/cytoscape/cytoscape.js/issues/new) and pull requests.
+
+
 ## Architecture & API
 
 There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core and the collection.  In Cytoscape.js, the core is a developer's main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.
@@ -116,4 +123,25 @@ cytoscape({
   ]
 
 });
+```
+
+## Compound nodes
+
+Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.
+
+Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship can not be changed.  Of course, you can clone an element, modify it, and then add it to the graph to effectively "modify" immutable fields while keeping the graph model consistent.
+
+As far as the API is concerned, compound nodes are treated just like regular nodes &mdash; except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
+
+For instance:
+
+```js
+var a = cy.$('#a'); // assume a compound node
+
+// the neighbourhood of `a` contains directly connected elements
+var directlyConnected = a.neighborhood();
+
+// you may want everything connected to its descendants instead
+// because the descendants "belong" to `a`
+var indirectlyConnected = a.add( a.descendants() ).neighborhood();
 ```

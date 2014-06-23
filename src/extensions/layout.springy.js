@@ -3,6 +3,9 @@
   var defaults = {
     maxSimulationTime: 1000,
     ungrabifyWhileSimulating: true,
+    stiffness: 400,
+    repulsion: 400,
+    damping: 0.5,
     fit: true,
     random: false
   };
@@ -18,10 +21,9 @@
     var cy = options.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
-
-    var container = cy.container();    
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+ 
+    var width = cy.width();
+    var height = cy.height();
     
     // make a new graph
     var graph = new Springy.Graph();
@@ -47,7 +49,7 @@
       });
     });
     
-    var layout = new Springy.Layout.ForceDirected(graph, 400.0, 400.0, 0.5);
+    var layout = new Springy.Layout.ForceDirected(graph, options.stiffness, options.repulsion, options.damping);
     
     var currentBB = layout.getBoundingBox();
     // var targetBB = {bottomleft: new Springy.Vector(-2, -2), topright: new Springy.Vector(2, 2)};
@@ -75,34 +77,35 @@
       function clear() {
         // code to clear screen
       },
+
       function drawEdge(edge, p1, p2) {
         // draw an edge
       },
+
       function drawNode(node, p) {
-      var v = toScreen(p);
-      var element = node.data.element;
+        var v = toScreen(p);
+        var element = node.data.element;
+        
+        window.p = p;
+        window.n = node;
+        
+        if( !element.locked() ){
+            element._private.position = {
+              x: v.x,
+              y: v.y
+            };
+            movedNodes = movedNodes.add(element);
+        } else {
+          setLayoutPositionForElement(element);
+        }
+        
+        if( drawnNodes == numNodes ){
+          cy.one('layoutready', options.ready);
+          cy.trigger('layoutready');
+        } 
+        
+        drawnNodes++;
       
-      window.p = p;
-      window.n = node;
-      
-      if( !element.locked() ){
-          element._private.position = {
-            x: v.x,
-            y: v.y
-          };
-          movedNodes = movedNodes.add(element);
-      } else {
-        setLayoutPositionForElement(element);
-      }
-      
-      if( drawnNodes == numNodes ){
-        cy.one('layoutready', options.ready);
-        cy.trigger('layoutready');
-      } 
-      
-      drawnNodes++;
-      
-       
       }
     );
     

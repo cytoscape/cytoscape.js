@@ -1,22 +1,32 @@
 ;(function($$){ 'use strict';
   
   $$.fn.core({
-    
-    autolockNodes: function(bool){
+
+    autolock: function(bool){
       if( bool !== undefined ){
-        this._private.autolockNodes = bool ? true : false;
+        this._private.autolock = bool ? true : false;
       } else {
-        return this._private.autolockNodes;
+        return this._private.autolock;
       }
       
       return this; // chaining
     },
 
-    autoungrabifyNodes: function(bool){
+    autoungrabify: function(bool){
       if( bool !== undefined ){
-        this._private.autoungrabifyNodes = bool ? true : false;
+        this._private.autoungrabify = bool ? true : false;
       } else {
-        return this._private.autoungrabifyNodes;
+        return this._private.autoungrabify;
+      }
+      
+      return this; // chaining
+    },
+
+    autounselectify: function(bool){
+      if( bool !== undefined ){
+        this._private.autounselectify = bool ? true : false;
+      } else {
+        return this._private.autounselectify;
       }
       
       return this; // chaining
@@ -490,5 +500,5 @@
       };
     }
   });
-  
+
 })( cytoscape );

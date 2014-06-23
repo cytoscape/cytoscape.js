@@ -25,13 +25,24 @@
       else if( args.length === 0 ){
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
+          var able = !params.ableField || ele._private[params.ableField];
 
-          if( !params.ableField || ele._private[params.ableField] ){
+          if( params.overrideAble ){
+            var overrideAble = params.overrideAble(ele);
+
+            if( overrideAble !== undefined ){
+              able = overrideAble;
+
+              if( !overrideAble ){ return this; } // to save cycles assume not able for all on override
+            }
+          }
+
+          if( able ){
             ele._private[params.field] = params.value;
           }
         }
         this.updateStyle(); // change of state => possible change of style
-        this.trigger(params.event);
+        this.trigger( params.event );
       }
 
       return this;
@@ -41,9 +52,10 @@
   function defineSwitchSet( params ){
     $$.elesfn[ params.field ] = function(){
       var ele = this[0];
+
       if( ele ){
-        if( params.altFieldFn ){
-          var val = params.altFieldFn(ele);
+        if( params.overrideField ){
+          var val = params.overrideField(ele);
 
           if( val !== undefined ){
             return val;
@@ -58,6 +70,7 @@
       event: params.on,
       field: params.field,
       ableField: params.ableField,
+      overrideAble: params.overrideAble,
       value: true
     });
 
@@ -65,14 +78,15 @@
       event: params.off,
       field: params.field,
       ableField: params.ableField,
+      overrideAble: params.overrideAble,
       value: false
     });
   }
   
   defineSwitchSet({
     field: 'locked',
-    altFieldFn: function(ele){
-      return ele.cy().autolockNodes() ? true : undefined;
+    overrideField: function(ele){
+      return ele.cy().autolock() ? true : undefined;
     },
     on: 'lock',
     off: 'unlock'
@@ -80,8 +94,8 @@
   
   defineSwitchSet({
     field: 'grabbable',
-    altFieldFn: function(ele){
-      return ele.cy().autoungrabifyNodes() ? false : undefined;
+    overrideField: function(ele){
+      return ele.cy().autoungrabify() ? false : undefined;
     },
     on: 'grabify',
     off: 'ungrabify'
@@ -90,12 +104,18 @@
   defineSwitchSet({
     field: 'selected',
     ableField: 'selectable',
+    overrideAble: function(ele){
+      return ele.cy().autounselectify() ? false : undefined;
+    },
     on: 'select',
     off: 'unselect'
   });
   
   defineSwitchSet({
     field: 'selectable',
+    overrideField: function(ele){
+      return ele.cy().autounselectify() ? false : undefined;
+    },
     on: 'selectify',
     off: 'unselectify'
   });

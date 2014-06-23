@@ -65,8 +65,9 @@
       panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
       userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
-      autolockNodes: false,
-      autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
+      autolock: options.autolock === undefined ? false : options.autolock,
+      autoungrabify: options.autoungrabify === undefined ? false : options.autoungrabify,
+      autounselectify: options.autounselectify === undefined ? false : options.autounselectify,
       styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {

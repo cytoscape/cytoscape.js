@@ -118,7 +118,8 @@
     cy.initRenderer( $$.util.extend({
       hideEdgesOnViewport: options.hideEdgesOnViewport,
       hideLabelsOnViewport: options.hideLabelsOnViewport,
-      textureOnViewport: options.textureOnViewport
+      textureOnViewport: options.textureOnViewport,
+      wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
@@ -292,6 +293,7 @@
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
       json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
       json.textureOnViewport = cy._private.options.textureOnViewport;
+      json.wheelSensitivity = cy._private.options.wheelSensitivity;
       
       return json;
     }

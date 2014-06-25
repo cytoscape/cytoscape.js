@@ -866,6 +866,7 @@
         }, 150);
       
         var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
+        diff = diff * r.wheelSensitivity;
 
         cy.zoom({
           level: cy.zoom() * Math.pow(10, diff),

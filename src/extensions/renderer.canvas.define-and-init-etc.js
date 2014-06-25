@@ -97,6 +97,7 @@
     this.hideEdgesOnViewport = options.hideEdgesOnViewport;
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
+    this.wheelSensitivity = options.wheelSensitivity;
 
     this.load();
   }

@@ -1,5 +1,5 @@
 {
-  "version": "snapshot-1236003370-1401398986679",
+  "version": "unstable",
   "jqueryVersion": "1.4",
 
   "sections": [
@@ -404,7 +404,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "zoom", "descr": "The zoom level to set." }
+                    { "name": "zoom", "descr": "The zoom level to set." },
                     { "name": "pan", "descr": "The pan to set (a rendered position)." }
                   ]
                 }

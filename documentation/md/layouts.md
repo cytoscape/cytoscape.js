@@ -124,7 +124,10 @@ options = {
 	},
 	levelWidth: function(nodes){ // the variation of concentric values in each level
 	  return nodes.maxDegree() / 4;
-	} 
+	}
+};
+
+cy.layout( options );
 ```
 
 

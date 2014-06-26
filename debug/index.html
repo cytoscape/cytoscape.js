@@ -15,6 +15,8 @@
 			<!-- library dependencies -->
 			<script type="text/javascript" src="../lib/arbor.js"></script>
 			<script type="text/javascript" src="../lib/springy.js"></script>
+			<script type="text/javascript" src="../lib/cola.v3.min.js"></script>
+			<script type="text/javascript" src="../lib/dagre.js"></script>
 
 			<!-- cy.js injected scripts (run `gulp debugrefs` to update) -->
 
@@ -82,8 +84,10 @@
 			<script src="../src/extensions/layout.arbor.js"></script>
 			<script src="../src/extensions/layout.breadthfirst.js"></script>
 			<script src="../src/extensions/layout.circle.js"></script>
+			<script src="../src/extensions/layout.cola.js"></script>
 			<script src="../src/extensions/layout.concentric.js"></script>
 			<script src="../src/extensions/layout.cose.js"></script>
+			<script src="../src/extensions/layout.dagre.js"></script>
 			<script src="../src/extensions/layout.grid.js"></script>
 			<script src="../src/extensions/layout.null.js"></script>
 			<script src="../src/extensions/layout.preset.js"></script>
@@ -168,15 +172,17 @@
 	    		    	
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
+	    		<option value="null">Null</option>
 	    		<option value="grid">Grid</option>
 	    		<option value="random">Random</option>
-	    		<option value="arbor" selected>Arbor</option>
-	    		<option value="arbor">Springy</option>
 	    		<option value="circle">Circle</option>
 	    		<option value="breadthfirst">Breadth first</option>
-	    		<option value="cose">CoSE</option>
 	    		<option value="concentric">Concentric</option>
-	    		<option value="null">Null</option>
+	    		<option value="cose">CoSE</option>
+	    		<option value="arbor">Arbor</option>
+	    		<option value="springy">Springy</option>
+	    		<option value="dagre" selected>Degre</option>
+	    		<option value="cola">Cola</option>
 	    	</select>
 	    	<button id="layout-button">Apply</button>
 	    	<small>Time taken: <span id="layout-time">&nbsp;</span></small> <br />

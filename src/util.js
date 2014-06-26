@@ -198,9 +198,9 @@
     error: function( msg ){
       if( console ){
         if( console.error ){
-          console.error( msg );
+          console.error.apply( console, arguments );
         } else if( console.log ){
-          console.log( msg );
+          console.log.apply( console, arguments );
         } else {
           throw msg;
         }

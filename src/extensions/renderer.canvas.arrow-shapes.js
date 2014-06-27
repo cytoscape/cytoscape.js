@@ -51,6 +51,7 @@
       for (var i = 0; i < points.length / 2; i++) {
         context.lineTo(points[i * 2], points[i * 2 + 1]);
       }
+
     },
     
     spacing: function(edge) {
@@ -64,6 +65,97 @@
 
   arrowShapes['triangle'] = arrowShapes['arrow'];
   
+  arrowShapes['triangle-backcurve'] = {
+    _ctrlPt: [ 0, -0.15 ],
+
+    collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+      var points = arrowShapes['triangle']._points;
+      
+//      console.log("collide(): " + direction);
+      
+      return $$.math.pointInsidePolygon(
+        x, y, points, centerX, centerY, width, height, direction, padding);
+    },
+    
+    roughCollide: bbCollide,
+    
+    draw: function(context) {
+      var points = arrowShapes['triangle']._points;
+    
+      for (var i = 0; i < points.length / 2; i++) {
+        context.lineTo(points[i * 2], points[i * 2 + 1]);
+      }
+
+      var ctrlPt = this._ctrlPt;
+
+      context.quadraticCurveTo( ctrlPt[0], ctrlPt[1], points[0], points[1] );
+    },
+    
+    spacing: function(edge) {
+      return 0;
+    },
+    
+    gap: function(edge) {
+      return edge._private.style['width'].pxValue * 2;
+    }
+  };
+  
+
+  arrowShapes['triangle-tee'] = {
+    _points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      -0.15, -0.3
+    ],
+
+    _pointsTee: [
+      -0.15, -0.4,
+      -0.15, -0.5,
+      0.15, -0.5,
+      0.15, -0.4
+    ],
+    
+    collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+      var triPts = arrowShapes['triangle-tee']._points;
+      var teePts = arrowShapes['triangle-tee']._pointsTee;
+      
+      var inside = $$.math.pointInsidePolygon(x, y, triPts, centerX, centerY, width, height, direction, padding) 
+        || $$.math.pointInsidePolygon(x, y, triPts, centerX, centerY, width, height, direction, padding);
+
+      return inside;
+    },
+    
+    roughCollide: bbCollide,
+    
+    draw: function(context) {
+      var triPts = arrowShapes['triangle-tee']._points;
+      for (var i = 0; i < triPts.length / 2; i++){
+        var pt1 = triPts[ i * 2 ];
+        var pt2 = triPts[ i * 2 + 1 ];
+        
+        context.lineTo( pt1, pt2 );
+      }
+
+      var teePts = arrowShapes['triangle-tee']._pointsTee;
+      context.moveTo( teePts[0], teePts[1] );
+      for (var i = 0; i < teePts.length / 2; i++){
+        var pt1 = teePts[ i * 2 ];
+        var pt2 = teePts[ i * 2 + 1 ];
+        
+        context.lineTo( pt1, pt2 );
+      }
+    },
+    
+    spacing: function(edge) {
+      return 0;
+    },
+    
+    gap: function(edge) {
+      return edge._private.style['width'].pxValue * 2;
+    }
+  };
+
   arrowShapes['none'] = {
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       return false;
@@ -148,11 +240,11 @@
     },
     
     spacing: function(edge) {
-      return 4;
+      return 1;
     },
     
     gap: function(edge) {
-      return 4;
+      return 1;
     }
   };
 
@@ -221,7 +313,7 @@
     },
     
     gap: function(edge) {
-      return edge._private.style['width'].pxValue * 2;
+      return edge._private.style['width'].pxValue;
     }
   };
 

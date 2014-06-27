@@ -177,7 +177,9 @@ Compound nodes:
 
 ### Edge properties
 
-These properties apply only to edges:
+These properties apply only to edges.
+
+Basic styling:
 
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
@@ -186,12 +188,30 @@ These properties apply only to edges:
  * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
- * **`source-arrow-color`** : The colour of the edge's arrow on the source side.
- * **`source-arrow-shape`** : The shape of the edge's arrow on the source side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+
+Edge arrow pointing towards the source node:
+
+ * **`source-arrow-color`** : The colour of the edge's source arrow.
+ * **`source-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`source-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
- * **`target-arrow-color`** : The colour of the edge's arrow on the target side.
- * **`target-arrow-shape`** : The shape of the edge's arrow on the target side; may be `tee`, `triangle`, `square`, `circle`, `diamond`, or `none`.
+
+Edge arrow pointing towards the source node, positioned in the middle of the edge:
+
+ * **`mid-source-arrow-color`** : The colour of the edge's mid source arrow.
+ * **`mid-source-arrow-shape`** : The shape of the edge's mid source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
+ * **`mid-source-arrow-fill`** : The fill state of the edge's mid source arrow; may be `filled` or `hollow`.
+
+Edge arrow pointing towards the target node:
+
+ * **`target-arrow-color`** : The colour of the edge's target arrow.
+ * **`target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
+
+Edge arrow pointing towards the target node, positioned in the middle of the edge:
+
+ * **`mid-target-arrow-color`** : The colour of the edge's target arrow.
+ * **`mid-target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
+ * **`mid-target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
 ### Core properties
 

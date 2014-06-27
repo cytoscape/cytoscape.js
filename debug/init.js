@@ -21,8 +21,8 @@ $(function(){
           'border-color': '#555',
           'shape': 'ellipse',
           //'shape': 'data(shape)',
-          'width': 'mapData(weight, 0, 100, 5, 15)',
-          'height': 'mapData(weight, 0, 100, 5, 15)',
+          // 'width': 'mapData(weight, 0, 100, 5, 15)',
+          // 'height': 'mapData(weight, 0, 100, 5, 15)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -63,10 +63,14 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'width': 'mapData(weight, 0, 100, 1, 4)',
-          // 'target-arrow-shape': 'data(tgtShape)',
+          'width': '3',
+          'source-arrow-shape': 'triangle-backcurve',
+          'target-arrow-shape': 'triangle',
+          'mid-target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'triangle-backcurve',
+          'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           'opacity': 0.5
           //'content': 'data(weight)'
         })
@@ -80,7 +84,9 @@ $(function(){
           'background-color': '#000',
           'line-color': '#000',
           'source-arrow-color': '#000',
-          'target-arrow-color': '#000'
+          'target-arrow-color': '#000',
+          'mid-source-arrow-color': '#000',
+          'mid-target-arrow-color': '#000'
         })
   ;
   
@@ -129,9 +135,9 @@ $(function(){
     }
   };
   
-  var cliques = 3;
-  var numNodes = 100;
-  var numEdges = 200;
+  var cliques = 1;
+  var numNodes = 3;
+  var numEdges = 10;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

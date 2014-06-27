@@ -71,7 +71,7 @@
       this.drawStyledEdge(
         edge, 
         context, 
-        [
+        rs.haystackPts = [
           rs.source.x * sourceW * halfRadius + sourcePos.x,
           rs.source.y * sourceH * halfRadius + sourcePos.y,
           rs.target.x * targetW * halfRadius + targetPos.x,
@@ -126,58 +126,14 @@
       
     }
     
-    if ( rs.edgeType !== 'haystack' && rs.noArrowPlacement !== true && rs.startX !== undefined ){
+    if( rs.edgeType === 'haystack' ){
+      this.drawArrowheads(context, edge, drawOverlayInstead);
+    } else if ( rs.noArrowPlacement !== true && rs.startX !== undefined ){
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
 
   };
   
-  var _genPoints = function(pt, spacing, even) {
-    
-    var approxLen = Math.sqrt(Math.pow(pt[4] - pt[0], 2) + Math.pow(pt[5] - pt[1], 2));
-    approxLen += Math.sqrt(Math.pow((pt[4] + pt[0]) / 2 - pt[2], 2) + Math.pow((pt[5] + pt[1]) / 2 - pt[3], 2));
-
-    var pts = Math.ceil(approxLen / spacing); 
-    var pz;
-    
-    if (pts > 0) {
-      pz = new Array(pts * 2);
-    } else {
-      return null;
-    }
-    
-    for (var i = 0; i < pts; i++) {
-      var cur = i / pts;
-      pz[i * 2] = pt[0] * (1 - cur) * (1 - cur) + 2 * (pt[2]) * (1 - cur) * cur + pt[4] * (cur) * (cur);
-      pz[i * 2 + 1] = pt[1] * (1 - cur) * (1 - cur) + 2 * (pt[3]) * (1 - cur) * cur + pt[5] * (cur) * (cur);
-    }
-    
-    return pz;
-  };
-  
-  var _genStraightLinePoints = function(pt, spacing, even) {
-    
-    var approxLen = Math.sqrt(Math.pow(pt[2] - pt[0], 2) + Math.pow(pt[3] - pt[1], 2));
-    
-    var pts = Math.ceil(approxLen / spacing);
-    var pz;
-    
-    if (pts > 0) {
-      pz = new Array(pts * 2);
-    } else {
-      return null;
-    }
-    
-    var lineOffset = [pt[2] - pt[0], pt[3] - pt[1]];
-    for (var i = 0; i < pts; i++) {
-      var cur = i / pts;
-      pz[i * 2] = lineOffset[0] * cur + pt[0];
-      pz[i * 2 + 1] = lineOffset[1] * cur + pt[1];
-    }
-    
-    return pz;
-  };
-
   
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
@@ -257,112 +213,145 @@
   CanvasRenderer.prototype.drawArrowheads = function(context, edge, drawOverlayInstead) {
     if( drawOverlayInstead ){ return; } // don't do anything for overlays 
 
+    var rs = edge._private.rscratch;
+    var self = this;
+    var isHaystack = rs.edgeType === 'haystack';
+
     // Displacement gives direction for arrowhead orientation
     var dispX, dispY;
+    var startX, startY, endX, endY;
 
-    var startX = edge._private.rscratch.arrowStartX;
-    var startY = edge._private.rscratch.arrowStartY;
+    var srcPos = edge.source().position();
+    var tgtPos = edge.target().position();
+
+    if( isHaystack ){
+      startX = rs.haystackPts[0];
+      startY = rs.haystackPts[1];
+      endX = rs.haystackPts[2];
+      endY = rs.haystackPts[3];
+    } else {
+      startX = rs.arrowStartX;
+      startY = rs.arrowStartY;
+      endX = rs.arrowEndX;
+      endY = rs.arrowEndY;
+    }
 
     var style = edge._private.style;
     
-    var srcPos = edge.source().position();
-    dispX = startX - srcPos.x;
-    dispY = startY - srcPos.y;
-    
-    if( !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
+    function drawArrowhead( prefix, x, y, dispX, dispY ){
+      if( style[prefix + '-arrow-shape'].value === 'none' ){
+        return;
+      }
 
       var gco = context.globalCompositeOperation;
 
       context.globalCompositeOperation = 'destination-out';
       
-      this.fillStyle(context, 255, 255, 255, 1);
+      self.fillStyle(context, 255, 255, 255, 1);
 
-      this.drawArrowShape(context, 'filled', style['source-arrow-shape'].value, 
-        startX, startY, dispX, dispY);
+      var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
+      self.drawArrowShape( context, 
+        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+        x, y, dispX, dispY
+      );
 
       context.globalCompositeOperation = gco;
 
-      var color = style['source-arrow-color'].value;
-      this.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
+      var color = style[prefix + '-arrow-color'].value;
+      self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
 
-      this.drawArrowShape(context, style['source-arrow-fill'].value, style['source-arrow-shape'].value, 
-        startX, startY, dispX, dispY);
+      self.drawArrowShape( context, 
+        style[prefix + '-arrow-fill'].value, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+        x, y, dispX, dispY
+      );
+    }
+
+    dispX = startX - srcPos.x;
+    dispY = startY - srcPos.y;
+
+    if( !isHaystack && !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
+      drawArrowhead( 'source', startX, startY, dispX, dispY );
 
     } else {
       // window.badArrow = true;
       // debugger;
     }
     
-    var endX = edge._private.rscratch.arrowEndX;
-    var endY = edge._private.rscratch.arrowEndY;
+    var midX = rs.midX;
+    var midY = rs.midY;
+
+    if( isHaystack ){
+      midX = ( startX + endX )/2;
+      midY = ( startY + endY )/2;
+    }
+
+    dispX = startX - endX;
+    dispY = startY - endY;
+
+    if( rs.edgeType === 'self' ){
+      dispX = 1;
+      dispY = -1;
+    }
+
+    if( !isNaN(midX) && !isNaN(midY) ){
+      drawArrowhead( 'mid-target', midX, midY, dispX, dispY );
+    }
+
+    dispX *= -1;
+    dispY *= -1;
+
+    if( !isNaN(midX) && !isNaN(midY) ){
+      drawArrowhead( 'mid-source', midX, midY, dispX, dispY );
+    }
     
-    var tgtPos = edge.target().position();
     dispX = endX - tgtPos.x;
     dispY = endY - tgtPos.y;
     
-    if( !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
-
-      var gco = context.globalCompositeOperation;
-
-      context.globalCompositeOperation = 'destination-out';
-
-      this.fillStyle(context, 255, 255, 255, 1);
-
-      this.drawArrowShape(context, 'filled', style['target-arrow-shape'].value,
-        endX, endY, dispX, dispY);
-
-      context.globalCompositeOperation = gco;
-
-      var color = style['target-arrow-color'].value;
-      this.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
-
-      this.drawArrowShape(context, style['target-arrow-fill'].value, style['target-arrow-shape'].value,
-        endX, endY, dispX, dispY);
+    if( !isHaystack && !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
+      drawArrowhead( 'target', endX, endY, dispX, dispY );
     }
   };
   
   // Draw arrowshape
-  CanvasRenderer.prototype.drawArrowShape = function(context, fill, shape, x, y, dispX, dispY) {
+  CanvasRenderer.prototype.drawArrowShape = function(context, fill, edgeWidth, shape, x, y, dispX, dispY) {
   
     // Negative of the angle
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
   
     if (dispX < 0) {
-      //context.strokeStyle = 'AA99AA';
       angle = angle + Math.PI / 2;
     } else {
-      //context.strokeStyle = 'AAAA99';
       angle = - (Math.PI / 2 + angle);
     }
     
-    //context.save();
     context.translate(x, y);
     
     context.moveTo(0, 0);
     context.rotate(-angle);
     
-    var size = this.getArrowWidth(context.lineWidth);
+    var size = this.getArrowWidth( edgeWidth );
     /// size = 100;
     context.scale(size, size);
     
     context.beginPath();
-    
+
     CanvasRenderer.arrowShapes[shape].draw(context);
     
     context.closePath();
-    
-//    context.stroke();
-    if( fill === 'hollow' ){
-      context.lineWidth = 1/size;
-      context.stroke();
-    } else {
+
+    if( fill === 'filled' || fill === 'both' ){
       context.fill();
+    }
+
+    if( fill === 'hollow' || fill === 'both' ){
+      context.lineWidth = 1/size;
+      context.lineJoin = 'miter';
+      context.stroke();
     }
 
     context.scale(1/size, 1/size);
     context.rotate(angle);
     context.translate(-x, -y);
-    //context.restore();
   };
 
 })( cytoscape );

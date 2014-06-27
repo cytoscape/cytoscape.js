@@ -465,10 +465,20 @@
         y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
       });
 
-      bpts.push({
+      var mid = {
         x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
         y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-      });
+      };
+
+      bpts.push( mid );
+
+      if( rs.edgeType === 'self' ){
+        rs.midX = rs.selfEdgeMidX;
+        rs.midY = rs.selfEdgeMidY;
+      } else {
+        rs.midX = mid.x;
+        rs.midY = mid.y;
+      }
 
       bpts.push({
         x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
@@ -1053,6 +1063,9 @@
             // recalc endpts
             this.findEndpoints( edge );
           }
+        } else if( rs.edgeType === 'straight' ){
+          rs.midX = ( srcX2 + tgtX2 )/2;
+          rs.midY = ( srcY2 + tgtY2 )/2;
         }
 
         // project the edge into rstyle

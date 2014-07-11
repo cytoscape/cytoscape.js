@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.10.
+ * This file is part of cytoscape.js 2.2.11.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -77,7 +77,7 @@ var cytoscape;
 // type testing utility functions
 
 ;(function($$, window){ 'use strict';
-  
+
   $$.is = {
     string: function(obj){
       return obj != null && typeof obj == typeof '';
@@ -88,7 +88,7 @@ var cytoscape;
     },
     
     array: function(obj){
-      return obj != null && obj instanceof Array;
+      return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
     },
     
     plainObject: function(obj){
@@ -5275,7 +5275,7 @@ var cytoscape;
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: 'rgba(' + clr[0] + ", " + clr[1] + ", " + clr[2] + ", " + clr[3]
+          strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
         };
       
       } else if( type.number ){
@@ -14445,20 +14445,19 @@ var cytoscape;
 
         r.hoverData.cxtStarted = true;
 
-        if( near ){
-          near.activate();
-          near.trigger( new $$.Event(e, {
-            type: 'cxttapstart', 
-            cyPosition: { x: pos[0], y: pos[1] } 
-          }) );
-
-          r.hoverData.down = near;
-        }
-
-        cy.trigger( new $$.Event(e, {
+        var cxtEvt = new $$.Event(e, {
           type: 'cxttapstart', 
           cyPosition: { x: pos[0], y: pos[1] } 
-        }) );
+        });
+
+        if( near ){
+          near.activate();
+          near.trigger( cxtEvt );
+
+          r.hoverData.down = near;
+        } else {
+          cy.trigger( cxtEvt );
+        }
 
         r.hoverData.downTime = (new Date()).getTime();
         r.hoverData.cxtDragged = false;

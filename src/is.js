@@ -1,7 +1,7 @@
 // type testing utility functions
 
 ;(function($$, window){ 'use strict';
-  
+
   $$.is = {
     string: function(obj){
       return obj != null && typeof obj == typeof '';
@@ -12,7 +12,7 @@
     },
     
     array: function(obj){
-      return obj != null && obj instanceof Array;
+      return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
     },
     
     plainObject: function(obj){

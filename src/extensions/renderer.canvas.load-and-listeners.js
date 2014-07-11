@@ -220,20 +220,19 @@
 
         r.hoverData.cxtStarted = true;
 
-        if( near ){
-          near.activate();
-          near.trigger( new $$.Event(e, {
-            type: 'cxttapstart', 
-            cyPosition: { x: pos[0], y: pos[1] } 
-          }) );
-
-          r.hoverData.down = near;
-        }
-
-        cy.trigger( new $$.Event(e, {
+        var cxtEvt = new $$.Event(e, {
           type: 'cxttapstart', 
           cyPosition: { x: pos[0], y: pos[1] } 
-        }) );
+        });
+
+        if( near ){
+          near.activate();
+          near.trigger( cxtEvt );
+
+          r.hoverData.down = near;
+        } else {
+          cy.trigger( cxtEvt );
+        }
 
         r.hoverData.downTime = (new Date()).getTime();
         r.hoverData.cxtDragged = false;

@@ -249,7 +249,7 @@
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: 'rgba(' + clr[0] + ", " + clr[1] + ", " + clr[2] + ", " + clr[3]
+          strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
         };
       
       } else if( type.number ){

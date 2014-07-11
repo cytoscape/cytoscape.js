@@ -157,15 +157,17 @@
     if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
       var rotationAngle = style['text-rotation'].value;
       
-      //If specified in degrees, convert to radians:
-      if(style['text-rotation'].units == 'deg') {
-        rotationAngle = rotationAngle * Math.PI/180;
+      if(rotationAngle != 0) {
+        //If specified in degrees, convert to radians:
+        if(style['text-rotation'].units == 'deg') {
+          rotationAngle = rotationAngle * Math.PI/180;
+        }
+        
+        context.save();
+        context.translate(textX,textY);
+        context.rotate(rotationAngle);
+        context.translate(-textX,-textY);
       }
-      
-      context.save();
-      context.translate(textX,textY);
-      context.rotate(rotationAngle);
-      context.translate(-textX,-textY);
       
       var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
@@ -175,7 +177,9 @@
 
       context.fillText(text, textX, textY);
       
-      context.restore();
+      if(rotationAngle != 0) {
+        context.restore();
+      }
     }
   };
 

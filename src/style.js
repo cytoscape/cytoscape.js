@@ -79,7 +79,8 @@
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
-      propList: { propList: true }
+      propList: { propList: true },
+      angle: { number: true, units: 'deg|rad'}
     };
 
     // define visual style properties
@@ -96,6 +97,7 @@
       { name: 'text-opacity', type: t.zeroOneNumber },
       { name: 'text-decoration', type: t.textDecoration },
       { name: 'text-transform', type: t.textTransform },
+      { name: 'text-rotation', type: t.angle },
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
       { name: 'font-variant', type: t.fontVariant },
@@ -244,6 +246,7 @@
           'text-opacity': 1,
           'text-decoration': 'none',
           'text-transform': textTransform,
+          'text-rotation': '0deg',
           'font-family': fontFamily,
           'font-style': fontStyle,
           'font-variant': fontVariant,

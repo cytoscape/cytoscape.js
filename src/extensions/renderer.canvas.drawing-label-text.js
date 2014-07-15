@@ -163,7 +163,6 @@
           rotationAngle = rotationAngle * Math.PI/180;
         }
         
-        context.save();
         context.translate(textX,textY);
         context.rotate(rotationAngle);
         context.translate(-textX,-textY);
@@ -178,7 +177,9 @@
       context.fillText(text, textX, textY);
       
       if(rotationAngle != 0) {
-        context.restore();
+        context.translate(textX,textY);
+        context.rotate(-rotationAngle);
+        context.translate(-textX,-textY);
       }
     }
   };

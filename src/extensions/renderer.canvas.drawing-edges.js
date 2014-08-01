@@ -175,16 +175,16 @@
 
     switch( type ){
       case 'dotted':
-        context.setLineDash([ 1, 1 ]);
+        canvasCxt.setLineDash([ 1, 1 ]);
         break;
 
       case 'dashed':
-        context.setLineDash([ 6, 3 ]);
+        canvasCxt.setLineDash([ 6, 3 ]);
         break;
 
       case 'solid':
       default:
-        context.setLineDash([ ]);
+        canvasCxt.setLineDash([ ]);
         break;
     }
 
@@ -239,7 +239,9 @@
     var style = edge._private.style;
     
     function drawArrowhead( prefix, x, y, dispX, dispY ){
-      if( style[prefix + '-arrow-shape'].value === 'none' ){
+      var arrowShape = style[prefix + '-arrow-shape'].value;
+
+      if( arrowShape === 'none' ){
         return;
       }
 
@@ -249,7 +251,15 @@
       
       self.fillStyle(context, 255, 255, 255, 1);
 
+
       var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
+      var arrowFill = style[prefix + '-arrow-fill'].value;
+
+      if( arrowShape === 'half-triangle-overshot' ){
+        arrowFill = 'hollow';
+        arrowClearFill = 'hollow';
+      }
+
       self.drawArrowShape( context, 
         arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
         x, y, dispX, dispY
@@ -261,7 +271,7 @@
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
 
       self.drawArrowShape( context, 
-        style[prefix + '-arrow-fill'].value, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+        arrowFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
         x, y, dispX, dispY
       );
     }
@@ -335,16 +345,20 @@
     
     context.beginPath();
 
-    CanvasRenderer.arrowShapes[shape].draw(context);
+    var shapeImpl = CanvasRenderer.arrowShapes[shape];
+
+    shapeImpl.draw(context);
     
-    context.closePath();
+    if( !shapeImpl.leavePathOpen ){
+      context.closePath();
+    }
 
     if( fill === 'filled' || fill === 'both' ){
       context.fill();
     }
 
     if( fill === 'hollow' || fill === 'both' ){
-      context.lineWidth = 1/size;
+      context.lineWidth = 1/size * ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 );
       context.lineJoin = 'miter';
       context.stroke();
     }

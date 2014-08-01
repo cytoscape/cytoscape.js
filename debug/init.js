@@ -40,7 +40,8 @@ $(function(){
           // 'pie-3-background-size': '10%',
           // 'pie-3-background-color': 'blue',
           // 'pie-4-background-size': '15%',
-          // 'pie-4-background-color': 'yellow'
+          // 'pie-4-background-color': 'yellow',
+          // 'pie-4-background-opacity': 0.5
         })
       .selector('$node > node') // compound (parent) nodes
         .css({

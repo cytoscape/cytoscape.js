@@ -129,12 +129,13 @@
       } 
       
       var darkness = style['background-blacken'].value;
+      var borderWidth = style['border-width'].pxValue;
 
       if( this.hasPie(node) ){
         this.drawPie(context, node);
 
         // redraw path for blacken and border
-        if( darkness !== 0 ){
+        if( darkness !== 0 || borderWidth !== 0 ){
 
           if( !usePaths ){
             CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
@@ -167,7 +168,7 @@
       }
 
       // Border width, draw border
-      if (style['border-width'].pxValue > 0) {
+      if (borderWidth > 0) {
 
         if( usePaths ){
           context.stroke( path );
@@ -236,6 +237,12 @@
     var y = node._private.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+    var usePaths = CanvasRenderer.usePaths();
+
+    if( usePaths ){
+      x = 0;
+      y = 0;
+    }
 
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
@@ -246,6 +253,7 @@
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
       var size = node._private.style['pie-' + i + '-background-size'].value;
       var color = node._private.style['pie-' + i + '-background-color'].value;
+      var opacity = node._private.style['pie-' + i + '-background-opacity'].value;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
@@ -264,7 +272,7 @@
       context.arc( x, y, radius, angleStart, angleEnd );
       context.closePath();
 
-      this.fillStyle(context, color[0], color[1], color[2], 1);
+      this.fillStyle(context, color[0], color[1], color[2], opacity);
 
       context.fill();
 

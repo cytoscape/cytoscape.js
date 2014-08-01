@@ -156,6 +156,44 @@
     }
   };
 
+  arrowShapes['half-triangle-overshot'] = {
+    _points: [
+      0, -0.25,
+      -0.5, -0.25,
+      0.5, 0.25
+    ],
+    
+    leavePathOpen: true,
+    matchEdgeWidth: true,
+
+    collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+      var points = this._points;
+      
+//      console.log("collide(): " + direction);
+      
+      return $$.math.pointInsidePolygon(
+        x, y, points, centerX, centerY, width, height, direction, padding);
+    },
+    
+    roughCollide: bbCollide,
+    
+    draw: function(context) {
+      var points = this._points;
+    
+      for (var i = 0; i < points.length / 2; i++) {
+        context.lineTo(points[i * 2], points[i * 2 + 1]);
+      }
+    },
+    
+    spacing: function(edge) {
+      return 0;
+    },
+    
+    gap: function(edge) {
+      return edge._private.style['width'].pxValue * 2;
+    }
+  };
+
   arrowShapes['none'] = {
     collide: function(x, y, centerX, centerY, width, height, direction, padding) {
       return false;

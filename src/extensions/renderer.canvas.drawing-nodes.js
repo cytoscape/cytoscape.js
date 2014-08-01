@@ -205,11 +205,17 @@
     var y = node._private.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+    var usePaths = CanvasRenderer.usePaths();
 
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
     } else if( pieSize.pxValue !== undefined ){
       radius = pieSize.pxValue / 2;
+    }
+
+    if( usePaths ){
+      x = 0;
+      y = 0;
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N

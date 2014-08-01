@@ -28,6 +28,8 @@
         type: 'resize'
       });
 
+      this.trigger('resize');
+
       return this;
     },
     

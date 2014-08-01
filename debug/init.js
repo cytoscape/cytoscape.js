@@ -72,7 +72,7 @@ $(function(){
           'mid-source-arrow-shape': 'triangle-backcurve',
           'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           'opacity': 0.5
           //'content': 'data(weight)'
         })
@@ -138,8 +138,8 @@ $(function(){
   };
   
   var cliques = 1;
-  var numNodes = 3;
-  var numEdges = 10;
+  var numNodes = 2;
+  var numEdges = 20;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

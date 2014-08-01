@@ -100,7 +100,7 @@
 
       // also add nodes and edges related to the topmost ancestor
       updateAncestorsInDragLayer( node, {
-        addToList: opts.addToList
+        inDragLayer: true
       } );
     };
 

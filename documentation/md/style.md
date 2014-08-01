@@ -165,6 +165,8 @@ You may find it useful to reserve a number to a particular colour for all nodes 
  * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
  * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
  * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
+ * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
+
 
 Compound nodes:
 

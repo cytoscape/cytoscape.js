@@ -28,8 +28,9 @@ $(function(){
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          // 'background-image': 'images/gnu.png',
-          // 'background-fit': 'contain',
+          'background-image': 'images/gnu.png',
+          'background-image-opacity': 0.5,
+          'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
           // 'background-clip': 'none',
           //'background-position-x': 5,

@@ -120,6 +120,7 @@
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
       { name: 'background-image', type: t.url },
+      { name: 'background-image-opacity', type: t.zeroOneNumber },
       { name: 'background-position-x', type: t.bgPos },
       { name: 'background-position-y', type: t.bgPos },
       { name: 'background-repeat', type: t.bgRepeat },

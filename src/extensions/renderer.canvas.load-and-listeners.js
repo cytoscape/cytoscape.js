@@ -357,7 +357,8 @@
         var containerPageCoords = r.findContainerClientCoords();
         
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
+          && e.target === r.data.topCanvas) {
           
         } else {
           return;

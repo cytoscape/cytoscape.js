@@ -79,6 +79,7 @@
       
       this.data.canvasNeedsRedraw[i] = false;
     }
+    this.data.topCanvas = this.data.canvases[0];
 
     this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
     this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');

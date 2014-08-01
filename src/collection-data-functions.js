@@ -243,6 +243,73 @@
       return this; // chaining
     },
 
+    // get/set the position relative to the origin
+    originPosition: function(){
+      var ele = this[0];
+      var cy = this.cy();
+      var zoom = cy.zoom();
+      var pan = cy.pan();
+      var opos = $$.is.plainObject( dim ) ? dim : undefined;
+      var setting = opos !== undefined || ( val !== undefined && $$.is.string(dim) );
+
+      if( ele && ele.isNode() ){ // must have an element and must be a node to return position
+        if( setting ){
+          for( var i = 0; i < this.length; i++ ){
+            var ele = this[i];
+            var parent = ele.parent();
+            var hasParent = parent.length > 0;
+            var relativeToParent = hasParent && ele._private.style['position'].value === 'parent';
+
+            if( hasParent ){
+              parent = parent[0];
+            }
+
+            var ppos = hasParent ? parent.originPosition() : { x: 0, y: 0 };
+
+            if( val !== undefined ){ // set one dimension
+              ele._private.position[dim] = relativeToParent ? val - ppos[dim] : val;
+            } else if( opos !== undefined ){ // set whole position
+              ele._private.position = {
+                x: relativeToParent ? opos.x - ppos.x : opos.x,
+                y: relativeToParent ? opos.y - ppos.y : opos.y,
+              };
+            }
+          }
+
+          this.rtrigger('position');
+
+        } else { // getting
+          var pos = ele._private.position;
+          var parent = ele.parent();
+          var hasParent = parent.length > 0;
+          var relativeToParent = hasParent && ele._private.style['position'].value === 'parent';
+
+          if( hasParent ){
+            parent = parent[0];
+          }
+
+          var ppos = hasParent ? parent.originPosition() : { x: 0, y: 0 };
+
+          opos = {
+            x: relativeToParent ? pos.x + ppos.x : pos.x,
+            y: relativeToParent ? pos.y + ppos.y : pos.y
+          };
+
+          if( dim === undefined ){ // then return the whole rendered position
+            return opos;
+          } else { // then return the specified dimension
+            return opos[ dim ];
+          }
+        }
+      } else if( !setting ){
+        return undefined; // for empty collection case
+      }
+
+      return this; // chaining
+    },
+
+    renderedOriginPosition: function(){},
+
     // convenience function to get a numerical value for the width of the node/edge
     width: function(){
       var ele = this[0];

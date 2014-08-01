@@ -49,6 +49,7 @@
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
+      position: { enums: ['parent', 'origin'] },
       size: { number: true, min: 0, enums: ['auto'] },
       bgSize: { number: true, min: 0, allowPercent: true },
       bgPos: { number: true, allowPercent: true },
@@ -132,11 +133,14 @@
       { name: 'border-style', type: t.borderStyle },
       { name: 'height', type: t.size },
       { name: 'width', type: t.size },
+      { name: 'shape', type: t.nodeShape },
+
+      // compound props
       { name: 'padding-left', type: t.size },
       { name: 'padding-right', type: t.size },
       { name: 'padding-top', type: t.size },
       { name: 'padding-bottom', type: t.size },
-      { name: 'shape', type: t.nodeShape },
+      { name: 'position', type: t.position },
 
       // pie backgrounds for nodes
       { name: 'pie-size', type: t.bgSize },
@@ -300,11 +304,15 @@
           'border-style': 'solid',
           'height': 30,
           'width': 30,
+          'shape': 'ellipse',
+
+          // compound props
           'padding-top': 0,
           'padding-bottom': 0,
           'padding-left': 0,
           'padding-right': 0,
-          'shape': 'ellipse',
+          'position': 'origin',
+          
 
           // node pie bg
           'pie-size': '100%',

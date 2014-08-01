@@ -28,9 +28,9 @@ $(function(){
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          'background-image': 'images/gnu.png',
-          'background-image-opacity': 0.5,
-          'background-fit': 'contain',
+          // 'background-image': 'images/gnu.png',
+          // 'background-image-opacity': 0.5,
+          // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
           // 'background-clip': 'none',
           //'background-position-x': 5,
@@ -72,7 +72,7 @@ $(function(){
           'mid-source-arrow-shape': 'triangle-backcurve',
           'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          // 'curve-style': 'haystack',
+          'curve-style': 'haystack',
           'opacity': 0.5
           //'content': 'data(weight)'
         })

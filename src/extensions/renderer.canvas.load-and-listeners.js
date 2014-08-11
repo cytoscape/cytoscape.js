@@ -92,11 +92,8 @@
         edges[i]._private.rscratch.inDragLayer = true;
       }
 
-      // add descendant nodes only if the compound size is set to auto
       var style = _p.style;
-      if( style['width'].value === 'auto' || style['height'].value === 'auto' ){
-        addDescendantsToDrag( node, opts );
-      }
+      addDescendantsToDrag( node, opts ); // always add to drag
 
       // also add nodes and edges related to the topmost ancestor
       updateAncestorsInDragLayer( node, {

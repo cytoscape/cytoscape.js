@@ -82,7 +82,7 @@
       single: true, // indicates this is an element
       data: params.data || {}, // data object
       layoutData: {}, // place for layouts to put calculated stats etc for mappers
-      position: params.position || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
+      position: params.position || {}, // (x, y) position pair
       autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
       autoHeight: undefined, 
       listeners: [], // array of bound listeners

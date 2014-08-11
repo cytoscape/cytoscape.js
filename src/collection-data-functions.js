@@ -243,35 +243,37 @@
       return this; // chaining
     },
 
-    // get/set the position relative to the origin
-    originPosition: function(){
+    // get/set the position relative to the parent
+    parentPosition: function( dim, val ){
       var ele = this[0];
       var cy = this.cy();
       var zoom = cy.zoom();
       var pan = cy.pan();
-      var opos = $$.is.plainObject( dim ) ? dim : undefined;
-      var setting = opos !== undefined || ( val !== undefined && $$.is.string(dim) );
+      var ppos = $$.is.plainObject( dim ) ? dim : undefined;
+      var setting = ppos !== undefined || ( val !== undefined && $$.is.string(dim) );
+      var hasCompoundNodes = cy.hasCompoundNodes();
 
       if( ele && ele.isNode() ){ // must have an element and must be a node to return position
         if( setting ){
           for( var i = 0; i < this.length; i++ ){
             var ele = this[i];
-            var parent = ele.parent();
-            var hasParent = parent.length > 0;
-            var relativeToParent = hasParent && ele._private.style['position'].value === 'parent';
+            var parent = hasCompoundNodes ? ele.parent() : null;
+            var hasParent = parent && parent.length > 0;
+            var relativeToParent = hasParent;
+            var deletePos = dim === null;
 
             if( hasParent ){
               parent = parent[0];
             }
 
-            var ppos = hasParent ? parent.originPosition() : { x: 0, y: 0 };
+            var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
 
             if( val !== undefined ){ // set one dimension
-              ele._private.position[dim] = relativeToParent ? val - ppos[dim] : val;
-            } else if( opos !== undefined ){ // set whole position
+              ele._private.position[dim] = val + origin[dim];
+            } else if( ppos !== undefined ){ // set whole position
               ele._private.position = {
-                x: relativeToParent ? opos.x - ppos.x : opos.x,
-                y: relativeToParent ? opos.y - ppos.y : opos.y,
+                x: ppos.x + origin.x,
+                y: ppos.y + origin.y,
               };
             }
           }
@@ -280,25 +282,26 @@
 
         } else { // getting
           var pos = ele._private.position;
-          var parent = ele.parent();
-          var hasParent = parent.length > 0;
-          var relativeToParent = hasParent && ele._private.style['position'].value === 'parent';
+          var parent = hasCompoundNodes ? ele.parent() : null;
+          var hasParent = parent && parent.length > 0;
+          var relativeToParent = hasParent;
+          var deletePos = dim === null;
 
           if( hasParent ){
             parent = parent[0];
           }
 
-          var ppos = hasParent ? parent.originPosition() : { x: 0, y: 0 };
+          var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
 
-          opos = {
-            x: relativeToParent ? pos.x + ppos.x : pos.x,
-            y: relativeToParent ? pos.y + ppos.y : pos.y
+          ppos = {
+            x: pos.x - origin.x,
+            y: pos.y - origin.y
           };
 
           if( dim === undefined ){ // then return the whole rendered position
-            return opos;
+            return ppos;
           } else { // then return the specified dimension
-            return opos[ dim ];
+            return ppos[ dim ];
           }
         }
       } else if( !setting ){
@@ -307,8 +310,6 @@
 
       return this; // chaining
     },
-
-    renderedOriginPosition: function(){},
 
     // convenience function to get a numerical value for the width of the node/edge
     width: function(){

@@ -124,6 +124,7 @@
       return new $$.Collection(cy, elements);
     },
 
+    // in place merge on calling collection
     merge: function( toAdd ){
       var cy = this._private.cy;    
       
@@ -148,6 +149,7 @@
       return this; // chaining
     },
 
+    // remove single ele in place in calling collection
     unmergeOne: function( ele ){
       ele = ele[0];
 
@@ -173,6 +175,7 @@
       return this;
     },
 
+    // remove eles in place on calling collection
     unmerge: function( toRemove ){
       var cy = this._private.cy;    
       
@@ -192,12 +195,13 @@
       return this; // chaining
     },
 
-    map: function( mapFn ){
+    map: function( mapFn, thisArg ){
       var arr = [];
+      var eles = this;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var ret = mapFn.apply( ele, [i, ele] );
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var ret = mapFn.apply( thisArg, [ele, i, eles] );
 
         arr.push( ret );
       }
@@ -205,13 +209,31 @@
       return arr;
     },
 
-    max: function( valFn ){
+    stdFilter: function( fn, thisArg ){
+      var filterEles = [];
+      var eles = this;
+      var cy = this._private.cy;
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var include = fn.apply( thisArg, [ele, i, eles] );
+
+        if( include ){
+          filterEles.push( ele );
+        }
+      }
+
+      return new $$.Collection( cy, filterEles );
+    },
+
+    max: function( valFn, thisArg ){
       var max = -Infinity;
       var maxEle;
+      var eles = this;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var val = valFn.apply( ele, [ i, ele ] );
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var val = valFn.apply( thisArg, [ ele, i, eles ] );
 
         if( val > max ){
           max = val;
@@ -225,13 +247,14 @@
       };
     },
 
-    min: function( valFn ){
+    min: function( valFn, thisArg ){
       var min = Infinity;
       var minEle;
+      var eles = this;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var val = valFn.apply( ele, [ i, ele ] );
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var val = valFn.apply( thisArg, [ ele, i, eles ] );
 
         if( val < min ){
           min = val;

@@ -39,7 +39,7 @@
     reg = $$.registerInstance( cy, container );
     var readies = reg.readies;
 
-    var head = window !== undefined && container !== undefined;
+    var head = window !== undefined && container !== undefined && !opts.headless;
     var options = opts;
     options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
     options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );

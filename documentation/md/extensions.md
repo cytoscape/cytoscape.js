@@ -26,17 +26,15 @@ Functions should be chainable, unless they need to return some other value.  To 
 Here is an example collection function:
 
 ```js
-cytoscape('collection', 'forEach', function( fn ){
+cytoscape('collection', 'foo', function( fn ){
   for( var i = 0; i < this.length; i++ ){
-    fn.apply( this[i], [ i, this[i] ] );
+    this[i].data('foo', 'bar');
   }
 
   return this; // chainability
 });
 
-cy.elements().forEach(function(){
-  console.log( 'forEach ' + this.id() );
-});
+cy.elements().foo();
 ```
 
 

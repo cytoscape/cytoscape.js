@@ -25,52 +25,6 @@
 
     { "name": "Notation", "md": "notation" },
 
-    { "name": "Performance", "md": "performance" },
-
-    { "name": "Selectors", "md": "selectors" },
-
-    { "name": "Style", "md": "style" },
-
-    { "name": "Events", "md": "events" },
-
-    { "name": "Layouts", "md": "layouts" },
-
-    {
-      "name": "Extensions",
-      "extensions": [
-        { 
-          "name": "panzoom", 
-          "github": "cytoscape/cytoscape.js-panzoom",
-          "descr": "A panzoom UI widget."
-        },
-        
-        { 
-          "name": "cxtmenu",
-          "github": "cytoscape/cytoscape.js-cxtmenu",
-          "descr": "A circular context menu."
-        },
-
-        {
-          "name": "edgehandles",
-          "github": "cytoscape/cytoscape.js-edgehandles",
-          "descr": "UI for connecting nodes with edges." 
-        },
-
-        { 
-          "name": "navigator",
-          "github": "cytoscape/cytoscape.js-navigator",
-          "descr": "A bird's eye view widget of the graph."
-        },
-
-        { 
-          "name": "qtip", 
-          "github": "cytoscape/cytoscape.js-qtip",
-          "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
-        }
-      ],
-      "md": "extensions"
-    },
-
     {
       "name": "Core",
       "md": "core/core",
@@ -1561,6 +1515,56 @@
             },
 
             {
+              "name": "eles.some",
+              "descr": "Determine whether any element in this collection satisfies the specified test function.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being tested." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the test function.",
+                      "optional": "true"
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "eles.every",
+              "descr": "Determine whether all elements in this collection satisfy the specified test function.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being tested." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the test function.",
+                      "optional": "true"
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "eles.allAre",
               "descr": "Determine whether all elements in the collection match a selector.",
               "formats": [
@@ -1611,6 +1615,32 @@
                 }
               ],
               "md": "collection/each"
+            },
+
+            {
+              "name": "eles.forEach",
+              "descr": "Iterate over the elements in the collection using an implementation like the native array function namesake.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The function executed each iteration.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being iterated." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/forEach"
             },
 
             {
@@ -1704,6 +1734,12 @@
                   "args": [
                     { "name": "eles", "descr": "The elements to intersect with." }
                   ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements to intersect with.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
                 }
               ]
             },
@@ -1754,6 +1790,32 @@
             },
 
             {
+              "name": "eles.stdFilter",
+              "descr": "Get a new collection containing elements that are accepted by the specified filter, using an implementation like the standard array namesake.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The filter function that returns truthy values for elements to include and falsey values for elements to exclude.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being filtered." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/map"
+            },
+
+            {
               "name": "eles.sort",
               "descr": "Get a new collection containing the elements sorted by the specified comparison function.",
               "formats": [
@@ -1771,7 +1833,20 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function(i, ele)", "descr": "The mapping function that returns the value to be mapped from `this` element." }
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The function that returns the mapped value for each element.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being mapped." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
                   ]
                 }
               ],
@@ -1780,11 +1855,24 @@
 
             {
               "name": "eles.min",
-              "descr": "Find a minimum value and the corresponding element.",
+              "descr": "Find a minimum value in a collection.",
               "formats": [
                 {
                   "args": [
-                    { "name": "function(i, ele)", "descr": "The function that returns the value to be used for `this` element." }
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The function that returns the value to compare for each element.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being searched." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
                   ]
                 }
               ],
@@ -1797,7 +1885,20 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function(i, ele)", "descr": "The function that returns the value to be used for `this` element." }
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The function that returns the value to compare for each element.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being searched." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
                   ]
                 }
               ],
@@ -1973,6 +2074,30 @@
                 }
               ],
               "md": "collection/codirectedEdges"
+            },
+
+            {
+              "name": "nodes.roots",
+              "descr": "From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.leaves",
+              "descr": "From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
             },
 
             {
@@ -2229,6 +2354,52 @@
 
       ]
     },
+
+    { "name": "Selectors", "md": "selectors" },
+
+    { "name": "Style", "md": "style" },
+
+    { "name": "Events", "md": "events" },
+
+    { "name": "Layouts", "md": "layouts" },
+
+    {
+      "name": "Extensions",
+      "extensions": [
+        { 
+          "name": "panzoom", 
+          "github": "cytoscape/cytoscape.js-panzoom",
+          "descr": "A panzoom UI widget."
+        },
+        
+        { 
+          "name": "cxtmenu",
+          "github": "cytoscape/cytoscape.js-cxtmenu",
+          "descr": "A circular context menu."
+        },
+
+        {
+          "name": "edgehandles",
+          "github": "cytoscape/cytoscape.js-edgehandles",
+          "descr": "UI for connecting nodes with edges." 
+        },
+
+        { 
+          "name": "navigator",
+          "github": "cytoscape/cytoscape.js-navigator",
+          "descr": "A bird's eye view widget of the graph."
+        },
+
+        { 
+          "name": "qtip", 
+          "github": "cytoscape/cytoscape.js-qtip",
+          "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
+        }
+      ],
+      "md": "extensions"
+    },
+
+    { "name": "Performance", "md": "performance" },
 
     {
       "name": "Architecture",

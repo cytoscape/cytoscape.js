@@ -1,12 +1,36 @@
 ;(function($$){ 'use strict';
 
   $$.fn.eles({
-    allAre: function(selector){
+    allAre: function( selector ){
       return this.filter(selector).length === this.length;
     },
 
-    is: function(selector){
+    is: function( selector ){
       return this.filter(selector).length > 0;
+    },
+
+    some: function( fn, thisArg ){
+      for( var i = 0; i < this.length; i++ ){
+        var ret = fn.apply( thisArg, [ ele, i, this ] );
+
+        if( ret ){
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    every: function( fn, thisArg ){
+      for( var i = 0; i < this.length; i++ ){
+        var ret = fn.apply( thisArg, [ ele, i, this ] );
+
+        if( !ret ){
+          return false;
+        }
+      }
+
+      return true;
     },
 
     same: function( collection ){
@@ -20,13 +44,13 @@
       return this.intersect( collection ).length === this.length;
     },
 
-    anySame: function(collection){
+    anySame: function( collection ){
       collection = this.cy().collection( collection );
 
       return this.intersect( collection ).length > 0;
     },
 
-    allAreNeighbors: function(collection){
+    allAreNeighbors: function( collection ){
       collection = this.cy().collection( collection );
 
       return this.neighborhood().intersect( collection ).length === collection.length;

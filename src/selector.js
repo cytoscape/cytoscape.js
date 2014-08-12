@@ -117,6 +117,17 @@
         tokens.comparatorOp += '|@' + op;
       }
 
+      // add ! variants to comparatorOp
+      var ops = tokens.comparatorOp.split('|');
+      for( var i = 0; i < ops.length; i++ ){
+        var op = ops[i];
+
+        if( op.indexOf('!') >= 0 ){ continue; } // skip ops that explicitly contain !
+        if( op === '=' ){ continue; } // skip = b/c != is explicitly defined
+
+        tokens.comparatorOp += '|\\!' + op;
+      }
+
       // NOTE: add new expression syntax here to have it recognised by the parser;
       // - a query contains all adjacent (i.e. no separator in between) expressions;
       // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
@@ -133,7 +144,9 @@
         
         state: {
           query: true,
-          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
+          // NB: if one colon selector is a substring of another from its start, place the longer one first
+          // e.g. :foobar|:foo
+          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parentless|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
           populate: function( state ){
             this.colonSelectors.push( state );
           }
@@ -483,10 +496,13 @@
         allColonSelectorsMatch = !element.animated();
         break;
       case ':parent':
-        allColonSelectorsMatch = element.children().nonempty();
+        allColonSelectorsMatch = element.isNode() && element.children().nonempty();
         break;
       case ':child':
-        allColonSelectorsMatch = element.parent().nonempty();
+        allColonSelectorsMatch = element.isNode() && element.parent().nonempty();
+        break;
+      case ':parentless':
+        allColonSelectorsMatch = element.isNode() && element.parent().empty();
         break;
       case ':loop':
         allColonSelectorsMatch = element.isEdge() && element.data('source') === element.data('target');
@@ -501,7 +517,7 @@
         allColonSelectorsMatch = !element.active();
         break;
       case ':touch':
-        allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
+        allColonSelectorsMatch = $$.is.touch();
         break;
       }
       
@@ -549,12 +565,19 @@
           var valStr = '' + value;
           
           var caseInsensitive = false;
-          if( operator.charAt(0) == '@' ){
+          if( operator.indexOf('@') >= 0 ){
             fieldStr = fieldStr.toLowerCase();
             valStr = valStr.toLowerCase();
             
-            operator = operator.substring(1);
+            operator = operator.replace('@', '');
             caseInsensitive = true;
+          }
+
+          var notExpr = false;
+          var handledNotExpr = false;
+          if( operator.indexOf('!') >= 0 ){
+            operator = operator.replace('!', '');
+            notExpr = true;
           }
           
           // if we're doing a case insensitive comparison, then we're using a STRING comparison
@@ -581,16 +604,20 @@
             matches = fieldVal !== value;
             break;
           case '>':
-            matches = fieldVal > value;
+            matches = !notExpr ? fieldVal > value : fieldVal <= value;
+            handledNotExpr = true;
             break;
           case '>=':
-            matches = fieldVal >= value;
+            matches = !notExpr ? fieldVal >= value : fieldVal < value;
+            handledNotExpr = true;
             break;
           case '<':
-            matches = fieldVal < value;
+            matches = !notExpr ? fieldVal < value : fieldVal >= value;
+            handledNotExpr = true;
             break;
           case '<=':
-            matches = fieldVal <= value;
+            matches = !notExpr ? fieldVal <= value : fieldVal > value;
+            handledNotExpr = true;
             break;
           default:
             matches = false;
@@ -611,6 +638,11 @@
           }
         } else {   
           matches = !params.fieldUndefined(field);
+        }
+
+        if( notExpr && !handledNotExpr ){
+          matches = !matches;
+          handledNotExpr = true;
         }
         
         if( !matches ){

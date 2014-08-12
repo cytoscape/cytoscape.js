@@ -8,6 +8,7 @@
     roots: function( selector ){
       var eles = this;
       var roots = [];
+
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
         if( !ele.isNode() ){
@@ -24,6 +25,29 @@
       }
 
       return new $$.Collection( this._private.cy, roots, { unique: true } ).filter( selector );
+    },
+
+    // get the leaf nodes in the DAG
+    leaves: function( selector ){
+      var eles = this;
+      var leaves = [];
+
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        if( !ele.isNode() ){
+          continue;
+        }
+
+        var hasEdgesPointingOut = ele.connectedEdges(function(){
+          return this.data('source') === ele.id() && this.data('target') !== ele.id();
+        }).length > 0;
+
+        if( !hasEdgesPointingOut ){
+          leaves.push( ele );
+        }
+      }
+
+      return new $$.Collection( this._private.cy, leaves, { unique: true } ).filter( selector );
     },
 
     // normally called children in graph theory
@@ -82,7 +106,7 @@
         eles = outgoers;
       }
 
-      return new $$.Collection( this._private.cy, sEles ).filter( selector );
+      return new $$.Collection( this._private.cy, sEles, { unique: true } ).filter( selector );
     },
 
     // normally called parents in graph theory
@@ -141,7 +165,7 @@
         eles = incomers;
       }
 
-      return new $$.Collection( this._private.cy, pEles ).filter( selector );
+      return new $$.Collection( this._private.cy, pEles, { unique: true } ).filter( selector );
     }
   });
 

@@ -108,7 +108,18 @@
 					{{#each fns}}
 						<div class="function">
 							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
-							<div class="descr" id="{{id}}">{{{descr}}}</div>
+							
+							{{#if pureAliases}}
+							<div class="pure-aliases">
+								Aliases:
+
+								{{#each pureAliases}}
+									<span class="pure-alias-name">{{this}}()</span>
+								{{/each}}
+							</div>
+							{{/if}}
+							
+							<div class="descr">{{{descr}}}</div>
 
 							{{#if formats}}
 							<div class="formats">

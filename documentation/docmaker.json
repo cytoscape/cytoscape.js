@@ -1249,6 +1249,7 @@
           "fns": [
             {
               "name": "eles.css",
+              "pureAliases": [ "eles.style" ],
               "descr": "Get the style of the element, or override the style of the elements.",
               "formatsSameFn": true,
               "formats": [
@@ -1283,12 +1284,13 @@
 
             {
               "name": "eles.removeCss",
-              "descr": "Removes all overridden style of the elements.",
-              "md": "collection/removeCss"
+              "pureAliases": [ "eles.removeStyle" ],
+              "descr": "Removes all overridden style of the elements."
             },
 
             {
               "name": "ele.renderedCss",
+              "pureAliases": [ "eles.renderedStyle" ],
               "descr": "Get the style of the element in rendered dimensions.",
               "formats": [
                 {
@@ -1299,8 +1301,7 @@
                   "descr": "Get a particular rendered style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
                 }
-              ],
-              "md": "collection/renderedCss"
+              ]
             },
 
             {
@@ -2159,6 +2160,7 @@
           "fns": [
             {
               "name": "eles.breadthFirstSearch",
+              "pureAliases": [ "eles.bfs" ],
               "descr": "Perform a breadth-first search within the elements in the collection.",
               "formats": [
                 {
@@ -2189,6 +2191,7 @@
 
             {
               "name": "eles.depthFirstSearch",
+              "pureAliases": [ "eles.dfs" ],
               "descr": "Perform a depth-first search within the elements in the collection.",
               "formats": [
                 {

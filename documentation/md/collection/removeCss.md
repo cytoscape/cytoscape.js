@@ -1,1 +1,0 @@
-Note that this function has the alias `eles.removeStyle()`, which can be used interchangeably with `eles.removeCss()`.

@@ -100,12 +100,16 @@ button:active {
 }
 
 .run {
-	margin-bottom: 0;
+	margin: 0 2em;
+	position: absolute;
+	right: 0;
+	opacity: 0.666;
+	font-size: 0.8em;
 }
 
-.run + * {
+/*.run + * {
 	margin-top: 0.25em;
-}
+}*/
 
 .important-indicator {
 	font-family: FontAwesome;
@@ -130,7 +134,7 @@ button:active {
 	top: 0;
 	bottom: 0;
 	width: 14em;
-	border-right: 1px solid #eee;
+	/*border-right: 1px solid #eee;*/
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;

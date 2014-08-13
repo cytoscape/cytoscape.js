@@ -42,10 +42,10 @@
         var eles = cy._private.aniEles;
         var doneEles = [];
 
-        for( var e = 0; e < eles.length; e++ ){
-          var ele = eles[e];
+        function handleElement( ele, isCore ){
           var current = ele._private.animation.current;
           var queue = ele._private.animation.queue;
+          var ranAnis = false;
           
           // if nothing currently animating, get something from the queue
           if( current.length === 0 ){
@@ -61,7 +61,7 @@
           var completes = [];
           for(var i = current.length - 1; i >= 0; i--){
             var ani = current[i];
-            step( ele, ani, now );
+            step( ele, ani, now, isCore );
 
             if( current[i].done ){
               completes.push( ani );
@@ -69,6 +69,8 @@
               // remove current[i]
               current.splice(i, 1);
             }
+
+            ranAnis = true;
           }
           
           // call complete callbacks
@@ -81,14 +83,24 @@
             }
           }
 
-          if( current.length === 0 && queue.length === 0 ){
+          if( !isCore && current.length === 0 && queue.length === 0 ){
             doneEles.push( ele );
           }
+
+          return ranAnis;
+        } // handleElements
+
+        // handle all eles
+        for( var e = 0; e < eles.length; e++ ){
+          var ele = eles[e];
           
+          handleElement( ele );
         } // each element
+
+        var ranCoreAni = handleElement( cy, true );
         
         // notify renderer
-        if( eles.length > 0 ){
+        if( eles.length > 0 || ranCoreAni ){
           cy.notify({
             type: 'draw',
             collection: eles
@@ -100,12 +112,13 @@
 
       } // handleElements
         
-      function step( self, animation, now ){
+      function step( self, animation, now, isCore ){
         var style = cy._private.style;
         var properties = animation.properties;
         var params = animation.params;
         var startTime = animation.callTime;
         var percent;
+        var isEles = !isCore;
         
         if( animation.duration === 0 ){
           percent = 1;
@@ -120,10 +133,11 @@
         }
         
         if( properties.delay == null ){ // then update the position
+
           var startPos = animation.startPosition;
           var endPos = properties.position;
           var pos = self._private.position;
-          if( endPos ){
+          if( endPos && isEles ){
             if( valid( startPos.x, endPos.x ) ){
               pos.x = ease( startPos.x, endPos.x, percent );
             }
@@ -133,8 +147,40 @@
             }
           }
 
-          if( properties.css ){
+          var startPan = animation.startPan;
+          var endPan = properties.pan;
+          var pan = self._private.pan;
+          var animatingPan = endPan != null && isCore;
+          if( animatingPan ){
+            if( valid( startPan.x, endPan.x ) ){
+              pan.x = ease( startPan.x, endPan.x, percent );
+            }
+
+            if( valid( startPan.y, endPan.y ) ){
+              pan.y = ease( startPan.y, endPan.y, percent );
+            }
+
+            self.trigger('pan');
+          }
+
+          var startZoom = animation.startZoom;
+          var endZoom = properties.zoom;
+          var animatingZoom = endZoom != null && isCore;
+          if( animatingZoom ){
+            if( valid( startZoom, endZoom ) ){
+              self._private.zoom = ease( startZoom, endZoom, percent );
+            }
+
+            self.trigger('zoom');
+          }
+
+          if( animatingPan || animatingZoom ){
+            self.trigger('viewport');
+          }
+
+          if( properties.css && isEles ){
             var props = properties.css;
+
             for( var i = 0; i < props.length; i++ ){
               var name = props[i].name;
               var prop = props[i];
@@ -146,6 +192,7 @@
               style.overrideBypass( self, name, easedVal );
             } // for props
           } // if 
+
         }
         
         if( $$.is.fn(params.step) ){
@@ -180,8 +227,19 @@
           percent = 1;
         }
 
-        var start = startProp.pxValue != null ? startProp.pxValue : startProp.value;
-        var end = endProp.pxValue != null ? endProp.pxValue : endProp.value;
+        var start, end;
+
+        if( startProp.pxValue != null || startProp.value != null ){
+          start = startProp.pxValue != null ? startProp.pxValue : startProp.value;
+        } else {
+          start = startProp;
+        }
+
+        if( endProp.pxValue != null || endProp.value != null ){
+          end = endProp.pxValue != null ? endProp.pxValue : endProp.value;
+        } else {
+          end = endProp;
+        }
 
         if( $$.is.number(start) && $$.is.number(end) ){
           return start + (end - start) * percent;

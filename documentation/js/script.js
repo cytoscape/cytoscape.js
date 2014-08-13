@@ -44,16 +44,24 @@ $(function(){
     $('#cy').attr('style', '');
   });
 
+  window.showCy = function(){
+    $('#cy, #cy-hide, #cy-refresh').removeClass('hidden');
+    $('#cy-show').addClass('hidden');
+
+    cy.resize();
+  };
+
+  window.hideCy = function(){
+    $('#cy, #cy-hide, #cy-refresh').addClass('hidden');
+    $('#cy-show').removeClass('hidden');
+  };
+
   $('#cy-hide').on('click', function(){
-    $('#cy, #cy-hide, #cy-refresh').hide();
-    $('#cy-show').show();
+    hideCy();
   });
 
   $('#cy-show').on('click', function(){
-    $('#cy, #cy-hide, #cy-refresh').show();
-    $('#cy-show').hide();
-
-    cy.resize();
+    showCy();
   });
 
 
@@ -72,6 +80,8 @@ $(function(){
 
     (function(text){
       $button.on('click', function(){
+        showCy();
+        
         $('#cy-title .content').html( text ).hide().fadeIn(100).delay(250).hide(200, function(){
           var ret = eval( text );
           

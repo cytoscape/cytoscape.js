@@ -26,7 +26,9 @@ node {
 At initialisation:
 
 ```js
-$('#cy').cytoscape({
+cytoscape({
+  container: document.getElementById('cy'),
+
   // ...
 
   style: 'node { background-color: green; }' // probably previously loaded via ajax rather than hardcoded
@@ -38,7 +40,9 @@ $('#cy').cytoscape({
 ### Plain JSON format
 
 ```js
-$('#cy').cytoscape({
+cytoscape({
+  container: document.getElementById('cy'),
+
   // ...
 
   style: [
@@ -59,7 +63,9 @@ $('#cy').cytoscape({
 ### Functional format
 
 ```js
-$('#cy').cytoscape({
+cytoscape({
+  container: document.getElementById('cy'),
+
   // ...
 
   style: cytoscape.stylesheet()
@@ -76,9 +82,7 @@ $('#cy').cytoscape({
 ```
 
 
-## Properties
-
-### Notes
+## Property types
 
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).
@@ -86,67 +90,33 @@ $('#cy').cytoscape({
  
 
 
-### Element properties
+## Node body
 
-These properties can be used on any element.
+These properties affect the style of a node's body:
 
-Labels:
-
- * **`color`** :  The colour of the element's label.
- * **`content`** : The text to display for an element's label.
- * **`font-family`** : A [comma-separated list of font names](http://www.w3schools.com/cssref/pr_font_font-family.asp) to use on the label text.
- * **`font-size`** : The size of the label text.
- * **`font-style`** : A [CSS font style](http://www.w3schools.com/cssref/pr_font_font-style.asp) to be applied to the label text.
- * **`font-weight`** : A [CSS font weight](http://www.w3schools.com/cssref/pr_font_weight.asp) to be applied to the label text.
- * **`text-opacity`** : The opacity of the label text, including its outline.
- * **`text-outline-color`** : The colour of the outline around the element's label text.
- * **`text-outline-opacity`** : The opacity of the outline on label text.
- * **`text-outline-width`** : The size of the outline on label text.
- * **`text-rotation`** : The angle to rotate the label text, may be specified in degrees or radians (e.g. `180deg` or `3.14rad`).
- * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
-
-Size & visibility:
-
- * **`opacity`** : The opacity of the element.
- * **`visibility`** : Whether the element is visible; can be `visible` or `hidden`.
- * **`width`** : The element's width; the line width for edges or the horizontal size of a node.
- * **`z-index`** : A non-negative integer that specifies the z-ordering of the element.  An element with a higher `z-index` is put on top of an element with a lower value.
-
-Overlays (e.g. used in `:active` state):
-
- * **`overlay-color`** : The colour of the overlay.
- * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
- * **`overlay-opacity`** : The opacity of the overlay.
-
-Transition animations:
-
- * **`transition-property`** : A comma separated list of style properties to animate in this state.
- * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
- * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25s`).
-
-
-### Node properties
-
-These properties apply only to nodes.
-
-Labels:
-
- * **`text-halign`** : The vertical alignment of a label; may have value `left`, `center`, or `right`.
- * **`text-valign`** : The vertical alignment of a label; may have value `top`, `center`, or `bottom`.
-
-Body:
-
+ * **`width`** : The width of the node's body.
+ * **`height`** : The height of the node's body.
+ * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
- * **`border-color`** : The colour of the node's border.
- * **`border-opacity`** : The opacity of the node's border.
  * **`border-width`** : The size of the node's border.
  * **`border-style`** : The style of the node's border; may be `solid`, `dotted`, `dashed`, or `double`.
- * **`height`** : The height of the node's body.
- * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
+ * **`border-color`** : The colour of the node's border.
+ * **`border-opacity`** : The opacity of the node's border.
 
-Background image:
+These node body properties only apply to compound nodes (i.e. nodes who have embedded children):
+
+ * **`padding-left`** : The size of the area on the left of the compound node that can not be occupied by child nodes.
+ * **`padding-right`** : The size of the area on the right of the compound node that can not be occupied by child nodes.
+ * **`padding-top`** : The size of the area on the top of the compound node that can not be occupied by child nodes.
+ * **`padding-bottom`** : The size of the area on the bottom of the compound node that can not be occupied by child nodes.
+
+
+
+## Background image
+
+A background image may be applied to a node's body:
 
  * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.
  * **`background-image-opacity`** : The opacity of the background image.
@@ -157,7 +127,8 @@ Background image:
  * **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
 
 
-Pie chart background:
+
+## Pie chart background
 
 These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
 
@@ -169,22 +140,12 @@ You may find it useful to reserve a number to a particular colour for all nodes 
  * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
 
 
-Compound nodes:
 
- * **`padding-left`** : The size of the area on the left of the compound node that can not be occupied by child nodes.
- * **`padding-right`** : The size of the area on the right of the compound node that can not be occupied by child nodes.
- * **`padding-top`** : The size of the area on the top of the compound node that can not be occupied by child nodes.
- * **`padding-bottom`** : The size of the area on the bottom of the compound node that can not be occupied by child nodes.
+## Edge line
 
+These properties affect the styling of an edge's line:
 
-
-
-### Edge properties
-
-These properties apply only to edges.
-
-Basic styling:
-
+ * **`width`** : The width of an edge's line.
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default) or `haystack` (for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
  * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
@@ -193,33 +154,57 @@ Basic styling:
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
-Edge arrow pointing towards the source node:
+
+
+## Edge arrow
+
+Towards the source node:
 
  * **`source-arrow-color`** : The colour of the edge's source arrow.
  * **`source-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`source-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
 
-Edge arrow pointing towards the source node, positioned in the middle of the edge:
+Towards the source node, positioned in the middle of the edge:
 
  * **`mid-source-arrow-color`** : The colour of the edge's mid source arrow.
  * **`mid-source-arrow-shape`** : The shape of the edge's mid source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`mid-source-arrow-fill`** : The fill state of the edge's mid source arrow; may be `filled` or `hollow`.
 
-Edge arrow pointing towards the target node:
+Towards the target node:
 
  * **`target-arrow-color`** : The colour of the edge's target arrow.
  * **`target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
-Edge arrow pointing towards the target node, positioned in the middle of the edge:
+Towards the target node, positioned in the middle of the edge:
 
  * **`mid-target-arrow-color`** : The colour of the edge's target arrow.
  * **`mid-target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
  * **`mid-target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
-### Core properties
 
-These properties apply only to the core.  You can use the special `core` selector string to set these properties.
+
+## Overlay
+
+These properties allow for the creation of overlays on top of nodes or edges, and are often used in the `:active` state.
+
+ * **`overlay-color`** : The colour of the overlay.
+ * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
+ * **`overlay-opacity`** : The opacity of the overlay.
+
+
+
+## Transition animation
+
+ * **`transition-property`** : A comma separated list of style properties to animate in this state.
+ * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
+ * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25s`).
+
+
+
+## Core
+
+These properties affect UI global to the graph, and apply only to the core.  You can use the special `core` selector string to set these properties.
 
  * **`active-bg-color`** : The colour of the indicator shown when the background is grabbed by the user.
  * **`active-bg-opacity`** : The opacity of the active background indicator.

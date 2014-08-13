@@ -8388,7 +8388,6 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 <li>If your handler function returns <code>false</code>, then the only the path up to that point is returned.</li>
 <li>The path returned includes edges such that if <code>path[i]</code> is a node, then <code>path[i - 1]</code> is the edge used to get to that node.</li>
 </ul>
-<p>This function has a shorter alias, <code>eles.bfs()</code>.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> bfs = cy.elements().bfs(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, depth)</span>{</span>
   console.log( <span class="hljs-string">'visit '</span> + <span class="hljs-keyword">this</span>.id() );
@@ -8573,7 +8572,6 @@ path.select();
 <li>If your handler function returns <code>false</code>, then the only the path up to that point is returned.</li>
 <li>The path returned includes edges such that if <code>path[i]</code> is a node, then <code>path[i - 1]</code> is the edge used to get to that node.</li>
 </ul>
-<p>This function has a shorter alias, <code>eles.dfs()</code>.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> dfs = cy.elements().dfs(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(i, depth)</span>{</span>
   console.log( <span class="hljs-string">'visit '</span> + <span class="hljs-keyword">this</span>.id() );
@@ -9206,7 +9204,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
   <span class="hljs-rule"><span class="hljs-attribute">background-color</span>:<span class="hljs-value"> green</span></span>;
 <span class="hljs-rule">}</span></span>
 </code></pre><p>At initialisation:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js">cytoscape({
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
+
   <span class="hljs-comment">// ...</span>
 
   style: <span class="hljs-string">'node { background-color: green; }'</span> <span class="hljs-comment">// probably previously loaded via ajax rather than hardcoded</span>
@@ -9215,7 +9215,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 });
 </code></pre>
 <h3 id="plain-json-format">Plain JSON format</h3>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js">cytoscape({
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
+
   <span class="hljs-comment">// ...</span>
 
   style: [
@@ -9233,7 +9235,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 });
 </code></pre>
 <h3 id="functional-format">Functional format</h3>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js">cytoscape({
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
+
   <span class="hljs-comment">// ...</span>
 
   style: cytoscape.stylesheet()
@@ -9248,69 +9252,35 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
   <span class="hljs-comment">// , ...</span>
 });
 </code></pre>
-<h2 id="style/properties">Properties <a href="#style/properties"><span class="icon-bookmark"></span></a></h2>
-<h3 id="notes">Notes</h3>
+<h2 id="style/property-types">Property types <a href="#style/property-types"><span class="icon-bookmark"></span></a></h2>
 <ul>
 <li>Colours may be specified by name (e.g. <code>red</code>), hex (e.g. <code>#ff0000</code> or <code>#f00</code>), RGB (e.g. <code>rgb(255, 0, 0)</code>), or HSL (e.g. <code>hsl(0, 100%, 50%)</code>).</li>
 <li>Values requiring a number, such as a length, can be specified in pixel values (e.g. <code>24px</code>), unitless values that are implicitly in pixels (<code>24</code>), or em values (e.g. <code>2em</code>).</li>
 <li>Opacity values are specified as numbers ranging on <code>0 &lt;= opacity &lt;= 1</code>.</li>
 </ul>
-<h3 id="element-properties">Element properties</h3>
-<p>These properties can be used on any element.</p>
-<p>Labels:</p>
+<h2 id="style/node-body">Node body <a href="#style/node-body"><span class="icon-bookmark"></span></a></h2>
+<p>These properties affect the style of a node&#39;s body:</p>
 <ul>
-<li><strong><code>color</code></strong> :  The colour of the element&#39;s label.</li>
-<li><strong><code>content</code></strong> : The text to display for an element&#39;s label.</li>
-<li><strong><code>font-family</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_font-family.asp">comma-separated list of font names</a> to use on the label text.</li>
-<li><strong><code>font-size</code></strong> : The size of the label text.</li>
-<li><strong><code>font-style</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_font-style.asp">CSS font style</a> to be applied to the label text.</li>
-<li><strong><code>font-weight</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_weight.asp">CSS font weight</a> to be applied to the label text.</li>
-<li><strong><code>text-opacity</code></strong> : The opacity of the label text, including its outline.</li>
-<li><strong><code>text-outline-color</code></strong> : The colour of the outline around the element&#39;s label text.</li>
-<li><strong><code>text-outline-opacity</code></strong> : The opacity of the outline on label text.</li>
-<li><strong><code>text-outline-width</code></strong> : The size of the outline on label text.</li>
-<li><strong><code>text-rotation</code></strong> : The angle to rotate the label text, may be specified in degrees or radians (e.g. <code>180deg</code> or <code>3.14rad</code>).</li>
-<li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</li>
-</ul>
-<p>Size &amp; visibility:</p>
-<ul>
-<li><strong><code>opacity</code></strong> : The opacity of the element.</li>
-<li><strong><code>visibility</code></strong> : Whether the element is visible; can be <code>visible</code> or <code>hidden</code>.</li>
-<li><strong><code>width</code></strong> : The element&#39;s width; the line width for edges or the horizontal size of a node.</li>
-<li><strong><code>z-index</code></strong> : A non-negative integer that specifies the z-ordering of the element.  An element with a higher <code>z-index</code> is put on top of an element with a lower value.</li>
-</ul>
-<p>Overlays (e.g. used in <code>:active</code> state):</p>
-<ul>
-<li><strong><code>overlay-color</code></strong> : The colour of the overlay.</li>
-<li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
-<li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
-</ul>
-<p>Transition animations:</p>
-<ul>
-<li><strong><code>transition-property</code></strong> : A comma separated list of style properties to animate in this state.</li>
-<li><strong><code>transition-duration</code></strong> : The length of the transition in seconds (e.g. <code>0.5s</code>).</li>
-<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>0.25s</code>).</li>
-</ul>
-<h3 id="node-properties">Node properties</h3>
-<p>These properties apply only to nodes.</p>
-<p>Labels:</p>
-<ul>
-<li><strong><code>text-halign</code></strong> : The vertical alignment of a label; may have value <code>left</code>, <code>center</code>, or <code>right</code>.</li>
-<li><strong><code>text-valign</code></strong> : The vertical alignment of a label; may have value <code>top</code>, <code>center</code>, or <code>bottom</code>.</li>
-</ul>
-<p>Body:</p>
-<ul>
+<li><strong><code>width</code></strong> : The width of the node&#39;s body.</li>
+<li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
+<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>, <code>star</code>.  Note that each shape fits within the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).</li>
 <li><strong><code>background-color</code></strong> : The colour of the node&#39;s body.</li>
 <li><strong><code>background-blacken</code></strong> : Blackens the node&#39;s body for values from 0 to 1; whitens the node&#39;s body for values from 0 to -1.</li>
 <li><strong><code>background-opacity</code></strong> : The opacity level of the node&#39;s background colour.</li>
-<li><strong><code>border-color</code></strong> : The colour of the node&#39;s border.</li>
-<li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
 <li><strong><code>border-width</code></strong> : The size of the node&#39;s border.</li>
 <li><strong><code>border-style</code></strong> : The style of the node&#39;s border; may be <code>solid</code>, <code>dotted</code>, <code>dashed</code>, or <code>double</code>.</li>
-<li><strong><code>height</code></strong> : The height of the node&#39;s body.</li>
-<li><strong><code>shape</code></strong> : The shape of the node&#39;s body; may be <code>rectangle</code>, <code>roundrectangle</code>, <code>ellipse</code>, <code>triangle</code>, <code>pentagon</code>, <code>hexagon</code>, <code>heptagon</code>, <code>octagon</code>, <code>star</code>.  Note that each shape fits within the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).</li>
+<li><strong><code>border-color</code></strong> : The colour of the node&#39;s border.</li>
+<li><strong><code>border-opacity</code></strong> : The opacity of the node&#39;s border.</li>
 </ul>
-<p>Background image:</p>
+<p>These node body properties only apply to compound nodes (i.e. nodes who have embedded children):</p>
+<ul>
+<li><strong><code>padding-left</code></strong> : The size of the area on the left of the compound node that can not be occupied by child nodes.</li>
+<li><strong><code>padding-right</code></strong> : The size of the area on the right of the compound node that can not be occupied by child nodes.</li>
+<li><strong><code>padding-top</code></strong> : The size of the area on the top of the compound node that can not be occupied by child nodes.</li>
+<li><strong><code>padding-bottom</code></strong> : The size of the area on the bottom of the compound node that can not be occupied by child nodes.</li>
+</ul>
+<h2 id="style/background-image">Background image <a href="#style/background-image"><span class="icon-bookmark"></span></a></h2>
+<p>A background image may be applied to a node&#39;s body:</p>
 <ul>
 <li><strong><code>background-image</code></strong> : The URL that points to the image that should be used as the node&#39;s background.  PNG, JPG, and SVG are supported formats.</li>
 <li><strong><code>background-image-opacity</code></strong> : The opacity of the background image.</li>
@@ -9320,7 +9290,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>background-position-y</code></strong> : The y position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>
 <li><strong><code>background-clip</code></strong> : How background image clipping is handled; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</li>
 </ul>
-<p>Pie chart background:</p>
+<h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="icon-bookmark"></span></a></h2>
 <p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o&#39;clock position and working clockwise.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
 <ul>
@@ -9329,17 +9299,10 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>pie-i-background-size</code></strong> : The size of the node&#39;s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
 <li><strong><code>pie-i-background-opacity</code></strong> : The opacity of the node&#39;s ith pie chart slice.</li>
 </ul>
-<p>Compound nodes:</p>
+<h2 id="style/edge-line">Edge line <a href="#style/edge-line"><span class="icon-bookmark"></span></a></h2>
+<p>These properties affect the styling of an edge&#39;s line:</p>
 <ul>
-<li><strong><code>padding-left</code></strong> : The size of the area on the left of the compound node that can not be occupied by child nodes.</li>
-<li><strong><code>padding-right</code></strong> : The size of the area on the right of the compound node that can not be occupied by child nodes.</li>
-<li><strong><code>padding-top</code></strong> : The size of the area on the top of the compound node that can not be occupied by child nodes.</li>
-<li><strong><code>padding-bottom</code></strong> : The size of the area on the bottom of the compound node that can not be occupied by child nodes.</li>
-</ul>
-<h3 id="edge-properties">Edge properties</h3>
-<p>These properties apply only to edges.</p>
-<p>Basic styling:</p>
-<ul>
+<li><strong><code>width</code></strong> : The width of an edge&#39;s line.</li>
 <li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes; may be <code>bezier</code> (default) or <code>haystack</code> (for which loops are unsupported).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for <code>haystack</code> edges.</li>
 <li><strong><code>haystack-radius</code></strong> : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.</li>
 <li><strong><code>control-point-step-size</code></strong> : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
@@ -9348,32 +9311,46 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 </ul>
-<p>Edge arrow pointing towards the source node:</p>
+<h2 id="style/edge-arrow">Edge arrow <a href="#style/edge-arrow"><span class="icon-bookmark"></span></a></h2>
+<p>Towards the source node:</p>
 <ul>
 <li><strong><code>source-arrow-color</code></strong> : The colour of the edge&#39;s source arrow.</li>
 <li><strong><code>source-arrow-shape</code></strong> : The shape of the edge&#39;s source arrow; may be <code>tee</code>, <code>triangle</code>, <code>triangle-tee</code>, <code>triangle-backcurve</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
 <li><strong><code>source-arrow-fill</code></strong> : The fill state of the edge&#39;s source arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 </ul>
-<p>Edge arrow pointing towards the source node, positioned in the middle of the edge:</p>
+<p>Towards the source node, positioned in the middle of the edge:</p>
 <ul>
 <li><strong><code>mid-source-arrow-color</code></strong> : The colour of the edge&#39;s mid source arrow.</li>
 <li><strong><code>mid-source-arrow-shape</code></strong> : The shape of the edge&#39;s mid source arrow; may be <code>tee</code>, <code>triangle</code>, <code>triangle-tee</code>, <code>triangle-backcurve</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
 <li><strong><code>mid-source-arrow-fill</code></strong> : The fill state of the edge&#39;s mid source arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 </ul>
-<p>Edge arrow pointing towards the target node:</p>
+<p>Towards the target node:</p>
 <ul>
 <li><strong><code>target-arrow-color</code></strong> : The colour of the edge&#39;s target arrow.</li>
 <li><strong><code>target-arrow-shape</code></strong> : The shape of the edge&#39;s target arrow; may be <code>tee</code>, <code>triangle</code>, <code>triangle-tee</code>, <code>triangle-backcurve</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
 <li><strong><code>target-arrow-fill</code></strong> : The fill state of the edge&#39;s target arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 </ul>
-<p>Edge arrow pointing towards the target node, positioned in the middle of the edge:</p>
+<p>Towards the target node, positioned in the middle of the edge:</p>
 <ul>
 <li><strong><code>mid-target-arrow-color</code></strong> : The colour of the edge&#39;s target arrow.</li>
 <li><strong><code>mid-target-arrow-shape</code></strong> : The shape of the edge&#39;s target arrow; may be <code>tee</code>, <code>triangle</code>, <code>triangle-tee</code>, <code>triangle-backcurve</code>, <code>square</code>, <code>circle</code>, <code>diamond</code>, or <code>none</code>.</li>
 <li><strong><code>mid-target-arrow-fill</code></strong> : The fill state of the edge&#39;s target arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 </ul>
-<h3 id="core-properties">Core properties</h3>
-<p>These properties apply only to the core.  You can use the special <code>core</code> selector string to set these properties.</p>
+<h2 id="style/overlay">Overlay <a href="#style/overlay"><span class="icon-bookmark"></span></a></h2>
+<p>These properties allow for the creation of overlays on top of nodes or edges, and are often used in the <code>:active</code> state.</p>
+<ul>
+<li><strong><code>overlay-color</code></strong> : The colour of the overlay.</li>
+<li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
+<li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
+</ul>
+<h2 id="style/transition-animation">Transition animation <a href="#style/transition-animation"><span class="icon-bookmark"></span></a></h2>
+<ul>
+<li><strong><code>transition-property</code></strong> : A comma separated list of style properties to animate in this state.</li>
+<li><strong><code>transition-duration</code></strong> : The length of the transition in seconds (e.g. <code>0.5s</code>).</li>
+<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>0.25s</code>).</li>
+</ul>
+<h2 id="style/core">Core <a href="#style/core"><span class="icon-bookmark"></span></a></h2>
+<p>These properties affect UI global to the graph, and apply only to the core.  You can use the special <code>core</code> selector string to set these properties.</p>
 <ul>
 <li><strong><code>active-bg-color</code></strong> : The colour of the indicator shown when the background is grabbed by the user.</li>
 <li><strong><code>active-bg-opacity</code></strong> : The opacity of the active background indicator.</li>
@@ -9396,6 +9373,30 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 				
 
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				
 				
 				
@@ -10621,7 +10622,63 @@ cy.elements().foo();
 				
 					<div class="section lvl2">
 						
-						<a href="#style/properties"><span class="icon-bookmark bookmark-icon"></span> Properties</a>
+						<a href="#style/property-types"><span class="icon-bookmark bookmark-icon"></span> Property types</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/node-body"><span class="icon-bookmark bookmark-icon"></span> Node body</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/background-image"><span class="icon-bookmark bookmark-icon"></span> Background image</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/pie-chart-background"><span class="icon-bookmark bookmark-icon"></span> Pie chart background</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/edge-line"><span class="icon-bookmark bookmark-icon"></span> Edge line</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/edge-arrow"><span class="icon-bookmark bookmark-icon"></span> Edge arrow</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/overlay"><span class="icon-bookmark bookmark-icon"></span> Overlay</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/transition-animation"><span class="icon-bookmark bookmark-icon"></span> Transition animation</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a href="#style/core"><span class="icon-bookmark bookmark-icon"></span> Core</a>
 					</div>
 
 					

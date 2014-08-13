@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.11.
+ * This file is part of cytoscape.js 2.2.12.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -10887,6 +10887,7 @@ var cytoscape;
       
       this.data.canvasNeedsRedraw[i] = false;
     }
+    this.data.topCanvas = this.data.canvases[0];
 
     this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
     this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
@@ -13554,11 +13555,17 @@ var cytoscape;
     var y = node._private.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+    var usePaths = CanvasRenderer.usePaths();
 
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
     } else if( pieSize.pxValue !== undefined ){
       radius = pieSize.pxValue / 2;
+    }
+
+    if( usePaths ){
+      x = 0;
+      y = 0;
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
@@ -14613,7 +14620,8 @@ var cytoscape;
         var containerPageCoords = r.findContainerClientCoords();
         
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
+          && e.target === r.data.topCanvas) {
           
         } else {
           return;

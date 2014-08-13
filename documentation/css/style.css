@@ -56,6 +56,10 @@ img {
 	background: transparent;
 }
 
+.hidden {
+	visibility: hidden;
+	pointer-events: none;
+}
 
 #cy-refresh,
 #cy-show,
@@ -80,7 +84,6 @@ img {
 	background: rgba(255, 255, 255, 0.66);
 	border-radius: 0;
 	border: 1px solid #ccc;
-	display: none;
 }
 
 button {
@@ -127,7 +130,7 @@ button:active {
 	top: 0;
 	bottom: 0;
 	width: 14em;
-	background: #f0f0f0;
+	border-right: 1px solid #eee;
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;
@@ -378,7 +381,7 @@ button:active {
 }
 
 .title .version {
-	font-size: 0.25em;
+	font-size: 0.5em;
 	color: #888;
 }
 
@@ -396,7 +399,7 @@ button:active {
 
 .buttons-subtitle {
 	margin: 0.5em 0;
-	font-size: 1.5em;
+	font-size: 1em;
 }
 
 h1 {

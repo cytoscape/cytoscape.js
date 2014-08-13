@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js snapshot-1236003370-1401398986679.
+ * This file is part of cytoscape.js 2.2.12.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -28,8 +28,6 @@ var cytoscape;
   var $$ = cytoscape = function(){ // jshint ignore:line
     return cytoscape.init.apply(cytoscape, arguments);
   };
-
-  $$.version = 'snapshot-1236003370-1401398986679';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -79,7 +77,7 @@ var cytoscape;
 // type testing utility functions
 
 ;(function($$, window){ 'use strict';
-  
+
   $$.is = {
     string: function(obj){
       return obj != null && typeof obj == typeof '';
@@ -90,7 +88,7 @@ var cytoscape;
     },
     
     array: function(obj){
-      return obj != null && obj instanceof Array;
+      return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
     },
     
     plainObject: function(obj){
@@ -167,23 +165,18 @@ var cytoscape;
       } else {
         return obj instanceof HTMLElement;
       }
+
+      
     },
 
     touch: function(){
       return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
-    },
-
-    boundingBox: function(obj){
-      return $$.is.plainObject(obj) && 
-        $$.is.number(obj.x1) && $$.is.number(obj.x2) &&
-        $$.is.number(obj.y1) && $$.is.number(obj.y2)
-      ;
     }
   };  
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
-;(function($$){ 'use strict';
+;(function($$, window){ 'use strict';
   
   // utility functions only for internal use
 
@@ -916,14 +909,16 @@ var cytoscape;
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
-  var requestAnimationFrame = typeof window === 'undefined' ? function(fn){ if(fn){ fn(); } } : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+  var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
+  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };
+
   $$.util.requestAnimationFrame = function(fn){
-    requestAnimationFrame(fn);
+    raf( fn );
   };
 
-})( cytoscape );
+})( cytoscape, typeof window === 'undefined' ? null : window  );
 
 ;(function($$){ 'use strict';
   
@@ -2655,18 +2650,6 @@ var cytoscape;
       $$.fn[type]( impl );
     }
     
-    // fill in missing (optional) layout functions in the prototype
-    if( type === 'layout' ){
-      var layoutProto = registrant.prototype;
-      var optLayoutFns = ['stop', 'resume', 'pause', 'resize'];
-
-      for( var i = 0; i < optLayoutFns.length; i++ ){
-        var fnName = optLayoutFns[i];
-
-        layoutProto[fnName] = layoutProto[fnName] || function(){};
-      }
-    }
-
     return $$.util.setMap({
       map: extensions,
       keys: [ type, name ],
@@ -2718,7 +2701,7 @@ var cytoscape;
     }
     
     else {
-      $$.util.error('Invalid extension access syntax');
+      $.error('Invalid extension access syntax');
     }
   
   };
@@ -2752,7 +2735,7 @@ var cytoscape;
         reg = $$.registerInstance( domEle );
       }
       
-      if( reg && reg.cy && reg.cy.isReady() ){
+      if( reg && reg.cy && reg.cy.ready() ){
         // already ready so just trigger now
         reg.cy.trigger('ready', [], ready);
 
@@ -3018,6 +3001,55 @@ var cytoscape;
         return self; // maintain chainability
       }; // function
     }, // data
+
+    batchData: function( params ){
+      var defaults = {
+        field: 'data',
+        event: 'data',
+        triggerFnName: 'trigger',
+        immutableKeys: {}, // key => true if immutable
+        updateStyle: false
+      };
+      var p = $$.util.extend({}, defaults, params);
+
+      return function batchDataImpl( map ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var eles = selfIsArrayLike ? self : self._private.elements;
+
+        if( eles.length === 0 ){ return self; }
+        var cy = selfIsArrayLike ? eles[0]._private.cy : self; // NB must have at least 1 ele to get cy
+        
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
+          var id = ele._private.data.id;
+          var mapData = map[id];
+
+          if( mapData !== undefined && mapData !== null ){
+            var obj = mapData;
+            var k, v;
+
+            // set the (k, v) pairs from the map
+            for( k in obj ){
+              v = obj[ k ];
+
+              var valid = !p.immutableKeys[k];
+              if( valid ){
+                ele._private[ p.field ][ k ] = v;
+              }
+            }
+          } // if
+        } // for
+
+        // update mappers if asked
+        var coln = new $$.Collection(cy, eles);
+        if( p.updateStyle ){ coln.updateStyle(); }
+
+        coln[ p.triggerFnName ]( p.event );
+
+        return self; // chaining
+      };
+    },
 
     // remove data field
     removeData: function( params ){
@@ -4123,11 +4155,6 @@ var cytoscape;
           var matches = false;
           elements = elements(); // make elements functional so we save cycles if query == null
 
-          var cy = elements.cy();
-          if( !cy.hasCompoundNodes() ){
-            return false;
-          }
-
           // query must match for at least one element (may be recursive)
           for(var i = 0; i < elements.size(); i++){
             if( queryMatches( query, elements.eq(i) ) ){
@@ -5060,9 +5087,9 @@ var cytoscape;
             // console.log(i + ' x MISS: rolling back context');
             this.rollBackContext( ele, context );
             removedCxts.push( context );
-          }
 
-          delete _p.styleCxts[i];
+            delete _p.styleCxts[i];
+          }
         }
       } // for context
 
@@ -5164,32 +5191,8 @@ var cytoscape;
   // for parsedProp:{ bypass: true }
   // the generated flattenedProp:{ bypassed: parsedProp } 
   $$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
-    var pp = parsedProp;
-
-    // copy b/c the same parsedProp may be applied to many elements, BUT
+    parsedProp = $$.util.clone( parsedProp ); // copy b/c the same parsedProp may be applied to many elements, BUT
     // the instances put in each element should be unique to avoid overwriting other the lists of other elements
-
-    if( context ){ // only need to copy if came from stylesheet
-      parsedProp = {
-        name: pp.name,
-        value: pp.value,
-        strValue: pp.strValue,
-        pxValue: pp.pxValue,
-        units: pp.units,
-        bypass: pp.bypass,
-        bypassed: pp.bypassed,
-        deleteBypass: pp.deleteBypass,
-        mapped: pp.mapped,
-        mapping: pp.mapping,
-        field: pp.field,
-        fieldMin: pp.fieldMin,
-        fieldMax: pp.fieldMax,
-        valueMin: pp.valueMin,
-        valueMax: pp.valueMax,
-        context: pp.context,
-        prev: pp.prev
-      };
-    }
 
     var prop = parsedProp;
     var style = ele._private.style;
@@ -5272,7 +5275,7 @@ var cytoscape;
           bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
           name: prop.name,
           value: clr,
-          strValue: 'rgba(' + clr[0] + ", " + clr[1] + ", " + clr[2] + ", " + clr[3]
+          strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
         };
       
       } else if( type.number ){
@@ -6035,13 +6038,18 @@ var cytoscape;
     reg = $$.registerInstance( cy, container );
     var readies = reg.readies;
 
-    var head = window !== undefined && container !== undefined;
     var options = opts;
-    options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
-    options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
+    options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
+    options.renderer = $$.util.extend( { name: window && container ? 'canvas' : 'null' }, options.renderer );
+    
+    // TODO determine whether we need a check like this even though we allow running headless now
+    // 
+    // if( !$$.is.domElement(options.container) ){
+    //   $$.util.error("Cytoscape.js must be called on an element");
+    //   return;
+    // }
     
     var _p = this._private = {
-      container: options.container, // html dom ele container
       ready: false, // whether ready has been triggered
       initrender: false, // has initrender has been triggered
       instanceId: reg.id, // the registered instance id
@@ -6063,7 +6071,6 @@ var cytoscape;
       boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
       autolockNodes: false,
       autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
-      styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
@@ -6097,16 +6104,15 @@ var cytoscape;
     }
 
     // init style
-    if( _p.styleEnabled ){
-      if( $$.is.stylesheet(options.style) ){
-        _p.style = options.style.generateStyle(this);
-      } else if( $$.is.array(options.style) ) {
-        _p.style = $$.style.fromJson(this, options.style);
-      } else if( $$.is.string(options.style) ){
-        _p.style = $$.style.fromString(this, options.style);
-      } else {
-        _p.style = new $$.Style( cy );
-      }
+
+    if( $$.is.stylesheet(options.style) ){
+      _p.style = options.style.generateStyle(this);
+    } else if( $$.is.array(options.style) ) {
+      _p.style = $$.style.fromJson(this, options.style);
+    } else if( $$.is.string(options.style) ){
+      _p.style = $$.style.fromString(this, options.style);
+    } else {
+      _p.style = new $$.Style( cy );
     }
 
     // create the renderer
@@ -6131,13 +6137,13 @@ var cytoscape;
 
       // if a ready callback is specified as an option, the bind it
       if( $$.is.fn( options.ready ) ){
-        cy.on('ready', options.ready);
+        cy.bind('ready', options.ready);
       }
 
       // bind all the ready handlers registered before creating this instance
       for( var i = 0; i < readies.length; i++ ){
         var fn = readies[i];
-        cy.on('ready', fn);
+        cy.bind('ready', fn);
       }
       reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
@@ -6149,16 +6155,8 @@ var cytoscape;
   
 
   $$.fn.core({
-    isReady: function(){
+    ready: function(){
       return this._private.ready;
-    },
-
-    ready: function( fn ){
-      if( this.isReady() ){
-        this.trigger('ready', [], fn); // just calls fn as though triggered via ready event
-      } else {
-        this.on('ready', fn);
-      }
     },
 
     initrender: function(){
@@ -6193,10 +6191,6 @@ var cytoscape;
 
     hasCompoundNodes: function(){
       return this._private.hasCompoundNodes;
-    },
-
-    styleEnabled: function(){
-      return this._private.styleEnabled;
     },
 
     addToPool: function( eles ){
@@ -6246,7 +6240,7 @@ var cytoscape;
     },
 
     container: function(){
-      return this._private.container;
+      return this._private.options.container;
     },
 
     options: function(){
@@ -6432,9 +6426,6 @@ var cytoscape;
     
     addToAnimationPool: function( eles ){
       var cy = this;
-
-      if( !cy.styleEnabled() ){ return; } // save cycles when no style used
-      
       var aniEles = cy._private.aniEles;
       var aniElesHas = [];
 
@@ -6455,9 +6446,6 @@ var cytoscape;
 
     startAnimationLoop: function(){
       var cy = this;
-
-      if( !cy.styleEnabled() ){ return; } // save cycles when no style used
-
       var stepDelay = 1000/60;
       var useTimeout = false;
       var useRequestAnimationFrame = true;
@@ -6715,6 +6703,19 @@ var cytoscape;
       triggerEvent: true
     }),
 
+    batchData: $$.define.batchData({
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
+      immutableKeys: {
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
+      },
+      updateStyle: true
+    }),
+
     scratch: $$.define.data({
       field: 'scratch',
       allowBinding: false,
@@ -6769,12 +6770,12 @@ var cytoscape;
       var cy = this;
       
       if( this._private.layoutRunning ){ // don't run another layout if one's already going
-        return this._private.layout;
+        return this;
       }
 
-      // if no params, return layout
+      // if no params, use the previous ones
       if( params == null ){
-        return this._private.layout;
+        params = this._private.options.layout;
       }
       
       this.initLayout( params );
@@ -6788,7 +6789,7 @@ var cytoscape;
 
       this._private.layout.run();
       
-      return this._private.layout;
+      return this;
       
     },
     
@@ -6825,27 +6826,8 @@ var cytoscape;
   
   $$.fn.core({
     notify: function( params ){
-      if( this._private.batchingNotify ){
-        var bEles = this._private.batchNotifyEles;
-        var bTypes = this._private.batchNotifyTypes;
-
-        if( params.collection ){ for( var i = 0; i < params.collection.length; i++ ){
-          var ele = params.collection[i];
-
-          if( !bEles.ids[ ele._private.id ] ){
-            bEles.push( ele );
-          }
-        } }
-
-        if( !bTypes.ids[ params.type ] ){
-          bTypes.push( params.type );
-        }
-
-        return; // notifications are disabled during batching
-      }
-
       if( !this._private.notificationsEnabled ){ return; } // exit on disabled
-
+      
       var renderer = this.renderer();
       var cy = this;
       
@@ -6876,32 +6858,6 @@ var cytoscape;
       this.notifications(false);
       callback();
       this.notifications(true);
-    },
-
-    batch: function( callback ){
-      var _p = this._private;
-
-      _p.batchingStyle = _p.batchingNotify = true;
-      _p.batchStyleEles = [];
-      _p.batchNotifyEles = [];
-      _p.batchNotifyTypes = [];
-
-      _p.batchStyleEles.ids = {};
-      _p.batchNotifyEles.ids = {};
-      _p.batchNotifyTypes.ids = {};
-
-      callback();
-
-      // update style for dirty eles
-      _p.batchingStyle = false;
-      new $$.Collection(this, _p.batchStyleEles).updateStyle();
-
-      // notify the renderer of queued eles and event types
-      _p.batchingNotify = false;
-      this.notify({
-        type: _p.batchNotifyTypes,
-        collection: _p.batchNotifyEles
-      });
     }
   });
   
@@ -6931,8 +6887,6 @@ var cytoscape;
     },
 
     resize: function(){
-      this._private.layout().resize();
-
       this.notify({
         type: 'resize'
       });
@@ -6979,23 +6933,17 @@ var cytoscape;
     // - guarantee a returned collection when elements or collection specified
     collection: function( eles ){
 
-      if( $$.is.string( eles ) ){
+      if( $$.is.string(eles) ){
         return this.$( eles );
-
-      } else if( $$.is.elementOrCollection( eles ) ){
+      } else if( $$.is.elementOrCollection(eles) ){
         return eles.collection();
-
-      } else if( $$.is.array( eles ) ){
-        return new $$.Collection( this, eles );
       }
 
       return new $$.Collection( this );
     },
     
     nodes: function( selector ){
-      var nodes = this.$(function(){
-        return this.isNode();
-      });
+      var nodes = this.$('node');
 
       if( selector ){
         return nodes.filter( selector );
@@ -7005,9 +6953,7 @@ var cytoscape;
     },
     
     edges: function( selector ){
-      var edges = this.$(function(){
-        return this.isEdge();
-      });
+      var edges = this.$('edge');
 
       if( selector ){
         return edges.filter( selector );
@@ -7242,29 +7188,14 @@ var cytoscape;
         return this;
       }
 
-      var bb;
-
       if( $$.is.string(elements) ){
         var sel = elements;
         elements = this.$( sel );
-
-      } else if( $$.is.boundingBox(elements) ){ // assume bb
-        var bbe = elements;
-        bb = {
-          x1: bbe.x1,
-          y1: bbe.y1,
-          x2: bbe.x2,
-          y2: bbe.y2
-        };
-
-        bb.w = bb.x2 - bb.x1;
-        bb.h = bb.y2 - bb.y1;
-
       } else if( !$$.is.elementOrCollection(elements) ){
         elements = this.elements();
       }
 
-      bb = bb || elements.boundingBox();
+      var bb = elements.boundingBox();
       var style = this.style();
 
       var w = parseFloat( style.containerCss('width') );
@@ -7272,7 +7203,7 @@ var cytoscape;
       var zoom;
       padding = $$.is.number(padding) ? padding : 0;
 
-      if( !isNaN(w) && !isNaN(h) && w > 0 && h > 0 && !isNaN(bb.w) && !isNaN(bb.h) &&  bb.w > 0 && bb.h > 0 ){
+      if( !isNaN(w) && !isNaN(h) && elements.length > 0 ){
         zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
         // crop zoom
@@ -7384,6 +7315,61 @@ var cytoscape;
 
       return this; // chaining
     },
+
+    viewport: function( opts ){ 
+      var _p = this._private;
+      var zoomDefd = true;
+      var panDefd = true;
+      var events = []; // to trigger
+      var zoomFailed = false;
+      var panFailed = false;
+
+      if( !opts ){ return this; }
+      if( !$$.is.number(opts.zoom) ){ zoomDefd = false; }
+      if( !$$.is.plainObject(opts.pan) ){ panDefd = false; }
+      if( !zoomDefd && !panDefd ){ return this; }
+
+      if( zoomDefd ){
+        var z = opts.zoom;
+
+        if( z < _p.minZoom || z > _p.maxZoom || !_p.zoomingEnabled ){
+          zoomFailed = true;
+
+        } else {
+          _p.zoom = z;
+
+          events.push('zoom');
+        }
+      }
+
+      if( panDefd && !zoomFailed && _p.panningEnabled ){
+        var p = opts.pan;
+
+        if( $$.is.number(p.x) ){
+          _p.pan.x = p.x;
+          panFailed = false;
+        }
+
+        if( $$.is.number(p.y) ){
+          _p.pan.y = p.y;
+          panFailed = false;
+        }
+
+        if( !panFailed ){
+          events.push('pan');
+        }
+      }
+
+      if( events.length > 0 ){
+        this.trigger( events.join(' ') );
+      }
+
+      this.notify({
+        type: 'viewport'
+      });
+
+      return this; // chaining
+    },
     
     // get the bounding box of the elements (in raw model position)
     boundingBox: function( selector ){
@@ -7405,9 +7391,9 @@ var cytoscape;
 
       if( $$.is.string(elements) ){
         var selector = elements;
-        elements = cy.elements( selector );
+        elements = this.elements( selector );
       } else if( !$$.is.elementOrCollection(elements) ){
-        elements = cy.elements();
+        elements = this.elements();
       }
 
       var bb = elements.boundingBox();
@@ -7446,58 +7432,6 @@ var cytoscape;
       });
       
       return this; // chaining
-    },
-
-    width: function(){
-      var container = this._private.container;
-
-      if( container ){
-        return container.clientWidth;
-      }
-
-      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
-    },
-
-    height: function(){
-      var container = this._private.container;
-
-      if( container ){
-        return container.clientHeight;
-      }
-
-      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
-    },
-
-    bounds: function(){
-      var pan = this._private.pan;
-      var zoom = this._private.zoom;
-      var rb = this.renderedBounds();
-
-      var b = {
-        x1: ( rb.x1 - pan.x )/zoom,
-        x2: ( rb.x2 - pan.x )/zoom,
-        y1: ( rb.y1 - pan.y )/zoom,
-        y2: ( rb.y2 - pan.y )/zoom,
-      };
-
-      b.w = b.x2 - b.x1;
-      b.h = b.y2 - b.y1;
-
-      return b;
-    },
-
-    renderedBounds: function(){
-      var width = this.width();
-      var height = this.height();
-
-      return {
-        x1: 0,
-        y1: 0,
-        x2: width,
-        y2: height,
-        w: width,
-        h: height
-      };
     }
   });  
   
@@ -7650,7 +7584,7 @@ var cytoscape;
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   // represents a set of nodes, edges, or both together
-  $$.Collection = function(cy, elements, options){
+  $$.Collection = function(cy, elements){
     if( !(this instanceof $$.Collection) ){
       return new $$.Collection(cy, elements);
     }
@@ -7704,7 +7638,7 @@ var cytoscape;
       
       var id = element._private.data.id;
       
-      if( !options || (options.unique && !ids[ id ] ) ){
+      if( !ids[ id ] ){
         ids[ id ] = element;
 
         this[ this.length ] = element;
@@ -7745,10 +7679,6 @@ var cytoscape;
     } else { // an element
       return new $$.Collection( this._private.cy, [this] );
     }
-  };
-
-  $$.elesfn.unique = function(){
-    return new $$.Collection( this._private.cy, this, { unique: true } );
   };
 
   $$.elesfn.json = function(){
@@ -8122,56 +8052,6 @@ var cytoscape;
 
     return this;
   };
-
-  $$.elesfn.move = function( struct ){
-    var cy = this._private.cy;
-
-    if( struct.source !== undefined || struct.target !== undefined ){
-      var srcId = struct.source;
-      var tgtId = struct.target;
-      var srcExists = cy.getElementById(srcId).length > 0;
-      var tgtExists = cy.getElementById(tgtId).length > 0;
-
-      if( srcExists || tgtExists ){
-        var jsons = this.jsons();
-
-        this.remove();
-
-        for( var i = 0; i < jsons.length; i++ ){
-          var json = jsons[i];
-
-          if( json.group === 'edges' ){
-            if( srcExists ){ json.data.source = srcId; }
-            if( tgtExists ){ json.data.target = tgtId; }
-          }
-        }
-
-        return cy.add( jsons );
-      }
- 
-    } else if( struct.parent !== undefined ){ // move node to new parent
-      var parentId = struct.parent;
-      var parentExists = struct.parent === null || cy.getElementById( parentId ).length > 0;
-    
-      if( parentExists ){
-        var jsons = this.jsons();
-
-        this.remove();
-
-        for( var i = 0; i < this.length; i++ ){
-          var json = jsons[i];
-
-          if( json.group === 'nodes' ){
-            json.data.parent = parentId === null ? undefined : parentId;
-          }
-        }
-      }
-
-      return cy.add( jsons );
-    }
-
-    return this; // if nothing done
-  };
   
 })( cytoscape );
 
@@ -8184,17 +8064,8 @@ var cytoscape;
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
     breadthFirstSearch: function( roots, fn, directed ){
-      var options;
-      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
-        options = roots;
-        roots = options.roots;
-        fn = options.visit;
-        directed = options.directed;
-      }
-
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
-      
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
@@ -8266,8 +8137,8 @@ var cytoscape;
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
       };
     },
 
@@ -8351,8 +8222,8 @@ var cytoscape;
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
+        path: new $$.Collection( cy, connectedEles ),
+        found: new $$.Collection( cy, found )
       };
     },
 
@@ -8411,14 +8282,6 @@ var cytoscape;
     },
 
     dijkstra: function( root, weightFn, directed ){
-      var options;
-      if( $$.is.plainObject(root) && !$$.is.elementOrCollection(root) ){
-        options = root;
-        root = options.root;
-        weightFn = options.weight;
-        directed = options.directed;
-      }
-
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
@@ -8452,7 +8315,7 @@ var cytoscape;
 
         for( var i = 0; i < uvs.length; i++ ){
           var edge = uvs[i];
-          var weight = weightFn.apply( edge, [edge] );
+          var weight = weightFn.call(edge);
 
           if( weight < smallestDistance || !smallestEdge ){
             smallestDistance = weight;
@@ -8536,9 +8399,6 @@ var cytoscape;
 
   $$.fn.eles({
     animated: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return false; }
-
       var ele = this[0];
 
       if( ele ){
@@ -8547,9 +8407,6 @@ var cytoscape;
     },
 
     clearQueue: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
       for( var i = 0; i < this.length; i++ ){
         var ele = this[i];
         ele._private.animation.queue = [];
@@ -8559,9 +8416,6 @@ var cytoscape;
     },
 
     delay: function( time, complete ){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
       this.animate({
         delay: time
       }, {
@@ -8573,10 +8427,8 @@ var cytoscape;
     },
 
     animate: function( properties, params ){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
       var callTime = +new Date();
+      var cy = this._private.cy;
       var style = cy.style();
       var q;
       
@@ -8648,9 +8500,6 @@ var cytoscape;
     }, // animate
 
     stop: function(clearQueue, jumpToEnd){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
       for( var i = 0; i < this.length; i++ ){
         var self = this[i];
         var anis = self._private.animation.current;
@@ -8689,74 +8538,6 @@ var cytoscape;
 ;(function( $$ ){ 'use strict';
   
   $$.fn.eles({
-    classes: function(opts){
-      var triggerEles = [];
-      var eles = this;
-      var changed = [];
-      var fn;
-
-      if( $$.is.fn(opts) ){
-        fn = opts;
-
-      } else if( !$$.is.plainObject(opts) ){
-        return this; // needs opts or fn
-      } 
-
-      for(var i = 0; i < eles.length; i++){
-        var ele = eles[i];
-        var eleChanged = false;
-
-        opts = fn ? fn.apply(ele, [i, ele]) : opts;
-
-        // add classes
-        if( opts.add ){ for( var j = 0; j < opts.add.length; j++ ){
-          var cls = opts.add[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = true;
-
-          if( !hasClass && !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-
-        // remove classes
-        if( opts.remove ){ for( var j = 0; j < opts.remove.length; j++ ){
-          var cls = opts.remove[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = false;
-
-          if( hasClass && !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-
-        // toggle classes
-        if( opts.toggle ){ for( var j = 0; j < opts.toggle.length; j++ ){
-          var cls = opts.toggle[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = !hasClass;
-
-          if( !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-      }
-
-      if( changed.length > 0 ){
-        new $$.Collection( this.cy(), changed )
-          .updateStyle()
-          .trigger('class')
-      }
-
-      return this;
-    },
-
     addClass: function(classes){
       classes = classes.split(/\s+/);
       var self = this;
@@ -8779,12 +8560,10 @@ var cytoscape;
       
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
-        new $$.Collection(this._private.cy, changed)
-          .updateStyle()
-          .trigger('class')
-        ;
+        new $$.Collection(this._private.cy, changed).updateStyle();
       }
 
+      self.trigger('class');
       return self;
     },
 
@@ -8824,12 +8603,10 @@ var cytoscape;
       
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
-        new $$.Collection(this._private.cy, changed)
-          .updateStyle()
-          .trigger('class')
-        ;
+        new $$.Collection(this._private.cy, changed).updateStyle();
       }
 
+      self.trigger('class');
       return self;
     },
 
@@ -8922,7 +8699,7 @@ var cytoscape;
         }
       }
       
-      return new $$.Collection( cy, parents, { unique: true } ).filter( selector );
+      return new $$.Collection( cy, parents ).filter( selector );
     },
 
     parents: function( selector ){
@@ -8938,22 +8715,7 @@ var cytoscape;
         eles = eles.parent();
       }
 
-      return new $$.Collection( this.cy(), parents, { unique: true } ).filter( selector );
-    },
-
-    commonAncestors: function( selector ){
-      var ancestors;
-
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var parents = ele.parents();
-        
-        ancestors = ancestors || parents;
-
-        ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
-      }
-
-      return ancestors.filter( selector );
+      return new $$.Collection( this.cy(), parents ).filter( selector );
     },
 
     children: function( selector ){
@@ -8964,7 +8726,7 @@ var cytoscape;
         children = children.concat( ele._private.children );
       }
 
-      return new $$.Collection( this.cy(), children, { unique: true } ).filter( selector );
+      return new $$.Collection( this.cy(), children ).filter( selector );
     },
 
     siblings: function( selector ){
@@ -9004,7 +8766,7 @@ var cytoscape;
 
       add( this.children() );
 
-      return new $$.Collection( this.cy(), elements, { unique: true } ).filter( selector );
+      return new $$.Collection( this.cy(), elements ).filter( selector );
     }
   });
 
@@ -9042,6 +8804,19 @@ var cytoscape;
       event: 'data',
       triggerFnName: 'trigger',
       triggerEvent: true,
+      immutableKeys: {
+        'id': true,
+        'source': true,
+        'target': true,
+        'parent': true
+      },
+      updateStyle: true
+    }),
+
+    batchData: $$.define.batchData({
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
       immutableKeys: {
         'id': true,
         'source': true,
@@ -9159,7 +8934,7 @@ var cytoscape;
     updateCompoundBounds: function(){
       var cy = this.cy();
 
-      if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
+      if( !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs
 
       var updated = [];
 
@@ -9301,7 +9076,7 @@ var cytoscape;
     height: function(){ 
       var ele = this[0];
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele && ele.isNode() ){
         var h = ele._private.style.height;
         return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
       }
@@ -9310,7 +9085,7 @@ var cytoscape;
     outerHeight: function(){
       var ele = this[0];
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele ){
         var style = ele._private.style;
         var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
         var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
@@ -9322,7 +9097,7 @@ var cytoscape;
     renderedHeight: function(){
       var ele = this[0];
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele ){
         var height = ele.height();
         return height * this.cy().zoom();
       }
@@ -9331,7 +9106,7 @@ var cytoscape;
     renderedOuterHeight: function(){
       var ele = this[0];
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele ){
         var oheight = ele.outerHeight();
         return oheight * this.cy().zoom();
       }
@@ -9701,19 +9476,19 @@ var cytoscape;
 ;(function($$){ 'use strict';
 
   $$.fn.eles({
-    nodes: function( selector ){
+    nodes: function(selector){
       return this.filter(function(i, element){
         return element.isNode();
       }).filter(selector);
     },
 
-    edges: function( selector ){
+    edges: function(selector){
       return this.filter(function(i, element){
         return element.isEdge();
       }).filter(selector);
     },
 
-    filter: function( filter ){
+    filter: function(filter){
       var cy = this._private.cy;
       
       if( $$.is.fn(filter) ){
@@ -9739,7 +9514,7 @@ var cytoscape;
       return new $$.Collection( cy ); // if not handled by above, give 'em an empty collection
     },
 
-    not: function( toRemove ){
+    not: function(toRemove){
       var cy = this._private.cy;
 
       if( !toRemove ){
@@ -9769,7 +9544,7 @@ var cytoscape;
     intersect: function( other ){
       var cy = this._private.cy;
       
-      // if a selector is specified, then filter by it instead
+      // if a selector is specified, then filter by it
       if( $$.is.string(other) ){
         var selector = other;
         return this.filter( selector );
@@ -9781,10 +9556,8 @@ var cytoscape;
       var col1Smaller = this.length < other.length;
       var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
       var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
-      var col = col1Smaller ? col1 : col2;
       
-      for( var i = 0; i < col.length; i++ ){
-        var id = col[i]._private.data.id;
+      for( var id in ids1 ){
         var ele = ids2[ id ];
 
         if( ele ){
@@ -9795,7 +9568,7 @@ var cytoscape;
       return new $$.Collection( cy, elements );
     },
 
-    add: function( toAdd ){
+    add: function(toAdd){
       var cy = this._private.cy;    
       
       if( !toAdd ){
@@ -9822,59 +9595,6 @@ var cytoscape;
       }
       
       return new $$.Collection(cy, elements);
-    },
-
-    map: function( mapFn ){
-      var arr = [];
-
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var ret = mapFn.apply( ele, [i, ele] );
-
-        arr.push( ret );
-      }
-
-      return arr;
-    },
-
-    max: function( valFn ){
-      var max = -Infinity;
-      var maxEle;
-
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var val = valFn.apply( ele, [ i, ele ] );
-
-        if( val > max ){
-          max = val;
-          maxEle = ele;
-        }
-      }
-
-      return {
-        value: max,
-        ele: maxEle
-      };
-    },
-
-    min: function( valFn ){
-      var min = Infinity;
-      var minEle;
-
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var val = valFn.apply( ele, [ i, ele ] );
-
-        if( val < min ){
-          min = val;
-          minEle = ele;
-        }
-      }
-
-      return {
-        value: min,
-        ele: minEle
-      };
     }
   });
   
@@ -9892,10 +9612,6 @@ var cytoscape;
 
     isLoop: function(){
       return this.isEdge() && this.source().id() === this.target().id();
-    },
-
-    isSimple: function(){
-      return this.isEdge() && this.source().id() !== this.target().id();
     },
 
     group: function(){
@@ -9973,14 +9689,6 @@ var cytoscape;
       return this[i] || new $$.Collection( this.cy() );
     },
 
-    first: function(){
-      return this[0] || new $$.Collection( this.cy() );
-    },
-
-    last: function(){
-      return this[ this.length - 1 ] || new $$.Collection( this.cy() );
-    },
-
     empty: function(){
       return this.length === 0;
     },
@@ -10006,24 +9714,24 @@ var cytoscape;
   });
 
 
-  $$.Collection.zIndexSort = function(a, b){
-    var cy = a._private.cy;
-    var hasCompoundNodes = cy._private.hasCompoundNodes;
-
+  $$.Collection.zIndexSort = function(a, b) {
     var elementDepth = function(ele) {
-      if( ele._private.group === 'nodes' ){
-        return ele._private.data.parent ? ele.parents().length : 0;
-        
-      } else if( ele._private.group === 'edges' ){
+      if (ele._private.group === 'nodes')
+      {
+        return ele._private.data.parent ? ele.parents().size() : 0;
+      }
+      else if (ele._private.group === 'edges')
+      {
         var source = ele._private.source;
         var target = ele._private.target;
 
-        var sourceDepth = source._private.data.parent ? source.parents().length : 0;
-        var targetDepth = target._private.data.parent ? target.parents().length : 0;
+        var sourceDepth = source._private.data.parent ? source.parents().size() : 0;
+        var targetDepth = target._private.data.parent ? target.parents().size() : 0;
 
-        return Math.max( sourceDepth, targetDepth );
-
-      } else {
+        return Math.max(sourceDepth, targetDepth);
+      }
+      else
+      {
         return 0;
       }
     };
@@ -10034,28 +9742,33 @@ var cytoscape;
     var depthB = 0;
 
     // no need to calculate element depth if there is no compound node
-    if( hasCompoundNodes ){
+    if ( a.cy().hasCompoundNodes() )
+    {
       depthA = elementDepth(a);
       depthB = elementDepth(b);
     }
 
     // if both elements has same depth,
     // then edges should be drawn first
-    if( depthA - depthB === 0 ){
+    if (depthA - depthB === 0)
+    {
       // 'a' is a node, it should be drawn later
-      if( a._private.group === 'nodes'
-        && b._private.group === 'edges' ){
+      if (a._private.group === 'nodes'
+        && b._private.group === 'edges')
+      {
         return 1;
       }
       
       // 'a' is an edge, it should be drawn first
-      else if( a._private.group === 'edges'
-        && b._private.group === 'nodes' ){
+      else if (a._private.group === 'edges'
+        && b._private.group === 'nodes')
+      {
         return -1;
       }
 
       // both nodes or both edges
-      else {
+      else
+      {
         if( result === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
           return a._private.index - b._private.index;
         } else {
@@ -10065,7 +9778,8 @@ var cytoscape;
     }
 
     // elements on different level
-    else {
+    else
+    {
       // deeper element should be drawn later
       return depthA - depthB;
     }
@@ -10083,23 +9797,6 @@ var cytoscape;
     // fully updates (recalculates) the style for the elements
     updateStyle: function( notifyRenderer ){
       var cy = this._private.cy;
-
-      if( !cy.styleEnabled() ){ return this; }
-
-      if( cy._private.batchingStyle ){
-        var bEles = cy._private.batchStyleEles;
-
-        for( var i = 0; i < this.length; i++ ){
-          var ele = this[i];
-
-          if( !bEles.ids[ ele._private.id ] ){
-            bEles.push( ele );
-          }
-        }
-
-        return this; // chaining and exit early when batching
-      }
-
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
@@ -10121,8 +9818,6 @@ var cytoscape;
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
-      if( !cy.styleEnabled() ){ return this; }
-
       style.updateMappers( this );
 
       var updatedCompounds = this.updateCompoundBounds();
@@ -10138,9 +9833,6 @@ var cytoscape;
     // get the specified css property as a rendered value (i.e. on-screen value)
     // or get the whole rendered style if no property specified (NB doesn't allow setting)
     renderedCss: function( property ){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
       var ele = this[0];
 
       if( ele ){
@@ -10156,10 +9848,7 @@ var cytoscape;
 
     // read the calculated css style of the element or override the style (via a bypass)
     css: function( name, value ){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
-      var style = cy.style();
+      var style = this.cy().style();
 
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
@@ -10200,10 +9889,7 @@ var cytoscape;
     },
 
     removeCss: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return this; }
-
-      var style = cy.style();
+      var style = this.cy().style();
       var eles = this;
 
       for( var i = 0; i < eles.length; i++ ){
@@ -10227,9 +9913,6 @@ var cytoscape;
     },
 
     visible: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return true; }
-
       var ele = this[0];
 
       if( ele ){
@@ -10278,9 +9961,6 @@ var cytoscape;
     },
 
     effectiveOpacity: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return 1; }
-
       var ele = this[0];
 
       if( ele ){
@@ -10309,9 +9989,6 @@ var cytoscape;
     },
 
     isFullAutoParent: function(){
-      var cy = this.cy();
-      if( !cy.styleEnabled() ){ return false; }
-
       var ele = this[0];
 
       if( ele ){
@@ -10456,9 +10133,6 @@ var cytoscape;
 
 ;(function($$){ 'use strict';
 
-  // DAG functions
-  //////////////////////////
-
   $$.fn.eles({
     // get the root nodes in the DAG
     roots: function( selector ){
@@ -10470,23 +10144,27 @@ var cytoscape;
           continue;
         }
 
-        var hasEdgesPointingIn = ele.connectedEdges(function(){
-          return this.data('target') === ele.id() && this.data('source') !== ele.id();
-        }).length > 0;
+        var hasEdgesPointingIn;
+
+        (function(){
+          hasEdgesPointingIn = ele.connectedEdges(function(){
+            return this.data('target') === ele.id() && this.data('source') !== ele.id();
+          }).length > 0;
+        })();
 
         if( !hasEdgesPointingIn ){
           roots.push( ele );
         }
       }
 
-      return new $$.Collection( this._private.cy, roots, { unique: true } ).filter( selector );
+      return new $$.Collection( this._private.cy, roots ).filter( selector );
     },
 
     // normally called children in graph theory
-    // these nodes =edges=> outgoing nodes
-    outgoers: function( selector ){
+    // these nodes =edges=> forward nodes
+    forwardNodes: function( selector ){
       var eles = this;
-      var oEles = [];
+      var fNodes = [];
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
@@ -10501,51 +10179,19 @@ var cytoscape;
           var tgtId = edge._private.data.target;
 
           if( srcId === eleId && tgtId !== eleId ){
-            oEles.push( edge );
-            oEles.push( edge.target()[0] );
+            fNodes.push( edge.target()[0] );
           }
         }
       }
 
-      return new $$.Collection( this._private.cy, oEles, { unique: true } ).filter( selector );
-    },
-
-    // aka DAG descendants
-    successors: function( selector ){
-      var eles = this;
-      var sEles = [];
-      var sElesIds = {};
-
-      for(;;){
-        var outgoers = eles.outgoers();
-
-        if( outgoers.length === 0 ){ break; } // done if no outgoers left
-
-        var newOutgoers = false;
-        for( var i = 0; i < outgoers.length; i++ ){
-          var outgoer = outgoers[i];
-          var outgoerId = outgoer.id();
-
-          if( !sElesIds[ outgoerId ] ){
-            sElesIds[ outgoerId ] = true;
-            sEles.push( outgoer );
-            newOutgoers = true;
-          }
-        }
-
-        if( !newOutgoers ){ break; } // done if touched all outgoers already
-
-        eles = outgoers;
-      }
-
-      return new $$.Collection( this._private.cy, sEles ).filter( selector );
+      return new $$.Collection( this._private.cy, fNodes ).filter( selector );
     },
 
     // normally called parents in graph theory
-    // these nodes <=edges= incoming nodes
-    incomers: function( selector ){
+    // these nodes <=edges= backward nodes
+    backwardNodes: function( selector ){
       var eles = this;
-      var oEles = [];
+      var bNodes = [];
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
@@ -10560,44 +10206,12 @@ var cytoscape;
           var tgtId = edge._private.data.target;
 
           if( tgtId === eleId && srcId !== eleId ){
-            oEles.push( edge );
-            oEles.push( edge.source()[0] );
+            bNodes.push( edge.source()[0] );
           }
         }
       }
 
-      return new $$.Collection( this._private.cy, oEles, { unique: true } ).filter( selector );
-    },
-
-    // aka DAG ancestors
-    predecessors: function( selector ){
-      var eles = this;
-      var pEles = [];
-      var pElesIds = {};
-
-      for(;;){
-        var incomers = eles.incomers();
-
-        if( incomers.length === 0 ){ break; } // done if no incomers left
-
-        var newIncomers = false;
-        for( var i = 0; i < incomers.length; i++ ){
-          var incomer = incomers[i];
-          var incomerId = incomer.id();
-
-          if( !pElesIds[ incomerId ] ){
-            pElesIds[ incomerId ] = true;
-            pEles.push( incomer );
-            newIncomers = true;
-          }
-        }
-
-        if( !newIncomers ){ break; } // done if touched all incomers already
-
-        eles = incomers;
-      }
-
-      return new $$.Collection( this._private.cy, pEles ).filter( selector );
+      return new $$.Collection( this._private.cy, bNodes ).filter( selector );
     }
   });
 
@@ -10631,15 +10245,15 @@ var cytoscape;
 
       }
       
-      return ( new $$.Collection( cy, elements, { unique: true } ) ).filter( selector );
+      return ( new $$.Collection( cy, elements ) ).filter( selector );
     },
 
     closedNeighborhood: function(selector){
-      return this.neighborhood().add( this ).filter( selector );
+      return this.neighborhood().add(this).filter(selector);
     },
 
     openNeighborhood: function(selector){
-      return this.neighborhood( selector );
+      return this.neighborhood(selector);
     }
   });  
 
@@ -10693,7 +10307,7 @@ var cytoscape;
         }
       }
       
-      return new $$.Collection( cy, sources, { unique: true } ).filter( selector );
+      return new $$.Collection( cy, sources ).filter( selector );
     };
   }
 
@@ -10737,7 +10351,7 @@ var cytoscape;
         }
       }
       
-      return new $$.Collection( cy, elements, { unique: true } );
+      return new $$.Collection( cy, elements );
     };
   }
   
@@ -10759,7 +10373,7 @@ var cytoscape;
         }
       }
       
-      return new $$.Collection( cy, retEles, { unique: true } ).filter( selector );
+      return new $$.Collection( cy, retEles ).filter( selector );
     },
 
     connectedNodes: function( selector ){
@@ -10775,7 +10389,7 @@ var cytoscape;
         retEles.push( edge.target()[0] );
       }
 
-      return new $$.Collection( cy, retEles, { unique: true } ).filter( selector );
+      return new $$.Collection( cy, retEles ).filter( selector );
     },
 
     parallelEdges: defineParallelEdgesFunction(),
@@ -10822,7 +10436,7 @@ var cytoscape;
         }
       }
       
-      return new $$.Collection( cy, elements, { unique: true } ).filter( selector );
+      return new $$.Collection( cy, elements ).filter( selector );
     };
   
   }
@@ -11259,6 +10873,7 @@ var cytoscape;
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
     containerStyle.zIndex = '0';
+    containerStyle.overflow = 'hidden';
 
     this.data.container.appendChild( this.data.canvasContainer );
 
@@ -11272,6 +10887,7 @@ var cytoscape;
       
       this.data.canvasNeedsRedraw[i] = false;
     }
+    this.data.topCanvas = this.data.canvases[0];
 
     this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
     this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
@@ -11304,47 +10920,34 @@ var cytoscape;
   };
 
   CanvasRenderer.prototype.notify = function(params) {
-    var types;
+    switch( params.type ){
 
-    if( $$.is.array( params.type ) ){
-      types = params.type;
+    case 'destroy':
+      this.destroy();
+      return;
 
-    } else {
-      types = [ params.type ];
+    case 'add':
+    case 'remove':
+    case 'load':
+      this.updateNodesCache();
+      this.updateEdgesCache();
+      break;
+
+    case 'viewport':
+      this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+      break;
+
+    case 'style':
+      this.updateCachedZSortedEles();
+      break;
     }
 
-    for( var i = 0; i < types.length; i++ ){
-      var type = types[i];
-
-      switch( type ){
-        case 'destroy':
-          this.destroy();
-          return;
-
-        case 'add':
-        case 'remove':
-        case 'load':
-          this.updateNodesCache();
-          this.updateEdgesCache();
-          break;
-
-        case 'viewport':
-          this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-          break;
-
-        case 'style':
-          this.updateCachedZSortedEles();
-          break;
-      }
-
-      if( type === 'load' || type === 'resize' ){
-        this.invalidateContainerClientCoordsCache();
-        this.matchCanvasSize(this.data.container);
-      }
-    } // for
+    if( params.type === 'load' || params.type === 'resize' ){
+      this.invalidateContainerClientCoordsCache();
+      this.matchCanvasSize(this.data.container);
+    }
     
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-    this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
     this.redraw();
   };
@@ -12071,17 +11674,11 @@ var cytoscape;
       //console.time('cachezorder')
       
       for( var i = 0; i < nodes.length; i++ ){
-        var rs = nodes[i]._private.rscratch;
-
-        if( nodes[i].visible() && !nodes[i].transparent() ){
-          eles.push( nodes[i] );
-        }
+        eles.push( nodes[i] );
       }
 
       for( var i = 0; i < edges.length; i++ ){
-        if( edges[i].visible() && !edges[i].transparent() ){
-          eles.push( edges[i] );
-        }
+        eles.push( edges[i] );
       }
 
       eles.sort( this.zOrderSort );
@@ -12945,6 +12542,11 @@ var cytoscape;
 
 // Draw edge
   CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
+
+    if( !edge.visible() ){
+      return;
+    }
+
     var rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die
@@ -13117,6 +12719,8 @@ var cytoscape;
   
   CanvasRenderer.prototype.drawStyledEdge = function(
       edge, context, pts, type, width) {
+    
+    var start = +new Date();
 
     // 3 points given -> assume Bezier
     // 2 -> assume straight
@@ -13341,7 +12945,11 @@ var cytoscape;
     } else {
       this.drawStyledEdge(edge, context, pts, 'solid', width);
     }
-  
+    
+    var end = +new Date();
+    time += end - start;
+    avg = time / (++calls);
+    window.avg = avg;
 
   };
 
@@ -13579,7 +13187,7 @@ var cytoscape;
   CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
     var text = edge._private.style['content'].strValue;
 
-    if( !text || text.match(/^\s+$/) ){
+    if( !edge.visible() || !text || text.match(/^\s+$/) ){
       return;
     }
 
@@ -13607,7 +13215,7 @@ var cytoscape;
   CanvasRenderer.prototype.drawNodeText = function(context, node) {
     var text = node._private.style['content'].strValue;
 
-    if ( !text || text.match(/^\s+$/) ) {
+    if ( !node.visible() || !text || text.match(/^\s+$/) ) {
       return;
     }
 
@@ -13752,6 +13360,10 @@ var cytoscape;
     var style = node._private.style;
     var rs = node._private.rscratch;
     
+    if ( !node.visible() ) {
+      return;
+    }
+
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;
@@ -13943,11 +13555,17 @@ var cytoscape;
     var y = node._private.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+    var usePaths = CanvasRenderer.usePaths();
 
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
     } else if( pieSize.pxValue !== undefined ){
       radius = pieSize.pxValue / 2;
+    }
+
+    if( usePaths ){
+      x = 0;
+      y = 0;
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
@@ -14197,9 +13815,8 @@ var cytoscape;
     //console.log('-- redraw --')
 
 
-    function drawToContext(){ 
+    function drawToContext(){
       startTime = +new Date();
-      // console.profile('draw' + startTime)
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -14492,8 +14109,6 @@ var cytoscape;
       //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
       r.currentlyDrawing = false;
-
-      // console.profileEnd('draw' + startTime)
     } // draw to context
 
     if( !forcedContext ){
@@ -14676,139 +14291,96 @@ var cytoscape;
   CanvasRenderer.prototype.load = function() {
     var r = this;
 
-    var getDragListIds = function(opts){
-      var listHasId;
-
-      if( opts.addToList && r.data.cy.hasCompoundNodes() ){ // only needed for compound graphs
-        if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
-          opts.addToList.hasId = {};
-
-          for( var i = 0; i < opts.addToList.length; i++ ){
-            var ele = opts.addToList[i];
-
-            opts.addToList.hasId[ ele.id() ] = true;
-          }
-        }
-
-        listHasId = opts.addToList.hasId;
-      }
-
-      return listHasId || {};
-    };
-
     // helper function to determine which child nodes and inner edges
     // of a compound node to be dragged as well as the grabbed and selected nodes
-    var addDescendantsToDrag = function(node, opts){
-      if( !node._private.cy.hasCompoundNodes() ){
-        return;
-      }
+    var addDescendantsToDrag = function(node, addSelected, dragElements) {
+      if (!addSelected)
+      {
+        var parents = node.parents();
 
-      var listHasId = getDragListIds( opts );
+        // do not process descendants for this node,
+        // because those will be handled for the topmost selected parent
+        for (var i=0; i < parents.size(); i++)
+        {
+            if (parents[i]._private.selected)
+            {
+              return;
+            }
+        }
+      }
 
       var innerNodes = node.descendants();
 
       // TODO do not drag hidden children & children of hidden children?
-      for( var i = 0; i < innerNodes.size(); i++ ){
-        var iNode = innerNodes[i];
-        var _p = iNode._private;
+      for (var i=0; i < innerNodes.size(); i++)
+      {
+        // if addSelected is true, then add node in any case,
+        // if not, then add only non-selected nodes
+        if ( (addSelected || !innerNodes[i]._private.selected) )
+        {
+          innerNodes[i]._private.rscratch.inDragLayer = true;
+          //innerNodes[i].trigger(new $$.Event(e, {type: 'grab'}));
+          //innerNodes[i].trigger(event);
+          dragElements.push(innerNodes[i]);
 
-        if( opts.inDragLayer ){
-          _p.rscratch.inDragLayer = true;
-        }
-
-        if( opts.addToList && !listHasId[ iNode.id() ] ){
-          opts.addToList.push( iNode );
-          listHasId[ iNode.id() ] = true;
-
-          _p.grabbed = true; 
-        }
-
-        var edges = _p.edges;
-        for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
-          edges[j]._private.rscratch.inDragLayer = true;
+          for (var j=0; j < innerNodes[i]._private.edges.length; j++)
+          {
+            innerNodes[i]._private.edges[j]._private.rscratch.inDragLayer = true;
+          }
         }
       }
     };
 
     // adds the given nodes, and its edges to the drag layer
-    var addNodeToDrag = function(node, opts){
+    var addNodeToDrag = function(node, dragElements) {
+      node._private.grabbed = true;
+      node._private.rscratch.inDragLayer = true;
 
-      var _p = node._private;
-      var listHasId = getDragListIds( opts );
+      dragElements.push(node);
 
-      if( opts.inDragLayer ){
-        _p.rscratch.inDragLayer = true;
+      for (var i=0;i<node._private.edges.length;i++) {
+        node._private.edges[i]._private.rscratch.inDragLayer = true;
       }
 
-      if( opts.addToList && !listHasId[ node.id() ] ){
-        opts.addToList.push( node );
-        listHasId[ node.id() ] = true;
-
-        _p.grabbed = true; 
-      }
-
-      var edges = _p.edges;
-      for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
-        edges[i]._private.rscratch.inDragLayer = true;
-      }
-
-      // add descendant nodes only if the compound size is set to auto
-      var style = _p.style;
-      if( style['width'].value === 'auto' || style['height'].value === 'auto' ){
-        addDescendantsToDrag( node, opts );
-      }
-
-      // also add nodes and edges related to the topmost ancestor
-      updateAncestorsInDragLayer( node, {
-        addToList: opts.addToList
-      } );
+      //node.trigger(new $$.Event(e, {type: 'grab'}));
     };
 
     // helper function to determine which ancestor nodes and edges should go
     // to the drag layer (or should be removed from drag layer).
-    var updateAncestorsInDragLayer = function(node, opts) {
+    var updateAncestorsInDragLayer = function(node, inDragLayer) {
       // find top-level parent
       var parent = node;
 
-      if( !node._private.cy.hasCompoundNodes() ){
-        return;
-      }
-
-      while( parent.parent().nonempty() ){
+      while (parent.parent().nonempty())
+      {
         parent = parent.parent()[0];
+
+        // var pstyle = parent._private.style;
+        // if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
+        //   parent = node;
+        //   break;
+        // }
       }
 
-      // no parent node: no nodes to add to the drag layer
-      if( parent == node ){
+      // no parent node: no node to add to the drag layer
+      if (parent == node && inDragLayer)
+      {
         return;
       }
 
-      var nodes = parent
-        .descendants()
-        .add( parent )
-        .not( node )
-        .not( node.descendants() )
-      ;
+      var nodes = parent.descendants().add(parent);
 
-      var edges = nodes.connectedEdges();
+      for (var i=0; i < nodes.size(); i++)
+      {
 
-      var listHasId = getDragListIds( opts );
+        nodes[i]._private.rscratch.inDragLayer = inDragLayer;
 
-      for( var i = 0; i < nodes.size(); i++ ){
-        if( opts.inDragLayer !== undefined ){
-          nodes[i]._private.rscratch.inDragLayer = opts.inDragLayer;
+        // TODO when calling this function for a set of nodes, we visit same edges over and over again,
+        // instead of adding edges for each node, it may be better to iterate all edges at once
+        // or another solution is to find out the common ancestors and process only those nodes for edges
+        for (var j=0; j<nodes[i]._private.edges.length; j++) {
+          nodes[i]._private.edges[j]._private.rscratch.inDragLayer = inDragLayer;
         }
-
-        if( opts.addToList && !listHasId[ nodes[i].id() ] ){
-          opts.addToList.push( nodes[i] );
-          listHasId[ nodes[i].id() ] = true;
-
-          nodes[i]._private.grabbed = true;
-        }
-      }
-
-      for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
-        edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
       }
     };
 
@@ -14880,20 +14452,19 @@ var cytoscape;
 
         r.hoverData.cxtStarted = true;
 
-        if( near ){
-          near.activate();
-          near.trigger( new $$.Event(e, {
-            type: 'cxttapstart', 
-            cyPosition: { x: pos[0], y: pos[1] } 
-          }) );
-
-          r.hoverData.down = near;
-        }
-
-        cy.trigger( new $$.Event(e, {
+        var cxtEvt = new $$.Event(e, {
           type: 'cxttapstart', 
           cyPosition: { x: pos[0], y: pos[1] } 
-        }) );
+        });
+
+        if( near ){
+          near.activate();
+          near.trigger( cxtEvt );
+
+          r.hoverData.down = near;
+        } else {
+          cy.trigger( cxtEvt );
+        }
 
         r.hoverData.downTime = (new Date()).getTime();
         r.hoverData.cxtDragged = false;
@@ -14912,27 +14483,55 @@ var cytoscape;
 
             if( r.nodeIsDraggable(near) ){
 
-              if ( near.isNode() && !near.selected() ){
+              if ( near.isNode() && !near.selected() ) {
 
-                draggedElements = r.dragData.possibleDragElements = [];
-                addNodeToDrag( near, { addToList: draggedElements } );
-
+                draggedElements = r.dragData.possibleDragElements = [ ];
+                addNodeToDrag(near, draggedElements);
                 near.trigger(grabEvent);
 
-              } else if ( near.isNode() && near.selected() ){
-                draggedElements = r.dragData.possibleDragElements = [  ];
-
-                var selectedNodes = cy.$(function(){ return this.isNode() && this.selected(); });
-
-                for( var i = 0; i < selectedNodes.length; i++ ){
-
-                  // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-                  if( r.nodeIsDraggable( selectedNodes[i] ) ){
-                    addNodeToDrag( selectedNodes[i], { addToList: draggedElements } );
-                  }
+                // add descendant nodes only if the compound size is set to auto
+                if (near._private.style['width'].value == 'auto' ||
+                    near._private.style['height'].value == 'auto')
+                {
+                  addDescendantsToDrag(near,
+                    true,
+                    draggedElements);
                 }
 
-                near.trigger( grabEvent );
+                // also add nodes and edges related to the topmost ancestor
+                updateAncestorsInDragLayer(near, true);
+
+              } else if ( near.isNode() && near.selected() ) {
+                draggedElements = r.dragData.possibleDragElements = [  ];
+
+                var triggeredGrab = false;
+                var selectedNodes = cy.$('node:selected');
+                for( var i = 0; i < selectedNodes.length; i++ ){
+                  //r.dragData.possibleDragElements.push( selectedNodes[i] );
+                  
+                  // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
+                  if (r.nodeIsDraggable(selectedNodes[i]))
+                  {
+                    addNodeToDrag(selectedNodes[i], draggedElements);
+                    
+                    // only trigger for grabbed node once
+                    if( !triggeredGrab ){
+                      near.trigger(grabEvent);
+                      triggeredGrab = true;
+                    }
+
+                    if (selectedNodes[i]._private.style['width'].value == 'auto' ||
+                      selectedNodes[i]._private.style['height'].value == 'auto')
+                    {
+                      addDescendantsToDrag(selectedNodes[i],
+                        false,
+                        draggedElements);
+                    }
+
+                    // also add nodes and edges related to the topmost ancestor
+                    updateAncestorsInDragLayer(selectedNodes[i], true);
+                  }
+                }
               }
 
               r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -14954,6 +14553,9 @@ var cytoscape;
                 cyPosition: { x: pos[0], y: pos[1] }
               }))
             ;
+            
+            // r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
+            // r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
             
           } else if (near == null) {
             cy
@@ -15013,12 +14615,13 @@ var cytoscape;
       var preventDefault = false;
       var capture = r.hoverData.capture;
 
-      // save cycles if mouse events aren't to be captured
-      if ( !capture ){
+      if (!capture) {
+        
         var containerPageCoords = r.findContainerClientCoords();
         
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight) {
+          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
+          && e.target === r.data.topCanvas) {
           
         } else {
           return;
@@ -15190,18 +14793,15 @@ var cytoscape;
 
           r.dragData.didDrag = true; // indicate that we actually did drag the node
 
+          r.hoverData.draggingEles = true;
+
           var toTrigger = [];
 
           for( var i = 0; i < draggedElements.length; i++ ){
             var dEle = draggedElements[i];
 
-            // now, add the elements to the drag layer if not done already
-            if( !r.hoverData.draggingEles ){ 
-              addNodeToDrag( dEle, { inDragLayer: true } );
-            }
-
             // Locked nodes not draggable, as well as non-visible nodes
-            if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
+            if (dEle.isNode() && r.nodeIsDraggable(dEle)) {
               var dPos = dEle._private.position;
 
               toTrigger.push( dEle );
@@ -15213,8 +14813,6 @@ var cytoscape;
 
             }
           }
-
-          r.hoverData.draggingEles = true;
           
           var tcol = (new $$.Collection(cy, toTrigger));
 
@@ -15304,9 +14902,14 @@ var cytoscape;
           && !r.hoverData.dragging // not panning
         ) {
 
-          cy.$(function(){
-            return this.selected();
-          }).unselect();
+          // console.log('unselect all from bg');
+
+  //++clock+unselect
+  //        var a = time();
+          cy.$(':selected').unselect();
+          
+  //++clock+unselect
+  //        console.log('unselect', time() - a);
           
           if (draggedElements.length > 0) {
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -15410,12 +15013,35 @@ var cytoscape;
                 near.select();
               }               
             }
+
+
+            updateAncestorsInDragLayer(near, false);
             
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
             
           }
-      
-        } 
+        // Ungrab single drag
+        } else if (near == down) {
+          if (near != null && near._private.grabbed) {
+            // console.log('ungrab single drag')
+
+            var grabbedEles = cy.$(':grabbed');
+
+            for(var i = 0; i < grabbedEles.length; i++){
+              var ele = grabbedEles[i];
+
+              ele._private.grabbed = false;
+              
+              var sEdges = ele._private.edges;
+              for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+
+              // for compound nodes, also remove related nodes and edges from the drag layer
+              updateAncestorsInDragLayer(ele, false);
+            }
+
+            near.trigger('free');
+          }
+        }
         
         if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {         
           var newlySelected = [];
@@ -15465,19 +15091,19 @@ var cytoscape;
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
-          for (var i=0; i < draggedElements.length; i++) {
+          for (var i=0; i<draggedElements.length; i++) {
             
-            if(draggedElements[i]._private.group === 'nodes') { 
+            if (draggedElements[i]._private.group == 'nodes') { 
               draggedElements[i]._private.rscratch.inDragLayer = false;
               draggedElements[i]._private.grabbed = false;
               
               var sEdges = draggedElements[i]._private.edges;
-              for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
+              for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
 
               // for compound nodes, also remove related nodes and edges from the drag layer
-              updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
+              updateAncestorsInDragLayer(draggedElements[i], false);
               
-            } else if( draggedElements[i]._private.group === 'edges' ){
+            } else if (draggedElements[i]._private.group == 'edges') {
               draggedElements[i]._private.rscratch.inDragLayer = false;
             }
             
@@ -15640,7 +15266,7 @@ var cytoscape;
         ];
 
         // consider context tap
-        if( distance1 < 200 ){
+        if( distance1 < 200 && !e.touches[2] ){
 
           var near1 = r.findNearestElement(now[0], now[1], true);
           var near2 = r.findNearestElement(now[2], now[3], true);
@@ -15705,32 +15331,60 @@ var cytoscape;
 
           r.touchData.start = near;
           
-          if( near.isNode() && r.nodeIsDraggable(near) ){
+          if (near._private.group == 'nodes' && r.nodeIsDraggable(near))
+          {
 
             var draggedEles = r.dragData.touchDragEles = [];
-            
+            addNodeToDrag(near, draggedEles);
+            near.trigger('grab');
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
             r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
             if( near.selected() ){
               // reset drag elements, since near will be added again
+              draggedEles = r.dragData.touchDragEles = [];
 
-              var selectedNodes = cy.$(function(){
-                return this.isNode() && this.selected();
-              });
+              var selectedNodes = cy.$('node:selected');
 
               for( var k = 0; k < selectedNodes.length; k++ ){
-                var selectedNode = selectedNodes[k];
 
-                if( r.nodeIsDraggable(selectedNode) ){
-                  addNodeToDrag( selectedNode, { addToList: draggedEles } );
+                var selectedNode = selectedNodes[k];
+                if (r.nodeIsDraggable(selectedNode)) {
+                  draggedEles.push( selectedNode );
+                  selectedNode._private.rscratch.inDragLayer = true;
+
+                  var sEdges = selectedNode._private.edges;
+                  for (var j=0; j<sEdges.length; j++) {
+                    sEdges[j]._private.rscratch.inDragLayer = true;
+                  }
+
+                  if (selectedNode._private.style['width'].value == 'auto' ||
+                      selectedNode._private.style['height'].value == 'auto')
+                  {
+                    addDescendantsToDrag(selectedNode,
+                      false,
+                      draggedEles);
+                  }
+
+                  // also add nodes and edges related to the topmost ancestor
+                  updateAncestorsInDragLayer(selectedNode, true);
                 }
               }
             } else {
-              addNodeToDrag( near, { addToList: draggedEles } );
-            }
+              //draggedEles.push( near );
 
-            near.trigger('grab');
+              // add descendant nodes only if the compound size is set to auto
+              if (near._private.style['width'].value == 'auto' ||
+                  near._private.style['height'].value == 'auto')
+              {
+                addDescendantsToDrag(near,
+                  true,
+                  draggedEles);
+              }
+
+              // also add nodes and edges related to the topmost ancestor
+              updateAncestorsInDragLayer(near, true);
+            }
           }
           
           near
@@ -15857,7 +15511,7 @@ var cytoscape;
 
       }  
 
-      if( capture && r.touchData.cxt ){
+      if( capture && r.touchData.cxt ){ 
         var cxtEvt = new $$.Event(e, {
           type: 'cxtdrag',
           cyPosition: { x: now[0], y: now[1] }
@@ -15902,7 +15556,7 @@ var cytoscape;
 
         }
 
-      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){ 
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
         this.lastThreeTouch = +new Date();
@@ -15926,6 +15580,16 @@ var cytoscape;
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
         r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+        var draggedEles = r.dragData.touchDragEles;
+        if( draggedEles ){ 
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+          for( var i = 0; i < draggedEles.length; i++ ){
+            draggedEles[i]._private.grabbed = false;
+            draggedEles[i]._private.rscratch.inDragLayer = false;
+          }
+        }
 
         // console.log('touchmove ptz');
 
@@ -16007,12 +15671,10 @@ var cytoscape;
             ;
           }
 
-          cy._private.zoom = zoom2;
-          cy._private.pan = pan2;
-          cy
-            .trigger('pan zoom')
-            .notify('viewport')
-          ;
+          cy.viewport({
+            zoom: zoom2,
+            pan: pan2
+          });
 
           distance1 = distance2;  
           f1x1 = f1x2;
@@ -16031,7 +15693,7 @@ var cytoscape;
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);;
+        var near = near || r.findNearestElement(now[0], now[1], true);
 
         if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
           var draggedEles = r.dragData.touchDragEles;
@@ -16039,16 +15701,12 @@ var cytoscape;
           for( var k = 0; k < draggedEles.length; k++ ){
             var draggedEle = draggedEles[k];
 
-            if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
+            if( r.nodeIsDraggable(draggedEle) ){
               r.dragData.didDrag = true;
               var dPos = draggedEle._private.position;
 
               dPos.x += disp[0];
               dPos.y += disp[1];
-
-              if( !r.hoverData.draggingEles ){
-                addNodeToDrag( draggedEle, { inDragLayer: true } );
-              }
             }
           }
 
@@ -16061,10 +15719,8 @@ var cytoscape;
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
-          if( 
-               r.touchData.startPosition[0] == earlier[0]
-            && r.touchData.startPosition[1] == earlier[1]
-          ){
+          if (r.touchData.startPosition[0] == earlier[0]
+            && r.touchData.startPosition[1] == earlier[1]) {
             
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           }
@@ -16159,6 +15815,8 @@ var cytoscape;
             }
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+
+            r.touchData.start = null;
           }
 
           cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
@@ -17145,11 +16803,10 @@ var cytoscape;
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // reset viewport to fit default simulation width & height
-    padding: 30, // padding around the simulation
-    simulationWidth: undefined, // uses viewport width by default
-    simulationHeight: undefined, // uses viewport height by default
-    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+    fit: true, // reset viewport to fit default simulationBounds
+    padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+    simulationBounds: undefined, // [x1, y1, x2, y2]; [0, 0, width, height] by default
+    ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
 
     // forces used by arbor (use arbor default on undefined)
     repulsion: undefined,
@@ -17164,50 +16821,48 @@ var cytoscape;
     nodeMass: undefined, 
     edgeLength: undefined,
 
-    stepSize: 0.1, // smoothing of arbor bounding box
+    stepSize: 1, // size of timestep in simulation
 
     // function that returns true if the system is stable to indicate
     // that the layout can be stopped
     stableEnergy: function( energy ){
       var e = energy; 
       return (e.max <= 0.5) || (e.mean <= 0.3);
-    },
-
-    // infinite layout options
-    infinite: false, // overrides all other options for a forces-all-the-time mode
-    infiniteFit: true // on every layout reposition of nodes, fit the viewport
+    }
   };
   
   function ArborLayout(options){
-    this._private = {};
-
-    this._private.options = $$.util.extend({}, defaults, options);
+    this.options = $$.util.extend({}, defaults, options);
   }
     
   ArborLayout.prototype.run = function(){
-    var options = this._private.options;
+    var options = this.options;
     var cy = options.cy;
     var nodes = cy.nodes();
     var edges = cy.edges();
-    var eles = nodes.add( edges );
     var container = cy.container();
-    this._private.width = container.clientWidth;
-    this._private.height = container.clientHeight;
-    var simUpdatingPos = false;
-    var layout = this;
+    var width = container.clientWidth;
+    var height = container.clientHeight;
+    var simulationBounds = options.simulationBounds;
 
-    if( options.simulationWidth != null && options.simulationHeight != null ){
-      this._private.width = options.simulationWidth; 
-      this._private.height = options.simulationHeight;
+    if( options.simulationBounds ){
+      width = simulationBounds[2] -  simulationBounds[0]; // x2 - x1
+      height = simulationBounds[3] - simulationBounds[1]; // y2 - y1
+    } else {
+      options.simulationBounds = [
+        0,
+        0, 
+        width,
+        height
+      ];
     }
 
     // make nice x & y fields
-    this._private.simBB = {
-      x1: 0,
-      y1: 0,
-      x2: this._private.width,
-      y2: this._private.height
-    };
+    var simBB = options.simulationBounds;
+    simBB.x1 = simBB[0];
+    simBB.y1 = simBB[1];
+    simBB.x2 = simBB[2];
+    simBB.y2 = simBB[3];
 
     // arbor doesn't work with just 1 node 
     if( cy.nodes().size() <= 1 ){
@@ -17215,11 +16870,9 @@ var cytoscape;
         cy.reset();
       }
 
-      var bb = this._private.simBB;
-
       cy.nodes().position({
-        x: Math.round( (bb.x1 + bb.x2)/2 ),
-        y: Math.round( (bb.y1 + bb.y2)/2 )
+        x: Math.round( (simBB.x1 + simBB.x2)/2 ),
+        y: Math.round( (simBB.y1 + simBB.y2)/2 )
       });
 
       cy.one('layoutready', options.ready);
@@ -17231,20 +16884,11 @@ var cytoscape;
       return;
     }
 
-    var sys = this._private.system = arbor.ParticleSystem();
-
-    sys.parameters({
-      repulsion: options.repulsion,
-      stiffness: options.stiffness, 
-      friction: options.friction, 
-      gravity: options.gravity, 
-      fps: options.fps, 
-      dt: options.dt, 
-      precision: options.precision
-    });
+    var sys = this.system = arbor.ParticleSystem(options.repulsion, options.stiffness, options.friction, options.gravity, options.fps, options.dt, options.precision);
+    this.system = sys;
 
     if( options.liveUpdate && options.fit ){
-      cy.fit( this._private.simBB );
+      cy.reset();
     }
     
     var doneTime = 250;
@@ -17260,15 +16904,13 @@ var cytoscape;
         var energy = sys.energy();
 
         // if we're stable (according to the client), we're done
-        if( !options.infinite && options.stableEnergy != null && energy != null && energy.n > 0 && options.stableEnergy(energy) ){
-          layout.stop();
+        if( options.stableEnergy != null && energy != null && energy.n > 0 && options.stableEnergy(energy) ){
+          sys.stop();
           return;
         }
 
-        if( !options.infinite && doneTime != Infinity ){
-          clearTimeout(doneTimeout);
-          doneTimeout = setTimeout(doneHandler, doneTime);
-        }
+        clearTimeout(doneTimeout);
+        doneTimeout = setTimeout(doneHandler, doneTime);
         
         var movedNodes = [];
         
@@ -17280,12 +16922,10 @@ var cytoscape;
             return;
           }
           
-          var bb = layout._private.simBB;
-
           if( !node.locked() && !node.grabbed() ){
             node.silentPosition({
-              x: bb.x1 + point.x,
-              y: bb.y1 + point.y
+              x: simBB.x1 + point.x,
+              y: simBB.y1 + point.y
             });
 
             movedNodes.push( node );
@@ -17294,14 +16934,9 @@ var cytoscape;
         
 
         var timeToDraw = (+new Date() - lastDraw) >= 16;
-        if( options.liveUpdate && movedNodes.length > 0 ){
-          simUpdatingPos = true;
-
+        if( options.liveUpdate && movedNodes.length > 0 && timeToDraw ){
           new $$.Collection(cy, movedNodes).rtrigger('position');
-          cy.fit( options.padding );
-
           lastDraw = +new Date();
-          simUpdatingPos = false;
         }
 
         
@@ -17314,8 +16949,8 @@ var cytoscape;
       
     };
     sys.renderer = sysRenderer;
-    sys.screenSize( this._private.width, this._private.height );
-    sys.screenPadding( options.padding, options.padding, options.padding, options.padding );
+    sys.screenSize( width, height );
+    sys.screenPadding( options.padding[0], options.padding[1], options.padding[2], options.padding[3] );
     sys.screenStep( options.stepSize );
 
     function calculateValueForElement(element, value){
@@ -17336,8 +16971,8 @@ var cytoscape;
     function fromScreen(pos){
       var x = pos.x;
       var y = pos.y;
-      var w = this._private.width;
-      var h = this._private.height;
+      var w = width;
+      var h = height;
       
       var left = -2;
       var right = 2;
@@ -17349,23 +16984,11 @@ var cytoscape;
         y: y/h * d + right
       };
     }
-
-    var grabHandler;
-    nodes.on('grab free position', grabHandler = function(e){
-      if( simUpdatingPos ){ return; }
-
-      var pos = this.position();
-      var apos = sys.fromScreen( pos );
-      var p = arbor.Point(apos.x, apos.y);
-      var padding = options.padding;
-      var bb = layout._private.simBB;
-
-      if(
-        bb.x1 + padding <= pos.x && pos.x <= bb.x2 - padding &&
-        bb.y1 + padding <= pos.y && pos.y <= bb.y2 - padding
-      ){
-        this.scratch().arbor.p = p;
-      }
+    
+    var grabHandler = function(e){
+      var pos = sys.fromScreen( this.position() );
+      var p = arbor.Point(pos.x, pos.y);
+      this.scratch().arbor.p = p;
       
       switch( e.type ){
       case 'grab':
@@ -17376,75 +16999,46 @@ var cytoscape;
         //this.scratch().arbor.tempMass = 1000;
         break;
       }
-    });
-
-    var lockHandler;
-    nodes.on('lock unlock', lockHandler = function(e){
-      node.scratch().arbor.fixed = node.locked();
-    });
+    };
+    nodes.bind('grab drag free', grabHandler);
           
-    var removeHandler;
-    eles.on('remove', removeHandler = function(e){
-      var ele = this;
-      var arborEle = ele.scratch().arbor;
+    nodes.each(function(i, node){
+      if( this.isFullAutoParent() ){ return; } // they don't exist in the sim
 
-      if( !arborEle ){ return; }
+      var id = this._private.data.id;
+      var mass = calculateValueForElement(this, options.nodeMass);
+      var locked = this._private.locked;
 
-      if( ele.isNode() ){
-        sys.pruneNode( arborEle );
-      } else {
-        sys.pruneEdge( arborEle );
+      if( node.isFullAutoParent() ){
+        return;
       }
-    });
-
-    var addHandler;
-    cy.on('add', '*', addHandler = function(){
-      var ele = this;
-
-      if( ele.isNode() ){
-        addNode( ele );
-      } else {
-        addEdge( ele );
-      }
-    });
-
-    function addNode( node ){
-      if( node.isFullAutoParent() ){ return; } // they don't exist in the sim
-
-      var id = node._private.data.id;
-      var mass = calculateValueForElement(node, options.nodeMass);
-      var locked = node._private.locked;
       
-      var pos = sys.fromScreen({
+      var pos = fromScreen({
         x: node.position().x,
         y: node.position().y
       });
 
-      node.scratch().arbor = sys.addNode(id, {
-        element: node,
+      if( node.locked() ){
+        return;
+      }
+
+      this.scratch().arbor = sys.addNode(id, {
+        element: this,
         mass: mass,
         fixed: locked,
         x: locked ? pos.x : undefined,
         y: locked ? pos.y : undefined
       });
-    }
-
-    function addEdge( edge ){
-      var src = edge.source().id();
-      var tgt = edge.target().id();
-      var length = calculateValueForElement(edge, options.edgeLength);
-      
-      edge.scratch().arbor = sys.addEdge(src, tgt, {
-        length: length
-      }); 
-    }
-
-    nodes.each(function(i, node){
-      addNode( node );
     });
     
-    edges.each(function(i, edge){
-      addEdge( edge );
+    edges.each(function(){
+      var src = this.source().id();
+      var tgt = this.target().id();
+      var length = calculateValueForElement(this, options.edgeLength);
+      
+      this.scratch().arbor = sys.addEdge(src, tgt, {
+        length: length
+      });
     });
     
     function packToCenter(callback){
@@ -17462,9 +17056,7 @@ var cytoscape;
       grabbableNodes.ungrabify();
     }
     
-    var doneHandler = layout._private.doneHandler = function(){
-      layout._private.doneHandler = null;
-
+    var doneHandler = function(){
       if( window.isIE ){
         packToCenter(function(){
           done();
@@ -17483,10 +17075,7 @@ var cytoscape;
         }
 
         // unbind handlers
-        nodes.off('grab free drag', grabHandler);
-        nodes.off('lock unlock', lockHandler);
-        eles.off('remove', removeHandler);
-        cy.off('add', '*', addHandler);
+        nodes.unbind('grab drag free', grabHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
@@ -17499,44 +17088,17 @@ var cytoscape;
     };
     
     sys.start();
-    if( !options.infinite && options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
+    if( options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
       setTimeout(function(){
-        layout.stop();
+        sys.stop();
       }, options.maxSimulationTime);
     }
     
   };
 
-  ArborLayout.prototype.pause = function(){
-    if( this._private.system != null ){
-      this._private.system.stop();
-    }
-  };
-
-  ArborLayout.prototype.resume = function(){
-    if( this._private.system != null ){
-      this._private.system.start();
-    }
-  };
-
   ArborLayout.prototype.stop = function(){
-    if( this._private.system != null ){
-      this._private.system.stop();
-    }
-
-    if( this._private.doneHandler ){
-      this._private.doneHandler();
-    }
-  };
-
-  ArborLayout.prototype.resize = function(){
-    if( this._private.system != null ){
-      var cy = this._private.options.cy;
-
-      var w = this._private.width = cy.width();
-      var h = this._private.height = cy.height();
-
-      this._private.system.screenSize( w, h );
+    if( this.system != null ){
+      system.stop();
     }
   };
   

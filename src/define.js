@@ -585,7 +585,7 @@
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
         var cy = this._private.cy || this;
-        var isCore = $$.is.core( this );
+        var isCore = !selfIsArrayLike;
         var isEles = !isCore;
 
         if( !cy.styleEnabled() ){ return this; }
@@ -621,11 +621,11 @@
           return this; // nothing to animate
         }
 
-        if( properties.css ){
+        if( properties.css && isEles ){
           properties.css = style.getValueStyle( properties.css, { array: true } );
         }
 
-        if( properties.renderedPosition ){
+        if( properties.renderedPosition && isEles ){
           var rpos = properties.renderedPosition;
           var pan = cy.pan();
           var zoom = cy.zoom();
@@ -647,6 +647,16 @@
             };
             var startStyle = style.getValueStyle( ele );
           }
+
+          if( isCore ){
+            var pan = ele._private.pan;
+            var startPan = {
+              x: pan.x,
+              y: pan.y
+            };
+
+            var startZoom = ele._private.zoom;
+          }
           
           if( ele.animated() && (params.queue === undefined || params.queue) ){
             q = ele._private.animation.queue;
@@ -660,7 +670,9 @@
             params: params,
             callTime: callTime,
             startPosition: startPosition,
-            startStyle: startStyle
+            startStyle: startStyle,
+            startPan: startPan,
+            startZoom: startZoom
           });
         }
 

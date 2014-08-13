@@ -509,7 +509,213 @@
         
         return self; // maintain chaining
       }; // function
-    } // trigger
+    }, // trigger
+
+
+    animated: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function animatedImpl(){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return false; }
+
+        var ele = all[0];
+
+        if( ele ){
+          return ele._private.animation.current.length > 0;
+        }
+      };
+    }, // animated
+
+    clearQueue: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function clearQueueImpl(){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+          ele._private.animation.queue = [];
+        }
+
+        return this;
+      };
+    }, // clearQueue
+
+    delay: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function delayImpl( time, complete ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        this.animate({
+          delay: time
+        }, {
+          duration: time,
+          complete: complete
+        });
+
+        return this;
+      };
+    }, // delay
+
+    animate: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function animateImpl( properties, params ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+        var isCore = $$.is.core( this );
+        var isEles = !isCore;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        var callTime = +new Date();
+        var style = cy.style();
+        var q;
+        
+        if( params === undefined ){
+          params = {};
+        }
+
+        if( params.duration === undefined ){
+          params.duration = 400;
+        }
+        
+        switch( params.duration ){
+        case 'slow':
+          params.duration = 600;
+          break;
+        case 'fast':
+          params.duration = 200;
+          break;
+        }
+        
+        var propertiesEmpty = true;
+        if( properties ){ for( var i in properties ){
+          propertiesEmpty = false;
+          break;
+        } }
+
+        if( propertiesEmpty ){
+          return this; // nothing to animate
+        }
+
+        if( properties.css ){
+          properties.css = style.getValueStyle( properties.css, { array: true } );
+        }
+
+        if( properties.renderedPosition ){
+          var rpos = properties.renderedPosition;
+          var pan = cy.pan();
+          var zoom = cy.zoom();
+
+          properties.position = {
+            x: ( rpos.x - pan.x ) /zoom,
+            y: ( rpos.y - pan.y ) /zoom
+          };
+        }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+
+          if( isEles ){
+            var pos = ele._private.position;
+            var startPosition = {
+              x: pos.x,
+              y: pos.y
+            };
+            var startStyle = style.getValueStyle( ele );
+          }
+          
+          if( ele.animated() && (params.queue === undefined || params.queue) ){
+            q = ele._private.animation.queue;
+          } else {
+            q = ele._private.animation.current;
+          }
+
+          q.push({
+            properties: properties,
+            duration: params.duration,
+            params: params,
+            callTime: callTime,
+            startPosition: startPosition,
+            startStyle: startStyle
+          });
+        }
+
+        if( isEles ){
+          cy.addToAnimationPool( this );
+        }
+
+        return this; // chaining
+      };
+    }, // animate
+
+    stop: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function stopImpl( clearQueue, jumpToEnd ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+          var anis = ele._private.animation.current;
+
+          for( var j = 0; j < anis.length; j++ ){
+            var animation = anis[j];    
+            if( jumpToEnd ){
+              // next iteration of the animation loop, the animation
+              // will go straight to the end and be removed
+              animation.duration = 0; 
+            }
+          }
+          
+          // clear the queue of future animations
+          if( clearQueue ){
+            ele._private.animation.queue = [];
+          }
+
+          if( !jumpToEnd ){
+            ele._private.animation.current = [];
+          }
+        }
+        
+        // we have to notify (the animation loop doesn't do it for us on `stop`)
+        this.cy().notify({
+          collection: this,
+          type: 'draw'
+        });
+        
+        return this;
+      };
+    } // stop
 
   }; // define
 

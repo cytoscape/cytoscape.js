@@ -2,6 +2,13 @@
   
   $$.fn.core({
     
+    // pull in animation functions
+    animated: $$.define.animated(),
+    clearQueue: $$.define.clearQueue(),
+    delay: $$.define.delay(),
+    animate: $$.define.animate(),
+    stop: $$.define.stop(),
+
     addToAnimationPool: function( eles ){
       var cy = this;
 

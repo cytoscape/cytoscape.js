@@ -536,6 +536,15 @@ pre code {
 	font-size: 1.25em;
 }
 
+.function .pure-aliases {
+	color: #888;
+	font-size: 0.8em;
+}
+
+.function .pure-alias-name {
+	font-family: Consolas, "Liberation Mono", Courier, monospace;
+}
+
 .function > .formats,
 .function > .details {
 	margin: 0.25em 0;

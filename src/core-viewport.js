@@ -93,14 +93,15 @@
 
       case 1: 
 
-        if( !this._private.panningEnabled ){
-          return this;
-
-        } else if( $$.is.string( args[0] ) ){ // .pan('x')
+        if( $$.is.string( args[0] ) ){ // .pan('x')
           dim = args[0];
           return pan[ dim ];
 
         } else if( $$.is.plainObject( args[0] ) ) { // .pan({ x: 0, y: 100 })
+          if( !this._private.panningEnabled ){
+            return this;
+          }
+
           dims = args[0];
           x = dims.x;
           y = dims.y;

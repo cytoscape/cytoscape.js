@@ -74,6 +74,10 @@
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
         y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0
       },
+      animation: { // object for currently-running animations
+        current: [],
+        queue: []
+      },
       hasCompoundNodes: false
     };
 

@@ -22,11 +22,11 @@ describe('Collection building and filtering', function(){
       },
       ready: function(){
         cy = this;
-        n1 = cy.$('#n1');
-        n2 = cy.$('#n2');
-        n3 = cy.$('#n3');
-        n1n2 = cy.$('#n1n2');
-        n2n3 = cy.$('#n2n3');
+        n1 = cy.$('#n1')[0];
+        n2 = cy.$('#n2')[0];
+        n3 = cy.$('#n3')[0];
+        n1n2 = cy.$('#n1n2')[0];
+        n2n3 = cy.$('#n2n3')[0];
 
         done();
       }
@@ -64,25 +64,130 @@ describe('Collection building and filtering', function(){
       ids.push( nodes[i].id() );
     }
 
-    var arr = cy.nodes().map(function(){
-      return this.id();
+    var arr = cy.nodes().map(function( ele ){
+      return ele.id();
     });
 
     expect( arr ).to.deep.equal( ids );
   });
 
   it('eles.max()', function(){
-    var max = cy.nodes().max(function(){ return this.data('val'); });
+    var max = cy.nodes().max(function( ele ){ return ele.data('val'); });
     
     expect( max.value ).to.equal( 3 );
     expect( max.ele.same(n3) ).to.be.true;
   });
 
   it('eles.min()', function(){
-    var min = cy.nodes().min(function(){ return this.data('val'); });
+    var min = cy.nodes().min(function( ele ){ return ele.data('val'); });
     
     expect( min.value ).to.equal( 1 );
     expect( min.ele.same(n1) ).to.be.true;
+  });
+
+  it('eles.merge()', function(){
+    var eles = cy.collection();
+    var _p = eles._private;
+
+    // confirm empty
+    expect( _p.indexes ).to.be.empty;
+    expect( _p.ids ).to.be.empty;
+    expect( eles.length ).to.equal(0);
+    expect( eles[0] ).to.not.exist;
+
+    eles.merge( n1 );
+
+    // confirm n1 added
+    expect( _p.indexes['n1'] ).to.equal(0);
+    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( eles.length ).to.equal(1);
+    expect( eles[0] ).to.equal(n1);
+    expect( eles[1] ).to.not.exist;
+
+    eles.merge( n2 );
+
+    // confirm n1 still there
+    expect( _p.indexes['n1'] ).to.equal(0);
+    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( eles[0] ).to.equal(n1);
+
+    // confirm n2 added
+    expect( _p.indexes['n2'] ).to.equal(1);
+    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( eles.length ).to.equal(2);
+    expect( eles[1] ).to.equal(n2);
+  });
+
+  it('eles.unmerge()', function(){
+    var eles = cy.$('#n1, #n2');
+    var _p = eles._private;
+
+    // confirm init state of collection
+    expect( _p.indexes['n1'] ).to.equal(0);
+    expect( _p.indexes['n2'] ).to.equal(1);
+    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( eles.length ).to.equal(2);
+    expect( eles[2] ).to.not.exist;
+
+    eles.unmerge( n1 );
+
+    // confirm only n2 left
+    expect( _p.indexes['n1'] ).to.not.exist;
+    expect( _p.indexes['n2'] ).to.equal(0);
+    expect( _p.ids['n1'] ).to.not.exist;
+    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( eles.length ).to.equal(1);
+    expect( eles[1] ).to.not.exist;
+    expect( eles[2] ).to.not.exist;
+
+    eles.unmerge( n2 );
+
+    // confirm empty
+    expect( _p.indexes['n1'] ).to.not.exist;
+    expect( _p.indexes['n2'] ).to.not.exist;
+    expect( _p.ids['n1'] ).to.not.exist;
+    expect( _p.ids['n2'] ).to.not.exist;
+    expect( eles.length ).to.equal(0);
+    expect( eles[0] ).to.not.exist;
+    expect( eles[1] ).to.not.exist;
+    expect( eles[2] ).to.not.exist;
+  });
+
+  it('eles.unmerge() last ele', function(){
+    var eles = cy.$('#n1, #n2');
+    var _p = eles._private;
+
+    // confirm init state of collection
+    expect( _p.indexes['n1'] ).to.equal(0);
+    expect( _p.indexes['n2'] ).to.equal(1);
+    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( eles.length ).to.equal(2);
+    expect( eles[2] ).to.not.exist;
+
+    eles.unmerge( n2 );
+
+    // confirm only n1 left
+    expect( _p.indexes['n2'] ).to.not.exist;
+    expect( _p.indexes['n1'] ).to.equal(0);
+    expect( _p.ids['n2'] ).to.not.exist;
+    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( eles.length ).to.equal(1);
+    expect( eles[1] ).to.not.exist;
+    expect( eles[2] ).to.not.exist;
+
+    eles.unmerge( n1 );
+
+    // confirm empty
+    expect( _p.indexes['n1'] ).to.not.exist;
+    expect( _p.indexes['n2'] ).to.not.exist;
+    expect( _p.ids['n1'] ).to.not.exist;
+    expect( _p.ids['n2'] ).to.not.exist;
+    expect( eles.length ).to.equal(0);
+    expect( eles[0] ).to.not.exist;
+    expect( eles[1] ).to.not.exist;
+    expect( eles[2] ).to.not.exist;
   });
 
 });

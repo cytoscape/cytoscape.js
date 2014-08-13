@@ -126,7 +126,8 @@
 
     // in place merge on calling collection
     merge: function( toAdd ){
-      var cy = this._private.cy;    
+      var _p = this._private;
+      var cy = _p.cy;    
       
       if( !toAdd ){
         return this;
@@ -138,11 +139,16 @@
       }
 
       for( var i = 0; i < toAdd.length; i++ ){
+        var toAddEle = toAdd[i];
+        var id = toAddEle.id();
+        var add = !_p.ids[ id ];
 
-        var add = !this._private.ids[ toAdd[i].id() ];
         if( add ){
-          this[ this.length++ ] = toAdd[i];
-          this._private.ids[ toAdd[i].id() ] = toAdd[i];
+          var index = this.length++;
+
+          this[ index ] = toAddEle;
+          _p.ids[ id ] = toAddEle;
+          _p.indexes[ id ] = index;
         }
       }
       
@@ -153,7 +159,9 @@
     unmergeOne: function( ele ){
       ele = ele[0];
 
-      var i = this._private.indexes[ ele.id() ];
+      var _p = this._private;
+      var id = ele.id();
+      var i = _p.indexes[ id ];
 
       if( i == null ){
         return this; // no need to remove
@@ -161,12 +169,19 @@
 
       // remove ele
       delete this[i];
-      delete this._private.ids[ this[i].id() ];
-      delete this._private.indexes[ this[i].id() ];
+      delete _p.ids[ id ];
+      delete _p.indexes[ id ];
+
+      var unmergedLastEle = i === this.length - 1;
 
       // replace empty spot with last ele in collection
-      if( this.length > 1 ){
-        this[i] = this[ this.length - 1 ];
+      if( this.length > 1 && !unmergedLastEle ){
+        var lastEleI = this.length - 1;
+        var lastEle = this[ lastEleI ];
+
+        delete this[ lastEleI ];
+        this[i] = lastEle;
+        _p.indexes[ lastEle.id() ] = i;
       }
 
       // the collection is now 1 ele smaller

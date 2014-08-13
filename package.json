@@ -3,6 +3,7 @@
   "description": "A JavaScript graph theory library for analysis and visualisation",
   "version": "2.2.10",
   "license": "LGPL",
+  "homepage": "http://js.cytoscape.org",
   "engines": {
     "node": ">=0.6"
   },

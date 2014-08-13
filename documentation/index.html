@@ -9258,6 +9258,11 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li>Values requiring a number, such as a length, can be specified in pixel values (e.g. <code>24px</code>), unitless values that are implicitly in pixels (<code>24</code>), or em values (e.g. <code>2em</code>).</li>
 <li>Opacity values are specified as numbers ranging on <code>0 &lt;= opacity &lt;= 1</code>.</li>
 </ul>
+<h2 id="style/mappers">Mappers <a href="#style/mappers"><span class="icon-bookmark"></span></a></h2>
+<p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
+<p><strong><code>data()</code></strong> specifies a direct mapping to an element&#39;s data field.  For example, <code>data(descr)</code> would map a property to the value in an element&#39;s <code>descr</code> field in its data (i.e. <code>ele.data(&quot;descr&quot;)</code>).  This is useful for mapping to properties like label text content (the <code>content</code> property).</p>
+<p><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</p>
+<p><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</p>
 <h2 id="style/node-body">Node body <a href="#style/node-body"><span class="icon-bookmark"></span></a></h2>
 <p>These properties affect the style of a node&#39;s body:</p>
 <ul>
@@ -9362,11 +9367,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>outside-texture-bg-color</code></strong> : The colour of the area outside the viewport texture when <code>initOptions.textureOnViewport === true</code>.</li>
 <li><strong><code>outside-texture-bg-opacity</code></strong> : The opacity of the area outside the viewport texture.</li>
 </ul>
-<h2 id="style/mappers">Mappers <a href="#style/mappers"><span class="icon-bookmark"></span></a></h2>
-<p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
-<p><strong><code>data()</code></strong> specifies a direct mapping to an element&#39;s data field.  For example, <code>data(descr)</code> would map a property to the value in an element&#39;s <code>descr</code> field in its data (i.e. <code>ele.data(&quot;descr&quot;)</code>).  This is useful for mapping to properties like label text content (the <code>content</code> property).</p>
-<p><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</p>
-<p><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</p>
 
 				
 
@@ -10629,6 +10629,13 @@ cy.elements().foo();
 				
 					<div class="section lvl2">
 						
+						<a href="#style/mappers"><span class="icon-bookmark bookmark-icon"></span> Mappers</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
 						<a href="#style/node-body"><span class="icon-bookmark bookmark-icon"></span> Node body</a>
 					</div>
 
@@ -10679,13 +10686,6 @@ cy.elements().foo();
 					<div class="section lvl2">
 						
 						<a href="#style/core"><span class="icon-bookmark bookmark-icon"></span> Core</a>
-					</div>
-
-					
-				
-					<div class="section lvl2">
-						
-						<a href="#style/mappers"><span class="icon-bookmark bookmark-icon"></span> Mappers</a>
 					</div>
 
 					

@@ -160,7 +160,8 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 **Compound nodes**
 
 * **`:parent`** : Matches parent nodes (they have one or more child nodes).
-* **`:child`** : Matches child nodes (they each have a parent).
+* **`:child`** or **`:nonorphan`**: Matches child nodes (they each have a parent).
+* **`:orphan`** : Matches orphan nodes (they each have no parent).
 
 **Edges**
 

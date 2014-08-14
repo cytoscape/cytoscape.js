@@ -2317,8 +2317,32 @@
             },
 
             {
+              "name": "nodes.orphans",
+              "descr": "Get all orphan (i.e. has no parent) nodes in the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.nonorphans",
+              "descr": "Get all nonorphan (i.e. has a parent) nodes in the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "nodes.children",
-              "descr": "Get all child (direct descendant) nodes of each node in the collection.",
+              "descr": "Get all child (i.e. direct descendant) nodes of each node in the collection.",
               "formats": [
                 {
                   "args": [

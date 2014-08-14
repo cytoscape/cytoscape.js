@@ -1,6 +1,6 @@
 ## About
 
-Cytoscape.js is an open-source [graph theory](http://en.wikipedia.org/wiki/Graph_theory) library written in JavaScript.  You can use Cytoscape.js for graph analysis and visualisation.
+Cytoscape.js is an open-source [graph theory](http://en.wikipedia.org/wiki/Graph_theory) (a.k.a. network) library written in JavaScript.  You can use Cytoscape.js for graph analysis and visualisation.
 
 Cytoscape.js allows you to easily display and manipulate rich, interactive graphs.  Because Cytoscape.js allows the user to interact with the graph and the library allows the client to hook into user events, Cytoscape.js is easily integrated into your webapp, especially since Cytoscape.js supports both desktop browsers, like Chrome, and mobile browsers, like on the iPad.  Cytoscape.js includes all the gestures you would expect out-of-the-box, including pinch-to-zoom, box selection, panning, et cetera.
 

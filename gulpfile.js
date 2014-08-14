@@ -351,6 +351,11 @@ gulp.task('docspush', shell.task([
   './publish-docs.sh'
 ]));
 
+gulp.task('betadocspush', shell.task([
+  './publish-beta-docs.sh'
+]));
+
+
 gulp.task('npm', shell.task([
   './publish-npm.sh'
 ]));

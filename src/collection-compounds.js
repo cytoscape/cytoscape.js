@@ -51,6 +51,18 @@
       return ancestors.filter( selector );
     },
 
+    orphans: function( selector ){
+      return this.stdFilter(function( ele ){
+        return ele.isNode() && ele.parent().empty();
+      }).filter( selector );
+    },
+
+    nonorphans: function( selector ){
+      return this.stdFilter(function( ele ){
+        return ele.isNode() && ele.parent().nonempty();
+      }).filter( selector );
+    },
+
     children: function( selector ){
       var children = [];
 

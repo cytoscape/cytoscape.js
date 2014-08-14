@@ -146,7 +146,7 @@
           query: true,
           // NB: if one colon selector is a substring of another from its start, place the longer one first
           // e.g. :foobar|:foo
-          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parentless|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
+          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:orphan|:nonorphan|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
           populate: function( state ){
             this.colonSelectors.push( state );
           }
@@ -499,9 +499,10 @@
         allColonSelectorsMatch = element.isNode() && element.children().nonempty();
         break;
       case ':child':
+      case ':nonorphan':
         allColonSelectorsMatch = element.isNode() && element.parent().nonempty();
         break;
-      case ':parentless':
+      case ':orphan':
         allColonSelectorsMatch = element.isNode() && element.parent().empty();
         break;
       case ':loop':

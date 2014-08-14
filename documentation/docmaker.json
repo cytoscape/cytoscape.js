@@ -189,6 +189,122 @@
           ]
         },
 
+        {
+          "name": "Events",
+
+          "fns": [
+            {
+              "name": "cy.on",
+              "descr": "Bind to events that occur in the graph.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/on"
+            },
+
+            {
+              "name": "cy.one",
+              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/one"
+            },
+
+            {
+              "name": "cy.off",
+              "descr": "Remove event handlers.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
+                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/off"
+            },
+
+            {
+              "name": "cy.trigger",
+              "descr": "Trigger one or more events.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/trigger"
+            },
+
+            {
+              "name": "cy.initrender",
+              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "md": "core/initrender"
+            },
+
+            {
+              "name": "cy.ready",
+              "descr": "Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function()", "descr": "The callback run as soon as the graph is ready, inside which `this` refers to the core (`cy`)." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.initrender",
+              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "md": "core/initrender"
+            }
+
+
+          ]
+        },
+
         { 
           "name": "Viewport manipulation",
 
@@ -484,118 +600,74 @@
         },
 
         {
-          "name": "Events",
-
+          "name": "Animation",
           "fns": [
             {
-              "name": "cy.on",
-              "descr": "Bind to events that occur in the graph.",
+              "name": "cy.animated",
+              "descr": "Get whether the core is currently being animated."
+            },
+
+            {
+              "name": "cy.animate",
+              "descr": "Animate the core.",
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
+                    { 
+                      "name": "props", 
+                      "descr": "An object containing the properties to animate.",
+                      "fields": [
+                        { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
+                        { "name": "pan", "descr": "A pan position to which the graph will be animated." }
+                      ]
+                    },
 
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                    {
+                      "name": "options",
+                      "descr": "An object containing animation options.",
+                      "fields": [
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                      ]
+                    }
                   ]
                 }
               ],
-              "md": "core/on"
+              "md": "core/animate"
             },
 
             {
-              "name": "cy.one",
-              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "name": "cy.delay",
+              "descr": "Add a delay between animations for the core.",
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "core/one"
-            },
-
-            {
-              "name": "cy.off",
-              "descr": "Remove event handlers.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
-                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "core/off"
-            },
-
-            {
-              "name": "cy.trigger",
-              "descr": "Trigger one or more events.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
-                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "core/trigger"
-            },
-
-            {
-              "name": "cy.initrender",
-              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
-              "md": "core/initrender"
-            },
-
-            {
-              "name": "cy.ready",
-              "descr": "Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function()", "descr": "The callback run as soon as the graph is ready, inside which `this` refers to the core (`cy`)." }
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
+                    { "name": "complete", "descr": "A function to call when the delay is complete." }
                   ]
                 }
               ]
             },
 
             {
-              "name": "cy.initrender",
-              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
-              "md": "core/initrender"
+              "name": "cy.stop",
+              "descr": "Stop all core animations that are currently running.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "clearQueue", "descr": "A boolean, indicating whether the queue of animations should be emptied." },
+                    { "name": "jumpToEnd", "descr": "A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.clearQueue",
+              "descr": "Remove all queued animations for the core."
             }
-
-
           ]
         },
 
@@ -722,6 +794,119 @@
               ],
               "md": "collection/move"
             }
+          ]
+        },
+
+        {
+          "name": "Events",
+          "fns": [
+            {
+              "name": "eles.on",
+              "descr": "Bind to events that occur on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/on"
+            },
+
+            {
+              "name": "eles.one",
+              "descr": "Bind a callback function that is triggered once per event per element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/one"
+            },
+            
+            {
+              "name": "eles.once",
+              "descr": "Bind a callback function that is triggered once per event per collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/once"
+            },
+
+            {
+              "name": "eles.off",
+              "descr": "Unbind one or more callback functions on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
+                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/off"
+            },
+
+            {
+              "name": "eles.trigger",
+              "descr": "Trigger events on the elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/trigger"
+            }      
           ]
         },
 
@@ -1146,119 +1331,6 @@
               "name": "eles.unselectify",
               "descr": "Make the selection states of the elements immutable."
             }
-          ]
-        },
-
-        {
-          "name": "Events",
-          "fns": [
-            {
-              "name": "eles.on",
-              "descr": "Bind to events that occur on the elements.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/on"
-            },
-
-            {
-              "name": "eles.one",
-              "descr": "Bind a callback function that is triggered once per event per element.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/one"
-            },
-            
-            {
-              "name": "eles.once",
-              "descr": "Bind a callback function that is triggered once per event per collection.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/once"
-            },
-
-            {
-              "name": "eles.off",
-              "descr": "Unbind one or more callback functions on the elements.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true },
-                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/off"
-            },
-
-            {
-              "name": "eles.trigger",
-              "descr": "Trigger events on the elements.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
-                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/trigger"
-            }      
           ]
         },
 

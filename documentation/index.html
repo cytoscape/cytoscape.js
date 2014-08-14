@@ -616,7 +616,7 @@ cy = cytoscape( options = {
 <p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
 <p><strong><code>hideLabelsOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
 <p><strong><code>textureOnViewport</code></strong> : When set to <code>true</code>, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.</p>
-<p><strong><code>wheelSensitivity</code></strong> : Changes the scroll wheel sensitivity when zooming. A value between 0 and 1 reduces the sensitivity (zooms slower), a value greater than 1 does the oposite.</p>
+<p><strong><code>wheelSensitivity</code></strong> : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).</p>
 <p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:</p>
 <ul>
 <li><strong><code>renderer.name</code></strong> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
@@ -1365,6 +1365,518 @@ cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-
 <li>you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),</li>
 <li>you probably do not want to use <code>eles.css()</code>, <code>eles.show()</code>, et cetera because they force a style bypass rather than a recalculation.</li>
 </ul>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="core/events">Events <a href="#core/events"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.on"><span class="fn-name">cy.on()</span>  <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind to events that occur in the graph.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<p>Bind to events that bubble up from elements matching the specified <code>node</code> selector:</p>
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, { foo: <span class="hljs-string">'bar'</span> }, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
+  console.log( evt.data.foo ); <span class="hljs-comment">// 'bar'</span>
+
+  <span class="hljs-keyword">var</span> node = evt.cyTarget;
+  console.log( <span class="hljs-string">'tapped '</span> + node.id() );
+});
+</code></pre>
+<p>Bind to all tap events that the core receives:</p>
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(event)</span>{</span>
+  <span class="hljs-comment">// cyTarget holds a reference to the originator</span>
+  <span class="hljs-comment">// of the event (core or element)</span>
+  <span class="hljs-keyword">var</span> evtTarget = event.cyTarget;
+
+  <span class="hljs-keyword">if</span>( evtTarget === cy ){
+      console.log(<span class="hljs-string">'tap on background'</span>);
+  } <span class="hljs-keyword">else</span> {
+    console.log(<span class="hljs-string">'tap on some element'</span>);
+  }
+});
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.one"><span class="fn-name">cy.one()</span>  <a href="#core/events/cy.one"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind to events that occur in the graph, and trigger the handler only once.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.one(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'tap!'</span>);
+});
+
+cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">0</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!</span>
+cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// nothing b/c already tapped</span>
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.off"><span class="fn-name">cy.off()</span>  <a href="#core/events/cy.off"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove event handlers.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The same selector used to bind to the events.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">handler</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A reference to the handler function to remove.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">cy.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions to remove.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The same selector used to bind to the events.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<p>For all handlers:</p>
+<pre><code class="lang-js">cy.on(<span class="hljs-string">"tap"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">/* ... */</span> });
+
+<span class="hljs-comment">// unbind all tap handlers, including the one above</span>
+cy.off(<span class="hljs-string">"tap"</span>);
+</code></pre>
+<p>For a particular handler:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">"called handler"</span>);
+};
+cy.on(<span class="hljs-string">"tap"</span>, handler);
+
+<span class="hljs-keyword">var</span> otherHandler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">"called other handler"</span>);
+};
+cy.on(<span class="hljs-string">"tap"</span>, otherHandler);
+
+<span class="hljs-comment">// just unbind handler</span>
+cy.off(<span class="hljs-string">"tap"</span>, handler);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.trigger"><span class="fn-name">cy.trigger()</span>  <a href="#core/events/cy.trigger"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Trigger one or more events.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names to trigger.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">extraParams</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.bind(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt, f, b)</span>{</span>
+  console.log(<span class="hljs-string">'tap'</span>, f, b);
+});
+
+cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>]);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Get whether the initial render event has occurred (useful for plugins etc).</p>
+</div>
+
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function returns whether the <code>initrender</code> event has occurred on the graph, meaning that the renderer has drawn the graph at least once.  This is useful when you need to grab image data from the core, as this function will let you know whether that data is available yet:  You can not grab the graph scene if it has not yet been rendered.</p>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.ready"><span class="fn-name">cy.ready()</span>  <a href="#core/events/cy.ready"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.ready( <span class="comma">, </span>function() )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function()</span>
+													 
+													<span class="descr"><p>The callback run as soon as the graph is ready, inside which <code>this</code> refers to the core (<code>cy</code>).</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Get whether the initial render event has occurred (useful for plugins etc).</p>
+</div>
+
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function returns whether the <code>initrender</code> event has occurred on the graph, meaning that the renderer has drawn the graph at least once.  This is useful when you need to grab image data from the core, as this function will let you know whether that data is available yet:  You can not grab the graph scene if it has not yet been rendered.</p>
 
 								
 							</div>		
@@ -2449,17 +2961,32 @@ cy.zoom({
 				
 				
 				
-					<h2 id="core/events">Events <a href="#core/events"><span class="icon-bookmark"></span></a></h2>
+					<h2 id="core/animation">Animation <a href="#core/animation"><span class="icon-bookmark"></span></a></h2>
 
 					
 
 					
 						<div class="function">
-							<div class="name" id="core/events/cy.on"><span class="fn-name">cy.on()</span>  <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="core/animation/cy.animated"><span class="fn-name">cy.animated()</span>  <a href="#core/animation/cy.animated"><span class="icon-bookmark"></span></a></div>
 							
 							
 							
-							<div class="descr"><p>Bind to events that occur in the graph.</p>
+							<div class="descr"><p>Get whether the core is currently being animated.</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/animation/cy.animate"><span class="fn-name">cy.animate()</span>  <a href="#core/animation/cy.animate"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Animate the core.</p>
 </div>
 
 							
@@ -2467,51 +2994,82 @@ cy.zoom({
 								
 									<div class="format">
 										
-											<div class="name">cy.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">cy.animate( <span class="comma">, </span>props<span class="comma">, </span>options )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name"><a href="#events">events</a></span>
+													<span class="name">props</span>
 													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+													<span class="descr"><p>An object containing the properties to animate.</p>
 </span>
 
 													
 													<ul class="fields">
 														
 															<li>
-																<span class="name">evt</span>
+																<span class="name">zoom</span>
 																 
-																<span class="descr"><p>The event object.</p>
+																<span class="descr"><p>A zoom level to which the graph will be animated.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">pan</span>
+																 
+																<span class="descr"><p>A pan position to which the graph will be animated.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+												<li>
+													<span class="name">options</span>
+													 
+													<span class="descr"><p>An object containing animation options.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">duration</span>
+																 
+																<span class="descr"><p>The duration of the animation in milliseconds.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">queue</span>
+																 
+																<span class="descr"><p>A boolean indicating whether to queue the animation.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">complete</span>
+																 
+																<span class="descr"><p>A function to call when the animation is done.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">step</span>
+																 
+																<span class="descr"><p>A function to call each time the animation steps.</p>
 </span>
 															</li>
 
@@ -2524,68 +3082,17 @@ cy.zoom({
 										</ul>
 									</div>
 								
-									<div class="format">
-										
-											<div class="name">cy.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
 							</div>
 							
 
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<p>Bind to events that bubble up from elements matching the specified <code>node</code> selector:</p>
-<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, { foo: <span class="hljs-string">'bar'</span> }, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
-  console.log( evt.data.foo ); <span class="hljs-comment">// 'bar'</span>
-
-  <span class="hljs-keyword">var</span> node = evt.cyTarget;
-  console.log( <span class="hljs-string">'tapped '</span> + node.id() );
-});
-</code></pre>
-<p>Bind to all tap events that the core receives:</p>
-<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(event)</span>{</span>
-  <span class="hljs-comment">// cyTarget holds a reference to the originator</span>
-  <span class="hljs-comment">// of the event (core or element)</span>
-  <span class="hljs-keyword">var</span> evtTarget = event.cyTarget;
-
-  <span class="hljs-keyword">if</span>( evtTarget === cy ){
-      console.log(<span class="hljs-string">'tap on background'</span>);
-  } <span class="hljs-keyword">else</span> {
-    console.log(<span class="hljs-string">'tap on some element'</span>);
-  }
+<pre><code class="lang-js">cy.animate({
+  pan: { x: <span class="hljs-number">100</span>, y: <span class="hljs-number">100</span> },
+  zoom: <span class="hljs-number">2</span>
+}, {
+  duration: <span class="hljs-number">1000</span>
 });
 </code></pre>
 
@@ -2594,11 +3101,11 @@ cy.zoom({
 						</div>
 					
 						<div class="function">
-							<div class="name" id="core/events/cy.one"><span class="fn-name">cy.one()</span>  <a href="#core/events/cy.one"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="core/animation/cy.delay"><span class="fn-name">cy.delay()</span>  <a href="#core/animation/cy.delay"><span class="icon-bookmark"></span></a></div>
 							
 							
 							
-							<div class="descr"><p>Bind to events that occur in the graph, and trigger the handler only once.</p>
+							<div class="descr"><p>Add a delay between animations for the core.</p>
 </div>
 
 							
@@ -2606,322 +3113,24 @@ cy.zoom({
 								
 									<div class="format">
 										
-											<div class="name">cy.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+											<div class="name">cy.delay( <span class="comma">, </span>duration<span class="comma">, </span>complete )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name"><a href="#events">events</a></span>
+													<span class="name">duration</span>
 													 
-													<span class="descr"><p>A space separated list of event names.</p>
+													<span class="descr"><p>How long the delay should be in milliseconds.</p>
 </span>
 
 													
 												</li>
 											
 												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
+													<span class="name">complete</span>
 													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">cy.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A selector to specify elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.one(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log(<span class="hljs-string">'tap!'</span>);
-});
-
-cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">0</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!</span>
-cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</span>).trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// nothing b/c already tapped</span>
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="core/events/cy.off"><span class="fn-name">cy.off()</span>  <a href="#core/events/cy.off"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Remove event handlers.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">cy.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>The same selector used to bind to the events.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">handler</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A reference to the handler function to remove.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">cy.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions to remove.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>The same selector used to bind to the events.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<p>For all handlers:</p>
-<pre><code class="lang-js">cy.on(<span class="hljs-string">"tap"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> <span class="hljs-comment">/* ... */</span> });
-
-<span class="hljs-comment">// unbind all tap handlers, including the one above</span>
-cy.off(<span class="hljs-string">"tap"</span>);
-</code></pre>
-<p>For a particular handler:</p>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log(<span class="hljs-string">"called handler"</span>);
-};
-cy.on(<span class="hljs-string">"tap"</span>, handler);
-
-<span class="hljs-keyword">var</span> otherHandler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log(<span class="hljs-string">"called other handler"</span>);
-};
-cy.on(<span class="hljs-string">"tap"</span>, otherHandler);
-
-<span class="hljs-comment">// just unbind handler</span>
-cy.off(<span class="hljs-string">"tap"</span>, handler);
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="core/events/cy.trigger"><span class="fn-name">cy.trigger()</span>  <a href="#core/events/cy.trigger"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Trigger one or more events.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">cy.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names to trigger.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">extraParams</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.bind(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt, f, b)</span>{</span>
-  console.log(<span class="hljs-string">'tap'</span>, f, b);
-});
-
-cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>]);
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Get whether the initial render event has occurred (useful for plugins etc).</p>
-</div>
-
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>This function returns whether the <code>initrender</code> event has occurred on the graph, meaning that the renderer has drawn the graph at least once.  This is useful when you need to grab image data from the core, as this function will let you know whether that data is available yet:  You can not grab the graph scene if it has not yet been rendered.</p>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="core/events/cy.ready"><span class="fn-name">cy.ready()</span>  <a href="#core/events/cy.ready"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">cy.ready( <span class="comma">, </span>function() )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">function()</span>
-													 
-													<span class="descr"><p>The callback run as soon as the graph is ready, inside which <code>this</code> refers to the core (<code>cy</code>).</p>
+													<span class="descr"><p>A function to call when the delay is complete.</p>
 </span>
 
 													
@@ -2939,20 +3148,63 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 						</div>
 					
 						<div class="function">
-							<div class="name" id="core/events/cy.initrender"><span class="fn-name">cy.initrender()</span>  <a href="#core/events/cy.initrender"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="core/animation/cy.stop"><span class="fn-name">cy.stop()</span>  <a href="#core/animation/cy.stop"><span class="icon-bookmark"></span></a></div>
 							
 							
 							
-							<div class="descr"><p>Get whether the initial render event has occurred (useful for plugins etc).</p>
+							<div class="descr"><p>Stop all core animations that are currently running.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.stop( <span class="comma">, </span>clearQueue<span class="comma">, </span>jumpToEnd )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">clearQueue</span>
+													 
+													<span class="descr"><p>A boolean, indicating whether the queue of animations should be emptied.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">jumpToEnd</span>
+													 
+													<span class="descr"><p>A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/animation/cy.clearQueue"><span class="fn-name">cy.clearQueue()</span>  <a href="#core/animation/cy.clearQueue"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove all queued animations for the core.</p>
 </div>
 
 							
 
 							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>This function returns whether the <code>initrender</code> event has occurred on the graph, meaning that the renderer has drawn the graph at least once.  This is useful when you need to grab image data from the core, as this function will let you know whether that data is available yet:  You can not grab the graph scene if it has not yet been rendered.</p>
-
 								
 							</div>		
 						</div>
@@ -3362,6 +3614,556 @@ eles.restore();
 <li>adds new elements from the JSON copies.</li>
 </ul>
 <p>This creates the same effect as though the elements have been moved.</p>
+
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="collection/events">Events <a href="#collection/events"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="collection/events/eles.on"><span class="fn-name">eles.on()</span>  <a href="#collection/events/eles.on"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind to events that occur on the elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="defails">Defails</h3>
+<p>In the handler function, <code>this</code> references the originally bound object, and <code>evt.cyTarget</code> references the target of the event.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
+  console.log( <span class="hljs-string">'tap '</span> + evt.cyTarget.id() );
+});
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/events/eles.one"><span class="fn-name">eles.one()</span>  <a href="#collection/events/eles.one"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind a callback function that is triggered once per event per element.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element in the calling collection once.  </p>
+<p>The semantics is a bit more complicated for compound nodes where a delegate selector has been specified:  Note that the handler is called once per element in the <em>calling collection</em>, and the handler is triggered by matching descendant elements.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).one(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  <span class="hljs-keyword">var</span> ele = e.cyTarget;
+  console.log(<span class="hljs-string">'tapped '</span> + ele.id());
+});
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/events/eles.once"><span class="fn-name">eles.once()</span>  <a href="#collection/events/eles.once"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind a callback function that is triggered once per event per collection.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the calling collection.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).once(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
+  <span class="hljs-keyword">var</span> ele = e.cyTarget;
+  console.log(<span class="hljs-string">'clicked '</span> + ele.id());
+});
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/events/eles.off"><span class="fn-name">eles.off()</span>  <a href="#collection/events/eles.off"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Unbind one or more callback functions on the elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The same delegate selector used to bind to the events.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">handler</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A reference to the handler function to remove.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">eles.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions to remove.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The same delegate selector used to bind to the events.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'tap'</span>) };
+
+<span class="hljs-comment">// bind</span>
+j.on(<span class="hljs-string">'tap'</span>, handler);
+
+<span class="hljs-comment">// bind some other handler</span>
+j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'some other handler'</span>);
+});
+
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// 'tap' &amp; 'some other handler'</span>
+
+<span class="hljs-comment">// unbind the renferenced handler</span>
+j.off(<span class="hljs-string">'tap'</span>, handler);
+
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// some other handler</span>
+
+<span class="hljs-comment">// unbind all tap handlers (including unnamed handler)</span>
+j.off(<span class="hljs-string">'tap'</span>);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/events/eles.trigger"><span class="fn-name">eles.trigger()</span>  <a href="#collection/events/eles.trigger"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Trigger events on the elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names to trigger.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">extraParams</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
+  console.log(<span class="hljs-string">'tap!!'</span>);
+});
+
+j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!!</span>
+</code></pre>
 
 								
 							</div>		
@@ -4697,556 +5499,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							
 
 							<div class="details">
-								
-							</div>		
-						</div>
-					
-
-				
-				
-				
-					<h2 id="collection/events">Events <a href="#collection/events"><span class="icon-bookmark"></span></a></h2>
-
-					
-
-					
-						<div class="function">
-							<div class="name" id="collection/events/eles.on"><span class="fn-name">eles.on()</span>  <a href="#collection/events/eles.on"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Bind to events that occur on the elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="defails">Defails</h3>
-<p>In the handler function, <code>this</code> references the originally bound object, and <code>evt.cyTarget</code> references the target of the event.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span>
-  console.log( <span class="hljs-string">'tap '</span> + evt.cyTarget.id() );
-});
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/events/eles.one"><span class="fn-name">eles.one()</span>  <a href="#collection/events/eles.one"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Bind a callback function that is triggered once per event per element.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>For each event specified to this function, the handler function is triggered once per element.  This is useful for one-off events that occur on each element in the calling collection once.  </p>
-<p>The semantics is a bit more complicated for compound nodes where a delegate selector has been specified:  Note that the handler is called once per element in the <em>calling collection</em>, and the handler is triggered by matching descendant elements.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).one(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
-  <span class="hljs-keyword">var</span> ele = e.cyTarget;
-  console.log(<span class="hljs-string">'tapped '</span> + ele.id());
-});
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/events/eles.once"><span class="fn-name">eles.once()</span>  <a href="#collection/events/eles.once"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Bind a callback function that is triggered once per event per collection.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A delegate selector to specify child elements for which the handler is triggered.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>For each event specified to this function, the handler function is triggered once.  This is useful for one-off events that occur on just one element in the calling collection.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.$(<span class="hljs-string">'node'</span>).once(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span>{</span>
-  <span class="hljs-keyword">var</span> ele = e.cyTarget;
-  console.log(<span class="hljs-string">'clicked '</span> + ele.id());
-});
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/events/eles.off"><span class="fn-name">eles.off()</span>  <a href="#collection/events/eles.off"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Unbind one or more callback functions on the elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>The same delegate selector used to bind to the events.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">handler</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A reference to the handler function to remove.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions to remove.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>The same delegate selector used to bind to the events.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
-<span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'tap'</span>) };
-
-<span class="hljs-comment">// bind</span>
-j.on(<span class="hljs-string">'tap'</span>, handler);
-
-<span class="hljs-comment">// bind some other handler</span>
-j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log(<span class="hljs-string">'some other handler'</span>);
-});
-
-j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// 'tap' &amp; 'some other handler'</span>
-
-<span class="hljs-comment">// unbind the renferenced handler</span>
-j.off(<span class="hljs-string">'tap'</span>, handler);
-
-j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// some other handler</span>
-
-<span class="hljs-comment">// unbind all tap handlers (including unnamed handler)</span>
-j.off(<span class="hljs-string">'tap'</span>);
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/events/eles.trigger"><span class="fn-name">eles.trigger()</span>  <a href="#collection/events/eles.trigger"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Trigger events on the elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names to trigger.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">extraParams</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
-
-j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
-  console.log(<span class="hljs-string">'tap!!'</span>);
-});
-
-j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!!</span>
-</code></pre>
-
 								
 							</div>		
 						</div>
@@ -9145,7 +9397,7 @@ path.select();
 
 				
 					<h2 id="selectors/notes-amp-caveats">Notes &amp; caveats <a href="#selectors/notes-amp-caveats"><span class="icon-bookmark"></span></a></h2>
-<p>A selector functions similar to a <a href="http://api.jquery.com/category/selectors/">jQuery selector</a> on DOM elements, but selectors in Cytoscape.js instead work on collections.  Note that wherever a selector may be specified as the argument to a function, a filter function may be used in place of the selector.  For example:</p>
+<p>A selector functions similar to a CSS selector on DOM elements, but selectors in Cytoscape.js instead work on collections of graph elements.  Note that wherever a selector may be specified as the argument to a function, a <a href="#collection/building--filtering/eles.filter"><code>eles.filter()</code></a>-style filter function may be used in place of the selector.  For example:</p>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> neighborhoodEdges = cy.neighborhood(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
   <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.isEdge();
 });
@@ -10166,6 +10418,30 @@ cy.elements().foo();
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>
+						<a href="#core/events"><span class="icon-bookmark bookmark-icon"></span> Events</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#core/events/cy.on"><span class="icon-bookmark bookmark-icon"></span> cy.on() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.one"><span class="icon-bookmark bookmark-icon"></span> cy.one() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.off"><span class="icon-bookmark bookmark-icon"></span> cy.off() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.trigger"><span class="icon-bookmark bookmark-icon"></span> cy.trigger() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.initrender"><span class="icon-bookmark bookmark-icon"></span> cy.initrender() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.ready"><span class="icon-bookmark bookmark-icon"></span> cy.ready() </a></div>
+					
+						<div class="section lvl3"><a href="#core/events/cy.initrender"><span class="icon-bookmark bookmark-icon"></span> cy.initrender() </a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
 						<a href="#core/viewport-manipulation"><span class="icon-bookmark bookmark-icon"></span> Viewport manipulation</a>
 					</div>
 
@@ -10220,23 +10496,19 @@ cy.elements().foo();
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>
-						<a href="#core/events"><span class="icon-bookmark bookmark-icon"></span> Events</a>
+						<a href="#core/animation"><span class="icon-bookmark bookmark-icon"></span> Animation</a>
 					</div>
 
 					
-						<div class="section lvl3"><a href="#core/events/cy.on"><span class="icon-bookmark bookmark-icon"></span> cy.on() </a></div>
+						<div class="section lvl3"><a href="#core/animation/cy.animated"><span class="icon-bookmark bookmark-icon"></span> cy.animated() </a></div>
 					
-						<div class="section lvl3"><a href="#core/events/cy.one"><span class="icon-bookmark bookmark-icon"></span> cy.one() </a></div>
+						<div class="section lvl3"><a href="#core/animation/cy.animate"><span class="icon-bookmark bookmark-icon"></span> cy.animate() </a></div>
 					
-						<div class="section lvl3"><a href="#core/events/cy.off"><span class="icon-bookmark bookmark-icon"></span> cy.off() </a></div>
+						<div class="section lvl3"><a href="#core/animation/cy.delay"><span class="icon-bookmark bookmark-icon"></span> cy.delay() </a></div>
 					
-						<div class="section lvl3"><a href="#core/events/cy.trigger"><span class="icon-bookmark bookmark-icon"></span> cy.trigger() </a></div>
+						<div class="section lvl3"><a href="#core/animation/cy.stop"><span class="icon-bookmark bookmark-icon"></span> cy.stop() </a></div>
 					
-						<div class="section lvl3"><a href="#core/events/cy.initrender"><span class="icon-bookmark bookmark-icon"></span> cy.initrender() </a></div>
-					
-						<div class="section lvl3"><a href="#core/events/cy.ready"><span class="icon-bookmark bookmark-icon"></span> cy.ready() </a></div>
-					
-						<div class="section lvl3"><a href="#core/events/cy.initrender"><span class="icon-bookmark bookmark-icon"></span> cy.initrender() </a></div>
+						<div class="section lvl3"><a href="#core/animation/cy.clearQueue"><span class="icon-bookmark bookmark-icon"></span> cy.clearQueue() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -10295,6 +10567,26 @@ cy.elements().foo();
 						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.restore"><span class="icon-bookmark bookmark-icon"></span> eles.restore() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/graph-manipulation/eles.move"><span class="icon-bookmark bookmark-icon"></span> eles.move() et al</a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a href="#collection/events"><span class="icon-bookmark bookmark-icon"></span> Events</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#collection/events/eles.on"><span class="icon-bookmark bookmark-icon"></span> eles.on() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/events/eles.one"><span class="icon-bookmark bookmark-icon"></span> eles.one() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/events/eles.once"><span class="icon-bookmark bookmark-icon"></span> eles.once() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/events/eles.off"><span class="icon-bookmark bookmark-icon"></span> eles.off() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/events/eles.trigger"><span class="icon-bookmark bookmark-icon"></span> eles.trigger() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -10397,26 +10689,6 @@ cy.elements().foo();
 						<div class="section lvl3"><a href="#collection/selection/eles.selectify"><span class="icon-bookmark bookmark-icon"></span> eles.selectify() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/selection/eles.unselectify"><span class="icon-bookmark bookmark-icon"></span> eles.unselectify() </a></div>
-					
-				
-					<div class="section lvl2">
-						<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
-						</span>
-						<a href="#collection/events"><span class="icon-bookmark bookmark-icon"></span> Events</a>
-					</div>
-
-					
-						<div class="section lvl3"><a href="#collection/events/eles.on"><span class="icon-bookmark bookmark-icon"></span> eles.on() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/events/eles.one"><span class="icon-bookmark bookmark-icon"></span> eles.one() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/events/eles.once"><span class="icon-bookmark bookmark-icon"></span> eles.once() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/events/eles.off"><span class="icon-bookmark bookmark-icon"></span> eles.off() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/events/eles.trigger"><span class="icon-bookmark bookmark-icon"></span> eles.trigger() </a></div>
 					
 				
 					<div class="section lvl2">

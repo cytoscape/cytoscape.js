@@ -27,6 +27,16 @@ try {
   throw '`' + demoFile + '` could not be read and parsed: ' + e;
 }
 
+function linkifyArg( arg ){
+  var link = config.fnArgLinks[ arg.name ];
+  
+  if( link ){
+    arg.linkedName = '<a href="'+ link +'">' + arg.name + '</a>';
+  } else {
+    arg.linkedName = arg.name;
+  }
+}
+
 // var html = converter.makeHtml("**I am bold!**");
 // var html = Handlebars.compile();
 
@@ -154,6 +164,8 @@ function compileConfig( config ){
 
         field.descr = marked( field.descr  || '' );
 
+        linkifyArg( field );
+
         if( field.fields ){
           processFields( field.fields );
         }
@@ -192,6 +204,8 @@ function compileConfig( config ){
             if( format.args ){
               for( var m = 0; m < format.args.length; m++ ){
                 var arg = format.args[m];
+
+                linkifyArg( arg );
 
                 arg.descr = marked( arg.descr || '' );
 

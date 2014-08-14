@@ -152,7 +152,7 @@ cytoscape({
 
 **`textureOnViewport`** : When set to `true`, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.
 
-**`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming. A value between 0 and 1 reduces the sensitivity (zooms slower), a value greater than 1 does the oposite.
+**`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 

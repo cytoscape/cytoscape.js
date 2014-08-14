@@ -734,10 +734,12 @@
 
   // Find edge control points
   CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+    if( !edges || edges.length === 0 ){ return; }
+
     var hashTable = {}; var cy = this.data.cy;
     var pairIds = [];
     var haystackEdges = [];
-    
+
     // create a table of edge (src, tgt) => list of edges between them
     var pairId;
     for (var i = 0; i < edges.length; i++){
@@ -779,8 +781,13 @@
     for (var p = 0; p < pairIds.length; p++) {
       pairId = pairIds[p];
     
-      src = cy.getElementById( hashTable[pairId][0]._private.data.source );
-      tgt = cy.getElementById( hashTable[pairId][0]._private.data.target );
+      // for each pair id, the edges should be sorted by index
+      hashTable[pairId].sort(function(edge1, edge2){
+        return edge1._private.index - edge2._private.index;
+      });
+
+      src = hashTable[pairId][0]._private.source;
+      tgt = hashTable[pairId][0]._private.target;
 
       srcPos = src._private.position;
       tgtPos = tgt._private.position;

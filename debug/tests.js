@@ -42,15 +42,25 @@ $(function(){
 			currentTest.setup();
 		});
 		
+		function randomColor(){
+			function randCh(){
+				return Math.round( Math.random() * 255 );
+			}
+
+			return 'rgb(' + randCh() + ', ' + randCh() + ', ' + randCh() + ')';
+		}
+
 		test({
-			name: "edgehandlesstart",
-			displayName: "Edgehandles force start",
-			description: "Force starts the edgehandles plugin on n0",
+			name: "randomEdgeColors",
+			displayName: "Random edge colours",
+			description: "Set each edge to a random colour",
 			setup: function(){
-				$('#cytoscape').cytoscapeEdgehandles('start', 'n0');
+				cy.edges().each(function(){
+					this.css( 'line-color', randomColor() );
+				});
 			},
 			teardown: function(){
-				
+				cy.edges().removeCss();
 			}
 		});
 

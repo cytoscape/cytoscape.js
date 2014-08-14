@@ -128,7 +128,7 @@
 								{{#each formats}}
 									<div class="format">
 										{{#if args}}
-											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{name}}{{#if optional}}]{{/if}}{{/each}} )</div>
+											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}} )</div>
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}
@@ -136,7 +136,7 @@
 										<ul class="args">
 											{{#each args}}
 												<li>
-													<span class="name">{{name}}</span>
+													<span class="name">{{{linkedName}}}</span>
 													{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
 													<span class="descr">{{{descr}}}</span>
 
@@ -144,7 +144,7 @@
 													<ul class="fields">
 														{{#each fields}}
 															<li>
-																<span class="name">{{name}}</span>
+																<span class="name">{{{linkedName}}}</span>
 																{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
 																<span class="descr">{{{descr}}}</span>
 															</li>
@@ -153,7 +153,7 @@
 															<ul class="fields">
 																{{#each fields}}
 																<li>
-																	<span class="name">{{name}}</span>
+																	<span class="name">{{{linkedName}}}</span>
 																	{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
 																	<span class="descr">{{{descr}}}</span>
 																</li>

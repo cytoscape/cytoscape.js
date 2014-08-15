@@ -6,7 +6,7 @@ $(function(){
 		$("#layout-button").bind("click", function(){
 			cy.layout({
 				name: $("#layout-select").val()
-			});
+			}).run();
 		});
 
 		var start, end;

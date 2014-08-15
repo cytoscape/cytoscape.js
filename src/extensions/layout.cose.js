@@ -82,6 +82,8 @@
     var options = this.options;
     var cy      = options.cy;
 
+    cy.trigger('layoutstart');
+
     // Set DEBUG - Global variable
     if (true === options.debug) {
       DEBUG = true;

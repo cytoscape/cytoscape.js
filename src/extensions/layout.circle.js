@@ -19,6 +19,8 @@
     var options = params;
     
     var cy = params.cy;
+    cy.trigger('layoutstart');
+      
     var nodes = cy.nodes().filter(function(){
       return !this.isFullAutoParent();
     });

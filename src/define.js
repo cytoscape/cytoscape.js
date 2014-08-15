@@ -404,7 +404,6 @@
               
               evt.cyTarget = evt.cyTarget || triggerer;
               evt.cy = evt.cy || cy;
-              evt.namespace = evt.namespace || evtObj.namespace;
 
             } else { // then we have to make one
               evt = new $$.Event( evtObj, {
@@ -414,7 +413,12 @@
               } );
             }
 
-            // Create a rendered position based on the passed position
+            // if a layout was specified, then put it in the typed event
+            if( evtObj.layout ){
+              evt.layout = evtObj.layout;
+            }
+
+            // create a rendered position based on the passed position
             if( evt.cyPosition ){
               var pos = evt.cyPosition;
               var zoom = cy.zoom();

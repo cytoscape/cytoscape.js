@@ -23,8 +23,8 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">unstable</span></h1>
-			<div class="subtitle">An open-source JavaScript graph theory library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">unstable</span></h1>
+			<div class="subtitle">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
@@ -293,7 +293,7 @@ cy = cytoscape( options = {
 
 				
 					<h2 id="introduction/about">About <a href="#introduction/about"><span class="icon-bookmark"></span></a></h2>
-<p>Cytoscape.js is an open-source <a href="http://en.wikipedia.org/wiki/Graph_theory">graph theory</a> library written in JavaScript.  You can use Cytoscape.js for graph analysis and visualisation.</p>
+<p>Cytoscape.js is an open-source <a href="http://en.wikipedia.org/wiki/Graph_theory">graph theory</a> (a.k.a. network) library written in JavaScript.  You can use Cytoscape.js for graph analysis and visualisation.</p>
 <p>Cytoscape.js allows you to easily display and manipulate rich, interactive graphs.  Because Cytoscape.js allows the user to interact with the graph and the library allows the client to hook into user events, Cytoscape.js is easily integrated into your webapp, especially since Cytoscape.js supports both desktop browsers, like Chrome, and mobile browsers, like on the iPad.  Cytoscape.js includes all the gestures you would expect out-of-the-box, including pinch-to-zoom, box selection, panning, et cetera.</p>
 <p>Cytoscape.js also has graph analysis in mind:  The library contains a slew of useful functions in graph theory.  You can use Cytoscape.js headlessly on Node.js to do graph analysis in the terminal or on a web server.</p>
 <p>Cytoscape.js is an open-source project, and anyone is free to contribute.  For more information, refer to the <a href="https://github.com/cytoscape/cytoscape.js">GitHub README</a>.</p>
@@ -9759,7 +9759,10 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <ul>
 <li><code>cyPosition</code> : indicates the model position of the event</li>
 <li><code>cyRenderedPosition</code> : indicates the rendered position of the event</li>
-<li><code>originalEvent</code> : the original user input device event object</li>
+<li><p><code>originalEvent</code> : the original user input device event object</p>
+<p>Fields for only layout events:</p>
+</li>
+<li><code>layout</code> : indicates the corresponding layout that triggered the event (useful if running multiple layouts simultaneously)</li>
 </ul>
 <h2 id="events/event-bubbling">Event bubbling <a href="#events/event-bubbling"><span class="icon-bookmark"></span></a></h2>
 <p>All events that occur on elements get bubbled up to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the <code>eventObj.cyTarget</code> field, which indicates the originator of the event (i.e. <code>eventObj.cyTarget === cy || eventObj.cyTarget === someEle</code>).</p>
@@ -9964,7 +9967,7 @@ cy.layout( options );
 cy.layout( options );
 </code></pre>
 <h2 id="layouts/arbor">Arbor <a href="#layouts/arbor"><span class="icon-bookmark"></span></a></h2>
-<p>The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.</p>
+<p>The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.  For more information about Arbor and its parameters, refer to <a href="http://arborjs.org/reference">its documentation</a>.</p>
 <pre><code class="lang-js">options = {
     name: <span class="hljs-string">'arbor'</span>,
 
@@ -10006,8 +10009,8 @@ cy.layout( options );
 <p>Notes about arbor:</p>
 <ul>
 <li>For webworkers to work properly, you need to point your browser to a server URL (e.g. <code>http://</code>) rather than a local address (e.g. <code>file://</code>).</li>
-<li>Please note that the <code>liveUpdate</code> option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
-<li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js in the <code>&lt;head&gt;</code> of your HTML document:</li>
+<li>Please note that the <code>liveUpdate</code> option can potentially be expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to <code>false</code>.</li>
+<li>NB: You must reference the version of <code>arbor.js</code> included with Cytoscape.js (or the unpatched, original <a href="http://arborjs.org"><code>arbor.js</code></a> if you are unaffected by the issues it contains) in the <code>&lt;head&gt;</code> of your HTML document:</li>
 </ul>
 <pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">head</span>&gt;</span>
     ...
@@ -10233,7 +10236,7 @@ cy.elements().foo();
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>

@@ -677,7 +677,7 @@
           "fns": [
             {
               "name": "cy.layout",
-              "descr": "Position elements in the graph with a layout.",
+              "descr": "Initialise a layout, which can be used to position nodes in the graph.",
               "formats": [
                 {
                   "args": [

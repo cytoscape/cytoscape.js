@@ -26,6 +26,7 @@
   DagreLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy; // cy is automatically populated for us in the constructor
+    cy.trigger('layoutstart');
 
     var g = new dagre.Digraph();
 

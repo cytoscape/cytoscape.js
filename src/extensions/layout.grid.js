@@ -1,6 +1,8 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // padding used on fit
     rows: undefined, // force num of rows in the grid
@@ -19,6 +21,8 @@
     var options = params;
     
     var cy = params.cy;
+    cy.trigger('layoutstart');
+
     var nodes = cy.nodes();
     var container = cy.container();
     
@@ -169,7 +173,7 @@
         }
       }
 
-      nodes.positions(function(i, element){
+      var getPos = function(i, element){
         var x, y;
 
         if( element.locked() || element.isFullAutoParent() ){
@@ -197,18 +201,52 @@
         
         return { x: x, y: y };
         
-      });
+      };
+
+      if( options.animate ){
+        for( var i = 0; i < nodes.length; i++ ){
+          var node = nodes[i];
+
+          var newPos = getPos( i, node );
+          var pos = node.position();
+
+          if( !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
+            node.silentPosition({ x: 0, y: 0 });
+          }
+
+          cy.one('layoutready', params.ready);
+          cy.trigger('layoutready');
+
+          node.animate({
+            position: newPos
+          }, {
+            duration: options.animationDuration,
+            step: i != 0 ? undefined : function(){
+              if( params.fit ){
+                cy.fit( options.padding );
+              } 
+            },
+            complete: i != nodes.length - 1 ? undefined : function(){
+              cy.one('layoutstop', params.stop);
+              cy.trigger('layoutstop');
+            }
+          });
+        }
+      } else {
+        nodes.positions( getPos );
+
+        if( params.fit ){
+          cy.fit( options.padding );
+        } 
+
+        cy.one('layoutready', params.ready);
+        cy.trigger('layoutready');
+        
+        cy.one('layoutstop', params.stop);
+        cy.trigger('layoutstop');
+      }
     }
     
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
   };
 
   GridLayout.prototype.stop = function(){

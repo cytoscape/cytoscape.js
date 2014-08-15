@@ -1,11 +1,11 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
-    liveUpdate: true, // whether to show the layout as it's running
+    animate: true, // whether to show the layout as it's running
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
-    fit: true, // reset viewport to fit default simulation width & height
+    fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
     simulationWidth: undefined, // uses viewport width by default
     simulationHeight: undefined, // uses viewport height by default
@@ -34,8 +34,7 @@
     },
 
     // infinite layout options
-    infinite: false, // overrides all other options for a forces-all-the-time mode
-    infiniteFit: false // on every layout reposition of nodes, fit the viewport
+    infinite: false // overrides all other options for a forces-all-the-time mode
   };
   
   function ArborLayout(options){
@@ -55,6 +54,13 @@
     this._private.height = cy.height();
     var simUpdatingPos = false;
     var layout = this;
+
+    cy.trigger({ type: 'layoutstart', layout: this });
+
+    // backward compatibility for old animation option
+    if( options.liveUpdate !== undefined ){
+      options.animate = options.liveUpdate;
+    }
 
     if( options.simulationWidth != null && options.simulationHeight != null ){
       this._private.width = options.simulationWidth; 
@@ -103,7 +109,7 @@
       precision: options.precision
     });
 
-    if( options.liveUpdate && options.fit ){
+    if( options.animate && options.fit ){
       cy.fit( this._private.simBB );
     }
     
@@ -154,12 +160,12 @@
         
 
         var timeToDraw = (+new Date() - lastDraw) >= 16;
-        if( options.liveUpdate && movedNodes.length > 0 ){
+        if( options.animate && movedNodes.length > 0 ){
           simUpdatingPos = true;
 
           new $$.Collection(cy, movedNodes).rtrigger('position');
 
-          if( options.infiniteFit ){
+          if( options.fit ){
             cy.fit( options.padding );
           }
 
@@ -271,6 +277,16 @@
       }
     });
 
+    var resizeHandler;
+    cy.on('resize', resizeHandler = function(){
+      if( layout._private.system != null ){
+        var w = layout._private.width = cy.width();
+        var h = layout._private.height = cy.height();
+
+        layout._private.system.screenSize( w, h );
+      }
+    });
+
     function addNode( node ){
       if( node.isFullAutoParent() ){ return; } // they don't exist in the sim
 
@@ -337,7 +353,7 @@
       }
       
       function done(){
-        if( !options.liveUpdate ){
+        if( !options.animate ){
           if( options.fit ){
             cy.reset();
           }
@@ -346,10 +362,11 @@
         }
 
         // unbind handlers
-        nodes.off('grab free drag', grabHandler);
+        nodes.off('grab free position', grabHandler);
         nodes.off('lock unlock', lockHandler);
         eles.off('remove', removeHandler);
         cy.off('add', '*', addHandler);
+        cy.off('resize', resizeHandler);
         
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
@@ -370,17 +387,6 @@
     
   };
 
-  ArborLayout.prototype.pause = function(){
-    if( this._private.system != null ){
-      this._private.system.stop();
-    }
-  };
-
-  ArborLayout.prototype.resume = function(){
-    if( this._private.system != null ){
-      this._private.system.start();
-    }
-  };
 
   ArborLayout.prototype.stop = function(){
     if( this._private.system != null ){
@@ -389,17 +395,6 @@
 
     if( this._private.doneHandler ){
       this._private.doneHandler();
-    }
-  };
-
-  ArborLayout.prototype.resize = function(){
-    if( this._private.system != null ){
-      var cy = this._private.options.cy;
-
-      var w = this._private.width = cy.width();
-      var h = this._private.height = cy.height();
-
-      this._private.system.screenSize( w, h );
     }
   };
   

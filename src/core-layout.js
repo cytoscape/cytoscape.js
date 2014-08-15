@@ -3,30 +3,7 @@
   $$.fn.core({
     
     layout: function( params ){
-      var cy = this;
-      
-      if( this._private.layoutRunning ){ // don't run another layout if one's already going
-        return this._private.layout;
-      }
-
-      // if no params, return layout
-      if( params == null ){
-        return this._private.layout;
-      }
-      
-      this.initLayout( params );
-      
-      cy.trigger('layoutstart');
-      
-      this._private.layoutRunning = true;
-      this.one('layoutstop', function(){
-        cy._private.layoutRunning = false;
-      });
-
-      this._private.layout.run();
-      
-      return this._private.layout;
-      
+      return this.initLayout( params );
     },
     
     initLayout: function( options ){
@@ -44,15 +21,16 @@
       var LayoutProto = $$.extension('layout', name);
       
       if( LayoutProto == null ){
-        $$.util.error('Can not apply layout: No such layout `%s` found; did you include its JS file?', name);
+        $$.util.error('Can not apply layout: No such layout `' + name + '` found; did you include its JS file?');
         return;
       }
       
-      this._private.layout = new LayoutProto( $$.util.extend({}, options, {
+      var layout = new LayoutProto( $$.util.extend({}, options, {
         renderer: this._private.renderer,
         cy: this
       }) );
-      this._private.options.layout = options; // save options
+      
+      return layout;
     }
     
   });

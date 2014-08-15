@@ -21,7 +21,7 @@
     // fill in missing (optional) layout functions in the prototype
     if( type === 'layout' ){
       var layoutProto = registrant.prototype;
-      var optLayoutFns = ['stop', 'resume', 'pause', 'resize'];
+      var optLayoutFns = ['stop'];
 
       for( var i = 0; i < optLayoutFns.length; i++ ){
         var fnName = optLayoutFns[i];

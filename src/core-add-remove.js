@@ -116,7 +116,7 @@
           cy.trigger('done');
         });
         
-        cy.layout( cy._private.options.layout );
+        cy.layout( cy._private.options.layout ).run();
 
       }
 

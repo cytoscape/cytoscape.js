@@ -16,6 +16,7 @@
   ColaLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy; // cy is automatically populated for us in the constructor
+    cy.trigger('layoutstart');
 
     // puts all nodes at (0, 0)
     cy.nodes().positions(function(){

@@ -19,6 +19,8 @@
     var options = this.options;
 
     var cy = options.cy;
+    cy.trigger('layoutstart');
+    
     var nodes = cy.nodes();
     var edges = cy.edges();
  

@@ -28,6 +28,8 @@
     var width = cy.width();
     var height = cy.height();
 
+    cy.trigger('layoutstart');
+
     var roots;
     if( $$.is.elementOrCollection(options.roots) ){
       roots = options.roots;
@@ -50,7 +52,7 @@
       } else {
         var maxDegree = nodes.maxDegree( false );
         roots = nodes.filter(function(){
-          return this.degree() === maxDegree;
+          return this.degree(false) === maxDegree;
         });
       }
     }

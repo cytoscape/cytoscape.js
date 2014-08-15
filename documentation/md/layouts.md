@@ -17,7 +17,7 @@ options = {
 	stop: function(){} // on layoutstop
 }
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 
@@ -34,7 +34,7 @@ options = {
 	fit: true // whether to fit to viewport
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 
@@ -56,7 +56,7 @@ options = {
 	padding: 30 // padding on fit
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 
@@ -77,7 +77,7 @@ options = {
 	stop: undefined // callback on layoutstop
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 
 ```
 
@@ -99,7 +99,7 @@ options = {
 	counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 ## Concentric
@@ -127,7 +127,7 @@ options = {
 	}
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 
@@ -149,14 +149,14 @@ options = {
 	maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 
 
 ## Arbor
 
-The `arbor` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation.
+The `arbor` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation.  For more information about Arbor and its parameters, refer to [its documentation](http://arborjs.org/reference).
 
 ```js
 options = {
@@ -195,14 +195,14 @@ options = {
 };
 
 
-cy.layout( options );
+cy.layout( options ).run();
 ```
 
 Notes about arbor:
 
  * For webworkers to work properly, you need to point your browser to a server URL (e.g. `http://`) rather than a local address (e.g. `file://`).
- * Please note that the `liveUpdate` option is expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to `false`.
- * NB: You must reference the version of `arbor.js` included with Cytoscape.js in the `<head>` of your HTML document:
+ * Please note that the `liveUpdate` option can potentially be expensive, so if you are concerned about running time (e.g. for large graphs), you should set it to `false`.
+ * NB: You must reference the version of `arbor.js` included with Cytoscape.js (or the unpatched, original [`arbor.js`](http://arborjs.org) if you are unaffected by the issues it contains) in the `<head>` of your HTML document:
 
 ```html
 <head>
@@ -282,5 +282,5 @@ options = {
 	minTemp             : 1
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 ```

@@ -12,6 +12,8 @@
     // general layout options
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
     ready: function(){}, // on layoutready
     stop: function(){} // on layoutstop
   };
@@ -26,12 +28,11 @@
   DagreLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy; // cy is automatically populated for us in the constructor
-    cy.trigger('layoutstart');
 
     var g = new dagre.Digraph();
 
     // add nodes to dagre
-    var nodes = cy.nodes();
+    var nodes = cy.nodes().not(':parent');
     for( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
 
@@ -71,7 +72,7 @@
       cy.getElementById(id).scratch().dagre = n;
     });
 
-    nodes.positions(function(){
+    nodes.layoutPositions(this, options, function(){
       var dModel = this.scratch().dagre;
 
       return {
@@ -79,18 +80,6 @@
         y: dModel.y
       };
     });
-
-    if( options.fit ){
-      cy.fit( options.padding );
-    }
-
-    // trigger layoutready when each node has had its position set at least once
-    cy.one('layoutready', options.ready);
-    cy.trigger('layoutready');
-
-    // trigger layoutstop when the layout stops (e.g. finishes)
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
   };
 
   // called on continuous layouts to stop them before they finish

@@ -46,7 +46,7 @@
   ArborLayout.prototype.run = function(){
     var options = this._private.options;
     var cy = options.cy;
-    var nodes = cy.nodes();
+    var nodes = cy.nodes().not(':parent');
     var edges = cy.edges();
     var eles = nodes.add( edges );
     var container = cy.container();
@@ -89,10 +89,10 @@
       });
 
       cy.one('layoutready', options.ready);
-      cy.trigger('layoutready');
+      cy.trigger({ type: 'layoutready', layout: layout });
 
       cy.one('layoutstop', options.stop);
-      cy.trigger('layoutstop');
+      cy.trigger({ type: 'layoutstop', layout: layout });
 
       return;
     }
@@ -110,7 +110,7 @@
     });
 
     if( options.animate && options.fit ){
-      cy.fit( this._private.simBB );
+      cy.fit( this._private.simBB, options.padding );
     }
     
     var doneTime = 250;
@@ -136,7 +136,7 @@
           doneTimeout = setTimeout(doneHandler, doneTime);
         }
         
-        var movedNodes = [];
+        var movedNodes = cy.collection();
         
         sys.eachNode(function(n, point){ 
           var data = n.data;
@@ -154,7 +154,7 @@
               y: bb.y1 + point.y
             });
 
-            movedNodes.push( node );
+            movedNodes.merge( node );
           }
         });
         
@@ -163,7 +163,7 @@
         if( options.animate && movedNodes.length > 0 ){
           simUpdatingPos = true;
 
-          new $$.Collection(cy, movedNodes).rtrigger('position');
+          movedNodes.rtrigger('position');
 
           if( options.fit ){
             cy.fit( options.padding );
@@ -177,7 +177,7 @@
         if( !ready ){
           ready = true;
           cy.one('layoutready', options.ready);
-          cy.trigger('layoutready');
+          cy.trigger({ type: 'layoutready', layout: layout });
         }
       }
       
@@ -225,6 +225,8 @@
 
       var pos = this.position();
       var apos = sys.fromScreen( pos );
+      if( !apos ){ return; }
+
       var p = arbor.Point(apos.x, apos.y);
       var padding = options.padding;
       var bb = layout._private.simBB;
@@ -326,15 +328,6 @@
       addEdge( edge );
     });
     
-    function packToCenter(callback){
-      // TODO implement this for IE :(
-      
-      if( options.fit ){
-        cy.fit();
-      }
-      callback();
-    }
-    
     var grabbableNodes = nodes.filter(":grabbable");
     // disable grabbing if so set
     if( options.ungrabifyWhileSimulating ){
@@ -344,38 +337,28 @@
     var doneHandler = layout._private.doneHandler = function(){
       layout._private.doneHandler = null;
 
-      if( window.isIE ){
-        packToCenter(function(){
-          done();
-        });
-      } else {
-        done();
+      if( !options.animate ){
+        if( options.fit ){
+          cy.reset();
+        }
+
+        nodes.rtrigger('position');
       }
+
+      // unbind handlers
+      nodes.off('grab free position', grabHandler);
+      nodes.off('lock unlock', lockHandler);
+      eles.off('remove', removeHandler);
+      cy.off('add', '*', addHandler);
+      cy.off('resize', resizeHandler);
       
-      function done(){
-        if( !options.animate ){
-          if( options.fit ){
-            cy.reset();
-          }
-
-          cy.nodes().rtrigger('position');
-        }
-
-        // unbind handlers
-        nodes.off('grab free position', grabHandler);
-        nodes.off('lock unlock', lockHandler);
-        eles.off('remove', removeHandler);
-        cy.off('add', '*', addHandler);
-        cy.off('resize', resizeHandler);
-        
-        // enable back grabbing if so set
-        if( options.ungrabifyWhileSimulating ){
-          grabbableNodes.grabify();
-        }
-
-        cy.one('layoutstop', options.stop);
-        cy.trigger('layoutstop');
+      // enable back grabbing if so set
+      if( options.ungrabifyWhileSimulating ){
+        grabbableNodes.grabify();
       }
+
+      cy.one('layoutstop', options.stop);
+      cy.trigger({ type: 'layoutstop', layout: layout });
     };
     
     sys.start();

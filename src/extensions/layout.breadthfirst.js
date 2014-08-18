@@ -2,13 +2,15 @@
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
     roots: undefined, // the roots of the trees
-    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function BreadthFirstLayout( options ){
@@ -27,8 +29,6 @@
     
     var width = cy.width();
     var height = cy.height();
-
-    cy.trigger('layoutstart');
 
     var roots;
     if( $$.is.elementOrCollection(options.roots) ){
@@ -287,7 +287,7 @@
       x: width/2,
       y: height/2
     };
-    nodes.positions(function(){
+    nodes.layoutPositions(this, options, function(){
       var ele = this[0];
       var info = ele._private.scratch.BreadthFirstLayout;
       var depth = info.depth;
@@ -321,15 +321,6 @@
       
     });
     
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
   };
 
   BreadthFirstLayout.prototype.stop = function(){

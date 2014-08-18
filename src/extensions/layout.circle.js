@@ -2,12 +2,14 @@
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     rStepSize: 10, // the step size for increasing the radius if the nodes don't fit on screen
     padding: 30, // the padding on fit
     startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
+    counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function CircleLayout( options ){
@@ -19,7 +21,6 @@
     var options = params;
     
     var cy = params.cy;
-    cy.trigger('layoutstart');
       
     var nodes = cy.nodes().filter(function(){
       return !this.isFullAutoParent();
@@ -69,9 +70,7 @@
       r += options.rStepSize;
     }
 
-
-    var i = 0;
-    nodes.positions(function(){
+    var getPos = function( i, ele ){
       var rx = r * Math.cos( theta );
       var ry = r * Math.sin( theta );
       var pos = {
@@ -79,20 +78,11 @@
         y: center.y + ry
       };
 
-      i++;
       theta = options.counterclockwise ? theta - dTheta : theta + dTheta;
       return pos;
-    });
+    };
     
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
+    nodes.layoutPositions( this, options, getPos );
   };
 
   CircleLayout.prototype.stop = function(){

@@ -37,11 +37,6 @@
 
   // called on continuous layouts to stop them before they finish
   NullLayout.prototype.stop = function(){
-    var options = this.options;
-    var cy = options.cy;
-
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
   };
 
   // register the layout

@@ -3,6 +3,14 @@
   $$.fn.core({
     
     layout: function( params ){
+      var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+
+      layout.run();
+
+      return this; // chaining
+    },
+
+    makeLayout: function( params ){
       return this.initLayout( params );
     },
     

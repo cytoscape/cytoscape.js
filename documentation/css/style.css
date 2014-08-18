@@ -552,6 +552,10 @@ pre code {
 	font-family: Consolas, "Liberation Mono", Courier, monospace;
 }
 
+.function .pure-alias:last-child .pure-alias-comma {
+	display: none;
+}
+
 .function > .formats,
 .function > .details {
 	margin: 0.25em 0;

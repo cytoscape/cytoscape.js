@@ -116,7 +116,9 @@
 								Aliases:
 
 								{{#each pureAliases}}
-									<span class="pure-alias-name">{{this}}()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">{{this}}()</span><span class="pure-alias-comma">,</span>
+									</span>
 								{{/each}}
 							</div>
 							{{/if}}

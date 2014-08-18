@@ -2376,16 +2376,10 @@
 
             {
               "name": "nodes.parents",
+              "pureAliases": ["nodes.ancestors"],
               "descr": "Get all ancestor nodes of each node in the collection.",
               "formats": [
                 {
-                  "args": [
-                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
-                  ]
-                },
-
-                {
-                  "name": "nodes.ancestors",
                   "args": [
                     { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
                   ]

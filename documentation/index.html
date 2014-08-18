@@ -3223,7 +3223,7 @@ cy.zoom({
 							
 							
 							
-							<div class="descr"><p>Position elements in the graph with a layout.</p>
+							<div class="descr"><p>Initialise a layout, which can be used to position nodes in the graph.</p>
 </div>
 
 							
@@ -3255,10 +3255,12 @@ cy.zoom({
 								
 									<h3 id="details">Details</h3>
 <p>For layouts included with Cytoscape.js, you can find their options documented in the <a href="#layouts">Layouts section</a>.  For external layouts, please refer to their accompanying documentation.</p>
-<p>You must specify <code>options.name</code> with the name of the layout you wish to run.</p>
+<p>You must specify <code>options.name</code> with the name of the layout you wish to use.</p>
+<p>This function creates and returns a layout object.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously. </p>
+<p><span class="important-indicator"></span> Note that you must call <code>.run()</code> on a layout in order for it to affect the graph.</p>
 <h3 id="examples">Examples</h3>
 <p>Run the grid layout:</p>
-<pre><code class="lang-js">cy.layout({ name: <span class="hljs-string">'grid'</span> });
+<pre><code class="lang-js">cy.layout({ name: <span class="hljs-string">'grid'</span> }).run();
 </code></pre>
 
 								
@@ -5520,7 +5522,9 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 								Aliases:
 
 								
-									<span class="pure-alias-name">eles.style()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">eles.style()</span><span class="pure-alias-comma">,</span>
+									</span>
 								
 							</div>
 							
@@ -5633,7 +5637,9 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 								Aliases:
 
 								
-									<span class="pure-alias-name">eles.removeStyle()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">eles.removeStyle()</span><span class="pure-alias-comma">,</span>
+									</span>
 								
 							</div>
 							
@@ -5656,7 +5662,9 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 								Aliases:
 
 								
-									<span class="pure-alias-name">eles.renderedStyle()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">eles.renderedStyle()</span><span class="pure-alias-comma">,</span>
+									</span>
 								
 							</div>
 							
@@ -8492,7 +8500,9 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 								Aliases:
 
 								
-									<span class="pure-alias-name">eles.bfs()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">eles.bfs()</span><span class="pure-alias-comma">,</span>
+									</span>
 								
 							</div>
 							
@@ -8676,7 +8686,9 @@ path.select();
 								Aliases:
 
 								
-									<span class="pure-alias-name">eles.dfs()</span>
+									<span class="pure-alias">
+										<span class="pure-alias-name">eles.dfs()</span><span class="pure-alias-comma">,</span>
+									</span>
 								
 							</div>
 							
@@ -9863,7 +9875,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
     stop: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>} <span class="hljs-comment">// on layoutstop</span>
 }
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/random">Random <a href="#layouts/random"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>random</code> layout puts nodes in random positions within the viewport.</p>
@@ -9875,7 +9887,7 @@ cy.layout( options );
     fit: <span class="hljs-literal">true</span> <span class="hljs-comment">// whether to fit to viewport</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/preset">Preset <a href="#layouts/preset"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>preset</code> layout puts nodes in the positions you specify manually.</p>
@@ -9891,7 +9903,7 @@ cy.layout( options );
     padding: <span class="hljs-number">30</span> <span class="hljs-comment">// padding on fit</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/grid">Grid <a href="#layouts/grid"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>grid</code> layout puts nodes in a well-spaced grid.</p>
@@ -9907,7 +9919,7 @@ cy.layout( options );
     stop: <span class="hljs-literal">undefined</span> <span class="hljs-comment">// callback on layoutstop</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/circle">Circle <a href="#layouts/circle"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>circle</code> layout puts nodes in a circle.</p>
@@ -9923,7 +9935,7 @@ cy.layout( options );
     counterclockwise: <span class="hljs-literal">false</span> <span class="hljs-comment">// whether the layout should go counterclockwise (true) or clockwise (false)</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/concentric">Concentric <a href="#layouts/concentric"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>concentric</code> layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the <code>concentric</code> layout value based on your metric, which can be used with <code>mapLayoutData()</code>.</p>
@@ -9947,7 +9959,7 @@ cy.layout( options );
     }
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/breadthfirst">Breadthfirst <a href="#layouts/breadthfirst"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.</p>
@@ -9964,7 +9976,7 @@ cy.layout( options );
     maximalAdjustments: <span class="hljs-number">0</span> <span class="hljs-comment">// how many times to try to position the nodes in a maximal way (i.e. no backtracking)</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <h2 id="layouts/arbor">Arbor <a href="#layouts/arbor"><span class="icon-bookmark"></span></a></h2>
 <p>The <code>arbor</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.  For more information about Arbor and its parameters, refer to <a href="http://arborjs.org/reference">its documentation</a>.</p>
@@ -10004,7 +10016,7 @@ cy.layout( options );
 };
 
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 <p>Notes about arbor:</p>
 <ul>
@@ -10081,7 +10093,7 @@ It was implemented by Gerardo Huck as part of Google Summer of Code 2013 (Mentor
     minTemp             : <span class="hljs-number">1</span>
 };
 
-cy.layout( options );
+cy.layout( options ).run();
 </code></pre>
 
 				
@@ -10236,7 +10248,7 @@ cy.elements().foo();
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>

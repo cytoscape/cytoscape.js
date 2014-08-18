@@ -18,15 +18,17 @@
     // Called on `layoutstop`
     stop                : function() {},
 
+    // Whether to animate while running the layout
+    animate             : true,
+
     // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-    refresh             : 0,
+    refresh             : 4,
     
     // Whether to fit the network view after when done
     fit                 : true, 
 
     // Padding on fit
     padding             : 30, 
-
 
     // Whether to randomize node positions on the beginning
     randomize           : true,
@@ -81,8 +83,11 @@
   CoseLayout.prototype.run = function() {
     var options = this.options;
     var cy      = options.cy;
+    var layout  = this;
 
-    cy.trigger('layoutstart');
+    layout.stopped = false;
+
+    cy.trigger({ type: 'layoutstart', layout: layout });
 
     // Set DEBUG - Global variable
     if (true === options.debug) {
@@ -105,23 +110,18 @@
     // If required, randomize node positions
     if (true === options.randomize) {
       randomizePositions(layoutInfo, cy);
-
-      if (0 < options.refresh) {
-        refreshPositions(layoutInfo, cy, options);
-      }
     }
 
     updatePositions(layoutInfo, cy, options);
 
-    // Main loop
-    for (var i = 0; i < options.numIter; i++) {
+    var mainLoop = function(i){
+      if( layout.stopped ){
+        logDebug("Layout manually stopped. Stopping computation in step " + i);
+        return false;
+      }
+
       // Do one step in the phisical simulation
       step(layoutInfo, cy, options, i);
-
-      // If required, update positions
-      if (0 < options.refresh && 0 === (i % options.refresh)) {
-        refreshPositions(layoutInfo, cy, options);
-      }
       
       // Update temperature
       layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
@@ -129,25 +129,66 @@
 
       if (layoutInfo.temperature < options.minTemp) {
         logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-        break;
+        return false;
       }
+
+      return true;
+    };
+
+    var done = function(){
+      refreshPositions(layoutInfo, cy, options);
+
+      // Fit the graph if necessary
+      if (true === options.fit) {
+        cy.fit( options.padding );
+      }
+      
+      // Get end time
+      var endTime = new Date();
+
+      console.info('Layout took ' + (endTime - startTime) + ' ms');
+
+      // Layout has finished
+      cy.one('layoutstop', options.stop);
+      cy.trigger({ type: 'layoutstop', layout: layout });
+    };
+
+    if( options.animate ){
+      var i = 0;
+      var frame = function(){
+
+        var f = 0;
+        var loopRet;
+        while( f < options.refresh && i < options.numIter ){
+          var loopRet = mainLoop(i);
+          if( loopRet === false ){ break; }
+
+          f++;
+          i++;
+        }
+
+        refreshPositions(layoutInfo, cy, options);
+        if( options.fit ){
+          cy.fit( options.padding );
+        }
+
+        if ( loopRet !== false && i + 1 < options.numIter ) {
+          $$.util.requestAnimationFrame( frame );
+        } else {
+          done();
+        }
+      };
+
+      $$.util.requestAnimationFrame( frame );
+    } else {
+      for (var i = 0; i < options.numIter; i++) {
+        if( mainLoop(i) === false ){ break; }
+      }
+
+      done();
     }
+   
     
-    refreshPositions(layoutInfo, cy, options);
-
-    // Fit the graph if necessary
-    if (true === options.fit) {
-      cy.fit( options.padding );
-    }
-    
-    // Get end time
-    var endTime = new Date();
-
-    console.info('Layout took ' + (endTime - startTime) + ' ms');
-
-    // Layout has finished
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
   };
 
 
@@ -155,10 +196,7 @@
    * @brief : called on continuous layouts to stop them before they finish
    */
   CoseLayout.prototype.stop = function(){
-    var options = this.options;
-
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+    this.stopped = true;
   };
 
 
@@ -511,7 +549,7 @@
       logDebug(s);
       layoutInfo.ready = true;
       cy.one('layoutready', options.ready);
-      cy.trigger('layoutready');
+      cy.trigger({ type: 'layoutready', layout: this });
     }
   };
 
@@ -918,20 +956,20 @@
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      logDebug("Resetting boundaries of compound node: " + n.id);
-      n.maxX = undefined;
-      n.minX = undefined;
-      n.maxY = undefined;
-      n.minY = undefined;
+        logDebug("Resetting boundaries of compound node: " + n.id);
+        n.maxX = undefined;
+        n.minX = undefined;
+        n.maxY = undefined;
+        n.minY = undefined;
       }
     }
 
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      // No need to set compound node position
-      logDebug("Skipping position update of node: " + n.id);
-      continue;
+        // No need to set compound node position
+        logDebug("Skipping position update of node: " + n.id);
+        continue;
       }
       s = "Node: " + n.id + " Previous position: (" + 
       n.positionX + ", " + n.positionY + ")."; 
@@ -957,14 +995,14 @@
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      n.positionX = (n.maxX + n.minX) / 2;
-      n.positionY = (n.maxY + n.minY) / 2;
-      n.width     = n.maxX - n.minX;
-      n.height    = n.maxY - n.minY;
-      s = "Updating position, size of compound node " + n.id;
-      s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
-      s += "\nWidth: " + n.width + ", Height: " + n.height;
-      logDebug(s);
+        n.positionX = (n.maxX + n.minX) / 2;
+        n.positionY = (n.maxY + n.minY) / 2;
+        n.width     = n.maxX - n.minX;
+        n.height    = n.maxY - n.minY;
+        s = "Updating position, size of compound node " + n.id;
+        s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
+        s += "\nWidth: " + n.width + ", Height: " + n.height;
+        logDebug(s);
       }
     }  
   };

@@ -1,12 +1,14 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
-    maxSimulationTime: 1000,
+    animate: true, // whether to show the layout as it's running
+    maxSimulationTime: 3000,
     ungrabifyWhileSimulating: true,
     stiffness: 400,
     repulsion: 400,
     damping: 0.5,
     fit: true,
+    padding: 30,
     random: false
   };
   
@@ -15,13 +17,14 @@
   }
   
   SpringyLayout.prototype.run = function(){
+    var layout = this;
     var self = this;
     var options = this.options;
 
     var cy = options.cy;
-    cy.trigger('layoutstart');
+    cy.trigger({ type: 'layoutstart', layout: layout });
     
-    var nodes = cy.nodes();
+    var nodes = cy.nodes().not(':parent');
     var edges = cy.edges();
  
     var width = cy.width();
@@ -77,7 +80,15 @@
     var drawnNodes = 1;
     var fdRenderer = new Springy.Renderer(layout,
       function clear() {
-        // code to clear screen
+        if( movedNodes.length > 0 && options.animate ){
+          movedNodes.rtrigger('position');
+
+          if( options.fit ){
+            cy.fit( options.padding );
+          }
+
+          movedNodes = cy.collection();
+        }
       },
 
       function drawEdge(edge, p1, p2) {
@@ -91,19 +102,19 @@
         window.p = p;
         window.n = node;
         
-        if( !element.locked() ){
+        if( !element.locked() && !element.grabbed() ){
             element._private.position = {
               x: v.x,
               y: v.y
             };
-            movedNodes = movedNodes.add(element);
+            movedNodes.merge(element);
         } else {
-          setLayoutPositionForElement(element);
+          //setLayoutPositionForElement(element);
         }
         
         if( drawnNodes == numNodes ){
           cy.one('layoutready', options.ready);
-          cy.trigger('layoutready');
+          cy.trigger({ type: 'layoutready', layout: layout });
         } 
         
         drawnNodes++;
@@ -117,14 +128,6 @@
         setLayoutPositionForElement(ele);
       }
     });
-  
-    // update actual node positions every once in a while
-    setInterval(function(){
-      if( movedNodes.size() > 0 ){
-        movedNodes.rtrigger('position');
-        movedNodes = cy.collection();
-      }
-    }, 50);
     
     // update node positions when dragging
     nodes.bind('drag', function(){
@@ -155,36 +158,28 @@
       fdRenderer.start();
     }
     
-    function stop(callback){
+    var stopSystem = self.stopSystem = function(){ console.log('stop');
       graph.filterNodes(function(){
         return false; // remove all nodes
       });
       
-      setTimeout(function(){
-        if( options.ungrabifyWhileSimulating ){
-          grabbableNodes.grabify();
-        }
-        
-        callback();
-      }, 100);
-    }
+      if( options.ungrabifyWhileSimulating ){
+        grabbableNodes.grabify();
+      }
 
-    var stopSystem = self.stopSystem = function(){
-      stop(function(){
-        if( options.fit ){
-          cy.fit();
-        }
-        
-        cy.one('layoutstop', options.stop);
-        cy.trigger('layoutstop');
+      if( options.fit ){
+        cy.fit( options.padding );
+      }
+      
+      cy.one('layoutstop', options.stop);
+      cy.trigger({ type: 'layoutstop', layout: layout });
 
-        self.stopSystem = null;
-      });
+      self.stopSystem = null;
     };
     
     start();
     setTimeout(function(){
-      stopSystem();
+      self.stop();
     }, options.maxSimulationTime);
 
   };

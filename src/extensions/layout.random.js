@@ -1,10 +1,12 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     fit: true, // whether to fit to viewport
-    padding: 30 // fit padding
+    padding: 30, // fit padding
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function RandomLayout( options ){
@@ -14,39 +16,19 @@
   RandomLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy;
-    cy.trigger('layoutstart');
-    
-    var nodes = cy.nodes();
-    var container = cy.container();
-    
     var width = cy.width();
     var height = cy.width();
+    var nodes = cy.nodes().not(':parent');
     
-
-    nodes.positions(function(i, element){
-      
-      if( element.locked() ){
-        return false;
-      }
-
+    var getPos = function( i, node ){
       return {
         x: Math.round( Math.random() * width ),
         y: Math.round( Math.random() * height )
       };
-    });
-    
-    // layoutready should be triggered when the layout has set each node's
-    // position at least once
-    cy.one('layoutready', options.ready);
-    cy.trigger('layoutready');
-    
-    if( options.fit ){
-      cy.fit( options.padding );
-    }
-    
-    // layoutstop should be triggered when the layout stops running
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+    };
+
+    nodes.layoutPositions( this, options, getPos );
+
   };
   
   RandomLayout.prototype.stop = function(){

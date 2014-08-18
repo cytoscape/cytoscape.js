@@ -2,8 +2,6 @@
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     padding: 30, // the padding on fit
     startAngle: 3/2 * Math.PI, // the position of the first node
     counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
@@ -15,7 +13,11 @@
     },
     levelWidth: function(nodes){ // the variation of concentric values in each level
       return nodes.maxDegree() / 4;
-    } 
+    },
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function ConcentricLayout( options ){
@@ -27,7 +29,6 @@
     var options = params;
     
     var cy = params.cy;
-    cy.trigger('layoutstart');
     
     var nodes = cy.nodes().filter(function(){
       return !this.isFullAutoParent();
@@ -131,21 +132,12 @@
     } 
 
     // position the nodes
-    nodes.positions(function(){
+    nodes.layoutPositions(this, options, function(){
       var id = this.id();
 
       return pos[id];
     });
-    
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
+  
   };
 
   ConcentricLayout.prototype.stop = function(){

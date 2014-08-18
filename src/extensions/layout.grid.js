@@ -1,13 +1,13 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
-    animate: true, // whether to transition the node positions
-    animationDuration: 500, // duration of animation in ms if enabled
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // padding used on fit
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
     position: function( node ){}, // returns { row, col } for element
+    animate: true, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
@@ -21,16 +21,15 @@
     var options = params;
     
     var cy = params.cy;
-    cy.trigger('layoutstart');
 
-    var nodes = cy.nodes();
+    var nodes = cy.nodes().not(':parent');
     var container = cy.container();
     
     var width = cy.width();
     var height = cy.width();
 
     if( height === 0 || width === 0){
-      nodes.positions(function(){
+      nodes.layoutPositions(this, options, function(){
         return { x: 0, y: 0 };
       });
       
@@ -203,48 +202,7 @@
         
       };
 
-      if( options.animate ){
-        for( var i = 0; i < nodes.length; i++ ){
-          var node = nodes[i];
-
-          var newPos = getPos( i, node );
-          var pos = node.position();
-
-          if( !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
-            node.silentPosition({ x: 0, y: 0 });
-          }
-
-          cy.one('layoutready', params.ready);
-          cy.trigger('layoutready');
-
-          node.animate({
-            position: newPos
-          }, {
-            duration: options.animationDuration,
-            step: i != 0 ? undefined : function(){
-              if( params.fit ){
-                cy.fit( options.padding );
-              } 
-            },
-            complete: i != nodes.length - 1 ? undefined : function(){
-              cy.one('layoutstop', params.stop);
-              cy.trigger('layoutstop');
-            }
-          });
-        }
-      } else {
-        nodes.positions( getPos );
-
-        if( params.fit ){
-          cy.fit( options.padding );
-        } 
-
-        cy.one('layoutready', params.ready);
-        cy.trigger('layoutready');
-        
-        cy.one('layoutstop', params.stop);
-        cy.trigger('layoutstop');
-      }
+      nodes.layoutPositions( this, options, getPos );
     }
     
   };

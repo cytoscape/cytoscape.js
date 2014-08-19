@@ -17,7 +17,7 @@ options = {
 	stop: function(){} // on layoutstop
 }
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 
@@ -34,7 +34,7 @@ options = {
 	fit: true // whether to fit to viewport
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 
@@ -56,7 +56,7 @@ options = {
 	padding: 30 // padding on fit
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 
@@ -77,7 +77,7 @@ options = {
 	stop: undefined // callback on layoutstop
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 
 ```
 
@@ -99,7 +99,7 @@ options = {
 	counterclockwise: false // whether the layout should go counterclockwise (true) or clockwise (false)
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 ## Concentric
@@ -127,7 +127,7 @@ options = {
 	}
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 
@@ -149,7 +149,7 @@ options = {
 	maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 
@@ -195,7 +195,7 @@ options = {
 };
 
 
-cy.layout( options ).run();
+cy.layout( options );
 ```
 
 Notes about arbor:
@@ -282,5 +282,5 @@ options = {
 	minTemp             : 1
 };
 
-cy.layout( options ).run();
+cy.layout( options );
 ```

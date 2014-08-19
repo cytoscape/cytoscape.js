@@ -2,14 +2,14 @@
   
   var defaults = {
     animate: true, // whether to show the layout as it's running
-    ready: undefined, // callback on layoutready 
-    stop: undefined, // callback on layoutstop
     maxSimulationTime: 4000, // max length in ms to run the layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
     simulationWidth: undefined, // uses viewport width by default
     simulationHeight: undefined, // uses viewport height by default
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+    ready: undefined, // callback on layoutready 
+    stop: undefined, // callback on layoutstop
 
     // forces used by arbor (use arbor default on undefined)
     repulsion: undefined,

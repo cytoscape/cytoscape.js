@@ -1,4 +1,4 @@
-The above extensions are a curated list.  To add your extension, please submit a pull request that adds your extension to [the documentation configuration JSON file](https://github.com/cytoscape/cytoscape.js/blob/master/documentation/docmaker.json).  Once pulled in, your extension will be listed with the next publish of the documentation.
+The above extensions are a curated list.  To add your extension, [please submit a request](https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description) that includes your extension's GitHub URL and a one line description.
 
 ## API
 

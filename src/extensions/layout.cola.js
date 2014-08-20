@@ -105,20 +105,46 @@
     });
     layout.adaptor = adaptor;
 
-    var nodeIdToIndex = {};
-    adaptor.nodes( nodes.map(function( node, i ){
-      nodeIdToIndex[ node.id() ] = i;
-
+    adaptor.nodes( nodes.stdFilter(function( node ){
+      return !node.isParent();
+    }).map(function( node, i ){
       return node._private.scratch.cola = {
         width: node.outerWidth(),
-        height: node.outerHeight()
+        height: node.outerHeight(),
+        index: i
       };
     }) );
 
-    adaptor.links( edges.map(function( edge, i ){
+    adaptor.groups( nodes.stdFilter(function( node ){
+      return node.isParent();
+    }).map(function( node, i ){ // add basic group incl leaf nodes
+      node._private.scratch.cola = {
+        index: i,
+
+        leaves: node.children().stdFilter(function( child ){
+          return !child.isParent();
+        }).map(function( child ){
+          return child[0]._private.scratch.cola.index;
+        })
+      };
+
+      return node;
+    }).map(function( node ){ // add subgroups
+      node._private.scratch.cola.groups = node.children().stdFilter(function( child ){
+        return child.isParent();
+      }).map(function( child ){
+        return child._private.scratch.cola.index;
+      });
+
+      return node._private.scratch.cola;
+    }) );
+
+    adaptor.links( edges.stdFilter(function( edge ){
+      return !edge.source().isParent() && !edge.target().isParent();
+    }).map(function( edge, i ){
       return edge._private.scratch.cola = {
-        source: nodeIdToIndex[ edge.data('source') ],
-        target: nodeIdToIndex[ edge.data('target') ],
+        source: edge.source()[0]._private.scratch.cola.index,
+        target: edge.target()[0]._private.scratch.cola.index,
         distance: $$.is.number(options.edgeLength) ? options.edgeLength : options.edgeLength.apply( edge, [edge] ),
         symDistance: $$.is.number(options.edgeSymLength) ? options.edgeSymLength : options.edgeSymLength.apply( edge, [edge] ),
       };

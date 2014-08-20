@@ -2,14 +2,16 @@
 
   // default layout options
   var defaults = {
-    animate: true,
+    animate: true, // whether to show the layout as it's running
     maxSimulationTime: 4000, // max length in ms to run the layout
+    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
 
-    // layout forces & constraints
+    // positioning options
     avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
+    flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
 
     // different methods of specifying edge length
     // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
@@ -24,7 +26,7 @@
 
     // layout event callbacks
     ready: function(){}, // on layoutready
-    stop: function(){} // on layoutstop
+    stop: function(){}, // on layoutstop
   };
 
   // constructor
@@ -196,10 +198,39 @@
       adaptor[ lengthFnName ]( lengthGetter );
     }
 
+    if( options.flow ){
+      var flow;
+      var defAxis = 'y';
+      var defMinSep = 50;
+
+      if( $$.is.string(options.flow) ){
+        flow = {
+          axis: options.flow,
+          minSeparation: defMinSep
+        };
+      } else if( $$.is.number(options.flow) ){
+        flow = {
+          axis: defAxis,
+          minSeparation: options.flow
+        };
+      } else if( $$.is.plainObject(options.flow) ){
+        flow = options.flow;
+
+        flow.axis = flow.axis || defAxis;
+        flow.minSeparation = flow.minSeparation != null ? flow.minSeparation : defMinSep;
+      } else { // e.g. options.flow: true
+        flow = {
+          axis: defAxis,
+          minSeparation: defMinSep
+        };
+      }
+
+      adaptor.flowLayout( flow.axis , flow.minSeparation );
+    }
+
     adaptor
       .avoidOverlaps( options.avoidOverlaps )
       .handleDisconnected( true )
-      //.flowLayout() // TODO
       //.constraints() // TODO
       //.distanceMatrix() // TODO
       .start( options.unconstrIter, options.userConstIter, options.allConstIter)

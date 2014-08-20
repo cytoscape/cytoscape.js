@@ -14,11 +14,12 @@
     stop: function(){}, // on layoutstop
 
     // positioning options
-    randomize: true, // use random node positions at beginning of layout
+    randomize: false, // use random node positions at beginning of layout
     avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
+    handleDisconnected: true, // if true, avoids disconnected components from overlapping
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
     flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
-    alignment: undefined, // alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 }; }
+    alignment: undefined, // relative alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 }; }
 
     // different methods of specifying edge length
     // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
@@ -393,7 +394,7 @@
 
     adaptor
       .avoidOverlaps( options.avoidOverlaps )
-      .handleDisconnected( true )
+      .handleDisconnected( options.handleDisconnected )
       .start( options.unconstrIter, options.userConstIter, options.allConstIter)
     ;
 

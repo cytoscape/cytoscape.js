@@ -26,7 +26,7 @@
     var container = cy.container();
     
     var width = cy.width();
-    var height = cy.width();
+    var height = cy.height();
 
     if( height === 0 || width === 0){
       nodes.layoutPositions(this, options, function(){

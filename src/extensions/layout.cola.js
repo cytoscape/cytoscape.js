@@ -85,6 +85,8 @@
     };
 
     var onDone = function(){
+      this.manuallyStopped = false;
+
       if( options.ungrabifyWhileSimulating ){
         grabbableNodes.grabify();
       }
@@ -124,7 +126,7 @@
 
           case 'end': 
             updateNodePositions();
-            if( !options.infinite ){ onDone(); }           
+            if( !options.infinite || layout.manuallyStopped ){ onDone(); }           
             break;
         }
       },
@@ -410,6 +412,7 @@
 
   // called on continuous layouts to stop them before they finish
   ColaLayout.prototype.stop = function(){
+    this.manuallyStopped = true;
     this.adaptor.stop();
   };
 

@@ -66,10 +66,10 @@ $(function(){
       .selector('edge')
         .css({
           'width': '3',
-          'source-arrow-shape': 'triangle-backcurve',
+          // 'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
-          'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve',
+          // 'mid-target-arrow-shape': 'triangle',
+          // 'mid-source-arrow-shape': 'triangle-backcurve',
           'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',

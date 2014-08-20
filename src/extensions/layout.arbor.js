@@ -8,6 +8,8 @@
     simulationWidth: undefined, // uses viewport width by default
     simulationHeight: undefined, // uses viewport height by default
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+
+    // callbacks on layout events
     ready: undefined, // callback on layoutready 
     stop: undefined, // callback on layoutstop
 
@@ -21,6 +23,7 @@
 
     // static numbers or functions that dynamically return what these
     // values should be for each element
+    // e.g. nodeMass: function(n){ return n.data('weight') }
     nodeMass: undefined, 
     edgeLength: undefined,
 

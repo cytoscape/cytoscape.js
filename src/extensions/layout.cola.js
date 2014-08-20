@@ -5,11 +5,16 @@
     animate: true, // whether to show the layout as it's running
     refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
-    ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
 
+    // layout event callbacks
+    ready: function(){}, // on layoutready
+    stop: function(){}, // on layoutstop
+
     // positioning options
+    randomize: true, // use random node positions at beginning of layout
     avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
     flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
@@ -25,9 +30,8 @@
     userConstIter: undefined, // initial layout iterations with user-specified constraints
     allConstIter: undefined, // initial layout iterations with all constraints including non-overlap
 
-    // layout event callbacks
-    ready: function(){}, // on layoutready
-    stop: function(){}, // on layoutstop
+    // infinite layout options
+    infinite: false // overrides all other options for a forces-all-the-time mode
   };
 
   // constructor
@@ -45,6 +49,8 @@
     var nodes = eles.nodes();
     var edges = eles.edges();
     var ready = false;
+    var width = cy.width();
+    var height = cy.height();
 
     var getOptVal = function( val, ele ){
       if( $$.is.fn(val) ){
@@ -82,6 +88,7 @@
       }
 
       nodes.off('grab free position', grabHandler);
+      nodes.off('lock unlock', lockHandler);
 
       // trigger layoutstop when the layout stops (e.g. finishes)
       cy.one('layoutstop', options.stop);
@@ -115,13 +122,23 @@
 
           case 'end': 
             updateNodePositions();
-            onDone();
+            if( !options.infinite ){ onDone(); }           
             break;
         }
       },
 
       kick: function( tick ){ // kick off the simulation
         var skip = 0;
+
+        var inftick = function(){
+          var ret = tick();
+
+          if( ret ){ // resume layout if done
+            adaptor.resume(); // resume => new kick
+          }
+          
+          return ret; // allow regular finish b/c of new kick
+        };
 
         var multitick = function(){ // multiple ticks in a row
           var ret;
@@ -134,7 +151,7 @@
           }
 
           for( var i = 0; i < ticksPerFrame && !ret; i++ ){
-            ret = ret || tick(); // pick up true ret vals => sim done
+            ret = ret || inftick(); // pick up true ret vals => sim done
           }
 
           return ret;
@@ -149,7 +166,7 @@
 
           $$.util.requestAnimationFrame( frame );
         } else {
-          while( !tick() ){}
+          while( !inftick() ){}
         }
       },
 
@@ -185,6 +202,7 @@
       switch( e.type ){
         case 'grab':
           adaptor.dragstart( scrCola );
+          adaptor.resume();
           break;
         case 'free':
           adaptor.dragend( scrCola );
@@ -193,13 +211,28 @@
       
     });
 
+    var lockHandler;
+    nodes.on('lock unlock', lockHandler = function(e){
+      var node = this;
+      var scrCola = node._private.scratch.cola;
+    
+      if( node.locked() ){
+        adaptor.dragstart( scrCola );
+      } else {
+        adaptor.dragend( scrCola );
+      }
+    });
+
     // add nodes to cola
     adaptor.nodes( nodes.stdFilter(function( node ){
       return !node.isParent();
     }).map(function( node, i ){
       var padding = getOptVal( options.nodeSpacing, node );
+      var pos = node.position();
 
       return node._private.scratch.cola = {
+        x: options.randomize ? Math.round( Math.random() * width ) : pos.x,
+        y: options.randomize ? Math.round( Math.random() * height ) : pos.y,
         width: node.outerWidth() + 2*padding,
         height: node.outerHeight() + 2*padding,
         index: i
@@ -268,7 +301,7 @@
       return c;
     }) );
 
-    adaptor.size([ cy.width(), cy.height() ]);
+    adaptor.size([ width, height ]);
 
     if( length != null ){
       adaptor[ lengthFnName ]( lengthGetter );
@@ -315,9 +348,11 @@
 
     cy.trigger({ type: 'layoutstart', layout: layout });
 
-    setTimeout(function(){
-      adaptor.stop();
-    }, options.maxSimulationTime);
+    if( !options.infinite ){
+      setTimeout(function(){
+        adaptor.stop();
+      }, options.maxSimulationTime);
+    }
 
   };
 

@@ -9,8 +9,13 @@
 
     // layout forces & constraints
     avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
-    edgeLength: function(edge){ return 100; }, // edge length in simulation
-    edgeSymLength: function(edge){ return 5; }, // symmetric diff edge length in simulation
+    nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
+
+    // different methods of specifying edge length
+    // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
+    edgeLength: undefined, // sets edge length directly in simulation
+    edgeSymDiffLength: undefined, // symmetric diff edge length in simulation
+    edgeJaccardLength: undefined, // jaccard edge length in simulation
 
     // iterations of cola algorithm; uses default values on undefined
     unconstrIter: undefined, // unconstrained initial layout iterations
@@ -37,6 +42,15 @@
     var nodes = eles.nodes();
     var edges = eles.edges();
     var ready = false;
+
+    var getOptVal = function( val, ele ){
+      if( $$.is.fn(val) ){
+        var fn = val;
+        return fn.apply( ele, [ ele ] );
+      } else {
+        return val;
+      }
+    }
 
     var updateNodePositions = function(){
       nodes.positions(function(i, node){
@@ -108,9 +122,11 @@
     adaptor.nodes( nodes.stdFilter(function( node ){
       return !node.isParent();
     }).map(function( node, i ){
+      var padding = getOptVal( options.nodeSpacing, node );
+
       return node._private.scratch.cola = {
-        width: node.outerWidth(),
-        height: node.outerHeight(),
+        width: node.outerWidth() + 2*padding,
+        height: node.outerHeight() + 2*padding,
         index: i
       };
     }) );
@@ -139,34 +155,53 @@
       return node._private.scratch.cola;
     }) );
 
+    var length;
+    var lengthFnName;
+    if( options.edgeLength != null ){
+      length = options.edgeLength;
+      lengthFnName = 'linkDistance';
+    } else if( options.edgeSymDiffLength != null ){
+      length = options.edgeSymDiffLength;
+      lengthFnName = 'symmetricDiffLinkLengths';
+    } else if( options.edgeJaccardLength != null ){
+      length = options.edgeJaccardLength;
+      lengthFnName = 'jaccardLinkLengths';
+    } else {
+      length = 100;
+      lengthFnName = 'linkDistance';
+    }
+
+    var lengthGetter = function( link ){
+      return link.calcLength;
+    };
+
     adaptor.links( edges.stdFilter(function( edge ){
       return !edge.source().isParent() && !edge.target().isParent();
     }).map(function( edge, i ){
-      return edge._private.scratch.cola = {
+      var c = edge._private.scratch.cola = {
         source: edge.source()[0]._private.scratch.cola.index,
-        target: edge.target()[0]._private.scratch.cola.index,
-        distance: $$.is.number(options.edgeLength) ? options.edgeLength : options.edgeLength.apply( edge, [edge] ),
-        symDistance: $$.is.number(options.edgeSymLength) ? options.edgeSymLength : options.edgeSymLength.apply( edge, [edge] ),
+        target: edge.target()[0]._private.scratch.cola.index
       };
+
+      if( length != null ){
+        c.calcLength = getOptVal( length, edge )
+      }
+
+      return c;
     }) );
 
+    adaptor.size([ cy.width(), cy.height() ]);
+
+    if( length != null ){
+      adaptor[ lengthFnName ]( lengthGetter );
+    }
+
     adaptor
-      .size([ cy.width(), cy.height() ])
-      .linkDistance(function( link ){
-        return link.distance;
-      })
-      // TODO
-      // .symmetricDiffLinkLengths(function( link ){
-      //   return link.symDistance;
-      // })
       .avoidOverlaps( options.avoidOverlaps )
       .handleDisconnected( true )
-      //.jaccardLinkLengths() // TODO
       //.flowLayout() // TODO
       //.constraints() // TODO
       //.distanceMatrix() // TODO
-      //.groups() // TODO
-      //.powerGraphGroups() // TODO
       .start( options.unconstrIter, options.userConstIter, options.allConstIter)
     ;
 
@@ -180,7 +215,7 @@
 
   // called on continuous layouts to stop them before they finish
   ColaLayout.prototype.stop = function(){
-    adaptor.stop();
+    this.adaptor.stop();
   };
 
   // register the layout

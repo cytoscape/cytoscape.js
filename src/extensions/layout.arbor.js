@@ -258,7 +258,7 @@
     });
           
     var removeHandler;
-    eles.on('remove', removeHandler = function(e){
+    eles.on('remove', removeHandler = function(e){ return; // TODO enable when layout add/remove api added
       var ele = this;
       var arborEle = ele.scratch().arbor;
 
@@ -272,7 +272,7 @@
     });
 
     var addHandler;
-    cy.on('add', '*', addHandler = function(){
+    cy.on('add', '*', addHandler = function(){ return; // TODO enable when layout add/remove api added
       var ele = this;
 
       if( ele.isNode() ){

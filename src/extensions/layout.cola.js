@@ -85,7 +85,7 @@
     };
 
     var onDone = function(){
-      this.manuallyStopped = false;
+      layout.manuallyStopped = false;
 
       if( options.ungrabifyWhileSimulating ){
         grabbableNodes.grabify();
@@ -412,8 +412,10 @@
 
   // called on continuous layouts to stop them before they finish
   ColaLayout.prototype.stop = function(){
-    this.manuallyStopped = true;
-    this.adaptor.stop();
+    if( this.adaptor ){
+      this.manuallyStopped = true;
+      this.adaptor.stop();
+    }
   };
 
   // register the layout

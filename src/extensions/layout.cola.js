@@ -18,6 +18,7 @@
     avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
     flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
+    alignment: undefined, // alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 }; }
 
     // different methods of specifying edge length
     // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
@@ -133,7 +134,7 @@
         var inftick = function(){
           var ret = tick();
 
-          if( ret ){ // resume layout if done
+          if( ret && options.infinite ){ // resume layout if done
             adaptor.resume(); // resume => new kick
           }
           
@@ -223,10 +224,12 @@
       }
     });
 
-    // add nodes to cola
-    adaptor.nodes( nodes.stdFilter(function( node ){
+    var nonparentNodes = nodes.stdFilter(function( node ){
       return !node.isParent();
-    }).map(function( node, i ){
+    });
+
+    // add nodes to cola
+    adaptor.nodes( nonparentNodes.map(function( node, i ){
       var padding = getOptVal( options.nodeSpacing, node );
       var pos = node.position();
 
@@ -238,6 +241,56 @@
         index: i
       };
     }) );
+
+    if( options.alignment ){ // then set alignment constraints
+
+      var offsetsX = [];
+      var offsetsY = [];
+
+      nonparentNodes.forEach(function( node ){
+        var align = getOptVal( options.alignment, node );
+        var scrCola = node._private.scratch.cola;
+        var index = scrCola.index;
+
+        if( !align ){ return; }
+
+        if( align.x != null ){
+          offsetsX.push({
+            node: index,
+            offset: align.x
+          });
+        }
+
+        if( align.y != null ){
+          offsetsY.push({
+            node: index,
+            offset: align.y
+          });
+        }
+      });
+
+      // add alignment constraints on nodes
+      var constraints = [];
+
+      if( offsetsX.length > 0 ){
+        constraints.push({
+          type: 'alignment',
+          axis: 'x',
+          offsets: offsetsX
+        });
+      }
+
+      if( offsetsY.length > 0 ){
+        constraints.push({
+          type: 'alignment',
+          axis: 'y',
+          offsets: offsetsY
+        });
+      }
+      
+      adaptor.constraints( constraints );
+
+    }
 
     // add compound nodes to cola
     adaptor.groups( nodes.stdFilter(function( node ){
@@ -341,8 +394,6 @@
     adaptor
       .avoidOverlaps( options.avoidOverlaps )
       .handleDisconnected( true )
-      //.constraints() // TODO
-      //.distanceMatrix() // TODO
       .start( options.unconstrIter, options.userConstIter, options.allConstIter)
     ;
 

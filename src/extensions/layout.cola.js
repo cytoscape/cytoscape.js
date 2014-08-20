@@ -3,8 +3,9 @@
   // default layout options
   var defaults = {
     animate: true, // whether to show the layout as it's running
+    refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
-    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+    ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
 
@@ -59,8 +60,10 @@
         var pos = node._private.position;
         var scratch = node._private.scratch.cola;
 
-        pos.x = scratch.x;
-        pos.y = scratch.y;
+        if( !node.grabbed() ){
+          pos.x = scratch.x;
+          pos.y = scratch.y;
+        }
       });
 
       if( !ready ){
@@ -74,6 +77,12 @@
     };
 
     var onDone = function(){
+      if( options.ungrabifyWhileSimulating ){
+        grabbableNodes.grabify();
+      }
+
+      nodes.off('grab free position', grabHandler);
+
       // trigger layoutstop when the layout stops (e.g. finishes)
       cy.one('layoutstop', options.stop);
       cy.trigger({ type: 'layoutstop', layout: layout });
@@ -84,6 +93,16 @@
       cy.one('layoutready', options.ready);
       cy.trigger({ type: 'layoutready', layout: layout });
     };
+
+    var ticksPerFrame = options.refresh;
+    var tickSkip = 1; // frames until a tick; used to slow down sim for debugging
+
+    if( options.refresh < 0 ){
+      tickSkip = Math.abs( options.refresh );
+      ticksPerFrame = 1;
+    } else {
+      ticksPerFrame = Math.max( 1, ticksPerFrame ); // at least 1
+    }
 
     var adaptor = cola.adaptor({
       trigger: function( e ){ // on sim event
@@ -102,9 +121,28 @@
       },
 
       kick: function( tick ){ // kick off the simulation
+        var skip = 0;
+
+        var multitick = function(){ // multiple ticks in a row
+          var ret;
+
+          // skip ticks to slow down layout for debugging
+          var thisSkip = skip;
+          skip = (skip + 1) % tickSkip;
+          if( thisSkip !== 0 ){
+            return false;
+          }
+
+          for( var i = 0; i < ticksPerFrame && !ret; i++ ){
+            ret = ret || tick(); // pick up true ret vals => sim done
+          }
+
+          return ret;
+        };
+
         if( options.animate ){
           var frame = function(){
-            if( tick() ){ return; }
+            if( multitick() ){ return; }
 
             $$.util.requestAnimationFrame( frame );
           };
@@ -121,6 +159,41 @@
     });
     layout.adaptor = adaptor;
 
+    // if set no grabbing during layout
+    var grabbableNodes = nodes.filter(':grabbable');
+    if( options.ungrabifyWhileSimulating ){
+      grabbableNodes.ungrabify();
+    }
+
+    // handle node dragging
+    var grabHandler;
+    nodes.on('grab free position', grabHandler = function(e){
+      var node = this;
+      var scrCola = node._private.scratch.cola;
+      var pos = node._private.position;
+
+      if( node.grabbed() ){
+        scrCola.x = pos.x;
+        scrCola.y = pos.y;
+
+        adaptor.dragstart( scrCola );
+      } else if( $$.is.number(scrCola.x) && $$.is.number(scrCola.y) ){
+        pos.x = scrCola.x;
+        pos.y = scrCola.y;
+      }
+
+      switch( e.type ){
+        case 'grab':
+          adaptor.dragstart( scrCola );
+          break;
+        case 'free':
+          adaptor.dragend( scrCola );
+          break;
+      }
+      
+    });
+
+    // add nodes to cola
     adaptor.nodes( nodes.stdFilter(function( node ){
       return !node.isParent();
     }).map(function( node, i ){
@@ -133,6 +206,7 @@
       };
     }) );
 
+    // add compound nodes to cola
     adaptor.groups( nodes.stdFilter(function( node ){
       return node.isParent();
     }).map(function( node, i ){ // add basic group incl leaf nodes
@@ -157,6 +231,7 @@
       return node._private.scratch.cola;
     }) );
 
+    // get the edge length setting mechanism
     var length;
     var lengthFnName;
     if( options.edgeLength != null ){
@@ -177,6 +252,7 @@
       return link.calcLength;
     };
 
+    // add the edges to cola
     adaptor.links( edges.stdFilter(function( edge ){
       return !edge.source().isParent() && !edge.target().isParent();
     }).map(function( edge, i ){
@@ -198,6 +274,7 @@
       adaptor[ lengthFnName ]( lengthGetter );
     }
 
+    // set the flow of cola
     if( options.flow ){
       var flow;
       var defAxis = 'y';

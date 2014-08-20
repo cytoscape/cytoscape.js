@@ -1,12 +1,9 @@
 {
   "name": "cytoscape",
-  "description": "A JavaScript graph theory library for analysis and visualisation",
-  "version": "2.2.10",
-  "license": "LGPL",
+  "version": "2.3.0-unstable",
+  "license": "LGPL-3.0+",
+  "description": "An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation",
   "homepage": "http://js.cytoscape.org",
-  "engines": {
-    "node": ">=0.6"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/cytoscape/cytoscape.js.git"
@@ -42,12 +39,28 @@
     }
   ],
   "keywords": [
-    "graph",
-    "theory",
-    "visualisation",
-    "visualization",
-    "analysis"
+    "graph", 
+    "graph-theory", 
+    "network", 
+    "node", 
+    "edge", 
+    "vertex", 
+    "link", 
+    "analysis", 
+    "visualisation", 
+    "visualization", 
+    "requirejs", 
+    "amd", 
+    "commonjs", 
+    "node", 
+    "npm",
+    "nodejs",
+    "bower", 
+    "jquery"
   ],
+  "engines": {
+    "node": ">=0.6"
+  },
   "main": "dist/cytoscape.js",
   "scripts": {},
   "devDependencies": {

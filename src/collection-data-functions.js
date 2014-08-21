@@ -142,6 +142,10 @@
       return this; // chaining
     },
 
+    silentPositions: function( pos ){
+      return this.positions( pos, true );
+    },
+
     updateCompoundBounds: function(){
       var cy = this.cy();
 
@@ -491,8 +495,8 @@
         } else if( ele.isEdge() && options.includeEdges ){ 
           includedEle = true;
 
-          var n1pos = ele.source()[0]._private.position;
-          var n2pos = ele.target()[0]._private.position;
+          var n1pos = ele._private.source._private.position;
+          var n2pos = ele._private.target._private.position;
 
           // handle edge dimensions (rough box estimate)
           //////////////////////////////////////////////
@@ -526,14 +530,22 @@
 
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
+
             var w = ele._private.style['width'].pxValue;
+            var wHalf = w/2;
+
             for( var j = 0; j < bpts.length; j++ ){
               var bpt = bpts[j];
 
-              x1 = bpt.x - w < x1 ? bpt.x - w : x1;
-              x2 = bpt.x + w > x2 ? bpt.x + w : x2;
-              y1 = bpt.y - w < y1 ? bpt.y - w : y1;
-              y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+              ex1 = bpt.x - wHalf;
+              ex2 = bpt.x + wHalf;
+              ey1 = bpt.y - wHalf;
+              ey2 = bpt.y + wHalf;
+
+              x1 = ex1 < x1 ? ex1 : x1;
+              x2 = ex2 > x2 ? ex2 : x2;
+              y1 = ey1 < y1 ? ey1 : y1;
+              y2 = ey2 > y2 ? ey2 : y2;
             }
           }
 

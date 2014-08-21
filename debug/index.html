@@ -118,7 +118,9 @@
 	<body>
     
     	<button id="goto-cy2">\ down /</button>
-	    <div id="cytoscape"></div>
+	    <div id="cytoscape">
+	    	<div id="bb"></div>
+	    </div>
 
 <!--
 	    <div>Dummy canvas for cy.renderTo():</div>
@@ -126,7 +128,7 @@
 	    <canvas style="border: 1px solid red;" width="600" height="600" id="dummy-canvas"></canvas>
 -->
 
-	    <div><button id="goto-cy">/ up \</button> Second instance:</div>
+	    <div><button id="goto-cy">/ up \</button> Second instance: <button id="init2">init</button></div> 
 	    
 	    <div id="cytoscape2"></div>
 
@@ -171,7 +173,11 @@
 
 	    	Autoungrabify:
 	    	<button id="enable-autoungrabify">on</button>
-	    	<button id="disable-autoungrabify">off</button>
+	    	<button id="disable-autoungrabify">off</button><br />
+
+	    	Selected BB:
+	    	<button id="show-bb">show</button>
+	    	<button id="hide-bb">hide</button>
 	    		    	
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">

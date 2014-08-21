@@ -502,4 +502,7 @@
     }
   });
 
+  // aliases
+  $$.corefn.centre = $$.corefn.center;
+
 })( cytoscape );

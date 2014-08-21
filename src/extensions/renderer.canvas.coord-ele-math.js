@@ -570,8 +570,8 @@
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     } else if (rs.edgeType == 'haystack') {
-      var srcPos = edge.source().position();
-      var tgtPos = edge.target().position();
+      var srcPos = edge._private.source._private.position;
+      var tgtPos = edge._private.target._private.position;
 
       edgeCenterX = (srcPos.x + rs.source.x + tgtPos.x + rs.target.x)/2;
       edgeCenterY = (srcPos.y + rs.source.y + tgtPos.y + rs.target.y)/2;
@@ -619,6 +619,7 @@
   };
 
   CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+    var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
     var size = style['font-size'].pxValue + 'px';
@@ -628,7 +629,7 @@
 
     var rscratch = ele._private.rscratch;
     var cacheKey = ele._private.labelKey;
-    var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
+    var cache = r.labelDimCache || (r.labelDimCache = {});
 
     if( cache[cacheKey] ){
       return cache[cacheKey];
@@ -677,40 +678,64 @@
 
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
-      var id = ele._private.data.id;
-      var styleSame = ele._private.styleKey === ele._private.rscratch.styleKey;
+      var _p = ele._private;
+      var rs = _p.rscratch;
+      var rstyle = _p.rstyle;
+      var id = _p.data.id;
+      var styleSame = rs.styleKey != null && _p.styleKey === rs.styleKey;
 
-      if( !styleSame ){ // only need to recalc if diff style
-        if( ele._private.group === 'nodes' ){
-          if( !styleSame ){
-            nodes.push( ele );
-          }
-        } else { // edges
-          var curveType = ele._private.style['curve-style'].value;
+      if( ele._private.group === 'nodes' ){
+        var pos = _p.position;
+        var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
+
+        if( !posSame || !styleSame ){
+          nodes.push( ele );
+        }
+
+        rstyle.nodeX = pos.x;
+        rstyle.nodeY = pos.y;
+      } else { // edges
+
+        var srcPos = ele._private.source._private.position;
+        var tgtPos = ele._private.target._private.position;
+        var srcSame = rstyle.srcX != null && rstyle.srcY != null && srcPos.x === rstyle.srcX && srcPos.y === rstyle.srcY;
+        var tgtSame = rstyle.tgtX != null && rstyle.tgtY != null && tgtPos.x === rstyle.tgtX && tgtPos.y === rstyle.tgtY;
+        var positionsSame = srcSame && tgtSame;
+
+        if( !positionsSame || !styleSame ){
+          var curveType = _p.style['curve-style'].value;
 
           if( curveType === 'bezier' ){
-            edges.push( ele );
-            handledEdge[ id ] = true;
+            if( !handledEdge[ id ] ){
+              edges.push( ele );
+              handledEdge[ id ] = true;
 
-            var parallelEdges = ele.parallelEdges();
-            for( var i = 0; i < parallelEdges.length; i++ ){
-              var pEdge = parallelEdges[i];
-              var pId = pEdge._private.data.id;
+              var parallelEdges = ele.parallelEdges();
+              for( var i = 0; i < parallelEdges.length; i++ ){
+                var pEdge = parallelEdges[i];
+                var pId = pEdge._private.data.id;
 
-              if( !handledEdge[ pId ] ){
-                edges.push( pEdge );
-                handledEdge[ pId ] = true;
+                if( !handledEdge[ pId ] ){
+                  edges.push( pEdge );
+                  handledEdge[ pId ] = true;
+                }
+                
               }
-              
             }
           } else {
             edges.push( ele );
           }
+        } // if positions diff
 
-        }
-      }
+        // update rstyle positions
+        rstyle.srcX = srcPos.x;
+        rstyle.srcY = srcPos.y;
+        rstyle.tgtX = tgtPos.x;
+        rstyle.tgtY = tgtPos.y;
 
-      ele._private.rscratch.styleKey = ele._private.styleKey;
+      } // if edges
+
+      rs.styleKey = _p.styleKey;
     }
 
     this.recalculateEdgeProjections( edges );

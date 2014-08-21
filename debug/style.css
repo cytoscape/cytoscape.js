@@ -9,3 +9,4 @@ label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left:
 #hide-commands { position: absolute; right: 0; top: 0; }
 #commands-show-area { position: absolute; right: 0; top: 0; font-size: 0.75em; }
 #show-commands {  }
+#bb { position: absolute; left: 0; top: 0; background: rgba(0, 255, 255, 0.333); z-index: 999999999; }

@@ -446,11 +446,11 @@
       var cy = eles._private.cy;
       var styleEnabled = cy._private.styleEnabled;
 
-      options = $$.util.extend({
-        includeNodes: true,
-        includeEdges: true,
-        includeLabels: true
-      }, options);
+      options = options || {};
+
+      var includeNodes = options.includeNodes === undefined ? true : options.includeNodes;
+      var includeEdges = options.includeEdges === undefined ? true : options.includeEdges;
+      var includeLabels = options.includeLabels === undefined ? true : options.includeLabels;
 
       // recalculate projections etc
       this.recalculateRenderedStyle();
@@ -463,12 +463,15 @@
       // find bounds of elements
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
+        var _p = ele._private;
+        var display = _p.style['display'].value;
+        var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;
 
-        if( ele.css('display') === 'none' ){ continue; } // then ele doesn't take up space      
+        if( display === 'none' ){ continue; } // then ele doesn't take up space      
 
-        if( ele.isNode() && options.includeNodes ){
+        if( isNode && includeNodes ){
           includedEle = true;
 
           var pos = ele._private.position;
@@ -492,7 +495,7 @@
           y1 = ey1 < y1 ? ey1 : y1;
           y2 = ey2 > y2 ? ey2 : y2;
 
-        } else if( ele.isEdge() && options.includeEdges ){ 
+        } else if( ele.isEdge() && includeEdges ){ 
           includedEle = true;
 
           var n1pos = ele._private.source._private.position;
@@ -567,7 +570,7 @@
           var labelX = rstyle.labelX;
           var labelY = rstyle.labelY;
 
-          if( includedEle && options.includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+          if( includedEle && includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
             var lh = labelHeight;
             var lw = labelWidth;
             var lx1, lx2, ly1, ly2;

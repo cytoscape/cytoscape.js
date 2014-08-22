@@ -30,6 +30,9 @@
     // Padding on fit
     padding             : 30, 
 
+    // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    boundingBox         : undefined,
+
     // Whether to randomize node positions on the beginning
     randomize           : true,
     
@@ -217,7 +220,10 @@
       edgeSize     : cy.edges().size(),
       temperature  : options.initialTemp,
       clientWidth  : cy.width(),
-      clientHeight : cy.width()
+      clientHeight : cy.width(),
+      boundingBox  : $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+                       x1: 0, y1: 0, w: cy.width(), h: cy.height()
+                     } )
     }; 
     
     // Shortcut
@@ -532,15 +538,45 @@
     var s = 'Refreshing positions';
     logDebug(s);
 
-    cy.nodes().positions(function(i, ele) {
+    var nodes = cy.nodes();
+    var bb = layoutInfo.boundingBox;
+    var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
+    
+    if( options.boundingBox ){
+      nodes.forEach(function( node ){
+        var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[node.data('id')]];
+
+        coseBB.x1 = Math.min( coseBB.x1, lnode.positionX );
+        coseBB.x2 = Math.max( coseBB.x2, lnode.positionX );
+
+        coseBB.y1 = Math.min( coseBB.y1, lnode.positionY );
+        coseBB.y2 = Math.max( coseBB.y2, lnode.positionY );
+      });
+
+      coseBB.w = coseBB.x2 - coseBB.x1;
+      coseBB.h = coseBB.y2 - coseBB.y1;
+    }
+
+    nodes.positions(function(i, ele) {
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
       s = "Node: " + lnode.id + ". Refreshed position: (" + 
       lnode.positionX + ", " + lnode.positionY + ").";
       logDebug(s);
-      return {
-        x: lnode.positionX,
-        y: lnode.positionY
-      };
+
+      if( options.boundingBox ){ // then add extra bounding box constraint
+        var pctX = (lnode.positionX - coseBB.x1) / coseBB.w;
+        var pctY = (lnode.positionY - coseBB.y1) / coseBB.h;
+
+        return {
+          x: bb.x1 + pctX * bb.w,
+          y: bb.y1 + pctY * bb.h
+        };
+      } else {
+        return {
+          x: lnode.positionX,
+          y: lnode.positionY
+        };
+      }
     });
 
     // Trigger layoutReady only on first call

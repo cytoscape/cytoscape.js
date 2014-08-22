@@ -3,6 +3,7 @@
   var defaults = {
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     animate: true, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
@@ -16,14 +17,16 @@
   RandomLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy;
-    var width = cy.width();
-    var height = cy.width();
     var nodes = cy.nodes().not(':parent');
     
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
+
     var getPos = function( i, node ){
       return {
-        x: Math.round( Math.random() * width ),
-        y: Math.round( Math.random() * height )
+        x: bb.x1 + Math.round( Math.random() * bb.w ),
+        y: bb.y1 + Math.round( Math.random() * bb.h )
       };
     };
 

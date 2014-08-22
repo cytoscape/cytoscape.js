@@ -1,7 +1,7 @@
 ;(function($$){ 'use strict';
   
   var defaults = {
-    positions: undefined, // map of (node id) => (position obj)
+    positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
     zoom: undefined, // the zoom level to set (prob want fit = false if set)
     pan: undefined, // the pan level to set (prob want fit = false if set)
     fit: true, // whether to fit to viewport
@@ -22,17 +22,24 @@
     cy.trigger('layoutstart');
     
     var nodes = cy.nodes();
-    
+    var posIsFn = $$.is.fn( options.positions );
+
     function getPosition(node){
       if( options.positions == null ){
         return null;
       }
+
+      if( posIsFn ){
+        return options.positions.apply( node, [ node ] );
+      }
       
-      if( options.positions[node._private.data.id] == null ){
+      var pos = options.positions[node._private.data.id];
+
+      if( pos == null ){
         return null;
       }
       
-      return options.positions[node._private.data.id];
+      return pos;
     }
     
     nodes.layoutPositions(this, options, function(i, node){

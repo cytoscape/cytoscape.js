@@ -8,6 +8,7 @@
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
 
     // layout event callbacks
     ready: function(){}, // on layoutready
@@ -15,7 +16,7 @@
 
     // positioning options
     randomize: false, // use random node positions at beginning of layout
-    avoidOverlaps: true, // if true, prevents overlap of node bounding boxes
+    avoidOverlap: true, // if true, prevents overlap of node bounding boxes
     handleDisconnected: true, // if true, avoids disconnected components from overlapping
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
     flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
@@ -51,8 +52,10 @@
     var nodes = eles.nodes();
     var edges = eles.edges();
     var ready = false;
-    var width = cy.width();
-    var height = cy.height();
+    
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
 
     var getOptVal = function( val, ele ){
       if( $$.is.fn(val) ){
@@ -64,13 +67,27 @@
     }
 
     var updateNodePositions = function(){
+      var x = { min: Infinity, max: -Infinity };
+      var y = { min: Infinity, max: -Infinity };
+
+      for( var i = 0; i < nodes.length; i++ ){
+        var node = nodes[i];
+        var scratch = node._private.scratch.cola;
+
+        x.min = Math.min( x.min, scratch.x );
+        x.max = Math.max( x.max, scratch.x );
+
+        y.min = Math.min( y.min, scratch.y );
+        y.max = Math.max( y.max, scratch.y );
+      }
+
       nodes.positions(function(i, node){
         var pos = node._private.position;
         var scratch = node._private.scratch.cola;
 
         if( !node.grabbed() ){
-          pos.x = scratch.x;
-          pos.y = scratch.y;
+          pos.x = bb.x1 + scratch.x - x.min;
+          pos.y = bb.y1 + scratch.y - y.min;
         }
       });
 
@@ -194,13 +211,13 @@
       var pos = node._private.position;
 
       if( node.grabbed() ){
-        scrCola.x = pos.x;
-        scrCola.y = pos.y;
+        scrCola.x = pos.x - bb.x1;
+        scrCola.y = pos.y - bb.y1;
 
         adaptor.dragstart( scrCola );
       } else if( $$.is.number(scrCola.x) && $$.is.number(scrCola.y) ){
-        pos.x = scrCola.x;
-        pos.y = scrCola.y;
+        pos.x = scrCola.x + bb.x1;
+        pos.y = scrCola.y + bb.y1;
       }
 
       switch( e.type ){
@@ -237,8 +254,8 @@
       var pos = node.position();
 
       return node._private.scratch.cola = {
-        x: options.randomize ? Math.round( Math.random() * width ) : pos.x,
-        y: options.randomize ? Math.round( Math.random() * height ) : pos.y,
+        x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
+        y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
         width: node.outerWidth() + 2*padding,
         height: node.outerHeight() + 2*padding,
         index: i
@@ -357,7 +374,7 @@
       return c;
     }) );
 
-    adaptor.size([ width, height ]);
+    adaptor.size([ bb.w, bb.h ]);
 
     if( length != null ){
       adaptor[ lengthFnName ]( lengthGetter );
@@ -395,7 +412,7 @@
     }
 
     adaptor
-      .avoidOverlaps( options.avoidOverlaps )
+      .avoidOverlaps( options.avoidOverlap )
       .handleDisconnected( options.handleDisconnected )
       .start( options.unconstrIter, options.userConstIter, options.allConstIter)
     ;

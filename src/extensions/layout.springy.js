@@ -2,14 +2,18 @@
   
   var defaults = {
     animate: true, // whether to show the layout as it's running
-    maxSimulationTime: 3000,
-    ungrabifyWhileSimulating: true,
+    maxSimulationTime: 4000, // max length in ms to run the layout
+    ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+    fit: true, // whether to fit the viewport to the graph
+    padding: 30, // padding on fit
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    random: false, // whether to use random initial positions
+    infinite: false, // overrides all other options for a forces-all-the-time mode
+
+    // springy forces
     stiffness: 400,
     repulsion: 400,
-    damping: 0.5,
-    fit: true,
-    padding: 30,
-    random: false
+    damping: 0.5
   };
   
   function SpringyLayout( options ){
@@ -20,6 +24,7 @@
     var layout = this;
     var self = this;
     var options = this.options;
+    var simUpdatingPos = false;
 
     var cy = options.cy;
     cy.trigger({ type: 'layoutstart', layout: layout });
@@ -27,8 +32,9 @@
     var nodes = cy.nodes().not(':parent');
     var edges = cy.edges();
  
-    var width = cy.width();
-    var height = cy.height();
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
     
     // make a new graph
     var graph = new Springy.Graph();
@@ -54,23 +60,33 @@
       });
     });
     
-    var layout = new Springy.Layout.ForceDirected(graph, options.stiffness, options.repulsion, options.damping);
-    
-    var currentBB = layout.getBoundingBox();
+    var sim = window.sim = new Springy.Layout.ForceDirected(graph, options.stiffness, options.repulsion, options.damping);
+
+    if( options.infinite ){
+      sim.minEnergyThreshold = -Infinity;
+    }
+
+    var currentBB = sim.getBoundingBox();
     // var targetBB = {bottomleft: new Springy.Vector(-2, -2), topright: new Springy.Vector(2, 2)};
     
     // convert to/from screen coordinates
     var toScreen = function(p) {
+      currentBB = sim.getBoundingBox();
+
       var size = currentBB.topright.subtract(currentBB.bottomleft);
-      var sx = p.subtract(currentBB.bottomleft).divide(size.x).x * width;
-      var sy = p.subtract(currentBB.bottomleft).divide(size.y).y * height;
+      var sx = p.subtract(currentBB.bottomleft).divide(size.x).x * bb.w + bb.x1;
+      var sy = p.subtract(currentBB.bottomleft).divide(size.y).y * bb.h + bb.x1;
+
       return new Springy.Vector(sx, sy);
     };
 
     var fromScreen = function(s) {
+      currentBB = sim.getBoundingBox();
+
       var size = currentBB.topright.subtract(currentBB.bottomleft);
-      var px = (s.x / width) * size.x + currentBB.bottomleft.x;
-      var py = (s.y / height) * size.y + currentBB.bottomleft.y;
+      var px = ((s.x - bb.x1) / bb.w) * size.x + currentBB.bottomleft.x;
+      var py = ((s.y - bb.y1) / bb.h) * size.y + currentBB.bottomleft.y;
+
       return new Springy.Vector(px, py);
     };
     
@@ -78,9 +94,11 @@
     
     var numNodes = cy.nodes().size();
     var drawnNodes = 1;
-    var fdRenderer = new Springy.Renderer(layout,
+    var fdRenderer = new Springy.Renderer(sim,
       function clear() {
         if( movedNodes.length > 0 && options.animate ){
+          simUpdatingPos = true;
+
           movedNodes.rtrigger('position');
 
           if( options.fit ){
@@ -88,6 +106,8 @@
           }
 
           movedNodes = cy.collection();
+
+          simUpdatingPos = false;
         }
       },
 
@@ -98,9 +118,6 @@
       function drawNode(node, p) {
         var v = toScreen(p);
         var element = node.data.element;
-        
-        window.p = p;
-        window.n = node;
         
         if( !element.locked() && !element.grabbed() ){
             element._private.position = {
@@ -130,7 +147,10 @@
     });
     
     // update node positions when dragging
-    nodes.bind('drag', function(){
+    var dragHandler;
+    nodes.on('position', dragHandler = function(){
+      if( simUpdatingPos ){ return; }
+
       setLayoutPositionForElement(this);
     });
     
@@ -158,7 +178,7 @@
       fdRenderer.start();
     }
     
-    var stopSystem = self.stopSystem = function(){ console.log('stop');
+    var stopSystem = self.stopSystem = function(){
       graph.filterNodes(function(){
         return false; // remove all nodes
       });
@@ -171,6 +191,8 @@
         cy.fit( options.padding );
       }
       
+      nodes.off('drag position', dragHandler);
+
       cy.one('layoutstop', options.stop);
       cy.trigger({ type: 'layoutstop', layout: layout });
 
@@ -178,9 +200,11 @@
     };
     
     start();
-    setTimeout(function(){
-      self.stop();
-    }, options.maxSimulationTime);
+    if( !options.infinite ){
+      setTimeout(function(){
+        self.stop();
+      }, options.maxSimulationTime);
+    }
 
   };
 

@@ -5,6 +5,8 @@
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
     maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
     animate: true, // whether to transition the node positions
@@ -27,8 +29,9 @@
     var graph = nodes.add(edges);
     var container = cy.container();
     
-    var width = cy.width();
-    var height = cy.height();
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
 
     var roots;
     if( $$.is.elementOrCollection(options.roots) ){
@@ -221,13 +224,15 @@
 
     // find min distance we need to leave between nodes
     var minDistance = 0;
-    for( var i = 0; i < nodes.length; i++ ){
-      var w = nodes[i].outerWidth();
-      var h = nodes[i].outerHeight();
-      
-      minDistance = Math.max(minDistance, w, h);
+    if( options.avoidOverlap ){
+      for( var i = 0; i < nodes.length; i++ ){
+        var w = nodes[i].outerWidth();
+        var h = nodes[i].outerHeight();
+        
+        minDistance = Math.max(minDistance, w, h);
+      }
+      minDistance *= 1.75; // just to have some nice spacing
     }
-    minDistance *= 1.75; // just to have some nice spacing
 
     // get the weighted percent for an element based on its connectivity to other levels
     var cachedWeightedPercent = {};
@@ -284,8 +289,8 @@
     }
 
     var center = {
-      x: width/2,
-      y: height/2
+      x: bb.x1 + bb.w/2,
+      y: bb.x1 + bb.h/2
     };
     nodes.layoutPositions(this, options, function(){
       var ele = this[0];
@@ -294,9 +299,9 @@
       var index = info.index;
       var depthSize = depths[depth].length;
 
-      var distanceX = Math.max( width / (depthSize + 1), minDistance );
-      var distanceY = Math.max( height / (depths.length + 1), minDistance );
-      var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
+      var distanceX = Math.max( bb.w / (depthSize + 1), minDistance );
+      var distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
+      var radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
       if( options.circle ){

@@ -5,8 +5,7 @@
     maxSimulationTime: 4000, // max length in ms to run the layout
     fit: true, // on every layout reposition of nodes, fit the viewport
     padding: 30, // padding around the simulation
-    simulationWidth: undefined, // uses viewport width by default
-    simulationHeight: undefined, // uses viewport height by default
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
 
     // callbacks on layout events
@@ -52,9 +51,9 @@
     var nodes = cy.nodes().not(':parent');
     var edges = cy.edges();
     var eles = nodes.add( edges );
-    var container = cy.container();
-    this._private.width = cy.width();
-    this._private.height = cy.height();
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
     var simUpdatingPos = false;
     var layout = this;
 
@@ -65,26 +64,11 @@
       options.animate = options.liveUpdate;
     }
 
-    if( options.simulationWidth != null && options.simulationHeight != null ){
-      this._private.width = options.simulationWidth; 
-      this._private.height = options.simulationHeight;
-    }
-
-    // make nice x & y fields
-    this._private.simBB = {
-      x1: 0,
-      y1: 0,
-      x2: this._private.width,
-      y2: this._private.height
-    };
-
     // arbor doesn't work with just 1 node 
     if( cy.nodes().size() <= 1 ){
       if( options.fit ){
         cy.reset();
       }
-
-      var bb = this._private.simBB;
 
       cy.nodes().position({
         x: Math.round( (bb.x1 + bb.x2)/2 ),
@@ -148,8 +132,6 @@
           if( node == null ){
             return;
           }
-          
-          var bb = layout._private.simBB;
 
           if( !node.locked() && !node.grabbed() ){
             node.silentPosition({
@@ -186,7 +168,7 @@
       
     };
     sys.renderer = sysRenderer;
-    sys.screenSize( this._private.width, this._private.height );
+    sys.screenSize( bb.w, bb.h );
     sys.screenPadding( options.padding, options.padding, options.padding, options.padding );
     sys.screenStep( options.stepSize );
 
@@ -202,24 +184,6 @@
       } else {
         return value;
       }
-    }
-    
-    // TODO we're using a hack; sys.toScreen should work :(
-    function fromScreen(pos){
-      var x = pos.x;
-      var y = pos.y;
-      var w = this._private.width;
-      var h = this._private.height;
-      
-      var left = -2;
-      var right = 2;
-      
-      var d = 4;
-      
-      return {
-        x: x/w * d + left,
-        y: y/h * d + right
-      };
     }
 
     var grabHandler;
@@ -284,11 +248,11 @@
 
     var resizeHandler;
     cy.on('resize', resizeHandler = function(){
-      if( layout._private.system != null ){
-        var w = layout._private.width = cy.width();
-        var h = layout._private.height = cy.height();
+      if( options.boundingBox == null && layout._private.system != null ){
+        var w = cy.width();
+        var h = cy.height();
 
-        layout._private.system.screenSize( w, h );
+        sys.screenSize( w, h );
       }
     });
 
@@ -298,10 +262,11 @@
       var id = node._private.data.id;
       var mass = calculateValueForElement(node, options.nodeMass);
       var locked = node._private.locked;
+      var nPos = node.position();
       
       var pos = sys.fromScreen({
-        x: node.position().x,
-        y: node.position().y
+        x: nPos.x,
+        y: nPos.y
       });
 
       node.scratch().arbor = sys.addNode(id, {

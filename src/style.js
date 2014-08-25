@@ -59,7 +59,7 @@
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
-      curveStyle: { enums: ['bezier', 'haystack'] },
+      curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
       fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },

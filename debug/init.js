@@ -65,6 +65,8 @@ $(function(){
           })
       .selector('edge')
         .css({
+          'curve-style': 'unbundled-bezier',
+          'control-point-distance': 100,
           'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
@@ -90,6 +92,11 @@ $(function(){
           'mid-source-arrow-color': '#000',
           'mid-target-arrow-color': '#000'
         })
+      // .selector('#ae')
+      //   .css({
+      //     'curve-style': 'unbundled-bezier',
+      //     'control-point-distance': 100
+      //   })
   ;
   
   window.options = {
@@ -138,7 +145,7 @@ $(function(){
   };
   
   var cliques = 1;
-  var numNodes = 4;
+  var numNodes = 2;
   var numEdges = 12;
   
   function randNodeId( clique ){

@@ -795,6 +795,10 @@
       
       hashTable[pairId].push( edge );
       pairIds.push( pairId );
+
+      if( style['curve-style'].value === 'unbundled-bezier' ){
+        hashTable[pairId].hasUnbundled = true;
+      }
     }
 
     var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
@@ -805,14 +809,23 @@
     // Nested for loop is OK; total number of iterations for both loops = edgeCount  
     for (var p = 0; p < pairIds.length; p++) {
       pairId = pairIds[p];
+      var pairEdges = hashTable[pairId];
     
       // for each pair id, the edges should be sorted by index
-      hashTable[pairId].sort(function(edge1, edge2){
+      pairEdges.sort(function(edge1, edge2){
         return edge1._private.index - edge2._private.index;
       });
 
-      src = hashTable[pairId][0]._private.source;
-      tgt = hashTable[pairId][0]._private.target;
+      src = pairEdges[0]._private.source;
+      tgt = pairEdges[0]._private.target;
+
+      // make sure src/tgt distinction is consistent
+      // (src/tgt in this case are just for ctrlpts and don't actually have to be true src/tgt)
+      if( src._private.data.id > tgt._private.data.id ){
+        var temp = src;
+        src = tgt;
+        tgt = temp;
+      }
 
       srcPos = src._private.position;
       tgtPos = tgt._private.position;
@@ -832,7 +845,7 @@
       badBezier = false;
       
 
-      if (hashTable[pairId].length > 1 && src !== tgt) {
+      if( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ){
 
         // pt outside src shape to calc distance/displacement from src to tgt
         var srcOutside = srcShape.intersectLine(
@@ -895,15 +908,21 @@
       var edge;
       var rs;
       
-      for (var i = 0; i < hashTable[pairId].length; i++) {
-        edge = hashTable[pairId][i];
+      for (var i = 0; i < pairEdges.length; i++) {
+        edge = pairEdges[i];
         rs = edge._private.rscratch;
         
         var edgeIndex1 = rs.lastEdgeIndex;
         var edgeIndex2 = i;
 
         var numEdges1 = rs.lastNumEdges;
-        var numEdges2 = hashTable[pairId].length;
+        var numEdges2 = pairEdges.length;
+
+        var eStyle = edge._private.style;
+        var stepSize = eStyle['control-point-step-size'].pxValue;
+        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
+        var stepWeight = eStyle['control-point-weight'].value;
+        var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
         var srcX1 = rs.lastSrcCtlPtX;
         var srcX2 = srcPos.x;
@@ -931,7 +950,7 @@
 
         if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
         &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
-        &&  edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 ){
+        &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
           // console.log('edge ctrl pt cache HIT')
           continue; // then the control points haven't changed and we can skip calculating them
         } else {
@@ -948,41 +967,62 @@
           // console.log('edge ctrl pt cache MISS')
         }
 
-        var eStyle = edge._private.style;
-        var stepSize = eStyle['control-point-step-size'].pxValue;
-        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
-        var stepWeight = eStyle['control-point-weight'].value;
-
         // Self-edge
-        if ( src.id() == tgt.id() ) {
+        if ( src === tgt ) {
             
           rs.edgeType = 'self';
           
+          var j = i;
+          var loopDist = stepSize;
+
+          if( edgeIsUnbundled ){
+            j = 0;
+            loopDist = stepDist;
+          }
+
           // New -- fix for large nodes
           rs.cp2ax = srcPos.x;
-          rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * stepSize * (i / 3 + 1);
+          rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1);
           
-          rs.cp2cx = src._private.position.x - (1 + Math.pow(srcW, 1.12) / 100) * stepSize * (i / 3 + 1);
+          rs.cp2cx = src._private.position.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1);
           rs.cp2cy = srcPos.y;
           
           rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
           rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
           
         // Straight edge
-        } else if (hashTable[pairId].length % 2 == 1
-          && i == Math.floor(hashTable[pairId].length / 2)) {
+        } else if (pairEdges.length % 2 === 1
+          && i === Math.floor(pairEdges.length / 2)
+          && !edgeIsUnbundled ) {
           
           rs.edgeType = 'straight';
           
         // Bezier edge
         } else {
-          var normStepDist = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
-          var manStepDist = stepDist !== undefined ? $$.math.signum( normStepDist ) * stepDist : undefined;
+          var normStepDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
+          var manStepDist;
+          var sign = $$.math.signum( normStepDist );
+
+          if( edgeIsUnbundled ){
+            manStepDist = stepDist;
+          } else {
+            manStepDist = stepDist !== undefined ? sign * stepDist : undefined; 
+          }
+
           var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
           
+          var w1 = (1 - stepWeight);
+          var w2 = stepWeight;
+
+          var swappedDirection = edge._private.source !== src;
+          if( swappedDirection ){
+            w1 = stepWeight;
+            w2 = (1 - stepWeight);
+          }
+
           var adjustedMidpt = {
-            x: midptSrcPts.x1 * (1 - stepWeight) + midptSrcPts.x2 * stepWeight,
-            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight
+            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
           };
 
           rs.edgeType = 'bezier';

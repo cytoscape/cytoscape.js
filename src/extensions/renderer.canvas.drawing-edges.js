@@ -61,7 +61,7 @@
     context.lineWidth = edgeWidth;
     
     if( rs.edgeType !== 'haystack' ){
-      this.findEndpoints(edge);
+      //this.findEndpoints(edge);
     }
     
     if( rs.edgeType === 'haystack' ){

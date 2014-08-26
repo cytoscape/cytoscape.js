@@ -210,14 +210,18 @@
    * @return    : layoutInfo object initialized
    */
   var createLayoutInfo = function(cy, options) {
+    // Shortcut
+    var edges = options.eles.edges();
+    var nodes = options.eles.nodes();
+
     var layoutInfo   = {
       layoutNodes  : [], 
       idToIndex    : {},
-      nodeSize     : cy.nodes().size(),
+      nodeSize     : nodes.size(),
       graphSet     : [],
       indexToGraph : [], 
       layoutEdges  : [],
-      edgeSize     : cy.edges().size(),
+      edgeSize     : edges.size(),
       temperature  : options.initialTemp,
       clientWidth  : cy.width(),
       clientHeight : cy.width(),
@@ -225,9 +229,6 @@
                        x1: 0, y1: 0, w: cy.width(), h: cy.height()
                      } )
     }; 
-    
-    // Shortcut
-    var nodes = cy.nodes();
     
     // Iterate over all nodes, creating layout nodes
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
@@ -307,9 +308,6 @@
       layoutInfo.indexToGraph[index] = i;
       }
     }
-
-    // Shortcut
-    var edges = cy.edges();
     
     // Iterate over all edges, creating Layout Edges
     for (var i = 0; i < layoutInfo.edgeSize; i++) {
@@ -538,7 +536,7 @@
     var s = 'Refreshing positions';
     logDebug(s);
 
-    var nodes = cy.nodes();
+    var nodes = options.eles.nodes();
     var bb = layoutInfo.boundingBox;
     var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
     

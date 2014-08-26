@@ -17,7 +17,8 @@
   RandomLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy;
-    var nodes = cy.nodes().not(':parent');
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()

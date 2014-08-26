@@ -23,8 +23,8 @@
     var options = params;
     
     var cy = params.cy;
-
-    var nodes = cy.nodes().not(':parent');
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
     var container = cy.container();
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {

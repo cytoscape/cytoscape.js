@@ -48,9 +48,9 @@
   ArborLayout.prototype.run = function(){
     var options = this._private.options;
     var cy = options.cy;
-    var nodes = cy.nodes().not(':parent');
-    var edges = cy.edges();
-    var eles = nodes.add( edges );
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
+    var edges = eles.edges();
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );

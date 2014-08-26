@@ -24,9 +24,10 @@
     var options = params;
     
     var cy = params.cy;
-    var nodes = cy.nodes();
-    var edges = cy.edges();
-    var graph = nodes.add(edges);
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
+    var edges = eles.edges();
+    var graph = eles;
     var container = cy.container();
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {

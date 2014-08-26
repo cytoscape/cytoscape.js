@@ -29,6 +29,7 @@
   DagreLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy; // cy is automatically populated for us in the constructor
+    var eles = options.eles;
 
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -37,7 +38,7 @@
     var g = new dagre.Digraph();
 
     // add nodes to dagre
-    var nodes = cy.nodes().not(':parent');
+    var nodes = eles.nodes().not(':parent');
     for( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
 
@@ -48,7 +49,7 @@
     }
 
     // add edges to dagre
-    var edges = cy.edges();
+    var edges = eles.edges();
     for( var i = 0; i < edges.length; i++ ){
       var edge = edges[i];
 

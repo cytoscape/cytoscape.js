@@ -48,7 +48,7 @@
     var layout = this;
     var options = this.options;
     var cy = options.cy; // cy is automatically populated for us in the constructor
-    var eles = cy.elements();
+    var eles = options.eles;
     var nodes = eles.nodes();
     var edges = eles.edges();
     var ready = false;

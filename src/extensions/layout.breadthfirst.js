@@ -9,6 +9,7 @@
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
     maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    strictHierarchy: false, // align successor nodes in a strict hierarchy (true) or condense into levels (false)
     animate: true, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
@@ -65,19 +66,28 @@
     var depths = [];
     var foundByBfs = {};
     var id2depth = {};
+    var prevNode = {};
+    var prevEdge = {};
 
     // find the depths of the nodes
-    graph.bfs(roots, function(i, depth){
-      var ele = this[0];
+    graph.bfs({
+      roots: roots,
+      directed: options.directed,
+      visit: function(i, depth, node, edge, prevNode){
+        var ele = this[0];
+        var id = ele.id();
 
-      if( !depths[depth] ){
-        depths[depth] = [];
+        if( !depths[depth] ){
+          depths[depth] = [];
+        }
+
+        depths[depth].push( ele );
+        foundByBfs[ id ] = true;
+        id2depth[ id ] = depth;
+        prevNode[ id ] = prevNode;
+        prevEdge[ id ] = edge;
       }
-
-      depths[depth].push( ele );
-      foundByBfs[ ele.id() ] = true;
-      id2depth[ ele.id() ] = depth;
-    }, options.directed);
+    });
 
     // check for nodes not found by bfs
     var orphanNodes = [];
@@ -305,24 +315,28 @@
       var radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
-      if( options.circle ){
-        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
-        var theta = 2 * Math.PI / depths[depth].length * index;
-
-        if( depth === 0 && depths[0].length === 1 ){
-          radius = 1;
-        }
-
-        return {
-          x: center.x + radius * Math.cos(theta),
-          y: center.y + radius * Math.sin(theta)
-        };
-
+      if( options.strictHierarchy ){
+        // TODO
       } else {
-        return {
-          x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
-          y: (depth + 1) * distanceY
-        };
+        if( options.circle ){
+          var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
+          var theta = 2 * Math.PI / depths[depth].length * index;
+
+          if( depth === 0 && depths[0].length === 1 ){
+            radius = 1;
+          }
+
+          return {
+            x: center.x + radius * Math.cos(theta),
+            y: center.y + radius * Math.sin(theta)
+          };
+
+        } else {
+          return {
+            x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
+            y: (depth + 1) * distanceY
+          };
+        }
       }
       
     });

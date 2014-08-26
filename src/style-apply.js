@@ -23,7 +23,7 @@
       // apply the styles
       for( var i = 0; i < this.length; i++ ){
         var context = this[i];
-        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
+        var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
         var props = context.properties;
         var newCxt = !_p.styleCxts[i];
 
@@ -41,9 +41,12 @@
 
             //if(prop.mapped) debugger;
 
-            if( newCxt || needToUpdateCxtMapping ){
+            if( newCxt ){
               // console.log(i + ' + MATCH: applying property: ' + prop.name);
               this.applyParsedProperty( ele, prop, context );
+            } else if( needToUpdateCxtMapping ){
+              // console.log(i + ' + MATCH: applying mapping: ' + prop.name);
+              this.applyParsedProperty( ele, currentEleProp );
             }
           }
 
@@ -80,10 +83,11 @@
 
   $$.styfn.updateStyleHints = function(ele){
     var _p = ele._private;
+    var self = this;
 
     // set whether has pie or not; for greater efficiency
     var hasPie = false;
-    if( _p.group === 'nodes' ){
+    if( _p.group === 'nodes' && self._private.hasPie ){
       for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
         var size = _p.style['pie-' + i + '-background-size'].value;
 
@@ -106,14 +110,14 @@
     _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
-    _p.styleKey = '';
-    for( var i = 0; i < $$.style.properties.length; i++ ){
-      var prop = $$.style.properties[i];
-      var eleProp = _p.style[ prop.name ];
-      var val = eleProp && eleProp.strValue ? eleProp.strValue : 'undefined';
+    _p.styleKey = Date.now(); // probably safe to use applied time and much faster
+    // for( var i = 0; i < $$.style.properties.length; i++ ){
+    //   var prop = $$.style.properties[i];
+    //   var eleProp = _p.style[ prop.name ];
+    //   var val = eleProp && eleProp.strValue ? eleProp.strValue : 'undefined';
 
-      _p.styleKey += '$' + val;
-    }
+    //   _p.styleKey += '$' + val;
+    // }
   };
 
   // when a context's selector no longer matches the ele, roll back the context on the ele
@@ -415,7 +419,7 @@
       for( var i = 0; i < props.length; i++ ){
         var prop = props[i];
         var styProp = style[ prop ];
-        var fromProp = styProp.prev;
+        var fromProp = styProp.prev || styProp.bypassed; // b/c bypasses don't store prevs
         var toProp = style[ prop ];
         var diff = false;
         var fromAddedCxt = false;

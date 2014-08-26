@@ -185,6 +185,7 @@
         value: pp.value,
         strValue: pp.strValue,
         pxValue: pp.pxValue,
+        msValue: pp.msValue,
         units: pp.units,
         bypass: pp.bypass,
         bypassed: pp.bypassed,
@@ -403,8 +404,8 @@
     var style = ele._private.style;
 
     var props = style['transition-property'].value;
-    var duration = style['transition-duration'].value * 1000;
-    var delay = style['transition-delay'].value * 1000;
+    var duration = style['transition-duration'].msValue;
+    var delay = style['transition-delay'].msValue;
     var css = {};
 
     if( props.length > 0 && duration > 0 ){
@@ -466,7 +467,7 @@
           ;
         }
 
-          // the previous value is good for an animation only if it's different
+        // the previous value is good for an animation only if it's different
         if( diff ){
           css[ prop ] = toProp.strValue; // to val
           this.applyBypass(ele, prop, fromProp.strValue); // from val
@@ -492,7 +493,7 @@
         duration: duration,
         queue: false,
         complete: function(){ 
-          self.removeAllBypasses( ele );
+          self.removeBypasses( ele, props );
 
           ele._private.transitioning = false;
         }
@@ -501,7 +502,7 @@
     } else if( ele._private.transitioning ){
       ele.stop();
 
-      this.removeAllBypasses( ele );
+      this.removeBypasses( ele, props );
 
       ele._private.transitioning = false;
     }

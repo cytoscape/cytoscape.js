@@ -7,11 +7,11 @@ $(function(){
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
-      .selector('node, edge')
-        .css({
-          // 'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-          // 'transition-duration': '0.25s'
-        })
+      // .selector('node, edge')
+      //   .css({
+      //     'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+      //     'transition-duration': '0.25s'
+      //   })
 
       .selector('node')
         .css({
@@ -65,8 +65,8 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'curve-style': 'unbundled-bezier',
-          'control-point-distance': 100,
+          // 'curve-style': 'unbundled-bezier',
+          // 'control-point-distance': 100,
           'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',

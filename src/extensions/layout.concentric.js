@@ -32,9 +32,8 @@
     
     var cy = params.cy;
     
-    var nodes = cy.nodes().filter(function(){
-      return !this.isFullAutoParent();
-    });
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()

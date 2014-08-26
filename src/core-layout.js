@@ -32,6 +32,12 @@
         $$.util.error('Can not apply layout: No such layout `' + name + '` found; did you include its JS file?');
         return;
       }
+
+      options.eles = options.eles != null ? options.eles : this.$();
+
+      if( $$.is.string( options.eles ) ){
+        options.eles = this.$( options.eles );
+      }
       
       var layout = new LayoutProto( $$.util.extend({}, options, {
         renderer: this._private.renderer,

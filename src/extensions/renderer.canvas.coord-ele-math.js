@@ -770,6 +770,7 @@
     for (var i = 0; i < edges.length; i++){
       var edge = edges[i];
       var style = edge._private.style;
+      var edgeIsUnbundled = style['curve-style'].value === 'unbundled-bezier';
 
       // ignore edges who are not to be displayed
       // they shouldn't take up space
@@ -789,14 +790,18 @@
         tgtId + '-' + srcId :
         srcId + '-' + tgtId ;
 
+      if( edgeIsUnbundled ){
+        pairId = 'unbundled' + edge._private.data.id;
+      }
+
       if (hashTable[pairId] == null) {
         hashTable[pairId] = [];
+        pairIds.push( pairId );
       }
       
       hashTable[pairId].push( edge );
-      pairIds.push( pairId );
 
-      if( style['curve-style'].value === 'unbundled-bezier' ){
+      if( edgeIsUnbundled ){
         hashTable[pairId].hasUnbundled = true;
       }
     }

@@ -44,13 +44,15 @@
 
     // each visual style property has a type and needs to be validated according to it
     $$.style.types = {
-      time: { number: true, min: 0, units: 's' },
+      time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
       position: { enums: ['parent', 'origin'] },
-      size: { number: true, min: 0, enums: ['auto'] },
+      autoSize: { number: true, min: 0, enums: ['auto'] },
+      number: { number: true },
+      size: { number: true, min: 0 },
       bgSize: { number: true, min: 0, allowPercent: true },
       bgPos: { number: true, allowPercent: true },
       bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
@@ -81,12 +83,12 @@
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
       propList: { propList: true },
-      angle: { number: true, units: 'deg|rad'}
+      angle: { number: true, units: 'deg|rad' }
     };
 
     // define visual style properties
     var t = $$.style.types;
-    $$.style.properties = [
+    var props = $$.style.properties = [
       // these are for elements
       { name: 'text-valign', type: t.valign },
       { name: 'text-halign', type: t.halign },
@@ -131,8 +133,8 @@
       { name: 'border-opacity', type: t.zeroOneNumber },
       { name: 'border-width', type: t.size },
       { name: 'border-style', type: t.borderStyle },
-      { name: 'height', type: t.size },
-      { name: 'width', type: t.size },
+      { name: 'height', type: t.autoSize },
+      { name: 'width', type: t.autoSize },
       { name: 'shape', type: t.nodeShape },
 
       // compound props
@@ -141,57 +143,6 @@
       { name: 'padding-top', type: t.size },
       { name: 'padding-bottom', type: t.size },
       { name: 'position', type: t.position },
-
-      // pie backgrounds for nodes
-      { name: 'pie-size', type: t.bgSize },
-      { name: 'pie-1-background-color', type: t.color },
-      { name: 'pie-2-background-color', type: t.color },
-      { name: 'pie-3-background-color', type: t.color },
-      { name: 'pie-4-background-color', type: t.color },
-      { name: 'pie-5-background-color', type: t.color },
-      { name: 'pie-6-background-color', type: t.color },
-      { name: 'pie-7-background-color', type: t.color },
-      { name: 'pie-8-background-color', type: t.color },
-      { name: 'pie-9-background-color', type: t.color },
-      { name: 'pie-10-background-color', type: t.color },
-      { name: 'pie-11-background-color', type: t.color },
-      { name: 'pie-12-background-color', type: t.color },
-      { name: 'pie-13-background-color', type: t.color },
-      { name: 'pie-14-background-color', type: t.color },
-      { name: 'pie-15-background-color', type: t.color },
-      { name: 'pie-16-background-color', type: t.color },
-      { name: 'pie-1-background-size', type: t.percent },
-      { name: 'pie-2-background-size', type: t.percent },
-      { name: 'pie-3-background-size', type: t.percent },
-      { name: 'pie-4-background-size', type: t.percent },
-      { name: 'pie-5-background-size', type: t.percent },
-      { name: 'pie-6-background-size', type: t.percent },
-      { name: 'pie-7-background-size', type: t.percent },
-      { name: 'pie-8-background-size', type: t.percent },
-      { name: 'pie-9-background-size', type: t.percent },
-      { name: 'pie-10-background-size', type: t.percent },
-      { name: 'pie-11-background-size', type: t.percent },
-      { name: 'pie-12-background-size', type: t.percent },
-      { name: 'pie-13-background-size', type: t.percent },
-      { name: 'pie-14-background-size', type: t.percent },
-      { name: 'pie-15-background-size', type: t.percent },
-      { name: 'pie-16-background-size', type: t.percent },
-      { name: 'pie-1-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-2-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-3-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-4-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-5-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-6-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-7-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-8-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-9-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-10-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-11-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-12-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-13-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-14-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-15-background-opacity', type: t.zeroOneNumber },
-      { name: 'pie-16-background-opacity', type: t.zeroOneNumber },
 
       // these are just for edges
       { name: 'source-arrow-shape', type: t.arrowShape },
@@ -209,7 +160,7 @@
       { name: 'line-style', type: t.lineStyle },
       { name: 'line-color', type: t.color },
       { name: 'control-point-step-size', type: t.size },
-      { name: 'control-point-distance', type: t.size },
+      { name: 'control-point-distance', type: t.number },
       { name: 'control-point-weight', type: t.zeroOneNumber },
       { name: 'curve-style', type: t.curveStyle },
       { name: 'haystack-radius', type: t.zeroOneNumber },
@@ -227,8 +178,15 @@
       { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
     ];
 
+    // pie backgrounds for nodes
+    props.push({ name: 'pie-size', type: t.bgSize });
+    for( var i = 1; i <= 16; i++ ){
+      props.push({ name: 'pie-'+i+'-background-color', type: t.color });
+      props.push({ name: 'pie-'+i+'-background-size', type: t.percent });
+      props.push({ name: 'pie-'+i+'-background-opacity', type: t.zeroOneNumber });
+    }
+
     // allow access of properties by name ( e.g. $$.style.properties.height )
-    var props = $$.style.properties;
     for( var i = 0; i < props.length; i++ ){
       var prop = props[i];
       
@@ -557,25 +515,29 @@
     // check the type and return the appropriate object
     if( type.number ){ 
       var units;
-      var implicitUnit = 'px'; // not set => px
+      var implicitUnits = 'px'; // not set => px
 
       if( type.units ){ // use specified units if set
         units = type.units;
       }
 
+      if( type.implicitUnits ){
+        implicitUnits = type.implicitUnits;
+      }
+
       if( !type.unitless ){
         if( valueIsString ){
-          var unitsRegex = "px|em" + (type.allowPercent ? "|\\%" : '');
+          var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
           if( units ){ unitsRegex = units; } // only allow explicit units if so set 
-          var match = value.match( "^(" + $$.util.regex.number + ")(" + unitsRegex + ")?" + "$" );
+          var match = value.match( '^(' + $$.util.regex.number + ')(' + unitsRegex + ')?' + '$' );
           
           if( match ){
             value = match[1];
-            units = match[2] || implicitUnit;
+            units = match[2] || implicitUnits;
           }
           
-        } else if( !units ) {
-          units = implicitUnit; // implicitly px if unspecified
+        } else if( !units || type.implicitUnits ) {
+          units = implicitUnits; // implicitly px if unspecified
         }
       }
 
@@ -627,10 +589,16 @@
         bypass: propIsBypass 
       };
 
+      // normalise value in pixels
       if( type.unitless || (units !== 'px' && units !== 'em') ){
         // then pxValue does not apply
       } else {
         ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      }
+
+      // normalise value in ms
+      if( units === 'ms' || units === 's' ){
+        ret.msValue = units === 'ms' ? value : 1000 * value;
       }
 
       return ret;

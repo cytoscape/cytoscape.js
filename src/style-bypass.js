@@ -100,4 +100,19 @@
     }
   };
 
+  $$.styfn.removeBypasses = function( eles, props ){
+    for( var i = 0; i < props.length; i++ ){
+      var name = props[i];
+      var prop = $$.style.properties[ name ];
+      var value = ''; // empty => remove bypass
+
+      var parsedProp = this.parse(name, value, true);
+
+      for( var j = 0; j < eles.length; j++ ){
+        var ele = eles[j];
+        this.applyParsedProperty(ele, parsedProp);
+      }
+    }
+  };
+
 })( cytoscape );

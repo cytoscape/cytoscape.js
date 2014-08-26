@@ -439,6 +439,7 @@
           if( !selfAsParent ){
             // connect with children
             parent[0]._private.children.push( node );
+            node._private.parent = parent[0];
 
             // let the core know we have a compound graph
             cy._private.hasCompoundNodes = true;

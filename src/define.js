@@ -355,6 +355,7 @@
         var eventsIsObject = $$.is.plainObject(events);
         var eventsIsEvent = $$.is.event(events);
         var cy = this._private.cy || this;
+        var hasCompounds = cy.hasCompoundNodes();
 
         if( eventsIsString ){ // then make a plain event object for each event name
           var evts = events.split(/\s+/);
@@ -497,8 +498,8 @@
 
             // bubble up event for elements
             if( bubbleUp ){
-              var parent = triggerer.parent();
-              var hasParent = parent.length !== 0;
+              var parent = hasCompounds ? triggerer._private.parent : null;
+              var hasParent = parent != null && parent.length !== 0;
 
               if( hasParent ){ // then bubble up to parent
                 parent = parent[0];

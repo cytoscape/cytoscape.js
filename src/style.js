@@ -586,7 +586,8 @@
         value: value,
         strValue: '' + value + (units ? units : ''),
         units: units,
-        bypass: propIsBypass 
+        bypass: propIsBypass,
+        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value != 0 && value != ''
       };
 
       // normalise value in pixels
@@ -748,6 +749,10 @@
     if( property ){
       var i = this.length - 1;
       this[i].properties.push( property );
+
+      if( property.hasPie ){
+        this._private.hasPie = true;
+      }
 
       // add to core style if necessary
       var currentSelectorIsCore = !this[i].selector;

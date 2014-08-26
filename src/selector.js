@@ -437,6 +437,8 @@
     if( query.group != null && query.group != '*' && query.group != element._private.group ){
       return false;
     }
+
+    var cy = element.cy();
     
     // check colon selectors
     var allColonSelectorsMatch = true;
@@ -722,16 +724,16 @@
     var confirmRelations = function( query, elements ){
       if( query != null ){
         var matches = false;
-        elements = elements(); // make elements functional so we save cycles if query == null
 
-        var cy = elements.cy();
         if( !cy.hasCompoundNodes() ){
           return false;
         }
 
+        elements = elements(); // make elements functional so we save cycles if query == null
+
         // query must match for at least one element (may be recursive)
-        for(var i = 0; i < elements.size(); i++){
-          if( queryMatches( query, elements.eq(i) ) ){
+        for(var i = 0; i < elements.length; i++){
+          if( queryMatches( query, elements[i] ) ){
             matches = true;
             break;
           }
@@ -801,7 +803,7 @@
     
     // don't bother trying if it's invalid
     if( self._private.invalid ){
-      return new $$.Collection( cy );
+      return false;
     }
   
     for(var j = 0; j < self.length; j++){

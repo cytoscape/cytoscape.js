@@ -10,7 +10,7 @@
       } );
 
       return this.breadthFirstSearch( options );
-    }
+    },
 
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
@@ -121,7 +121,7 @@
       } );
 
       return this.depthFirstSearch( options );
-    }
+    },
 
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)

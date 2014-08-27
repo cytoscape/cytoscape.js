@@ -107,15 +107,7 @@
 
     // init style
     if( _p.styleEnabled ){
-      if( $$.is.stylesheet(options.style) ){
-        _p.style = options.style.generateStyle(this);
-      } else if( $$.is.array(options.style) ) {
-        _p.style = $$.style.fromJson(this, options.style);
-      } else if( $$.is.string(options.style) ){
-        _p.style = $$.style.fromString(this, options.style);
-      } else {
-        _p.style = new $$.Style( cy );
-      }
+      this.setStyle( options.style );
     }
 
     // create the renderer

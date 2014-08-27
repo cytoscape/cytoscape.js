@@ -126,17 +126,27 @@
       return this; // chaining
     },
 
-    removeCss: function(){
+    removeCss: function( names ){
       var cy = this.cy();
       if( !cy.styleEnabled() ){ return this; }
 
       var style = cy.style();
       var eles = this;
 
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+      if( names === undefined ){
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
 
-        style.removeAllBypasses( ele );
+          style.removeAllBypasses( ele );
+        }
+      } else {
+        names = names.split(/\s+/);
+
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
+
+          style.removeBypasses( ele, names );
+        }
       }
 
       var updatedCompounds = this.updateCompoundBounds();

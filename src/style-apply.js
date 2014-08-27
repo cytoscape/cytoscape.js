@@ -7,78 +7,127 @@
   $$.styfn.apply = function( eles ){
     var self = this;
 
+    if( self._private.newStyle ){
+      this._private.contextStyles = {};
+    }
+
     for( var ie = 0; ie < eles.length; ie++ ){
       var ele = eles[ie];
-      var _p = ele._private;
-      var addedCxts = [];
-      var removedCxts = [];
+      var cxtMeta = self.getContextMeta( ele );
+      var cxtStyle = self.getContextStyle( cxtMeta );
+      var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-      if( self._private.newStyle ){
-        _p.styleCxts = [];
-        _p.style = {};
-      }
-
-      // console.log('APPLYING STYLESHEET\n--\n');
-
-      // apply the styles
-      for( var i = 0; i < this.length; i++ ){
-        var context = this[i];
-        var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
-        var props = context.properties;
-        var newCxt = !_p.styleCxts[i];
-
-        // console.log(i + ' : looking at selector: ' + context.selector);
-
-        if( contextSelectorMatches ){ // then apply its properties
-
-          // apply the properties in the context
-          
-          for( var j = 0; j < props.length; j++ ){ // for each prop
-            var prop = props[j];
-            var currentEleProp = _p.style[prop.name];
-            var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
-            var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
-
-            //if(prop.mapped) debugger;
-
-            if( newCxt ){
-              // console.log(i + ' + MATCH: applying property: ' + prop.name);
-              this.applyParsedProperty( ele, prop, context );
-            } else if( needToUpdateCxtMapping ){
-              // console.log(i + ' + MATCH: applying mapping: ' + prop.name);
-              this.applyParsedProperty( ele, currentEleProp );
-            }
-          }
-
-          // keep a note that this context matches
-          ele._private.styleCxts[i] = context;
-
-          if( self._private.newStyle === false && newCxt ){
-            addedCxts.push( context );
-          }
-          
-        } else {
-
-          // roll back style cxts that don't match now
-          if( _p.styleCxts[i] ){
-            // console.log(i + ' x MISS: rolling back context');
-            this.rollBackContext( ele, context );
-            removedCxts.push( context );
-
-            delete _p.styleCxts[i];
-          }
-        }
-      } // for context
-
-      if( addedCxts.length > 0 || removedCxts.length > 0 ){
-        this.updateTransitions( ele, addedCxts, removedCxts );
-      }
-
+      self.updateTransitions( ele, app.diffProps );
       self.updateStyleHints( ele );
 
     } // for elements
 
     self._private.newStyle = false;
+  };
+
+  $$.styfn.getContextMeta = function( ele ){
+    var self = this;
+    var cxtKey = '';
+    var diffProps = [];
+    var prevKey = ele._private.styleCxtKey || '';
+
+    // apply the styles
+    for( var i = 0; i < self.length; i++ ){
+      var context = self[i];
+      var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
+
+      if( contextSelectorMatches ){
+        cxtKey += 't';
+      } else {
+        cxtKey += 'f';
+      }
+
+      var changedCxt = cxtKey[i] !== prevKey[i] || self._private.newStyle; // new style always applied b/c old cxts may not be the same
+      if( changedCxt ){
+        for( var j = 0; j < context.properties.length; j++ ){
+          var prop = context.properties[j];
+
+          if( !diffProps[ prop.name ] ){
+            diffProps.push( prop.name );
+            diffProps[ prop.name ] = true;
+          }
+          
+        }
+      }
+    } // for context
+
+    ele._private.styleCxtKey = cxtKey;
+
+    return {
+      key: cxtKey,
+      diffPropNames: diffProps
+    };
+  };
+
+  // gets a computed ele style object based on matched contexts
+  $$.styfn.getContextStyle = function( cxtMeta ){
+    var cxtKey = cxtMeta.key;
+    var self = this;
+    var cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
+
+    // if already computed style, returned cached copy
+    if( cxtStyles[cxtKey] ){ return cxtStyles[cxtKey]; }
+
+    var style = {
+      _private: {
+        key: cxtKey
+      }
+    };
+
+    for( var i = 0; i < self.length; i++ ){
+      var cxt = self[i];
+      var hasCxt = cxtKey[i] === 't';
+
+      if( !hasCxt ){ continue; }
+
+      for( var j = 0; j < cxt.properties.length; j++ ){
+        var prop = cxt.properties[j];
+        var styProp = style[ prop.name ] = prop;
+
+        styProp.context = cxt;
+      }
+    }
+
+    return cxtStyles[cxtKey] = style;
+  };
+
+  $$.styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
+    var self = this;
+    var cxtKey = cxtMeta.key;
+    var diffProps = cxtMeta.diffPropNames;
+    var retDiffProps = {};
+
+    for( var i = 0; i < diffProps.length; i++ ){
+      var diffPropName = diffProps[i];
+      var cxtProp = cxtStyle[ diffPropName ];
+      var eleProp = ele._private.style[ diffPropName ];
+
+      // save cycles when the context prop doesn't need to be applied
+      if( !cxtProp || eleProp === cxtProp ){ continue; }
+
+      var cxt = cxtProp.context;
+
+      var retDiffProp = retDiffProps[ diffPropName ] = {
+        prev: eleProp
+      };
+
+      self.applyParsedProperty( ele, cxtProp );
+
+      retDiffProp.next = ele._private.style[ diffPropName ];
+
+      if( retDiffProp.next.bypass ){
+        retDiffProp.next = retDiffProp.next.bypassed;
+      }
+    }
+
+    return {
+      diffProps: retDiffProps
+    };
   };
 
   $$.styfn.updateStyleHints = function(ele){
@@ -120,47 +169,6 @@
     // }
   };
 
-  // when a context's selector no longer matches the ele, roll back the context on the ele
-  // (cheaper than having to recalc from the beginning)
-  $$.styfn.rollBackContext = function( ele, context ){
-    for( var j = 0; j < context.properties.length; j++ ){ // for each prop
-      var prop = context.properties[j];
-      var eleProp = ele._private.style[ prop.name ];
-
-      // because bypasses do not store prevs, look at the bypassed property
-      if( eleProp.bypassed ){
-        eleProp = eleProp.bypassed;
-      }
-
-      var first = true;
-      var lastEleProp;
-      var l = 0;
-      while( eleProp.prev ){
-        var prev = eleProp.prev;
-
-        if( eleProp.context === context ){
-
-          if( first ){
-            ele._private.style[ prop.name ] = prev;
-          } else if( lastEleProp ){
-            lastEleProp.prev = prev;
-          }
-          
-        }
-
-        lastEleProp = eleProp;
-        eleProp = prev;
-        first = false;
-        l++;
-
-        // in case we have a problematic prev list
-        // if( l >= 100 ){
-        //   debugger;
-        // }
-      }
-    }
-  };
-
   // apply a property to the style (for internal use)
   // returns whether application was successful
   //
@@ -177,35 +185,7 @@
   // 
   // for parsedProp:{ bypass: true }
   // the generated flattenedProp:{ bypassed: parsedProp } 
-  $$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
-    var pp = parsedProp;
-
-    // copy b/c the same parsedProp may be applied to many elements, BUT
-    // the instances put in each element should be unique to avoid overwriting other the lists of other elements
-
-    if( context ){ // only need to copy if came from stylesheet
-      parsedProp = {
-        name: pp.name,
-        value: pp.value,
-        strValue: pp.strValue,
-        pxValue: pp.pxValue,
-        msValue: pp.msValue,
-        units: pp.units,
-        bypass: pp.bypass,
-        bypassed: pp.bypassed,
-        deleteBypass: pp.deleteBypass,
-        mapped: pp.mapped,
-        mapping: pp.mapping,
-        field: pp.field,
-        fieldMin: pp.fieldMin,
-        fieldMax: pp.fieldMax,
-        valueMin: pp.valueMin,
-        valueMax: pp.valueMax,
-        context: pp.context,
-        prev: pp.prev
-      };
-    }
-
+  $$.styfn.applyParsedProperty = function( ele, parsedProp ){
     var prop = parsedProp;
     var style = ele._private.style;
     var fieldVal, flatProp;
@@ -348,28 +328,12 @@
       style[ prop.name ] = prop; // and set
     
     } else { // prop is not bypass
-      var prevProp;
-
       if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
-        prevProp = origProp.bypassed;
-        
         origProp.bypassed = prop;
       } else { // then just replace the old prop with the new one
-        prevProp = style[ prop.name ];
-
         style[ prop.name ] = prop; 
       }
-
-      if( prevProp && prevProp.mapping && prop.mapping && prevProp.context === context ){
-        prevProp = prevProp.prev;
-      }
-
-      if( prevProp && prevProp !== prop ){
-        prop.prev = prevProp;
-      }
     }
-
-    prop.context = context;
 
     return true;
   };
@@ -403,7 +367,7 @@
     }
   };
 
-  $$.styfn.updateTransitions = function( ele, addedCxts, removedCxts ){
+  $$.styfn.updateTransitions = function( ele, diffProps, isBypass ){
     var self = this;
     var style = ele._private.style;
 
@@ -419,41 +383,16 @@
       for( var i = 0; i < props.length; i++ ){
         var prop = props[i];
         var styProp = style[ prop ];
-        var fromProp = styProp.prev || styProp.bypassed; // b/c bypasses don't store prevs
-        var toProp = style[ prop ];
+        var diffProp = diffProps[ prop ];
+
+        if( !diffProp ){ continue; }
+
+        var prevProp = diffProp.prev;
+        var fromProp = prevProp;
+        var toProp = diffProp.next != null ? diffProp.next : styProp;
         var diff = false;
-        var fromAddedCxt = false;
-        var fromRemovedCxt = false;
 
-        // see if the prop was added from one of the contexts
-        for( var j = 0; j < addedCxts.length; j++ ){
-          var cxt = addedCxts[j];
-
-          if( cxt === toProp.context ){
-            fromAddedCxt = true;
-            break;
-          }
-        } 
-
-        // see if the prop was removed from one of the contexts
-        for( var j = removedCxts.length - 1; j >= 0; j-- ){ // reverse order b/c last has precedence
-          var cxt = removedCxts[j];
-
-          for( var k = 0; k < cxt.properties.length; k++ ){
-            var cProp = cxt.properties[k];
-
-            if( cProp.name === prop ){
-              fromRemovedCxt = true;
-              fromProp = cProp;
-              break;
-            }
-          }
-
-          if( fromRemovedCxt ){ break; }
-        }
-
-        // if not from changed context, then it's not a state transition but just an overriding part of the stylesheet
-        if( !fromAddedCxt && !fromRemovedCxt ){ continue; }
+        if( !fromProp ){ continue; } 
 
         // consider px values
         if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
@@ -497,7 +436,9 @@
         duration: duration,
         queue: false,
         complete: function(){ 
-          self.removeBypasses( ele, props );
+          if( !isBypass ){
+            self.removeBypasses( ele, props );
+          }
 
           ele._private.transitioning = false;
         }

@@ -401,10 +401,8 @@ $(function(){
 
 			teardown: function(){
 				var stylesheet = window.defaultSty;
-				var style = cy.style();
-
-				stylesheet.assignToStyle( style );
-				style.update();
+				
+				cy.style( stylesheet );
 			}
 		});
 	});

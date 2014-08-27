@@ -69,6 +69,22 @@
         type: _p.batchNotifyTypes,
         collection: _p.batchNotifyEles
       });
+
+      return this;
+    },
+
+    // for backwards compatibility
+    batchData: function( map ){
+      var cy = this;
+
+      return this.batch(function(){
+        for( var id in map ){
+          var data = map[id];
+          var ele = cy.getElementById( id );
+          
+          ele.data( data );
+        }
+      });
     }
   });
   

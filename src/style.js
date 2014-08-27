@@ -13,7 +13,8 @@
 
     this._private = {
       cy: cy,
-      coreStyle: {}
+      coreStyle: {},
+      newStyle: true
     };
     
     this.length = 0;
@@ -179,8 +180,9 @@
     ];
 
     // pie backgrounds for nodes
+    $$.style.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
     props.push({ name: 'pie-size', type: t.bgSize });
-    for( var i = 1; i <= 16; i++ ){
+    for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){
       props.push({ name: 'pie-'+i+'-background-color', type: t.color });
       props.push({ name: 'pie-'+i+'-background-size', type: t.percent });
       props.push({ name: 'pie-'+i+'-background-opacity', type: t.zeroOneNumber });
@@ -192,9 +194,6 @@
       
       props[ prop.name ] = prop; // allow lookup by name
     }
-
-    // because the pie properties are numbered, give access to a constant N (for renderer use)
-    $$.style.pieBackgroundN = 16;
   })();
 
   // adds the default stylesheet to the current style
@@ -382,12 +381,11 @@
 
   // remove all contexts
   $$.styfn.clear = function(){
-    this._private.newStyle = true;
-
     for( var i = 0; i < this.length; i++ ){
       delete this[i];
     }
     this.length = 0;
+    this._private.newStyle = true;
 
     return this; // chaining
   };
@@ -700,7 +698,8 @@
     var i = this.length++; // new context means new index
     this[i] = {
       selector: selector,
-      properties: []
+      properties: [],
+      index: i
     };
 
     return this; // chaining
@@ -749,6 +748,7 @@
     if( property ){
       var i = this.length - 1;
       this[i].properties.push( property );
+      this[i].properties[ property.name ] = property; // allow access by name as well
 
       if( property.hasPie ){
         this._private.hasPie = true;

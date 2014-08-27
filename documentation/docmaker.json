@@ -694,6 +694,20 @@
             {
               "name": "cy.style",
               "descr": "Get the entry point to modify the visual style of the graph after initialisation.",
+              "formats": [
+                {
+                  "descr": "Get the current style object.",
+                },
+                {
+                  "descr": "Assign a new stylesheet to replace the existing one.",
+                  "args": [
+                    {
+                      "name": "stylesheet",
+                      "descr": "Either a `cytoscape.Stylesheet` object, a string stylesheet, or a JSON stylesheet (the same formats accepted for `options.style` at initialisation)."
+                    }
+                  ]
+                }
+              ],
               "md": "core/style"
             }
           ]
@@ -1375,7 +1389,17 @@
             {
               "name": "eles.removeCss",
               "pureAliases": [ "eles.removeStyle" ],
-              "descr": "Removes all overridden style of the elements."
+              "descr": "Removes overridden style of the elements.",
+              "formats": [
+                {
+                  "descr": "Removes all overridden style of the elements."
+                },
+
+                {
+                  "descr": "Removes particular overridden style properties of the elements.",
+                  "args": [ { "name": "names", "descr": "A space-separated list of property names for which overridden styles will be removed." } ]
+                }
+              ]
             },
 
             {

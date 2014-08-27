@@ -2,7 +2,7 @@
 
   // bypasses are applied to an existing style on an element, and just tacked on temporarily
   // returns true iff application was successful for at least 1 specified property
-  $$.styfn.applyBypass = function( eles, name, value ){
+  $$.styfn.applyBypass = function( eles, name, value, updateTransitions ){
     var props = [];
     
     // put all the properties (can specify one or many) in an array after parsing them
@@ -29,6 +29,7 @@
       }
     } else if( $$.is.plainObject(name) ){ // then parse each property
       var specifiedProps = name;
+      updateTransitions = value;
 
       for( var i = 0; i < $$.style.properties.length; i++ ){
         var prop = $$.style.properties[i];
@@ -58,11 +59,21 @@
     var ret = false; // return true if at least one succesful bypass applied
     for( var i = 0; i < eles.length; i++ ){ // for each ele
       var ele = eles[i];
+      var prevProps = {};
 
       for( var j = 0; j < props.length; j++ ){ // for each prop
         var prop = props[j];
 
+        if( updateTransitions ){
+          var prevProp = ele._private.style[ prop.name ];
+          prevProps[ prop.name ] = prevProp;
+        }
+
         ret = this.applyParsedProperty( ele, prop ) || ret;
+      }
+
+      if( updateTransitions ){
+        this.updateTransitions( ele, prevProps );
       }
     }
 
@@ -85,32 +96,46 @@
     }
   };
 
-  $$.styfn.removeAllBypasses = function( eles ){
-    for( var i = 0; i < $$.style.properties.length; i++ ){
-      var prop = $$.style.properties[i];
-      var name = prop.name;
-      var value = ''; // empty => remove bypass
+  $$.styfn.removeAllBypasses = function( eles, updateTransitions ){
+    for( var j = 0; j < eles.length; j++ ){
+      var ele = eles[j];
+      var prevProps = {};
 
-      var parsedProp = this.parse(name, value, true);
+      for( var i = 0; i < $$.style.properties.length; i++ ){
+        var prop = $$.style.properties[i];
+        var name = prop.name;
+        var value = ''; // empty => remove bypass
+        var parsedProp = this.parse(name, value, true);
+        var prevProp = ele._private.style[ prop.name ];
 
-      for( var j = 0; j < eles.length; j++ ){
-        var ele = eles[j];
+        prevProps[ prop.name ] = prevProp;
+
         this.applyParsedProperty(ele, parsedProp);
+
+        if( updateTransitions ){
+          this.updateTransitions( ele, prevProps );
+        }
       }
     }
   };
 
-  $$.styfn.removeBypasses = function( eles, props ){
-    for( var i = 0; i < props.length; i++ ){
-      var name = props[i];
-      var prop = $$.style.properties[ name ];
-      var value = ''; // empty => remove bypass
+  $$.styfn.removeBypasses = function( eles, props, updateTransitions ){
+    for( var j = 0; j < eles.length; j++ ){
+      var ele = eles[j];
+      var prevProps = {};
 
-      var parsedProp = this.parse(name, value, true);
+      for( var i = 0; i < props.length; i++ ){
+        var name = props[i];
+        var prop = $$.style.properties[ name ];
+        var value = ''; // empty => remove bypass
+        var parsedProp = this.parse(name, value, true);
+        var prevProp = ele._private.style[ prop.name ];
 
-      for( var j = 0; j < eles.length; j++ ){
-        var ele = eles[j];
         this.applyParsedProperty(ele, parsedProp);
+
+        if( updateTransitions ){
+          this.updateTransitions( ele, prevProps );
+        }
       }
     }
   };

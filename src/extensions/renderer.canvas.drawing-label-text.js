@@ -153,21 +153,9 @@
     if( parentOpacity === 0 ){ return; }
 
     var text = this.setupTextStyle( context, element );
-
+    
     if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
-      var rotationAngle = style['text-rotation'].value;
-      
-      if(rotationAngle != 0) {
-        //If specified in degrees, convert to radians:
-        if(style['text-rotation'].units == 'deg') {
-          rotationAngle = rotationAngle * Math.PI/180;
-        }
-        
-        context.translate(textX,textY);
-        context.rotate(rotationAngle);
-        context.translate(-textX,-textY);
-      }
-      
+     
       var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;
@@ -175,12 +163,6 @@
       }
 
       context.fillText(text, textX, textY);
-      
-      if(rotationAngle != 0) {
-        context.translate(textX,textY);
-        context.rotate(-rotationAngle);
-        context.translate(-textX,-textY);
-      }
     }
   };
 

@@ -9,7 +9,7 @@
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
     maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
-    strictHierarchy: false, // align successor nodes in a strict hierarchy (true) or condense into levels (false)
+    strictHierarchy: false, // align successor nodes in a strict hierarchy (true) or condense into levels (false); N/A for circle: true
     animate: true, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
@@ -55,10 +55,35 @@
       if( options.directed ){
         roots = nodes.roots();
       } else {
-        var maxDegree = nodes.maxDegree( false );
-        roots = nodes.filter(function(){
-          return this.degree(false) === maxDegree;
-        });
+        var components = [];
+        var unhandledNodes = nodes;
+
+        while( unhandledNodes.length > 0 ){
+          var currComp = cy.collection();
+
+          eles.bfs({
+            roots: unhandledNodes[0],
+            visit: function(i, depth, node, edge, pNode){
+              currComp = currComp.add( node );
+            },
+            directed: false
+          });
+
+          unhandledNodes = unhandledNodes.not( currComp );
+          components.push( currComp );
+        }
+
+        roots = cy.collection();
+        for( var i = 0; i < components.length; i++ ){
+          var comp = components[i];
+          var maxDegree = comp.maxDegree( false );
+          var compRoots = comp.filter(function(){
+            return this.degree(false) === maxDegree;
+          });
+
+          roots = roots.add( compRoots );
+        }
+        
       }
     }
 
@@ -68,12 +93,13 @@
     var id2depth = {};
     var prevNode = {};
     var prevEdge = {};
+    var successors = {};
 
     // find the depths of the nodes
     graph.bfs({
       roots: roots,
       directed: options.directed,
-      visit: function(i, depth, node, edge, prevNode){
+      visit: function(i, depth, node, edge, pNode){
         var ele = this[0];
         var id = ele.id();
 
@@ -84,8 +110,15 @@
         depths[depth].push( ele );
         foundByBfs[ id ] = true;
         id2depth[ id ] = depth;
-        prevNode[ id ] = prevNode;
+        prevNode[ id ] = pNode;
         prevEdge[ id ] = edge;
+
+        if( pNode ){
+          var prevId = pNode.id();
+          var succ = successors[ prevId ] = successors[ prevId ] || [];
+          
+          succ.push( node );
+        }
       }
     });
 
@@ -299,24 +332,59 @@
 
     }
 
+    var biggestDepthSize = 0;
+    for( var i = 0; i < depths.length; i++ ){
+      biggestDepthSize = Math.max( depths[i].length, biggestDepthSize );
+    }
+
     var center = {
       x: bb.x1 + bb.w/2,
       y: bb.x1 + bb.h/2
     };
-    nodes.layoutPositions(this, options, function(){
-      var ele = this[0];
+   
+    var getPosition = function( ele, isBottomDepth ){
       var info = ele._private.scratch.BreadthFirstLayout;
       var depth = info.depth;
       var index = info.index;
       var depthSize = depths[depth].length;
+
+      if( options.strictHierarchy ){
+        depthSize = biggestDepthSize;
+      }
 
       var distanceX = Math.max( bb.w / (depthSize + 1), minDistance );
       var distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
       var radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
-      if( options.strictHierarchy ){
-        // TODO
+      if( options.strictHierarchy && !options.circle ){
+        
+        var epos = {
+          x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
+          y: (depth + 1) * distanceY
+        };
+
+        if( isBottomDepth ){
+          return epos;
+        }
+
+        var succs = successors[ ele.id() ];
+        if( succs ){
+          epos.x = 0;
+
+          for( var i = 0 ; i < succs.length; i++ ){
+            var spos = pos[ succs[i].id() ];
+            
+            epos.x += spos.x;
+          }
+
+          epos.x /= succs.length;
+        } else {
+          //debugger;
+        }
+
+        return epos;
+
       } else {
         if( options.circle ){
           var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
@@ -339,6 +407,22 @@
         }
       }
       
+    };
+
+    // get positions in reverse depth order
+    var pos = {};
+    for( var i = depths.length - 1; i >=0; i-- ){
+      var depth = depths[i];
+
+      for( var j = 0; j < depth.length; j++ ){
+        var node = depth[j];
+
+        pos[ node.id() ] = getPosition( node, i === depths.length - 1 );
+      }
+    }
+
+    nodes.layoutPositions(this, options, function(){
+      return pos[ this.id() ];
     });
     
   };

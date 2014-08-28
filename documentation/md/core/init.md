@@ -115,6 +115,7 @@ cytoscape({
   hideEdgesOnViewport: false,
   hideLabelsOnViewport: false,
   textureOnViewport: false,
+  motionBlur: false,
   wheelSensitivity: 1,
   renderer: { /* ... */ },
   style: undefined /* ... */,
@@ -151,6 +152,8 @@ cytoscape({
 **`hideLabelsOnViewport`** : When set to `true`, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.
 
 **`textureOnViewport`** : When set to `true`, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.
+
+**`motionBlur`** : When set to `true`, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.
 
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 

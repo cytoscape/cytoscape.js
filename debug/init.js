@@ -103,6 +103,7 @@ $(function(){
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
+    motionBlur: true,
     renderer: {
       name: 'canvas',
       showFps: true

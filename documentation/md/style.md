@@ -195,6 +195,20 @@ Towards the target node, positioned in the middle of the edge:
  * **`mid-target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
 
+## Labels
+
+ * **`color`** :  The colour of the element's label.
+ * **`content`** : The text to display for an element's label.
+ * **`font-family`** : A [comma-separated list of font names](http://www.w3schools.com/cssref/pr_font_font-family.asp) to use on the label text.
+ * **`font-size`** : The size of the label text.
+ * **`font-style`** : A [CSS font style](http://www.w3schools.com/cssref/pr_font_font-style.asp) to be applied to the label text.
+ * **`font-weight`** : A [CSS font weight](http://www.w3schools.com/cssref/pr_font_weight.asp) to be applied to the label text.
+ * **`text-opacity`** : The opacity of the label text, including its outline.
+ * **`text-outline-color`** : The colour of the outline around the element's label text.
+ * **`text-outline-opacity`** : The opacity of the outline on label text.
+ * **`text-outline-width`** : The size of the outline on label text.
+ * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
+
 
 ## Overlay
 

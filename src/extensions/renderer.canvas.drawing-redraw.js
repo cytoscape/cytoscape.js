@@ -153,6 +153,7 @@
 
   CanvasRenderer.minRedrawLimit = 1000/60; // people can't see much better than 60fps
   CanvasRenderer.maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
+  CanvasRenderer.motionBlurDelay = 100;
 
   // Redraw frame
   CanvasRenderer.prototype.redraw = function( options ) {
@@ -169,7 +170,14 @@
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
-    
+    var prevRedrawTime = this.lastDrawTime;
+    var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
+    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
+
+    if( r.motionBlurTimeout ){
+      clearTimeout( r.motionBlurTimeout );
+    }
+
     if( this.redrawTimeout ){
       clearTimeout( this.redrawTimeout );
     }
@@ -250,8 +258,16 @@
 
       function setContextTransform(context, clear){
         context.setTransform(1, 0, 0, 1, 0, 0);
-        
-        if( !forcedContext && (clear === undefined || clear) ){
+
+        if( clear === 'motionBlur' ){
+          var gco = context.globalCompositeOperation;
+
+          context.globalCompositeOperation = 'destination-out';
+          r.fillStyle( context, 255, 255, 255, 0.666 );
+          context.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
+
+          context.globalCompositeOperation = gco;
+        } else if( !forcedContext && (clear === undefined || clear) ){
           context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
         }
         
@@ -404,13 +420,15 @@
 
       }
 
+      var nodeLayerNeedsMotionClear = needDraw[CanvasRenderer.DRAG] && !needDraw[CanvasRenderer.NODE] && motionBlur && !r.clearedNodeLayerForMotionBlur;
+      if( nodeLayerNeedsMotionClear ){ r.clearedNodeLayerForMotionBlur = true; }
 
-      if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
+      if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || nodeLayerNeedsMotionClear ){
         // console.log('redrawing node layer');
         
         var context = forcedContext || data.contexts[CanvasRenderer.NODE];
 
-        setContextTransform( context );
+        setContextTransform( context, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
         drawElements(eles.nondrag, context);
         
         if( !drawAllLayers ){
@@ -422,7 +440,7 @@
         
         var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
         
-        setContextTransform( context );
+        setContextTransform( context, motionBlur ? 'motionBlur' : undefined );
         drawElements(eles.drag, context);
         
         if( !drawAllLayers ){
@@ -534,6 +552,28 @@
       r.currentlyDrawing = false;
 
       // console.profileEnd('draw' + startTime)
+
+      if( r.clearingMotionBlur ){
+        r.clearingMotionBlur = false;
+        r.motionBlurCleared = true;
+        r.motionBlur = true;
+      }
+
+      if( motionBlur ){ 
+        r.motionBlurTimeout = setTimeout(function(){
+          r.motionBlurTimeout = null;
+          // console.log('motion blur clear');
+
+          r.clearedNodeLayerForMotionBlur = false;
+          r.motionBlur = false;
+          r.clearingMotionBlur = true;
+
+          needDraw[CanvasRenderer.NODE] = true; 
+          needDraw[CanvasRenderer.DRAG] = true; 
+
+          r.redraw();
+        }, CanvasRenderer.motionBlurDelay);
+      }
     } // draw to context
 
     if( !forcedContext ){

@@ -78,7 +78,8 @@
         current: [],
         queue: []
       },
-      hasCompoundNodes: false
+      hasCompoundNodes: false,
+      deferredExecQueue: []
     };
 
     // set selection type
@@ -115,7 +116,8 @@
       hideEdgesOnViewport: options.hideEdgesOnViewport,
       hideLabelsOnViewport: options.hideLabelsOnViewport,
       textureOnViewport: options.textureOnViewport,
-      wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1
+      wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+      motionBlur: options.motionBlur
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
@@ -290,8 +292,28 @@
       json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
       json.textureOnViewport = cy._private.options.textureOnViewport;
       json.wheelSensitivity = cy._private.options.wheelSensitivity;
+      json.motionBlur = cy._private.options.motionBlur;
       
       return json;
+    },
+
+    // defer execution until not busy and guarantee relative execution order of deferred functions
+    defer: function( fn ){
+      var cy = this;
+      var _p = cy._private;
+      var q = _p.deferredExecQueue;
+
+      q.push( fn );
+
+      if( !_p.deferredTimeout ){
+        _p.deferredTimeout = setTimeout(function(){
+          while( q.length > 0 ){
+            ( q.shift() )();
+          }
+
+          _p.deferredTimeout = null;
+        }, 0);
+      }
     }
     
   });  

@@ -51,7 +51,22 @@
           var prop = props[j];
           var name = prop.name;
 
-          if( !addedProp[name] ){
+          // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
+          // (semi expensive check since it makes this function O(n^2) on context length, but worth it since overall result
+          // is cached)
+          var laterCxtOverrides = false; 
+          for( var k = i + 1; k < self.length; k++ ){
+            var laterCxt = self[k];
+            var hasLaterCxt = newCxtKey[k] === 't';
+
+            if( !hasLaterCxt ){ continue; } // can't override unless the context is active
+
+            laterCxtOverrides = laterCxt.properties[ prop.name ] != null;
+
+            if( laterCxtOverrides ){ break; } // exit early as long as one later context overrides
+          }
+
+          if( !addedProp[name] && !laterCxtOverrides ){
             addedProp[name] = true;
             diffProps.push( name );
           }

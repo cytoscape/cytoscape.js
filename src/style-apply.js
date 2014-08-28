@@ -175,6 +175,7 @@
   $$.styfn.updateStyleHints = function(ele){
     var _p = ele._private;
     var self = this;
+    var style = _p.style;
 
     // set whether has pie or not; for greater efficiency
     var hasPie = false;
@@ -191,15 +192,32 @@
 
     _p.hasPie = hasPie;
 
-    var transform = _p.style['text-transform'].strValue;
-    var content = _p.style['content'].strValue;
-    var fStyle = _p.style['font-style'].strValue;
-    var size = _p.style['font-size'].pxValue + 'px';
-    var family = _p.style['font-family'].strValue;
-    var variant = _p.style['font-variant'].strValue;
-    var weight = _p.style['font-weight'].strValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform;
+    var transform = style['text-transform'].strValue;
+    var content = style['content'].strValue;
+    var fStyle = style['font-style'].strValue;
+    var size = style['font-size'].pxValue + 'px';
+    var family = style['font-family'].strValue;
+    var variant = style['font-variant'].strValue;
+    var weight = style['font-weight'].strValue;
+    var valign = style['text-valign'].strValue;
+    var halign = style['text-valign'].strValue;
+    var oWidth = style['text-outline-width'].pxValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
+
+    var width = style['width'].pxValue;
+    var height = style['height'].pxValue;
+    var borderW = style['border-width'].pxValue;
+    _p.boundingBoxKey = width +'$'+ height +'$'+ borderW;
+
+    if( ele._private.group === 'edges' ){
+      var cpss = style['control-point-step-size'].pxValue;
+      var cpd = style['control-point-distance'] ? style['control-point-distance'].pxValue : undefined;
+      var cpw = style['control-point-weight'].value;
+      var curve = style['curve-style'].strValue;
+      
+      _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
+    }
 
     _p.styleKey = Date.now(); // probably safe to use applied time and much faster
     // for( var i = 0; i < $$.style.properties.length; i++ ){

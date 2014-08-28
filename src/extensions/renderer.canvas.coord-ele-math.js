@@ -682,7 +682,9 @@
       var rs = _p.rscratch;
       var rstyle = _p.rstyle;
       var id = _p.data.id;
-      var styleSame = rs.styleKey != null && _p.styleKey === rs.styleKey;
+      var bbStyleSame = rs.boundingBoxKey != null && _p.boundingBoxKey === rs.boundingBoxKey;
+      var labelStyleSame = rs.labelKey != null && _p.labelKey === rs.labelKey;
+      var styleSame = bbStyleSame && labelStyleSame;
 
       if( ele._private.group === 'nodes' ){
         var pos = _p.position;
@@ -735,7 +737,8 @@
 
       } // if edges
 
-      rs.styleKey = _p.styleKey;
+      rs.boundingBoxKey = _p.boundingBoxKey;
+      rs.labelKey = _p.labelKey;
     }
 
     this.recalculateEdgeProjections( edges );

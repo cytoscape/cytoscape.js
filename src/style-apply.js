@@ -9,6 +9,7 @@
 
     if( self._private.newStyle ){
       this._private.contextStyles = {};
+      this._private.propDiffs = {};
     }
 
     for( var ie = 0; ie < eles.length; ie++ ){
@@ -25,10 +26,47 @@
     self._private.newStyle = false;
   };
 
+  $$.styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
+    var self = this;
+    var cache = self._private.propDiffs = self._private.propDiffs || {};
+    var dualCxtKey = oldCxtKey + '-' + newCxtKey;
+    var cachedVal = cache[dualCxtKey];
+
+    if( cachedVal ){
+      return cachedVal;
+    }
+
+    var diffProps = [];
+    var addedProp = {};
+
+    for( var i = 0; i < self.length; i++ ){
+      var cxt = self[i];
+      var oldHasCxt = oldCxtKey[i] === 't';
+      var newHasCxt = newCxtKey[i] === 't';
+      var cxtHasDiffed = oldHasCxt !== newHasCxt;
+
+      if( cxtHasDiffed ){
+        var props = cxt.properties;
+        for( var j = 0; j < props.length; j++ ){
+          var prop = props[j];
+          var name = prop.name;
+
+          if( !addedProp[name] ){
+            addedProp[name] = true;
+            diffProps.push( name );
+          }
+        }
+      }
+    }
+
+    cache[ dualCxtKey ] = diffProps;
+    return diffProps;
+  };
+
   $$.styfn.getContextMeta = function( ele ){
     var self = this;
     var cxtKey = '';
-    var diffProps = [];
+    var diffProps;
     var prevKey = ele._private.styleCxtKey || '';
 
     // apply the styles
@@ -41,20 +79,9 @@
       } else {
         cxtKey += 'f';
       }
-
-      var changedCxt = cxtKey[i] !== prevKey[i] || self._private.newStyle; // new style always applied b/c old cxts may not be the same
-      if( changedCxt ){
-        for( var j = 0; j < context.properties.length; j++ ){
-          var prop = context.properties[j];
-
-          if( !diffProps[ prop.name ] ){
-            diffProps.push( prop.name );
-            diffProps[ prop.name ] = true;
-          }
-          
-        }
-      }
     } // for context
+
+    diffProps = self.getPropertiesDiff( prevKey, cxtKey );
 
     ele._private.styleCxtKey = cxtKey;
 

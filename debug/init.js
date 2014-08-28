@@ -145,9 +145,9 @@ $(function(){
     }
   };
   
-  var cliques = 1;
-  var numNodes = 2;
-  var numEdges = 12;
+  var cliques = 2;
+  var numNodes = 12;
+  var numEdges = 24;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

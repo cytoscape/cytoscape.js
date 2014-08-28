@@ -61,9 +61,9 @@
         var ret;
 
         if( std ){
-          ret = fn.call(thisArg, j++, depth, v, prevEdge, prevNode);
+          ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
         } else {
-          ret = fn.call(v, v, prevEdge, prevNode, j++, depth);
+          ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
         }
 
         if( ret === true ){
@@ -174,9 +174,9 @@
           var ret;
 
           if( std ){
-            ret = fn.call(thisArg, j++, depth, v, prevEdge, prevNode);
+            ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
           } else {
-            ret = fn.call(v, v, prevEdge, prevNode, j++, depth);
+            ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
           }
 
           if( ret === true ){

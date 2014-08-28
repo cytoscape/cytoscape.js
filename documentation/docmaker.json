@@ -728,7 +728,8 @@
                       "descr": "The export options.",
                       "fields": [
                         { "name": "bg", "descr": "The background colour of the image (transparent by default)." },
-                        { "name": "full", "descr": "Whether to export the current viewport view (false, default) or the entire graph (true)." }
+                        { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
+                        { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." }
                       ]
                     }
                   ]

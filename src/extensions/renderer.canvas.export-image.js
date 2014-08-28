@@ -18,7 +18,7 @@
     var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
     var scale = 1;
 
-    if( options.full && options.scale !== undefined ){
+    if( options.scale !== undefined ){
       width *= options.scale;
       height *= options.scale;
 
@@ -53,15 +53,22 @@
           forcedContext: buffCxt,
           drawAllLayers: true,
           forcedZoom: scale,
-          forcedPan: { x: -bb.x1, y: -bb.y1 },
+          forcedPan: { x: -bb.x1*scale, y: -bb.y1*scale },
           forcedPxRatio: 1
         });
       } else { // draw the current view
+        var cyPan = cy.pan();
+        var pan = {
+          x: cyPan.x * scale,
+          y: cyPan.y * scale
+        };
+        var zoom = cy.zoom() * scale;
+
         this.redraw({
           forcedContext: buffCxt,
           drawAllLayers: true,
-          forcedZoom: cy.zoom(),
-          forcedPan: cy.pan(),
+          forcedZoom: zoom,
+          forcedPan: pan,
           forcedPxRatio: 1
         });
       }

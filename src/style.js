@@ -378,7 +378,7 @@
   // remove all contexts
   $$.styfn.clear = function(){
     for( var i = 0; i < this.length; i++ ){
-      delete this[i];
+      this[i] = undefined;
     }
     this.length = 0;
     this._private.newStyle = true;

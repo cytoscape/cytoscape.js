@@ -356,11 +356,11 @@
           if( keepChildren ){ // then only delete child fields not in keepChildren
             for( var child in obj ){
               if( !keepChildren[child] ){
-                delete obj[child];
+                obj[child] = undefined;
               }
             }
           } else {
-            delete obj[key];
+            obj[key] = undefined;
           }
 
         } else {

@@ -144,7 +144,7 @@
             var valid = !p.immutableKeys[ key ]; // not valid if immutable
             if( valid ){
               for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
-                delete all[ i_a ]._private[ p.field ][ key ];
+                all[ i_a ]._private[ p.field ][ key ] = undefined;
               }
             }
           }
@@ -163,7 +163,7 @@
               var validKeyToDelete = !p.immutableKeys[ key ];
 
               if( validKeyToDelete ){
-                delete _privateFields[ key ];
+                _privateFields[ key ] = undefined;
               }
             }
           }

@@ -15,6 +15,7 @@
       if( options.animate ){
         for( var i = 0; i < nodes.length; i++ ){
           var node = nodes[i];
+          var lastNode = i === nodes.length - 1;
 
           var newPos = fn.call( node, i, node );
           var pos = node.position();
@@ -30,18 +31,22 @@
             position: newPos
           }, {
             duration: options.animationDuration,
-            step: i != 0 ? undefined : function(){
+            step: lastNode ? undefined : function(){
               if( options.fit ){
                 cy.fit( options.padding );
               } 
             },
-            complete: i != nodes.length - 1 ? undefined : function(){
+            complete: lastNode ? undefined : function(){
               if( options.zoom != null ){
                 cy.zoom( options.zoom );
               }
 
               if( options.pan ){
                 cy.pan( options.pan );
+              } 
+
+              if( options.fit ){
+                cy.fit( options.padding );
               } 
               
               cy.one('layoutstop', options.stop);

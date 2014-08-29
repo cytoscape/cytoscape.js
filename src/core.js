@@ -28,16 +28,12 @@
     opts = $$.util.extend({}, defaults, opts);
 
     var container = opts.container;
-    var reg = $$.getRegistrationForInstance(cy, container);
+    var reg = container ? container._jqcy : null; // e.g. already registered some info (e.g. readies) via jquery
     if( reg && reg.cy ){ 
-      reg.domElement.innerHTML = '';
+      container.innerHTML = '';
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
-
-      $$.removeRegistrationForInstance(reg.cy, reg.domElement);
     } 
-
-    reg = $$.registerInstance( cy, container );
-    var readies = reg.readies;
+    var readies = reg ? (reg.readies || []) : [];
 
     var head = window !== undefined && container !== undefined && !opts.headless;
     var options = opts;
@@ -48,7 +44,6 @@
       container: options.container, // html dom ele container
       ready: false, // whether ready has been triggered
       initrender: false, // has initrender has been triggered
-      instanceId: reg.id, // the registered instance id
       options: options, // cached options
       elements: [], // array of elements
       id2index: {}, // element id => index in elements array
@@ -143,7 +138,7 @@
         var fn = readies[i];
         cy.on('ready', fn);
       }
-      reg.readies = []; // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
+      if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
       cy.trigger('ready');
     }, options.done);
@@ -167,18 +162,6 @@
 
     initrender: function(){
       return this._private.initrender;
-    },
-
-    registered: function(){
-      if( this._private && this._private.instanceId != null ){
-        return true;
-      } else {
-        return false;
-      }
-    },
-
-    registeredId: function(){
-      return this._private.instanceId;
     },
 
     getElementById: function( id ){

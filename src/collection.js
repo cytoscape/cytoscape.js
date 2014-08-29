@@ -419,7 +419,7 @@
 
         if( parent.empty() ){
           // non-existant parent; just remove it
-          delete data.parent;
+          data.parent = undefined;
         } else {
           var selfAsParent = false;
           var ancestor = parent;
@@ -427,7 +427,7 @@
             if( node.same(ancestor) ){
               // mark self as parent and remove from data
               selfAsParent = true;
-              delete data.parent; // remove parent reference
+              data.parent = undefined; // remove parent reference
 
               // exit or we loop forever
               break;

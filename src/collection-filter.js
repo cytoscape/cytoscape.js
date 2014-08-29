@@ -168,9 +168,9 @@
       }
 
       // remove ele
-      delete this[i];
-      delete _p.ids[ id ];
-      delete _p.indexes[ id ];
+      this[i] = undefined;
+      _p.ids[ id ] = undefined;
+      _p.indexes[ id ] = undefined;
 
       var unmergedLastEle = i === this.length - 1;
 
@@ -179,7 +179,7 @@
         var lastEleI = this.length - 1;
         var lastEle = this[ lastEleI ];
 
-        delete this[ lastEleI ];
+        this[ lastEleI ] = undefined;
         this[i] = lastEle;
         _p.indexes[ lastEle.id() ] = i;
       }

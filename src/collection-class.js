@@ -158,7 +158,7 @@
           if( !cls || cls === '' ){ continue; }
 
           var hasClass = ele._private.classes[cls];
-          delete ele._private.classes[cls];
+          ele._private.classes[cls] = undefined;
 
           if( hasClass ){ // then we changed its set of classes
             changed.push( ele );

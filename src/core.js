@@ -220,7 +220,7 @@
         var inPool = index !== undefined;
 
         if( inPool ){
-          delete this._private.id2index[ id ];
+          this._private.id2index[ id ] = undefined;
           elements.splice(index, 1);
 
           // adjust the index of all elements past this index

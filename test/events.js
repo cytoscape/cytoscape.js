@@ -175,7 +175,7 @@ describe('Events', function(){
       });
 
       cy.layout({
-        name: 'grid'
+        name: 'null'
       });
 
     });

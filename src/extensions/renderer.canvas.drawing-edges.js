@@ -263,7 +263,7 @@
         arrowClearFill = 'hollow';
       }
 
-      self.drawArrowShape( context, 
+      self.drawArrowShape( edge, prefix, context, 
         arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
         x, y, dispX, dispY
       );
@@ -273,7 +273,7 @@
       var color = style[prefix + '-arrow-color'].value;
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
 
-      self.drawArrowShape( context, 
+      self.drawArrowShape( edge, prefix, context, 
         arrowFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
         x, y, dispX, dispY
       );
@@ -326,7 +326,7 @@
   };
   
   // Draw arrowshape
-  CanvasRenderer.prototype.drawArrowShape = function(context, fill, edgeWidth, shape, x, y, dispX, dispY) {
+  CanvasRenderer.prototype.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
   
     // Negative of the angle
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
@@ -350,7 +350,10 @@
 
     var shapeImpl = CanvasRenderer.arrowShapes[shape];
 
-    shapeImpl.draw(context);
+    // TODO More performant edge arrows with Path2D cache #662
+    // TODO offload context transformations into calcs in arrowShape.draw()
+    // TODO cache into Path2D
+    shapeImpl.draw(context, size, angle);
     
     if( !shapeImpl.leavePathOpen ){
       context.closePath();

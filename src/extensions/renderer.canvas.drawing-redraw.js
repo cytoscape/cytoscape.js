@@ -392,17 +392,11 @@
           ele = edges[i];
           
           r.drawEdge(context, ele);
-        }
 
-        for (var i = 0; i < edges.length && !hideEdges && !hideLabels; i++) {
-          ele = edges[i];
-          
-          r.drawEdgeText(context, ele);
-        }
+          if( !hideLabels ){
+            r.drawEdgeText(context, ele);
+          }
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
-          ele = edges[i];
-          
           r.drawEdge(context, ele, true);
         }
 

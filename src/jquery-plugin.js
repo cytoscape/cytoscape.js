@@ -2,6 +2,10 @@
   
   if( !$ ){ return; } // no jquery => don't need this
 
+  var jqData = function( $ele ){
+    return $ele[0]._jqcy = $ele[0]._jqcy || {};
+  };
+
   // allow calls on a jQuery selector by proxying calls to $.cytoscape
   // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
   $.fn.cytoscape = function(opts){
@@ -9,8 +13,7 @@
 
     // get object
     if( opts === 'get' ){
-      var reg = $$.getRegistrationForInstance( $this[0] );
-      return reg.cy;
+      return jqData( $this ).cy;
     }
     
     // bind to ready
@@ -19,20 +22,16 @@
 
       var ready = opts;
       var domEle = $this[0];
-      var reg = $$.getRegistrationForInstance( domEle );
-
-      if( !reg ){
-        reg = $$.registerInstance( domEle );
-      }
+      var cy = jqData( $this ).cy;
       
-      if( reg && reg.cy && reg.cy.ready() ){
-        // already ready so just trigger now
-        reg.cy.trigger('ready', [], ready);
+      if( cy && cy.ready() ){ // already ready so just trigger now
+        cy.trigger('ready', [], ready);
 
-      } else {
-        // not yet ready, so add to readies list
-        
-        reg.readies.push( ready );
+      } else { // not yet ready, so add to readies list
+        var data = jqData( $this );
+        var readies = data.readies = data.readies || [];
+
+        readies.push( ready );
       } 
       
     }
@@ -58,8 +57,8 @@
       }
       
       $this.each(function(){
-        var reg = $$.getRegistrationForInstance( domEle );
-        var cy = reg.cy;
+        var $ele = $(this);
+        var cy = jqData( $ele ).cy;
         var fnName = opts;
         
         if( cy && $$.is.fn( cy[fnName] ) ){

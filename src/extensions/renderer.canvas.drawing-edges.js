@@ -5,6 +5,7 @@
 // Draw edge
   CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
     var rs = edge._private.rscratch;
+    var usePaths = CanvasRenderer.usePaths();
 
     // if bezier ctrl pts can not be calculated, then die
     if( rs.badBezier ){
@@ -32,7 +33,7 @@
       this.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
       context.lineCap = 'round';
 
-      if( edge._private.rscratch.edgeType == 'self'){
+      if( edge._private.rscratch.edgeType == 'self' && !usePaths ){
         context.lineCap = 'butt';
       }
 
@@ -81,17 +82,15 @@
         edgeWidth
       );
     } else if (rs.edgeType === 'self') {
-          
-      var details = edge._private.rscratch;
-      this.drawStyledEdge(edge, context, [details.startX, details.startY, details.cp2ax,
-        details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY],
-        lineStyle,
-        edgeWidth);
       
-      this.drawStyledEdge(edge, context, [details.selfEdgeMidX, details.selfEdgeMidY,
-        details.cp2cx, details.cp2cy, details.endX, details.endY],
-        lineStyle,
-        edgeWidth);
+      var details = edge._private.rscratch;
+      var points = [details.startX, details.startY, details.cp2ax,
+        details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
+        details.selfEdgeMidX, details.selfEdgeMidY,
+        details.cp2cx, details.cp2cy, details.endX, details.endY];
+
+      var details = edge._private.rscratch;
+      this.drawStyledEdge(edge, context, points, lineStyle, edgeWidth);
       
     } else if (rs.edgeType === 'straight') {
       
@@ -191,9 +190,13 @@
     if( !pathCacheHit ){
       if( context.beginPath ){ context.beginPath(); }
       context.moveTo(pts[0], pts[1]);
-      if (pts.length == 3 * 2) {
+      
+      if (pts.length === 3 * 2) { // bezier
         context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-      } else {
+      } else if( pts.length === 3 * 2 * 2 ){ // double bezier loop
+        context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
+        context.quadraticCurveTo(pts[8], pts[9], pts[10], pts[11]);
+      } else { // line
         context.lineTo(pts[2], pts[3]);
       }
     }

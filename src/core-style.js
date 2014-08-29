@@ -25,7 +25,7 @@
         _p.style = $$.style.fromString(this, style);
       
       } else {
-        _p.style = new $$.Style( cy );
+        _p.style = new $$.Style( this );
       }
 
       return _p.style;

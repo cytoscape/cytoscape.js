@@ -164,6 +164,12 @@
       return this._private.initrender;
     },
 
+    destroy: function(){
+      this.renderer().destroy();
+
+      return this;
+    },
+
     getElementById: function( id ){
       var index = this._private.id2index[ id ];
       if( index !== undefined ){

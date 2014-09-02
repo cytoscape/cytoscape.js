@@ -13,6 +13,19 @@
     target.addEventListener(event, handler, useCapture);
   };
 
+  CanvasRenderer.prototype.nodeIsDraggable = function(node) {
+    if (node._private.style['opacity'].value !== 0
+      && node._private.style['visibility'].value == 'visible'
+      && node._private.style['display'].value == 'element'
+      && !node.locked()
+      && node.grabbable() ) {
+
+      return true;
+    }
+    
+    return false;
+  };
+
   CanvasRenderer.prototype.load = function() {
     var r = this;
 
@@ -149,18 +162,9 @@
       }
     };
 
-    CanvasRenderer.prototype.nodeIsDraggable = function(node) {
-      if (node._private.style['opacity'].value !== 0
-        && node._private.style['visibility'].value == 'visible'
-        && node._private.style['display'].value == 'element'
-        && !node.locked()
-        && node.grabbable() ) {
-  
-        return true;
-      }
-      
-      return false;
-    };
+    r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
+      r.destroy();
+    });
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {

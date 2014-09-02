@@ -327,7 +327,13 @@
   
   // Draw arrowshape
   CanvasRenderer.prototype.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
-  
+    var usePaths = CanvasRenderer.usePaths();
+    var rs = edge._private.rscratch;
+    var pathCacheHit = false;
+    var path;
+    var canvasContext = context;
+    var translation = { x: x, y: y };
+
     // Negative of the angle
     var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
   
@@ -337,41 +343,60 @@
       angle = - (Math.PI / 2 + angle);
     }
     
-    context.translate(x, y);
-    
-    context.moveTo(0, 0);
-    context.rotate(-angle);
-    
     var size = this.getArrowWidth( edgeWidth );
-    /// size = 100;
-    context.scale(size, size);
-    
-    context.beginPath();
-
     var shapeImpl = CanvasRenderer.arrowShapes[shape];
 
-    // TODO More performant edge arrows with Path2D cache #662
-    // TODO offload context transformations into calcs in arrowShape.draw()
-    // TODO cache into Path2D
-    shapeImpl.draw(context, size, angle);
+    // context.translate(x, y);
+
+    if( usePaths ){
+      var pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
+      rs.arrowPathCacheKey = rs.arrowPathCacheKey || {};
+      rs.arrowPathCache = rs.arrowPathCache || {};
+
+      var alreadyCached = rs.arrowPathCacheKey[arrowType] === pathCacheKey;
+      if( alreadyCached ){
+        path = context = rs.arrowPathCache[arrowType];
+        pathCacheHit = true;
+      } else {
+        path = context = new Path2D();
+        rs.arrowPathCacheKey[arrowType] = pathCacheKey;
+        rs.arrowPathCache[arrowType] = path;
+      }
+    }
+
+    if( context.beginPath ){ context.beginPath(); }
+
+    if( !pathCacheHit ){
+      shapeImpl.draw(context, size, angle, translation);
+    }
     
-    if( !shapeImpl.leavePathOpen ){
+    if( !shapeImpl.leavePathOpen && context.closePath ){
       context.closePath();
     }
 
+    context = canvasContext;
+
     if( fill === 'filled' || fill === 'both' ){
-      context.fill();
+      if( usePaths ){
+        context.fill( path );
+      } else {
+        context.fill();
+      }
     }
 
     if( fill === 'hollow' || fill === 'both' ){
-      context.lineWidth = 1/size * ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 );
+      context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 );
       context.lineJoin = 'miter';
-      context.stroke();
+
+      if( usePaths ){
+        context.stroke( path );
+      } else {
+        context.stroke();
+      }
+      
     }
 
-    context.scale(1/size, 1/size);
-    context.rotate(angle);
-    context.translate(-x, -y);
+    // context.translate(-x, -y);
   };
 
 })( cytoscape );

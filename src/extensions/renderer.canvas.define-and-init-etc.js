@@ -100,6 +100,7 @@
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
     this.motionBlurEnabled = options.motionBlur;
+    this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
 
     this.load();

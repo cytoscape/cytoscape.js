@@ -6,7 +6,7 @@
     pan: undefined, // the pan level to set (prob want fit = false if set)
     fit: true, // whether to fit to viewport
     padding: 30, // padding on fit
-    animate: true, // whether to transition the node positions
+    animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop

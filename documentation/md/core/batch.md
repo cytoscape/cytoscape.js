@@ -22,3 +22,30 @@ This makes for very efficient modifications to elements, but it has some caveats
 
 * you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),
 * you probably do not want to use `eles.css()`, `eles.show()`, et cetera because they force a style bypass rather than a recalculation.
+
+
+## Examples
+
+Synchronous style:
+```js
+cy.batch(function(){
+  cy.$('#j')
+    .data('weight', '70')
+    .addClass('funny')
+    .removeClass('serious')
+  ;
+});
+```
+
+Asynchronous style:
+```js
+cy.startBatch();
+
+cy.$('#j')
+  .data('weight', '70')
+  .addClass('funny')
+  .removeClass('serious')
+;
+
+cy.endBatch();
+```

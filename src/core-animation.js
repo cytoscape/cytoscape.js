@@ -101,9 +101,16 @@
         
         // notify renderer
         if( eles.length > 0 || ranCoreAni ){
+          var toNotify;
+
+          if( eles.length > 0 ){
+            var updatedEles = eles.updateCompoundBounds();
+            toNotify = updatedEles.length > 0 ? eles.add( updatedEles ) : eles;
+          }
+
           cy.notify({
             type: 'draw',
-            collection: eles
+            collection: toNotify
           });
         }
 

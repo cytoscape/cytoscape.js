@@ -117,6 +117,7 @@ cytoscape({
   textureOnViewport: false,
   motionBlur: false,
   wheelSensitivity: 1,
+  pixelRatio: undefined, // auto based on screen
   renderer: { /* ... */ },
   style: undefined /* ... */,
   styleEnabled: isHeadless ? false : true,
@@ -156,6 +157,8 @@ cytoscape({
 **`motionBlur`** : When set to `true`, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.
 
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
+
+**`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered.
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 

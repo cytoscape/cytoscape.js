@@ -45,7 +45,7 @@
       this.notifications(true);
     },
 
-    batch: function( callback ){
+    startBatch: function(){
       var _p = this._private;
 
       _p.batchingStyle = _p.batchingNotify = true;
@@ -57,7 +57,11 @@
       _p.batchNotifyEles.ids = {};
       _p.batchNotifyTypes.ids = {};
 
-      callback();
+      return this;
+    },
+
+    endBatch: function(){
+      var _p = this._private;
 
       // update style for dirty eles
       _p.batchingStyle = false;
@@ -69,6 +73,14 @@
         type: _p.batchNotifyTypes,
         collection: _p.batchNotifyEles
       });
+
+      return this;
+    },
+
+    batch: function( callback ){
+      this.startBatch();
+      callback();
+      this.endBatch();
 
       return this;
     },

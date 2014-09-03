@@ -8,7 +8,7 @@
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
     position: function( node ){}, // returns { row, col } for element
-    animate: true, // whether to transition the node positions
+    animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop

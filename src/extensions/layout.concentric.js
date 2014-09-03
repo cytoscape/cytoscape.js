@@ -4,7 +4,7 @@
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // the padding on fit
     startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+    counterclockwise: false, // whether the layout should go counterclockwise/anticlockwise (true) or clockwise (false)
     minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
@@ -16,7 +16,7 @@
     levelWidth: function(nodes){ // the variation of concentric values in each level
       return nodes.maxDegree() / 4;
     },
-    animate: true, // whether to transition the node positions
+    animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop

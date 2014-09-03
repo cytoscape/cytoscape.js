@@ -9,8 +9,7 @@
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
     maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
-    strictHierarchy: false, // align successor nodes in a strict hierarchy (true) or condense into levels (false); N/A for circle: true
-    animate: true, // whether to transition the node positions
+    animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop

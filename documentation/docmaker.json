@@ -114,7 +114,7 @@
 
             {
               "name": "cy.getElementById",
-              "descr": "Gets an element from its ID in a very performant way.",
+              "descr": "Get an element from its ID in a very performant way.",
               "formats": [
                 { "args": [
                   { "name": "id", "descr": "The ID of the element to get." }
@@ -165,7 +165,7 @@
                       "descr": "The filter function that returns true for elements that should be returned.",
                       "fields": [
                         { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
-                        { "name": "ele", "descr": "The current element under consideration for filtering." }
+                        { "name": "ele", "descr": "The current element under consideration for filtering (also accessible as `this`)." }
                       ]
                     }
                   ]
@@ -182,9 +182,25 @@
                   "args": [
                     { "name": "function()", "descr": "A callback within which you can make batch updates to elements." }
                   ]
+                },
+
+                {
+                  "name": "cy.startBatch",
+                  "descr": "Starts batching manually (useful for asynchronous cases)."
+                },
+
+                {
+                  "name": "cy.endBatch",
+                  "descr": "Ends batching manually (useful for asynchronous cases)."
                 }
               ],
               "md": "core/batch"
+            },
+
+            {
+              "name": "cy.destroy",
+              "descr": "A convenience function to explicitly destroy the instance.",
+              "md": "core/destroy"
             }
           ]
         },
@@ -776,6 +792,11 @@
               "name": "eles.restore",
               "descr": "Put removed elements back into the graph.",
               "md": "collection/restore"
+            },
+
+            {
+              "name": "eles.clone",
+              "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
             },
 
             {
@@ -2500,6 +2521,11 @@
     { "name": "Layouts", "md": "layouts" },
 
     {
+      "name": "Architecture",
+      "md": "architecture"
+    },
+
+    {
       "name": "Extensions",
       "extensions": [
         { 
@@ -2535,12 +2561,7 @@
       "md": "extensions"
     },
 
-    { "name": "Performance", "md": "performance" },
-
-    {
-      "name": "Architecture",
-      "md": "architecture"
-    }
+    { "name": "Performance", "md": "performance" }
 
   ]
 }

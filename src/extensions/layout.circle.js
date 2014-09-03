@@ -8,7 +8,7 @@
     radius: undefined, // the radius of the circle
     startAngle: 3/2 * Math.PI, // the position of the first node
     counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
-    animate: true, // whether to transition the node positions
+    animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop

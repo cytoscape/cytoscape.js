@@ -302,6 +302,21 @@
     return jsons;
   };
 
+  $$.elesfn.clone = function(){
+    var cy = this.cy();
+    var elesArr = [];
+
+    for( var i = 0; i < this.length; i++ ){
+      var ele = this[i];
+      var json = ele.json();
+      var clone = new $$.Element(cy, json, false); // NB no restore
+
+      elesArr.push( clone );
+    }
+
+    return new $$.Collection( cy, elesArr );
+  };
+
   $$.elesfn.restore = function( notifyRenderer ){
     var self = this;
     var restored = [];

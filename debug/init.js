@@ -55,7 +55,8 @@ $(function(){
           'padding-left': 10,
           'padding-right': 20,
           'padding-top': 5,
-          'padding-bottom': 30
+          'padding-bottom': 30,
+          // 'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
@@ -65,6 +66,11 @@ $(function(){
           })
       .selector('edge')
         .css({
+          'line-color': '#bbb',
+          'source-arrow-color': '#bbb',
+          'mid-source-arrow-color': '#bbb',
+          'target-arrow-color': '#bbb',
+          'mid-target-arrow-color': '#bbb',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
           'width': '3',
@@ -75,7 +81,7 @@ $(function(){
           'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
-          'opacity': 0.5
+          'opacity': 0.666
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')
@@ -103,7 +109,8 @@ $(function(){
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
-    motionBlur: true,
+    // motionBlur: true,
+    // pixelRatio: 1,
     renderer: {
       name: 'canvas',
       showFps: true
@@ -306,7 +313,8 @@ $(function(){
 
   });
 
-  $('#init2').on('click', function(){
+  var init2;
+  $('#init2').on('click', init2 = function(){
     // compound graph in the second instance
     $container2.cy({
       elements: {
@@ -384,9 +392,7 @@ $(function(){
     });
   });
 
-  
-  
-
+  init2();
 
   
 });

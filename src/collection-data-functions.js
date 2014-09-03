@@ -129,8 +129,7 @@
         }
 
         var updatedEles = this.updateCompoundBounds();
-        
-        var toTrigger = this.add( updatedEles );
+        var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
 
         if( silent ){
           toTrigger.trigger('position');

@@ -28,11 +28,12 @@
       style.apply( this );
 
       var updatedCompounds = this.updateCompoundBounds();
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
+        toNotify.rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger('style'); // just fire the event
+        toNotify.trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -48,11 +49,12 @@
       style.updateMappers( this );
 
       var updatedCompounds = this.updateCompoundBounds();
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
+        toNotify.rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger('style'); // just fire the event
+        toNotify.trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -93,7 +95,8 @@
         style.applyBypass( this, props );
 
         var updatedCompounds = this.updateCompoundBounds();
-        this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+        var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+        toNotify.rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
   
@@ -110,7 +113,8 @@
           style.applyBypass( this, name, value );
 
           var updatedCompounds = this.updateCompoundBounds();
-          this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+          var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+          toNotify.rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -150,7 +154,8 @@
       }
 
       var updatedCompounds = this.updateCompoundBounds();
-      this.add( updatedCompounds ).rtrigger('style');
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+      toNotify.rtrigger('style'); // let the renderer know we've updated style
     },
 
     show: function(){

@@ -112,7 +112,8 @@
       hideLabelsOnViewport: options.hideLabelsOnViewport,
       textureOnViewport: options.textureOnViewport,
       wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
-      motionBlur: options.motionBlur
+      motionBlur: options.motionBlur,
+      pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : undefined
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
@@ -166,6 +167,12 @@
 
     destroy: function(){
       this.renderer().destroy();
+
+      var domEle = this.container();
+      var parEle = domEle.parentNode;
+      if( parEle ){
+        parEle.removeChild( domEle );
+      }
 
       return this;
     },

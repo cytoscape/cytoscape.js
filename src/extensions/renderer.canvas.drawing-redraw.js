@@ -7,6 +7,10 @@
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var context = this.data.contexts[0];
 
+    if( this.forcedPixelRatio != null ){
+      return this.forcedPixelRatio;
+    }
+
     var backingStore = context.backingStorePixelRatio ||
       context.webkitBackingStorePixelRatio ||
       context.mozBackingStorePixelRatio ||
@@ -16,9 +20,9 @@
 
     //console.log(window.devicePixelRatio, backingStore);
 
-    if( isFirefox ){ // because ff can't scale canvas properly
-      return 1;
-    }
+    // if( isFirefox ){ // because ff can't scale canvas properly
+    //   return 1;
+    // }
 
     return (window.devicePixelRatio || 1) / backingStore;
   };

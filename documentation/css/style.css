@@ -38,12 +38,26 @@ img {
 #cy-title {
 	position: fixed;
 	right: 0;
-	bottom: 300px;
-	width: 300px;
+	bottom: 15em;
+	width: 15em;
 	overflow: hidden;
 	color: rgba(0, 0, 0, 0.5);
 	text-align: left;
 	font-family: Andale Mono, monospace;
+	font-size: 0.8em;
+}
+
+#cy-label {
+	position: fixed;
+	bottom: 15em;
+	margin-bottom: -0.666em;
+	right: 0;
+	width: 15em;
+	text-align: center;
+	z-index: 1000;
+}
+
+#cy-label code {
 	font-size: 0.8em;
 }
 
@@ -71,7 +85,7 @@ img {
 	padding: 4px 6px;
 	color: #333;
 	cursor: pointer;
-	z-index: 1000;
+	z-index: 1001;
 }
 
 #cy-hide {
@@ -398,7 +412,7 @@ button:active {
 }
 
 .links a {
-	white-space: nowrap;
+	/*white-space: nowrap;*/
 }
 
 .buttons-subtitle {

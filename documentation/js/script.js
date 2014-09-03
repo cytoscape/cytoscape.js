@@ -45,14 +45,14 @@ $(function(){
   });
 
   window.showCy = function(){
-    $('#cy, #cy-hide, #cy-refresh').removeClass('hidden');
+    $('#cy, #cy-hide, #cy-refresh, #cy-label').removeClass('hidden');
     $('#cy-show').addClass('hidden');
 
     cy.resize();
   };
 
   window.hideCy = function(){
-    $('#cy, #cy-hide, #cy-refresh').addClass('hidden');
+    $('#cy, #cy-hide, #cy-refresh, #cy-label').addClass('hidden');
     $('#cy-show').removeClass('hidden');
   };
 

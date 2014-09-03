@@ -40,7 +40,7 @@
     debug               : false,
 
     // Node repulsion (non overlapping) multiplier
-    nodeRepulsion       : 10000,
+    nodeRepulsion       : 400000,
     
     // Node repulsion (overlapping) multiplier
     nodeOverlap         : 10,
@@ -67,7 +67,7 @@
     coolingFactor       : 0.95, 
     
     // Lower temperature threshold (below this point the layout will end)
-    minTemp             : 1
+    minTemp             : 1.0
   };
 
 

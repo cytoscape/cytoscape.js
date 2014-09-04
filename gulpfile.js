@@ -313,7 +313,7 @@ gulp.task('docsdemoshots', function(next){
 });
 
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docs', 'docsmin', next );
 });
 
 gulp.task('pkgver', ['version'], function(){
@@ -337,8 +337,8 @@ gulp.task('dist', ['build'], function(){
   ;
 });
 
-gulp.task('pub', ['pkgver', 'dist', 'docspub'], function(next){
-  next();
+gulp.task('pub', function(next){
+  runSequence('pkgver', 'dist', 'docspub', next);
 });
 
 gulp.task('tag', shell.task([

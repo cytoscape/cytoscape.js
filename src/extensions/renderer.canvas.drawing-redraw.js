@@ -239,11 +239,13 @@
       var eles = {
         drag: {
           nodes: [],
-          edges: []
+          edges: [],
+          eles: []
         },
         nondrag: {
           nodes: [],
-          edges: []
+          edges: [],
+          eles: []
         }
       };
 
@@ -356,44 +358,37 @@
             list = eles.nondrag;
           }
 
-          list[ ele._private.group ].push( ele );
+          list.eles.push( ele );
         }
 
       }
       
       
       function drawElements( list, context ){
-        var edges = list.edges;
-        var nodes = list.nodes;
+        var eles = list.eles;
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
-          ele = edges[i];
-          
-          r.drawEdge(context, ele);
-        }
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
 
-        for (var i = 0; i < edges.length && !hideEdges && !hideLabels; i++) {
-          ele = edges[i];
-          
-          r.drawEdgeText(context, ele);
-        }
+          if( ele.isNode() ){
+            r.drawNode(context, ele);
 
-        for (var i = 0; i < edges.length && !hideEdges; i++) {
-          ele = edges[i];
-          
-          r.drawEdge(context, ele, true);
-        }
+            if( !hideLabels ){
+              r.drawNodeText(context, ele);
+            }
 
-        for( var i = 0; i < nodes.length; i++ ){
-          var ele = nodes[i];
+            r.drawNode(context, ele, true);
+          } else if( !hideEdges ) {
+            r.drawEdge(context, ele);
 
-          r.drawNode(context, ele);
-          
-          if( !hideLabels ){
-            r.drawNodeText(context, ele);
+            if( !hideLabels ){
+              r.drawEdgeText(context, ele);
+            }
+
+            r.drawEdge(context, ele, true);
           }
           
-          r.drawNode(context, ele, true);
+          
         }
 
       }

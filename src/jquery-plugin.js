@@ -3,7 +3,9 @@
   if( !$ ){ return; } // no jquery => don't need this
 
   var jqData = function( $ele ){
-    return $ele[0]._jqcy = $ele[0]._jqcy || {};
+    var d = $ele[0]._jqcy = $ele[0]._jqcy || {};
+
+    return d;
   };
 
   // allow calls on a jQuery selector by proxying calls to $.cytoscape
@@ -21,7 +23,6 @@
       //debugger;
 
       var ready = opts;
-      var domEle = $this[0];
       var cy = jqData( $this ).cy;
       
       if( cy && cy.ready() ){ // already ready so just trigger now
@@ -49,7 +50,6 @@
     
     // proxy a function call
     else {
-      var domEle = $this[0];
       var rets = [];
       var args = [];
       for(var i = 1; i < arguments.length; i++){

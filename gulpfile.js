@@ -16,7 +16,6 @@ var shell = require('gulp-shell');
 var jshint = require('gulp-jshint');
 var jshStylish = require('jshint-stylish');
 var exec = require('child_process').exec;
-var docsConf = require('./documentation/docmaker.json');
 var runSequence = require('run-sequence');
 
 var version; // used for marking builds w/ version etc
@@ -237,8 +236,8 @@ gulp.task('docs', function(next){
   
 });
 
-gulp.task('docsmin', ['docshtmlmin'], function(next){
-  next();
+gulp.task('docsmin', function(next){
+  runSequence( 'docshtmlmin', next );
 });
 
 gulp.task('docsclean', function(next){
@@ -247,7 +246,7 @@ gulp.task('docsclean', function(next){
   ;
 });
 
-gulp.task('docshtmlmin', ['docsminrefs'], function(){
+gulp.task('docshtmlmin', function(){
   return gulp.src('documentation/index.html')
     .pipe( htmlmin({
       collapseWhitespace: true,
@@ -314,7 +313,7 @@ gulp.task('docsdemoshots', function(next){
 });
 
 gulp.task('docspub', function(next){
-  runSequence( ['version', 'docsver', 'docsjs', 'docsbuildlist'], 'docsdemoshots', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsmin', next );
 });
 
 gulp.task('pkgver', ['version'], function(){

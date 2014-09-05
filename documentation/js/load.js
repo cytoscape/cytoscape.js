@@ -1,5 +1,8 @@
 $( loadCy = function(){
 
+$('#cy').remove();
+$('body').append('<div id="cy"></div>');
+
 //<demo>
 
 // initialise cytoscape.js on a html dom element with some options:

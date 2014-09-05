@@ -4,6 +4,9 @@
     this.options = options;
   }
   
+  NullRenderer.prototype.recalculateRenderedStyle = function(){
+  };
+
   NullRenderer.prototype.notify = function(){
     // the null renderer does nothing
   };

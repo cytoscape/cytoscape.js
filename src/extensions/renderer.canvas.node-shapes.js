@@ -8,7 +8,6 @@
   //
   // draw: draw
   // intersectLine: report intersection from x, y, to node center
-  // checkPointRough: heuristic check x, y in node, no false negatives
   // checkPoint: check x, y in node
 
   var nodeShapes = CanvasRenderer.nodeShapes = {};
@@ -89,12 +88,6 @@
         x1, y1, x2, y2, padding, width, height, centerX, centerY);
     },
     
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return true;
-    },
-    
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
@@ -159,14 +152,6 @@
         points, width, height, centerX, centerY, [0, -1], padding);
     },
     
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['triangle'].points, // Triangle?
-          padding, width, height, centerX, centerY);
-    },
-    
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
@@ -217,15 +202,6 @@
         centerY, [0, -1], padding);
     },
     
-    checkPointRough: function(
-      x, y, padding, width, height,
-      centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['square'].points, 
-          padding, width, height, centerX, centerY);
-    },
-    
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
@@ -272,17 +248,6 @@
       return $$.math.roundRectangleIntersectBox(
         x1, y1, x2, y2, 
         width, height, centerX, centerY, padding);
-    },
-    
-    checkPointRough: function(
-      x, y, padding, width, height,
-      centerX, centerY) {
-    
-      // This check is OK because it assumes the round rectangle
-      // has sharp edges for the rough check 
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['roundrectangle'].points, 
-          padding, width, height, centerX, centerY);
     },
     
     // Looks like the width passed into this function is actually the total width / 2
@@ -398,14 +363,6 @@
         points, width, height, centerX, centerY, [0, -1], padding);
     },
     
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['pentagon'].points, 
-          padding, width, height, centerX, centerY);
-    },
-    
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
@@ -449,14 +406,6 @@
       return $$.math.boxIntersectPolygon(
         x1, y1, x2, y2,
         points, width, height, centerX, centerY, [0, -1], padding);
-    },
-    
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['hexagon'].points, 
-          padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
@@ -503,15 +452,7 @@
         x1, y1, x2, y2,
         points, width, height, centerX, centerY, [0, -1], padding);
     },
-    
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['heptagon'].points, 
-          padding, width, height, centerX, centerY);
-    },
-    
+
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
       
@@ -555,14 +496,6 @@
       return renderer.boxIntersectPolygon(
           x1, y1, x2, y2,
           points, width, height, centerX, centerY, [0, -1], padding);
-    },
-    
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['octagon'].points, 
-          padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(
@@ -638,14 +571,6 @@
       return renderer.boxIntersectPolygon(
           x1, y1, x2, y2,
           points, width, height, centerX, centerY, [0, -1], padding);
-    },
-    
-    checkPointRough: function(
-      x, y, padding, width, height, centerX, centerY) {
-    
-      return $$.math.checkInBoundingBox(
-        x, y, nodeShapes['star5'].points, 
-          padding, width, height, centerX, centerY);
     },
     
     checkPoint: function(

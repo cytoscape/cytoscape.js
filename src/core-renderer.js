@@ -47,19 +47,6 @@
         })
       );
        
-    },
-
-    // ask renderer to recalc rendered styles for eles
-    recalculateRenderedStyle: function( eles ){
-      var renderer = this.renderer();
-
-      if( !eles ){
-        eles = this.elements();
-      }
-
-      if( renderer.recalculateRenderedStyle ){
-        renderer.recalculateRenderedStyle( eles );
-      }
     }
     
   });  

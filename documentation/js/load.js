@@ -1,7 +1,7 @@
 $( loadCy = function(){
 
-$('#cy').remove();
-$('body').append('<div id="cy"></div>');
+// $('#cy').remove();
+// $('body').append('<div id="cy"></div>');
 
 //<demo>
 

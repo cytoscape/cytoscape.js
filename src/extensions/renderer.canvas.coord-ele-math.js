@@ -39,30 +39,33 @@
     var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
 
     function checkNode(node){
-      var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
-      var borderWO = node._private.style['border-width'].pxValue / 2;
-      var width = self.getNodeWidth( node );
-      var height = self.getNodeHeight( node );
+      var width = node.outerWidth();
+      var height = node.outerHeight();
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
-      var visible = node.visible() && !node.transparent();
-
-      // exit early if invisible edge and must be visible
-      if( visibleElementsOnly && !visible ){
-        return;
-      }
 
       if(
         pos.x - hw <= x && x <= pos.x + hw // bb check x
           &&
         pos.y - hh <= y && y <= pos.y + hh // bb check y
-          && 
-        shape.checkPointRough(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
-          &&
-        shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
       ){
-          near.push( node );
+        var visible = !visibleElementsOnly || ( node.visible() && !node.transparent() );
+
+        // exit early if invisible edge and must be visible
+        if( visibleElementsOnly && !visible ){
+          return;
+        }
+
+        var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
+        var borderWO = node._private.style['border-width'].pxValue / 2;
+
+        if(
+          shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+        ){
+            near.push( node );
+        }
+
       }
     }
 
@@ -72,33 +75,50 @@
       var width = style['width'].pxValue;
       var widthSq = width * width;
       var width2 = width * 2;
-      var visible = edge.visible() && !edge.transparent();
       var src = edge._private.source;
       var tgt = edge._private.target;
+      var inEdgeBB = false;
 
       // exit early if invisible edge and must be visible
-      if( visibleElementsOnly && !visible ){
-        return;
+      var passedVisibilityCheck = undefined;
+      var passesVisibilityCheck = function(){
+        if( passedVisibilityCheck !== undefined ){
+          return passedVisibilityCheck;
+        }
+
+        if( !visibleElementsOnly ){
+          passedVisibilityCheck = true;
+          return true;
+        }
+
+        var visible = edge.visible() && !edge.transparent();
+        if( visible ){
+          passedVisibilityCheck = true;
+          return true;
+        }
+
+        passedVisibilityCheck = false;
+        return false;
       }
 
       if (rs.edgeType === 'self') {
         if(
             (
-              $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq)
-                &&
+              (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
+                && passesVisibilityCheck() &&
               ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY) )
             )
               ||
             (
-              $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq)
-                &&
+              (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
+                && passesVisibilityCheck() &&
               ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY) )
             )
         ){
           near.push( edge );
         }
       
-      } else if (rs.edgeType == 'haystack') {
+      } else if (rs.edgeType === 'haystack') {
         var radius = style['haystack-radius'].value;
         var halfRadius = radius/2; // b/c have to half width/height
 
@@ -115,8 +135,8 @@
         var endY = tgtPos.y + rs.target.y * tgtH * halfRadius;
 
         if( 
-          $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2)
-            &&
+          (inEdgeBB = $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2))
+            && passesVisibilityCheck() &&
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY )
         ){
           near.push( edge );
@@ -124,8 +144,8 @@
       
       } else if (rs.edgeType === 'straight') {
         if(
-          $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2)
-            &&
+          (inEdgeBB = $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
+            && passesVisibilityCheck() &&
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
         ){
           near.push( edge );
@@ -133,15 +153,15 @@
       
       } else if (rs.edgeType === 'bezier') {
         if(
-          $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq)
-            &&
+          (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
+            && passesVisibilityCheck() &&
           (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
         ){
           near.push( edge );
         }
       }
       
-      if( near.length === 0 || near[near.length - 1] !== edge ){
+      if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
         var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
         var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
 
@@ -160,7 +180,7 @@
         if(
           (
             srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
-              &&
+              && 
             srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
           )
             ||
@@ -1400,12 +1420,18 @@
     return adjacentEdges;
   };
 
-  CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
-    return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-  };
-  
-  CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
-    return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+  CanvasRenderer.prototype.getArrowWidth = CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+    var cache = this.arrowWidthCache = this.arrowWidthCache || {};
+
+    var cachedVal = cache[edgeWidth];
+    if( cachedVal ){
+      return cachedVal;
+    }
+
+    cachedVal =  Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+    cache[edgeWidth] = cachedVal;
+
+    return cachedVal;
   };
 
 

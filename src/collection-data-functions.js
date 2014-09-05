@@ -443,7 +443,8 @@
     boundingBox: function( options ){
       var eles = this;
       var cy = eles._private.cy;
-      var styleEnabled = cy._private.styleEnabled;
+      var cy_p = cy._private;
+      var styleEnabled = cy_p.styleEnabled;
 
       options = options || {};
 
@@ -452,7 +453,7 @@
       var includeLabels = options.includeLabels === undefined ? true : options.includeLabels;
 
       // recalculate projections etc
-      this.recalculateRenderedStyle();
+      cy_p.renderer.recalculateRenderedStyle( this );
 
       var x1 = Infinity;
       var x2 = -Infinity;
@@ -473,7 +474,7 @@
         if( isNode && includeNodes ){
           includedEle = true;
 
-          var pos = ele._private.position;
+          var pos = _p.position;
           x = pos.x;
           y = pos.y;
           var w = ele.outerWidth();

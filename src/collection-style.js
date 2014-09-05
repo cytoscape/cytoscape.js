@@ -59,11 +59,6 @@
       return this; // chaining
     },
 
-    // let renderer recalc rendered style for these eles
-    recalculateRenderedStyle: function(){
-      this._private.cy.recalculateRenderedStyle( this );
-    },
-
     // get the specified css property as a rendered value (i.e. on-screen value)
     // or get the whole rendered style if no property specified (NB doesn't allow setting)
     renderedCss: function( property ){
@@ -173,6 +168,7 @@
       if( !cy.styleEnabled() ){ return true; }
 
       var ele = this[0];
+      var hasCompoundNodes = cy.hasCompoundNodes();
 
       if( ele ){
         var style = ele._private.style;
@@ -185,6 +181,8 @@
         }
         
         if( ele._private.group === 'nodes' ){
+          if( !hasCompoundNodes ){ return true; }
+
           var parents = ele._private.data.parent ? ele.parents() : null;
 
           if( parents ){
@@ -223,11 +221,16 @@
       var cy = this.cy();
       if( !cy.styleEnabled() ){ return 1; }
 
+      var hasCompoundNodes = cy.hasCompoundNodes();
       var ele = this[0];
 
       if( ele ){
-        var parentOpacity = ele._private.style.opacity.value;
-        var parents = !ele._private.data.parent ? null : ele.parents();
+        var _p = ele._private;
+        var parentOpacity = _p.style.opacity.value;
+
+        if( !hasCompoundNodes ){ return parentOpacity; }
+
+        var parents = !_p.data.parent ? null : ele.parents();
         
         if( parents ){
           for( var i = 0; i < parents.length; i++ ){
@@ -244,9 +247,14 @@
 
     transparent: function(){
       var ele = this[0];
+      var hasCompoundNodes = ele.cy().hasCompoundNodes();
 
       if( ele ){
-        return ele.effectiveOpacity() === 0;
+        if( !hasCompoundNodes ){
+          return ele._private.style.opacity === 0;
+        } else {
+          return ele.effectiveOpacity() === 0;
+        }
       }
     },
 

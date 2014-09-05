@@ -30,7 +30,10 @@
     var container = opts.container;
     var reg = container ? container._jqcy : null; // e.g. already registered some info (e.g. readies) via jquery
     if( reg && reg.cy ){ 
-      container.innerHTML = '';
+      while( container.firstChild ){ // clean the container
+        container.removeChild( container.firstChild );
+      }
+      
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
     } 
     var readies = reg ? (reg.readies || []) : [];

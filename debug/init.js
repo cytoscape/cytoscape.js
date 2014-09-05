@@ -75,13 +75,13 @@ $(function(){
           // 'control-point-distance': 100,
           'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
-          'target-arrow-shape': 'triangle',
+          // 'target-arrow-shape': 'triangle',
           // 'mid-target-arrow-shape': 'triangle',
           // 'mid-source-arrow-shape': 'triangle-backcurve',
-          'target-arrow-fill': 'filled',
+          // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          // 'curve-style': 'haystack',
-          'opacity': 0.666
+          'curve-style': 'haystack',
+          'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')
@@ -153,8 +153,8 @@ $(function(){
   };
   
   var cliques = 2;
-  var numNodes = 12;
-  var numEdges = 24;
+  var numNodes = 10;
+  var numEdges = 40;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;
@@ -317,6 +317,11 @@ $(function(){
   $('#init2').on('click', init2 = function(){
     // compound graph in the second instance
     $container2.cy({
+      renderer: {
+        name: 'canvas',
+        showFps: true
+      },
+
       elements: {
          nodes: [{ data: { id: 'n8', parent: 'n4' } },
            { data: { id: 'n9', parent: 'n4' } },

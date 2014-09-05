@@ -24,7 +24,7 @@
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
-    this.recalculateEdgeLabelProjection( edge );
+    // this.recalculateEdgeLabelProjection( edge );
     
     var rs = edge._private.rscratch;
     this.drawText(context, edge, rs.labelX, rs.labelY);
@@ -45,7 +45,7 @@
       return;
     }
       
-    this.recalculateNodeLabelProjection( node );
+    // this.recalculateNodeLabelProjection( node );
 
     var textHalign = node._private.style['text-halign'].strValue;
     var textValign = node._private.style['text-valign'].strValue;

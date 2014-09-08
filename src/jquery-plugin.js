@@ -2,8 +2,8 @@
   
   if( !$ ){ return; } // no jquery => don't need this
 
-  var jqData = function( $ele ){
-    var d = $ele[0]._jqcy = $ele[0]._jqcy || {};
+  var cyReg = function( $ele ){
+    var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
 
     return d;
   };
@@ -15,21 +15,20 @@
 
     // get object
     if( opts === 'get' ){
-      return jqData( $this ).cy;
+      return cyReg( $this ).cy;
     }
     
     // bind to ready
     else if( $$.is.fn(opts) ){
-      //debugger;
 
       var ready = opts;
-      var cy = jqData( $this ).cy;
+      var cy = cyReg( $this ).cy;
       
       if( cy && cy.ready() ){ // already ready so just trigger now
         cy.trigger('ready', [], ready);
 
       } else { // not yet ready, so add to readies list
-        var data = jqData( $this );
+        var data = cyReg( $this );
         var readies = data.readies = data.readies || [];
 
         readies.push( ready );
@@ -58,7 +57,7 @@
       
       $this.each(function(){
         var $ele = $(this);
-        var cy = jqData( $ele ).cy;
+        var cy = cyReg( $ele ).cy;
         var fnName = opts;
         
         if( cy && $$.is.fn( cy[fnName] ) ){

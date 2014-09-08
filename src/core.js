@@ -28,12 +28,20 @@
     opts = $$.util.extend({}, defaults, opts);
 
     var container = opts.container;
-    var reg = container ? container._jqcy : null; // e.g. already registered some info (e.g. readies) via jquery
+    var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+    reg = reg || {};
+
     if( reg && reg.cy ){ 
       container.innerHTML = '';
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
-    } 
-    var readies = reg ? (reg.readies || []) : [];
+
+      reg = {}; // old instance => replace reg completely
+    }
+
+    var readies = reg.readies = reg.readies || [];
+    
+    container._cyreg = reg; // make sure container assoc'd reg points to this cy
+    reg.cy = cy;
 
     var options = opts;
     options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
@@ -160,7 +168,13 @@
     },
 
     destroy: function(){
-      this.renderer().destroy();
+      this.notify({ type: 'destroy' }); // destroy the renderer
+
+      var domEle = this.container();
+      var parEle = domEle.parentNode;
+      if( parEle ){
+        parEle.removeChild( domEle );
+      }
 
       return this;
     },

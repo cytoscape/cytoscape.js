@@ -1,8 +1,11 @@
 $( loadCy = function(){
 
+<<<<<<< HEAD
 // $('#cy').remove();
 // $('body').append('<div id="cy"></div>');
 
+=======
+>>>>>>> 228af9a... clean up reg
 //<demo>
 
 // initialise cytoscape.js on a html dom element with some options:

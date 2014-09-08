@@ -41,11 +41,11 @@ var cytoscape;
   // define the function namespace here, since it has members in many places
   $$.fn = {};
 
-  if( typeof exports !== 'undefined' ){ // expose as a commonjs module
-    exports = module.exports = cytoscape;
+  if( typeof module !== 'undefined' && module.exports ){ // expose as a commonjs module
+    module.exports = cytoscape;
   }
 
-  if( typeof define !== 'undefined' ){ // expose as an amd/requirejs module
+  if( typeof define !== 'undefined' && define.amd ){ // expose as an amd/requirejs module
     define('cytoscape', function(){
       return cytoscape;
     });

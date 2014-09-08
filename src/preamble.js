@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js {{VERSION}}.
+ * This file is part of Cytoscape.js {{VERSION}}.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -12,6 +12,6 @@
  * details.
  * 
  * You should have received a copy of the GNU Lesser General Public License along with
- * cytoscape.js. If not, see <http://www.gnu.org/licenses/>.
+ * Cytoscape.js. If not, see <http://www.gnu.org/licenses/>.
  */
  

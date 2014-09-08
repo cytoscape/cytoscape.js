@@ -28,98 +28,104 @@
   // runs the layout
   DagreLayout.prototype.run = function(){
     var options = this.options;
-    var cy = options.cy; // cy is automatically populated for us in the constructor
-    var eles = options.eles;
+    var layout = this;
 
-    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
-      x1: 0, y1: 0, w: cy.width(), h: cy.height()
-    } );
+    $$.util.require('dagre', function(dagre){
 
-    var g = new dagre.Digraph();
+      var cy = options.cy; // cy is automatically populated for us in the constructor
+      var eles = options.eles;
 
-    // add nodes to dagre
-    var nodes = eles.nodes().not(':parent');
-    for( var i = 0; i < nodes.length; i++ ){
-      var node = nodes[i];
-
-      g.addNode( node.id(), {
-        width: node.width(),
-        height: node.height()
+      var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+        x1: 0, y1: 0, w: cy.width(), h: cy.height()
       } );
-    }
 
-    // add edges to dagre
-    var edges = eles.edges();
-    for( var i = 0; i < edges.length; i++ ){
-      var edge = edges[i];
+      var g = new dagre.Digraph();
 
-      g.addEdge( edge.id(), edge.source().id(), edge.target().id(), {
-        minLen: $$.is.fn(options.minLen) ? options.minLen.apply( edge, [ edge ] ) : options.minLen
-      } );
-    }
+      // add nodes to dagre
+      var nodes = eles.nodes().not(':parent');
+      for( var i = 0; i < nodes.length; i++ ){
+        var node = nodes[i];
 
-    var d = dagre.layout();
-
-    if( options.nodeSep ){
-      d.nodeSep( options.nodeSep );
-    }
-
-    if( options.edgeSep ){
-      d.edgeSep( options.edgeSep );
-    }
-    
-    if( options.rankSep ){
-      d.rankSep( options.rankSep );
-    }
-      
-    d = d.run(g);
-
-    d.eachNode(function(id, n) {
-      cy.getElementById(id).scratch().dagre = n;
-    });
-
-    var dagreBB;
-
-    if( options.boundingBox ){
-      dagreBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
-      nodes.forEach(function( node ){
-        var dModel = node.scratch().dagre;
-
-        dagreBB.x1 = Math.min( dagreBB.x1, dModel.x );
-        dagreBB.x2 = Math.max( dagreBB.x2, dModel.x );
-
-        dagreBB.y1 = Math.min( dagreBB.y1, dModel.y );
-        dagreBB.y2 = Math.max( dagreBB.y2, dModel.y );
-      });
-
-      dagreBB.w = dagreBB.x2 - dagreBB.x1;
-      dagreBB.h = dagreBB.y2 - dagreBB.y1;
-    } else {
-      dagreBB = bb;
-    }
-
-    var constrainPos = function( p ){
-      if( options.boundingBox ){
-        var xPct = (p.x - dagreBB.x1) / dagreBB.w;
-        var yPct = (p.y - dagreBB.y1) / dagreBB.h;
-
-        return {
-          x: bb.x1 + xPct * bb.w,
-          y: bb.y1 + yPct * bb.h
-        };
-      } else {
-        return p;
+        g.addNode( node.id(), {
+          width: node.width(),
+          height: node.height()
+        } );
       }
-    };
 
-    nodes.layoutPositions(this, options, function(){
-      var dModel = this.scratch().dagre;
+      // add edges to dagre
+      var edges = eles.edges();
+      for( var i = 0; i < edges.length; i++ ){
+        var edge = edges[i];
 
-      return constrainPos({
-        x: dModel.x,
-        y: dModel.y
+        g.addEdge( edge.id(), edge.source().id(), edge.target().id(), {
+          minLen: $$.is.fn(options.minLen) ? options.minLen.apply( edge, [ edge ] ) : options.minLen
+        } );
+      }
+
+      var d = dagre.layout();
+
+      if( options.nodeSep ){
+        d.nodeSep( options.nodeSep );
+      }
+
+      if( options.edgeSep ){
+        d.edgeSep( options.edgeSep );
+      }
+      
+      if( options.rankSep ){
+        d.rankSep( options.rankSep );
+      }
+        
+      d = d.run(g);
+
+      d.eachNode(function(id, n) {
+        cy.getElementById(id).scratch().dagre = n;
       });
-    });
+
+      var dagreBB;
+
+      if( options.boundingBox ){
+        dagreBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
+        nodes.forEach(function( node ){
+          var dModel = node.scratch().dagre;
+
+          dagreBB.x1 = Math.min( dagreBB.x1, dModel.x );
+          dagreBB.x2 = Math.max( dagreBB.x2, dModel.x );
+
+          dagreBB.y1 = Math.min( dagreBB.y1, dModel.y );
+          dagreBB.y2 = Math.max( dagreBB.y2, dModel.y );
+        });
+
+        dagreBB.w = dagreBB.x2 - dagreBB.x1;
+        dagreBB.h = dagreBB.y2 - dagreBB.y1;
+      } else {
+        dagreBB = bb;
+      }
+
+      var constrainPos = function( p ){
+        if( options.boundingBox ){
+          var xPct = (p.x - dagreBB.x1) / dagreBB.w;
+          var yPct = (p.y - dagreBB.y1) / dagreBB.h;
+
+          return {
+            x: bb.x1 + xPct * bb.w,
+            y: bb.y1 + yPct * bb.h
+          };
+        } else {
+          return p;
+        }
+      };
+
+      nodes.layoutPositions(layout, options, function(){
+        var dModel = this.scratch().dagre;
+
+        return constrainPos({
+          x: dModel.x,
+          y: dModel.y
+        });
+      });
+
+    }); // require
   };
 
   // called on continuous layouts to stop them before they finish

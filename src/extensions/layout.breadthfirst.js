@@ -191,7 +191,7 @@
         for( var j = 0; j < eles.length; j++ ){
           var ele = eles[j];
 
-          ele._private.scratch.BreadthFirstLayout = {
+          ele._private.scratch.breadthfirst = {
             depth: i,
             index: j
           };
@@ -205,13 +205,13 @@
       var edges = node.connectedEdges(function(){
         return this.data('target') === node.id();
       });
-      var thisInfo = node._private.scratch.BreadthFirstLayout;
+      var thisInfo = node._private.scratch.breadthfirst;
       var highestDepthOfOther = 0;
       var highestOther;
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
         var otherNode = edge.source()[0];
-        var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+        var otherInfo = otherNode._private.scratch.breadthfirst;
 
         if( thisInfo.depth <= otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
           highestDepthOfOther = otherInfo.depth;
@@ -233,7 +233,7 @@
         var nDepth = depth.length;
         for( var j = 0; j < nDepth; j++ ){
           var ele = depth[j];
-          var info = ele._private.scratch.BreadthFirstLayout;
+          var info = ele._private.scratch.breadthfirst;
           var intEle = intersectsDepth(ele);
 
           if( intEle ){
@@ -245,9 +245,9 @@
 
       for( var i = 0; i < elesToMove.length; i++ ){ 
         var ele = elesToMove[i];
-        var info = ele._private.scratch.BreadthFirstLayout;
+        var info = ele._private.scratch.breadthfirst;
         var intEle = info.intEle;
-        var intInfo = intEle._private.scratch.BreadthFirstLayout;
+        var intInfo = intEle._private.scratch.breadthfirst;
 
         depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
 
@@ -284,15 +284,15 @@
         return cachedWeightedPercent[ ele.id() ];
       }
 
-      var eleDepth = ele._private.scratch.BreadthFirstLayout.depth;
+      var eleDepth = ele._private.scratch.breadthfirst.depth;
       var neighbors = ele.neighborhood().nodes();
       var percent = 0;
       var samples = 0;
 
       for( var i = 0; i < neighbors.length; i++ ){
         var neighbor = neighbors[i];
-        var index = neighbor._private.scratch.BreadthFirstLayout.index;
-        var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
+        var index = neighbor._private.scratch.breadthfirst.index;
+        var depth = neighbor._private.scratch.breadthfirst.depth;
         var nDepth = depths[depth].length;
 
         if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
@@ -342,7 +342,7 @@
     };
    
     var getPosition = function( ele, isBottomDepth ){
-      var info = ele._private.scratch.BreadthFirstLayout;
+      var info = ele._private.scratch.breadthfirst;
       var depth = info.depth;
       var index = info.index;
       var depthSize = depths[depth].length;

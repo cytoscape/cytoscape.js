@@ -343,7 +343,7 @@ cy = cytoscape( options = {
 <h2 id="notation/architecture-amp-api">Architecture &amp; API <a href="#notation/architecture-amp-api"><span class="icon-bookmark"></span></a></h2>
 <p>There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core (i.e. a graph instance) and the collection.  In Cytoscape.js, the core is a developer&#39;s main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.</p>
 <p>The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.</p>
-<h2 id="notation/notation">Notation <a href="#notation/notation"><span class="icon-bookmark"></span></a></h2>
+<h2 id="notation/functions">Functions <a href="#notation/functions"><span class="icon-bookmark"></span></a></h2>
 <p>There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below:</p>
 <table>
 <thead>
@@ -550,7 +550,7 @@ cy = cytoscape( options = {
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'ready'</span>) }
 });
 </code></pre>
-<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.</p>
+<p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option <code>options.headless</code> is <code>true</code>, the null renderer is used by default.</p>
 <p>You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery: </p>
 <pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
@@ -573,7 +573,7 @@ cy = cytoscape( options = {
 <span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-string">'get'</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
 </code></pre>
 <h3 id="the-ready-callback">The ready callback</h3>
-<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually and use the <code>preset</code> layout &mdash; which does nothing unless you pass specific layout options to it.</p>
+<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the <a href="#notation/elements-json">elements JSON</a> and use the <code>preset</code> layout &mdash; which does nothing by default.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
 <p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.</p>
@@ -2711,7 +2711,7 @@ cy.zoom({
 												</li>
 											
 												<li>
-													<span class="name">pan</span>
+													<span class="name"><a href="#notation/position">pan</a></span>
 													 
 													<span class="descr"><p>The pan to set (a rendered position).</p>
 </span>
@@ -3087,12 +3087,68 @@ cy.zoom({
 															
 														
 															<li>
-																<span class="name">pan</span>
+																<span class="name"><a href="#notation/position">pan</a></span>
 																 
-																<span class="descr"><p>A pan position to which the graph will be animated.</p>
+																<span class="descr"><p>A panning position to which the graph will be animated.</p>
 </span>
 															</li>
 
+															
+														
+															<li>
+																<span class="name"><a href="#notation/position">panBy</a></span>
+																 
+																<span class="descr"><p>A relative panning position to which the graph will be animated.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">fit</span>
+																 
+																<span class="descr"><p>An object containing fitting options from which the graph will be animated.</p>
+</span>
+															</li>
+
+															
+															<ul class="fields">
+																
+																<li>
+																	<span class="name"><a href="#collection">eles</a></span>
+																	 
+																	<span class="descr"><p>Elements or a selector to which the viewport will be fitted.</p>
+</span>
+																</li>
+																
+																<li>
+																	<span class="name">padding</span>
+																	 
+																	<span class="descr"><p>Padding to use with the fitting.</p>
+</span>
+																</li>
+																
+															</ul>
+															
+														
+															<li>
+																<span class="name">center</span>
+																 
+																<span class="descr"><p>An object containing centring options from which the graph will be animated.</p>
+</span>
+															</li>
+
+															
+															<ul class="fields">
+																
+																<li>
+																	<span class="name"><a href="#collection">eles</a></span>
+																	 
+																	<span class="descr"><p>Elements or a selector to which the viewport will be centred.</p>
+</span>
+																</li>
+																
+															</ul>
 															
 														
 													</ul>
@@ -3157,9 +3213,22 @@ cy.zoom({
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
+<p>Manual pan and zoom:</p>
 <pre><code class="lang-js">cy.animate({
   pan: { x: <span class="hljs-number">100</span>, y: <span class="hljs-number">100</span> },
   zoom: <span class="hljs-number">2</span>
+}, {
+  duration: <span class="hljs-number">1000</span>
+});
+</code></pre>
+<p>Fit to elements:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+cy.animate({
+  fit: {
+    eles: j,
+    padding: <span class="hljs-number">20</span>
+  }
 }, {
   duration: <span class="hljs-number">1000</span>
 });
@@ -4490,6 +4559,147 @@ j.data({
 <li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
 </ul>
 
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/data/ele.scratch"><span class="fn-name">ele.scratch()</span>  <a href="#collection/data/ele.scratch"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like <code>&#39;_foo&#39;</code>.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.scratch()</div>
+										
+										<div class="descr"><p>Get the entire scratchpad object for the element.</p>
+</div>
+										<ul class="args">
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">ele.scratch( <span class="comma">, </span>namespace )</div>
+										
+										<div class="descr"><p>Get the scratchpad at a particular namespace.</p>
+</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">namespace</span>
+													 
+													<span class="descr"><p>A namespace string.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">ele.scratch( <span class="comma">, </span>namespace<span class="comma">, </span>value )</div>
+										
+										<div class="descr"><p>Set the scratchpad at a particular namespace.</p>
+</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">namespace</span>
+													 
+													<span class="descr"><p>A namespace string.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">value</span>
+													 
+													<span class="descr"><p>The value to set at the specified namespace.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function is useful for storing temporary, possibly non-JSON data.  Extensions &mdash; like layouts, renderers, and so on &mdash; use <code>ele.scratch()</code> namespaced on their registered name.  For example, an extension named <code>foo</code> would use the namespace <code>&#39;foo&#39;</code>.  </p>
+<p>If you want to use this function for your own app-level data, you can prefix the namespaces you use by underscore to avoid collisions with extensions.  For example, using <code>ele.scratch(&#39;_foo&#39;)</code> in your app will avoid collisions with an extension named <code>foo</code>.</p>
+<p>This function is useful for associating non-JSON data to an element.  Whereas data stored via <code>ele.data()</code> is included by <code>ele.json()</code>, data stored by <code>ele.scratch()</code> is not.  This makes it easy to temporarily store unserialisable data.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+<span class="hljs-comment">// entire scratchpad:</span>
+<span class="hljs-comment">// be careful, since you could clobber over someone else's namespace or forget to use one at all!</span>
+<span class="hljs-keyword">var</span> fooScratch = j.scratch()._foo = {}; 
+<span class="hljs-comment">// ... now you can modify fooScratch all you want</span>
+
+<span class="hljs-comment">// set namespaced scratchpad to ele:</span>
+<span class="hljs-comment">// safer, recommended</span>
+<span class="hljs-keyword">var</span> fooScratch = j.scratch(<span class="hljs-string">'_foo'</span>, {});
+<span class="hljs-comment">// ... now you can modify fooScratch all you want</span>
+
+<span class="hljs-comment">// get namespaced scratchpad from ele (assumes set before)</span>
+<span class="hljs-keyword">var</span> fooScratch = j.scratch(<span class="hljs-string">'_foo'</span>);
+<span class="hljs-comment">// ... now you can modify fooScratch all you want</span>
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/data/ele.removeScratch"><span class="fn-name">ele.removeScratch()</span>  <a href="#collection/data/ele.removeScratch"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.removeScratch( <span class="comma">, </span>namespace )</div>
+										
+										<div class="descr"><p>Remove the scratchpad data at a particular namespace.</p>
+</div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">namespace</span>
+													 
+													<span class="descr"><p>A namespace string.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
 								
 							</div>		
 						</div>
@@ -9208,6 +9418,9 @@ path.select();
 					<h2 id="collection/compound-nodes">Compound nodes <a href="#collection/compound-nodes"><span class="icon-bookmark"></span></a></h2>
 
 					
+						<p>These functions apply to <a href="#notation/compound-nodes">compound graphs</a>.</p>
+
+					
 
 					
 						<div class="function">
@@ -9215,7 +9428,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get whether the node is a parent (i.e. a node containing one or more child nodes)</p>
+							<div class="descr"><p>Get whether the node is a compound parent (i.e. a node containing one or more child nodes)</p>
 </div>
 
 							
@@ -9230,7 +9443,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get whether the node is a child (i.e. contained within a node)</p>
+							<div class="descr"><p>Get whether the node is a compound child (i.e. contained within a node)</p>
 </div>
 
 							
@@ -9245,7 +9458,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get the parent node of each node in the collection.</p>
+							<div class="descr"><p>Get the compound parent node of each node in the collection.</p>
 </div>
 
 							
@@ -9293,7 +9506,7 @@ path.select();
 							</div>
 							
 							
-							<div class="descr"><p>Get all ancestor nodes of each node in the collection.</p>
+							<div class="descr"><p>Get all compound ancestor nodes (i.e. parents, parents&#39; parents, etc.) of each node in the collection.</p>
 </div>
 
 							
@@ -9331,7 +9544,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.</p>
+							<div class="descr"><p>Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.</p>
 </div>
 
 							
@@ -9362,7 +9575,7 @@ path.select();
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>You can get the closest common ancestor via <code>nodes.commonAncestor().first()</code> and the farthest via <code>nodes.commonAncestor().last()</code>, because the common ancestors are sorted in order of closeness.</p>
+<p>You can get the closest common ancestor via <code>nodes.commonAncestors().first()</code> and the farthest via <code>nodes.commonAncestors().last()</code>, because the common ancestors are in descending order of closeness.</p>
 
 								
 							</div>		
@@ -9373,7 +9586,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all orphan (i.e. has no parent) nodes in the calling collection.</p>
+							<div class="descr"><p>Get all orphan (i.e. has no compound parent) nodes in the calling collection.</p>
 </div>
 
 							
@@ -9411,7 +9624,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all nonorphan (i.e. has a parent) nodes in the calling collection.</p>
+							<div class="descr"><p>Get all nonorphan (i.e. has a compound parent) nodes in the calling collection.</p>
 </div>
 
 							
@@ -9449,7 +9662,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all child (i.e. direct descendant) nodes of each node in the collection.</p>
+							<div class="descr"><p>Get all compound child (i.e. direct descendant) nodes of each node in the collection.</p>
 </div>
 
 							
@@ -9487,7 +9700,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all descendant (children, children&#39;s children, etc.) nodes of each node in the collection.</p>
+							<div class="descr"><p>Get all compound descendant (i.e. children, children&#39;s children, etc.) nodes of each node in the collection.</p>
 </div>
 
 							
@@ -9525,7 +9738,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Get all sibling (same parent) nodes of each node in the collection.</p>
+							<div class="descr"><p>Get all sibling (i.e. same compound parent) nodes of each node in the collection.</p>
 </div>
 
 							
@@ -10537,7 +10750,7 @@ cy.elements().foo();
 				
 					<div class="section lvl2">
 						
-						<a href="#notation/notation"><span class="icon-bookmark bookmark-icon"></span> Notation</a>
+						<a href="#notation/functions"><span class="icon-bookmark bookmark-icon"></span> Functions</a>
 					</div>
 
 					
@@ -10796,6 +11009,10 @@ cy.elements().foo();
 						<div class="section lvl3"><a href="#collection/data/eles.data"><span class="icon-bookmark bookmark-icon"></span> eles.data() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/data/eles.removeData"><span class="icon-bookmark bookmark-icon"></span> eles.removeData() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/data/ele.scratch"><span class="icon-bookmark bookmark-icon"></span> ele.scratch() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/data/ele.removeScratch"><span class="icon-bookmark bookmark-icon"></span> ele.removeScratch() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/data/ele.id"><span class="icon-bookmark bookmark-icon"></span> ele.id() </a></div>
 					

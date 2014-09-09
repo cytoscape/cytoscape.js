@@ -641,6 +641,38 @@
           };
         }
 
+        // override pan w/ panBy if set
+        if( properties.panBy && isCore ){
+          var panBy = properties.panBy;
+          var cyPan = cy.pan();
+
+          properties.pan = {
+            x: cyPan.x + panBy.x,
+            y: cyPan.y + panBy.y
+          };
+        }
+
+        // override pan w/ center if set
+        var center = properties.center || properties.centre;
+        if( center && isCore ){
+          var centerPan = cy.getCenterPan( center.eles );
+
+          if( centerPan ){
+            properties.pan = centerPan;
+          }
+        }
+
+        // override pan & zoom w/ fit if set
+        if( properties.fit && isCore ){
+          var fit = properties.fit;
+          var fitVp = cy.getFitViewport( fit.eles || fit.boundingBox, fit.padding );
+
+          if( fitVp ){
+            properties.pan = fitVp.pan; //{ x: fitVp.pan.x, y: fitVp.pan.y };
+            properties.zoom = fitVp.zoom;
+          }
+        }
+
         for( var i = 0; i < all.length; i++ ){
           var ele = all[i];
 
@@ -654,13 +686,13 @@
           }
 
           if( isCore ){
-            var pan = ele._private.pan;
+            var pan = cy._private.pan;
             var startPan = {
               x: pan.x,
               y: pan.y
             };
 
-            var startZoom = ele._private.zoom;
+            var startZoom = cy._private.zoom;
           }
           
           if( ele.animated() && (params.queue === undefined || params.queue) ){

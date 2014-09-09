@@ -17,6 +17,8 @@
     "position": "#notation/position",
     "pos": "#notation/position",
     "renderedPosition": "#notation/position",
+    "pan": "#notation/position",
+    "panBy": "#notation/position",
     "css": "#style"
   },
 
@@ -634,7 +636,23 @@
                       "descr": "An object containing the properties to animate.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
-                        { "name": "pan", "descr": "A pan position to which the graph will be animated." }
+                        { "name": "pan", "descr": "A panning position to which the graph will be animated." },
+                        { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
+                        {
+                          "name": "fit",
+                          "descr": "An object containing fitting options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be fitted." },
+                            { "name": "padding", "descr": "Padding to use with the fitting." }
+                          ]
+                        },
+                        {
+                          "name": "center",
+                          "descr": "An object containing centring options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
+                          ]
+                        }
                       ]
                     },
 
@@ -998,6 +1016,45 @@
                 }
               ],
               "md": "collection/removeData"
+            },
+
+            {
+              "name": "ele.scratch",
+              "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.",
+              "formats": [
+                {
+                  "descr": "Get the entire scratchpad object for the element."
+                },
+
+                {
+                  "descr": "Get the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." },
+                    { "name": "value", "descr": "The value to set at the specified namespace." }
+                  ]
+                }
+              ],
+              "md": "collection/scratch"
+            },
+
+            {
+              "name": "ele.removeScratch",
+              "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.",
+              "formats": [
+                {
+                  "descr": "Remove the scratchpad data at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -2397,20 +2454,21 @@
 
         {
           "name": "Compound nodes",
+          "md": "collection/compoundNodes",
           "fns": [
             {
               "name": "node.isParent",
-              "descr": "Get whether the node is a parent (i.e. a node containing one or more child nodes)"
+              "descr": "Get whether the node is a compound parent (i.e. a node containing one or more child nodes)"
             },
 
             {
               "name": "node.isChild",
-              "descr": "Get whether the node is a child (i.e. contained within a node)"
+              "descr": "Get whether the node is a compound child (i.e. contained within a node)"
             },
 
             {
               "name": "nodes.parent",
-              "descr": "Get the parent node of each node in the collection.",
+              "descr": "Get the compound parent node of each node in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2423,7 +2481,7 @@
             {
               "name": "nodes.parents",
               "pureAliases": ["nodes.ancestors"],
-              "descr": "Get all ancestor nodes of each node in the collection.",
+              "descr": "Get all compound ancestor nodes (i.e. parents, parents' parents, etc.) of each node in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2435,7 +2493,7 @@
 
             {
               "name": "nodes.commonAncestors",
-              "descr": "Get all ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.",
+              "descr": "Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.",
               "formats": [
                 {
                   "args": [
@@ -2448,7 +2506,7 @@
 
             {
               "name": "nodes.orphans",
-              "descr": "Get all orphan (i.e. has no parent) nodes in the calling collection.",
+              "descr": "Get all orphan (i.e. has no compound parent) nodes in the calling collection.",
               "formats": [
                 {
                   "args": [
@@ -2460,7 +2518,7 @@
 
             {
               "name": "nodes.nonorphans",
-              "descr": "Get all nonorphan (i.e. has a parent) nodes in the calling collection.",
+              "descr": "Get all nonorphan (i.e. has a compound parent) nodes in the calling collection.",
               "formats": [
                 {
                   "args": [
@@ -2472,7 +2530,7 @@
 
             {
               "name": "nodes.children",
-              "descr": "Get all child (i.e. direct descendant) nodes of each node in the collection.",
+              "descr": "Get all compound child (i.e. direct descendant) nodes of each node in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2484,7 +2542,7 @@
 
             {
               "name": "nodes.descendants",
-              "descr": "Get all descendant (children, children's children, etc.) nodes of each node in the collection.",
+              "descr": "Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2496,7 +2554,7 @@
 
             {
               "name": "nodes.siblings",
-              "descr": "Get all sibling (same parent) nodes of each node in the collection.",
+              "descr": "Get all sibling (i.e. same compound parent) nodes of each node in the collection.",
               "formats": [
                 {
                   "args": [

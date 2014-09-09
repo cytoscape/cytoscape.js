@@ -51,6 +51,16 @@
     options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
     options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
     
+    var defVal = function( def, val, altVal ){
+      if( val !== undefined ){
+        return val;
+      } else if( altVal !== undefined ){
+        return altVal;
+      } else {
+        return def;
+      }
+    };
+
     var _p = this._private = {
       container: options.container, // html dom ele container
       ready: false, // whether ready has been triggered
@@ -66,14 +76,14 @@
       notificationsEnabled: true, // whether notifications are sent to the renderer
       minZoom: 1e-50,
       maxZoom: 1e50,
-      zoomingEnabled: options.zoomingEnabled === undefined ? true : options.zoomingEnabled,
-      userZoomingEnabled: options.userZoomingEnabled === undefined ? true : options.userZoomingEnabled,
-      panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
-      userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
-      boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
-      autolock: options.autolock === undefined ? false : options.autolock,
-      autoungrabify: options.autoungrabify === undefined ? false : options.autoungrabify,
-      autounselectify: options.autounselectify === undefined ? false : options.autounselectify,
+      zoomingEnabled: defVal(true, options.zoomingEnabled),
+      userZoomingEnabled: defVal(true, options.userZoomingEnabled),
+      panningEnabled: defVal(true, options.panningEnabled),
+      userPanningEnabled: defVal(true, options.userPanningEnabled),
+      boxSelectionEnabled: defVal(true, options.boxSelectionEnabled),
+      autolock: defVal(false, options.autolock, options.autolockNodes),
+      autoungrabify: defVal(false, options.autoungrabify, options.autoungrabifyNodes),
+      autounselectify: defVal(false, options.autounselectify),
       styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {

@@ -196,13 +196,31 @@
     },
     
     fit: function( elements, padding ){
+      var viewportState = this.getFitViewport( elements, padding );
+
+      if( viewportState ){
+        var _p = this._private;
+        _p.zoom = viewportState.zoom;
+        _p.pan = viewportState.pan;
+
+        this.trigger('pan zoom viewport');
+
+        this.notify({ // notify the renderer that the viewport changed
+          type: 'viewport'
+        });
+      }
+
+      return this; // chaining
+    },
+
+    getFitViewport: function( elements, padding ){
       if( $$.is.number(elements) && padding === undefined ){ // elements is optional
         padding = elements;
         elements = undefined;
       }
 
       if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
-        return this;
+        return;
       }
 
       var bb;
@@ -228,7 +246,6 @@
       }
 
       bb = bb || elements.boundingBox();
-      var style = this.style();
 
       var w = this.width();
       var h = this.height();
@@ -236,25 +253,24 @@
       padding = $$.is.number(padding) ? padding : 0;
 
       if( !isNaN(w) && !isNaN(h) && w > 0 && h > 0 && !isNaN(bb.w) && !isNaN(bb.h) &&  bb.w > 0 && bb.h > 0 ){
-        zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
+        zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
 
         // crop zoom
         zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
         zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
 
-        this._private.pan = { // now pan to middle
+        var pan = { // now pan to middle
           x: (w - zoom*( bb.x1 + bb.x2 ))/2,
           y: (h - zoom*( bb.y1 + bb.y2 ))/2
         };
 
-        this.trigger('pan zoom viewport');
-
-        this.notify({ // notify the renderer that the viewport changed
-          type: 'viewport'
-        });
+        return {
+          zoom: zoom, 
+          pan: pan
+        };
       }
 
-      return this; // chaining
+      return;
     },
     
     minZoom: function( zoom ){
@@ -404,9 +420,25 @@
       return this; // chaining
     },
     
-    center: function(elements){
-      if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
-        return this;
+    center: function( elements ){
+      var pan = getCenterPan( elements );
+
+      if( pan ){
+        this._private.pan = pan;
+
+        this.trigger('pan viewport');
+
+        this.notify({ // notify the renderer that the viewport changed
+          type: 'viewport'
+        });
+      }
+
+      return this; // chaining
+    },
+
+    getCenterPan: function( elements ){
+      if( !this._private.panningEnabled ){
+        return;
       }
 
       if( $$.is.string(elements) ){
@@ -417,23 +449,16 @@
       }
 
       var bb = elements.boundingBox();
-      var style = this.style();
-      var w = parseFloat( style.containerCss('width') );
-      var h = parseFloat( style.containerCss('height') );
+      var w = this.width();
+      var h = this.height();
       var zoom = this._private.zoom;
 
-      this.pan({ // now pan to middle
+      var pan = { // middle
         x: (w - zoom*( bb.x1 + bb.x2 ))/2,
         y: (h - zoom*( bb.y1 + bb.y2 ))/2
-      });
+      };
       
-      this.trigger('pan viewport');
-
-      this.notify({ // notify the renderer that the viewport changed
-        type: 'viewport'
-      });
-
-      return this; // chaining
+      return pan;
     },
     
     reset: function(){
@@ -504,5 +529,9 @@
 
   // aliases
   $$.corefn.centre = $$.corefn.center;
+
+  // backwards compatibility
+  $$.corefn.autolockNodes = $$.corefn.autolock;
+  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabifyNodes;
 
 })( cytoscape );

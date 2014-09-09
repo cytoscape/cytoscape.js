@@ -139,7 +139,7 @@
           percent = 1;
         }
         
-        if( properties.delay == null ){ // then update the position
+        if( properties.delay == null ){ // then update
 
           var startPos = animation.startPosition;
           var endPos = properties.position;

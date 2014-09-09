@@ -12,7 +12,7 @@ There are two components in the architecture that a developer need concern himse
 The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
 
 
-## Notation
+## Functions
 
 There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below:
 
@@ -39,7 +39,7 @@ There is an important distinction to make for position:  A position may be a _mo
 
 A model position &mdash; as its name suggests &mdash; is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.
 
-A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.
+A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.
 
 In this documentation, "position" refers to model position unless otherwise stated.
 

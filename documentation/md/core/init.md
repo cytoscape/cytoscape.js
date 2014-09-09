@@ -47,7 +47,7 @@ cytoscape({
 });
 ```
 
-If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js), the null renderer is used by default.
+If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option `options.headless` is `true`, the null renderer is used by default.
 
 You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery: 
 
@@ -86,7 +86,7 @@ var cy = $('#cy').cytoscape('get'); // now we have a global reference to `cy`
 
 ### The ready callback
 
-<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part is asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous layout at initialisation, you may want to use `ready`.  You can guarantee that the initial layout takes no time if you specify all node positions manually and use the `preset` layout &mdash; which does nothing unless you pass specific layout options to it.
+<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use `ready`.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the [elements JSON](#notation/elements-json) and use the `preset` layout &mdash; which does nothing by default.
 
 
 

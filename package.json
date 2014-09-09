@@ -39,23 +39,23 @@
     }
   ],
   "keywords": [
-    "graph", 
-    "graph-theory", 
-    "network", 
-    "node", 
-    "edge", 
-    "vertex", 
-    "link", 
-    "analysis", 
-    "visualisation", 
-    "visualization", 
-    "requirejs", 
-    "amd", 
-    "commonjs", 
-    "node", 
+    "graph",
+    "graph-theory",
+    "network",
+    "node",
+    "edge",
+    "vertex",
+    "link",
+    "analysis",
+    "visualisation",
+    "visualization",
+    "requirejs",
+    "amd",
+    "commonjs",
+    "node",
     "npm",
     "nodejs",
-    "bower", 
+    "bower",
     "jquery"
   ],
   "engines": {
@@ -84,6 +84,7 @@
     "gulp-jshint": "~1.5.5",
     "jshint-stylish": "~0.2.0",
     "bluebird": "^2.0.2",
-    "run-sequence": "^0.3.6"
+    "run-sequence": "^0.3.6",
+    "jsonlint": "^1.6.2"
   }
 }

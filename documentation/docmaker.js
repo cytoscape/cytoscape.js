@@ -4,6 +4,7 @@ var fs = require('fs');
 var marked = require('marked');
 // var mdConvertor = require('node-markdown').Markdown;
 var Handlebars = require('handlebars');
+var jsonlint = require('jsonlint');
 var hljs = require('highlight.js');
 var encoding = 'utf8';
 var config;
@@ -11,9 +12,11 @@ var configFile = './docmaker.json';
 var demoFile = './js/load.js';
 
 try {
-  config = require(configFile);
+  jsonlint.parse( fs.readFileSync(configFile, 'utf8') ); // validate first for convenience
+  config = require( configFile );
 } catch(e){
-  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/ : ' + e;
+  console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
+  throw e;
 }
 
 // load the demo file

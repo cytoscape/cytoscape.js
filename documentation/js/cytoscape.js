@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.13.
+ * This file is part of cytoscape.js snapshot-228af9a792-1410283758792.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2595,8 +2595,8 @@ var cytoscape;
   
   if( !$ ){ return; } // no jquery => don't need this
 
-  var jqData = function( $ele ){
-    var d = $ele[0]._jqcy = $ele[0]._jqcy || {};
+  var cyReg = function( $ele ){
+    var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
 
     return d;
   };
@@ -2608,21 +2608,20 @@ var cytoscape;
 
     // get object
     if( opts === 'get' ){
-      return jqData( $this ).cy;
+      return cyReg( $this ).cy;
     }
     
     // bind to ready
     else if( $$.is.fn(opts) ){
-      //debugger;
 
       var ready = opts;
-      var cy = jqData( $this ).cy;
+      var cy = cyReg( $this ).cy;
       
       if( cy && cy.ready() ){ // already ready so just trigger now
         cy.trigger('ready', [], ready);
 
       } else { // not yet ready, so add to readies list
-        var data = jqData( $this );
+        var data = cyReg( $this );
         var readies = data.readies = data.readies || [];
 
         readies.push( ready );
@@ -2651,7 +2650,7 @@ var cytoscape;
       
       $this.each(function(){
         var $ele = $(this);
-        var cy = jqData( $ele ).cy;
+        var cy = cyReg( $ele ).cy;
         var fnName = opts;
         
         if( cy && $$.is.fn( cy[fnName] ) ){
@@ -5909,12 +5908,20 @@ var cytoscape;
     opts = $$.util.extend({}, defaults, opts);
 
     var container = opts.container;
-    var reg = container ? container._jqcy : null; // e.g. already registered some info (e.g. readies) via jquery
+    var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+    reg = reg || {};
+
     if( reg && reg.cy ){ 
       container.innerHTML = '';
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
-    } 
-    var readies = reg ? (reg.readies || []) : [];
+
+      reg = {}; // old instance => replace reg completely
+    }
+
+    var readies = reg.readies = reg.readies || [];
+    
+    container._cyreg = reg; // make sure container assoc'd reg points to this cy
+    reg.cy = cy;
 
     var options = opts;
     options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
@@ -6041,7 +6048,13 @@ var cytoscape;
     },
 
     destroy: function(){
-      this.renderer().destroy();
+      this.notify({ type: 'destroy' }); // destroy the renderer
+
+      var domEle = this.container();
+      var parEle = domEle.parentNode;
+      if( parEle ){
+        parEle.removeChild( domEle );
+      }
 
       return this;
     },

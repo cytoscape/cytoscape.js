@@ -32,7 +32,7 @@
     reg = reg || {};
 
     if( reg && reg.cy ){ 
-      container.innerHTML = '';
+      if( container ){ container.innerHTML = ''; }
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
       reg = {}; // old instance => replace reg completely
@@ -40,7 +40,7 @@
 
     var readies = reg.readies = reg.readies || [];
     
-    container._cyreg = reg; // make sure container assoc'd reg points to this cy
+    if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
     var options = opts;

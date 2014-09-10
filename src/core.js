@@ -32,8 +32,10 @@
     reg = reg || {};
 
     if( reg && reg.cy ){ 
-      while( container.firstChild ){ // clean the container
-        container.removeChild( container.firstChild );
+      if( container ){
+        while( container.firstChild ){ // clean the container
+          container.removeChild( container.firstChild );
+        }
       }
       
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
@@ -43,7 +45,7 @@
 
     var readies = reg.readies = reg.readies || [];
     
-    container._cyreg = reg; // make sure container assoc'd reg points to this cy
+    if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
     var head = window !== undefined && container !== undefined && !opts.headless;
@@ -188,12 +190,6 @@
 
     destroy: function(){
       this.notify({ type: 'destroy' }); // destroy the renderer
-
-      var domEle = this.container();
-      var parEle = domEle.parentNode;
-      if( parEle ){
-        parEle.removeChild( domEle );
-      }
 
       var domEle = this.container();
       var parEle = domEle.parentNode;

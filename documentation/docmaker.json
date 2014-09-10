@@ -1709,6 +1709,19 @@
             },
 
             {
+              "name": "eles.allAre",
+              "descr": "Determine whether all elements in the collection match a selector.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "The selector to match against." }
+                  ]
+                }
+              ]
+
+            },
+
+                        {
               "name": "eles.some",
               "descr": "Determine whether any element in this collection satisfies the specified test function.",
               "formats": [
@@ -1756,19 +1769,6 @@
                   ]
                 }
               ]
-            },
-
-            {
-              "name": "eles.allAre",
-              "descr": "Determine whether all elements in the collection match a selector.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "selector", "descr": "The selector to match against." }
-                  ]
-                }
-              ]
-
             }
           ]
         },

@@ -453,7 +453,9 @@
       var includeLabels = options.includeLabels === undefined ? true : options.includeLabels;
 
       // recalculate projections etc
-      cy_p.renderer.recalculateRenderedStyle( this );
+      if( styleEnabled ){
+        cy_p.renderer.recalculateRenderedStyle( this );
+      }
 
       var x1 = Infinity;
       var x2 = -Infinity;
@@ -464,7 +466,7 @@
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
         var _p = ele._private;
-        var display = _p.style['display'].value;
+        var display = styleEnabled ? _p.style['display'].value : 'element';
         var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;

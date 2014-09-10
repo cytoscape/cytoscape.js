@@ -45,7 +45,25 @@ describe('Collection iteration', function(){
   it('eles.each()', function(){
     var count = 0;
 
-    cy.nodes().each(function(){
+    cy.nodes().each(function( i, ele ){
+      expect( cytoscape.is.elementOrCollection(this) ).to.be.true;
+      expect( cytoscape.is.elementOrCollection(ele) ).to.be.true;
+      expect( i ).to.equal( count );
+
+      count++;
+    });
+
+    expect( count ).to.equal(3);
+  });
+
+  it('eles.forEach()', function(){
+    var count = 0;
+
+    cy.nodes().forEach(function( ele, i, eles ){
+      expect( cytoscape.is.elementOrCollection(ele) ).to.be.true;
+      expect( cytoscape.is.elementOrCollection(eles) ).to.be.true;
+      expect( i ).to.equal( count );
+
       count++;
     });
 

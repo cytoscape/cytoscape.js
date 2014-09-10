@@ -11,7 +11,7 @@
 
     some: function( fn, thisArg ){
       for( var i = 0; i < this.length; i++ ){
-        var ret = fn.apply( thisArg, [ ele, i, this ] );
+        var ret = fn.apply( thisArg, [ this[i], i, this ] );
 
         if( ret ){
           return true;
@@ -23,7 +23,7 @@
 
     every: function( fn, thisArg ){
       for( var i = 0; i < this.length; i++ ){
-        var ret = fn.apply( thisArg, [ ele, i, this ] );
+        var ret = fn.apply( thisArg, [ this[i], i, this ] );
 
         if( !ret ){
           return false;

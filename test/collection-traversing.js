@@ -95,6 +95,14 @@ describe('Collection traversing', function(){
     expect( n1n2.codirectedEdges().same( e.add(n1n2) ) ).to.be.true;
   });
 
+  it('nodes.roots()', function(){
+    expect( cy.nodes().roots().same(n1) ).to.be.true;
+  });
+
+  it('nodes.leaves()', function(){
+    expect( cy.nodes().leaves().same(n3) ).to.be.true;
+  });
+
   it('nodes.incomers()', function(){
     expect( n2.incomers().same( n1.add(n1n2) ) ).to.be.true;
   });

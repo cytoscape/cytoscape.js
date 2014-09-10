@@ -389,7 +389,7 @@ cy = cytoscape( options = {
 <p>A node&#39;s position refers to the centre point of its bounding box.</p>
 <p>There is an important distinction to make for position:  A position may be a <em>model</em> position or a <em>rendered</em> position.</p>
 <p>A model position &mdash; as its name suggests &mdash; is the position stored in the model for an element.  An element&#39;s model position remains constant, despite changes to zoom and pan.</p>
-<p>A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of <code>{ x: 100, y: 100 }</code> specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element&#39;s rendered position naturally changes as zoom and pan changes, because the element&#39;s on-screen position in the viewport changes as zooming and panning are applied.</p>
+<p>A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of <code>{ x: 100, y: 100 }</code> specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element&#39;s rendered position naturally changes as zoom and pan changes, because the element&#39;s on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.</p>
 <p>In this documentation, &quot;position&quot; refers to model position unless otherwise stated.</p>
 <h2 id="notation/elements-json">Elements JSON <a href="#notation/elements-json"><span class="icon-bookmark"></span></a></h2>
 <p>Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:</p>
@@ -6826,6 +6826,44 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 						</div>
 					
 						<div class="function">
+							<div class="name" id="collection/comparison/eles.allAre"><span class="fn-name">eles.allAre()</span>  <a href="#collection/comparison/eles.allAre"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Determine whether all elements in the collection match a selector.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.allAre( <span class="comma">, </span>selector )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													 
+													<span class="descr"><p>The selector to match against.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="collection/comparison/eles.some"><span class="fn-name">eles.some()</span>  <a href="#collection/comparison/eles.some"><span class="icon-bookmark"></span></a></div>
 							
 							
@@ -6965,44 +7003,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 													<span class="name">thisArg</span>
 													<span class="optional">[optional]</span> 
 													<span class="descr"><p>The value for <code>this</code> within the test function.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/comparison/eles.allAre"><span class="fn-name">eles.allAre()</span>  <a href="#collection/comparison/eles.allAre"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Determine whether all elements in the collection match a selector.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.allAre( <span class="comma">, </span>selector )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													 
-													<span class="descr"><p>The selector to match against.</p>
 </span>
 
 													
@@ -11176,11 +11176,11 @@ cy.elements().foo();
 					
 						<div class="section lvl3"><a href="#collection/comparison/eles.is"><span class="icon-bookmark bookmark-icon"></span> eles.is() </a></div>
 					
+						<div class="section lvl3"><a href="#collection/comparison/eles.allAre"><span class="icon-bookmark bookmark-icon"></span> eles.allAre() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/comparison/eles.some"><span class="icon-bookmark bookmark-icon"></span> eles.some() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/comparison/eles.every"><span class="icon-bookmark bookmark-icon"></span> eles.every() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/comparison/eles.allAre"><span class="icon-bookmark bookmark-icon"></span> eles.allAre() </a></div>
 					
 				
 					<div class="section lvl2">

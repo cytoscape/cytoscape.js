@@ -119,6 +119,10 @@ button:active {
 	right: 0;
 	opacity: 0.666;
 	font-size: 0.8em;
+
+	border: 1px solid #4183C4;
+	color: #4183C4;
+	background: transparent;
 }
 
 /*.run + * {

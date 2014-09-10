@@ -97,6 +97,7 @@ describe('Selectors', function(){
     itSelects('[weight >= 2]', 'nparent', 'n2');
     itSelects('[weight < 2]', 'n1', 'n1n2');
     itSelects('[weight <= 2]', 'n1', 'n2', 'n1n2');
+    itSelects('[weight !< 2]', 'n2', 'nparent');
 
     // metadata
     itSelects('[[degree = 1]]', 'n1', 'n2');
@@ -121,8 +122,11 @@ describe('Selectors', function(){
     // compound
     itSelects(':parent', 'nparent');
     itSelects(':child', 'n2');
+    itSelects(':nonorphan', 'n2');
+    itSelects(':orphan', 'n1', 'nparent');
     itSelects('#nparent node', 'n2');
     itSelects('#nparent > node', 'n2');
+    itSelects('$node > node', 'nparent');
 
     // edges
     itSelects(':loop', 'nparentLoop');

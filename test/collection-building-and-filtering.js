@@ -10,9 +10,9 @@ describe('Collection building and filtering', function(){
     cytoscape({
       elements: {
         nodes: [
-            { data: { id: 'n1', val: 1 } },
-            { data: { id: 'n2', val: 2 } },
-            { data: { id: 'n3', val: 3 } }
+            { data: { id: 'n1', val: 1, sortVal: 2 } },
+            { data: { id: 'n2', val: 2, sortVal: 1 } },
+            { data: { id: 'n3', val: 3, sortVal: 3 } }
         ],
         
         edges: [
@@ -54,6 +54,27 @@ describe('Collection building and filtering', function(){
       return this.id() === 'n1';
     }).same(n1) ).to.be.true;
 
+  });
+
+  it('eles.stdFilter()', function(){
+    expect( cy.$('#n1, #n2').stdFilter(function( ele ){
+      return ele.id() === 'n1';
+    }).same(n1) ).to.be.true;
+
+    expect( cy.$('#n1, #n2').stdFilter(function( ele ){
+      return ele.id() === 'n1';
+    }).same(n1) ).to.be.true;
+  });
+
+  it('eles.sort()', function(){
+    var sorted = cy.nodes().sort(function(a, b){
+      return a.data('sortVal') - b.data('sortVal');
+    });
+
+    expect( sorted.length ).to.equal(3);
+    expect( sorted[0].same(n2) ).to.be.true;
+    expect( sorted[1].same(n1) ).to.be.true;
+    expect( sorted[2].same(n3) ).to.be.true;
   });
 
   it('eles.map()', function(){

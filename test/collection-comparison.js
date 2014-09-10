@@ -1,5 +1,6 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
+var $$ = cytoscape;
 
 describe('Collection comparison', function(){
 
@@ -59,6 +60,42 @@ describe('Collection comparison', function(){
   it('eles.allAre()', function(){
     expect( cy.$('#n1, #n2').allAre('node') ).to.be.true;
     expect( cy.$('#n1, #n1n2').allAre('node') ).to.be.false;
+  });
+
+  it('eles.some()', function(){
+    expect( cy.edges().some(function( ele, i, eles ){
+      expect( $$.is.elementOrCollection(ele) ).to.be.true;
+      expect( $$.is.elementOrCollection(eles) ).to.be.true;
+      expect( $$.is.number(i) ).to.be.true;
+
+      return ele.data('source') === 'n1';
+    }) ).to.be.true;
+
+    expect( cy.edges().some(function( ele, i, eles ){
+      expect( $$.is.elementOrCollection(ele) ).to.be.true;
+      expect( $$.is.elementOrCollection(eles) ).to.be.true;
+      expect( $$.is.number(i) ).to.be.true;
+
+      return ele.data('source') === 'no-way-this-id-exists';
+    }) ).to.be.false;
+  });
+
+  it('eles.every()', function(){
+    expect( cy.edges().every(function( ele, i, eles ){
+      expect( $$.is.elementOrCollection(ele) ).to.be.true;
+      expect( $$.is.elementOrCollection(eles) ).to.be.true;
+      expect( $$.is.number(i) ).to.be.true;
+
+      return ele.data('source') === 'n1';
+    }) ).to.be.false;
+
+    expect( cy.edges().every(function( ele, i, eles ){
+      expect( $$.is.elementOrCollection(ele) ).to.be.true;
+      expect( $$.is.elementOrCollection(eles) ).to.be.true;
+      expect( $$.is.number(i) ).to.be.true;
+
+      return ele.isEdge();
+    }) ).to.be.true;
   });
 
 });

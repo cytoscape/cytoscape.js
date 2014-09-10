@@ -61,4 +61,11 @@ describe('Collection compound nodes', function(){
     expect( ancestors[1].same( n1 ) ).to.be.true;
   });
 
+  it('nodes.orphans()', function(){
+    expect( cy.elements().orphans().same( n1 ) ).to.be.true;
+  });
+
+  it('nodes.nonorphans()', function(){
+    expect( cy.elements().nonorphans().same( n2.add(n3).add(n4) ) ).to.be.true;
+  });
 });

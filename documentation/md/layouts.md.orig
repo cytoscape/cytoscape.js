@@ -7,7 +7,7 @@ Several layouts are included with Cytoscape.js by default, and their options are
 
 ## Null
 
-The `null` layout puts all nodes at (0, 0).  It's useful for debugging purposes.
+
 
 ```js
 options = {

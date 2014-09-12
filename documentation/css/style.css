@@ -40,10 +40,15 @@ img {
 	right: 0;
 	bottom: 15em;
 	width: 15em;
+	text-align: left;
+	background: rgba(255, 255, 255, 0.5);
 	overflow: hidden;
 	color: rgba(0, 0, 0, 0.5);
 	text-align: left;
 	font-family: Andale Mono, monospace;
+}
+
+#cy-title pre {
 	font-size: 0.8em;
 }
 
@@ -224,6 +229,23 @@ button:active {
 	width: 200px;
 }
 
+.gallery-full-demo{
+	display: inline-block;
+	position: relative;
+	width: 100%;
+	max-width: 600px;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+}
+
+.gallery-full-title {
+	font-size: 0.8em;
+}
+
+.gallery-full-padder {
+	margin-top: 100%;
+}
+
 .gallery-title {
 	font-size: 0.8em;
 }
@@ -240,11 +262,31 @@ button:active {
 	height: 200px;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	background-size: cover;
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
-.gallery-link-overlay {
+.gallery-full-embed,
+.gallery-full-link-overlay,
+.gallery-full-preview {
+	display: block;
 	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: 50% 0;
+	border-color: transparent;
+}
+
+.gallery-link-overlay,
+.gallery-full-link-overlay {
+	position: absolute;
+	z-index: 1;
 }
 
 .gallery-embed {

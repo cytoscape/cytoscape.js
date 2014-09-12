@@ -1,0 +1,1 @@
+The `circle` layout puts nodes in a circle.

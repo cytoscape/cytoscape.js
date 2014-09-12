@@ -347,14 +347,30 @@
       if (!capture) {
         
         var containerPageCoords = r.findContainerClientCoords();
-        
+
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
           && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
-          && e.target === r.data.topCanvas) {
-          
+        ) {
+          // inside container bounds so OK
         } else {
           return;
         }
+
+        var cyContainer = r.data.container;
+        var target = e.target;
+        var tParent = target.parentNode;
+        var containerIsTarget = false;
+
+        while( tParent ){
+          if( tParent === cyContainer ){
+            containerIsTarget = true;
+            break;
+          }
+
+          tParent = tParent.parentNode;
+        }
+
+        if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
       }
 
       var cy = r.data.cy;

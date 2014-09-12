@@ -79,6 +79,26 @@
 					{{{html}}}
 				{{/if}}
 
+				{{#if demo}}
+
+					<div class="gallery-full-demo">			
+						<button class="run"><span class="icon-play"></span> Run code</button>
+
+						<div class="gallery-full-padder"></div>
+
+						<a class="gallery-full-link" target="_blank" href="{{demo.srcUrl}}">
+							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
+						</a>
+						
+					</div>
+
+					{{#if demo.name}}
+						<div class="gallery-full-title">
+							<span class="gallery-full-name">{{demo.name}}</span>
+						</div>
+					{{/if}}
+
+				{{/if}}
 
 				{{#if demos}}
 
@@ -106,6 +126,10 @@
 
 					{{#if html}}
 						{{{html}}}
+					{{/if}}
+
+					{{#if layout}}
+						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
 					{{/if}}
 
 					{{#each fns}}

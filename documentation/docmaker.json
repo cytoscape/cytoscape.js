@@ -2592,11 +2592,97 @@
 
     { "name": "Events", "md": "events" },
 
-    { "name": "Layouts", "md": "layouts" },
+    {
+      "name": "Layouts",
+      "md": "layouts/intro",
+      "sections": [
+        {
+          "md": "layouts/null",
+          "layout": {
+            "name": "null"
+          }
+        },
+
+        {
+          "md": "layouts/random",
+          "layout": {
+            "name": "random"
+          }
+        },
+
+        {
+          "md": "layouts/preset",
+          "layout": {
+            "name": "preset"
+          }
+        },
+
+        {
+          "md": "layouts/grid",
+          "layout": {
+            "name": "grid"
+          }
+        },
+
+        {
+          "md": "layouts/circle",
+          "layout": {
+            "name": "circle"
+          }
+        },
+
+        {
+          "md": "layouts/concentric",
+          "layout": {
+            "name": "concentric"
+          }
+        },
+
+        {
+          "md": "layouts/breadthfirst",
+          "layout": {
+            "name": "breadthfirst"
+          }
+        },
+
+        {
+          "md": "layouts/arbor",
+          "layout": {
+            "name": "arbor"
+          }
+        },
+
+        {
+          "md": "layouts/cose",
+          "layout": {
+            "name": "cose"
+          }
+        },
+
+        {
+          "layout": {
+            "name": "cola"
+          }
+        },
+
+        {
+          "layout": {
+            "name": "dagre"
+          }
+        },
+
+        {
+          "layout": {
+            "name": "springy"
+          }
+        }
+      ]
+    },
 
     {
       "name": "Architecture",
-      "md": "architecture"
+      "md": "architecture",
+      "demo": { "id": "mexemi", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
     },
 
     {

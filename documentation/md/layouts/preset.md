@@ -1,0 +1,1 @@
+The `preset` layout puts nodes in the positions you specify manually.

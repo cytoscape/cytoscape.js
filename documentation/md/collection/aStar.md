@@ -1,10 +1,10 @@
 ## Details
 
-Note that this function performs `A Star` search on only the subset of the graph in the calling collection.
+Note that this function performs A* search on only the subset of the graph in the calling collection.
 
 This function returns an object of the following form:
 
-```
+```js
 {
   found, /* true or false */
   distance, /* Distance of the shortest path, if found */
@@ -12,25 +12,14 @@ This function returns an object of the following form:
 }
 ```
 
-the function receives an "options" object as argument, which has the following form:
+Regarding optional options:
 
-```
-{
-  root, /* Mandatory. Starting node, wither object or selector string */
-  weight, /* Optional. Weight function */
-  heuristic, /* Optional. Heuristic function to guide search */
-  directed, /* Optional. Whether consider this a directed (true) or undirected graph (false) */
-  goal /* Mandatory. Node to search for a path to. Either object or selector string. */
-}
-```
-
-If no weight function is defined, a constance weight of 1 is used for each edge. 
-If no heuristic function is provided, a constant null function will be used, turning this into the same behaviour as Dijkstra's algorithm. Heuristic should be monotonic (also called consistent) in addition of being 'admissible'.
+* If no weight function is defined, a constant weight of 1 is used for each edge. 
+* If no heuristic function is provided, a constant null function will be used, turning this into the same behaviour as Dijkstra's algorithm. The heuristic should be monotonic (also called consistent) in addition to being 'admissible'.
 
 
 ## Examples
 
 ```js
-var options = {root: "#1", goal: "#2"};
-var res = cy.elements().aStar(options);
+var aStar = cy.elements().aStar({ root: "#j", goal: "#e" });
 ```

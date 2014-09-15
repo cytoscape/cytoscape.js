@@ -116,7 +116,10 @@
           cy.trigger('done');
         });
         
-        cy.layout( cy._private.options.layout );
+        var layoutOpts = $$.util.extend({}, cy._private.options.layout);
+        layoutOpts.eles = cy.$();
+
+        cy.layout( layoutOpts );
 
       }
 

@@ -18,6 +18,7 @@
     //   distance // Distance for the shortest path from root to goal
     //   path // Array of ids of nodes in shortest path
     aStar: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -217,7 +218,7 @@
       logDebug("Reached end of computation without finding our goal");
       return {
         found : false
-        , cost : undefined
+        , distance : undefined
         , path : undefined 
         , steps : steps
       };
@@ -232,6 +233,7 @@
     //   pathTo : function(fromId, toId) // Returns the shortest path from node with ID "fromID" to node with ID "toId", as an array of node IDs
     //   distanceTo: function(fromId, toId) // Returns the distance of the shortest path from node with ID "fromID" to node with ID "toId"
     floydWarshall: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -420,6 +422,7 @@
     //   distanceTo: function(toId) // Returns the distance of the shortest path from root node to node with ID "toId"
     //   hasNegativeWeightCycle: true/false (if true, pathTo and distanceTo will be undefined)
     bellmanFord: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -619,6 +622,7 @@
     //   partition1: list of IDs of nodes in one partition
     //   partition2: list of IDs of nodes in the other partition
     kargerStein: function(options) {
+      options = options || {};
       
       var logDebug = function() {
         if (debug) {
@@ -801,6 +805,7 @@
     // retObj => returned object by function
     //  rank : function that returns the pageRank of a given node (object or selector string)
     pageRank: function(options) {
+      options = options || {};
       
       var normalizeVector = function(vector) {
         var length = vector.length;

@@ -69,7 +69,7 @@ Run `gulp` in the console.  The main targets are:
  * `lint` : lint the JS sources via jshint
  * `watch` : update JS refs in HTML files (debug page, test page) automatically when JS files are added or deleted
 
-**Documenation:**
+**Documentation:**
  * `docs` : build the documentation template
  * `docsdemoshots` : get snapshots of demos referenced in the docs (requires PhantomJS, e.g. `brew update && brew install phantomjs`)
  * `docsmin` : build the documentation template with all resources minified
@@ -82,8 +82,8 @@ Run `gulp` in the console.  The main targets are:
 
 ## Release instructions
 
- 1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`.
- 1. Confirm `VERSION` is picked up by gulp: `gulp version`.
+ 1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
+ 1. Confirm `VERSION` is picked up by gulp: `gulp version`
  1. Confirm JS files pass linting: `gulp lint`
  1. Confirm all tests passing: `gulp test`
  1. Build and publish the release: `gulp pub`, and then...

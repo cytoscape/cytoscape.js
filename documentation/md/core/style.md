@@ -23,6 +23,19 @@ cy.style()
   // ...
 
   .update() // update the elements in the graph with the new style
+;
+```
+
+You can also add to the existing stylesheet:
+```js
+cy.style()
+  .selector('node')
+    .css({
+      'background-color': 'red'
+    })
+
+  .update() // update the elements in the graph with the new style
+;
 ```
 
 You can also set the style from plain JSON:
@@ -33,7 +46,7 @@ cy.style()
     {
       selector: 'node',
       css: {
-        'background-color': 'blue'
+        'background-color': 'green'
       }
     }
 
@@ -41,13 +54,15 @@ cy.style()
   ])
 
   .update() // update the elements in the graph with the new style
-  ```
+;
+```
 
 You can also set the style from a style string (that you would probably pull from a file on your server):
 
 ```js
 cy.style()
-  .fromString('node { background-color: blue; }')
+  .fromString('node { background-color: yellow; }')
 
   .update() // update the elements in the graph with the new style
-  ```
+;
+```

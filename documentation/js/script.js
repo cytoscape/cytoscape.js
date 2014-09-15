@@ -1,3 +1,5 @@
+window.isTouchDevice = cytoscape.is.touch(); // for init docs
+
 $(function(){
 
   setTimeout(function(){
@@ -73,7 +75,7 @@ $(function(){
   for( var i = 0; i < $codes.length; i++ ){
     var $code = $( $codes[i] );
     var $parent = $code.parent();
-    var $button = $('<button class="run"><span class="icon-play"></span> Run code</button>');
+    var $button = $('<button class="run"><span class="icon-play"></span></button>');
     var text = $code.text();
 
     $parent.before( $button );
@@ -81,8 +83,14 @@ $(function(){
     (function(text){
       $button.on('click', function(){
         showCy();
+
+        var $title = $('#cy-title');
+        var $content = $title.find('.content');
         
-        $('#cy-title .content').html( text ).hide().fadeIn(100).delay(250).hide(200, function(){
+        $content.html( text );
+        $title.show();
+
+        $content.hide().fadeIn(100).delay(250).hide(200, function(){
           var ret = eval( text );
           
           if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
@@ -117,6 +125,7 @@ $(function(){
               
               .delay(delay, function(){
                 ret.removeCss();
+                $title.hide();
               })
             ;
 

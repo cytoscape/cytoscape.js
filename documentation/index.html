@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)">
+		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -24,13 +24,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery 1.4+, and plain JavaScript)</span><span class="version">unstable</span></h1>
-			<div class="subtitle">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> 1.4+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)</span><span class="version">2.3-beta</span></h1>
+			<div class="subtitle">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-unstable.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.3-beta.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -302,7 +302,7 @@ cy = cytoscape( options = {
 <p>The library was developed at the <a href="http://thedonnellycentre.utoronto.ca">Donnelly Centre</a> at the <a href="http://www.utoronto.ca/">University of Toronto</a>.  It is the successor of <a href="http://cytoscapeweb.cytoscape.org/">Cytoscape Web</a>.</p>
 <h2 id="introduction/cytoscape.js-amp-cytoscape">Cytoscape.js &amp; Cytoscape <a href="#introduction/cytoscape.js-amp-cytoscape"><span class="icon-bookmark"></span></a></h2>
 <p>Though Cytoscape.js shares its name with <a href="http://www.cytoscape.org/">Cytoscape</a>, Cytoscape.js is not exactly the same as Cytoscape desktop.  Cytoscape.js is a JavaScript library for <em>programmers</em>.  It is not an app for end-users, and developers need to write code around Cytoscape.js to build graphcentric webapps.</p>
-<p>Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java<em>Script</em>.  However, Cytoscape.js supports its own ecosystem of UI plugins and API extensions.</p>
+<p>Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your webapp with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins/apps &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java<em>Script</em>.  However, Cytoscape.js supports its own ecosystem of UI plugins and API extensions.</p>
 <p>We are trying to make the two projects intercompatible as possible, and we do share philosophies with Cytoscape:  Graph style and data should be separate, the library should provide core functionality with extensions adding functionality on top of the library, and so on.</p>
 <h2 id="introduction/funding">Funding <a href="#introduction/funding"><span class="icon-bookmark"></span></a></h2>
 <p>Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:</p>
@@ -345,6 +345,7 @@ cy = cytoscape( options = {
 <h2 id="notation/architecture-amp-api">Architecture &amp; API <a href="#notation/architecture-amp-api"><span class="icon-bookmark"></span></a></h2>
 <p>There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core (i.e. a graph instance) and the collection.  In Cytoscape.js, the core is a developer&#39;s main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.</p>
 <p>The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.</p>
+<p><span class="important-indicator"></span> Note that a collection is immutible by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.</p>
 <h2 id="notation/functions">Functions <a href="#notation/functions"><span class="icon-bookmark"></span></a></h2>
 <p>There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below:</p>
 <table>
@@ -534,7 +535,7 @@ cy = cytoscape( options = {
 <p>To use Cytoscape.js in your HTML document:</p>
 <pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"cytoscape.js"</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
 </code></pre>
-<p><span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js scripts.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</p>
+<p><span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</p>
 <p><span class="important-indicator"></span> Also note that you should call <a href="#core/viewport-manipulation/cy.resize"><code>cy.resize()</code></a> when your code resizes the viewport.</p>
 <p>To install Cytoscape.js via npm:</p>
 <pre><code>npm <span class="hljs-keyword">install</span> cytoscape
@@ -549,7 +550,7 @@ cy = cytoscape( options = {
 </code></pre>
 <h3 id="getting-started">Getting started</h3>
 <p>An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:</p>
-<pre><code class="lang-js">cytoscape({
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
   container: document.getElementById(<span class="hljs-string">'cy'</span>),
   ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span> console.log(<span class="hljs-string">'ready'</span>) }
 });
@@ -580,89 +581,52 @@ cy = cytoscape( options = {
 <p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the <a href="#notation/elements-json">elements JSON</a> and use the <code>preset</code> layout &mdash; which does nothing by default.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
-<p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.</p>
-<pre><code class="lang-js">cytoscape({
-  headless: <span class="hljs-literal">false</span>,
+<p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.  Environments outside the browser (e.g. Node.js) are automatically set as headless for convenience.</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
+  <span class="hljs-comment">// very commonly used options:</span>
   container: <span class="hljs-literal">undefined</span>, 
-  selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
+  elements: [ <span class="hljs-comment">/* ... */</span> ],
+  style: [ <span class="hljs-comment">/* ... */</span> ],
   layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
+
+  <span class="hljs-comment">// initial viewport state:</span>
   zoom: <span class="hljs-number">1</span>,
+  pan: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> },
+
+  <span class="hljs-comment">// interaction options:</span>
   minZoom: <span class="hljs-number">1e-50</span>,
   maxZoom: <span class="hljs-number">1e50</span>,
   zoomingEnabled: <span class="hljs-literal">true</span>,
   userZoomingEnabled: <span class="hljs-literal">true</span>,
-  pan: { x: <span class="hljs-number">0</span>, y: <span class="hljs-number">0</span> },
   panningEnabled: <span class="hljs-literal">true</span>,
   userPanningEnabled: <span class="hljs-literal">true</span>,
-  autoungrabifyNodes: <span class="hljs-literal">false</span>,
+  selectionType: (isTouchDevice ? <span class="hljs-string">'additive'</span> : <span class="hljs-string">'single'</span>),
+  autolock: <span class="hljs-literal">false</span>,
+  autoungrabify: <span class="hljs-literal">false</span>,
+  autounselectify: <span class="hljs-literal">false</span>,
+
+  <span class="hljs-comment">// rendering options:</span>
+  headless: <span class="hljs-literal">false</span>,
+  styleEnabled: <span class="hljs-literal">true</span>,
   hideEdgesOnViewport: <span class="hljs-literal">false</span>,
   hideLabelsOnViewport: <span class="hljs-literal">false</span>,
   textureOnViewport: <span class="hljs-literal">false</span>,
   motionBlur: <span class="hljs-literal">false</span>,
   wheelSensitivity: <span class="hljs-number">1</span>,
   pixelRatio: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// auto based on screen</span>
-  renderer: { <span class="hljs-comment">/* ... */</span> },
-  style: <span class="hljs-literal">undefined</span> <span class="hljs-comment">/* ... */</span>,
-  styleEnabled: isHeadless ? <span class="hljs-literal">false</span> : <span class="hljs-literal">true</span>,
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
   initrender: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span>{</span> <span class="hljs-comment">/* ... */</span> },
-  elements: [ <span class="hljs-comment">/* ... */</span> ]
+  renderer: { <span class="hljs-comment">/* ... */</span> }
 });
 </code></pre>
-<p><strong><code>headless</code></strong> : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set <code>headless: true</code> if you want a headless instance in a browser.</p>
+<h3 id="very-commonly-used-options">Very commonly used options</h3>
 <p><strong><code>container</code></strong> : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).</p>
-<p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&#39;additive&#39;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&#39;single&#39;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
-<p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout&#39;s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in <code>options.elements</code> at initialisation time).</p>
-<p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
-<p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.</p>
-<p><strong><code>userZoomingEnabled</code></strong> : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.</p>
-<p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied. </p>
-<p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.</p>
-<p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
-<p><strong><code>autoungrabifyNodes</code></strong> : Whether nodes should be ungrabified (not grabbable by user) by default (if <code>true</code>, overrides individual node state).</p>
-<p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
-<p><strong><code>hideLabelsOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
-<p><strong><code>textureOnViewport</code></strong> : When set to <code>true</code>, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.</p>
-<p><strong><code>motionBlur</code></strong> : When set to <code>true</code>, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.</p>
-<p><strong><code>wheelSensitivity</code></strong> : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).</p>
-<p><strong><code>pixelRatio</code></strong> : Overrides the screen pixel ratio with a manually set value (<code>1</code> recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered.</p>
-<p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:</p>
-<ul>
-<li><strong><code>renderer.name</code></strong> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
-</ul>
-<p><strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the document.</p>
-<p>For example:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
-  <span class="hljs-comment">/* ... */</span>
-
-  <span class="hljs-comment">// could be JSON, functional style, or string (probably pulled from a file)</span>
-  style: [
-    { 
-      selector: <span class="hljs-string">'node'</span>,
-      css: {
-        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>,
-        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#ffff00'</span>
-      }
-    },  
-
-    { 
-      selector: <span class="hljs-string">'edge'</span>,
-      css: {
-        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'blue'</span>
-      }
-    }
-  ]
-
-  <span class="hljs-comment">/* ... */</span>
-});
-</code></pre>
-<p><strong><code>styleEnabled</code></strong> : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary &mdash; thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.</p>
-<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.</p>
-<p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.</p>
 <p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.</p>
 <p>For example:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
   <span class="hljs-comment">/* ... */</span>
+
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
   elements: [
     {
@@ -699,8 +663,10 @@ cy = cytoscape( options = {
 });
 </code></pre>
 <p>You can alternatively specify separate arrays indexed in a object by the group names so you don&#39;t have to specify the <code>group</code> property over and over for each element:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
   <span class="hljs-comment">/* ... */</span>
+
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
 
   elements: {
     nodes: [
@@ -731,6 +697,64 @@ cy = cytoscape( options = {
   <span class="hljs-comment">/* ... */</span>
 });
 </code></pre>
+<p><strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the document.</p>
+<p>For example:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
+  <span class="hljs-comment">/* ... */</span>
+
+  container: document.getElementById(<span class="hljs-string">'cy'</span>),
+
+  <span class="hljs-comment">// could be JSON, functional style, or string (probably pulled from a file)</span>
+  style: [
+    { 
+      selector: <span class="hljs-string">'node'</span>,
+      css: {
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>,
+        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#ffff00'</span>
+      }
+    },  
+
+    { 
+      selector: <span class="hljs-string">'edge'</span>,
+      css: {
+        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'blue'</span>
+      }
+    }
+  ]
+
+  <span class="hljs-comment">/* ... */</span>
+});
+</code></pre>
+<p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout&#39;s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in <code>options.elements</code> at initialisation time).</p>
+<p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.</p>
+<h3 id="initial-viewport-state">Initial viewport state</h3>
+<p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
+<p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.</p>
+<h3 id="interaction-options-">Interaction options:</h3>
+<p><strong><code>minZoom</code></strong> : A minimum bound on the zoom level of the graph.  The viewport can not be scaled smaller than this zoom level.</p>
+<p><strong><code>maxZoom</code></strong> : A maximum bound on the zoom level of the graph.  The viewport can not be scaled larger than this zoom level.</p>
+<p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.</p>
+<p><strong><code>userZoomingEnabled</code></strong> : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option. </p>
+<p><strong><code>panningEnabled</code></strong> : Whether panning the graph is enabled, both by user events and programmatically.</p>
+<p><strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
+<p><strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, <code>&#39;additive&#39;</code> is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, <code>&#39;single&#39;</code> is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
+<p><strong><code>autoungrabify</code></strong> : Whether nodes should be ungrabified (not grabbable by user) by default (if <code>true</code>, overrides individual node state).</p>
+<p><strong><code>autolock</code></strong> : Whether nodes should be locked (not movable at all) by default (if <code>true</code>, overrides individual node state).</p>
+<p><strong><code>autounselectify</code></strong> : Whether nodes should be unselectified (immutible selection state) by default (if <code>true</code>, overrides individual element state).</p>
+<h2 id="initialisation/rendering-options">Rendering options <a href="#initialisation/rendering-options"><span class="icon-bookmark"></span></a></h2>
+<p><strong><code>headless</code></strong> : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set <code>headless: true</code> if you want a headless instance in a browser.</p>
+<p><strong><code>styleEnabled</code></strong> : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary &mdash; thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.</p>
+<p><strong><code>hideEdgesOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
+<p><strong><code>hideLabelsOnViewport</code></strong> : When set to <code>true</code>, the renderer does not render labels while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.</p>
+<p><strong><code>textureOnViewport</code></strong> : When set to <code>true</code>, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.</p>
+<p><strong><code>motionBlur</code></strong> : When set to <code>true</code>, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.</p>
+<p><strong><code>wheelSensitivity</code></strong> : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).</p>
+<p><strong><code>pixelRatio</code></strong> : Overrides the screen pixel ratio with a manually set value (<code>1</code> recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered.</p>
+<p><strong><code>initrender</code></strong> : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use <code>ready</code> instead.</p>
+<p><strong><code>renderer</code></strong> : A plain object containing options for the renderer to be used.  The <code>options.renderer.name</code> field specifies which renderer is used.  You need not specify anything for the <code>renderer</code> option, unless you want to specify one of the rendering options below:</p>
+<ul>
+<li><strong><code>renderer.name</code></strong> : The name of the renderer to use.  By default, the <code>&#39;canvas&#39;</code> renderer is used.  If you <a href="#extensions">build and register</a> your own renderer, then you can specify its name here.</li>
+</ul>
 
 					
 
@@ -3054,7 +3078,7 @@ cy.zoom({
 							
 							
 							
-							<div class="descr"><p>Get whether the core is currently being animated.</p>
+							<div class="descr"><p>Get whether the viewport is currently being animated.</p>
 </div>
 
 							
@@ -3069,7 +3093,7 @@ cy.zoom({
 							
 							
 							
-							<div class="descr"><p>Animate the core.</p>
+							<div class="descr"><p>Animate the viewport.</p>
 </div>
 
 							
@@ -3257,7 +3281,7 @@ cy.animate({
 							
 							
 							
-							<div class="descr"><p>Add a delay between animations for the core.</p>
+							<div class="descr"><p>Add a delay between animations for the viewport.</p>
 </div>
 
 							
@@ -3304,7 +3328,7 @@ cy.animate({
 							
 							
 							
-							<div class="descr"><p>Stop all core animations that are currently running.</p>
+							<div class="descr"><p>Stop all viewport animations that are currently running.</p>
 </div>
 
 							
@@ -3351,7 +3375,7 @@ cy.animate({
 							
 							
 							
-							<div class="descr"><p>Remove all queued animations for the core.</p>
+							<div class="descr"><p>Remove all queued animations for the viewport.</p>
 </div>
 
 							
@@ -3423,7 +3447,7 @@ cy.animate({
 							
 							
 							
-							<div class="descr"><p>Initialise a layout, which can be used to algorithmically positions the nodes in the graph.</p>
+							<div class="descr"><p>Get a new layout, which can be used to algorithmically positions the nodes in the graph.</p>
 </div>
 
 							
@@ -3454,8 +3478,15 @@ cy.animate({
 							<div class="details">
 								
 									<p>You must specify <code>options.name</code> with the name of the layout you wish to use.</p>
-<p>This function creates and returns a layout object.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously. </p>
+<p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously. </p>
 <p><span class="important-indicator"></span> Note that you must call <code>.run()</code> on a layout in order for it to affect the graph.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> layout = cy.makeLayout({
+  name: <span class="hljs-string">'random'</span>
+});
+
+layout.run();
+</code></pre>
 
 								
 							</div>		
@@ -3526,6 +3557,17 @@ cy.style( stringStylesheet );
   <span class="hljs-comment">// ...</span>
 
   .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
+;
+</code></pre>
+<p>You can also add to the existing stylesheet:</p>
+<pre><code class="lang-js">cy.style()
+  .selector(<span class="hljs-string">'node'</span>)
+    .css({
+      <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>
+    })
+
+  .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
+;
 </code></pre>
 <p>You can also set the style from plain JSON:</p>
 <pre><code class="lang-js">cy.style()
@@ -3533,7 +3575,7 @@ cy.style( stringStylesheet );
     {
       selector: <span class="hljs-string">'node'</span>,
       css: {
-        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'blue'</span>
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'green'</span>
       }
     }
 
@@ -3541,12 +3583,14 @@ cy.style( stringStylesheet );
   ])
 
   .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
+;
 </code></pre>
 <p>You can also set the style from a style string (that you would probably pull from a file on your server):</p>
 <pre><code class="lang-js">cy.style()
-  .fromString(<span class="hljs-string">'node { background-color: blue; }'</span>)
+  .fromString(<span class="hljs-string">'node { background-color: yellow; }'</span>)
 
   .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
+;
 </code></pre>
 
 								
@@ -3810,7 +3854,7 @@ eles.restore();
 															<li>
 																<span class="name">source</span>
 																 
-																<span class="descr"><p>The new source node ID.</p>
+																<span class="descr"><p>The ID of the new source node.</p>
 </span>
 															</li>
 
@@ -3819,7 +3863,7 @@ eles.restore();
 															<li>
 																<span class="name">target</span>
 																 
-																<span class="descr"><p>The new target node ID.</p>
+																<span class="descr"><p>The ID of the new target node.</p>
 </span>
 															</li>
 
@@ -3852,7 +3896,7 @@ eles.restore();
 															<li>
 																<span class="name">parent</span>
 																 
-																<span class="descr"><p>The new parent node ID (use <code>null</code> for no parent).</p>
+																<span class="descr"><p>The ID of the new parent node (use <code>null</code> for no parent).</p>
 </span>
 															</li>
 
@@ -3879,6 +3923,12 @@ eles.restore();
 <li>adds new elements from the JSON copies.</li>
 </ul>
 <p>This creates the same effect as though the elements have been moved.</p>
+<h3 id="examples">Examples</h3>
+<p>Move an edge:</p>
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'#ej'</span>).move({
+  target: <span class="hljs-string">'g'</span>
+})
+</code></pre>
 
 								
 							</div>		
@@ -8640,10 +8690,11 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>Two edges are said to be parallel if they connect the same two nodes.  That is,</p>
+<p>Two edges are said to be parallel if they connect the same two nodes.  Any two parallel edges may connect nodes in the same direction, in which case the edges share the same source and target.  They may alternatively connect nodes in the opposite direction, in which case the source and target are reversed in the second edge.</p>
+<p>That is,</p>
 <ul>
 <li><code>edge1.source().id() === edge2.source().id() &amp;&amp; edge1.target().id() === edge2.target().id()</code> or </li>
-<li><code>edge1.source().id() === edge2.target().id() &amp;&amp; edge1.target().id() === edge2.source().id()</code>.</li>
+<li><code>edge1.source().id() === edge2.target().id() &amp;&amp; edge1.target().id() === edge2.source().id()</code>. </li>
 </ul>
 
 								
@@ -8686,7 +8737,8 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>Two edges are said to be codirected if they connect the same two nodes in the same direction.  That is, <code>edge1.source().id() === edge2.source().id() &amp;&amp; edge1.target().id() === edge2.target().id()</code>.</p>
+<p>Two edges are said to be codirected if they connect the same two nodes in the same direction: The edges have the same source and target.</p>
+<p>That is, <code>edge1.source().id() === edge2.source().id() &amp;&amp; edge1.target().id() === edge2.target().id()</code>.</p>
 
 								
 							</div>		
@@ -9432,12 +9484,13 @@ path.select();
 									<h3 id="details">Details</h3>
 <p>Note that this function performs Dijkstra&#39;s algorithm on only the subset of the graph in the calling collection.</p>
 <p>This function returns an object of the following form:</p>
-<pre><code>{
+<pre><code class="lang-js">{
   distanceTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span>{</span> <span class="hljs-comment">/* impl */</span> }
   pathTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span>{</span> <span class="hljs-comment">/* impl */</span> }
 }
-</code></pre><p><code>distanceTo(node)</code> returns the distance from the source node to <code>node</code>, and <code>pathTo(node)</code> returns a collection containing the shortest path from the source node to <code>node</code>.  The path starts with the source node and includes the edges between the nodes in the path such that if <code>pathTo(node)[i]</code> is an edge, then <code>pathTo(node)[i-1]</code> is the previous node in the path and <code>pathTo(node)[i+1]</code> is the next node in the path.</p>
-<p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
+</code></pre>
+<p><code>distanceTo(node)</code> returns the distance from the source node to <code>node</code>, and <code>pathTo(node)</code> returns a collection containing the shortest path from the source node to <code>node</code>.  The path starts with the source node and includes the edges between the nodes in the path such that if <code>pathTo(node)[i]</code> is an edge, then <code>pathTo(node)[i-1]</code> is the previous node in the path and <code>pathTo(node)[i+1]</code> is the next node in the path.</p>
+<p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> dijkstra = cy.elements().dijkstra(<span class="hljs-string">'#e'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span>{</span>
   <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.data(<span class="hljs-string">'weight'</span>);
@@ -9445,6 +9498,111 @@ path.select();
 
 <span class="hljs-keyword">var</span> pathToJ = dijkstra.pathTo( cy.$(<span class="hljs-string">'#j'</span>) );
 <span class="hljs-keyword">var</span> distToJ = dijkstra.distanceTo( cy.$(<span class="hljs-string">'#j'</span>) );
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/algorithms/eles.aStar"><span class="fn-name">eles.aStar()</span>  <a href="#collection/algorithms/eles.aStar"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Perform the A* search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.aStar( <span class="comma">, </span>options )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">options</span>
+													 
+													<span class="descr"></span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name"><a href="#collection">root</a></span>
+																 
+																<span class="descr"><p>The root node (selector or collection) where the search starts.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">weight: function(edge)</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">heuristic: function(node)</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (<code>this</code>) node to the goal.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">directed</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">goal</span>
+																 
+																<span class="descr"><p>The goal node (selector or collection) where the search ends.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>Note that this function performs A* search on only the subset of the graph in the calling collection.</p>
+<p>This function returns an object of the following form:</p>
+<pre><code class="lang-js">{
+  found, <span class="hljs-comment">/* true or false */</span>
+  distance, <span class="hljs-comment">/* Distance of the shortest path, if found */</span>
+  path <span class="hljs-comment">/* Array of node ids in the shortest path, if found */</span>
+}
+</code></pre>
+<p>Regarding optional options:</p>
+<ul>
+<li>If no weight function is defined, a constant weight of 1 is used for each edge. </li>
+<li>If no heuristic function is provided, a constant null function will be used, turning this into the same behaviour as Dijkstra&#39;s algorithm. The heuristic should be monotonic (also called consistent) in addition to being &#39;admissible&#39;.</li>
+</ul>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> aStar = cy.elements().aStar({ root: <span class="hljs-string">"#j"</span>, goal: <span class="hljs-string">"#e"</span> });
 </code></pre>
 
 								
@@ -9464,13 +9622,13 @@ path.select();
 								
 									<div class="format">
 										
-											<div class="name">eles.kruskal(  [<span class="comma">, </span>function()] )</div>
+											<div class="name">eles.kruskal(  [<span class="comma">, </span>function(edge)] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name">function()</span>
+													<span class="name">function(edge)</span>
 													<span class="optional">[optional]</span> 
 													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
 </span>
@@ -9497,104 +9655,6 @@ path.select();
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/algorithms/eles.aStar"><span class="fn-name">eles.aStar()</span>  <a href="#collection/algorithms/eles.aStar"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Perform A Star search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.aStar( <span class="comma">, </span>root [<span class="comma">, </span>function()] [<span class="comma">, </span>function()] [<span class="comma">, </span>directed]<span class="comma">, </span>goal )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#collection">root</a></span>
-													 
-													<span class="descr"><p>The root node (selector or collection) where the search starts.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function()</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function()</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (<code>this</code>) node to the goal.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">directed</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">goal</span>
-													 
-													<span class="descr"><p>The goal node (selector or collection) where the search ends.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>Note that this function performs <code>A Star</code> search on only the subset of the graph in the calling collection.</p>
-<p>This function returns an object of the following form:</p>
-<pre><code>{
-  found, /* <span class="hljs-constant">true</span> <span class="hljs-keyword">or</span> <span class="hljs-constant">false</span> */
-  distance, /* Distance <span class="hljs-keyword">of</span> <span class="hljs-keyword">the</span> shortest path, <span class="hljs-keyword">if</span> found */
-  path /* Array <span class="hljs-keyword">of</span> node ids <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> shortest path, <span class="hljs-keyword">if</span> found */
-}
-</code></pre><p>the function receives an &quot;options&quot; object as argument, which has the following form:</p>
-<pre><code>{
-  root, /* Mandatory. Starting node, wither object <span class="hljs-keyword">or</span> selector <span class="hljs-built_in">string</span> */
-  weight, /* Optional. Weight <span class="hljs-keyword">function</span> */
-  heuristic, /* Optional. Heuristic <span class="hljs-keyword">function</span> <span class="hljs-keyword">to</span> guide search */
-  directed, /* Optional. Whether consider this a directed (<span class="hljs-literal">true</span>) <span class="hljs-keyword">or</span> undirected graph (<span class="hljs-literal">false</span>) */
-  goal /* Mandatory. Node <span class="hljs-keyword">to</span> search <span class="hljs-keyword">for</span> a path <span class="hljs-keyword">to</span>. Either object <span class="hljs-keyword">or</span> selector <span class="hljs-built_in">string</span>. */
-}
-</code></pre><p>If no weight function is defined, a constance weight of 1 is used for each edge. 
-If no heuristic function is provided, a constant null function will be used, turning this into the same behaviour as Dijkstra&#39;s algorithm. Heuristic should be monotonic (also called consistent) in addition of being &#39;admissible&#39;.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> options = {root: <span class="hljs-string">"#1"</span>, goal: <span class="hljs-string">"#2"</span>};
-<span class="hljs-keyword">var</span> res = cy.elements().aStar(options);
-</code></pre>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
 							<div class="name" id="collection/algorithms/eles.floydWarshall"><span class="fn-name">eles.floydWarshall()</span>  <a href="#collection/algorithms/eles.floydWarshall"><span class="icon-bookmark"></span></a></div>
 							
 							
@@ -9607,26 +9667,38 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<div class="format">
 										
-											<div class="name">eles.floydWarshall(  [<span class="comma">, </span>function()] [<span class="comma">, </span>directed] )</div>
+											<div class="name">eles.floydWarshall( <span class="comma">, </span>options )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name">function()</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
-</span>
+													<span class="name">options</span>
+													 
+													<span class="descr"></span>
 
 													
-												</li>
-											
-												<li>
-													<span class="name">directed</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+													<ul class="fields">
+														
+															<li>
+																<span class="name">weight: function(edge)</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
 </span>
+															</li>
 
+															
+														
+															<li>
+																<span class="name">directed</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
 													
 												</li>
 											
@@ -9640,18 +9712,14 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
-<pre><code>{
-  pathTo, /* function <span class="hljs-keyword">that</span> computes <span class="hljs-keyword">the</span> shortest path <span class="hljs-keyword">between</span> <span class="hljs-number">2</span> nodes (either objects <span class="hljs-keyword">or</span> selector strings) */
-  distanceTo /* function <span class="hljs-keyword">that</span> computes <span class="hljs-keyword">the</span> shortest distance <span class="hljs-keyword">between</span> <span class="hljs-number">2</span> nodes (either objects <span class="hljs-keyword">or</span> selector strings) */
+<pre><code class="lang-js">{
+  pathTo, <span class="hljs-comment">/* function that computes the shortest path between 2 nodes (either objects or selector strings) */</span>
+  distanceTo <span class="hljs-comment">/* function that computes the shortest distance between 2 nodes (either objects or selector strings) */</span>
 }
-</code></pre><p>the function receives an &quot;options&quot; object as argument, which has the following form:</p>
-<pre><code>{
-  weight, /* Optional. Weight <span class="hljs-function"><span class="hljs-keyword">function</span> */
-  <span class="hljs-title">directed</span> /* <span class="hljs-title">Optional</span>. <span class="hljs-title">Whether</span> <span class="hljs-title">consider</span> <span class="hljs-title">this</span> <span class="hljs-title">a</span> <span class="hljs-title">directed</span> <span class="hljs-params">(true)</span></span> <span class="hljs-keyword">or</span> undirected graph (<span class="hljs-keyword">false</span>) */
-}
-</code></pre><p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
+</code></pre>
+<p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> res = cy.elements().floydWarshall({});
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> fw = cy.elements().floydWarshall();
 </code></pre>
 
 								
@@ -9671,35 +9739,47 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<div class="format">
 										
-											<div class="name">eles.bellmanFord( <span class="comma">, </span>root [<span class="comma">, </span>function()] [<span class="comma">, </span>directed] )</div>
+											<div class="name">eles.bellmanFord( <span class="comma">, </span>options )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name"><a href="#collection">root</a></span>
+													<span class="name">options</span>
 													 
-													<span class="descr"><p>The root node (selector or collection) where the search starts.</p>
-</span>
+													<span class="descr"></span>
 
 													
-												</li>
-											
-												<li>
-													<span class="name">function()</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
+													<ul class="fields">
+														
+															<li>
+																<span class="name"><a href="#collection">root</a></span>
+																 
+																<span class="descr"><p>The root node (selector or collection) where the search starts.</p>
 </span>
+															</li>
 
-													
-												</li>
-											
-												<li>
-													<span class="name">directed</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+															
+														
+															<li>
+																<span class="name">function()</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
 </span>
+															</li>
 
+															
+														
+															<li>
+																<span class="name">directed</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
 													
 												</li>
 											
@@ -9713,21 +9793,15 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
-<pre><code>{
-  pathTo, /* function <span class="hljs-keyword">that</span> computes <span class="hljs-keyword">the</span> shortest path <span class="hljs-keyword">from</span> root node <span class="hljs-keyword">to</span> <span class="hljs-keyword">the</span> argument node (either objects <span class="hljs-keyword">or</span> selector <span class="hljs-type">string</span>) */
-  distanceTo, /* function <span class="hljs-keyword">that</span> computes <span class="hljs-keyword">the</span> shortest distance <span class="hljs-keyword">from</span> root node <span class="hljs-keyword">to</span> argument node (either objects <span class="hljs-keyword">or</span> selector <span class="hljs-type">string</span>) */
-  hasNegativeWeightCycle /* <span class="hljs-constant">true</span>/<span class="hljs-constant">false</span>. If <span class="hljs-constant">true</span>, pathTo <span class="hljs-keyword">and</span> distanceTo will be undefined */
+<pre><code class="lang-js">{
+  pathTo, <span class="hljs-comment">/* function that computes the shortest path from root node to the argument node (either objects or selector string) */</span>
+  distanceTo, <span class="hljs-comment">/* function that computes the shortest distance from root node to argument node (either objects or selector string) */</span>
+  hasNegativeWeightCycle <span class="hljs-comment">/* true/false. If true, pathTo and distanceTo will be undefined */</span>
 }
-</code></pre><p>the function receives an &quot;options&quot; object as argument, which has the following form:</p>
-<pre><code>{
-  root, /* Mandatory. Starting node */
-  weight, /* Optional. Weight <span class="hljs-function"><span class="hljs-keyword">function</span> */
-  <span class="hljs-title">directed</span> /* <span class="hljs-title">Optional</span>. <span class="hljs-title">Whether</span> <span class="hljs-title">consider</span> <span class="hljs-title">this</span> <span class="hljs-title">a</span> <span class="hljs-title">directed</span> <span class="hljs-params">(true)</span></span> <span class="hljs-keyword">or</span> undirected graph (<span class="hljs-keyword">false</span>) */,
-}
-</code></pre><p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
+</code></pre>
+<p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> options = {root: <span class="hljs-string">"#1"</span>};
-<span class="hljs-keyword">var</span> res = cy.elements().bellmanFord(options);
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> bf = cy.elements().bellmanFord({ root: <span class="hljs-string">"j"</span> };
 </code></pre>
 
 								
@@ -9739,7 +9813,7 @@ If no heuristic function is provided, a constant null function will be used, tur
 							
 							
 							
-							<div class="descr"><p>Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but there&#39;s no warranty about it.</p>
+							<div class="descr"><p>Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.</p>
 </div>
 
 							
@@ -9762,14 +9836,14 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
-<pre><code>{
-  cut, /* List <span class="hljs-keyword">of</span> edge ids <span class="hljs-keyword">that</span> are <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> cut*/
-  partition1, /* List <span class="hljs-keyword">of</span> node ids <span class="hljs-keyword">that</span> are <span class="hljs-keyword">in</span> one partition */
-  partition2 /* List <span class="hljs-keyword">of</span> node ids <span class="hljs-keyword">that</span> are <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> other partition*/
+<pre><code class="lang-js">{
+  cut, <span class="hljs-comment">/* List of edge ids that are in the cut*/</span>
+  partition1, <span class="hljs-comment">/* List of node ids that are in one partition */</span>
+  partition2 <span class="hljs-comment">/* List of node ids that are in the other partition*/</span>
 }
-</code></pre><p>the function does not require any arguments.</p>
+</code></pre>
 <h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> res = cy.elements().kargerStein();
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> ks = cy.elements().kargerStein();
 </code></pre>
 
 								
@@ -9789,35 +9863,47 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<div class="format">
 										
-											<div class="name">eles.pageRank(  [<span class="comma">, </span>dampingFactor] [<span class="comma">, </span>precision] [<span class="comma">, </span>iterations] )</div>
+											<div class="name">eles.pageRank( <span class="comma">, </span>options )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
 											
 												<li>
-													<span class="name">dampingFactor</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>Numeric parameter for the algorithm.</p>
-</span>
+													<span class="name">options</span>
+													 
+													<span class="descr"></span>
 
 													
-												</li>
-											
-												<li>
-													<span class="name">precision</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>Numeric parameter that represents the required precision.</p>
+													<ul class="fields">
+														
+															<li>
+																<span class="name">dampingFactor</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>Numeric parameter for the algorithm.</p>
 </span>
+															</li>
 
-													
-												</li>
-											
-												<li>
-													<span class="name">iterations</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>Maximum number of iterations to perform.</p>
+															
+														
+															<li>
+																<span class="name">precision</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>Numeric parameter that represents the required precision.</p>
 </span>
+															</li>
 
+															
+														
+															<li>
+																<span class="name">iterations</span>
+																<span class="optional">[optional]</span> 
+																<span class="descr"><p>Maximum number of iterations to perform.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
 													
 												</li>
 											
@@ -9831,17 +9917,12 @@ If no heuristic function is provided, a constant null function will be used, tur
 								
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
-<pre><code>{
-  rank /* function <span class="hljs-keyword">that</span> computes <span class="hljs-keyword">the</span> rank <span class="hljs-keyword">of</span> a <span class="hljs-keyword">given</span> node (either object <span class="hljs-keyword">or</span> selector <span class="hljs-type">string</span>) */
+<pre><code class="lang-js">{
+  rank <span class="hljs-comment">/* function that computes the rank of a given node (either object or selector string) */</span>
 }
-</code></pre><p>the function receives an &quot;options&quot; object as argument, which has the following form:</p>
-<pre><code>{
-  dampingFactor, <span class="hljs-comment">/* Optional */</span>
-  <span class="hljs-keyword">precision</span>, <span class="hljs-comment">/* Optional */</span>
-  iterations <span class="hljs-comment">/* Optional */</span>
-}
-</code></pre><h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> res = cy.elements().pageRank();
+</code></pre>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> pr = cy.elements().pageRank();
 </code></pre>
 
 								
@@ -10412,6 +10493,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li>Colours may be specified by name (e.g. <code>red</code>), hex (e.g. <code>#ff0000</code> or <code>#f00</code>), RGB (e.g. <code>rgb(255, 0, 0)</code>), or HSL (e.g. <code>hsl(0, 100%, 50%)</code>).</li>
 <li>Values requiring a number, such as a length, can be specified in pixel values (e.g. <code>24px</code>), unitless values that are implicitly in pixels (<code>24</code>), or em values (e.g. <code>2em</code>).</li>
 <li>Opacity values are specified as numbers ranging on <code>0 &lt;= opacity &lt;= 1</code>.</li>
+<li>Time is measured in units of ms or s.</li>
 </ul>
 <h2 id="style/mappers">Mappers <a href="#style/mappers"><span class="icon-bookmark"></span></a></h2>
 <p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
@@ -10471,6 +10553,13 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 </ul>
+<h1 id="visibility">Visibility</h1>
+<ul>
+<li><strong><code>display</code></strong> : Whether to display the element; may be <code>element</code> for displayed or <code>none</code> for not displayed.  Note that a <code>display: none</code> bezier edge does not take up space in its bundle.</li>
+<li><strong><code>visibility</code></strong> : Whether the element is visible; may be <code>visible</code> or <code>hidden</code>.  Note that a <code>visibility: hidden</code> bezier edge still takes up space in its bundle.</li>
+<li><strong><code>opacity</code></strong> : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.</li>
+<li><strong><code>z-index</code></strong> : An integer value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code>.  Note that edges are under nodes despite <code>z-index</code>, except when necessary for compound nodes.</li>
+</ul>
 <h2 id="style/edge-arrow">Edge arrow <a href="#style/edge-arrow"><span class="icon-bookmark"></span></a></h2>
 <p>Towards the source node:</p>
 <ul>
@@ -10500,15 +10589,21 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <ul>
 <li><strong><code>color</code></strong> :  The colour of the element&#39;s label.</li>
 <li><strong><code>content</code></strong> : The text to display for an element&#39;s label.</li>
-<li><strong><code>font-family</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_font-family.asp">comma-separated list of font names</a> to use on the label text.</li>
+<li><strong><code>font-family</code></strong> : A <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-family">comma-separated list of font names</a> to use on the label text.</li>
 <li><strong><code>font-size</code></strong> : The size of the label text.</li>
-<li><strong><code>font-style</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_font-style.asp">CSS font style</a> to be applied to the label text.</li>
-<li><strong><code>font-weight</code></strong> : A <a href="http://www.w3schools.com/cssref/pr_font_weight.asp">CSS font weight</a> to be applied to the label text.</li>
+<li><strong><code>font-style</code></strong> : A <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-style">CSS font style</a> to be applied to the label text.</li>
+<li><strong><code>font-weight</code></strong> : A <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight">CSS font weight</a> to be applied to the label text.</li>
+<li><strong><code>text-transform</code></strong> : A transformation to apply to the label text; may be <code>none</code>, <code>uppercase</code>, or <code>lowercase</code>.</li>
 <li><strong><code>text-opacity</code></strong> : The opacity of the label text, including its outline.</li>
 <li><strong><code>text-outline-color</code></strong> : The colour of the outline around the element&#39;s label text.</li>
 <li><strong><code>text-outline-opacity</code></strong> : The opacity of the outline on label text.</li>
 <li><strong><code>text-outline-width</code></strong> : The size of the outline on label text.</li>
-<li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</li>
+<li><p><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</p>
+<p>These properties can only be used on node labels:</p>
+</li>
+<li><p><strong><code>text-halign</code></strong> : The vertical alignment of a label; may have value <code>left</code>, <code>center</code>, or <code>right</code>.</p>
+</li>
+<li><strong><code>text-valign</code></strong> : The vertical alignment of a label; may have value <code>top</code>, <code>center</code>, or <code>bottom</code>.</li>
 </ul>
 <h2 id="style/overlay">Overlay <a href="#style/overlay"><span class="icon-bookmark"></span></a></h2>
 <p>These properties allow for the creation of overlays on top of nodes or edges, and are often used in the <code>:active</code> state.</p>
@@ -10521,7 +10616,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <ul>
 <li><strong><code>transition-property</code></strong> : A comma separated list of style properties to animate in this state.</li>
 <li><strong><code>transition-duration</code></strong> : The length of the transition in seconds (e.g. <code>0.5s</code>).</li>
-<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>0.25s</code>).</li>
+<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>250ms</code>).</li>
 </ul>
 <h2 id="style/core">Core <a href="#style/core"><span class="icon-bookmark"></span></a></h2>
 <p>These properties affect UI global to the graph, and apply only to the core.  You can use the special <code>core</code> selector string to set these properties.</p>
@@ -11191,7 +11286,7 @@ cy.layout( options );</code></pre>
 				
 
 					<div class="gallery-full-demo">			
-						<button class="run"><span class="icon-play"></span> Run code</button>
+						<button class="run"><span class="icon-play"></span></button>
 
 						<div class="gallery-full-padder"></div>
 
@@ -11973,9 +12068,9 @@ cy.elements().foo();
 					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.dijkstra"><span class="icon-bookmark bookmark-icon"></span> eles.dijkstra() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark bookmark-icon"></span> eles.kruskal() </a></div>
-					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.aStar"><span class="icon-bookmark bookmark-icon"></span> eles.aStar() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark bookmark-icon"></span> eles.kruskal() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.floydWarshall"><span class="icon-bookmark bookmark-icon"></span> eles.floydWarshall() </a></div>
 					

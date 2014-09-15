@@ -16,12 +16,12 @@
     
     initLayout: function( options ){
       if( options == null ){
-        $$.util.error('Layout options must be specified to run a layout');
+        $$.util.error('Layout options must be specified to make a layout');
         return;
       }
       
       if( options.name == null ){
-        $$.util.error('A `name` must be specified to run a layout');
+        $$.util.error('A `name` must be specified to make a layout');
         return;
       }
       
@@ -40,7 +40,6 @@
       }
       
       var layout = new LayoutProto( $$.util.extend({}, options, {
-        renderer: this._private.renderer,
         cy: this
       }) );
       

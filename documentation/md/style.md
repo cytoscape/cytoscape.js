@@ -87,6 +87,7 @@ cytoscape({
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
+ * Time is measured in units of ms or s.
  
 
 
@@ -168,6 +169,14 @@ These properties affect the styling of an edge's line:
 
 
 
+# Visibility
+
+* **`display`** : Whether to display the element; may be `element` for displayed or `none` for not displayed.  Note that a `display: none` bezier edge does not take up space in its bundle.
+* **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.  Note that a `visibility: hidden` bezier edge still takes up space in its bundle.
+* **`opacity`** : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.
+* **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
+
+
 ## Edge arrow
 
 Towards the source node:
@@ -199,15 +208,22 @@ Towards the target node, positioned in the middle of the edge:
 
  * **`color`** :  The colour of the element's label.
  * **`content`** : The text to display for an element's label.
- * **`font-family`** : A [comma-separated list of font names](http://www.w3schools.com/cssref/pr_font_font-family.asp) to use on the label text.
+ * **`font-family`** : A [comma-separated list of font names](https://developer.mozilla.org/en-US/docs/Web/CSS/font-family) to use on the label text.
  * **`font-size`** : The size of the label text.
- * **`font-style`** : A [CSS font style](http://www.w3schools.com/cssref/pr_font_font-style.asp) to be applied to the label text.
- * **`font-weight`** : A [CSS font weight](http://www.w3schools.com/cssref/pr_font_weight.asp) to be applied to the label text.
+ * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
+ * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
+ * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
  * **`text-opacity`** : The opacity of the label text, including its outline.
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
+
+ These properties can only be used on node labels:
+
+ * **`text-halign`** : The vertical alignment of a label; may have value `left`, `center`, or `right`.
+ * **`text-valign`** : The vertical alignment of a label; may have value `top`, `center`, or `bottom`.
+
 
 
 ## Overlay
@@ -224,7 +240,7 @@ These properties allow for the creation of overlays on top of nodes or edges, an
 
  * **`transition-property`** : A comma separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
- * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `0.25s`).
+ * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
 
 
 

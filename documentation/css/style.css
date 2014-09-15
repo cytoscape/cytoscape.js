@@ -46,6 +46,7 @@ img {
 	color: rgba(0, 0, 0, 0.5);
 	text-align: left;
 	font-family: Andale Mono, monospace;
+	display: none;
 }
 
 #cy-title pre {

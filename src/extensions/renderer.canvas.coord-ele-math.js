@@ -644,7 +644,7 @@
     var fStyle = style['font-style'].strValue;
     var size = style['font-size'].pxValue + 'px';
     var family = style['font-family'].strValue;
-    var variant = style['font-variant'].strValue;
+    // var variant = style['font-variant'].strValue;
     var weight = style['font-weight'].strValue;
 
     var rscratch = ele._private.rscratch;
@@ -668,7 +668,7 @@
     ds.fontFamily = family;
     ds.fontStyle = fStyle;
     ds.fontSize = size;
-    ds.fontVariant = variant;
+    // ds.fontVariant = variant;
     ds.fontWeight = weight;
 
     // forced style

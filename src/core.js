@@ -3,7 +3,6 @@
   var isTouch = $$.is.touch();
 
   var defaults = {
-    hideEdgesOnViewport: false
   };
   
   var origDefaults = $$.util.copy( defaults );

@@ -4,7 +4,7 @@
     
     style: function( newStyle ){
       if( newStyle ){
-        var s = this.assignStyle( newStyle );
+        var s = this.setStyle( newStyle );
 
         s.update();
       }

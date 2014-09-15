@@ -405,6 +405,44 @@ $(function(){
 				cy.style( stylesheet );
 			}
 		});
+
+		test({
+			name: "strStyle",
+			displayName: "Set a string stylesheet",
+			description: "Change the visual style and make sure it takes effect",
+			setup: function(){
+				cy.style('node { background-color: blue; }');
+			},
+
+			teardown: function(){
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
+			}
+		});
+
+		test({
+			name: "addStyle",
+			displayName: "Add to current stylesheet",
+			description: "Add to the visual style and make sure it takes effect",
+			setup: function(){
+				cy.style()
+					.selector('node')
+						.css({
+							'background-color': 'blue'
+						})
+						
+					.update()
+				;
+			},
+
+			teardown: function(){
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
+			}
+		});
+
 	});
 
 });

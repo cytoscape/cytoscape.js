@@ -1,6 +1,5 @@
 {
-  "version": "unstable",
-  "jqueryVersion": "1.4",
+  "version": "2.3-beta",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -622,12 +621,12 @@
           "fns": [
             {
               "name": "cy.animated",
-              "descr": "Get whether the core is currently being animated."
+              "descr": "Get whether the viewport is currently being animated."
             },
 
             {
               "name": "cy.animate",
-              "descr": "Animate the core.",
+              "descr": "Animate the viewport.",
               "formats": [
                 {
                   "args": [
@@ -674,7 +673,7 @@
 
             {
               "name": "cy.delay",
-              "descr": "Add a delay between animations for the core.",
+              "descr": "Add a delay between animations for the viewport.",
               "formats": [
                 {
                   "args": [
@@ -687,7 +686,7 @@
 
             {
               "name": "cy.stop",
-              "descr": "Stop all core animations that are currently running.",
+              "descr": "Stop all viewport animations that are currently running.",
               "formats": [
                 {
                   "args": [
@@ -700,7 +699,7 @@
 
             {
               "name": "cy.clearQueue",
-              "descr": "Remove all queued animations for the core."
+              "descr": "Remove all queued animations for the viewport."
             }
           ]
         },
@@ -727,7 +726,7 @@
 
             {
               "name": "cy.makeLayout",
-              "descr": "Initialise a layout, which can be used to algorithmically positions the nodes in the graph.",
+              "descr": "Get a new layout, which can be used to algorithmically positions the nodes in the graph.",
               "formats": [
                 {
                   "args": [
@@ -844,8 +843,8 @@
                     "name": "location",
                     "descr": "Where the edges are moved.  You can specify a new source, a new target, or both.",
                     "fields": [
-                      { "name": "source", "descr": "The new source node ID." },
-                      { "name": "target", "descr": "The new target node ID." }
+                      { "name": "source", "descr": "The ID of the new source node." },
+                      { "name": "target", "descr": "The ID of the new target node." }
                     ]
                   } ]
                 },
@@ -857,7 +856,7 @@
                     "name": "location",
                     "descr": "Where the nodes are moved.",
                     "fields": [
-                      { "name": "parent", "descr": "The new parent node ID (use `null` for no parent)." }
+                      { "name": "parent", "descr": "The ID of the new parent node (use `null` for no parent)." }
                     ]
                   } ]
                 }
@@ -2454,33 +2453,35 @@
             },
 
             {
+              "name": "eles.aStar",
+              "descr": "Perform the A* search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "heuristic: function(node)", "descr": "A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (`this`) node to the goal.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true },
+                      { "name": "goal", "descr": "The goal node (selector or collection) where the search ends." }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/aStar"
+            },
+
+            {
               "name": "eles.kruskal",
               "descr": "Perform Kruskal's algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
               "formats": [
                 {
                   "args": [
-                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
+                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
                   ]
                 }
               ],
               "md": "collection/kruskal"
-            },
-
-            {
-              "name": "eles.aStar",
-              "descr": "Perform A Star search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
-                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "function()", "descr": "A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (`this`) node to the goal.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true },
-                    { "name": "goal", "descr": "The goal node (selector or collection) where the search ends." }
-                  ]
-                }
-              ],
-              "md": "collection/aStar"
             },
 
             {
@@ -2489,12 +2490,14 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    { "name": "options", "fields": [
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
                   ]
                 }
               ],
-              "md": "collection/floydwarshall"
+              "md": "collection/floydWarshall"
             },
 
             {
@@ -2503,24 +2506,26 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
-                    { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
+                      { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
                   ]
                 }
               ],
-              "md": "collection/bellmanford"
+              "md": "collection/bellmanFord"
             }, 
 
             {
               "name": "eles.kargerStein",
-              "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but there's no warranty about it.",
+              "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
               "formats": [
                 {
                   "args": []
                 }
               ],
-              "md": "collection/kargerstein"
+              "md": "collection/kargerStein"
             }, 
 
             {
@@ -2528,14 +2533,16 @@
               "descr": "Rank the nodes in the collection using the Page Rank algorithm.",
               "formats": [
                 {
-                  "args": [
-                    { "name": "dampingFactor", "descr": "Numeric parameter for the algorithm.", "optional": true},
-                    { "name": "precision", "descr": "Numeric parameter that represents the required precision.", "optional": true },
-                    { "name": "iterations", "descr": "Maximum number of iterations to perform.", "optional": true }
+                  "args": [ 
+                    { "name": "options", "fields": [
+                      { "name": "dampingFactor", "descr": "Numeric parameter for the algorithm.", "optional": true},
+                      { "name": "precision", "descr": "Numeric parameter that represents the required precision.", "optional": true },
+                      { "name": "iterations", "descr": "Maximum number of iterations to perform.", "optional": true }
+                    ] }
                   ]
                 }
               ],
-              "md": "collection/pagerank"
+              "md": "collection/pageRank"
             }
 
           ]

@@ -3,6 +3,10 @@
 ;(function($$, window){ 'use strict';
 
   $$.is = {
+    defined: function(obj){
+      return obj != null; // not undefined or null
+    },
+
     string: function(obj){
       return obj != null && typeof obj == typeof '';
     },

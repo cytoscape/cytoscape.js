@@ -68,7 +68,7 @@
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
-      textTransform: { enums: ['none', 'capitalize', 'uppercase', 'lowercase'] },
+      textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
@@ -89,7 +89,7 @@
     // define visual style properties
     var t = $$.style.types;
     var props = $$.style.properties = [
-      // these are for elements
+      // labels
       { name: 'text-valign', type: t.valign },
       { name: 'text-halign', type: t.halign },
       { name: 'color', type: t.color },
@@ -98,29 +98,47 @@
       { name: 'text-outline-width', type: t.size },
       { name: 'text-outline-opacity', type: t.zeroOneNumber },
       { name: 'text-opacity', type: t.zeroOneNumber },
-      { name: 'text-decoration', type: t.textDecoration },
+      // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
+      // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
-      { name: 'font-variant', type: t.fontVariant },
+      // { name: 'font-variant', type: t.fontVariant }, // not useful
       { name: 'font-weight', type: t.fontWeight },
       { name: 'font-size', type: t.size },
       { name: 'min-zoomed-font-size', type: t.size },
+
+      // visibility
       { name: 'display', type: t.display },
       { name: 'visibility', type: t.visibility },
       { name: 'opacity', type: t.zeroOneNumber },
       { name: 'z-index', type: t.nonNegativeInt },
+
+      // overlays
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
+
+      // transition anis
       { name: 'transition-property', type: t.propList },
       { name: 'transition-duration', type: t.time },
       { name: 'transition-delay', type: t.time },
 
-      // these are just for nodes
-      { name: 'background-blacken', type: t.nOneOneNumber },
+      // node body
+      { name: 'height', type: t.autoSize },
+      { name: 'width', type: t.autoSize },
+      { name: 'shape', type: t.nodeShape },
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
+      { name: 'background-blacken', type: t.nOneOneNumber },
+
+      // node border
+      { name: 'border-color', type: t.color },
+      { name: 'border-opacity', type: t.zeroOneNumber },
+      { name: 'border-width', type: t.size },
+      { name: 'border-style', type: t.borderStyle },
+      
+      // node background images
       { name: 'background-image', type: t.url },
       { name: 'background-image-opacity', type: t.zeroOneNumber },
       { name: 'background-position-x', type: t.bgPos },
@@ -128,13 +146,6 @@
       { name: 'background-repeat', type: t.bgRepeat },
       { name: 'background-fit', type: t.bgFit },
       { name: 'background-clip', type: t.bgClip },
-      { name: 'border-color', type: t.color },
-      { name: 'border-opacity', type: t.zeroOneNumber },
-      { name: 'border-width', type: t.size },
-      { name: 'border-style', type: t.borderStyle },
-      { name: 'height', type: t.autoSize },
-      { name: 'width', type: t.autoSize },
-      { name: 'shape', type: t.nodeShape },
 
       // compound props
       { name: 'padding-left', type: t.size },
@@ -143,7 +154,16 @@
       { name: 'padding-bottom', type: t.size },
       { name: 'position', type: t.position },
 
-      // these are just for edges
+      // edge line
+      { name: 'line-style', type: t.lineStyle },
+      { name: 'line-color', type: t.color },
+      { name: 'control-point-step-size', type: t.size },
+      { name: 'control-point-distance', type: t.number },
+      { name: 'control-point-weight', type: t.zeroOneNumber },
+      { name: 'curve-style', type: t.curveStyle },
+      { name: 'haystack-radius', type: t.zeroOneNumber },
+
+      // edge arrows
       { name: 'source-arrow-shape', type: t.arrowShape },
       { name: 'target-arrow-shape', type: t.arrowShape },
       { name: 'mid-source-arrow-shape', type: t.arrowShape },
@@ -156,13 +176,6 @@
       { name: 'target-arrow-fill', type: t.arrowFill },
       { name: 'mid-source-arrow-fill', type: t.arrowFill },
       { name: 'mid-target-arrow-fill', type: t.arrowFill },
-      { name: 'line-style', type: t.lineStyle },
-      { name: 'line-color', type: t.color },
-      { name: 'control-point-step-size', type: t.size },
-      { name: 'control-point-distance', type: t.number },
-      { name: 'control-point-weight', type: t.zeroOneNumber },
-      { name: 'curve-style', type: t.curveStyle },
-      { name: 'haystack-radius', type: t.zeroOneNumber },
 
       // these are just for the core
       { name: 'selection-box-color', type: t.color },
@@ -204,7 +217,7 @@
     // delaying the read of these val's is not an opt'n: that would delay init'l load time
     var fontFamily = 'Helvetica' || this.containerPropertyAsString('font-family') || 'sans-serif';
     var fontStyle = 'normal' || this.containerPropertyAsString('font-style') || 'normal';
-    var fontVariant = 'normal' || this.containerPropertyAsString('font-variant') || 'normal';
+    // var fontVariant = 'normal' || this.containerPropertyAsString('font-variant') || 'normal';
     var fontWeight = 'normal' || this.containerPropertyAsString('font-weight') || 'normal';
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
@@ -223,10 +236,9 @@
           'text-opacity': 1,
           'text-decoration': 'none',
           'text-transform': textTransform,
-          'text-rotation': '0deg',
           'font-family': fontFamily,
           'font-style': fontStyle,
-          'font-variant': fontVariant,
+          // 'font-variant': fontVariant,
           'font-weight': fontWeight,
           'font-size': fontSize,
           'min-zoomed-font-size': 0,

@@ -3,7 +3,7 @@
 
 This function returns an object of the following form:
 
-```
+```js
 {
   cut, /* List of edge ids that are in the cut*/
   partition1, /* List of node ids that are in one partition */
@@ -11,10 +11,8 @@ This function returns an object of the following form:
 }
 ```
 
-the function does not require any arguments.
-
 ## Examples
 
 ```js
-var res = cy.elements().kargerStein();
+var ks = cy.elements().kargerStein();
 ```

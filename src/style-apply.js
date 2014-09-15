@@ -7,7 +7,7 @@
   $$.styfn.apply = function( eles ){
     var self = this;
 
-    if( self._private.newStyle ){
+    if( self._private.newStyle ){ // clear style caches
       this._private.contextStyles = {};
       this._private.propDiffs = {};
     }
@@ -84,7 +84,11 @@
     var diffProps;
     var prevKey = ele._private.styleCxtKey || '';
 
-    // apply the styles
+    if( self._private.newStyle ){
+      prevKey = ''; // since we need to apply all style if a fresh stylesheet
+    }
+
+    // get the cxt key
     for( var i = 0; i < self.length; i++ ){
       var context = self[i];
       var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
@@ -197,12 +201,12 @@
     var fStyle = style['font-style'].strValue;
     var size = style['font-size'].pxValue + 'px';
     var family = style['font-family'].strValue;
-    var variant = style['font-variant'].strValue;
+    // var variant = style['font-variant'].strValue;
     var weight = style['font-weight'].strValue;
     var valign = style['text-valign'].strValue;
     var halign = style['text-valign'].strValue;
     var oWidth = style['text-outline-width'].pxValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
     var width = style['width'].pxValue;
@@ -362,9 +366,12 @@
       }
 
       flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
+
       if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
-      } 
+        var flatPropVal = origProp ? origProp.strValue : '';
+
+        flatProp = this.parse( prop.name, flatPropVal, prop.bypass, true );
+      }
 
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want

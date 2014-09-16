@@ -294,7 +294,6 @@
         json.style = cy.style().json();
       }
 
-      json.scratch = cy.scratch();
       json.zoomingEnabled = cy._private.zoomingEnabled;
       json.userZoomingEnabled = cy._private.userZoomingEnabled;
       json.zoom = cy._private.zoom;

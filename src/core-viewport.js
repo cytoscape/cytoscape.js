@@ -421,7 +421,7 @@
     },
     
     center: function( elements ){
-      var pan = getCenterPan( elements );
+      var pan = this.getCenterPan( elements );
 
       if( pan ){
         this._private.pan = pan;

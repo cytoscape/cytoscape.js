@@ -675,26 +675,7 @@
 
         for( var i = 0; i < all.length; i++ ){
           var ele = all[i];
-
-          if( isEles ){
-            var pos = ele._private.position;
-            var startPosition = {
-              x: pos.x,
-              y: pos.y
-            };
-            var startStyle = style.getValueStyle( ele );
-          }
-
-          if( isCore ){
-            var pan = cy._private.pan;
-            var startPan = {
-              x: pan.x,
-              y: pan.y
-            };
-
-            var startZoom = cy._private.zoom;
-          }
-          
+         
           if( ele.animated() && (params.queue === undefined || params.queue) ){
             q = ele._private.animation.queue;
           } else {
@@ -705,11 +686,7 @@
             properties: properties,
             duration: params.duration,
             params: params,
-            callTime: callTime,
-            startPosition: startPosition,
-            startStyle: startStyle,
-            startPan: startPan,
-            startZoom: startZoom
+            callTime: callTime
           });
         }
 
@@ -757,7 +734,7 @@
         }
         
         // we have to notify (the animation loop doesn't do it for us on `stop`)
-        this.cy().notify({
+        cy.notify({
           collection: this,
           type: 'draw'
         });

@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3-beta.
+ * This file is part of Cytoscape.js 2.2.14.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3-beta';
+  $$.version = '2.2.14';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -2762,36 +2762,6 @@ var cytoscape;
         cytoscape(options);
       });
     }
-    
-    // proxy a function call
-    else {
-      var rets = [];
-      var args = [];
-      for(var i = 1; i < arguments.length; i++){
-        args[i - 1] = arguments[i];
-      }
-      
-      $this.each(function(){
-        var $ele = $(this);
-        var cy = cyReg( $ele ).cy;
-        var fnName = opts;
-        
-        if( cy && $$.is.fn( cy[fnName] ) ){
-          var ret = cy[fnName].apply(cy, args);
-          rets.push(ret);
-        }
-      });
-      
-      // if only one instance, don't need to return array
-      if( rets.length === 1 ){
-        rets = rets[0];
-      } else if( rets.length === 0 ){
-        rets = $(this);
-      }
-      
-      return rets;
-    }
-
   };
   
   // allow access to the global cytoscape object under jquery for legacy reasons
@@ -3574,26 +3544,7 @@ var cytoscape;
 
         for( var i = 0; i < all.length; i++ ){
           var ele = all[i];
-
-          if( isEles ){
-            var pos = ele._private.position;
-            var startPosition = {
-              x: pos.x,
-              y: pos.y
-            };
-            var startStyle = style.getValueStyle( ele );
-          }
-
-          if( isCore ){
-            var pan = cy._private.pan;
-            var startPan = {
-              x: pan.x,
-              y: pan.y
-            };
-
-            var startZoom = cy._private.zoom;
-          }
-          
+         
           if( ele.animated() && (params.queue === undefined || params.queue) ){
             q = ele._private.animation.queue;
           } else {
@@ -3604,11 +3555,7 @@ var cytoscape;
             properties: properties,
             duration: params.duration,
             params: params,
-            callTime: callTime,
-            startPosition: startPosition,
-            startStyle: startStyle,
-            startPan: startPan,
-            startZoom: startZoom
+            callTime: callTime
           });
         }
 
@@ -3656,7 +3603,7 @@ var cytoscape;
         }
         
         // we have to notify (the animation loop doesn't do it for us on `stop`)
-        this.cy().notify({
+        cy.notify({
           collection: this,
           type: 'draw'
         });
@@ -6722,7 +6669,6 @@ var cytoscape;
         json.style = cy.style().json();
       }
 
-      json.scratch = cy.scratch();
       json.zoomingEnabled = cy._private.zoomingEnabled;
       json.userZoomingEnabled = cy._private.userZoomingEnabled;
       json.zoom = cy._private.zoom;
@@ -6966,9 +6912,13 @@ var cytoscape;
           var completes = [];
           for(var i = current.length - 1; i >= 0; i--){
             var ani = current[i];
+
+            // start if need be
+            if( !ani.started ){ startAnimation( ele, ani ); }
+            
             step( ele, ani, now, isCore );
 
-            if( current[i].done ){
+            if( ani.done ){
               completes.push( ani );
               
               // remove current[i]
@@ -7023,12 +6973,45 @@ var cytoscape;
         eles.unmerge( doneEles );
 
       } // handleElements
-        
+      
+      function startAnimation( self, ani ){
+        var isCore = $$.is.core( self );
+        var isEles = !isCore;
+        var ele = self;
+        var style = cy._private.style;
+
+        if( isEles ){
+          var pos = ele._private.position;
+          var startPosition = {
+            x: pos.x,
+            y: pos.y
+          };
+          var startStyle = style.getValueStyle( ele );
+        }
+
+        if( isCore ){
+          var pan = cy._private.pan;
+          var startPan = {
+            x: pan.x,
+            y: pan.y
+          };
+
+          var startZoom = cy._private.zoom;
+        }
+
+        ani.started = true;
+        ani.startTime = Date.now();
+        ani.startPosition = startPosition;
+        ani.startStyle = startStyle;
+        ani.startPan = startPan;
+        ani.startZoom = startZoom;
+      }
+
       function step( self, animation, now, isCore ){
         var style = cy._private.style;
         var properties = animation.properties;
         var params = animation.params;
-        var startTime = animation.callTime;
+        var startTime = animation.startTime;
         var percent;
         var isEles = !isCore;
         
@@ -7986,7 +7969,7 @@ var cytoscape;
     },
     
     center: function( elements ){
-      var pan = getCenterPan( elements );
+      var pan = this.getCenterPan( elements );
 
       if( pan ){
         this._private.pan = pan;
@@ -9057,8 +9040,8 @@ var cytoscape;
 
       var edges = this.edges();
       var S = edges.toArray().sort(function(a, b){
-        var weightA = weightFn.call(a);
-        var weightB = weightFn.call(b);
+        var weightA = weightFn.call(a, a);
+        var weightB = weightFn.call(b, b);
 
         return weightA - weightB;
       });
@@ -9227,6 +9210,7 @@ var cytoscape;
     //   distance // Distance for the shortest path from root to goal
     //   path // Array of ids of nodes in shortest path
     aStar: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9426,7 +9410,7 @@ var cytoscape;
       logDebug("Reached end of computation without finding our goal");
       return {
         found : false
-        , cost : undefined
+        , distance : undefined
         , path : undefined 
         , steps : steps
       };
@@ -9441,6 +9425,7 @@ var cytoscape;
     //   pathTo : function(fromId, toId) // Returns the shortest path from node with ID "fromID" to node with ID "toId", as an array of node IDs
     //   distanceTo: function(fromId, toId) // Returns the distance of the shortest path from node with ID "fromID" to node with ID "toId"
     floydWarshall: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9629,6 +9614,7 @@ var cytoscape;
     //   distanceTo: function(toId) // Returns the distance of the shortest path from root node to node with ID "toId"
     //   hasNegativeWeightCycle: true/false (if true, pathTo and distanceTo will be undefined)
     bellmanFord: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9828,6 +9814,7 @@ var cytoscape;
     //   partition1: list of IDs of nodes in one partition
     //   partition2: list of IDs of nodes in the other partition
     kargerStein: function(options) {
+      options = options || {};
       
       var logDebug = function() {
         if (debug) {
@@ -10010,6 +9997,7 @@ var cytoscape;
     // retObj => returned object by function
     //  rank : function that returns the pageRank of a given node (object or selector string)
     pageRank: function(options) {
+      options = options || {};
       
       var normalizeVector = function(vector) {
         var length = vector.length;
@@ -17793,9 +17781,8 @@ var cytoscape;
             newlySelCol.select();
           }
 
-          if( newlySelected.length === 0 ){
-            r.redraw();
-          }
+          // always need redraw in case eles unselectable
+          r.redraw();
           
         }
         

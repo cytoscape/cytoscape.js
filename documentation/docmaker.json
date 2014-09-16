@@ -120,7 +120,8 @@
                 { "args": [
                   { "name": "id", "descr": "The ID of the element to get." }
                 ] }
-              ]
+              ],
+              "md": "core/getElementById"
             },
 
             {
@@ -391,7 +392,8 @@
                     { "name": "bool", "descr": "A truthy value enables panning; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/panningEnabled"
             },
 
             {
@@ -408,7 +410,8 @@
                     { "name": "bool", "descr": "A truthy value enables user panning; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/userPanningEnabled"
             },
 
             {
@@ -449,7 +452,8 @@
                     { "name": "bool", "descr": "A truthy value enables zooming; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/zoomingEnabled"
             },
 
             {
@@ -466,7 +470,8 @@
                     { "name": "bool", "descr": "A truthy value enables user zooming; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/userZoomingEnabled"
             },
 
             {
@@ -531,7 +536,8 @@
                     { "name": "bool", "descr": "A truthy value enables box selection; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/boxSelectionEnabled"
             },
 
             {
@@ -564,7 +570,8 @@
                     { "name": "bool", "descr": "A truthy value enables autolocking; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/autolock"
             },
 
             {
@@ -581,7 +588,8 @@
                     { "name": "bool", "descr": "A truthy value enables autoungrabbifying; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/autoungrabify"
             },
 
             {
@@ -598,7 +606,8 @@
                     { "name": "bool", "descr": "A truthy value enables autounselectifying; a falsey value disables it." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/autounselectify"
             },
 
             {
@@ -681,7 +690,8 @@
                     { "name": "complete", "descr": "A function to call when the delay is complete." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/delay"
             },
 
             {
@@ -694,7 +704,8 @@
                     { "name": "jumpToEnd", "descr": "A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway." }
                   ]
                 }
-              ]
+              ],
+              "md": "core/stop"
             },
 
             {
@@ -783,7 +794,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "md": "core/png"
             },
 
             {
@@ -1214,7 +1226,7 @@
           "fns": [
             {
               "name": "node.position",
-              "descr": "Get or set the position of a node.",
+              "descr": "Get or set the (model) position of a node.",
               "formats": [
                 {
                   "descr": "Get the entire position object."
@@ -1247,7 +1259,7 @@
 
             {
               "name": "nodes.positions",
-              "descr": "Set the positions of several nodes with a function.",
+              "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
                   "descr": "Set the positions functionally.",
@@ -1269,7 +1281,8 @@
                     { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to set." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/positions"
             },
 
             {
@@ -1376,12 +1389,14 @@
 
             {
               "name": "nodes.grabify",
-              "descr": "Allow the user to grab the nodes."
+              "descr": "Allow the user to grab the nodes.",
+              "md": "collection/grabify"
             },
 
             {
               "name": "nodes.ungrabify",
-              "descr": "Disallow the user to grab the nodes."
+              "descr": "Disallow the user to grab the nodes.",
+              "md": "collection/ungrabify"
             },
             
             {
@@ -1391,12 +1406,14 @@
 
             {
               "name": "nodes.lock",
-              "descr": "Lock the nodes such that their positions can not be changed."
+              "descr": "Lock the nodes such that their positions can not be changed.",
+              "md": "collection/lock"
             },
 
             {
               "name": "nodes.unlock",
-              "descr": "Unlock the nodes such that their positions can be changed."
+              "descr": "Unlock the nodes such that their positions can be changed.",
+              "md": "collection/unlock"
             },
 
             {
@@ -1417,12 +1434,14 @@
 
             {
               "name": "eles.select",
-              "descr": "Make the elements selected (NB other elements outside the collection are not affected)."
+              "descr": "Make the elements selected (NB other elements outside the collection are not affected).",
+              "md": "collection/select"
             },
 
             {
               "name": "eles.unselect",
-              "descr": "Make the elements not selected (NB other elements outside the collection are not affected)."
+              "descr": "Make the elements not selected (NB other elements outside the collection are not affected).",
+              "md": "collection/unselect"
             },
 
             {
@@ -1432,12 +1451,14 @@
 
             {
               "name": "eles.selectify",
-              "descr": "Make the selection states of the elements mutable."
+              "descr": "Make the selection states of the elements mutable.",
+              "md": "collection/selectify"
             },
 
             {
               "name": "eles.unselectify",
-              "descr": "Make the selection states of the elements immutable."
+              "descr": "Make the selection states of the elements immutable.",
+              "md": "collection/unselectify"
             }
           ]
         },
@@ -1649,7 +1670,8 @@
                     { "name": "complete", "descr": "A function to call when the delay is complete." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/delay"
             },
 
             {
@@ -1662,7 +1684,8 @@
                     { "name": "jumpToEnd", "descr": "A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/stop"
             },
 
             {

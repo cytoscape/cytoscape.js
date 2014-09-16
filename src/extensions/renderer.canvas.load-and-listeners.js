@@ -802,9 +802,8 @@
             newlySelCol.select();
           }
 
-          if( newlySelected.length === 0 ){
-            r.redraw();
-          }
+          // always need redraw in case eles unselectable
+          r.redraw();
           
         }
         

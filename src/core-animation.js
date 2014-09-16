@@ -61,9 +61,13 @@
           var completes = [];
           for(var i = current.length - 1; i >= 0; i--){
             var ani = current[i];
+
+            // start if need be
+            if( !ani.started ){ startAnimation( ele, ani ); }
+            
             step( ele, ani, now, isCore );
 
-            if( current[i].done ){
+            if( ani.done ){
               completes.push( ani );
               
               // remove current[i]
@@ -118,12 +122,45 @@
         eles.unmerge( doneEles );
 
       } // handleElements
-        
+      
+      function startAnimation( self, ani ){
+        var isCore = $$.is.core( self );
+        var isEles = !isCore;
+        var ele = self;
+        var style = cy._private.style;
+
+        if( isEles ){
+          var pos = ele._private.position;
+          var startPosition = {
+            x: pos.x,
+            y: pos.y
+          };
+          var startStyle = style.getValueStyle( ele );
+        }
+
+        if( isCore ){
+          var pan = cy._private.pan;
+          var startPan = {
+            x: pan.x,
+            y: pan.y
+          };
+
+          var startZoom = cy._private.zoom;
+        }
+
+        ani.started = true;
+        ani.startTime = Date.now();
+        ani.startPosition = startPosition;
+        ani.startStyle = startStyle;
+        ani.startPan = startPan;
+        ani.startZoom = startZoom;
+      }
+
       function step( self, animation, now, isCore ){
         var style = cy._private.style;
         var properties = animation.properties;
         var params = animation.params;
-        var startTime = animation.callTime;
+        var startTime = animation.startTime;
         var percent;
         var isEles = !isCore;
         

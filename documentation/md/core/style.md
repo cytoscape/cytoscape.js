@@ -6,7 +6,7 @@ Sets a new style by reference:
 
 ```js
 // here a string stylesheet is used, but you could also use json or a cytoscape.Stylesheet object
-var stringStylesheet = 'node { background-color: blue; }';
+var stringStylesheet = 'node { background-color: cyan; }';
 cy.style( stringStylesheet );
 ```
 
@@ -18,7 +18,7 @@ cy.style()
 
   // and then define new styles
   .selector('node')
-  	.css('background-color', 'blue')
+  	.css('background-color', 'magenta')
 
   // ...
 
@@ -31,7 +31,7 @@ You can also add to the existing stylesheet:
 cy.style()
   .selector('node')
     .css({
-      'background-color': 'red'
+      'background-color': 'yellow'
     })
 
   .update() // update the elements in the graph with the new style
@@ -46,7 +46,7 @@ cy.style()
     {
       selector: 'node',
       css: {
-        'background-color': 'green'
+        'background-color': 'red'
       }
     }
 
@@ -61,7 +61,7 @@ You can also set the style from a style string (that you would probably pull fro
 
 ```js
 cy.style()
-  .fromString('node { background-color: yellow; }')
+  .fromString('node { background-color: blue; }')
 
   .update() // update the elements in the graph with the new style
 ;

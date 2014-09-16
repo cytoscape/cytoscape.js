@@ -11,4 +11,6 @@ cy.nodes().animate({
 }, {
   duration: 1000
 });
+
+console.log('Animating nodes...');
 ```

@@ -67,6 +67,14 @@ $(function(){
 			cy.autoungrabify(false);
 		});
 
+		$("#enable-autounselectify").click(function(){
+			cy.autounselectify(true);
+		});
+
+		$("#disable-autounselectify").click(function(){
+			cy.autounselectify(false);
+		});
+
 		$("#show-bb").click(function(){
 			var eles = cy.$(':selected');
 

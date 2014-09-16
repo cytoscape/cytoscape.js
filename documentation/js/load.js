@@ -57,18 +57,18 @@ cy = cytoscape( options = {
     ],
 
     edges: [
-      { data: { source: 'j', target: 'e' } },
-      { data: { source: 'j', target: 'k' } },
-      { data: { source: 'j', target: 'g' } },
+      { data: { source: 'j', target: 'e', id: 'je' } },
+      { data: { source: 'j', target: 'k', id: 'jk' } },
+      { data: { source: 'j', target: 'g', id: 'jg' } },
 
-      { data: { source: 'e', target: 'j' } },
-      { data: { source: 'e', target: 'k' } },
+      { data: { source: 'e', target: 'j', id: 'ej' } },
+      { data: { source: 'e', target: 'k', id: 'ek' } },
 
-      { data: { source: 'k', target: 'j' } },
-      { data: { source: 'k', target: 'e' } },
-      { data: { source: 'k', target: 'g' } },
+      { data: { source: 'k', target: 'j', id: 'kj' } },
+      { data: { source: 'k', target: 'e', id: 'ke' } },
+      { data: { source: 'k', target: 'g', id: 'kg' } },
 
-      { data: { source: 'g', target: 'j' } }
+      { data: { source: 'g', target: 'j', id: 'gj' } }
     ],
   },
 

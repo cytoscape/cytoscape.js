@@ -10,6 +10,18 @@ var encoding = 'utf8';
 var config;
 var configFile = './docmaker.json';
 var demoFile = './js/load.js';
+var mdRend = new marked.Renderer();
+
+rendCode = mdRend.code;
+mdRend.code = function(code, lang){
+  var button;
+
+  if( lang === 'js' ){
+    button = '<button class="run run-inline-code"><span class="icon-play"></span></button>';
+  }
+
+  return button + rendCode.call(this, code, lang);
+};
 
 try {
   jsonlint.parse( fs.readFileSync(configFile, 'utf8') ); // validate first for convenience
@@ -57,14 +69,19 @@ function md2html( file ){
   //var html = mdConvertor( md );
   var html = marked( md, {
     highlight: function(code, lang){
+      var ret;
 
       if( lang ){
-        return hljs.highlight(lang, code).value;
+        ret = hljs.highlight(lang, code).value;
       } else {
-        return hljs.highlightAuto(code).value;
+        ret = hljs.highlightAuto(code).value;
       }
+
+      return ret;
       
-    }
+    },
+
+    renderer: mdRend
   } );
 
 

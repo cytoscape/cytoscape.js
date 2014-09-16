@@ -71,70 +71,60 @@ $(function(){
     $('#demo-source').removeClass('collapsed');
   });
 
-  var $codes = $('pre code[class = "lang-js"]');
-  for( var i = 0; i < $codes.length; i++ ){
-    var $code = $( $codes[i] );
-    var $parent = $code.parent();
-    var $button = $('<button class="run"><span class="icon-play"></span></button>');
-    var text = $code.text();
+  $(document).on('click', '.run.run-inline-code', function(){
+    showCy();
 
-    $parent.before( $button );
+    var text = $(this).nextAll('pre:first').text();
 
-    (function(text){
-      $button.on('click', function(){
-        showCy();
+    var $title = $('#cy-title');
+    var $content = $title.find('.content');
+    
+    $content.html( text );
+    $title.show();
 
-        var $title = $('#cy-title');
-        var $content = $title.find('.content');
-        
-        $content.html( text );
-        $title.show();
+    $content.hide().fadeIn(100).delay(250).hide(200, function(){
+      var ret = eval( text );
+      
+      if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
+        //console.log(ret)
 
-        $content.hide().fadeIn(100).delay(250).hide(200, function(){
-          var ret = eval( text );
+        var css = {
+          'text-outline-color': '#4183C4',
+          'background-color': '#4183C4',
+          'line-color': '#4183C4',
+          'target-arrow-color': '#4183C4',
+          'source-arrow-color': '#4183C4'
+        };
+
+        var delay = 200;
+
+        ret
+          .stop( true )
+
+          .animate({ css: css })
           
-          if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
-            //console.log(ret)
+          .delay(delay, function(){
+            ret.removeCss();
+          })
 
-            var css = {
-              'text-outline-color': '#4183C4',
-              'background-color': '#4183C4',
-              'line-color': '#4183C4',
-              'target-arrow-color': '#4183C4',
-              'source-arrow-color': '#4183C4'
-            };
+          .animate({ css: css })
+          
+          .delay(delay, function(){
+            ret.removeCss();
+          })
 
-            var delay = 200;
+          .animate({ css: css })
+          
+          .delay(delay, function(){
+            ret.removeCss();
+            $title.hide();
+          })
+        ;
 
-            ret
-              .stop( true )
+      }
+    });
 
-              .animate({ css: css })
-              
-              .delay(delay, function(){
-                ret.removeCss();
-              })
-
-              .animate({ css: css })
-              
-              .delay(delay, function(){
-                ret.removeCss();
-              })
-
-              .animate({ css: css })
-              
-              .delay(delay, function(){
-                ret.removeCss();
-                $title.hide();
-              })
-            ;
-
-          }
-        });
-
-      });
-    })(text)
-  }
+  });
 
   $('#download-button').on('click', function(){
     if( _gaq ){

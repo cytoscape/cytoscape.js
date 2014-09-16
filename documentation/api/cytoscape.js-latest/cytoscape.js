@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js 2.2.13.
+ * This file is part of cytoscape.js 2.2.14.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2595,8 +2595,8 @@ var cytoscape;
   
   if( !$ ){ return; } // no jquery => don't need this
 
-  var jqData = function( $ele ){
-    var d = $ele[0]._jqcy = $ele[0]._jqcy || {};
+  var cyReg = function( $ele ){
+    var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
 
     return d;
   };
@@ -2608,21 +2608,20 @@ var cytoscape;
 
     // get object
     if( opts === 'get' ){
-      return jqData( $this ).cy;
+      return cyReg( $this ).cy;
     }
     
     // bind to ready
     else if( $$.is.fn(opts) ){
-      //debugger;
 
       var ready = opts;
-      var cy = jqData( $this ).cy;
+      var cy = cyReg( $this ).cy;
       
       if( cy && cy.ready() ){ // already ready so just trigger now
         cy.trigger('ready', [], ready);
 
       } else { // not yet ready, so add to readies list
-        var data = jqData( $this );
+        var data = cyReg( $this );
         var readies = data.readies = data.readies || [];
 
         readies.push( ready );
@@ -2640,36 +2639,6 @@ var cytoscape;
         cytoscape(options);
       });
     }
-    
-    // proxy a function call
-    else {
-      var rets = [];
-      var args = [];
-      for(var i = 1; i < arguments.length; i++){
-        args[i - 1] = arguments[i];
-      }
-      
-      $this.each(function(){
-        var $ele = $(this);
-        var cy = jqData( $ele ).cy;
-        var fnName = opts;
-        
-        if( cy && $$.is.fn( cy[fnName] ) ){
-          var ret = cy[fnName].apply(cy, args);
-          rets.push(ret);
-        }
-      });
-      
-      // if only one instance, don't need to return array
-      if( rets.length === 1 ){
-        rets = rets[0];
-      } else if( rets.length === 0 ){
-        rets = $(this);
-      }
-      
-      return rets;
-    }
-
   };
   
   // allow access to the global cytoscape object under jquery for legacy reasons
@@ -5909,12 +5878,20 @@ var cytoscape;
     opts = $$.util.extend({}, defaults, opts);
 
     var container = opts.container;
-    var reg = container ? container._jqcy : null; // e.g. already registered some info (e.g. readies) via jquery
+    var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+    reg = reg || {};
+
     if( reg && reg.cy ){ 
-      container.innerHTML = '';
+      if( container ){ container.innerHTML = ''; }
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
-    } 
-    var readies = reg ? (reg.readies || []) : [];
+
+      reg = {}; // old instance => replace reg completely
+    }
+
+    var readies = reg.readies = reg.readies || [];
+    
+    if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
+    reg.cy = cy;
 
     var options = opts;
     options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
@@ -6041,7 +6018,13 @@ var cytoscape;
     },
 
     destroy: function(){
-      this.renderer().destroy();
+      this.notify({ type: 'destroy' }); // destroy the renderer
+
+      var domEle = this.container();
+      var parEle = domEle.parentNode;
+      if( parEle ){
+        parEle.removeChild( domEle );
+      }
 
       return this;
     },
@@ -14477,14 +14460,30 @@ var cytoscape;
       if (!capture) {
         
         var containerPageCoords = r.findContainerClientCoords();
-        
+
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
           && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
-          && e.target === r.data.topCanvas) {
-          
+        ) {
+          // inside container bounds so OK
         } else {
           return;
         }
+
+        var cyContainer = r.data.container;
+        var target = e.target;
+        var tParent = target.parentNode;
+        var containerIsTarget = false;
+
+        while( tParent ){
+          if( tParent === cyContainer ){
+            containerIsTarget = true;
+            break;
+          }
+
+          tParent = tParent.parentNode;
+        }
+
+        if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
       }
 
       var cy = r.data.cy;

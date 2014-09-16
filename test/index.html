@@ -3,6 +3,11 @@
   <meta charset="utf-8">
   <title>Cy.js Mocha Tests</title>
 
+  <link rel="stylesheet" href="lib/mocha.css" />
+
+  <script src="lib/chai.js"></script>
+  <script src="lib/jquery.js"></script>
+
   <!-- `gulp testrefs` updates these scripts -->
 
   <!-- inject:js -->
@@ -78,10 +83,6 @@
   <script src="../src/extensions/renderer.null.js"></script>
   <!-- endinject -->
 
-  <link rel="stylesheet" href="lib/mocha.css" />
-
-  <script src="lib/chai.js"></script>
-
   <script>
     window.require = function( name, fallbackVal ){
       if( fallbackVal ){ return fallbackVal; }
@@ -124,6 +125,8 @@
       //mocha.globals(['jQuery']);
       mocha.run();
     </script>
+
+    <div id="cy"></div>
 
   </body>
 </html>

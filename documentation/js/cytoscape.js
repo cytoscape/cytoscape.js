@@ -1,5 +1,5 @@
 /*!
- * This file is part of cytoscape.js snapshot-228af9a792-1410283758792.
+ * This file is part of cytoscape.js 2.2.14.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2639,36 +2639,6 @@ var cytoscape;
         cytoscape(options);
       });
     }
-    
-    // proxy a function call
-    else {
-      var rets = [];
-      var args = [];
-      for(var i = 1; i < arguments.length; i++){
-        args[i - 1] = arguments[i];
-      }
-      
-      $this.each(function(){
-        var $ele = $(this);
-        var cy = cyReg( $ele ).cy;
-        var fnName = opts;
-        
-        if( cy && $$.is.fn( cy[fnName] ) ){
-          var ret = cy[fnName].apply(cy, args);
-          rets.push(ret);
-        }
-      });
-      
-      // if only one instance, don't need to return array
-      if( rets.length === 1 ){
-        rets = rets[0];
-      } else if( rets.length === 0 ){
-        rets = $(this);
-      }
-      
-      return rets;
-    }
-
   };
   
   // allow access to the global cytoscape object under jquery for legacy reasons
@@ -5912,7 +5882,7 @@ var cytoscape;
     reg = reg || {};
 
     if( reg && reg.cy ){ 
-      container.innerHTML = '';
+      if( container ){ container.innerHTML = ''; }
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
       reg = {}; // old instance => replace reg completely
@@ -5920,7 +5890,7 @@ var cytoscape;
 
     var readies = reg.readies = reg.readies || [];
     
-    container._cyreg = reg; // make sure container assoc'd reg points to this cy
+    if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
     var options = opts;
@@ -14490,14 +14460,30 @@ var cytoscape;
       if (!capture) {
         
         var containerPageCoords = r.findContainerClientCoords();
-        
+
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
           && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
-          && e.target === r.data.topCanvas) {
-          
+        ) {
+          // inside container bounds so OK
         } else {
           return;
         }
+
+        var cyContainer = r.data.container;
+        var target = e.target;
+        var tParent = target.parentNode;
+        var containerIsTarget = false;
+
+        while( tParent ){
+          if( tParent === cyContainer ){
+            containerIsTarget = true;
+            break;
+          }
+
+          tParent = tParent.parentNode;
+        }
+
+        if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
       }
 
       var cy = r.data.cy;

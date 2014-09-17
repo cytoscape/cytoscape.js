@@ -44,6 +44,14 @@ cy = cytoscape( options = {
         'width': 2,
         'target-arrow-shape': 'triangle'
       }
+    },
+
+    {
+      selector: '.foo',
+      css: {
+        'border-width': 4,
+        'border-color': 'red'
+      }
     }
   ],
 

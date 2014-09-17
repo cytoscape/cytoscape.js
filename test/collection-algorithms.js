@@ -50,6 +50,14 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     });
   });
 
+  function ele2id(ele){
+    return ele.id();
+  }
+
+  function isNode(ele){
+    return ele.isNode();
+  }
+
   function eles(){
     var col = cy.collection();
 
@@ -235,7 +243,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var res = cy.elements().aStar(options);
       expect(res.found).to.equal(true);
       expect(res.distance).to.equal(1);
-      expect(res.path).to.deep.equal(["a", "b"]);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
   });
 
   it('eles.aStar(): undirected, null heuristic, unweighted (2)', function(){
@@ -246,7 +254,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var res = cy.elements().aStar(options);
       expect(res.found).to.equal(true);
       expect(res.distance).to.equal(2);
-      expect(res.path).to.deep.equal(["a", "e", "d"]);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "d"]);
   });
 
   it('eles.aStar(): directed, null heuristic, unweighted', function(){
@@ -268,7 +276,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var res = cy.elements().aStar(options);
       expect(res.found).to.equal(true);
       expect(res.distance).to.equal(3);
-      expect(res.path).to.deep.equal(["a", "b", "c", "d"]);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c", "d"]);
   });
 
   it('eles.aStar(): undirected, null heuristic, weighted', function(){
@@ -281,7 +289,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var res = cy.elements().aStar(options);
       expect( res.found ).to.equal(true);
       expect( res.distance ).to.equal(8);
-      expect( res.path ).to.deep.equal(["a", "e", "d"]);
+      expect( res.path.stdFilter(isNode).map(ele2id) ).to.deep.equal(["a", "e", "d"]);
   });
 
   it('eles.aStar(): directed, null heuristic, weighted', function(){
@@ -294,7 +302,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var res = cy.elements().aStar(options);
       expect(res.found).to.equal(true);
       expect(res.distance).to.equal(10);
-      expect(res.path).to.deep.equal(["a", "b", "c", "d"]);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c", "d"]);
   });
 
   it('eles.aStar(): directed, null heuristic, weighted, not found', function(){
@@ -315,88 +323,88 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 		     weight: function() {return this.data('weight');}
 		    };
       var res = cy.elements().floydWarshall(options);
-      var path = res.pathTo;
-      var distance = res.distanceTo;
+      var path = res.path;
+      var distance = res.distance;
 
       // Paths from node a
       expect(distance(a,a)).to.equal(0);
-      expect(path(a,a)).to.deep.equal(["a"]);
+      expect(path(a,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(a,b)).to.equal(3);
-      expect(path(a,b)).to.deep.equal(["a", "b"]);
+      expect(path(a,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(a,c)).to.equal(8);
-      expect(path(a,c)).to.deep.equal(["a", "b", "c"]);
+      expect(path(a,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c"]);
 
       expect(distance(a,d)).to.equal(10);
-      expect(path(a,d)).to.deep.equal(["a", "b", "c", "d"]);
+      expect(path(a,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c", "d"]);
 
       expect(distance(a,e)).to.equal(1);
-      expect(path(a,e)).to.deep.equal(["a", "e"]);
+      expect(path(a,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
 
       // Paths from node b
       expect(distance(b,a)).to.equal(Infinity);
-      expect(path(b,a)).to.deep.equal(undefined);
+      expect(path(b,a).empty()).to.be.true;
 
       expect(distance(b,b)).to.equal(0);
-      expect(path(b,b)).to.deep.equal(["b"]);
+      expect(path(b,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["b"]);
 
       expect(distance(b,c)).to.equal(5);
-      expect(path(b,c)).to.deep.equal(["b", "c"]);
+      expect(path(b,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c"]);
 
       expect(distance(b,d)).to.equal(7);
-      expect(path(b,d)).to.deep.equal(["b", "c", "d"]);
+      expect(path(b,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c", "d"]);
 
       expect(distance(b,e)).to.equal(4);
-      expect(path(b,e)).to.deep.equal(["b", "e"]);
+      expect(path(b,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "e"]);
 
       // Paths from node c
       expect(distance(c,a)).to.equal(Infinity);
-      expect(path(c,a)).to.deep.equal(undefined);
+      expect(path(c,a).empty()).to.be.true;
 
       expect(distance(c,b)).to.equal(Infinity);
-      expect(path(c,b)).to.deep.equal(undefined);
+      expect(path(c,b).empty()).to.be.true;
 
       expect(distance(c,c)).to.equal(0);
-      expect(path(c,c)).to.deep.equal(["c"]);
+      expect(path(c,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["c"]);
 
       expect(distance(c,d)).to.equal(2);
-      expect(path(c,d)).to.deep.equal(["c", "d"]);
+      expect(path(c,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "d"]);
 
       expect(distance(c,e)).to.equal(6);
-      expect(path(c,e)).to.deep.equal(["c", "e"]);
+      expect(path(c,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "e"]);
 
       // Paths from node d
       expect(distance(d,a)).to.equal(Infinity);
-      expect(path(d,a)).to.deep.equal(undefined);
+      expect(path(d,a).empty()).to.be.true;
 
       expect(distance(d,b)).to.equal(Infinity);
-      expect(path(d,b)).to.deep.equal(undefined);
+      expect(path(d,b).empty()).to.be.true;
 
       expect(distance(d,c)).to.equal(Infinity);
-      expect(path(d,c)).to.deep.equal(undefined);
+      expect(path(d,c).empty()).to.be.true;
 
       expect(distance(d,d)).to.equal(0);
-      expect(path(d,d)).to.deep.equal(["d"]);
+      expect(path(d,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["d"]);
 
       expect(distance(d,e)).to.equal(7);
-      expect(path(d,e)).to.deep.equal(["d", "e"]);
+      expect(path(d,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["d", "e"]);
 
       // Paths from node e
       expect(distance(e,a)).to.equal(Infinity);
-      expect(path(e,a)).to.deep.equal(undefined);
+      expect(path(e,a).empty()).to.be.true;
 
       expect(distance(e,b)).to.equal(Infinity);
-      expect(path(e,b)).to.deep.equal(undefined);
+      expect(path(e,b).empty()).to.be.true;
 
       expect(distance(e,c)).to.equal(Infinity);
-      expect(path(e,c)).to.deep.equal(undefined);
+      expect(path(e,c).empty()).to.be.true;
 
       expect(distance(e,d)).to.equal(Infinity);
-      expect(path(e,d)).to.deep.equal(undefined);
+      expect(path(e,d).empty()).to.be.true;
 
       expect(distance(e,e)).to.equal(0);
-      expect(path(e,e)).to.deep.equal(["e"]);
+      expect(path(e,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["e"]);
 
   });
 
@@ -406,88 +414,88 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 		     weight: function() {return this.data('weight');}
 		    };
       var res = cy.elements().floydWarshall(options);
-      var path = res.pathTo;
-      var distance = res.distanceTo;
+      var path = res.path;
+      var distance = res.distance;
 
       // Paths from node a
       expect(distance(a,a)).to.equal(0);
-      expect(path(a,a)).to.deep.equal(["a"]);
+      expect(path(a,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(a,b)).to.equal(3);
-      expect(path(a,b)).to.deep.equal(["a", "b"]);
+      expect(path(a,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(a,c)).to.equal(7);
-      expect(path(a,c)).to.deep.equal(["a", "e", "c"]);
+      expect(path(a,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "c"]);
 
       expect(distance(a,d)).to.equal(8);
-      expect(path(a,d)).to.deep.equal(["a", "e", "d"]);
+      expect(path(a,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "d"]);
 
       expect(distance(a,e)).to.equal(1);
-      expect(path(a,e)).to.deep.equal(["a", "e"]);
+      expect(path(a,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
 
       // Paths from node b
       expect(distance(b,a)).to.equal(3);
-      expect(path(b,a)).to.deep.equal(["b", "a"]);
+      expect(path(b,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "a"]);
 
       expect(distance(b,b)).to.equal(0);
-      expect(path(b,b)).to.deep.equal(["b"]);
+      expect(path(b,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["b"]);
 
       expect(distance(b,c)).to.equal(5);
-      expect(path(b,c)).to.deep.equal(["b", "c"]);
+      expect(path(b,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c"]);
 
       expect(distance(b,d)).to.equal(7);
-      expect(path(b,d)).to.deep.equal(["b", "c", "d"]);
+      expect(path(b,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c", "d"]);
 
       expect(distance(b,e)).to.equal(4);
       //expect(path(b,e)).to.deep.equal(["b", "e"]);
 
       // Paths from node c
       expect(distance(c,a)).to.equal(7);
-      expect(path(c,a)).to.deep.equal(["c", "e", "a"]);
+      expect(path(c,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "e", "a"]);
 
       expect(distance(c,b)).to.equal(5);
-      expect(path(c,b)).to.deep.equal(["c", "b"]);
+      expect(path(c,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "b"]);
 
       expect(distance(c,c)).to.equal(0);
-      expect(path(c,c)).to.deep.equal(["c"]);
+      expect(path(c,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["c"]);
 
       expect(distance(c,d)).to.equal(2);
-      expect(path(c,d)).to.deep.equal(["c", "d"]);
+      expect(path(c,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "d"]);
 
       expect(distance(c,e)).to.equal(6);
-      expect(path(c,e)).to.deep.equal(["c", "e"]);
+      expect(path(c,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["c", "e"]);
 
       // Paths from node d
       expect(distance(d,a)).to.equal(8);
-      expect(path(d,a)).to.deep.equal(["d", "e", "a"]);
+      expect(path(d,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["d", "e", "a"]);
 
       expect(distance(d,b)).to.equal(7);
-      expect(path(d,b)).to.deep.equal(["d", "c", "b"]);
+      expect(path(d,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["d", "c", "b"]);
 
       expect(distance(d,c)).to.equal(2);
-      expect(path(d,c)).to.deep.equal(["d", "c"]);
+      expect(path(d,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["d", "c"]);
 
       expect(distance(d,d)).to.equal(0);
-      expect(path(d,d)).to.deep.equal(["d"]);
+      expect(path(d,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["d"]);
 
       expect(distance(d,e)).to.equal(7);
-      expect(path(d,e)).to.deep.equal(["d", "e"]);
+      expect(path(d,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["d", "e"]);
 
       // Paths from node e
       expect(distance(e,a)).to.equal(1);
-      expect(path(e,a)).to.deep.equal(["e", "a"]);
+      expect(path(e,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["e", "a"]);
 
       expect(distance(e,b)).to.equal(4);
       //expect(path(e,b)).to.deep.equal();
 
       expect(distance(e,c)).to.equal(6);
-      expect(path(e,c)).to.deep.equal(["e", "c"]);
+      expect(path(e,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["e", "c"]);
 
       expect(distance(e,d)).to.equal(7);
-      expect(path(e,d)).to.deep.equal(["e", "d"]);
+      expect(path(e,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["e", "d"]);
 
       expect(distance(e,e)).to.equal(0);
-      expect(path(e,e)).to.deep.equal(["e"]);
+      expect(path(e,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["e"]);
 
   });
 
@@ -495,48 +503,48 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.floydWarshall(): directed, unweighted', function() {
       var options = {directed: true};
       var res = cy.elements().floydWarshall(options);
-      var path = res.pathTo;
-      var distance = res.distanceTo;
+      var path = res.path;
+      var distance = res.distance;
 
       // Paths from node a
       expect(distance(a,a)).to.equal(0);
-      expect(path(a,a)).to.deep.equal(["a"]);
+      expect(path(a,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(a,b)).to.equal(1);
-      expect(path(a,b)).to.deep.equal(["a", "b"]);
+      expect(path(a,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(a,c)).to.equal(2);
-      expect(path(a,c)).to.deep.equal(["a", "b", "c"]);
+      expect(path(a,c).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c"]);
 
       expect(distance(a,d)).to.equal(3);
-      expect(path(a,d)).to.deep.equal(["a", "b", "c", "d"]);
+      expect(path(a,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b", "c", "d"]);
 
       expect(distance(a,e)).to.equal(1);
-      expect(path(a,e)).to.deep.equal(["a", "e"]);
+      expect(path(a,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
 
   });
 
   it('eles.floydWarshall(): undirected, unweighted', function() {
       var options = {directed: false};
       var res = cy.elements().floydWarshall(options);
-      var path = res.pathTo;
-      var distance = res.distanceTo;
+      var path = res.path;
+      var distance = res.distance;
 
       // Paths from node a
       expect(distance(a,a)).to.equal(0);
-      expect(path(a,a)).to.deep.equal(["a"]);
+      expect(path(a,a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(a,b)).to.equal(1);
-      expect(path(a,b)).to.deep.equal(["a", "b"]);
+      expect(path(a,b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(a,c)).to.equal(2);
       //expect(path(a,c)).to.deep.equal(["a", "b", "c"]);
 
       expect(distance(a,d)).to.equal(2);
-      expect(path(a,d)).to.deep.equal(["a", "e", "d"]);
+      expect(path(a,d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "d"]);
 
       expect(distance(a,e)).to.equal(1);
-      expect(path(a,e)).to.deep.equal(["a", "e"]);
+      expect(path(a,e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
   });
 
 
@@ -555,19 +563,19 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
       // Paths from node a
       expect(distance(a)).to.equal(0);
-      expect(path(a)).to.deep.equal(["a"]);
+      expect(path(a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(b)).to.equal(3);
-      expect(path(b)).to.deep.equal(["a", "b"]);
+      expect(path(b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(c)).to.equal(7);
-      expect(path(c)).to.deep.equal(["a", "e", "c"]);
+      expect(path(c).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "c"]);
 
       expect(distance(d)).to.equal(8);
-      expect(path(d)).to.deep.equal(["a", "e", "d"]);
+      expect(path(d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "d"]);
 
        expect(distance(e)).to.equal(1);
-       expect(path(e)).to.deep.equal(["a", "e"]);
+       expect(path(e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
   });
 
 
@@ -598,19 +606,19 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
       // Paths from node b
       expect(distance(a)).to.equal(Infinity);
-      expect(path(a)).to.deep.equal(undefined);
+      expect(path(a).empty()).to.be.true;
 
       expect(distance(b)).to.equal(0);
-      expect(path(b)).to.deep.equal(["b"]);
+      expect(path(b).stdFilter(isNode).map(ele2id)).to.deep.equal(["b"]);
 
       expect(distance(c)).to.equal(5);
-      expect(path(c)).to.deep.equal(["b", "c"]);
+      expect(path(c).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c"]);
 
       expect(distance(d)).to.equal(7);
-      expect(path(d)).to.deep.equal(["b", "c", "d"]);
+      expect(path(d).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "c", "d"]);
 
       expect(distance(e)).to.equal(4);
-      expect(path(e)).to.deep.equal(["b", "e"]);
+      expect(path(e).stdFilter(isNode).map(ele2id)).to.deep.equal(["b", "e"]);
   });
 
 
@@ -627,19 +635,19 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
       // Paths from node a
       expect(distance(a)).to.equal(0);
-      expect(path(a)).to.deep.equal(["a"]);
+      expect(path(a).stdFilter(isNode).map(ele2id)).to.deep.equal(["a"]);
 
       expect(distance(b)).to.equal(1);
-      expect(path(b)).to.deep.equal(["a", "b"]);
+      expect(path(b).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "b"]);
 
       expect(distance(c)).to.equal(2);
       //expect(path(c)).to.deep.equal(["a", "b", "c"]);
 
       expect(distance(d)).to.equal(2);
-      expect(path(d)).to.deep.equal(["a", "e", "d"]);
+      expect(path(d).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e", "d"]);
 
       expect(distance(e)).to.equal(1);
-      expect(path(e)).to.deep.equal(["a", "e"]);
+      expect(path(e).stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "e"]);
 
   });
 

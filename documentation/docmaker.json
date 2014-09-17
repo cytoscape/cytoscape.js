@@ -1226,6 +1226,7 @@
           "fns": [
             {
               "name": "node.position",
+              "pureAliases": [ "node.modelPosition" ],
               "descr": "Get or set the (model) position of a node.",
               "formats": [
                 {
@@ -1259,6 +1260,7 @@
 
             {
               "name": "nodes.positions",
+              "pureAliases": [ "nodes.modelPositions" ],
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
@@ -1425,6 +1427,10 @@
         },
 
         {
+          "name": "Layout TODO"
+        },
+
+        {
           "name": "Selection",
           "fns": [
             {
@@ -1466,6 +1472,67 @@
         {
           "name": "Style",
           "fns": [
+            {
+              "name": "eles.addClass",
+              "descr": "Add classes to elements.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to add to the elements." } ]
+                }
+              ],
+              "md": "collection/addClass"
+            },
+
+            {
+              "name": "eles.removeClass",
+              "descr": "Remove classes from elements.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to remove from the elements." } ]
+                }
+              ],
+              "md": "collection/removeClass"
+            },
+
+            {
+              "name": "eles.toggleClass",
+              "descr": "Toggle whether the elements have the specified classes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "classes", "descr": "A space-separated list of class names to toggle on the elements." },
+                    { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/toggleClass"
+            },
+
+            {
+              "name": "eles.flashClass",
+              "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "classes", "descr": "A space-separated list of class names to flash on the elements." },
+                    { "name": "duration", "descr": "The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/flashClass"
+            },
+
+            {
+              "name": "ele.hasClass",
+              "descr": "Get whether an element has a particular class.",
+              "formats": [
+                {
+                  "args": [ { "name": "className", "descr": "The name of the class to test for." } ]
+                }
+              ],
+              "md": "collection/hasClass"
+            },
+
             {
               "name": "eles.css",
               "pureAliases": [ "eles.style" ],
@@ -1560,62 +1627,6 @@
             {
               "name": "ele.transparent",
               "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
-            },
-
-            {
-              "name": "eles.addClass",
-              "descr": "Add classes to elements.",
-              "formats": [
-                {
-                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to add to the elements." } ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.removeClass",
-              "descr": "Remove classes from elements.",
-              "formats": [
-                {
-                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to remove from the elements." } ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.toggleClass",
-              "descr": "Toggle whether the elements have the specified classes.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "classes", "descr": "A space-separated list of class names to toggle on the elements." },
-                    { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "eles.flashClass",
-              "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "classes", "descr": "A space-separated list of class names to flash on the elements." },
-                    { "name": "duration", "descr": "The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "ele.hasClass",
-              "descr": "Get whether an element has a particular class.",
-              "formats": [
-                {
-                  "args": [ { "name": "className", "descr": "The name of the class to test for." } ]
-                }
-              ]
             }
           ]
         },
@@ -1707,7 +1718,8 @@
                     { "name": "eles", "descr": "The other elements to compare to." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/same"
             },
 
             {
@@ -1719,7 +1731,8 @@
                     { "name": "eles", "descr": "The other elements to compare to." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/anySame"
             },
 
             {
@@ -1731,7 +1744,8 @@
                     { "name": "eles", "descr": "The other elements to compare to." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/allAreNeighbors"
             },
 
             {
@@ -1743,7 +1757,8 @@
                     { "name": "selector", "descr": "The selector to match against." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/is"
             },
 
             {
@@ -1755,11 +1770,11 @@
                     { "name": "selector", "descr": "The selector to match against." }
                   ]
                 }
-              ]
-
+              ],
+              "md": "collection/allAre"
             },
 
-                        {
+            {
               "name": "eles.some",
               "descr": "Determine whether any element in this collection satisfies the specified test function.",
               "formats": [
@@ -1781,7 +1796,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/some"
             },
 
             {
@@ -1806,7 +1822,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/every"
             }
           ]
         },
@@ -1937,7 +1954,8 @@
                     { "name": "selector", "descr": "Elements in the graph matching this selector are added." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/add"
             },
 
             {
@@ -1955,7 +1973,8 @@
                     { "name": "selector", "descr": "Elements from the calling collection matching this selector will not be in the resultant collection." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/not"
             },
 
             {
@@ -1973,7 +1992,8 @@
                     { "name": "selector", "descr": "A selector representing the elements to intersect with.  All elements in the graph matching the selector are used as the passed collection." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/intersect"
             },
 
             {
@@ -2018,7 +2038,8 @@
                     { "name": "selector", "descr": "The selector to match against." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/filter"
             },
 
             {
@@ -2044,7 +2065,7 @@
                   ]
                 }
               ],
-              "md": "collection/map"
+              "md": "collection/stdFilter"
             },
 
             {
@@ -2056,7 +2077,8 @@
                     { "name": "function(ele1, ele2)", "descr": "The sorting comparison function that returns a negative number for `ele1` before `ele2`, 0 for `ele1` same as `ele2`, or a positive number for `ele1` after `ele2`." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/sort"
             },
 
             {
@@ -2189,7 +2211,8 @@
                     { "name": "selector", "descr": "The other collection, specified as a selector which is matched against all elements in the graph." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/edgesWith"
             },
 
             {
@@ -2207,7 +2230,8 @@
                     { "name": "selector", "descr": "The other collection, specified as a selector which is matched against all elements in the graph." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/edgesTo"
             },
 
             {
@@ -2219,7 +2243,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/connectedNodes"
             },
 
             {
@@ -2231,7 +2256,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/connectedEdges"
             },
 
             {
@@ -2243,7 +2269,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/source"
             },
 
             {
@@ -2255,7 +2282,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/sources"
             },
 
             {
@@ -2267,7 +2295,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/target"
             },
 
             {
@@ -2279,7 +2308,8 @@
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/targets"
             },
 
             {
@@ -2483,28 +2513,15 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
+                      { "name": "goal", "descr": "The goal node (selector or collection) where the search ends." },
                       { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
                       { "name": "heuristic: function(node)", "descr": "A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (`this`) node to the goal.", "optional": true },
-                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true },
-                      { "name": "goal", "descr": "The goal node (selector or collection) where the search ends." }
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
                 }
               ],
               "md": "collection/aStar"
-            },
-
-            {
-              "name": "eles.kruskal",
-              "descr": "Perform Kruskal's algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "collection/kruskal"
             },
 
             {
@@ -2525,13 +2542,13 @@
 
             {
               "name": "eles.bellmanFord",
-              "descr": "Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all the rest.",
+              "descr": "Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
               "formats": [
                 {
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
-                      { "name": "function()", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
@@ -2541,13 +2558,21 @@
             }, 
 
             {
-              "name": "eles.kargerStein",
-              "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
+              "name": "eles.kruskal",
+              "descr": "Perform Kruskal's algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
               "formats": [
                 {
-                  "args": []
+                  "args": [
+                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
+                  ]
                 }
               ],
+              "md": "collection/kruskal"
+            },
+
+            {
+              "name": "eles.kargerStein",
+              "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
             }, 
 
@@ -2697,7 +2722,7 @@
 
     {
       "name": "Layouts",
-      "md": "layouts/intro",
+      "md": "layout/intro",
       "sections": [
         {
           "md": "layouts/null",
@@ -2778,7 +2803,110 @@
           "layout": {
             "name": "springy"
           }
+        },
+
+        {
+          "name": "Layout manipulation",
+          "md": "layout/manipulation",
+          "fns": [
+            {
+              "name": "layout.run",
+              "descr": "Start running the layout.",
+              "md": "layout/run"
+            },
+
+            {
+              "name": "layout.stop",
+              "descr": "Stop running the layout.",
+              "md": "layout/stop"
+            }
+          ]
+        },
+
+        {
+          "name": "Layout events",
+          "md": "layout/events",
+          "fns": [
+            {
+              "name": "layout.on",
+              "descr": "Bind to events that are emitted by the layout.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "layout/on"
+            },
+
+            {
+              "name": "layout.one",
+              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "layout/one"
+            },
+
+            {
+              "name": "layout.off",
+              "descr": "Remove event handlers.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
+                  ]
+                }
+              ],
+              "md": "layout/off"
+            },
+
+            {
+              "name": "layout.trigger",
+              "descr": "Trigger one or more events on the layout.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "layout/trigger"
+            }
+          ]
         }
+
       ]
     },
 

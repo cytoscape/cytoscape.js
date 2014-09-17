@@ -42,6 +42,11 @@
       var layout = new LayoutProto( $$.util.extend({}, options, {
         cy: this
       }) );
+
+      // make sure layout has _private for use w/ std apis like .on()
+      if( !$$.is.plainObject(layout._private) ){
+        layout._private = {};
+      }
       
       return layout;
     }

@@ -18,7 +18,7 @@
       $$.fn[type]( impl );
     }
     
-    // fill in missing (optional) layout functions in the prototype
+    // fill in missing layout functions in the prototype
     if( type === 'layout' ){
       var layoutProto = registrant.prototype;
       var optLayoutFns = ['stop'];
@@ -28,6 +28,16 @@
 
         layoutProto[fnName] = layoutProto[fnName] || function(){};
       }
+
+      layoutProto.on = $$.define.on({ layout: true });
+      layoutProto.one = $$.define.on({ layout: true, unbindSelfOnTrigger: true });
+      layoutProto.once = $$.define.on({ layout: true, unbindAllBindersOnTrigger: true });
+      layoutProto.off = $$.define.off({ layout: true });
+      layoutProto.trigger = $$.define.trigger({ layout: true });
+
+      // aliases for those folks who like old stuff:
+      layoutProto.bind = layoutProto.on;
+      layoutProto.unbind = layoutProto.off;
     }
 
     return $$.util.setMap({

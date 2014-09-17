@@ -127,6 +127,14 @@ describe('Graph theory algorithms (advanced) ', function(){
     return Math.sqrt( Math.pow(n1[0] - n2[0], 2) + Math.pow(n1[1] - n2[1], 2));
   };
 
+  function ele2id( ele ){
+    return ele.id();
+  }
+
+  function isNode( ele ){
+    return ele.isNode();
+  }
+
   it('eles.aStar(): directed, null heuristic, unweighted', function(){
     var options = {root: nodes[6][1], 
              goal: nodes[1][5], 
@@ -136,7 +144,7 @@ describe('Graph theory algorithms (advanced) ', function(){
     var res = cy.elements().aStar(options);
     expect(res.found).to.equal(true);
     expect(res.distance).to.equal(9);
-    expect(res.path).to.deep.equal(["6-1", "5-1", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);
+    expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["6-1", "5-1", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);
   });
   
   it('eles.aStar(): directed, heuristic, unweighted', function(){
@@ -148,7 +156,7 @@ describe('Graph theory algorithms (advanced) ', function(){
     var res = cy.elements().aStar(options);
     expect(res.found).to.equal(true);
     expect(res.distance).to.equal(9);
-    expect(res.path).to.deep.equal(["6-1", "6-2", "6-3", "6-4", "6-5", "6-6", "5-6", "4-6", "3-6", "2-6"]);
+    expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["6-1", "6-2", "6-3", "6-4", "6-5", "6-6", "5-6", "4-6", "3-6", "2-6"]);
   });
 
   it('eles.aStar(): undirected, heuristic vs null heuristic (performance), ', function(){
@@ -160,7 +168,7 @@ describe('Graph theory algorithms (advanced) ', function(){
     var res1 = cy.elements().aStar(options1);
     expect(res1.found).to.equal(true);
     expect(res1.distance).to.equal(10);
-    expect(res1.path).to.deep.equal(["3-3", "4-3", "4-2", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);   
+    expect(res1.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["3-3", "4-3", "4-2", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);   
 
     var options2 = {root: nodes[3][3], 
             goal: nodes[1][5], 
@@ -170,7 +178,7 @@ describe('Graph theory algorithms (advanced) ', function(){
     var res2 = cy.elements().aStar(options2);
     expect(res2.found).to.equal(true);
     expect(res2.distance).to.equal(10);
-    expect(res2.path).to.deep.equal(["3-3", "4-3", "4-2", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);   
+    expect(res2.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["3-3", "4-3", "4-2", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);   
 
     // Performance with heuristic should be better than without it
     expect(res1.steps).to.be.below(res2.steps);

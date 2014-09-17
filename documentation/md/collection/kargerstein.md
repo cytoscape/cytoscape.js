@@ -5,9 +5,9 @@ This function returns an object of the following form:
 
 ```js
 {
-  cut, /* List of edge ids that are in the cut*/
-  partition1, /* List of node ids that are in one partition */
-  partition2 /* List of node ids that are in the other partition*/
+  cut, /* Collection of edges that are in the cut */
+  partition1, /* Collection of nodes that are in the first partition */
+  partition2 /* Collection of nodes that are in the second partition */
 }
 ```
 
@@ -15,4 +15,6 @@ This function returns an object of the following form:
 
 ```js
 var ks = cy.elements().kargerStein();
+
+ks.cut.select();
 ```

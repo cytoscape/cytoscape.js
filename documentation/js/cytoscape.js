@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.2.14.
+ * This file is part of Cytoscape.js 2.3-beta.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.2.14';
+  $$.version = '2.3-beta';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -9222,14 +9222,19 @@ var cytoscape;
       var reconstructPath = function(start, end, cameFromMap, pathAcum) {
         // Base case
         if (start == end) {
-          pathAcum.push(end);
+          pathAcum.push( cy.getElementById(end) );
           return pathAcum;
         }
         
         if (end in cameFromMap) {
           // We know which node is before the last one
           var previous = cameFromMap[end];
-          pathAcum.push(end)
+          var previousEdge = cameFromEdge[end];
+
+          pathAcum.push( cy.getElementById(end) );
+          pathAcum.push( cy.getElementById(previousEdge) );
+
+
           return reconstructPath(start, 
                        previous, 
                        cameFromMap, 
@@ -9295,8 +9300,9 @@ var cytoscape;
       if (options.heuristic != null && $$.is.fn(options.heuristic)) {       
         var heuristic = options.heuristic;
       } else {
-        $$$.util.error("Missing required parameter (heuristic)! Aborting.");
-        return;
+        var heuristic = function(){ return 0; }; // use constant if unspecified
+        // $$.util.error("Missing required parameter (heuristic)! Aborting.");
+        // return;
       }
 
       // Weight function - optional
@@ -9317,6 +9323,7 @@ var cytoscape;
       var closedSet = [];
       var openSet = [source.id()];
       var cameFrom = {};
+      var cameFromEdge = {};
       var gScore = {};
       var fScore = {};
 
@@ -9347,7 +9354,7 @@ var cytoscape;
           return {
             found : true
             , distance : gScore[cMin.id()]
-            , path : rPath
+            , path : new $$.Collection(cy, rPath)
             , steps : steps
           };          
         }
@@ -9389,6 +9396,7 @@ var cytoscape;
             fScore[w.id()] = tempScore + heuristic(w);
             openSet.push(w.id()); // Add node to openSet
             cameFrom[w.id()] = cMin.id();
+            cameFromEdge[w.id()] = e.id();
             logDebug("   not in openSet, adding it. ");
             logDebug("   fScore(%s) = %s", w.id(), tempScore);
             continue;
@@ -9486,13 +9494,20 @@ var cytoscape;
       // Initialize matrix used for path reconstruction
       // Initialize distance matrix
       var next = [];
-      for (var i = 0; i < numNodes; i++) {
-        var newRow = new Array(numNodes);
-        for (var j = 0; j < numNodes; j++) {
-          newRow[j] = undefined;
+      var edgeNext = [];
+
+      var initMatrix = function(next){
+        for (var i = 0; i < numNodes; i++) {
+          var newRow = new Array(numNodes);
+          for (var j = 0; j < numNodes; j++) {
+            newRow[j] = undefined;
+          }
+          next.push(newRow);
         }
-        next.push(newRow);
       }
+
+      initMatrix(next);
+      initMatrix(edgeNext);
       
       // Process edges
       for (var i = 0; i < edges.length ; i++) {     
@@ -9504,6 +9519,7 @@ var cytoscape;
         if (dist[sourceIndex][targetIndex] > weight) {
           dist[sourceIndex][targetIndex] = weight
           next[sourceIndex][targetIndex] = targetIndex;
+          edgeNext[sourceIndex][targetIndex] = edges[i];
         }
       }
 
@@ -9516,8 +9532,9 @@ var cytoscape;
           
           // Check if already process another edge between same 2 nodes
           if (dist[sourceIndex][targetIndex] > weight) {
-            dist[sourceIndex][targetIndex] = weight
+            dist[sourceIndex][targetIndex] = weight;
             next[sourceIndex][targetIndex] = targetIndex;
+            edgeNext[sourceIndex][targetIndex] = edges[i];
           }
         }
       }
@@ -9541,7 +9558,7 @@ var cytoscape;
       }
 
       var res = {
-        distanceTo: function(from, to) {
+        distance: function(from, to) {
           if ($$.is.string(from)) {
             // from is a selector string
             var fromId = (cy.filter(from)[0]).id();
@@ -9561,18 +9578,25 @@ var cytoscape;
           return dist[id2position[fromId]][id2position[toId]];
         },
 
-        pathTo : function(from, to) {
-          var reconstructPathAux = function(from, to, next, position2id) {
+        path: function(from, to) {
+          var reconstructPathAux = function(from, to, next, position2id, edgeNext) {
             if (from === to) {
-              return [position2id[from]];
+              return cy.getElementById( position2id[from] );
             }
             if (next[from][to] === undefined) {
               return undefined;
             }
-            var path = [position2id[from]];
+
+            var path = [ cy.getElementById(position2id[from]) ];
+            var prev = from;
             while (from !== to) {
+              prev = from;
               from = next[from][to];
-              path.push(position2id[from]);
+
+              var edge = edgeNext[prev][from];
+              path.push( edge );
+
+              path.push( cy.getElementById(position2id[from]) );
             }
             return path;
           };
@@ -9592,10 +9616,14 @@ var cytoscape;
             // to is a node
             var toId = to.id();
           }
-          return reconstructPathAux(id2position[fromId], 
+          
+          var pathArr = reconstructPathAux(id2position[fromId], 
                         id2position[toId], 
                         next,
-                        position2id);
+                        position2id,
+                        edgeNext);
+
+          return new $$.Collection( cy, pathArr );
         },
       };
 
@@ -9674,6 +9702,7 @@ var cytoscape;
       // Initializations
       var cost = [];
       var predecessor = [];
+      var predEdge = [];
       
       for (var i = 0; i < numNodes; i++) {
         if (nodes[i].id() === source.id()) {
@@ -9697,6 +9726,7 @@ var cytoscape;
           if (temp < cost[targetIndex]) {
             cost[targetIndex] = temp;
             predecessor[targetIndex] = sourceIndex;
+            predEdge[targetIndex] = edges[e];
             flag = true;
           }
 
@@ -9706,6 +9736,7 @@ var cytoscape;
             if (temp < cost[sourceIndex]) {
               cost[sourceIndex] = temp;
               predecessor[sourceIndex] = targetIndex;
+              predEdge[sourceIndex] = edges[e];
               flag = true;
             }
           }
@@ -9754,24 +9785,26 @@ var cytoscape;
 
         pathTo : function(to) {
 
-          var reconstructPathAux = function(predecessor, fromPos, toPos, position2id, acumPath) {
-            // Add toId to path
-            acumPath.push(position2id[toPos]);        
-            if (fromPos === toPos) {
-              // reached starting node
-              return acumPath;
+          var reconstructPathAux = function(predecessor, fromPos, toPos, position2id, acumPath, predEdge) {
+            for(;;){
+              // Add toId to path
+              acumPath.push( cy.getElementById(position2id[toPos]) );
+              acumPath.push( predEdge[toPos] );
+
+              if (fromPos === toPos) {
+                // reached starting node
+                return acumPath;
+              }
+
+              // If no path exists, discart acumulated path and return undefined
+              var predPos = predecessor[toPos];
+              if (typeof predPos === "undefined") {
+                return undefined;
+              }
+
+              toPos = predPos;
             }
-            // If no path exists, discart acumulated path and return undefined
-            var predPos = predecessor[toPos];
-            if (typeof predPos === "undefined") {
-              return undefined;
-            }
-            // recursively compute path until predecessor of toId
-            return reconstructPathAux(predecessor, 
-                          fromPos, 
-                          predPos, 
-                          position2id, 
-                          acumPath);
+
           };
 
           if ($$.is.string(to)) {
@@ -9788,13 +9821,15 @@ var cytoscape;
                         id2position[source.id()],
                         id2position[toId], 
                         position2id, 
-                        path);
+                        path,
+                        predEdge);
 
           // Get it in the correct order and return it
           if (res != null) {
             res.reverse();
           }
-          return res;                       
+
+          return new $$.Collection(cy, res);                       
         }, 
 
         hasNegativeWeightCycle: false
@@ -9964,7 +9999,7 @@ var cytoscape;
 
       
       // Construct result
-      var resEdges = (minCut[0]).map(function(e) {return edges[e[0]].id();});
+      var resEdges = (minCut[0]).map(function(e){ return edges[e[0]]; });
       var partition1 = [];
       var partition2 = [];
 
@@ -9973,16 +10008,16 @@ var cytoscape;
       for (var i = 0; i < minCut[1].length; i++) { 
         var partitionId = minCut[1][i]; 
         if (partitionId === witnessNodePartition) {
-          partition1.push(nodes[i].id());
+          partition1.push(nodes[i]);
         } else {
-          partition2.push(nodes[i].id());
+          partition2.push(nodes[i]);
         }       
       }
       
       var ret = {
-        cut: resEdges,
-        partition1: partition1,
-        partition2: partition2
+        cut: new $$.Collection(cy, resEdges),
+        partition1: new $$.Collection(cy, partition1),
+        partition2: new $$.Collection(cy, partition2)
       };
       
       return ret;
@@ -12130,6 +12165,8 @@ var cytoscape;
       var updatedCompounds = this.updateCompoundBounds();
       var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
       toNotify.rtrigger('style'); // let the renderer know we've updated style
+
+      return this; // chaining
     },
 
     show: function(){

@@ -2762,36 +2762,6 @@ var cytoscape;
         cytoscape(options);
       });
     }
-    
-    // proxy a function call
-    else {
-      var rets = [];
-      var args = [];
-      for(var i = 1; i < arguments.length; i++){
-        args[i - 1] = arguments[i];
-      }
-      
-      $this.each(function(){
-        var $ele = $(this);
-        var cy = cyReg( $ele ).cy;
-        var fnName = opts;
-        
-        if( cy && $$.is.fn( cy[fnName] ) ){
-          var ret = cy[fnName].apply(cy, args);
-          rets.push(ret);
-        }
-      });
-      
-      // if only one instance, don't need to return array
-      if( rets.length === 1 ){
-        rets = rets[0];
-      } else if( rets.length === 0 ){
-        rets = $(this);
-      }
-      
-      return rets;
-    }
-
   };
   
   // allow access to the global cytoscape object under jquery for legacy reasons
@@ -3574,26 +3544,7 @@ var cytoscape;
 
         for( var i = 0; i < all.length; i++ ){
           var ele = all[i];
-
-          if( isEles ){
-            var pos = ele._private.position;
-            var startPosition = {
-              x: pos.x,
-              y: pos.y
-            };
-            var startStyle = style.getValueStyle( ele );
-          }
-
-          if( isCore ){
-            var pan = cy._private.pan;
-            var startPan = {
-              x: pan.x,
-              y: pan.y
-            };
-
-            var startZoom = cy._private.zoom;
-          }
-          
+         
           if( ele.animated() && (params.queue === undefined || params.queue) ){
             q = ele._private.animation.queue;
           } else {
@@ -3604,11 +3555,7 @@ var cytoscape;
             properties: properties,
             duration: params.duration,
             params: params,
-            callTime: callTime,
-            startPosition: startPosition,
-            startStyle: startStyle,
-            startPan: startPan,
-            startZoom: startZoom
+            callTime: callTime
           });
         }
 
@@ -3656,7 +3603,7 @@ var cytoscape;
         }
         
         // we have to notify (the animation loop doesn't do it for us on `stop`)
-        this.cy().notify({
+        cy.notify({
           collection: this,
           type: 'draw'
         });
@@ -6722,7 +6669,6 @@ var cytoscape;
         json.style = cy.style().json();
       }
 
-      json.scratch = cy.scratch();
       json.zoomingEnabled = cy._private.zoomingEnabled;
       json.userZoomingEnabled = cy._private.userZoomingEnabled;
       json.zoom = cy._private.zoom;
@@ -6966,9 +6912,13 @@ var cytoscape;
           var completes = [];
           for(var i = current.length - 1; i >= 0; i--){
             var ani = current[i];
+
+            // start if need be
+            if( !ani.started ){ startAnimation( ele, ani ); }
+            
             step( ele, ani, now, isCore );
 
-            if( current[i].done ){
+            if( ani.done ){
               completes.push( ani );
               
               // remove current[i]
@@ -7023,12 +6973,45 @@ var cytoscape;
         eles.unmerge( doneEles );
 
       } // handleElements
-        
+      
+      function startAnimation( self, ani ){
+        var isCore = $$.is.core( self );
+        var isEles = !isCore;
+        var ele = self;
+        var style = cy._private.style;
+
+        if( isEles ){
+          var pos = ele._private.position;
+          var startPosition = {
+            x: pos.x,
+            y: pos.y
+          };
+          var startStyle = style.getValueStyle( ele );
+        }
+
+        if( isCore ){
+          var pan = cy._private.pan;
+          var startPan = {
+            x: pan.x,
+            y: pan.y
+          };
+
+          var startZoom = cy._private.zoom;
+        }
+
+        ani.started = true;
+        ani.startTime = Date.now();
+        ani.startPosition = startPosition;
+        ani.startStyle = startStyle;
+        ani.startPan = startPan;
+        ani.startZoom = startZoom;
+      }
+
       function step( self, animation, now, isCore ){
         var style = cy._private.style;
         var properties = animation.properties;
         var params = animation.params;
-        var startTime = animation.callTime;
+        var startTime = animation.startTime;
         var percent;
         var isEles = !isCore;
         
@@ -7986,7 +7969,7 @@ var cytoscape;
     },
     
     center: function( elements ){
-      var pan = getCenterPan( elements );
+      var pan = this.getCenterPan( elements );
 
       if( pan ){
         this._private.pan = pan;
@@ -9057,8 +9040,8 @@ var cytoscape;
 
       var edges = this.edges();
       var S = edges.toArray().sort(function(a, b){
-        var weightA = weightFn.call(a);
-        var weightB = weightFn.call(b);
+        var weightA = weightFn.call(a, a);
+        var weightB = weightFn.call(b, b);
 
         return weightA - weightB;
       });
@@ -9227,6 +9210,7 @@ var cytoscape;
     //   distance // Distance for the shortest path from root to goal
     //   path // Array of ids of nodes in shortest path
     aStar: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9238,14 +9222,19 @@ var cytoscape;
       var reconstructPath = function(start, end, cameFromMap, pathAcum) {
         // Base case
         if (start == end) {
-          pathAcum.push(end);
+          pathAcum.push( cy.getElementById(end) );
           return pathAcum;
         }
         
         if (end in cameFromMap) {
           // We know which node is before the last one
           var previous = cameFromMap[end];
-          pathAcum.push(end)
+          var previousEdge = cameFromEdge[end];
+
+          pathAcum.push( cy.getElementById(end) );
+          pathAcum.push( cy.getElementById(previousEdge) );
+
+
           return reconstructPath(start, 
                        previous, 
                        cameFromMap, 
@@ -9311,8 +9300,9 @@ var cytoscape;
       if (options.heuristic != null && $$.is.fn(options.heuristic)) {       
         var heuristic = options.heuristic;
       } else {
-        $$$.util.error("Missing required parameter (heuristic)! Aborting.");
-        return;
+        var heuristic = function(){ return 0; }; // use constant if unspecified
+        // $$.util.error("Missing required parameter (heuristic)! Aborting.");
+        // return;
       }
 
       // Weight function - optional
@@ -9333,6 +9323,7 @@ var cytoscape;
       var closedSet = [];
       var openSet = [source.id()];
       var cameFrom = {};
+      var cameFromEdge = {};
       var gScore = {};
       var fScore = {};
 
@@ -9363,7 +9354,7 @@ var cytoscape;
           return {
             found : true
             , distance : gScore[cMin.id()]
-            , path : rPath
+            , path : new $$.Collection(cy, rPath)
             , steps : steps
           };          
         }
@@ -9405,6 +9396,7 @@ var cytoscape;
             fScore[w.id()] = tempScore + heuristic(w);
             openSet.push(w.id()); // Add node to openSet
             cameFrom[w.id()] = cMin.id();
+            cameFromEdge[w.id()] = e.id();
             logDebug("   not in openSet, adding it. ");
             logDebug("   fScore(%s) = %s", w.id(), tempScore);
             continue;
@@ -9426,7 +9418,7 @@ var cytoscape;
       logDebug("Reached end of computation without finding our goal");
       return {
         found : false
-        , cost : undefined
+        , distance : undefined
         , path : undefined 
         , steps : steps
       };
@@ -9441,6 +9433,7 @@ var cytoscape;
     //   pathTo : function(fromId, toId) // Returns the shortest path from node with ID "fromID" to node with ID "toId", as an array of node IDs
     //   distanceTo: function(fromId, toId) // Returns the distance of the shortest path from node with ID "fromID" to node with ID "toId"
     floydWarshall: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9501,13 +9494,20 @@ var cytoscape;
       // Initialize matrix used for path reconstruction
       // Initialize distance matrix
       var next = [];
-      for (var i = 0; i < numNodes; i++) {
-        var newRow = new Array(numNodes);
-        for (var j = 0; j < numNodes; j++) {
-          newRow[j] = undefined;
+      var edgeNext = [];
+
+      var initMatrix = function(next){
+        for (var i = 0; i < numNodes; i++) {
+          var newRow = new Array(numNodes);
+          for (var j = 0; j < numNodes; j++) {
+            newRow[j] = undefined;
+          }
+          next.push(newRow);
         }
-        next.push(newRow);
       }
+
+      initMatrix(next);
+      initMatrix(edgeNext);
       
       // Process edges
       for (var i = 0; i < edges.length ; i++) {     
@@ -9519,6 +9519,7 @@ var cytoscape;
         if (dist[sourceIndex][targetIndex] > weight) {
           dist[sourceIndex][targetIndex] = weight
           next[sourceIndex][targetIndex] = targetIndex;
+          edgeNext[sourceIndex][targetIndex] = edges[i];
         }
       }
 
@@ -9531,8 +9532,9 @@ var cytoscape;
           
           // Check if already process another edge between same 2 nodes
           if (dist[sourceIndex][targetIndex] > weight) {
-            dist[sourceIndex][targetIndex] = weight
+            dist[sourceIndex][targetIndex] = weight;
             next[sourceIndex][targetIndex] = targetIndex;
+            edgeNext[sourceIndex][targetIndex] = edges[i];
           }
         }
       }
@@ -9556,7 +9558,7 @@ var cytoscape;
       }
 
       var res = {
-        distanceTo: function(from, to) {
+        distance: function(from, to) {
           if ($$.is.string(from)) {
             // from is a selector string
             var fromId = (cy.filter(from)[0]).id();
@@ -9576,18 +9578,25 @@ var cytoscape;
           return dist[id2position[fromId]][id2position[toId]];
         },
 
-        pathTo : function(from, to) {
-          var reconstructPathAux = function(from, to, next, position2id) {
+        path: function(from, to) {
+          var reconstructPathAux = function(from, to, next, position2id, edgeNext) {
             if (from === to) {
-              return [position2id[from]];
+              return cy.getElementById( position2id[from] );
             }
             if (next[from][to] === undefined) {
               return undefined;
             }
-            var path = [position2id[from]];
+
+            var path = [ cy.getElementById(position2id[from]) ];
+            var prev = from;
             while (from !== to) {
+              prev = from;
               from = next[from][to];
-              path.push(position2id[from]);
+
+              var edge = edgeNext[prev][from];
+              path.push( edge );
+
+              path.push( cy.getElementById(position2id[from]) );
             }
             return path;
           };
@@ -9607,10 +9616,14 @@ var cytoscape;
             // to is a node
             var toId = to.id();
           }
-          return reconstructPathAux(id2position[fromId], 
+          
+          var pathArr = reconstructPathAux(id2position[fromId], 
                         id2position[toId], 
                         next,
-                        position2id);
+                        position2id,
+                        edgeNext);
+
+          return new $$.Collection( cy, pathArr );
         },
       };
 
@@ -9629,6 +9642,7 @@ var cytoscape;
     //   distanceTo: function(toId) // Returns the distance of the shortest path from root node to node with ID "toId"
     //   hasNegativeWeightCycle: true/false (if true, pathTo and distanceTo will be undefined)
     bellmanFord: function(options) {
+      options = options || {};
 
       var logDebug = function() {
         if (debug) {
@@ -9688,6 +9702,7 @@ var cytoscape;
       // Initializations
       var cost = [];
       var predecessor = [];
+      var predEdge = [];
       
       for (var i = 0; i < numNodes; i++) {
         if (nodes[i].id() === source.id()) {
@@ -9711,6 +9726,7 @@ var cytoscape;
           if (temp < cost[targetIndex]) {
             cost[targetIndex] = temp;
             predecessor[targetIndex] = sourceIndex;
+            predEdge[targetIndex] = edges[e];
             flag = true;
           }
 
@@ -9720,6 +9736,7 @@ var cytoscape;
             if (temp < cost[sourceIndex]) {
               cost[sourceIndex] = temp;
               predecessor[sourceIndex] = targetIndex;
+              predEdge[sourceIndex] = edges[e];
               flag = true;
             }
           }
@@ -9768,24 +9785,26 @@ var cytoscape;
 
         pathTo : function(to) {
 
-          var reconstructPathAux = function(predecessor, fromPos, toPos, position2id, acumPath) {
-            // Add toId to path
-            acumPath.push(position2id[toPos]);        
-            if (fromPos === toPos) {
-              // reached starting node
-              return acumPath;
+          var reconstructPathAux = function(predecessor, fromPos, toPos, position2id, acumPath, predEdge) {
+            for(;;){
+              // Add toId to path
+              acumPath.push( cy.getElementById(position2id[toPos]) );
+              acumPath.push( predEdge[toPos] );
+
+              if (fromPos === toPos) {
+                // reached starting node
+                return acumPath;
+              }
+
+              // If no path exists, discart acumulated path and return undefined
+              var predPos = predecessor[toPos];
+              if (typeof predPos === "undefined") {
+                return undefined;
+              }
+
+              toPos = predPos;
             }
-            // If no path exists, discart acumulated path and return undefined
-            var predPos = predecessor[toPos];
-            if (typeof predPos === "undefined") {
-              return undefined;
-            }
-            // recursively compute path until predecessor of toId
-            return reconstructPathAux(predecessor, 
-                          fromPos, 
-                          predPos, 
-                          position2id, 
-                          acumPath);
+
           };
 
           if ($$.is.string(to)) {
@@ -9802,13 +9821,15 @@ var cytoscape;
                         id2position[source.id()],
                         id2position[toId], 
                         position2id, 
-                        path);
+                        path,
+                        predEdge);
 
           // Get it in the correct order and return it
           if (res != null) {
             res.reverse();
           }
-          return res;                       
+
+          return new $$.Collection(cy, res);                       
         }, 
 
         hasNegativeWeightCycle: false
@@ -9828,6 +9849,7 @@ var cytoscape;
     //   partition1: list of IDs of nodes in one partition
     //   partition2: list of IDs of nodes in the other partition
     kargerStein: function(options) {
+      options = options || {};
       
       var logDebug = function() {
         if (debug) {
@@ -9977,7 +9999,7 @@ var cytoscape;
 
       
       // Construct result
-      var resEdges = (minCut[0]).map(function(e) {return edges[e[0]].id();});
+      var resEdges = (minCut[0]).map(function(e){ return edges[e[0]]; });
       var partition1 = [];
       var partition2 = [];
 
@@ -9986,16 +10008,16 @@ var cytoscape;
       for (var i = 0; i < minCut[1].length; i++) { 
         var partitionId = minCut[1][i]; 
         if (partitionId === witnessNodePartition) {
-          partition1.push(nodes[i].id());
+          partition1.push(nodes[i]);
         } else {
-          partition2.push(nodes[i].id());
+          partition2.push(nodes[i]);
         }       
       }
       
       var ret = {
-        cut: resEdges,
-        partition1: partition1,
-        partition2: partition2
+        cut: new $$.Collection(cy, resEdges),
+        partition1: new $$.Collection(cy, partition1),
+        partition2: new $$.Collection(cy, partition2)
       };
       
       return ret;
@@ -10010,6 +10032,7 @@ var cytoscape;
     // retObj => returned object by function
     //  rank : function that returns the pageRank of a given node (object or selector string)
     pageRank: function(options) {
+      options = options || {};
       
       var normalizeVector = function(vector) {
         var length = vector.length;
@@ -12142,6 +12165,8 @@ var cytoscape;
       var updatedCompounds = this.updateCompoundBounds();
       var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
       toNotify.rtrigger('style'); // let the renderer know we've updated style
+
+      return this; // chaining
     },
 
     show: function(){
@@ -17793,9 +17818,8 @@ var cytoscape;
             newlySelCol.select();
           }
 
-          if( newlySelected.length === 0 ){
-            r.redraw();
-          }
+          // always need redraw in case eles unselectable
+          r.redraw();
           
         }
         

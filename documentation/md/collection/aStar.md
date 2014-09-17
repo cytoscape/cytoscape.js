@@ -8,7 +8,7 @@ This function returns an object of the following form:
 {
   found, /* true or false */
   distance, /* Distance of the shortest path, if found */
-  path /* Array of node ids in the shortest path, if found */
+  path /* Ordered collection of elements in the shortest path, if found */
 }
 ```
 
@@ -22,4 +22,6 @@ Regarding optional options:
 
 ```js
 var aStar = cy.elements().aStar({ root: "#j", goal: "#e" });
+
+aStar.path.select();
 ```

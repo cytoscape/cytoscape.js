@@ -151,6 +151,8 @@
       var updatedCompounds = this.updateCompoundBounds();
       var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
       toNotify.rtrigger('style'); // let the renderer know we've updated style
+
+      return this; // chaining
     },
 
     show: function(){

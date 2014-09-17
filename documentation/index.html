@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="An open-source JavaScript graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -24,8 +24,8 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)</span><span class="version">2.3-beta</span></h1>
-			<div class="subtitle">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)</span><span class="version">2.3-beta</span></h1>
+			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
@@ -100,6 +100,14 @@ cy = cytoscape( options = {
       css: {
         <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
         <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
+      }
+    },
+
+    {
+      selector: <span class="hljs-string">'.foo'</span>,
+      css: {
+        <span class="hljs-string">'border-width'</span>: <span class="hljs-number">4</span>,
+        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'red'</span>
       }
     }
   ],
@@ -5326,7 +5334,7 @@ j.data({
 							
 							
 							
-							<div class="descr"><p>Get or set the position of a node.</p>
+							<div class="descr"><p>Get or set the (model) position of a node.</p>
 </div>
 
 							
@@ -5445,7 +5453,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							
 							
 							
-							<div class="descr"><p>Set the positions of several nodes with a function.</p>
+							<div class="descr"><p>Set the (model) positions of several nodes with a function.</p>
 </div>
 
 							
@@ -6025,6 +6033,17 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 				
 				
 				
+					<h2 id="collection/layout-todo">Layout TODO <a href="#collection/layout-todo"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+
+					
+
+				
+				
+				
 					<h2 id="collection/selection">Selection <a href="#collection/selection"><span class="icon-bookmark"></span></a></h2>
 
 					
@@ -6152,6 +6171,246 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 					
 
+					
+						<div class="function">
+							<div class="name" id="collection/style/eles.addClass"><span class="fn-name">eles.addClass()</span>  <a href="#collection/style/eles.addClass"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Add classes to elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.addClass( <span class="comma">, </span>classes )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													 
+													<span class="descr"><p>A space-separated list of class names to add to the elements.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).addClass(<span class="hljs-string">'foo'</span>);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/eles.removeClass"><span class="fn-name">eles.removeClass()</span>  <a href="#collection/style/eles.removeClass"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove classes from elements.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.removeClass( <span class="comma">, </span>classes )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													 
+													<span class="descr"><p>A space-separated list of class names to remove from the elements.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).removeClass(<span class="hljs-string">'foo'</span>);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/eles.toggleClass"><span class="fn-name">eles.toggleClass()</span>  <a href="#collection/style/eles.toggleClass"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Toggle whether the elements have the specified classes.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.toggleClass( <span class="comma">, </span>classes [<span class="comma">, </span>toggle] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													 
+													<span class="descr"><p>A space-separated list of class names to toggle on the elements.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">toggle</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<p>Toggle:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).toggleClass(<span class="hljs-string">'foo'</span>);
+</code></pre>
+<p>Toggle on:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).toggleClass(<span class="hljs-string">'foo'</span>, <span class="hljs-literal">true</span>);
+</code></pre>
+<p>Toggle off:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).toggleClass(<span class="hljs-string">'foo'</span>, <span class="hljs-literal">false</span>);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/eles.flashClass"><span class="fn-name">eles.flashClass()</span>  <a href="#collection/style/eles.flashClass"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Add classes to the elements, and then remove the classes after a specified duration.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.flashClass( <span class="comma">, </span>classes [<span class="comma">, </span>duration] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">classes</span>
+													 
+													<span class="descr"><p>A space-separated list of class names to flash on the elements.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">duration</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j, #e'</span>).flashClass(<span class="hljs-string">'foo'</span>, <span class="hljs-number">1000</span>);
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/style/ele.hasClass"><span class="fn-name">ele.hasClass()</span>  <a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Get whether an element has a particular class.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">ele.hasClass( <span class="comma">, </span>className )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">className</span>
+													 
+													<span class="descr"><p>The name of the class to test for.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">console.log( <span class="hljs-string">'j has class `foo` : '</span>  + cy.$(<span class="hljs-string">'#j'</span>).hasClass(<span class="hljs-string">'foo'</span>) );
+</code></pre>
+
+								
+							</div>		
+						</div>
 					
 						<div class="function">
 							<div class="name" id="collection/style/eles.css"><span class="fn-name">eles.css()</span> et al <a href="#collection/style/eles.css"><span class="icon-bookmark"></span></a></div>
@@ -6482,214 +6741,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="descr"><p>Get whether the element&#39;s effective opacity is completely transparent, which takes into consideration parent node opacity.</p>
 </div>
 
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/eles.addClass"><span class="fn-name">eles.addClass()</span>  <a href="#collection/style/eles.addClass"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Add classes to elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.addClass( <span class="comma">, </span>classes )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">classes</span>
-													 
-													<span class="descr"><p>A space-separated list of class names to add to the elements.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/eles.removeClass"><span class="fn-name">eles.removeClass()</span>  <a href="#collection/style/eles.removeClass"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Remove classes from elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.removeClass( <span class="comma">, </span>classes )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">classes</span>
-													 
-													<span class="descr"><p>A space-separated list of class names to remove from the elements.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/eles.toggleClass"><span class="fn-name">eles.toggleClass()</span>  <a href="#collection/style/eles.toggleClass"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Toggle whether the elements have the specified classes.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.toggleClass( <span class="comma">, </span>classes [<span class="comma">, </span>toggle] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">classes</span>
-													 
-													<span class="descr"><p>A space-separated list of class names to toggle on the elements.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">toggle</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/eles.flashClass"><span class="fn-name">eles.flashClass()</span>  <a href="#collection/style/eles.flashClass"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Add classes to the elements, and then remove the classes after a specified duration.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.flashClass( <span class="comma">, </span>classes [<span class="comma">, </span>duration] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">classes</span>
-													 
-													<span class="descr"><p>A space-separated list of class names to flash on the elements.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">duration</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/ele.hasClass"><span class="fn-name">ele.hasClass()</span>  <a href="#collection/style/ele.hasClass"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Get whether an element has a particular class.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">ele.hasClass( <span class="comma">, </span>className )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">className</span>
-													 
-													<span class="descr"><p>The name of the class to test for.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
 							
 
 							<div class="details">
@@ -7048,6 +7099,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> heavies = cy.$(<span class="hljs-string">'node[weight &gt; 60]'</span>);
+<span class="hljs-keyword">var</span> guys = cy.$(<span class="hljs-string">'#j, #g, #k'</span>);
+
+console.log( <span class="hljs-string">'same ? '</span> + heavies.same(guys) );
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7085,6 +7144,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> guys = cy.$(<span class="hljs-string">'#j, #g, #k'</span>);
+
+console.log( <span class="hljs-string">'any same ? '</span> + j.anySame(guys) );
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -7124,6 +7191,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> gAndK = cy.$(<span class="hljs-string">'#g, #k'</span>);
+
+console.log( <span class="hljs-string">'all neighbours ? '</span> + j.allAreNeighbors(gAndK) );
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7162,6 +7237,13 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+console.log( <span class="hljs-string">'j has weight &gt; 50 ? '</span> + j.is(<span class="hljs-string">'[weight &gt; 50]'</span>) );
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7199,6 +7281,13 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> jAndE = cy.$(<span class="hljs-string">'#j, #e'</span>);
+
+console.log( <span class="hljs-string">'j and e all have weight &gt; 50 ? '</span> + jAndE.allAre(<span class="hljs-string">'[weight &gt; 50]'</span>) );
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -7278,6 +7367,16 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> jAndE = cy.$(<span class="hljs-string">'#j, #e'</span>);
+<span class="hljs-keyword">var</span> someHeavierThan50 = jAndE.some(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span>{</span>
+  <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
+});
+
+console.log( <span class="hljs-string">'some heavier than 50 ? '</span> + someHeavierThan50 );
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7355,6 +7454,16 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> jAndE = cy.$(<span class="hljs-string">'#j, #e'</span>);
+<span class="hljs-keyword">var</span> everyHeavierThan50 = jAndE.every(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span>{</span>
+  <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
+});
+
+console.log( <span class="hljs-string">'every heavier than 50 ? '</span> + everyHeavierThan50 );
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -7793,6 +7902,18 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<p>With a collection:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> e = cy.$(<span class="hljs-string">'#e'</span>);
+
+j.add(e);
+</code></pre>
+<p>With a selector:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j'</span>).add(<span class="hljs-string">'#e'</span>);
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7850,6 +7971,18 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<p>With a collection:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> nodes = cy.nodes();
+
+nodes.not(j);
+</code></pre>
+<p>With a selector:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.nodes().not(<span class="hljs-string">'#j'</span>);
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -7906,6 +8039,14 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> jNhd = cy.$(<span class="hljs-string">'#j'</span>).neighborhood();
+<span class="hljs-keyword">var</span> eNhd = cy.$(<span class="hljs-string">'#e'</span>).neighborhood();
+
+jNhd.intersect( eNhd );
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -8028,6 +8169,11 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.nodes().filter(<span class="hljs-string">'[weight &gt; 50]'</span>);
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8107,9 +8253,8 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<p>Get an array of node weights:</p>
-<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> weights = cy.nodes().map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span>{</span>
-  <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>);
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.nodes().stdFilter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span>{</span>
+  <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
 });
 </code></pre>
 
@@ -8151,6 +8296,27 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<p>Get collection of nodes in order of increasing weight:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> nodes = cy.nodes().sort(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( a, b )</span>{</span>
+  <span class="hljs-keyword">return</span> a.data(<span class="hljs-string">'weight'</span>) &gt; b.data(<span class="hljs-string">'weight'</span>);
+});
+
+<span class="hljs-comment">// show order via animations</span>
+<span class="hljs-keyword">var</span> duration = <span class="hljs-number">1000</span>;
+nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node, i )</span>{</span>
+  node.delay( i * duration ).animate({
+    css: {
+      <span class="hljs-string">'border-width'</span>: <span class="hljs-number">4</span>,
+      <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'green'</span>
+    }
+  }, { duration: duration });
+});
+
+console.log(<span class="hljs-string">'Animating nodes to show sorted order'</span>);
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -8235,6 +8401,8 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> weights = cy.nodes().map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span>{</span>
   <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>);
 });
+
+console.log(map);
 </code></pre>
 
 								
@@ -8520,6 +8688,9 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 <p>The neighbourhood returned by this function is a bit different than the traditional definition of a &quot;neighbourhood&quot;:  This returned neighbourhood includes the edges connecting the collection to the neighbourhood.  This gives you more flexibility.</p>
 <p>An <strong>open neighbourhood</strong> is one that <strong>does not</strong> include the original set of elements.  If unspecified, a neighbourhood is open by default.</p>
 <p>A <strong>closed neighbourhood</strong> is one that <strong>does</strong> include the original set of elements. </p>
+<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#j'</span>).neighborhood();
+</code></pre>
 
 								
 							</div>		
@@ -8579,6 +8750,14 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> e = cy.$(<span class="hljs-string">'#e'</span>);
+
+j.edgesWith(e);
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8636,6 +8815,14 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+<span class="hljs-keyword">var</span> e = cy.$(<span class="hljs-string">'#e'</span>);
+
+j.edgesTo(e);
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8673,6 +8860,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> je = cy.$(<span class="hljs-string">'#je'</span>);
+
+je.connectedNodes();
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -8712,6 +8906,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+j.connectedEdges();
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8749,6 +8950,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> je = cy.$(<span class="hljs-string">'#je'</span>);
+
+je.source();
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -8788,6 +8996,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
+
+edges.sources();
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8826,6 +9041,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 
 							<div class="details">
 								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> je = cy.$(<span class="hljs-string">'#je'</span>);
+
+je.target();
+</code></pre>
+
+								
 							</div>		
 						</div>
 					
@@ -8863,6 +9085,13 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 							
 
 							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
+
+edges.targets();
+</code></pre>
+
 								
 							</div>		
 						</div>
@@ -8909,6 +9138,9 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 <li><code>edge1.source().id() === edge2.source().id() &amp;&amp; edge1.target().id() === edge2.target().id()</code> or </li>
 <li><code>edge1.source().id() === edge2.target().id() &amp;&amp; edge1.target().id() === edge2.source().id()</code>. </li>
 </ul>
+<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#je'</span>).parallelEdges();
+</code></pre>
 
 								
 							</div>		
@@ -8952,6 +9184,9 @@ console.log( <span class="hljs-string">'max val: '</span> + max.value + <span cl
 									<h3 id="details">Details</h3>
 <p>Two edges are said to be codirected if they connect the same two nodes in the same direction: The edges have the same source and target.</p>
 <p>That is, <code>edge1.source().id() === edge2.source().id() &amp;&amp; edge1.target().id() === edge2.target().id()</code>.</p>
+<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.$(<span class="hljs-string">'#je'</span>).codirectedEdges(); <span class="hljs-comment">// only self in this case</span>
+</code></pre>
 
 								
 							</div>		
@@ -9753,6 +9988,15 @@ path.select();
 															
 														
 															<li>
+																<span class="name">goal</span>
+																 
+																<span class="descr"><p>The goal node (selector or collection) where the search ends.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span> 
 																<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
@@ -9779,15 +10023,6 @@ path.select();
 
 															
 														
-															<li>
-																<span class="name">goal</span>
-																 
-																<span class="descr"><p>The goal node (selector or collection) where the search ends.</p>
-</span>
-															</li>
-
-															
-														
 													</ul>
 													
 												</li>
@@ -9806,7 +10041,7 @@ path.select();
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">{
   found, <span class="hljs-comment">/* true or false */</span>
   distance, <span class="hljs-comment">/* Distance of the shortest path, if found */</span>
-  path <span class="hljs-comment">/* Array of node ids in the shortest path, if found */</span>
+  path <span class="hljs-comment">/* Ordered collection of elements in the shortest path, if found */</span>
 }
 </code></pre>
 <p>Regarding optional options:</p>
@@ -9816,51 +10051,8 @@ path.select();
 </ul>
 <h3 id="examples">Examples</h3>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> aStar = cy.elements().aStar({ root: <span class="hljs-string">"#j"</span>, goal: <span class="hljs-string">"#e"</span> });
-</code></pre>
 
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/algorithms/eles.kruskal"><span class="fn-name">eles.kruskal()</span>  <a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Perform Kruskal&#39;s algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.kruskal(  [<span class="comma">, </span>function(edge)] )</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">function(edge)</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>Note that this function runs Kruskal&#39;s algorithm on the subset of the graph in the calling collection.</p>
-<h3 id="examples">Examples</h3>
-<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.elements().kruskal();
+aStar.path.select();
 </code></pre>
 
 								
@@ -9926,13 +10118,20 @@ path.select();
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">{
-  pathTo, <span class="hljs-comment">/* function that computes the shortest path between 2 nodes (either objects or selector strings) */</span>
-  distanceTo <span class="hljs-comment">/* function that computes the shortest distance between 2 nodes (either objects or selector strings) */</span>
+  <span class="hljs-comment">/* function that computes the shortest path between 2 nodes 
+  (either objects or selector strings) */</span>
+  path: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( fromNode, toNode )</span>{</span> <span class="hljs-comment">/* impl */</span> }, 
+
+  <span class="hljs-comment">/* function that computes the shortest distance between 2 nodes 
+  (either objects or selector strings) */</span>
+  distance: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( fromNode, toNode )</span>{</span> <span class="hljs-comment">/* impl */</span> }
 }
 </code></pre>
 <p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> fw = cy.elements().floydWarshall();
+
+fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</span>).select();
 </code></pre>
 
 								
@@ -9944,7 +10143,7 @@ path.select();
 							
 							
 							
-							<div class="descr"><p>Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all the rest.</p>
+							<div class="descr"><p>Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.</p>
 </div>
 
 							
@@ -9975,7 +10174,7 @@ path.select();
 															
 														
 															<li>
-																<span class="name">function()</span>
+																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span> 
 																<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
 </span>
@@ -10007,14 +10206,69 @@ path.select();
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">{
-  pathTo, <span class="hljs-comment">/* function that computes the shortest path from root node to the argument node (either objects or selector string) */</span>
-  distanceTo, <span class="hljs-comment">/* function that computes the shortest distance from root node to argument node (either objects or selector string) */</span>
-  hasNegativeWeightCycle <span class="hljs-comment">/* true/false. If true, pathTo and distanceTo will be undefined */</span>
+  <span class="hljs-comment">/* function that computes the shortest path from root node to the argument node
+  (either objects or selector string) */</span>
+  pathTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(node)</span>{</span> <span class="hljs-comment">/* impl */</span> }, 
+
+  <span class="hljs-comment">/* function that computes the shortest distance from root node to argument node
+  (either objects or selector string) */</span>
+  distanceTo: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(node)</span>{</span> <span class="hljs-comment">/* impl */</span> }, 
+
+  <span class="hljs-comment">/* true/false. If true, pathTo and distanceTo will be undefined */</span>
+  hasNegativeWeightCycle 
 }
 </code></pre>
-<p>If no weight function is defined, a constance weight of 1 is used for each edge. </p>
+<p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
+<p>The Bellman-Ford algorithm is good at detecting negative weight cycles, but it can not return path or distance results if it finds them.</p>
 <h3 id="examples">Examples</h3>
-<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> bf = cy.elements().bellmanFord({ root: <span class="hljs-string">"j"</span> };
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> bf = cy.elements().bellmanFord({ root: <span class="hljs-string">"#j"</span> });
+
+bf.pathTo(<span class="hljs-string">'#g'</span>).select();
+</code></pre>
+
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="collection/algorithms/eles.kruskal"><span class="fn-name">eles.kruskal()</span>  <a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Perform Kruskal&#39;s algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">eles.kruskal(  [<span class="comma">, </span>function(edge)] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function(edge)</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A function that returns the positive numeric weight for <code>this</code> edge.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>Note that this function runs Kruskal&#39;s algorithm on the subset of the graph in the calling collection.</p>
+<h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">cy.elements().kruskal();
 </code></pre>
 
 								
@@ -10030,33 +10284,21 @@ path.select();
 </div>
 
 							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.kargerStein()</div>
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-										</ul>
-									</div>
-								
-							</div>
-							
 
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
 <p>This function returns an object of the following form:</p>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js">{
-  cut, <span class="hljs-comment">/* List of edge ids that are in the cut*/</span>
-  partition1, <span class="hljs-comment">/* List of node ids that are in one partition */</span>
-  partition2 <span class="hljs-comment">/* List of node ids that are in the other partition*/</span>
+  cut, <span class="hljs-comment">/* Collection of edges that are in the cut */</span>
+  partition1, <span class="hljs-comment">/* Collection of nodes that are in the first partition */</span>
+  partition2 <span class="hljs-comment">/* Collection of nodes that are in the second partition */</span>
 }
 </code></pre>
 <h3 id="examples">Examples</h3>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> ks = cy.elements().kargerStein();
+
+ks.cut.select();
 </code></pre>
 
 								
@@ -10136,6 +10378,8 @@ path.select();
 </code></pre>
 <h3 id="examples">Examples</h3>
 <button class="run run-inline-code"><span class="icon-play"></span></button><pre><code class="lang-js"><span class="hljs-keyword">var</span> pr = cy.elements().pageRank();
+
+console.log(<span class="hljs-string">'g rank: '</span> + pr.rank(<span class="hljs-string">'#g'</span>));
 </code></pre>
 
 								
@@ -11484,6 +11728,368 @@ cy.layout( options );</code></pre>
 
 				
 				
+				
+					<h2 id="layouts/layout-manipulation">Layout manipulation <a href="#layouts/layout-manipulation"><span class="icon-bookmark"></span></a></h2>
+
+					
+						<p>Layouts have a set of functions available to them, which allow for more complex behaviour than the primary run-one-layout-at-a-time usecase.  A new, developer accessible layout can be made via <a href="#core/visuals/cy.makeLayout"><code>cy.makeLayout()</code></a>.</p>
+
+					
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-manipulation/layout.run"><span class="fn-name">layout.run()</span>  <a href="#layouts/layout-manipulation/layout.run"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Start running the layout.</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-manipulation/layout.stop"><span class="fn-name">layout.stop()</span>  <a href="#layouts/layout-manipulation/layout.stop"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Stop running the layout.</p>
+</div>
+
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+
+				
+				
+				
+					<h2 id="layouts/layout-events">Layout events <a href="#layouts/layout-events"><span class="icon-bookmark"></span></a></h2>
+
+					
+
+					
+
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-events/layout.on"><span class="fn-name">layout.on()</span>  <a href="#layouts/layout-events/layout.on"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind to events that are emitted by the layout.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">layout.on( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">layout.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-events/layout.one"><span class="fn-name">layout.one()</span>  <a href="#layouts/layout-events/layout.one"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Bind to events that occur in the graph, and trigger the handler only once.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">layout.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">function(evt)</span>
+													 
+													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+</span>
+
+													
+													<ul class="fields">
+														
+															<li>
+																<span class="name">evt</span>
+																 
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+															
+														
+													</ul>
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">layout.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">data</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-events/layout.off"><span class="fn-name">layout.off()</span>  <a href="#layouts/layout-events/layout.off"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove event handlers.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">layout.off( <span class="comma">, </span>events [<span class="comma">, </span>handler] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">handler</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A reference to the handler function to remove.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+									<div class="format">
+										
+											<div class="name">layout.off( <span class="comma">, </span>eventsMap )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">eventsMap</a></span>
+													 
+													<span class="descr"><p>A map of event names to handler functions to remove.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="layouts/layout-events/layout.trigger"><span class="fn-name">layout.trigger()</span>  <a href="#layouts/layout-events/layout.trigger"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Trigger one or more events on the layout.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">layout.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													 
+													<span class="descr"><p>A space separated list of event names to trigger.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">extraParams</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+							</div>		
+						</div>
+					
+
+				
+				
 			
 				<h1 id="architecture">Architecture <a href="#architecture"><span class="icon-bookmark"></span></a></h1>
 
@@ -11640,7 +12246,7 @@ cy.elements().foo();
 </li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp">https://github.com/scalableminds/gulp-image-resize</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -12071,6 +12677,13 @@ cy.elements().foo();
 					
 				
 					<div class="section lvl2">
+						
+						<a href="#collection/layout-todo"><span class="icon-bookmark bookmark-icon"></span> Layout TODO</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
 						<span class="expander">
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
@@ -12101,6 +12714,16 @@ cy.elements().foo();
 					</div>
 
 					
+						<div class="section lvl3"><a href="#collection/style/eles.addClass"><span class="icon-bookmark bookmark-icon"></span> eles.addClass() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/eles.removeClass"><span class="icon-bookmark bookmark-icon"></span> eles.removeClass() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/eles.toggleClass"><span class="icon-bookmark bookmark-icon"></span> eles.toggleClass() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/eles.flashClass"><span class="icon-bookmark bookmark-icon"></span> eles.flashClass() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/style/ele.hasClass"><span class="icon-bookmark bookmark-icon"></span> ele.hasClass() </a></div>
+					
 						<div class="section lvl3"><a href="#collection/style/eles.css"><span class="icon-bookmark bookmark-icon"></span> eles.css() et al</a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/eles.removeCss"><span class="icon-bookmark bookmark-icon"></span> eles.removeCss() </a></div>
@@ -12116,16 +12739,6 @@ cy.elements().foo();
 						<div class="section lvl3"><a href="#collection/style/ele.effectiveOpacity"><span class="icon-bookmark bookmark-icon"></span> ele.effectiveOpacity() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/style/ele.transparent"><span class="icon-bookmark bookmark-icon"></span> ele.transparent() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/style/eles.addClass"><span class="icon-bookmark bookmark-icon"></span> eles.addClass() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/style/eles.removeClass"><span class="icon-bookmark bookmark-icon"></span> eles.removeClass() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/style/eles.toggleClass"><span class="icon-bookmark bookmark-icon"></span> eles.toggleClass() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/style/eles.flashClass"><span class="icon-bookmark bookmark-icon"></span> eles.flashClass() </a></div>
-					
-						<div class="section lvl3"><a href="#collection/style/ele.hasClass"><span class="icon-bookmark bookmark-icon"></span> ele.hasClass() </a></div>
 					
 				
 					<div class="section lvl2">
@@ -12283,11 +12896,11 @@ cy.elements().foo();
 					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.aStar"><span class="icon-bookmark bookmark-icon"></span> eles.aStar() </a></div>
 					
-						<div class="section lvl3"><a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark bookmark-icon"></span> eles.kruskal() </a></div>
-					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.floydWarshall"><span class="icon-bookmark bookmark-icon"></span> eles.floydWarshall() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.bellmanFord"><span class="icon-bookmark bookmark-icon"></span> eles.bellmanFord() </a></div>
+					
+						<div class="section lvl3"><a href="#collection/algorithms/eles.kruskal"><span class="icon-bookmark bookmark-icon"></span> eles.kruskal() </a></div>
 					
 						<div class="section lvl3"><a href="#collection/algorithms/eles.kargerStein"><span class="icon-bookmark bookmark-icon"></span> eles.kargerStein() </a></div>
 					
@@ -12600,6 +13213,38 @@ cy.elements().foo();
 						<a href="#layouts/springy"><span class="icon-bookmark bookmark-icon"></span> springy</a>
 					</div>
 
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a href="#layouts/layout-manipulation"><span class="icon-bookmark bookmark-icon"></span> Layout manipulation</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#layouts/layout-manipulation/layout.run"><span class="icon-bookmark bookmark-icon"></span> layout.run() </a></div>
+					
+						<div class="section lvl3"><a href="#layouts/layout-manipulation/layout.stop"><span class="icon-bookmark bookmark-icon"></span> layout.stop() </a></div>
+					
+				
+					<div class="section lvl2">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a href="#layouts/layout-events"><span class="icon-bookmark bookmark-icon"></span> Layout events</a>
+					</div>
+
+					
+						<div class="section lvl3"><a href="#layouts/layout-events/layout.on"><span class="icon-bookmark bookmark-icon"></span> layout.on() </a></div>
+					
+						<div class="section lvl3"><a href="#layouts/layout-events/layout.one"><span class="icon-bookmark bookmark-icon"></span> layout.one() </a></div>
+					
+						<div class="section lvl3"><a href="#layouts/layout-events/layout.off"><span class="icon-bookmark bookmark-icon"></span> layout.off() </a></div>
+					
+						<div class="section lvl3"><a href="#layouts/layout-events/layout.trigger"><span class="icon-bookmark bookmark-icon"></span> layout.trigger() </a></div>
 					
 				
 			

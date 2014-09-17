@@ -14,4 +14,6 @@ This function returns an object of the following form:
 
 ```js
 var pr = cy.elements().pageRank();
+
+console.log('g rank: ' + pr.rank('#g'));
 ```

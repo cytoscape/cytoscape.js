@@ -636,5 +636,9 @@
       };
     }
   }); 
+
+  // in case some users want to be explicit
+  $$.elesfn.modelPosition = $$.elesfn.position;
+  $$.elesfn.modelPositions = $$.elesfn.positions;
   
 })( cytoscape );

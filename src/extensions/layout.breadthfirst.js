@@ -26,9 +26,7 @@
     var cy = params.cy;
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
-    var edges = eles.edges();
     var graph = eles;
-    var container = cy.container();
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -424,10 +422,7 @@
       return pos[ this.id() ];
     });
     
-  };
-
-  BreadthFirstLayout.prototype.stop = function(){
-    // not a continuous layout
+    return this; // chaining
   };
   
   $$('layout', 'breadthfirst', BreadthFirstLayout);

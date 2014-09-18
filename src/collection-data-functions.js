@@ -250,8 +250,6 @@
     parentPosition: function( dim, val ){
       var ele = this[0];
       var cy = this.cy();
-      var zoom = cy.zoom();
-      var pan = cy.pan();
       var ppos = $$.is.plainObject( dim ) ? dim : undefined;
       var setting = ppos !== undefined || ( val !== undefined && $$.is.string(dim) );
       var hasCompoundNodes = cy.hasCompoundNodes();
@@ -263,7 +261,6 @@
             var parent = hasCompoundNodes ? ele.parent() : null;
             var hasParent = parent && parent.length > 0;
             var relativeToParent = hasParent;
-            var deletePos = dim === null;
 
             if( hasParent ){
               parent = parent[0];
@@ -288,7 +285,6 @@
           var parent = hasCompoundNodes ? ele.parent() : null;
           var hasParent = parent && parent.length > 0;
           var relativeToParent = hasParent;
-          var deletePos = dim === null;
 
           if( hasParent ){
             parent = parent[0];

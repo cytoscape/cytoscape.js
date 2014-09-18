@@ -81,13 +81,15 @@
     // read the calculated css style of the element or override the style (via a bypass)
     css: function( name, value ){
       var cy = this.cy();
+      
       if( !cy.styleEnabled() ){ return this; }
 
+      var updateTransitions = false;
       var style = cy.style();
 
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
-        style.applyBypass( this, props );
+        style.applyBypass( this, props, updateTransitions );
 
         var updatedCompounds = this.updateCompoundBounds();
         var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
@@ -105,7 +107,7 @@
           }
 
         } else { // then set the bypass with the property value
-          style.applyBypass( this, name, value );
+          style.applyBypass( this, name, value, updateTransitions );
 
           var updatedCompounds = this.updateCompoundBounds();
           var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
@@ -127,8 +129,10 @@
 
     removeCss: function( names ){
       var cy = this.cy();
+      
       if( !cy.styleEnabled() ){ return this; }
 
+      var updateTransitions = false;
       var style = cy.style();
       var eles = this;
 
@@ -136,7 +140,7 @@
         for( var i = 0; i < eles.length; i++ ){
           var ele = eles[i];
 
-          style.removeAllBypasses( ele );
+          style.removeAllBypasses( ele, updateTransitions );
         }
       } else {
         names = names.split(/\s+/);
@@ -144,7 +148,7 @@
         for( var i = 0; i < eles.length; i++ ){
           var ele = eles[i];
 
-          style.removeBypasses( ele, names );
+          style.removeBypasses( ele, names, updateTransitions );
         }
       }
 

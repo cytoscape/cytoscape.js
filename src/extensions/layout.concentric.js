@@ -147,10 +147,7 @@
       return pos[id];
     });
   
-  };
-
-  ConcentricLayout.prototype.stop = function(){
-    // not a continuous layout
+    return this; // chaining
   };
   
   $$('layout', 'concentric', ConcentricLayout);

@@ -799,7 +799,6 @@
   // does selector match a single element?
   $$.selfn.matches = function(ele){
     var self = this;
-    var cy = ele.cy();
     
     // don't bother trying if it's invalid
     if( self._private.invalid ){

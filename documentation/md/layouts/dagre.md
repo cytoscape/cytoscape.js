@@ -1,0 +1,1 @@
+The `dagre` layout organises the graph using a DAG (directed acyclic graph) system.  It is especially suitable for DAGs and trees.  For more information, please refer to its [Dagre's documentation](https://github.com/cpettitt/dagre).

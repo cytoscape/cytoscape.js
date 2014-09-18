@@ -14,7 +14,7 @@ var mdRend = new marked.Renderer();
 
 rendCode = mdRend.code;
 mdRend.code = function(code, lang){
-  var button;
+  var button = '';
 
   if( lang === 'js' ){
     button = '<button class="run run-inline-code"><span class="icon-play"></span></button>';

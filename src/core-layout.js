@@ -47,6 +47,9 @@
       if( !$$.is.plainObject(layout._private) ){
         layout._private = {};
       }
+
+      layout._private.cy = this;
+      layout._private.listeners = [];
       
       return layout;
     }

@@ -79,7 +79,7 @@
       var col1 = this;
       var col2 = other;
       var col1Smaller = this.length < other.length;
-      var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
+      // var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
       var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
       var col = col1Smaller ? col1 : col2;
       

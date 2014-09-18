@@ -55,7 +55,7 @@
 
       // Returns the index of the element in openSet which has minimum fScore
       var findMin = function(openSet, fScore) {
-        if (openSet.length == 0) {
+        if (openSet.length === 0) {
           // Should never be the case
           return undefined;
         }
@@ -160,10 +160,10 @@
           rPath.reverse();
           logDebug("Path: %s", rPath);
           return {
-            found : true
-            , distance : gScore[cMin.id()]
-            , path : new $$.Collection(cy, rPath)
-            , steps : steps
+            found : true,
+            distance : gScore[cMin.id()],
+            path : new $$.Collection(cy, rPath),
+            steps : steps
           };          
         }
         
@@ -225,10 +225,10 @@
       // If we've reached here, then we've not reached our goal
       logDebug("Reached end of computation without finding our goal");
       return {
-        found : false
-        , distance : undefined
-        , path : undefined 
-        , steps : steps
+        found : false,
+        distance : undefined,
+        path : undefined,
+        steps : steps
       };
     }, // aStar()
 
@@ -312,7 +312,7 @@
           }
           next.push(newRow);
         }
-      }
+      };
 
       initMatrix(next);
       initMatrix(edgeNext);
@@ -325,7 +325,7 @@
         
         // Check if already process another edge between same 2 nodes
         if (dist[sourceIndex][targetIndex] > weight) {
-          dist[sourceIndex][targetIndex] = weight
+          dist[sourceIndex][targetIndex] = weight;
           next[sourceIndex][targetIndex] = targetIndex;
           edgeNext[sourceIndex][targetIndex] = edges[i];
         }
@@ -772,7 +772,7 @@
 
       // We will store the best cut found here
       var minCutSize = Infinity;
-      var minCut = undefined;     
+      var minCut;     
 
       // Initial meta node partition
       var originalMetaNode = [];
@@ -855,7 +855,7 @@
         for (var i = 0; i < length; i++) {
           vector[i] = vector[i] / total;
         }
-      }
+      };
       
       var logDebug = function() {
         if (debug) {
@@ -957,7 +957,7 @@
       var p = 1.0 / numNodes + additionalProb; // Shorthand
       // Traverse matrix, column by column
       for (var j = 0; j < numNodes; j++) { 
-        if (columnSum[j] == 0) {
+        if (columnSum[j] === 0) {
           // No 'links' out from node jth, assume equal probability for each possible node
           for (var i = 0; i < numNodes; i++) {
             matrix[i][j] = p;

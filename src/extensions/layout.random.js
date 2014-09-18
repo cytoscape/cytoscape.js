@@ -33,12 +33,9 @@
 
     nodes.layoutPositions( this, options, getPos );
 
+    return this; // chaining
   };
   
-  RandomLayout.prototype.stop = function(){
-    // stop the layout if it were running continuously
-  };
-
   // register the layout
   $$(
     'layout', // we're registering a layout

@@ -24,7 +24,7 @@
       var ready = opts;
       var cy = cyReg( $this ).cy;
       
-      if( cy && cy.ready() ){ // already ready so just trigger now
+      if( cy && cy.isReady() ){ // already ready so just trigger now
         cy.trigger('ready', [], ready);
 
       } else { // not yet ready, so add to readies list

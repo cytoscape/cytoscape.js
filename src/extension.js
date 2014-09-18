@@ -26,7 +26,14 @@
       for( var i = 0; i < optLayoutFns.length; i++ ){
         var fnName = optLayoutFns[i];
 
-        layoutProto[fnName] = layoutProto[fnName] || function(){};
+        layoutProto[fnName] = layoutProto[fnName] || function(){ return this; };
+      }
+
+      // either .start() or .run() is defined, so autogen the other
+      if( layoutProto.start && !layoutProto.run ){
+        layoutProto.run = function(){ this.start(); return this; };
+      } else if( !layoutProto.start && layoutProto.run ){
+        layoutProto.start = function(){ this.run(); return this; };
       }
 
       layoutProto.on = $$.define.on({ layout: true });

@@ -80,7 +80,7 @@
       var inEdgeBB = false;
 
       // exit early if invisible edge and must be visible
-      var passedVisibilityCheck = undefined;
+      var passedVisibilityCheck;
       var passesVisibilityCheck = function(){
         if( passedVisibilityCheck !== undefined ){
           return passedVisibilityCheck;
@@ -99,7 +99,7 @@
 
         passedVisibilityCheck = false;
         return false;
-      }
+      };
 
       if (rs.edgeType === 'self') {
         if(
@@ -435,8 +435,6 @@
       //console.time('cachezorder')
       
       for( var i = 0; i < nodes.length; i++ ){
-        var rs = nodes[i]._private.rscratch;
-
         if( nodes[i].visible() && !nodes[i].transparent() ){
           eles.push( nodes[i] );
         }
@@ -647,7 +645,6 @@
     // var variant = style['font-variant'].strValue;
     var weight = style['font-weight'].strValue;
 
-    var rscratch = ele._private.rscratch;
     var cacheKey = ele._private.labelKey;
     var cache = r.labelDimCache || (r.labelDimCache = {});
 
@@ -784,7 +781,7 @@
   CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
-    var hashTable = {}; var cy = this.data.cy;
+    var hashTable = {};
     var pairIds = [];
     var haystackEdges = [];
 

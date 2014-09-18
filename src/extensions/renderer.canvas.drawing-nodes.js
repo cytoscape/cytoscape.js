@@ -56,7 +56,6 @@
 
         case 'solid':
         case 'double':
-        default:
           context.setLineDash([ ]);
           break;
       }

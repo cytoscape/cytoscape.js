@@ -129,6 +129,25 @@
 					{{/if}}
 
 					{{#if layout}}
+						{{#if demos}}
+							<div class="gallery-demos">
+								{{#each demos}}
+									<div class="gallery-demo">
+										<div class="gallery-title">
+											<span class="gallery-name">{{name}}</span>
+										</div>
+										
+										<a class="gallery-link" target="_blank" href="{{srcUrl}}">
+											<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+										</a>
+										
+									</div>
+								{{/each}}
+							</div>
+						{{/if}}
+
+						<h3>Options</h3>
+						<button class="run run-inline-code"><span class="icon-play"></span></button>
 						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
 					{{/if}}
 
@@ -271,6 +290,10 @@
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>
+		<script src="js/springy.js"></script>
+		<script src="js/cola.v3.min.js"></script>
+		<script src="js/cola.adaptor.js"></script>
+		<script src="js/dagre.js"></script>
 
 		<script type="text/javascript">
 

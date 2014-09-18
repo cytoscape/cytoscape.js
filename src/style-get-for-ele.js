@@ -70,8 +70,6 @@
         }
 
         if( styleProp ){
-          var val = styleProp.value === undefined ? styleProp : styleProp.value;
-
           if( opts.array ){
             rstyle.push( styleProp );
           } else {

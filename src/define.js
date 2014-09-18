@@ -395,7 +395,7 @@
             var triggerer = all[j];
             var listeners = triggerer._private.listeners;
             var triggererIsElement = $$.is.element(triggerer);
-            var bubbleUp = triggererIsElement;
+            var bubbleUp = triggererIsElement || params.layout;
 
             // create the event for this element from the event object
             var evt;
@@ -417,6 +417,11 @@
             // if a layout was specified, then put it in the typed event
             if( evtObj.layout ){
               evt.layout = evtObj.layout;
+            }
+
+            // if triggered by layout, put in event
+            if( params.layout ){
+              evt.layout = triggerer;
             }
 
             // create a rendered position based on the passed position
@@ -563,9 +568,6 @@
       fnParams = $$.util.extend({}, defaults, fnParams);
 
       return function delayImpl( time, complete ){
-        var self = this;
-        var selfIsArrayLike = self.length !== undefined;
-        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
         var cy = this._private.cy || this;
 
         if( !cy.styleEnabled() ){ return this; }

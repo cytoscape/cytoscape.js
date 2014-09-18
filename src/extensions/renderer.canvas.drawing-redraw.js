@@ -2,7 +2,7 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
-  var isFirefox = typeof InstallTrigger !== 'undefined';
+  // var isFirefox = typeof InstallTrigger !== 'undefined';
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var context = this.data.contexts[0];
@@ -174,7 +174,6 @@
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
-    var prevRedrawTime = this.lastDrawTime;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
 

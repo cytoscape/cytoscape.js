@@ -25,11 +25,9 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
  * If you can go without them or show them on tap/mouseover, you'll get better performance.
  * Consider not having labels for edges.
  * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
-* **Simplify edge style** : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.
+* **Simplify edge style** : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.
 * **Simplify node style** : Keep your node styles simple to improve performance.  
  * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [https://github.com/scalableminds/gulp-image-resize](gulp) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.
-* **Opacity** : Making elements semitransparent is more expensive than leaving them opaque.  Try to use `visibility: hidden` or `display: none` to hide elements rather than using opacity.
-* **Concise stylsheets are fast stylesheets** : Try to keep your stylesheets from getting overly long.  Cut out unused blocks and try to limit the number of blocks &mdash; and therefore selectors &mdash; you have.  Each time style needs to be recalculated, each block's selector needs to be compared to each element.  Note that usually stylesheet length has a much lesser effect on performance than other factors.
 
 By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.

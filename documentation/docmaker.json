@@ -716,8 +716,7 @@
         },
 
         {
-          "name": "Visuals",
-
+          "name": "Layout",
           "fns": [
             {
               "name": "cy.layout",
@@ -749,8 +748,14 @@
                 }
               ],
               "md": "core/makeLayout"
-            },
+            }
+          ]
+        },
 
+        {
+          "name": "Style",
+
+          "fns": [
             {
               "name": "cy.style",
               "descr": "Get the entry point to modify the visual style of the graph after initialisation.",
@@ -1427,7 +1432,40 @@
         },
 
         {
-          "name": "Layout TODO"
+          "name": "Layout",
+          "fns": [
+            {
+              "name": "eles.layout",
+              "descr": "Run a layout on the elements in the calling collection, algorithmically positioning the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The layout options."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/layout"
+            },
+
+            {
+              "name": "eles.makeLayout",
+              "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The layout options."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/makeLayout"
+            }
+          ]
         },
 
         {
@@ -2774,9 +2812,9 @@
         },
 
         {
-          "md": "layouts/arbor",
+          "md": "layouts/dagre",
           "layout": {
-            "name": "arbor"
+            "name": "dagre"
           }
         },
 
@@ -2788,18 +2826,21 @@
         },
 
         {
+          "md": "layouts/cola",
           "layout": {
             "name": "cola"
           }
         },
 
         {
+          "md": "layouts/arbor",
           "layout": {
-            "name": "dagre"
+            "name": "arbor"
           }
         },
 
         {
+          "md": "layouts/springy",
           "layout": {
             "name": "springy"
           }
@@ -2811,13 +2852,14 @@
           "fns": [
             {
               "name": "layout.run",
+              "pureAliases": [ "layout.start" ],
               "descr": "Start running the layout.",
               "md": "layout/run"
             },
 
             {
               "name": "layout.stop",
-              "descr": "Stop running the layout.",
+              "descr": "Stop running the (asynchronous/discrete) layout.",
               "md": "layout/stop"
             }
           ]
@@ -2851,7 +2893,7 @@
 
             {
               "name": "layout.one",
-              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "descr": "Bind to events that are emitted by the layout, and trigger the handler only once.",
               "formats": [
                 {
                   "args": [
@@ -2873,7 +2915,7 @@
 
             {
               "name": "layout.off",
-              "descr": "Remove event handlers.",
+              "descr": "Remove event handlers on the layout.",
               "formats": [
                 {
                   "args": [

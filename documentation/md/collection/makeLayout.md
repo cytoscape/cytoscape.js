@@ -1,3 +1,5 @@
+This function is useful for running a layout on a subset of the elements in the graph, perhaps in parallel to other layouts.
+
 You must specify `options.name` with the name of the layout you wish to use.
 
 This function creates and returns a [layout object](#layouts).  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously. 
@@ -7,7 +9,7 @@ This function creates and returns a [layout object](#layouts).  You may want to 
 ## Examples
 
 ```js
-var layout = cy.makeLayout({
+var layout = cy.elements().makeLayout({
   name: 'random'
 });
 

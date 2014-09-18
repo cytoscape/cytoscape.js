@@ -90,7 +90,7 @@
 
     layout.stopped = false;
 
-    cy.trigger({ type: 'layoutstart', layout: layout });
+    layout.trigger({ type: 'layoutstart', layout: layout });
 
     // Set DEBUG - Global variable
     if (true === options.debug) {
@@ -103,7 +103,7 @@
     var startTime = new Date();
 
     // Initialize layout info
-    var layoutInfo = createLayoutInfo(cy, options);
+    var layoutInfo = createLayoutInfo(cy, layout, options);
     
     // Show LayoutInfo contents if debugging
     if (DEBUG) {
@@ -152,8 +152,8 @@
       console.info('Layout took ' + (endTime - startTime) + ' ms');
 
       // Layout has finished
-      cy.one('layoutstop', options.stop);
-      cy.trigger({ type: 'layoutstop', layout: layout });
+      layout.one('layoutstop', options.stop);
+      layout.trigger({ type: 'layoutstop', layout: layout });
     };
 
     if( options.animate ){
@@ -191,7 +191,7 @@
       done();
     }
    
-    
+    return this; // chaining
   };
 
 
@@ -200,6 +200,8 @@
    */
   CoseLayout.prototype.stop = function(){
     this.stopped = true;
+
+    return this; // chaining
   };
 
 
@@ -209,12 +211,13 @@
    * @arg cy    : cytoscape.js object
    * @return    : layoutInfo object initialized
    */
-  var createLayoutInfo = function(cy, options) {
+  var createLayoutInfo = function(cy, layout, options) {
     // Shortcut
     var edges = options.eles.edges();
     var nodes = options.eles.nodes();
 
     var layoutInfo   = {
+      layout       : layout,
       layoutNodes  : [], 
       idToIndex    : {},
       nodeSize     : nodes.size(),
@@ -536,6 +539,7 @@
     var s = 'Refreshing positions';
     logDebug(s);
 
+    var layout = layoutInfo.layout;
     var nodes = options.eles.nodes();
     var bb = layoutInfo.boundingBox;
     var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
@@ -582,8 +586,8 @@
       s = 'Triggering layoutready';
       logDebug(s);
       layoutInfo.ready = true;
-      cy.one('layoutready', options.ready);
-      cy.trigger({ type: 'layoutready', layout: this });
+      layout.one('layoutready', options.ready);
+      layout.trigger({ type: 'layoutready', layout: this });
     }
   };
 

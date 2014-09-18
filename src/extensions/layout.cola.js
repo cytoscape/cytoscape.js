@@ -20,7 +20,7 @@
     handleDisconnected: true, // if true, avoids disconnected components from overlapping
     nodeSpacing: function( node ){ return 10; }, // extra spacing around nodes
     flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
-    alignment: undefined, // relative alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 }; }
+    alignment: undefined, // relative alignment constraints on nodes, e.g. function( node ){ return { x: 0, y: 1 } }
 
     // different methods of specifying edge length
     // each can be a constant numerical value or a function like `function( edge ){ return 2; }`
@@ -67,7 +67,7 @@
         } else {
           return val;
         }
-      }
+      };
 
       var updateNodePositions = function(){
         var x = { min: Infinity, max: -Infinity };
@@ -115,14 +115,14 @@
         nodes.off('lock unlock', lockHandler);
 
         // trigger layoutstop when the layout stops (e.g. finishes)
-        cy.one('layoutstop', options.stop);
-        cy.trigger({ type: 'layoutstop', layout: layout });
+        layout.one('layoutstop', options.stop);
+        layout.trigger({ type: 'layoutstop', layout: layout });
       };
 
       var onReady = function(){
         // trigger layoutready when each node has had its position set at least once
-        cy.one('layoutready', options.ready);
-        cy.trigger({ type: 'layoutready', layout: layout });
+        layout.one('layoutready', options.ready);
+        layout.trigger({ type: 'layoutready', layout: layout });
       };
 
       var ticksPerFrame = options.refresh;
@@ -256,13 +256,15 @@
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
 
-        return node._private.scratch.cola = {
+        var struct = node._private.scratch.cola = {
           x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
           y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
           width: node.outerWidth() + 2*padding,
           height: node.outerHeight() + 2*padding,
           index: i
         };
+
+        return struct;
       }) );
 
       if( options.alignment ){ // then set alignment constraints
@@ -371,7 +373,7 @@
         };
 
         if( length != null ){
-          c.calcLength = getOptVal( length, edge )
+          c.calcLength = getOptVal( length, edge );
         }
 
         return c;
@@ -420,7 +422,7 @@
         .start( options.unconstrIter, options.userConstIter, options.allConstIter)
       ;
 
-      cy.trigger({ type: 'layoutstart', layout: layout });
+      layout.trigger({ type: 'layoutstart', layout: layout });
 
       if( !options.infinite ){
         setTimeout(function(){
@@ -429,6 +431,8 @@
       }
 
     }); // require
+
+    return this; // chaining
   };
 
   // called on continuous layouts to stop them before they finish
@@ -437,6 +441,8 @@
       this.manuallyStopped = true;
       this.adaptor.stop();
     }
+
+    return this; // chaining
   };
 
   // register the layout

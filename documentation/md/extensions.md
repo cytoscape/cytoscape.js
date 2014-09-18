@@ -45,13 +45,13 @@ A layout modifies the positions of nodes in the graph.  A layout has number of o
 
 Layouts may be blocking if they are fast &mdash; meaning you can execute your code to run after the layout on the line following the layout call.  Layouts may also be continuous, in which case, callback functions are provided to know when the layout finishes.
 
-A layout has two events that must be triggereed on the core, including `layoutready` and `layoutstop`:
+A layout has two events that must be triggered on the core, including `layoutready` and `layoutstop`:
 
  * `layoutready` : This is triggered on the core (via `cy.trigger('layoutready')`) when the layout has set the positions on every node at least once.  This lets the core know that the nodes now have valid positions and can be rendered.  It is important to trigger `layoutready` on continuous layouts so that the nodes are shown moving.  For blocking (non-continous) layouts, `layoutready` can just be triggered after the layout is done but before `layoutstop`.
 
  * `layoutstop` : This is triggered on the core (via `cy.trigger('layoutstop')`) when the layout has finished.  It should be triggered after `layoutready`.  The layout should not change node positions after triggering `layoutstop`.
 
-For an example layout, please refer to the [null layout source code](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Arbor layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.arbor.js) is a good example of a continuous layout.
+For an example layout, please refer to the [null layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Cola layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.cola.js) is a good example of a continuous layout.
  
 
 

@@ -126,11 +126,8 @@
       });
 
     }); // require
-  };
 
-  // called on continuous layouts to stop them before they finish
-  DagreLayout.prototype.stop = function(){
-    // not continuous
+    return this; // chaining
   };
 
   // register the layout

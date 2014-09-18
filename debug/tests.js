@@ -443,6 +443,29 @@ $(function(){
 			}
 		});
 
+		test({
+			name: "redTap",
+			displayName: "Mouseover nodes to toggle red bypass",
+			description: "..",
+			setup: function(){
+				var on = {}; // id => true | false
+
+				cy.on('mouseover', 'node', function(){
+					if( on[ this.id() ] ){
+						this.removeCss();
+						on[ this.id() ] = false;
+					} else {
+						this.css('background-color', 'red');
+						on[ this.id() ] = true;
+					}					
+				});
+			},
+
+			teardown: function(){
+				cy.off('click', 'node');
+			}
+		});
+
 	});
 
 });

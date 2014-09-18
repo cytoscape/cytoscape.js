@@ -15,10 +15,13 @@
   // runs the layout
   NullLayout.prototype.run = function(){
     var options = this.options;
-    var cy = options.cy; // cy is automatically populated for us in the constructor
-    var eles = options.eles;
+    var eles = options.eles; // elements to consider in the layout
+    var layout = this;
 
-    cy.trigger('layoutstart');
+    // cy is automatically populated for us in the constructor
+    var cy = options.cy; // jshint ignore:line
+
+    layout.trigger('layoutstart');
 
     // puts all nodes at (0, 0)
     eles.nodes().positions(function(){
@@ -29,16 +32,19 @@
     });
 
     // trigger layoutready when each node has had its position set at least once
-    cy.one('layoutready', options.ready);
-    cy.trigger('layoutready');
+    layout.one('layoutready', options.ready);
+    layout.trigger('layoutready');
 
     // trigger layoutstop when the layout stops (e.g. finishes)
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+    layout.one('layoutstop', options.stop);
+    layout.trigger('layoutstop');
+
+    return this; // chaining
   };
 
   // called on continuous layouts to stop them before they finish
   NullLayout.prototype.stop = function(){
+    return this; // chaining
   };
 
   // register the layout

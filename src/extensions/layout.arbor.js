@@ -60,7 +60,7 @@
       } );
       var simUpdatingPos = false;
 
-      cy.trigger({ type: 'layoutstart', layout: layout });
+      layout.trigger({ type: 'layoutstart', layout: layout });
 
       // backward compatibility for old animation option
       if( options.liveUpdate !== undefined ){
@@ -78,11 +78,11 @@
           y: Math.round( (bb.y1 + bb.y2)/2 )
         });
 
-        cy.one('layoutready', options.ready);
-        cy.trigger({ type: 'layoutready', layout: layout });
+        layout.one('layoutready', options.ready);
+        layout.trigger({ type: 'layoutready', layout: layout });
 
-        cy.one('layoutstop', options.stop);
-        cy.trigger({ type: 'layoutstop', layout: layout });
+        layout.one('layoutstop', options.stop);
+        layout.trigger({ type: 'layoutstop', layout: layout });
 
         return;
       }
@@ -147,7 +147,6 @@
           });
           
 
-          var timeToDraw = (+new Date() - lastDraw) >= 16;
           if( options.animate && movedNodes.length > 0 ){
             simUpdatingPos = true;
 
@@ -164,8 +163,8 @@
           
           if( !ready ){
             ready = true;
-            cy.one('layoutready', options.ready);
-            cy.trigger({ type: 'layoutready', layout: layout });
+            layout.one('layoutready', options.ready);
+            layout.trigger({ type: 'layoutready', layout: layout });
           }
         }
         
@@ -225,27 +224,27 @@
             
       var removeHandler;
       eles.on('remove', removeHandler = function(e){ return; // TODO enable when layout add/remove api added
-        var ele = this;
-        var arborEle = ele.scratch().arbor;
+        // var ele = this;
+        // var arborEle = ele.scratch().arbor;
 
-        if( !arborEle ){ return; }
+        // if( !arborEle ){ return; }
 
-        if( ele.isNode() ){
-          sys.pruneNode( arborEle );
-        } else {
-          sys.pruneEdge( arborEle );
-        }
+        // if( ele.isNode() ){
+        //   sys.pruneNode( arborEle );
+        // } else {
+        //   sys.pruneEdge( arborEle );
+        // }
       });
 
       var addHandler;
       cy.on('add', '*', addHandler = function(){ return; // TODO enable when layout add/remove api added
-        var ele = this;
+        // var ele = this;
 
-        if( ele.isNode() ){
-          addNode( ele );
-        } else {
-          addEdge( ele );
-        }
+        // if( ele.isNode() ){
+        //   addNode( ele );
+        // } else {
+        //   addEdge( ele );
+        // }
       });
 
       var resizeHandler;
@@ -327,8 +326,8 @@
           grabbableNodes.grabify();
         }
 
-        cy.one('layoutstop', options.stop);
-        cy.trigger({ type: 'layoutstop', layout: layout });
+        layout.one('layoutstop', options.stop);
+        layout.trigger({ type: 'layoutstop', layout: layout });
       };
       
       sys.start();
@@ -339,6 +338,8 @@
       }
     
     }); // require
+
+    return this; // chaining
   };
 
 
@@ -350,6 +351,8 @@
     if( this._private.doneHandler ){
       this._private.doneHandler();
     }
+
+    return this; // chaining
   };
   
   $$('layout', 'arbor', ArborLayout);

@@ -24,7 +24,6 @@
       if( !this._private.notificationsEnabled ){ return; } // exit on disabled
 
       var renderer = this.renderer();
-      var cy = this;
       
       renderer.notify(params);
     },

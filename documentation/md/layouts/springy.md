@@ -1,0 +1,1 @@
+The `springy` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation.  For more information about Springy and its parameters, refer to [its documentation](http://getspringy.com).

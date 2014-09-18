@@ -18,11 +18,8 @@
   
   PresetLayout.prototype.run = function(){
     var options = this.options;
-    var cy = options.cy;
     var eles = options.eles;
 
-    cy.trigger('layoutstart');
-    
     var nodes = eles.nodes();
     var posIsFn = $$.is.fn( options.positions );
 
@@ -54,6 +51,7 @@
       return position;
     });
         
+    return this; // chaining
   };
   
   $$('layout', 'preset', PresetLayout);

@@ -139,12 +139,12 @@
       }
     }
 
-    return cxtStyles[cxtKey] = style;
+    cxtStyles[cxtKey] = style;
+    return style;
   };
 
   $$.styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
     var self = this;
-    var cxtKey = cxtMeta.key;
     var diffProps = cxtMeta.diffPropNames;
     var retDiffProps = {};
 
@@ -155,8 +155,6 @@
 
       // save cycles when the context prop doesn't need to be applied
       if( !cxtProp || eleProp === cxtProp ){ continue; }
-
-      var cxt = cxtProp.context;
 
       var retDiffProp = retDiffProps[ diffPropName ] = {
         prev: eleProp
@@ -434,6 +432,7 @@
     }
   };
 
+  // diffProps : { name => { prev, next } }
   $$.styfn.updateTransitions = function( ele, diffProps, isBypass ){
     var self = this;
     var style = ele._private.style;

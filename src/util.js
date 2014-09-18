@@ -104,7 +104,7 @@
 
         if( ret !== undefined ){ fulfil(ret); }
         if( next ){ next(); }
-      }
+      };
       var onCheckCommonJsDone = function(){
         if( !done ){
           checkAmd( onCheckAmdDone );
@@ -120,7 +120,7 @@
             if( next ){ next(); }
           });
         }
-      }
+      };
       var onCheckAmdDone = function(){
         if( !done && options.msgIfNotFound ){
           $$.util.error('Cytoscape.js tried to pull in dependency `' + name + '` but no module (i.e. CommonJS, AMD, or window) was found');
@@ -156,7 +156,7 @@
 
           checkDone();
         });
-      })() }
+      })(); }
     },
 
     // ported lodash throttle function
@@ -849,7 +849,7 @@
   var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
-  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60) } };
+  raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };
 
   $$.util.requestAnimationFrame = function(fn){
     raf( fn );

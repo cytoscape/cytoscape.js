@@ -32,7 +32,7 @@
       var simUpdatingPos = false;
 
       var cy = options.cy;
-      cy.trigger({ type: 'layoutstart', layout: layout });
+      layout.trigger({ type: 'layoutstart', layout: layout });
       
       var eles = options.eles;
       var nodes = eles.nodes().not(':parent');
@@ -136,8 +136,8 @@
           }
           
           if( drawnNodes == numNodes ){
-            cy.one('layoutready', options.ready);
-            cy.trigger({ type: 'layoutready', layout: layout });
+            layout.one('layoutready', options.ready);
+            layout.trigger({ type: 'layoutready', layout: layout });
           } 
           
           drawnNodes++;
@@ -184,7 +184,7 @@
         fdRenderer.start();
       }
       
-      var stopSystem = self.stopSystem = function(){
+      self.stopSystem = function(){
         graph.filterNodes(function(){
           return false; // remove all nodes
         });
@@ -199,8 +199,8 @@
         
         nodes.off('drag position', dragHandler);
 
-        cy.one('layoutstop', options.stop);
-        cy.trigger({ type: 'layoutstop', layout: layout });
+        layout.one('layoutstop', options.stop);
+        layout.trigger({ type: 'layoutstop', layout: layout });
 
         self.stopSystem = null;
       };
@@ -213,12 +213,16 @@
       }
 
     }); // require
+
+    return this; // chaining
   };
 
   SpringyLayout.prototype.stop = function(){
     if( this.stopSystem != null ){
       this.stopSystem();
     }
+
+    return this; // chaining
   };
   
   $$('layout', 'springy', SpringyLayout);

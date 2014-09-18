@@ -80,10 +80,8 @@
     };
     
     nodes.layoutPositions( this, options, getPos );
-  };
 
-  CircleLayout.prototype.stop = function(){
-    // not a continuous layout
+    return this; // chaining
   };
   
   $$('layout', 'circle', CircleLayout);

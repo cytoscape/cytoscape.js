@@ -43,7 +43,7 @@
       x: xTranslated,
       y: yTranslated
     };
-  }
+  };
 
   arrowShapes['arrow'] = {
     _points: [
@@ -148,7 +148,7 @@
       var triPts = arrowShapes['triangle-tee']._points;
       var teePts = arrowShapes['triangle-tee']._pointsTee;
       
-      var inside = $$.math.pointInsidePolygon(x, y, triPts, centerX, centerY, width, height, direction, padding) 
+      var inside = $$.math.pointInsidePolygon(x, y, teePts, centerX, centerY, width, height, direction, padding) 
         || $$.math.pointInsidePolygon(x, y, triPts, centerX, centerY, width, height, direction, padding);
 
       return inside;

@@ -2,7 +2,6 @@
   
   $$.fn.eles({
     classes: function(opts){
-      var triggerEles = [];
       var eles = this;
       var changed = [];
       var fn;
@@ -64,6 +63,7 @@
         new $$.Collection( this.cy(), changed )
           .updateStyle()
           .trigger('class')
+        ;
       }
 
       return this;

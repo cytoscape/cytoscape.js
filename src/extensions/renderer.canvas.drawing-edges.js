@@ -140,8 +140,6 @@
     // 3 points given -> assume Bezier
     // 2 -> assume straight
     
-    var cy = this.data.cy;
-    var zoom = cy.zoom();
     var rs = edge._private.rscratch;
     var canvasCxt = context;
     var path;
@@ -182,7 +180,6 @@
         break;
 
       case 'solid':
-      default:
         canvasCxt.setLineDash([ ]);
         break;
     }

@@ -371,6 +371,7 @@ gulp.task('watch', function(next){
   next();
 });
 
+// http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
   return gulp.src( paths.sources )
     .pipe( jshint({
@@ -381,7 +382,8 @@ gulp.task('lint', function(){
       unused: 'vars',
       eqnull: true,
       sub: true,
-      shadow: true
+      shadow: true,
+      laxcomma: true
     }) )
 
     .pipe( jshint.reporter(jshStylish) )

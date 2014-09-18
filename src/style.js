@@ -593,7 +593,7 @@
         strValue: '' + value + (units ? units : ''),
         units: units,
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value != 0 && value != ''
+        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value !== 0 && value !== ''
       };
 
       // normalise value in pixels

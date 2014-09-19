@@ -17,7 +17,8 @@ Fields for only user input device events:
  * `cyRenderedPosition` : indicates the rendered position of the event
  * `originalEvent` : the original user input device event object
 
- Fields for only layout events:
+Fields for only layout events:
+
  * `layout` : indicates the corresponding layout that triggered the event (useful if running multiple layouts simultaneously)
 
 ## Event bubbling

@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3-beta.
+ * This file is part of Cytoscape.js 2.3.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3-beta';
+  $$.version = '2.3.0';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -16638,7 +16638,6 @@ var cytoscape;
         var context = data.contexts[CanvasRenderer.NODE];
 
         var texture = r.textureCache.texture;
-        var texture = r.textureCache.texture;
         var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
 
@@ -16814,7 +16813,7 @@ var cytoscape;
 
           context.setTransform(1, 0, 0, 1, 0, 0);
 
-          context.font = '20px helvetica';
+          //context.font = '20px helvetica';
           context.fillStyle = 'rgba(255, 0, 0, 0.75)';
           context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
           context.lineWidth = 1;

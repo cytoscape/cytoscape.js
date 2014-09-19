@@ -18,6 +18,35 @@
       $$.fn[type]( impl );
     }
     
+    // fill in missing layout functions in the prototype
+    if( type === 'layout' ){
+      var layoutProto = registrant.prototype;
+      var optLayoutFns = ['stop'];
+
+      for( var i = 0; i < optLayoutFns.length; i++ ){
+        var fnName = optLayoutFns[i];
+
+        layoutProto[fnName] = layoutProto[fnName] || function(){ return this; };
+      }
+
+      // either .start() or .run() is defined, so autogen the other
+      if( layoutProto.start && !layoutProto.run ){
+        layoutProto.run = function(){ this.start(); return this; };
+      } else if( !layoutProto.start && layoutProto.run ){
+        layoutProto.start = function(){ this.run(); return this; };
+      }
+
+      layoutProto.on = $$.define.on({ layout: true });
+      layoutProto.one = $$.define.on({ layout: true, unbindSelfOnTrigger: true });
+      layoutProto.once = $$.define.on({ layout: true, unbindAllBindersOnTrigger: true });
+      layoutProto.off = $$.define.off({ layout: true });
+      layoutProto.trigger = $$.define.trigger({ layout: true });
+
+      // aliases for those folks who like old stuff:
+      layoutProto.bind = layoutProto.on;
+      layoutProto.unbind = layoutProto.off;
+    }
+
     return $$.util.setMap({
       map: extensions,
       keys: [ type, name ],
@@ -69,7 +98,7 @@
     }
     
     else {
-      $.error('Invalid extension access syntax');
+      $$.util.error('Invalid extension access syntax');
     }
   
   };

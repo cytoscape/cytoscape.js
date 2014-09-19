@@ -9,11 +9,15 @@
 		<link rel="stylesheet" href="jquery.gritter.css" />
 		<link rel="stylesheet" href="style.css" />
 		
-		<script type="text/javascript" src="jquery.2.0.3.min.js"></script>
+		<script type="text/javascript" src="jquery-2.1.1.js"></script>
 		<script type="text/javascript" src="require.js"></script>
 
 			<!-- library dependencies -->
 			<script type="text/javascript" src="../lib/arbor.js"></script>
+			<script type="text/javascript" src="../lib/springy.js"></script>
+			<script type="text/javascript" src="../lib/cola.v3.min.js"></script>
+			<script type="text/javascript" src="../lib/cola.adaptor.js"></script>
+			<script type="text/javascript" src="../lib/dagre.js"></script>
 
 			<!-- cy.js injected scripts (run `gulp debugrefs` to update) -->
 
@@ -50,6 +54,7 @@
 			<script src="../src/core-viewport.js"></script>
 			<script src="../src/collection.js"></script>
 			<script src="../src/collection-algorithms.js"></script>
+			<script src="../src/collection-algorithms2.js"></script>
 			<script src="../src/collection-animation.js"></script>
 			<script src="../src/collection-class.js"></script>
 			<script src="../src/collection-comparators.js"></script>
@@ -60,9 +65,11 @@
 			<script src="../src/collection-filter.js"></script>
 			<script src="../src/collection-group.js"></script>
 			<script src="../src/collection-iteration.js"></script>
+			<script src="../src/collection-layout.js"></script>
 			<script src="../src/collection-style.js"></script>
 			<script src="../src/collection-switch-functions.js"></script>
 			<script src="../src/collection-traversing.js"></script>
+			<script src="../src/collection-viewport.js"></script>
 			<script src="../src/heap.js"></script>
 			<script src="../src/extensions/renderer.canvas.define-and-init-etc.js"></script>
 			<script src="../src/extensions/renderer.canvas.arrow-shapes.js"></script>
@@ -80,8 +87,10 @@
 			<script src="../src/extensions/layout.arbor.js"></script>
 			<script src="../src/extensions/layout.breadthfirst.js"></script>
 			<script src="../src/extensions/layout.circle.js"></script>
+			<script src="../src/extensions/layout.cola.js"></script>
 			<script src="../src/extensions/layout.concentric.js"></script>
 			<script src="../src/extensions/layout.cose.js"></script>
+			<script src="../src/extensions/layout.dagre.js"></script>
 			<script src="../src/extensions/layout.grid.js"></script>
 			<script src="../src/extensions/layout.null.js"></script>
 			<script src="../src/extensions/layout.preset.js"></script>
@@ -101,15 +110,20 @@
 		<script type="text/javascript" src="view.js"></script>
 		<script type="text/javascript" src="style.js"></script>
 		<script type="text/javascript" src="init.js"></script>
+		<script type="text/javascript" src="profile.js"></script>
 	
 		
 		<title>cytoscape.js debug page</title>
 	</head>
 
 	<body>
-		<h1>cytoscape.js debug page</h1>
-	    
-	    <div id="cytoscape"></div>
+    
+    	<button id="goto-cy2">\ down /</button>
+	    <div id="cytoscape">
+	    	<div id="bb"></div>
+	    </div>
+
+	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
 
 	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
 
@@ -119,14 +133,20 @@
 	    <canvas style="border: 1px solid red;" width="600" height="600" id="dummy-canvas"></canvas>
 -->
 
-	    <div>Second instance to test multiple instances:</div>
+	    <div><button id="goto-cy">/ up \</button> Second instance: <button id="init2">init</button></div> 
 	    
 	    <div id="cytoscape2"></div>
 
 	    <div id="console"></div>
 	    
+	    <div id="commands-show-area">
+	    	<button id="show-commands">+</button>
+		</div>
+
 	    <div id="commands">
 	    	
+	    	<button id="hide-commands">-</button>
+
 	    	<h2>Testing</h2>
 	    	<select id="test-type-select">
 	    	</select>
@@ -158,18 +178,29 @@
 
 	    	Autoungrabify:
 	    	<button id="enable-autoungrabify">on</button>
-	    	<button id="disable-autoungrabify">off</button>
+	    	<button id="disable-autoungrabify">off</button><br />
+
+	    	Autounselectify:
+	    	<button id="enable-autounselectify">on</button>
+	    	<button id="disable-autounselectify">off</button><br />
+
+	    	Selected BB:
+	    	<button id="show-bb">show</button>
+	    	<button id="hide-bb">hide</button>
 	    		    	
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
+	    		<option value="null">Null</option>
 	    		<option value="grid">Grid</option>
 	    		<option value="random">Random</option>
-	    		<option value="arbor" selected>Arbor</option>
 	    		<option value="circle">Circle</option>
-	    		<option value="breadthfirst">Breadth first</option>
-	    		<option value="cose">CoSE</option>
+	    		<option value="breadthfirst">Breadthfirst</option>
 	    		<option value="concentric">Concentric</option>
-	    		<option value="null">Null</option>
+	    		<option value="cose">CoSE</option>
+	    		<option value="arbor">Arbor</option>
+	    		<option value="springy">Springy</option>
+	    		<option value="dagre">Degre</option>
+	    		<option value="cola" selected>Cola</option>
 	    	</select>
 	    	<button id="layout-button">Apply</button>
 	    	<small>Time taken: <span id="layout-time">&nbsp;</span></small> <br />

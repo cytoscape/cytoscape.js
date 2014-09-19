@@ -2,10 +2,14 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
 
-  var isFirefox = typeof InstallTrigger !== 'undefined';
+  // var isFirefox = typeof InstallTrigger !== 'undefined';
 
   CanvasRenderer.prototype.getPixelRatio = function(){ 
     var context = this.data.contexts[0];
+
+    if( this.forcedPixelRatio != null ){
+      return this.forcedPixelRatio;
+    }
 
     var backingStore = context.backingStorePixelRatio ||
       context.webkitBackingStorePixelRatio ||
@@ -16,9 +20,9 @@
 
     //console.log(window.devicePixelRatio, backingStore);
 
-    if( isFirefox ){ // because ff can't scale canvas properly
-      return 1;
-    }
+    // if( isFirefox ){ // because ff can't scale canvas properly
+    //   return 1;
+    // }
 
     return (window.devicePixelRatio || 1) / backingStore;
   };
@@ -153,6 +157,7 @@
 
   CanvasRenderer.minRedrawLimit = 1000/60; // people can't see much better than 60fps
   CanvasRenderer.maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
+  CanvasRenderer.motionBlurDelay = 100;
 
   // Redraw frame
   CanvasRenderer.prototype.redraw = function( options ) {
@@ -169,7 +174,13 @@
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
-    
+    var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
+    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
+
+    if( r.motionBlurTimeout ){
+      clearTimeout( r.motionBlurTimeout );
+    }
+
     if( this.redrawTimeout ){
       clearTimeout( this.redrawTimeout );
     }
@@ -208,13 +219,14 @@
     }
 
 
-    var startTime;
+    var startTime = +new Date();
 
     //console.log('-- redraw --')
 
 
-    function drawToContext(){
-      startTime = +new Date();
+    function drawToContext(){ 
+      // startTime = +new Date();
+      // console.profile('draw' + startTime)
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -251,8 +263,16 @@
 
       function setContextTransform(context, clear){
         context.setTransform(1, 0, 0, 1, 0, 0);
-        
-        if( !forcedContext && (clear === undefined || clear) ){
+
+        if( clear === 'motionBlur' ){
+          var gco = context.globalCompositeOperation;
+
+          context.globalCompositeOperation = 'destination-out';
+          r.fillStyle( context, 255, 255, 255, 0.666 );
+          context.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
+
+          context.globalCompositeOperation = gco;
+        } else if( !forcedContext && (clear === undefined || clear) ){
           context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
         }
         
@@ -277,7 +297,7 @@
         if( !r.textureCache ){
           r.textureCache = {};
 
-          bb = r.textureCache.bb = cy.boundingBox();
+          bb = r.textureCache.bb = cy.elements().boundingBox();
 
           r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
 
@@ -310,7 +330,6 @@
 
         var context = data.contexts[CanvasRenderer.NODE];
 
-        var texture = r.textureCache.texture;
         var texture = r.textureCache.texture;
         var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
@@ -347,10 +366,15 @@
         }
 
         var zEles = r.getCachedZSortedEles();
+        var extent = cy.extent();
 
         for (var i = 0; i < zEles.length; i++) {
           var ele = zEles[i];
           var list;
+          var bb = ele.boundingBox();
+          var insideExtent = $$.math.boundingBoxesIntersect( extent, bb );
+
+          if( !insideExtent ){ continue; } // no need to render
 
           if ( ele._private.rscratch.inDragLayer ) {
             list = eles.drag;
@@ -393,13 +417,15 @@
 
       }
 
+      var nodeLayerNeedsMotionClear = needDraw[CanvasRenderer.DRAG] && !needDraw[CanvasRenderer.NODE] && motionBlur && !r.clearedNodeLayerForMotionBlur;
+      if( nodeLayerNeedsMotionClear ){ r.clearedNodeLayerForMotionBlur = true; }
 
-      if (needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
+      if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || nodeLayerNeedsMotionClear ){
         // console.log('redrawing node layer');
         
         var context = forcedContext || data.contexts[CanvasRenderer.NODE];
 
-        setContextTransform( context );
+        setContextTransform( context, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
         drawElements(eles.nondrag, context);
         
         if( !drawAllLayers ){
@@ -411,7 +437,7 @@
         
         var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
         
-        setContextTransform( context );
+        setContextTransform( context, motionBlur ? 'motionBlur' : undefined );
         drawElements(eles.drag, context);
         
         if( !drawAllLayers ){
@@ -419,11 +445,11 @@
         }
       }
       
-      if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers) ) {
+      if( r.showFps || (!drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers)) ) {
         // console.log('redrawing selection box');
         
         var context = forcedContext || data.contexts[CanvasRenderer.SELECT_BOX];
-        
+
         setContextTransform( context );
 
         if (data.select[4] == 1) {
@@ -473,6 +499,24 @@
           context.fill();
         }
         
+        var timeToRender = r.averageRedrawTime;
+        if( r.showFps && timeToRender ){
+          timeToRender = Math.round( timeToRender );
+          var fps = Math.round(1000/timeToRender);
+
+          context.setTransform(1, 0, 0, 1, 0, 0);
+
+          //context.font = '20px helvetica';
+          context.fillStyle = 'rgba(255, 0, 0, 0.75)';
+          context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
+          context.lineWidth = 1;
+          context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
+
+          var maxFps = 60;
+          context.strokeRect(0, 30, 250, 20);
+          context.fillRect(0, 30, 250 * Math.min(fps/maxFps, 1), 20);
+        }
+
         if( !drawAllLayers ){
           needDraw[CanvasRenderer.SELECT_BOX] = false; 
         }
@@ -496,12 +540,37 @@
       }
 
       r.redrawTotalTime += endTime - startTime;
+      r.lastRedrawTime = endTime - startTime;
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
       //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
       r.currentlyDrawing = false;
+
+      // console.profileEnd('draw' + startTime)
+
+      if( r.clearingMotionBlur ){
+        r.clearingMotionBlur = false;
+        r.motionBlurCleared = true;
+        r.motionBlur = true;
+      }
+
+      if( motionBlur ){ 
+        r.motionBlurTimeout = setTimeout(function(){
+          r.motionBlurTimeout = null;
+          // console.log('motion blur clear');
+
+          r.clearedNodeLayerForMotionBlur = false;
+          r.motionBlur = false;
+          r.clearingMotionBlur = true;
+
+          needDraw[CanvasRenderer.NODE] = true; 
+          needDraw[CanvasRenderer.DRAG] = true; 
+
+          r.redraw();
+        }, CanvasRenderer.motionBlurDelay);
+      }
     } // draw to context
 
     if( !forcedContext ){

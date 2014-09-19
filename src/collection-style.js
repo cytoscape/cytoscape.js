@@ -5,17 +5,35 @@
     // fully updates (recalculates) the style for the elements
     updateStyle: function( notifyRenderer ){
       var cy = this._private.cy;
+
+      if( !cy.styleEnabled() ){ return this; }
+
+      if( cy._private.batchingStyle ){
+        var bEles = cy._private.batchStyleEles;
+
+        for( var i = 0; i < this.length; i++ ){
+          var ele = this[i];
+
+          if( !bEles.ids[ ele._private.id ] ){
+            bEles.push( ele );
+          }
+        }
+
+        return this; // chaining and exit early when batching
+      }
+
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
       style.apply( this );
 
       var updatedCompounds = this.updateCompoundBounds();
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
+        toNotify.rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger('style'); // just fire the event
+        toNotify.trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -26,14 +44,17 @@
       var style = cy.style();
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
+      if( !cy.styleEnabled() ){ return this; }
+
       style.updateMappers( this );
 
       var updatedCompounds = this.updateCompoundBounds();
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
       if( notifyRenderer ){
-        this.add( updatedCompounds ).rtrigger('style'); // let renderer know we changed style
+        toNotify.rtrigger('style'); // let renderer know we changed style
       } else {
-        this.add( updatedCompounds ).trigger('style'); // just fire the event
+        toNotify.trigger('style'); // just fire the event
       }
       return this; // chaining
     },
@@ -41,6 +62,9 @@
     // get the specified css property as a rendered value (i.e. on-screen value)
     // or get the whole rendered style if no property specified (NB doesn't allow setting)
     renderedCss: function( property ){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return this; }
+
       var ele = this[0];
 
       if( ele ){
@@ -56,14 +80,20 @@
 
     // read the calculated css style of the element or override the style (via a bypass)
     css: function( name, value ){
-      var style = this.cy().style();
+      var cy = this.cy();
+      
+      if( !cy.styleEnabled() ){ return this; }
+
+      var updateTransitions = false;
+      var style = cy.style();
 
       if( $$.is.plainObject(name) ){ // then extend the bypass
         var props = name;
-        style.applyBypass( this, props );
+        style.applyBypass( this, props, updateTransitions );
 
         var updatedCompounds = this.updateCompoundBounds();
-        this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+        var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+        toNotify.rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
   
@@ -77,10 +107,11 @@
           }
 
         } else { // then set the bypass with the property value
-          style.applyBypass( this, name, value );
+          style.applyBypass( this, name, value, updateTransitions );
 
           var updatedCompounds = this.updateCompoundBounds();
-          this.add( updatedCompounds ).rtrigger('style'); // let the renderer know we've updated style
+          var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+          toNotify.rtrigger('style'); // let the renderer know we've updated style
         }
 
       } else if( name === undefined ){
@@ -96,18 +127,36 @@
       return this; // chaining
     },
 
-    removeCss: function(){
-      var style = this.cy().style();
+    removeCss: function( names ){
+      var cy = this.cy();
+      
+      if( !cy.styleEnabled() ){ return this; }
+
+      var updateTransitions = false;
+      var style = cy.style();
       var eles = this;
 
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+      if( names === undefined ){
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
 
-        style.removeAllBypasses( ele );
+          style.removeAllBypasses( ele, updateTransitions );
+        }
+      } else {
+        names = names.split(/\s+/);
+
+        for( var i = 0; i < eles.length; i++ ){
+          var ele = eles[i];
+
+          style.removeBypasses( ele, names, updateTransitions );
+        }
       }
 
       var updatedCompounds = this.updateCompoundBounds();
-      this.add( updatedCompounds ).rtrigger('style');
+      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+      toNotify.rtrigger('style'); // let the renderer know we've updated style
+
+      return this; // chaining
     },
 
     show: function(){
@@ -121,7 +170,11 @@
     },
 
     visible: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return true; }
+
       var ele = this[0];
+      var hasCompoundNodes = cy.hasCompoundNodes();
 
       if( ele ){
         var style = ele._private.style;
@@ -134,6 +187,8 @@
         }
         
         if( ele._private.group === 'nodes' ){
+          if( !hasCompoundNodes ){ return true; }
+
           var parents = ele._private.data.parent ? ele.parents() : null;
 
           if( parents ){
@@ -169,11 +224,19 @@
     },
 
     effectiveOpacity: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return 1; }
+
+      var hasCompoundNodes = cy.hasCompoundNodes();
       var ele = this[0];
 
       if( ele ){
-        var parentOpacity = ele._private.style.opacity.value;
-        var parents = !ele._private.data.parent ? null : ele.parents();
+        var _p = ele._private;
+        var parentOpacity = _p.style.opacity.value;
+
+        if( !hasCompoundNodes ){ return parentOpacity; }
+
+        var parents = !_p.data.parent ? null : ele.parents();
         
         if( parents ){
           for( var i = 0; i < parents.length; i++ ){
@@ -190,13 +253,21 @@
 
     transparent: function(){
       var ele = this[0];
+      var hasCompoundNodes = ele.cy().hasCompoundNodes();
 
       if( ele ){
-        return ele.effectiveOpacity() === 0;
+        if( !hasCompoundNodes ){
+          return ele._private.style.opacity === 0;
+        } else {
+          return ele.effectiveOpacity() === 0;
+        }
       }
     },
 
     isFullAutoParent: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
       var ele = this[0];
 
       if( ele ){

@@ -1,6 +1,12 @@
 ## Notes & caveats
 
-A selector functions similar to a [jQuery selector](http://api.jquery.com/category/selectors/) on DOM elements, but selectors in Cytoscape.js instead work on collections.
+A selector functions similar to a CSS selector on DOM elements, but selectors in Cytoscape.js instead work on collections of graph elements.  Note that wherever a selector may be specified as the argument to a function, a [`eles.filter()`](#collection/building--filtering/eles.filter)-style filter function may be used in place of the selector.  For example:
+
+```js
+var neighborhoodEdges = cy.neighborhood(function(){
+  return this.isEdge();
+});
+```
 
 The selectors can be combined together to make powerful queries in Cytoscape.js, for example:
 
@@ -87,6 +93,9 @@ Matches elements if their data attribute ends with the specified value (e.g. `[f
 **`@` (data attribute operator modifier)**  
 Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)
 
+**`!` (data attribute operator modifier)**  
+Prepended to an operator so that it is negated (e.g. `[foo !$= 'ar']`, `[foo !>= 'a']`)
+
 **`[[]]` (metadata brackets)**  
 Use double square brackets in place of square ones to match against metadata instead of data (e.g. `[[degree > 2]]` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
 
@@ -151,7 +160,8 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 **Compound nodes**
 
 * **`:parent`** : Matches parent nodes (they have one or more child nodes).
-* **`:child`** : Matches child nodes (they each have a parent).
+* **`:child`** or **`:nonorphan`**: Matches child nodes (they each have a parent).
+* **`:orphan`** : Matches orphan nodes (they each have no parent).
 
 **Edges**
 

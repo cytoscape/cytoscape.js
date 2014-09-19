@@ -70,6 +70,95 @@
       return target;
     },
 
+    // require that pulls in module from commonjs, amd, or window (falling back until found)
+    require: function( name, callback, options ){
+      var ret;
+      options = $$.util.extend({
+        msgIfNotFound: true
+      }, options);
+
+      var done = false;
+      var fulfil = function( ret ){
+        done = true;
+        callback( ret );
+      };
+
+      var checkWindow = function( next ){
+        if( window ){ // detected browser/window env
+          ret = window[ name ];
+        }
+
+        if( ret !== undefined ){ fulfil(ret); }
+        if( next ){ next(); }
+      };
+      var onCheckWindowDone = function(){
+        if( !done ){
+          checkCommonJs( onCheckCommonJsDone );
+        }
+      };
+
+      var checkCommonJs = function( next ){
+        if( typeof module !== 'undefined' && module.exports && require ){ // detected commonjs env
+          ret = require( name ); // regular require
+        }
+
+        if( ret !== undefined ){ fulfil(ret); }
+        if( next ){ next(); }
+      };
+      var onCheckCommonJsDone = function(){
+        if( !done ){
+          checkAmd( onCheckAmdDone );
+        }
+      };
+
+      var checkAmd = function( next ){
+        if( typeof define !== 'undefined' && define.amd && require ){ // detected amd env w/ defined module
+          require([ name ], function( nameImpl ){
+            ret = nameImpl;
+            
+            if( ret !== undefined ){ fulfil(ret); }
+            if( next ){ next(); }
+          });
+        }
+      };
+      var onCheckAmdDone = function(){
+        if( !done && options.msgIfNotFound ){
+          $$.util.error('Cytoscape.js tried to pull in dependency `' + name + '` but no module (i.e. CommonJS, AMD, or window) was found');
+        }
+      };
+
+      // kick off 1st check: window
+      checkWindow( onCheckWindowDone );
+
+    },
+
+    // multiple requires in one callback
+    requires: function( names, callback ){
+      var impls = [];
+      var gotImpl = [];
+
+      var checkDone = function(){
+        for( var i = 0; i < names.length; i++ ){ // check have all impls
+          if( !gotImpl[i] ){ return; }
+        }
+
+        // otherwise, all got all impls => done
+        callback.apply( callback, impls ); 
+      };
+
+      for( var i = 0; i < names.length; i++ ){ (function(){ // w/scope
+        var name = names[i];
+        var index = i;
+
+        $$.util.require(name, function(impl){
+          impls[index] = impl;
+          gotImpl[index] = true;
+
+          checkDone();
+        });
+      })(); }
+    },
+
     // ported lodash throttle function
     throttle: function(func, wait, options) {
       var leading = true,
@@ -198,9 +287,9 @@
     error: function( msg ){
       if( console ){
         if( console.error ){
-          console.error( msg );
+          console.error.apply( console, arguments );
         } else if( console.log ){
-          console.log( msg );
+          console.log.apply( console, arguments );
         } else {
           throw msg;
         }
@@ -232,6 +321,31 @@
       }
     },
     
+    // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
+    makeBoundingBox: function( bb ){
+      if( bb.x1 != null && bb.y1 != null ){
+        if( bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1 ){
+          return {
+            x1: bb.x1,
+            y1: bb.y1,
+            x2: bb.x2,
+            y2: bb.y2,
+            w: bb.x2 - bb.x1,
+            h: bb.y2 - bb.y1
+          };
+        } else if( bb.w != null && bb.h != null && bb.w >= 0 && bb.h >= 0 ){
+          return {
+            x1: bb.x1,
+            y1: bb.y1,
+            x2: bb.x1 + bb.w,
+            y2: bb.y1 + bb.h,
+            w: bb.w,
+            h: bb.h
+          };
+        }
+      } 
+    },
+
     // has anything been set in the map
     mapEmpty: function( map ){
       var empty = true;
@@ -331,11 +445,11 @@
           if( keepChildren ){ // then only delete child fields not in keepChildren
             for( var child in obj ){
               if( !keepChildren[child] ){
-                delete obj[child];
+                obj[child] = undefined;
               }
             }
           } else {
-            delete obj[key];
+            obj[key] = undefined;
           }
 
         } else {
@@ -538,7 +652,8 @@
     },
 
     color2tuple: function( color ){
-      return $$.util.colorname2tuple(color)
+      return ( $$.is.array(color) ? color : null ) 
+        || $$.util.colorname2tuple(color)
         || $$.util.hex2tuple(color)
         || $$.util.rgb2tuple(color)
         || $$.util.hsl2tuple(color);

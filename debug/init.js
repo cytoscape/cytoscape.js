@@ -7,11 +7,11 @@ $(function(){
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
-      .selector('node, edge')
-        .css({
-          // 'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-          // 'transition-duration': '0.25s'
-        })
+      // .selector('node, edge')
+      //   .css({
+      //     'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+      //     'transition-duration': '0.25s'
+      //   })
 
       .selector('node')
         .css({
@@ -21,14 +21,15 @@ $(function(){
           'border-color': '#555',
           'shape': 'ellipse',
           //'shape': 'data(shape)',
-          'width': 'mapData(weight, 0, 100, 10, 100)',
-          'height': 'mapData(weight, 0, 100, 10, 100)',
+          // 'width': 'mapData(weight, 0, 100, 5, 15)',
+          // 'height': 'mapData(weight, 0, 100, 5, 15)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
           // 'background-image': 'images/gnu.png',
+          // 'background-image-opacity': 0.5,
           // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
           // 'background-clip': 'none',
@@ -40,7 +41,8 @@ $(function(){
           // 'pie-3-background-size': '10%',
           // 'pie-3-background-color': 'blue',
           // 'pie-4-background-size': '15%',
-          // 'pie-4-background-color': 'yellow'
+          // 'pie-4-background-color': 'yellow',
+          // 'pie-4-background-opacity': 0.5
         })
       .selector('$node > node') // compound (parent) nodes
         .css({
@@ -53,7 +55,8 @@ $(function(){
           'padding-left': 10,
           'padding-right': 20,
           'padding-top': 5,
-          'padding-bottom': 30
+          'padding-bottom': 30,
+          // 'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
@@ -63,11 +66,22 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'width': 'mapData(weight, 0, 100, 1, 4)',
-          // 'target-arrow-shape': 'data(tgtShape)',
+          'line-color': '#bbb',
+          'source-arrow-color': '#bbb',
+          'mid-source-arrow-color': '#bbb',
+          'target-arrow-color': '#bbb',
+          'mid-target-arrow-color': '#bbb',
+          // 'curve-style': 'unbundled-bezier',
+          // 'control-point-distance': 100,
+          'width': '3',
+          // 'source-arrow-shape': 'triangle-backcurve',
+          // 'target-arrow-shape': 'triangle',
+          // 'mid-target-arrow-shape': 'triangle',
+          // 'mid-source-arrow-shape': 'triangle-backcurve',
+          // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack'
-          //'opacity': 0.5
+          'curve-style': 'haystack',
+          'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')
@@ -80,20 +94,31 @@ $(function(){
           'background-color': '#000',
           'line-color': '#000',
           'source-arrow-color': '#000',
-          'target-arrow-color': '#000'
+          'target-arrow-color': '#000',
+          'mid-source-arrow-color': '#000',
+          'mid-target-arrow-color': '#000'
         })
+      // .selector('#ae')
+      //   .css({
+      //     'curve-style': 'unbundled-bezier',
+      //     'control-point-distance': 100
+      //   })
   ;
   
   window.options = {
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
-    //textureOnViewport: true,
+    // textureOnViewport: true,
+    // motionBlur: true,
+    // pixelRatio: 1,
     renderer: {
-      name: 'canvas'
+      name: 'canvas',
+      showFps: true
     },
-    layout: {
-      name: 'grid'
-    },
+    // layout: {
+    //   name: 'arbor',
+    //   infinite: true
+    // },
     style: defaultSty,
     
     elements: {
@@ -127,9 +152,9 @@ $(function(){
     }
   };
   
-  var cliques = 3;
-  var numNodes = 100;
-  var numEdges = 200;
+  var cliques = 2;
+  var numNodes = 10;
+  var numEdges = 40;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;
@@ -246,12 +271,8 @@ $(function(){
       }
       numNodes += n;
       
-      cy.add(nodes);
-      
-      var nodesCollection = cy.nodes();
       function nodeId(){
-        var index = Math.round((nodesCollection.size() - 1) * Math.random());
-        return nodesCollection.eq(index).data('id');
+        return randNodeId( Math.round( Math.random() * (cliques - 1) ) );
       }
       
       var edges = [];
@@ -269,7 +290,7 @@ $(function(){
       numEdges += e;
       
       time(function(){
-        cy.add(edges);
+        cy.add( nodes.concat(edges) );
       });
     });
 
@@ -292,83 +313,91 @@ $(function(){
 
   });
 
-  // compound graph in the second instance
-  $container2.cy({
-    elements: {
-       nodes: [{ data: { id: 'n8', parent: 'n4' } },
-         { data: { id: 'n9', parent: 'n4' } },
-         { data: { id: 'n4', parent: 'n1' } },
-         { data: { id: 'n5', parent: 'n1', shape: 'triangle' } },
-         { data: { id: 'n1' } },
-           { data: { id: 'n2' } },
-           { data: { id: 'node-really-long-name-6', parent: 'n2' } },
-           { data: { id: 'n7', parent: 'n2', shape: 'square' } },
-         { data: { id: 'n3', parent: 'non-auto', shape: 'rectangle' } },
-         { data: { id: 'non-auto'}}],
-       edges: [ { data: { id: 'e1', source: 'n1', target: 'n3' } },
-           { data: { id: 'e2', source: 'n3', target: 'n7' } },
-           { data: { id: 'e3', source: 'node-really-long-name-6', target: 'n7' } },
-           { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n9' } },
-           { data: { id: 'e5', source: 'n8', target: 'n9' } },
-           { data: { id: 'e6', source: 'n5', target: 'n8' } },
-           { data: { id: 'e7', source: 'n2', target: 'n4' } }]
-    },
-    style: defaultSty,
+  var init2;
+  $('#init2').on('click', init2 = function(){
+    // compound graph in the second instance
+    $container2.cy({
+      renderer: {
+        name: 'canvas',
+        showFps: true
+      },
 
-    ready: function(){
-       window.cy2 = this;
-       cy2.on('click', 'node', function(evt){
-           var node = this;
-           console.log('%o', node);
-       });
-    }
-  }).cy(function(){
-    $('#compound-remove-selected-button').click(function(){
-      cy2.elements(':selected').remove();
-    });
+      elements: {
+         nodes: [{ data: { id: 'n8', parent: 'n4' } },
+           { data: { id: 'n9', parent: 'n4' } },
+           { data: { id: 'n4', parent: 'n1' } },
+           { data: { id: 'n5', parent: 'n1', shape: 'triangle' } },
+           { data: { id: 'n1' } },
+             { data: { id: 'n2' } },
+             { data: { id: 'node-really-long-name-6', parent: 'n2' } },
+             { data: { id: 'n7', parent: 'n2', shape: 'square' } },
+           { data: { id: 'n3', parent: 'non-auto', shape: 'rectangle' } },
+           { data: { id: 'non-auto'}}],
+         edges: [ { data: { id: 'e1', source: 'n1', target: 'n3' } },
+             { data: { id: 'e2', source: 'n3', target: 'n7' } },
+             { data: { id: 'e3', source: 'node-really-long-name-6', target: 'n7' } },
+             { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n9' } },
+             { data: { id: 'e5', source: 'n8', target: 'n9' } },
+             { data: { id: 'e6', source: 'n5', target: 'n8' } },
+             { data: { id: 'e7', source: 'n2', target: 'n4' } }]
+      },
+      style: defaultSty,
 
-    $('#compound-hide-selected-button').click(function(){
-      cy2.elements(':selected').hide();
-    });
-
-    $('#compound-show-all-button').click(function(){
-      cy2.elements().show();
-    });
-
-    var numChildren = 0;
-
-    $('#add-child-button').click(function(){
-
-      var parentId = $('#parent-node').val();
-      var nodes = [];
-
-      nodes.push({group: 'nodes',
-                   data: {id: 'c' + numChildren, parent: parentId},
-                   position: {x: Math.random() * width, y: Math.random() * height}});
-
-      numChildren++;
-
-      cy2.add(nodes);
-    });
-
-    $('#set-random-style').click(function(){
-
-      var nodes = cy2.elements('node:selected');
-
-      for (var i=0; i < nodes.size(); i++)
-      {
-        var shapes = ['triangle', 'rectangle', 'ellipse', 'pentagon'];
-
-        // pick a random shape and dimensions
-        nodes[i].css({'width': Math.round(Math.random() * 50 + 1),
-          'height': Math.round(Math.random() * 50 + 1),
-          'shape': shapes[Math.floor(Math.random() * 4)]});
+      ready: function(){
+         window.cy2 = this;
+         cy2.on('click', 'node', function(evt){
+             var node = this;
+             console.log('%o', node);
+         });
       }
+    }).cy(function(){
+      $('#compound-remove-selected-button').click(function(){
+        cy2.elements(':selected').remove();
+      });
 
+      $('#compound-hide-selected-button').click(function(){
+        cy2.elements(':selected').hide();
+      });
+
+      $('#compound-show-all-button').click(function(){
+        cy2.elements().show();
+      });
+
+      var numChildren = 0;
+
+      $('#add-child-button').click(function(){
+
+        var parentId = $('#parent-node').val();
+        var nodes = [];
+
+        nodes.push({group: 'nodes',
+                     data: {id: 'c' + numChildren, parent: parentId},
+                     position: {x: Math.random() * width, y: Math.random() * height}});
+
+        numChildren++;
+
+        cy2.add(nodes);
+      });
+
+      $('#set-random-style').click(function(){
+
+        var nodes = cy2.elements('node:selected');
+
+        for (var i=0; i < nodes.size(); i++)
+        {
+          var shapes = ['triangle', 'rectangle', 'ellipse', 'pentagon'];
+
+          // pick a random shape and dimensions
+          nodes[i].css({'width': Math.round(Math.random() * 50 + 1),
+            'height': Math.round(Math.random() * 50 + 1),
+            'shape': shapes[Math.floor(Math.random() * 4)]});
+        }
+
+      });
     });
   });
-  
 
+  init2();
 
   
 });

@@ -4,16 +4,31 @@ var fs = require('fs');
 var marked = require('marked');
 // var mdConvertor = require('node-markdown').Markdown;
 var Handlebars = require('handlebars');
+var jsonlint = require('jsonlint');
 var hljs = require('highlight.js');
 var encoding = 'utf8';
 var config;
 var configFile = './docmaker.json';
 var demoFile = './js/load.js';
+var mdRend = new marked.Renderer();
+
+rendCode = mdRend.code;
+mdRend.code = function(code, lang){
+  var button = '';
+
+  if( lang === 'js' ){
+    button = '<button class="run run-inline-code"><span class="icon-play"></span></button>';
+  }
+
+  return button + rendCode.call(this, code, lang);
+};
 
 try {
-  config = require(configFile);
+  jsonlint.parse( fs.readFileSync(configFile, 'utf8') ); // validate first for convenience
+  config = require( configFile );
 } catch(e){
-  throw '`' + configFile + '` could not be read; check the JSON is formatted correctly http://pro.jsonlint.com/ : ' + e;
+  console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
+  throw e;
 }
 
 // load the demo file
@@ -25,6 +40,16 @@ try {
   config.demojs = hljs.highlight('js', config.demojs).value;
 } catch(e){
   throw '`' + demoFile + '` could not be read and parsed: ' + e;
+}
+
+function linkifyArg( arg ){
+  var link = config.fnArgLinks[ arg.name ];
+  
+  if( link ){
+    arg.linkedName = '<a href="'+ link +'">' + arg.name + '</a>';
+  } else {
+    arg.linkedName = arg.name;
+  }
 }
 
 // var html = converter.makeHtml("**I am bold!**");
@@ -44,14 +69,19 @@ function md2html( file ){
   //var html = mdConvertor( md );
   var html = marked( md, {
     highlight: function(code, lang){
+      var ret;
 
       if( lang ){
-        return hljs.highlight(lang, code).value;
+        ret = hljs.highlight(lang, code).value;
       } else {
-        return hljs.highlightAuto(code).value;
+        ret = hljs.highlightAuto(code).value;
       }
+
+      return ret;
       
-    }
+    },
+
+    renderer: mdRend
   } );
 
 
@@ -59,6 +89,7 @@ function md2html( file ){
 }
 
 function toUrl( str ){
+  str = str || '';
   str = str.replace(/ /g, '-');
   str = str.replace(/\&|\,|\;|\(|\)/g, '');
   str = str.toLowerCase();
@@ -94,12 +125,20 @@ function parseSubsections( section ){
   return psubs;
 }
 
+function populateDemo( demo ){
+  demo.embedUrl = 'http://jsbin.com/' + demo.id + '/latest/embed?output';
+  demo.srcUrl = 'http://jsbin.com/' + demo.id + '/latest/edit?js,output';
+  demo.imgUrl = 'img/demos/' + demo.id + '.png';
+}
+
 function compileConfig( config ){
   var sections = config.sections;
   var parent = config;
 
   for( var i = 0; sections && i < sections.length; i++ ){
     var section = sections[i];
+
+    if( section.layout ){ section.name = section.layout.name; }
 
     section.id = (parent.name ? (toUrl(parent.name) + '/') : '') + toUrl( section.name );
     section.bookmark = makeBookmark( section.id );
@@ -123,10 +162,12 @@ function compileConfig( config ){
       for( var j = 0; j < demos.length; j++ ){
         var demo = demos[j];
 
-        demo.embedUrl = 'http://jsbin.com/' + demo.id + '/latest';
-        demo.srcUrl = 'http://jsbin.com/' + demo.id + '/latest/edit?js,output';
-        demo.imgUrl = 'img/demos/' + demo.id + '.png';
+        populateDemo( demo );
       }
+    }
+
+    if( section.demo ){
+      populateDemo( section.demo );
     }
 
     if( section.extensions ){
@@ -145,6 +186,51 @@ function compileConfig( config ){
           return 1;
         }
       });
+    }
+
+    if( section.layout ){
+      var layout = section.layout;
+
+      section.name = layout.name;
+      layout.code = fs.readFileSync( '../src/extensions/layout.' + layout.name + '.js', 'utf8' );
+
+      try {
+        layout.options = layout.code.match(/defaults\s*\=\s*(\{(?:.|\s)+?\}\;)/)[1];
+        
+        var lopts = layout.options;
+
+        // cleanup indent
+        lopts = lopts.replace(/\n[ ]{4}/g, '\n  ');
+        lopts = lopts.replace(/[ ]{2}\}\;/g, '};');
+
+        // add name
+        lopts = lopts.replace(/\{/, '{\n  name: \'' + layout.name + '\',\n');
+        
+        // wrap w/ code
+        lopts = 'var options = ' + lopts + '\n\ncy.layout( options );';
+
+        // highlight
+        lopts = hljs.highlight('js', lopts).value;
+
+        layout.optionsFormatted = lopts;
+      } catch(e){
+        throw 'Error processing layout options for `'+ layout.name +'`; must have `defaults = { ... };`';
+      }
+    }
+
+
+    function processFields( fields ){
+      for( var i = 0; fields && i < fields.length; i++ ){
+        var field = fields[i];
+
+        field.descr = marked( field.descr  || '' );
+
+        linkifyArg( field );
+
+        if( field.fields ){
+          processFields( field.fields );
+        }
+      }
     }
 
     if( section.fns ){
@@ -178,7 +264,13 @@ function compileConfig( config ){
 
             if( format.args ){
               for( var m = 0; m < format.args.length; m++ ){
-                format.args[m].descr = marked( format.args[m].descr || '' );
+                var arg = format.args[m];
+
+                linkifyArg( arg );
+
+                arg.descr = marked( arg.descr || '' );
+
+                processFields( arg.fields );
               }
             }
 

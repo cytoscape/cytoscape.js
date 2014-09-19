@@ -1,8 +1,12 @@
-body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; }	
-#cytoscape, #cytoscape2 { border: 1px solid #888; height: 600px; background: #fff; width: 600px; }	
-#commands { position: absolute; right: 0; top: 4.5em; margin: 0.5em; font-size: 0.75em; line-height: 1; }
+body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin: 0; padding: 0; height: 100%; width: 100%;}	
+#cytoscape, #cytoscape2 { position: relative; border: 1px solid #888; height: 450px; background: #fff; width: 600px; max-width: 100%; max-height: 50%; }	
+#commands { position: absolute; right: 0; top: 0; padding: 0.25em; font-size: 0.75em; line-height: 1; background: #f5f5f5; border-radius: 0.333em; }
 #commands h2 { margin-top: 1em; font-size: 1.25em; }
 label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left: 0.5em; background: #fff; }
 #nodes-number, #edges-number, #parent-node { width: 5em; }
 .ui-tooltip { font-size: 0.75em; max-width: 400px; }
 #string-stylesheet { display: block; min-height: 7em; }
+#hide-commands { position: absolute; right: 0; top: 0; }
+#commands-show-area { position: absolute; right: 0; top: 0; font-size: 0.75em; }
+#show-commands {  }
+#bb { position: absolute; left: 0; top: 0; background: rgba(0, 255, 255, 0.333); z-index: 999999999; }

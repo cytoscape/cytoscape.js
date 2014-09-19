@@ -37,19 +37,6 @@
       updateStyle: true
     }),
 
-    batchData: $$.define.batchData({
-      field: 'data',
-      event: 'data',
-      triggerFnName: 'trigger',
-      immutableKeys: {
-        'id': true,
-        'source': true,
-        'target': true,
-        'parent': true
-      },
-      updateStyle: true
-    }),
-
     scratch: $$.define.data({
       field: 'scratch',
       allowBinding: false,
@@ -142,8 +129,7 @@
         }
 
         var updatedEles = this.updateCompoundBounds();
-        
-        var toTrigger = this.add( updatedEles );
+        var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
 
         if( silent ){
           toTrigger.trigger('position');
@@ -155,10 +141,14 @@
       return this; // chaining
     },
 
+    silentPositions: function( pos ){
+      return this.positions( pos, true );
+    },
+
     updateCompoundBounds: function(){
       var cy = this.cy();
 
-      if( !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs
+      if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
 
       var updated = [];
 
@@ -256,25 +246,101 @@
       return this; // chaining
     },
 
+    // get/set the position relative to the parent
+    parentPosition: function( dim, val ){
+      var ele = this[0];
+      var cy = this.cy();
+      var ppos = $$.is.plainObject( dim ) ? dim : undefined;
+      var setting = ppos !== undefined || ( val !== undefined && $$.is.string(dim) );
+      var hasCompoundNodes = cy.hasCompoundNodes();
+
+      if( ele && ele.isNode() ){ // must have an element and must be a node to return position
+        if( setting ){
+          for( var i = 0; i < this.length; i++ ){
+            var ele = this[i];
+            var parent = hasCompoundNodes ? ele.parent() : null;
+            var hasParent = parent && parent.length > 0;
+            var relativeToParent = hasParent;
+
+            if( hasParent ){
+              parent = parent[0];
+            }
+
+            var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
+
+            if( val !== undefined ){ // set one dimension
+              ele._private.position[dim] = val + origin[dim];
+            } else if( ppos !== undefined ){ // set whole position
+              ele._private.position = {
+                x: ppos.x + origin.x,
+                y: ppos.y + origin.y,
+              };
+            }
+          }
+
+          this.rtrigger('position');
+
+        } else { // getting
+          var pos = ele._private.position;
+          var parent = hasCompoundNodes ? ele.parent() : null;
+          var hasParent = parent && parent.length > 0;
+          var relativeToParent = hasParent;
+
+          if( hasParent ){
+            parent = parent[0];
+          }
+
+          var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
+
+          ppos = {
+            x: pos.x - origin.x,
+            y: pos.y - origin.y
+          };
+
+          if( dim === undefined ){ // then return the whole rendered position
+            return ppos;
+          } else { // then return the specified dimension
+            return ppos[ dim ];
+          }
+        }
+      } else if( !setting ){
+        return undefined; // for empty collection case
+      }
+
+      return this; // chaining
+    },
+
     // convenience function to get a numerical value for the width of the node/edge
     width: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
-        var w = ele._private.style.width;
-        return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
+        if( styleEnabled ){
+          var w = ele._private.style.width;
+          return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
+        } else {
+          return 1;
+        }
       }
     },
 
     outerWidth: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
-        var style = ele._private.style;
-        var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
-        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        if( styleEnabled ){
+          var style = ele._private.style;
+          var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
+          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
 
-        return width + border;
+          return width + border;
+        } else {
+          return 1;
+        }
       }
     },
 
@@ -299,20 +365,32 @@
     // convenience function to get a numerical value for the height of the node
     height: function(){ 
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
-      if( ele && ele.isNode() ){
-        var h = ele._private.style.height;
-        return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
+      if( ele && ele._private.group === 'nodes' ){
+        if( styleEnabled ){
+          var h = ele._private.style.height;
+          return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
+        } else {
+          return 1;
+        }
       }
     },
 
     outerHeight: function(){
       var ele = this[0];
+      var cy = ele._private.cy;
+      var styleEnabled = cy._private.styleEnabled;
 
-      if( ele ){
-        var style = ele._private.style;
-        var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
-        var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+      if( ele && ele._private.group === 'nodes' ){
+        if( styleEnabled ){
+          var style = ele._private.style;
+          var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
+          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        } else {
+          return 1;
+        }
 
         return height + border;
       }
@@ -321,7 +399,7 @@
     renderedHeight: function(){
       var ele = this[0];
 
-      if( ele ){
+      if( ele && ele._private.group === 'nodes' ){
         var height = ele.height();
         return height * this.cy().zoom();
       }
@@ -330,7 +408,7 @@
     renderedOuterHeight: function(){
       var ele = this[0];
 
-      if( ele ){
+      if( ele && ele._private.group === 'nodes' ){
         var oheight = ele.outerHeight();
         return oheight * this.cy().zoom();
       }
@@ -360,15 +438,20 @@
     // get the bounding box of the elements (in raw model position)
     boundingBox: function( options ){
       var eles = this;
+      var cy = eles._private.cy;
+      var cy_p = cy._private;
+      var styleEnabled = cy_p.styleEnabled;
 
-      options = $$.util.extend({
-        includeNodes: true,
-        includeEdges: true,
-        includeLabels: true
-      }, options);
+      options = options || {};
+
+      var includeNodes = options.includeNodes === undefined ? true : options.includeNodes;
+      var includeEdges = options.includeEdges === undefined ? true : options.includeEdges;
+      var includeLabels = options.includeLabels === undefined ? true : options.includeLabels;
 
       // recalculate projections etc
-      this.cy().recalculateRenderedStyle();
+      if( styleEnabled ){
+        cy_p.renderer.recalculateRenderedStyle( this );
+      }
 
       var x1 = Infinity;
       var x2 = -Infinity;
@@ -378,15 +461,18 @@
       // find bounds of elements
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
+        var _p = ele._private;
+        var display = styleEnabled ? _p.style['display'].value : 'element';
+        var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;
 
-        if( ele.css('display') === 'none' ){ continue; } // then ele doesn't take up space      
+        if( display === 'none' ){ continue; } // then ele doesn't take up space      
 
-        if( ele.isNode() && options.includeNodes ){
+        if( isNode && includeNodes ){
           includedEle = true;
 
-          var pos = ele._private.position;
+          var pos = _p.position;
           x = pos.x;
           y = pos.y;
           var w = ele.outerWidth();
@@ -407,11 +493,11 @@
           y1 = ey1 < y1 ? ey1 : y1;
           y2 = ey2 > y2 ? ey2 : y2;
 
-        } else if( ele.isEdge() && options.includeEdges ){ 
+        } else if( ele.isEdge() && includeEdges ){ 
           includedEle = true;
 
-          var n1pos = ele.source()[0]._private.position;
-          var n2pos = ele.target()[0]._private.position;
+          var n1pos = ele._private.source._private.position;
+          var n2pos = ele._private.target._private.position;
 
           // handle edge dimensions (rough box estimate)
           //////////////////////////////////////////////
@@ -443,84 +529,97 @@
           // handle points along edge (sanity check)
           //////////////////////////////////////////
 
-          var bpts = rstyle.bezierPts || [];
-          var w = ele._private.style['width'].pxValue;
-          for( var j = 0; j < bpts.length; j++ ){
-            var bpt = bpts[j];
+          if( styleEnabled ){
+            var bpts = rstyle.bezierPts || [];
 
-            x1 = bpt.x - w < x1 ? bpt.x - w : x1;
-            x2 = bpt.x + w > x2 ? bpt.x + w : x2;
-            y1 = bpt.y - w < y1 ? bpt.y - w : y1;
-            y2 = bpt.y + w > y2 ? bpt.y + w : y2;
+            var w = ele._private.style['width'].pxValue;
+            var wHalf = w/2;
+
+            for( var j = 0; j < bpts.length; j++ ){
+              var bpt = bpts[j];
+
+              ex1 = bpt.x - wHalf;
+              ex2 = bpt.x + wHalf;
+              ey1 = bpt.y - wHalf;
+              ey2 = bpt.y + wHalf;
+
+              x1 = ex1 < x1 ? ex1 : x1;
+              x2 = ex2 > x2 ? ex2 : x2;
+              y1 = ey1 < y1 ? ey1 : y1;
+              y2 = ey2 > y2 ? ey2 : y2;
+            }
           }
 
-        }
+        } // edges
 
         // handle label dimensions
         //////////////////////////
 
-        var style = ele._private.style;
-        var rstyle = ele._private.rstyle;
-        var label = style['content'].strValue;
-        var fontSize = style['font-size'];
-        var halign = style['text-halign'];
-        var valign = style['text-valign'];
-        var labelWidth = rstyle.labelWidth;
-        var labelHeight = rstyle.labelHeight;
-        var labelX = rstyle.labelX;
-        var labelY = rstyle.labelY;
+        if( styleEnabled ){
 
-        if( includedEle && options.includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
-          var lh = labelHeight;
-          var lw = labelWidth;
-          var lx1, lx2, ly1, ly2;
+          var style = ele._private.style;
+          var rstyle = ele._private.rstyle;
+          var label = style['content'].strValue;
+          var fontSize = style['font-size'];
+          var halign = style['text-halign'];
+          var valign = style['text-valign'];
+          var labelWidth = rstyle.labelWidth;
+          var labelHeight = rstyle.labelHeight;
+          var labelX = rstyle.labelX;
+          var labelY = rstyle.labelY;
 
-          if( ele.isEdge() ){
-            lx1 = labelX - lw/2;
-            lx2 = labelX + lw/2;
-            ly1 = labelY - lh/2;
-            ly2 = labelY + lh/2;
-          } else {
-            switch( halign.value ){
-              case 'left':
-                lx1 = labelX - lw;
-                lx2 = labelX;
-                break;
+          if( includedEle && includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+            var lh = labelHeight;
+            var lw = labelWidth;
+            var lx1, lx2, ly1, ly2;
 
-              case 'center':
-                lx1 = labelX - lw/2;
-                lx2 = labelX + lw/2;
-                break;
+            if( ele.isEdge() ){
+              lx1 = labelX - lw/2;
+              lx2 = labelX + lw/2;
+              ly1 = labelY - lh/2;
+              ly2 = labelY + lh/2;
+            } else {
+              switch( halign.value ){
+                case 'left':
+                  lx1 = labelX - lw;
+                  lx2 = labelX;
+                  break;
 
-              case 'right':
-                lx1 = labelX;
-                lx2 = labelX + lw;
-                break;
+                case 'center':
+                  lx1 = labelX - lw/2;
+                  lx2 = labelX + lw/2;
+                  break;
+
+                case 'right':
+                  lx1 = labelX;
+                  lx2 = labelX + lw;
+                  break;
+              }
+
+              switch( valign.value ){
+                case 'top':
+                  ly1 = labelY - lh;
+                  ly2 = labelY;
+                  break;
+
+                case 'center':
+                  ly1 = labelY - lh/2;
+                  ly2 = labelY + lh/2;
+                  break;
+
+                case 'bottom':
+                  ly1 = labelY;
+                  ly2 = labelY + lh;
+                  break;
+              }
             }
 
-            switch( valign.value ){
-              case 'top':
-                ly1 = labelY - lh;
-                ly2 = labelY;
-                break;
-
-              case 'center':
-                ly1 = labelY - lh/2;
-                ly2 = labelY + lh/2;
-                break;
-
-              case 'bottom':
-                ly1 = labelY;
-                ly2 = labelY + lh;
-                break;
-            }
+            x1 = lx1 < x1 ? lx1 : x1;
+            x2 = lx2 > x2 ? lx2 : x2;
+            y1 = ly1 < y1 ? ly1 : y1;
+            y2 = ly2 > y2 ? ly2 : y2;
           }
-
-          x1 = lx1 < x1 ? lx1 : x1;
-          x2 = lx2 > x2 ? lx2 : x2;
-          y1 = ly1 < y1 ? ly1 : y1;
-          y2 = ly2 > y2 ? ly2 : y2;
-        }
+        } // style enabled
       } // for
 
       return {
@@ -532,7 +631,10 @@
         h: y2 - y1
       };
     }
-  });
+  }); 
 
+  // in case some users want to be explicit
+  $$.elesfn.modelPosition = $$.elesfn.position;
+  $$.elesfn.modelPositions = $$.elesfn.positions;
   
 })( cytoscape );

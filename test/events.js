@@ -8,6 +8,8 @@ describe('Events', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      styleEnabled: true,
+      
       elements: {
         nodes: [
             { data: { id: "n1", foo: "one", } },
@@ -172,7 +174,9 @@ describe('Events', function(){
         done();
       });
 
-      cy.layout();
+      cy.layout({
+        name: 'null'
+      });
 
     });
 

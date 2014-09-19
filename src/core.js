@@ -3,7 +3,6 @@
   var isTouch = $$.is.touch();
 
   var defaults = {
-    hideEdgesOnViewport: false
   };
   
   var origDefaults = $$.util.copy( defaults );
@@ -32,7 +31,12 @@
     reg = reg || {};
 
     if( reg && reg.cy ){ 
-      if( container ){ container.innerHTML = ''; }
+      if( container ){
+        while( container.firstChild ){ // clean the container
+          container.removeChild( container.firstChild );
+        }
+      }
+      
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
       reg = {}; // old instance => replace reg completely
@@ -43,44 +47,56 @@
     if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
+    var head = window !== undefined && container !== undefined && !opts.headless;
     var options = opts;
-    options.layout = $$.util.extend( { name: window && container ? 'grid' : 'null' }, options.layout );
-    options.renderer = $$.util.extend( { name: window && container ? 'canvas' : 'null' }, options.renderer );
+    options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
+    options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
     
-    // TODO determine whether we need a check like this even though we allow running headless now
-    // 
-    // if( !$$.is.domElement(options.container) ){
-    //   $$.util.error("Cytoscape.js must be called on an element");
-    //   return;
-    // }
-    
+    var defVal = function( def, val, altVal ){
+      if( val !== undefined ){
+        return val;
+      } else if( altVal !== undefined ){
+        return altVal;
+      } else {
+        return def;
+      }
+    };
+
     var _p = this._private = {
+      container: options.container, // html dom ele container
       ready: false, // whether ready has been triggered
       initrender: false, // has initrender has been triggered
       options: options, // cached options
       elements: [], // array of elements
       id2index: {}, // element id => index in elements array
       listeners: [], // list of listeners
-      aniEles: [], // array of elements being animated
+      aniEles: $$.Collection(this), // elements being animated
       scratch: {}, // scratch object for core
       layout: null,
       renderer: null,
       notificationsEnabled: true, // whether notifications are sent to the renderer
       minZoom: 1e-50,
       maxZoom: 1e50,
-      zoomingEnabled: options.zoomingEnabled === undefined ? true : options.zoomingEnabled,
-      userZoomingEnabled: options.userZoomingEnabled === undefined ? true : options.userZoomingEnabled,
-      panningEnabled: options.panningEnabled === undefined ? true : options.panningEnabled,
-      userPanningEnabled: options.userPanningEnabled === undefined ? true : options.userPanningEnabled,
-      boxSelectionEnabled: options.boxSelectionEnabled === undefined ? true : options.boxSelectionEnabled,
-      autolockNodes: false,
-      autoungrabifyNodes: options.autoungrabifyNodes === undefined ? false : options.autoungrabifyNodes,
+      zoomingEnabled: defVal(true, options.zoomingEnabled),
+      userZoomingEnabled: defVal(true, options.userZoomingEnabled),
+      panningEnabled: defVal(true, options.panningEnabled),
+      userPanningEnabled: defVal(true, options.userPanningEnabled),
+      boxSelectionEnabled: defVal(true, options.boxSelectionEnabled),
+      autolock: defVal(false, options.autolock, options.autolockNodes),
+      autoungrabify: defVal(false, options.autoungrabify, options.autoungrabifyNodes),
+      autounselectify: defVal(false, options.autounselectify),
+      styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
       zoom: $$.is.number(options.zoom) ? options.zoom : 1,
       pan: {
         x: $$.is.plainObject(options.pan) && $$.is.number(options.pan.x) ? options.pan.x : 0,
         y: $$.is.plainObject(options.pan) && $$.is.number(options.pan.y) ? options.pan.y : 0
       },
-      hasCompoundNodes: false
+      animation: { // object for currently-running animations
+        current: [],
+        queue: []
+      },
+      hasCompoundNodes: false,
+      deferredExecQueue: []
     };
 
     // set selection type
@@ -108,22 +124,18 @@
     }
 
     // init style
-
-    if( $$.is.stylesheet(options.style) ){
-      _p.style = options.style.generateStyle(this);
-    } else if( $$.is.array(options.style) ) {
-      _p.style = $$.style.fromJson(this, options.style);
-    } else if( $$.is.string(options.style) ){
-      _p.style = $$.style.fromString(this, options.style);
-    } else {
-      _p.style = new $$.Style( cy );
+    if( _p.styleEnabled ){
+      this.setStyle( options.style );
     }
 
     // create the renderer
     cy.initRenderer( $$.util.extend({
       hideEdgesOnViewport: options.hideEdgesOnViewport,
       hideLabelsOnViewport: options.hideLabelsOnViewport,
-      textureOnViewport: options.textureOnViewport
+      textureOnViewport: options.textureOnViewport,
+      wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+      motionBlur: options.motionBlur,
+      pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : undefined
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
@@ -141,13 +153,13 @@
 
       // if a ready callback is specified as an option, the bind it
       if( $$.is.fn( options.ready ) ){
-        cy.bind('ready', options.ready);
+        cy.on('ready', options.ready);
       }
 
       // bind all the ready handlers registered before creating this instance
       for( var i = 0; i < readies.length; i++ ){
         var fn = readies[i];
-        cy.bind('ready', fn);
+        cy.on('ready', fn);
       }
       if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
       
@@ -159,8 +171,16 @@
   
 
   $$.fn.core({
-    ready: function(){
+    isReady: function(){
       return this._private.ready;
+    },
+
+    ready: function( fn ){
+      if( this.isReady() ){
+        this.trigger('ready', [], fn); // just calls fn as though triggered via ready event
+      } else {
+        this.on('ready', fn);
+      }
     },
 
     initrender: function(){
@@ -197,6 +217,10 @@
       return this._private.hasCompoundNodes;
     },
 
+    styleEnabled: function(){
+      return this._private.styleEnabled;
+    },
+
     addToPool: function( eles ){
       var elements = this._private.elements;
       var id2index = this._private.id2index;
@@ -231,7 +255,7 @@
         var inPool = index !== undefined;
 
         if( inPool ){
-          delete this._private.id2index[ id ];
+          this._private.id2index[ id ] = undefined;
           elements.splice(index, 1);
 
           // adjust the index of all elements past this index
@@ -244,7 +268,7 @@
     },
 
     container: function(){
-      return this._private.options.container;
+      return this._private.container;
     },
 
     options: function(){
@@ -266,8 +290,10 @@
         json.elements[group].push( ele.json() );
       });
 
-      json.style = cy.style().json();
-      json.scratch = cy.scratch();
+      if( this._private.styleEnabled ){
+        json.style = cy.style().json();
+      }
+
       json.zoomingEnabled = cy._private.zoomingEnabled;
       json.userZoomingEnabled = cy._private.userZoomingEnabled;
       json.zoom = cy._private.zoom;
@@ -282,8 +308,29 @@
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
       json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
       json.textureOnViewport = cy._private.options.textureOnViewport;
+      json.wheelSensitivity = cy._private.options.wheelSensitivity;
+      json.motionBlur = cy._private.options.motionBlur;
       
       return json;
+    },
+
+    // defer execution until not busy and guarantee relative execution order of deferred functions
+    defer: function( fn ){
+      var cy = this;
+      var _p = cy._private;
+      var q = _p.deferredExecQueue;
+
+      q.push( fn );
+
+      if( !_p.deferredTimeout ){
+        _p.deferredTimeout = setTimeout(function(){
+          while( q.length > 0 ){
+            ( q.shift() )();
+          }
+
+          _p.deferredTimeout = null;
+        }, 0);
+      }
     }
     
   });  

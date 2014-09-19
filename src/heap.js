@@ -294,7 +294,7 @@
       this._private.heap.pop();
       this._private.elements.pop();
       this._private.length = this._private.heap.length;
-      delete this._private.pointers[remId];
+      this._private.pointers[remId] = undefined;
 
       this.heapify(0);
       return top;
@@ -352,7 +352,7 @@
       this._private.heap.pop();
       this._private.elements.pop();
       this._private.length = this._private.heap.length;
-      delete this._private.pointers[remId];
+      this._private.pointers[remId] = undefined;
 
       this.findDirectionHeapify(elementIndex);
     }

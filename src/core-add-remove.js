@@ -52,9 +52,9 @@
 
             for( var j = 0, jl = elesArray.length; j < jl; j++ ){
               var json = elesArray[j];
+              json.group = group;
 
-              var mjson = $$.util.extend({}, json, { group: group });
-              jsons.push( mjson );
+              jsons.push( json );
             }
           } 
         }
@@ -116,7 +116,10 @@
           cy.trigger('done');
         });
         
-        cy.layout( cy._private.options.layout );
+        var layoutOpts = $$.util.extend({}, cy._private.options.layout);
+        layoutOpts.eles = cy.$();
+
+        cy.layout( layoutOpts );
 
       }
 

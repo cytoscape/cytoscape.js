@@ -2,12 +2,12 @@
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     padding: 30, // the padding on fit
     startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+    counterclockwise: false, // whether the layout should go counterclockwise/anticlockwise (true) or clockwise (false)
     minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     height: undefined, // height of layout area (overrides container height)
     width: undefined, // width of layout area (overrides container width)
     concentric: function(){ // returns numeric value for each node, placing higher nodes in levels towards the centre
@@ -15,7 +15,11 @@
     },
     levelWidth: function(nodes){ // the variation of concentric values in each level
       return nodes.maxDegree() / 4;
-    } 
+    },
+    animate: false, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function ConcentricLayout( options ){
@@ -27,17 +31,17 @@
     var options = params;
     
     var cy = params.cy;
-    var nodes = cy.nodes().filter(function(){
-      return !this.isFullAutoParent();
-    });
-    var container = cy.container();
     
-    var width = options.width !== undefined ? options.width : container.clientWidth;
-    var height = options.height !== undefined ? options.height : container.clientHeight;
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
+    
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
 
     var center = {
-      x: width/2,
-      y: height/2
+      x: bb.x1 + bb.w/2,
+      y: bb.y1 + bb.h/2
     };
     
     var nodeValues = []; // { node, value }
@@ -100,12 +104,20 @@
     var r = 0;
     var minDist = maxNodeSize + options.minNodeSpacing; // min dist between nodes
 
+    if( !options.avoidOverlap ){ // then strictly constrain to bb
+      var firstLvlHasMulti = levels.length > 0 && levels[0].length > 1;
+      var maxR = ( Math.min(bb.w, bb.h) / 2 - minDist );
+      var rStep = maxR / ( levels.length + firstLvlHasMulti ? 1 : 0 );
+
+      minDist = Math.min( minDist, rStep );
+    }
+
     for( var i = 0; i < levels.length; i++ ){
       var level = levels[i];
       var dTheta = 2 * Math.PI / level.length;
 
       // calculate the radius
-      if( level.length > 1 ){ // but only if more than one node (can't overlap)
+      if( level.length > 1 && options.avoidOverlap ){ // but only if more than one node (can't overlap)
         var dcos = Math.cos(dTheta) - Math.cos(0);
         var dsin = Math.sin(dTheta) - Math.sin(0);
         var rMin = Math.sqrt( minDist * minDist / ( dcos*dcos + dsin*dsin ) ); // s.t. no nodes overlapping
@@ -129,25 +141,13 @@
     } 
 
     // position the nodes
-    nodes.positions(function(){
+    nodes.layoutPositions(this, options, function(){
       var id = this.id();
 
       return pos[id];
     });
-    
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
-  };
-
-  ConcentricLayout.prototype.stop = function(){
-    // not a continuous layout
+  
+    return this; // chaining
   };
   
   $$('layout', 'concentric', ConcentricLayout);

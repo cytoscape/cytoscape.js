@@ -10,10 +10,6 @@
     var style = node._private.style;
     var rs = node._private.rscratch;
     
-    if ( !node.visible() ) {
-      return;
-    }
-
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;
@@ -41,12 +37,28 @@
 
       var bgColor = style['background-color'].value;
       var borderColor = style['border-color'].value;
+      var borderStyle = style['border-style'].value;
 
       this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
       
       this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
+
+      switch( borderStyle ){
+        case 'dotted':
+          context.setLineDash([ 1, 1 ]);
+          break;
+
+        case 'dashed':
+          context.setLineDash([ 4, 2 ]);
+          break;
+
+        case 'solid':
+        case 'double':
+          context.setLineDash([ ]);
+          break;
+      }
 
       //var image = this.getCachedImage('url');
       
@@ -116,12 +128,13 @@
       } 
       
       var darkness = style['background-blacken'].value;
+      var borderWidth = style['border-width'].pxValue;
 
       if( this.hasPie(node) ){
         this.drawPie(context, node);
 
         // redraw path for blacken and border
-        if( darkness !== 0 ){
+        if( darkness !== 0 || borderWidth !== 0 ){
 
           if( !usePaths ){
             CanvasRenderer.nodeShapes[this.getNodeShape(node)].drawPath(
@@ -154,7 +167,7 @@
       }
 
       // Border width, draw border
-      if (style['border-width'].pxValue > 0) {
+      if (borderWidth > 0) {
 
         if( usePaths ){
           context.stroke( path );
@@ -162,11 +175,29 @@
           context.stroke();
         }
 
+        if( borderStyle === 'double' ){
+          context.lineWidth = style['border-width'].pxValue/3;
+
+          var gco = context.globalCompositeOperation;
+          context.globalCompositeOperation = 'destination-out';
+
+          if( usePaths ){
+            context.stroke( path );
+          } else {
+            context.stroke();
+          }
+
+          context.globalCompositeOperation = gco;
+        }
+
       }
 
       if( usePaths ){
         context.translate( -pos.x, -pos.y );
       }
+
+      // reset in case we changed the border style
+      context.setLineDash([ ]);
 
     // draw the overlay
     } else {
@@ -207,20 +238,21 @@
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
     var usePaths = CanvasRenderer.usePaths();
 
+    if( usePaths ){
+      x = 0;
+      y = 0;
+    }
+
     if( pieSize.units === '%' ){
       radius = radius * pieSize.value / 100;
     } else if( pieSize.pxValue !== undefined ){
       radius = pieSize.pxValue / 2;
     }
 
-    if( usePaths ){
-      x = 0;
-      y = 0;
-    }
-
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
       var size = node._private.style['pie-' + i + '-background-size'].value;
       var color = node._private.style['pie-' + i + '-background-color'].value;
+      var opacity = node._private.style['pie-' + i + '-background-opacity'].value;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
@@ -239,7 +271,7 @@
       context.arc( x, y, radius, angleStart, angleEnd );
       context.closePath();
 
-      this.fillStyle(context, color[0], color[1], color[2], 1);
+      this.fillStyle(context, color[0], color[1], color[2], opacity);
 
       context.fill();
 

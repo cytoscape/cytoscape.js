@@ -3,9 +3,13 @@
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // padding used on fit
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
     position: function( node ){}, // returns { row, col } for element
+    animate: false, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
@@ -19,24 +23,25 @@
     var options = params;
     
     var cy = params.cy;
-    var nodes = cy.nodes();
-    var container = cy.container();
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
     
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
 
-    if( height === 0 || width === 0){
-      nodes.positions(function(){
-        return { x: 0, y: 0 };
+    if( bb.h === 0 || bb.w === 0){
+      nodes.layoutPositions(this, options, function(){
+        return { x: bb.x1, y: bb.y1 };
       });
       
     } else {
       
       // width/height * splits^2 = cells where splits is number of times to split width
       var cells = nodes.size();
-      var splits = Math.sqrt( cells * height/width );
+      var splits = Math.sqrt( cells * bb.h/bb.w );
       var rows = Math.round( splits );
-      var cols = Math.round( width/height * splits );
+      var cols = Math.round( bb.w/bb.h * splits );
 
       var small = function(val){
         if( val == null ){
@@ -105,16 +110,18 @@
         }
       }
       
-      var cellWidth = width / cols;
-      var cellHeight = height / rows;
+      var cellWidth = bb.w / cols;
+      var cellHeight = bb.h / rows;
 
-      for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[i];
-        var w = node.outerWidth();
-        var h = node.outerHeight();
+      if( options.avoidOverlap ){
+        for( var i = 0; i < nodes.length; i++ ){
+          var node = nodes[i];
+          var w = node.outerWidth();
+          var h = node.outerHeight();
 
-        cellWidth = Math.max( cellWidth, w );
-        cellHeight = Math.max( cellHeight, h );
+          cellWidth = Math.max( cellWidth, w );
+          cellHeight = Math.max( cellHeight, h );
+        }
       }
       
       var cellUsed = {}; // e.g. 'c-0-2' => true
@@ -169,7 +176,7 @@
         }
       }
 
-      nodes.positions(function(i, element){
+      var getPos = function(i, element){
         var x, y;
 
         if( element.locked() || element.isFullAutoParent() ){
@@ -179,8 +186,8 @@
         // see if we have a manual position set
         var rcPos = id2manPos[ element.id() ];
         if( rcPos ){
-          x = rcPos.col * cellWidth + cellWidth/2;
-          y = rcPos.row * cellHeight + cellHeight/2;
+          x = rcPos.col * cellWidth + cellWidth/2 + bb.x1;
+          y = rcPos.row * cellHeight + cellHeight/2 + bb.y1;
         
         } else { // otherwise set automatically
         
@@ -188,8 +195,8 @@
             moveToNextCell();
           }
 
-          x = col * cellWidth + cellWidth/2;
-          y = row * cellHeight + cellHeight/2;
+          x = col * cellWidth + cellWidth/2 + bb.x1;
+          y = row * cellHeight + cellHeight/2 + bb.y1;
           use( row, col );
           
           moveToNextCell();
@@ -197,22 +204,13 @@
         
         return { x: x, y: y };
         
-      });
-    }
-    
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
-  };
+      };
 
-  GridLayout.prototype.stop = function(){
-    // not a continuous layout
+      nodes.layoutPositions( this, options, getPos );
+    }
+
+    return this; // chaining
+    
   };
   
   $$('layout', 'grid', GridLayout);

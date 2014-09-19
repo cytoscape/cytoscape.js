@@ -17,7 +17,7 @@
         }
       }
       
-      return new $$.Collection( cy, parents ).filter( selector );
+      return new $$.Collection( cy, parents, { unique: true } ).filter( selector );
     },
 
     parents: function( selector ){
@@ -33,7 +33,34 @@
         eles = eles.parent();
       }
 
-      return new $$.Collection( this.cy(), parents ).filter( selector );
+      return new $$.Collection( this.cy(), parents, { unique: true } ).filter( selector );
+    },
+
+    commonAncestors: function( selector ){
+      var ancestors;
+
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[i];
+        var parents = ele.parents();
+        
+        ancestors = ancestors || parents;
+
+        ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
+      }
+
+      return ancestors.filter( selector );
+    },
+
+    orphans: function( selector ){
+      return this.stdFilter(function( ele ){
+        return ele.isNode() && ele.parent().empty();
+      }).filter( selector );
+    },
+
+    nonorphans: function( selector ){
+      return this.stdFilter(function( ele ){
+        return ele.isNode() && ele.parent().nonempty();
+      }).filter( selector );
     },
 
     children: function( selector ){
@@ -44,7 +71,7 @@
         children = children.concat( ele._private.children );
       }
 
-      return new $$.Collection( this.cy(), children ).filter( selector );
+      return new $$.Collection( this.cy(), children, { unique: true } ).filter( selector );
     },
 
     siblings: function( selector ){
@@ -84,7 +111,7 @@
 
       add( this.children() );
 
-      return new $$.Collection( this.cy(), elements ).filter( selector );
+      return new $$.Collection( this.cy(), elements, { unique: true } ).filter( selector );
     }
   });
 

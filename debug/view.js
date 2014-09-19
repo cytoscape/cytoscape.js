@@ -52,19 +52,54 @@ $(function(){
 		});
 
 		$("#enable-autolock").click(function(){
-			cy.autolockNodes(true);
+			cy.autolock(true);
 		});
 
 		$("#disable-autolock").click(function(){
-			cy.autolockNodes(false);
+			cy.autolock(false);
 		});
 
 		$("#enable-autoungrabify").click(function(){
-			cy.autoungrabifyNodes(true);
+			cy.autoungrabify(true);
 		});
 
 		$("#disable-autoungrabify").click(function(){
-			cy.autoungrabifyNodes(false);
+			cy.autoungrabify(false);
+		});
+
+		$("#enable-autounselectify").click(function(){
+			cy.autounselectify(true);
+		});
+
+		$("#disable-autounselectify").click(function(){
+			cy.autounselectify(false);
+		});
+
+		$("#show-bb").click(function(){
+			var eles = cy.$(':selected');
+
+			if( eles.length === 0 ){
+				eles = cy.elements();
+			}
+
+			eles.showBB();
+		});
+
+		cytoscape('collection', 'showBB', function(){
+			var bb = this.renderedBoundingBox();
+
+			$('#bb').css({
+				left: bb.x1,
+				top: bb.y1,
+				width: bb.x2 - bb.x1,
+				height: bb.y2 - bb.y1
+			}).show();
+
+			return this;
+		});
+
+		$("#hide-bb").click(function(){
+			$('#bb').hide();
 		});
 		
 	});

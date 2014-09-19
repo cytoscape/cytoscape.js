@@ -1,4 +1,4 @@
-The above extensions are a curated list.  To add your extension, please submit a pull request that adds your extension to [the documentation configuration JSON file](https://github.com/cytoscape/cytoscape.js/blob/master/documentation/docmaker.json).  Once pulled in, your extension will be listed with the next publish of the documentation.
+The above extensions are a curated list.  To add your extension, [please submit a request](https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description) that includes your extension's GitHub URL and a one line description.
 
 ## API
 
@@ -10,10 +10,10 @@ cytoscape( type, name, extension );
 
 The value of `type` can take on the following values:
 
- * `core` : The extension adds a core function.
- * `collection` : The extension adds a collection function.
- * `layout` : The extension registers a layout prototype.
- * `renderer` : The extension registers a renderer prototype.
+ * `'core'` : The extension adds a core function.
+ * `'collection'` : The extension adds a collection function.
+ * `'layout'` : The extension registers a layout prototype.
+ * `'renderer'` : The extension registers a renderer prototype.
 
 The `name` argument indicates the name of the extension, which should be a single word in lower case.
 
@@ -26,17 +26,15 @@ Functions should be chainable, unless they need to return some other value.  To 
 Here is an example collection function:
 
 ```js
-cytoscape('collection', 'forEach', function( fn ){
+cytoscape('collection', 'foo', function( fn ){
   for( var i = 0; i < this.length; i++ ){
-    fn.apply( this[i], [ i, this[i] ] );
+    this[i].data('foo', 'bar');
   }
 
   return this; // chainability
 });
 
-cy.elements().forEach(function(){
-  console.log( 'forEach ' + this.id() );
-});
+cy.elements().foo();
 ```
 
 
@@ -47,13 +45,13 @@ A layout modifies the positions of nodes in the graph.  A layout has number of o
 
 Layouts may be blocking if they are fast &mdash; meaning you can execute your code to run after the layout on the line following the layout call.  Layouts may also be continuous, in which case, callback functions are provided to know when the layout finishes.
 
-A layout has two events that must be triggereed on the core, including `layoutready` and `layoutstop`:
+A layout has two events that must be triggered on the core, including `layoutready` and `layoutstop`:
 
  * `layoutready` : This is triggered on the core (via `cy.trigger('layoutready')`) when the layout has set the positions on every node at least once.  This lets the core know that the nodes now have valid positions and can be rendered.  It is important to trigger `layoutready` on continuous layouts so that the nodes are shown moving.  For blocking (non-continous) layouts, `layoutready` can just be triggered after the layout is done but before `layoutstop`.
 
  * `layoutstop` : This is triggered on the core (via `cy.trigger('layoutstop')`) when the layout has finished.  It should be triggered after `layoutready`.  The layout should not change node positions after triggering `layoutstop`.
 
-For an example layout, please refer to the [null layout source code](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Arbor layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.arbor.js) is a good example of a continuous layout.
+For an example layout, please refer to the [null layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.null.js).  The layout just sets each node to position (0, 0), and it is well documented.  The [Cola layout](https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/layout.cola.js) is a good example of a continuous layout.
  
 
 

@@ -18,8 +18,11 @@
     // Called on `layoutstop`
     stop                : function() {},
 
+    // Whether to animate while running the layout
+    animate             : true,
+
     // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-    refresh             : 0,
+    refresh             : 4,
     
     // Whether to fit the network view after when done
     fit                 : true, 
@@ -27,6 +30,8 @@
     // Padding on fit
     padding             : 30, 
 
+    // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    boundingBox         : undefined,
 
     // Whether to randomize node positions on the beginning
     randomize           : true,
@@ -35,7 +40,7 @@
     debug               : false,
 
     // Node repulsion (non overlapping) multiplier
-    nodeRepulsion       : 10000,
+    nodeRepulsion       : 400000,
     
     // Node repulsion (overlapping) multiplier
     nodeOverlap         : 10,
@@ -62,7 +67,7 @@
     coolingFactor       : 0.95, 
     
     // Lower temperature threshold (below this point the layout will end)
-    minTemp             : 1
+    minTemp             : 1.0
   };
 
 
@@ -81,6 +86,11 @@
   CoseLayout.prototype.run = function() {
     var options = this.options;
     var cy      = options.cy;
+    var layout  = this;
+
+    layout.stopped = false;
+
+    layout.trigger({ type: 'layoutstart', layout: layout });
 
     // Set DEBUG - Global variable
     if (true === options.debug) {
@@ -93,7 +103,7 @@
     var startTime = new Date();
 
     // Initialize layout info
-    var layoutInfo = createLayoutInfo(cy, options);
+    var layoutInfo = createLayoutInfo(cy, layout, options);
     
     // Show LayoutInfo contents if debugging
     if (DEBUG) {
@@ -103,23 +113,18 @@
     // If required, randomize node positions
     if (true === options.randomize) {
       randomizePositions(layoutInfo, cy);
-
-      if (0 < options.refresh) {
-        refreshPositions(layoutInfo, cy, options);
-      }
     }
 
     updatePositions(layoutInfo, cy, options);
 
-    // Main loop
-    for (var i = 0; i < options.numIter; i++) {
+    var mainLoop = function(i){
+      if( layout.stopped ){
+        logDebug("Layout manually stopped. Stopping computation in step " + i);
+        return false;
+      }
+
       // Do one step in the phisical simulation
       step(layoutInfo, cy, options, i);
-
-      // If required, update positions
-      if (0 < options.refresh && 0 === (i % options.refresh)) {
-        refreshPositions(layoutInfo, cy, options);
-      }
       
       // Update temperature
       layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
@@ -127,25 +132,66 @@
 
       if (layoutInfo.temperature < options.minTemp) {
         logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-        break;
+        return false;
       }
+
+      return true;
+    };
+
+    var done = function(){
+      refreshPositions(layoutInfo, cy, options);
+
+      // Fit the graph if necessary
+      if (true === options.fit) {
+        cy.fit( options.padding );
+      }
+      
+      // Get end time
+      var endTime = new Date();
+
+      console.info('Layout took ' + (endTime - startTime) + ' ms');
+
+      // Layout has finished
+      layout.one('layoutstop', options.stop);
+      layout.trigger({ type: 'layoutstop', layout: layout });
+    };
+
+    if( options.animate ){
+      var i = 0;
+      var frame = function(){
+
+        var f = 0;
+        var loopRet;
+        while( f < options.refresh && i < options.numIter ){
+          var loopRet = mainLoop(i);
+          if( loopRet === false ){ break; }
+
+          f++;
+          i++;
+        }
+
+        refreshPositions(layoutInfo, cy, options);
+        if( options.fit ){
+          cy.fit( options.padding );
+        }
+
+        if ( loopRet !== false && i + 1 < options.numIter ) {
+          $$.util.requestAnimationFrame( frame );
+        } else {
+          done();
+        }
+      };
+
+      $$.util.requestAnimationFrame( frame );
+    } else {
+      for (var i = 0; i < options.numIter; i++) {
+        if( mainLoop(i) === false ){ break; }
+      }
+
+      done();
     }
-    
-    refreshPositions(layoutInfo, cy, options);
-
-    // Fit the graph if necessary
-    if (true === options.fit) {
-      cy.fit( options.padding );
-    }
-    
-    // Get end time
-    var endTime = new Date();
-
-    console.info('Layout took ' + (endTime - startTime) + ' ms');
-
-    // Layout has finished
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+   
+    return this; // chaining
   };
 
 
@@ -153,10 +199,9 @@
    * @brief : called on continuous layouts to stop them before they finish
    */
   CoseLayout.prototype.stop = function(){
-    var options = this.options;
+    this.stopped = true;
 
-    cy.one('layoutstop', options.stop);
-    cy.trigger('layoutstop');
+    return this; // chaining
   };
 
 
@@ -166,22 +211,27 @@
    * @arg cy    : cytoscape.js object
    * @return    : layoutInfo object initialized
    */
-  var createLayoutInfo = function(cy, options) {
+  var createLayoutInfo = function(cy, layout, options) {
+    // Shortcut
+    var edges = options.eles.edges();
+    var nodes = options.eles.nodes();
+
     var layoutInfo   = {
+      layout       : layout,
       layoutNodes  : [], 
       idToIndex    : {},
-      nodeSize     : cy.nodes().size(),
+      nodeSize     : nodes.size(),
       graphSet     : [],
       indexToGraph : [], 
       layoutEdges  : [],
-      edgeSize     : cy.edges().size(),
+      edgeSize     : edges.size(),
       temperature  : options.initialTemp,
-      clientWidth  : cy.container().clientWidth,
-      clientHeight : cy.container().clientHeight
+      clientWidth  : cy.width(),
+      clientHeight : cy.width(),
+      boundingBox  : $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+                       x1: 0, y1: 0, w: cy.width(), h: cy.height()
+                     } )
     }; 
-    
-    // Shortcut
-    var nodes = cy.nodes();
     
     // Iterate over all nodes, creating layout nodes
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
@@ -261,9 +311,6 @@
       layoutInfo.indexToGraph[index] = i;
       }
     }
-
-    // Shortcut
-    var edges = cy.edges();
     
     // Iterate over all edges, creating Layout Edges
     for (var i = 0; i < layoutInfo.edgeSize; i++) {
@@ -492,15 +539,46 @@
     var s = 'Refreshing positions';
     logDebug(s);
 
-    cy.nodes().positions(function(i, ele) {
+    var layout = layoutInfo.layout;
+    var nodes = options.eles.nodes();
+    var bb = layoutInfo.boundingBox;
+    var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
+    
+    if( options.boundingBox ){
+      nodes.forEach(function( node ){
+        var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[node.data('id')]];
+
+        coseBB.x1 = Math.min( coseBB.x1, lnode.positionX );
+        coseBB.x2 = Math.max( coseBB.x2, lnode.positionX );
+
+        coseBB.y1 = Math.min( coseBB.y1, lnode.positionY );
+        coseBB.y2 = Math.max( coseBB.y2, lnode.positionY );
+      });
+
+      coseBB.w = coseBB.x2 - coseBB.x1;
+      coseBB.h = coseBB.y2 - coseBB.y1;
+    }
+
+    nodes.positions(function(i, ele) {
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
       s = "Node: " + lnode.id + ". Refreshed position: (" + 
       lnode.positionX + ", " + lnode.positionY + ").";
       logDebug(s);
-      return {
-        x: lnode.positionX,
-        y: lnode.positionY
-      };
+
+      if( options.boundingBox ){ // then add extra bounding box constraint
+        var pctX = (lnode.positionX - coseBB.x1) / coseBB.w;
+        var pctY = (lnode.positionY - coseBB.y1) / coseBB.h;
+
+        return {
+          x: bb.x1 + pctX * bb.w,
+          y: bb.y1 + pctY * bb.h
+        };
+      } else {
+        return {
+          x: lnode.positionX,
+          y: lnode.positionY
+        };
+      }
     });
 
     // Trigger layoutReady only on first call
@@ -508,8 +586,8 @@
       s = 'Triggering layoutready';
       logDebug(s);
       layoutInfo.ready = true;
-      cy.one('layoutready', options.ready);
-      cy.trigger('layoutready');
+      layout.one('layoutready', options.ready);
+      layout.trigger({ type: 'layoutready', layout: this });
     }
   };
 
@@ -916,20 +994,20 @@
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      logDebug("Resetting boundaries of compound node: " + n.id);
-      n.maxX = undefined;
-      n.minX = undefined;
-      n.maxY = undefined;
-      n.minY = undefined;
+        logDebug("Resetting boundaries of compound node: " + n.id);
+        n.maxX = undefined;
+        n.minX = undefined;
+        n.maxY = undefined;
+        n.minY = undefined;
       }
     }
 
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      // No need to set compound node position
-      logDebug("Skipping position update of node: " + n.id);
-      continue;
+        // No need to set compound node position
+        logDebug("Skipping position update of node: " + n.id);
+        continue;
       }
       s = "Node: " + n.id + " Previous position: (" + 
       n.positionX + ", " + n.positionY + ")."; 
@@ -955,14 +1033,14 @@
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
       if (0 < n.children.length) {
-      n.positionX = (n.maxX + n.minX) / 2;
-      n.positionY = (n.maxY + n.minY) / 2;
-      n.width     = n.maxX - n.minX;
-      n.height    = n.maxY - n.minY;
-      s = "Updating position, size of compound node " + n.id;
-      s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
-      s += "\nWidth: " + n.width + ", Height: " + n.height;
-      logDebug(s);
+        n.positionX = (n.maxX + n.minX) / 2;
+        n.positionY = (n.maxY + n.minY) / 2;
+        n.width     = n.maxX - n.minX;
+        n.height    = n.maxY - n.minY;
+        s = "Updating position, size of compound node " + n.id;
+        s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
+        s += "\nWidth: " + n.width + ", Height: " + n.height;
+        logDebug(s);
       }
     }  
   };

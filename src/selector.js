@@ -117,6 +117,17 @@
         tokens.comparatorOp += '|@' + op;
       }
 
+      // add ! variants to comparatorOp
+      var ops = tokens.comparatorOp.split('|');
+      for( var i = 0; i < ops.length; i++ ){
+        var op = ops[i];
+
+        if( op.indexOf('!') >= 0 ){ continue; } // skip ops that explicitly contain !
+        if( op === '=' ){ continue; } // skip = b/c != is explicitly defined
+
+        tokens.comparatorOp += '|\\!' + op;
+      }
+
       // NOTE: add new expression syntax here to have it recognised by the parser;
       // - a query contains all adjacent (i.e. no separator in between) expressions;
       // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
@@ -133,7 +144,9 @@
         
         state: {
           query: true,
-          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
+          // NB: if one colon selector is a substring of another from its start, place the longer one first
+          // e.g. :foobar|:foo
+          regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:orphan|:nonorphan|:parent|:child|:loop|:simple|:active|:inactive|:touch)',
           populate: function( state ){
             this.colonSelectors.push( state );
           }
@@ -419,6 +432,339 @@
     // TODO impl if we decide to use a DB for storing elements
   };
   
+  var queryMatches = function(query, element){
+    // check group
+    if( query.group != null && query.group != '*' && query.group != element._private.group ){
+      return false;
+    }
+
+    var cy = element.cy();
+    
+    // check colon selectors
+    var allColonSelectorsMatch = true;
+    for(var k = 0; k < query.colonSelectors.length; k++){
+      var sel = query.colonSelectors[k];
+      
+      switch(sel){
+      case ':selected':
+        allColonSelectorsMatch = element.selected();
+        break;
+      case ':unselected':
+        allColonSelectorsMatch = !element.selected();
+        break;
+      case ':selectable':
+        allColonSelectorsMatch = element.selectable();
+        break;
+      case ':unselectable':
+        allColonSelectorsMatch = !element.selectable();
+        break;
+      case ':locked':
+        allColonSelectorsMatch = element.locked();
+        break;
+      case ':unlocked':
+        allColonSelectorsMatch = !element.locked();
+        break;
+      case ':visible':
+        allColonSelectorsMatch = element.visible();
+        break;
+      case ':hidden':
+        allColonSelectorsMatch = !element.visible();
+        break;
+      case ':transparent':
+        allColonSelectorsMatch = element.transparent();
+        break;
+      case ':grabbed':
+        allColonSelectorsMatch = element.grabbed();
+        break;
+      case ':free':
+        allColonSelectorsMatch = !element.grabbed();
+        break;
+      case ':removed':
+        allColonSelectorsMatch = element.removed();
+        break;
+      case ':inside':
+        allColonSelectorsMatch = !element.removed();
+        break;
+      case ':grabbable':
+        allColonSelectorsMatch = element.grabbable();
+        break;
+      case ':ungrabbable':
+        allColonSelectorsMatch = !element.grabbable();
+        break;
+      case ':animated':
+        allColonSelectorsMatch = element.animated();
+        break;
+      case ':unanimated':
+        allColonSelectorsMatch = !element.animated();
+        break;
+      case ':parent':
+        allColonSelectorsMatch = element.isNode() && element.children().nonempty();
+        break;
+      case ':child':
+      case ':nonorphan':
+        allColonSelectorsMatch = element.isNode() && element.parent().nonempty();
+        break;
+      case ':orphan':
+        allColonSelectorsMatch = element.isNode() && element.parent().empty();
+        break;
+      case ':loop':
+        allColonSelectorsMatch = element.isEdge() && element.data('source') === element.data('target');
+        break;
+      case ':simple':
+        allColonSelectorsMatch = element.isEdge() && element.data('source') !== element.data('target');
+        break;
+      case ':active':
+        allColonSelectorsMatch = element.active();
+        break;
+      case ':inactive':
+        allColonSelectorsMatch = !element.active();
+        break;
+      case ':touch':
+        allColonSelectorsMatch = $$.is.touch();
+        break;
+      }
+      
+      if( !allColonSelectorsMatch ) break;
+    }
+    if( !allColonSelectorsMatch ) return false;
+    
+    // check id
+    var allIdsMatch = true;
+    for(var k = 0; k < query.ids.length; k++){
+      var id = query.ids[k];
+      var actualId = element._private.data.id;
+      
+      allIdsMatch = allIdsMatch && (id == actualId);
+      
+      if( !allIdsMatch ) break;
+    }
+    if( !allIdsMatch ) return false;
+    
+    // check classes
+    var allClassesMatch = true;
+    for(var k = 0; k < query.classes.length; k++){
+      var cls = query.classes[k];
+      
+      allClassesMatch = allClassesMatch && element.hasClass(cls);
+      
+      if( !allClassesMatch ) break;
+    }
+    if( !allClassesMatch ) return false;
+    
+    // generic checking for data/metadata
+    var operandsMatch = function(params){
+      var allDataMatches = true;
+      for(var k = 0; k < query[params.name].length; k++){
+        var data = query[params.name][k];
+        var operator = data.operator;
+        var value = data.value;
+        var field = data.field;
+        var matches;
+        
+        if( operator != null && value != null ){
+          
+          var fieldVal = params.fieldValue(field);
+          var fieldStr = !$$.is.string(fieldVal) && !$$.is.number(fieldVal) ? '' : '' + fieldVal;
+          var valStr = '' + value;
+          
+          var caseInsensitive = false;
+          if( operator.indexOf('@') >= 0 ){
+            fieldStr = fieldStr.toLowerCase();
+            valStr = valStr.toLowerCase();
+            
+            operator = operator.replace('@', '');
+            caseInsensitive = true;
+          }
+
+          var notExpr = false;
+          var handledNotExpr = false;
+          if( operator.indexOf('!') >= 0 ){
+            operator = operator.replace('!', '');
+            notExpr = true;
+          }
+          
+          // if we're doing a case insensitive comparison, then we're using a STRING comparison
+          // even if we're comparing numbers
+          if( caseInsensitive ){
+            value = valStr.toLowerCase();
+            fieldVal = fieldStr.toLowerCase();
+          }
+
+          switch(operator){
+          case '*=':
+            matches = fieldStr.search(valStr) >= 0;
+            break;
+          case '$=':
+            matches = new RegExp(valStr + '$').exec(fieldStr) != null;
+            break;
+          case '^=':
+            matches = new RegExp('^' + valStr).exec(fieldStr) != null;
+            break;
+          case '=':
+            matches = fieldVal === value;
+            break;
+          case '!=':
+            matches = fieldVal !== value;
+            break;
+          case '>':
+            matches = !notExpr ? fieldVal > value : fieldVal <= value;
+            handledNotExpr = true;
+            break;
+          case '>=':
+            matches = !notExpr ? fieldVal >= value : fieldVal < value;
+            handledNotExpr = true;
+            break;
+          case '<':
+            matches = !notExpr ? fieldVal < value : fieldVal >= value;
+            handledNotExpr = true;
+            break;
+          case '<=':
+            matches = !notExpr ? fieldVal <= value : fieldVal > value;
+            handledNotExpr = true;
+            break;
+          default:
+            matches = false;
+            break;
+            
+          }
+        } else if( operator != null ){
+          switch(operator){
+          case '?':
+            matches = params.fieldTruthy(field);
+            break;
+          case '!':
+            matches = !params.fieldTruthy(field);
+            break;
+          case '^':
+            matches = params.fieldUndefined(field);
+            break;
+          }
+        } else {   
+          matches = !params.fieldUndefined(field);
+        }
+
+        if( notExpr && !handledNotExpr ){
+          matches = !matches;
+          handledNotExpr = true;
+        }
+        
+        if( !matches ){
+          allDataMatches = false;
+          break;
+        }
+      } // for
+      
+      return allDataMatches;
+    }; // operandsMatch
+    
+    // check data matches
+    var allDataMatches = operandsMatch({
+      name: 'data',
+      fieldValue: function(field){
+        return element._private.data[field];
+      },
+      fieldRef: function(field){
+        return 'element._private.data.' + field;
+      },
+      fieldUndefined: function(field){
+        return element._private.data[field] === undefined;
+      },
+      fieldTruthy: function(field){
+        if( element._private.data[field] ){
+          return true;
+        }
+        return false;
+      }
+    });
+    
+    if( !allDataMatches ){
+      return false;
+    }
+    
+    // check metadata matches
+    var allMetaMatches = operandsMatch({
+      name: 'meta',
+      fieldValue: function(field){
+        return element[field]();
+      },
+      fieldRef: function(field){
+        return 'element.' + field + '()';
+      },
+      fieldUndefined: function(field){
+        return element[field]() == null;
+      },
+      fieldTruthy: function(field){
+        if( element[field]() ){
+          return true;
+        }
+        return false;
+      }
+    });
+    
+    if( !allMetaMatches ){
+      return false;
+    }
+    
+    // check collection
+    if( query.collection != null ){
+      var matchesAny = query.collection._private.ids[ element.id() ] != null;
+      
+      if( !matchesAny ){
+        return false;
+      }
+    }
+    
+    // check filter function
+    if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
+      return false;
+    }
+    
+
+    // check parent/child relations
+    var confirmRelations = function( query, elements ){
+      if( query != null ){
+        var matches = false;
+
+        if( !cy.hasCompoundNodes() ){
+          return false;
+        }
+
+        elements = elements(); // make elements functional so we save cycles if query == null
+
+        // query must match for at least one element (may be recursive)
+        for(var i = 0; i < elements.length; i++){
+          if( queryMatches( query, elements[i] ) ){
+            matches = true;
+            break;
+          }
+        }
+
+        return matches;
+      } else {
+        return true;
+      }
+    };
+
+    if (! confirmRelations(query.parent, function(){
+      return element.parent();
+    }) ){ return false; }
+
+    if (! confirmRelations(query.ancestor, function(){
+      return element.parents();
+    }) ){ return false; }
+
+    if (! confirmRelations(query.child, function(){
+      return element.children();
+    }) ){ return false; }
+
+    if (! confirmRelations(query.descendant, function(){
+      return element.descendants();
+    }) ){ return false; }
+
+    // we've reached the end, so we've matched everything for this query
+    return true;
+  }; // queryMatches
+
   // filter an existing collection
   $$.selfn.filter = function(collection){
     var self = this;
@@ -428,313 +774,7 @@
     if( self._private.invalid ){
       return new $$.Collection( cy );
     }
-    
-    var queryMatches = function(query, element){
-      // check group
-      if( query.group != null && query.group != '*' && query.group != element._private.group ){
-        return false;
-      }
-      
-      // check colon selectors
-      var allColonSelectorsMatch = true;
-      for(var k = 0; k < query.colonSelectors.length; k++){
-        var sel = query.colonSelectors[k];
-        
-        switch(sel){
-        case ':selected':
-          allColonSelectorsMatch = element.selected();
-          break;
-        case ':unselected':
-          allColonSelectorsMatch = !element.selected();
-          break;
-        case ':selectable':
-          allColonSelectorsMatch = element.selectable();
-          break;
-        case ':unselectable':
-          allColonSelectorsMatch = !element.selectable();
-          break;
-        case ':locked':
-          allColonSelectorsMatch = element.locked();
-          break;
-        case ':unlocked':
-          allColonSelectorsMatch = !element.locked();
-          break;
-        case ':visible':
-          allColonSelectorsMatch = element.visible();
-          break;
-        case ':hidden':
-          allColonSelectorsMatch = !element.visible();
-          break;
-        case ':transparent':
-          allColonSelectorsMatch = element.transparent();
-          break;
-        case ':grabbed':
-          allColonSelectorsMatch = element.grabbed();
-          break;
-        case ':free':
-          allColonSelectorsMatch = !element.grabbed();
-          break;
-        case ':removed':
-          allColonSelectorsMatch = element.removed();
-          break;
-        case ':inside':
-          allColonSelectorsMatch = !element.removed();
-          break;
-        case ':grabbable':
-          allColonSelectorsMatch = element.grabbable();
-          break;
-        case ':ungrabbable':
-          allColonSelectorsMatch = !element.grabbable();
-          break;
-        case ':animated':
-          allColonSelectorsMatch = element.animated();
-          break;
-        case ':unanimated':
-          allColonSelectorsMatch = !element.animated();
-          break;
-        case ':parent':
-          allColonSelectorsMatch = element.children().nonempty();
-          break;
-        case ':child':
-          allColonSelectorsMatch = element.parent().nonempty();
-          break;
-        case ':loop':
-          allColonSelectorsMatch = element.isEdge() && element.data('source') === element.data('target');
-          break;
-        case ':simple':
-          allColonSelectorsMatch = element.isEdge() && element.data('source') !== element.data('target');
-          break;
-        case ':active':
-          allColonSelectorsMatch = element.active();
-          break;
-        case ':inactive':
-          allColonSelectorsMatch = !element.active();
-          break;
-        case ':touch':
-          allColonSelectorsMatch = window && document && (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch);
-          break;
-        }
-        
-        if( !allColonSelectorsMatch ) break;
-      }
-      if( !allColonSelectorsMatch ) return false;
-      
-      // check id
-      var allIdsMatch = true;
-      for(var k = 0; k < query.ids.length; k++){
-        var id = query.ids[k];
-        var actualId = element._private.data.id;
-        
-        allIdsMatch = allIdsMatch && (id == actualId);
-        
-        if( !allIdsMatch ) break;
-      }
-      if( !allIdsMatch ) return false;
-      
-      // check classes
-      var allClassesMatch = true;
-      for(var k = 0; k < query.classes.length; k++){
-        var cls = query.classes[k];
-        
-        allClassesMatch = allClassesMatch && element.hasClass(cls);
-        
-        if( !allClassesMatch ) break;
-      }
-      if( !allClassesMatch ) return false;
-      
-      // generic checking for data/metadata
-      var operandsMatch = function(params){
-        var allDataMatches = true;
-        for(var k = 0; k < query[params.name].length; k++){
-          var data = query[params.name][k];
-          var operator = data.operator;
-          var value = data.value;
-          var field = data.field;
-          var matches;
-          
-          if( operator != null && value != null ){
-            
-            var fieldVal = params.fieldValue(field);
-            var fieldStr = !$$.is.string(fieldVal) && !$$.is.number(fieldVal) ? '' : '' + fieldVal;
-            var valStr = '' + value;
-            
-            var caseInsensitive = false;
-            if( operator.charAt(0) == '@' ){
-              fieldStr = fieldStr.toLowerCase();
-              valStr = valStr.toLowerCase();
-              
-              operator = operator.substring(1);
-              caseInsensitive = true;
-            }
-            
-            // if we're doing a case insensitive comparison, then we're using a STRING comparison
-            // even if we're comparing numbers
-            if( caseInsensitive ){
-              value = valStr.toLowerCase();
-              fieldVal = fieldStr.toLowerCase();
-            }
-
-            switch(operator){
-            case '*=':
-              matches = fieldStr.search(valStr) >= 0;
-              break;
-            case '$=':
-              matches = new RegExp(valStr + '$').exec(fieldStr) != null;
-              break;
-            case '^=':
-              matches = new RegExp('^' + valStr).exec(fieldStr) != null;
-              break;
-            case '=':
-              matches = fieldVal === value;
-              break;
-            case '!=':
-              matches = fieldVal !== value;
-              break;
-            case '>':
-              matches = fieldVal > value;
-              break;
-            case '>=':
-              matches = fieldVal >= value;
-              break;
-            case '<':
-              matches = fieldVal < value;
-              break;
-            case '<=':
-              matches = fieldVal <= value;
-              break;
-            default:
-              matches = false;
-              break;
-              
-            }
-          } else if( operator != null ){
-            switch(operator){
-            case '?':
-              matches = params.fieldTruthy(field);
-              break;
-            case '!':
-              matches = !params.fieldTruthy(field);
-              break;
-            case '^':
-              matches = params.fieldUndefined(field);
-              break;
-            }
-          } else {   
-            matches = !params.fieldUndefined(field);
-          }
-          
-          if( !matches ){
-            allDataMatches = false;
-            break;
-          }
-        } // for
-        
-        return allDataMatches;
-      }; // operandsMatch
-      
-      // check data matches
-      var allDataMatches = operandsMatch({
-        name: 'data',
-        fieldValue: function(field){
-          return element._private.data[field];
-        },
-        fieldRef: function(field){
-          return 'element._private.data.' + field;
-        },
-        fieldUndefined: function(field){
-          return element._private.data[field] === undefined;
-        },
-        fieldTruthy: function(field){
-          if( element._private.data[field] ){
-            return true;
-          }
-          return false;
-        }
-      });
-      
-      if( !allDataMatches ){
-        return false;
-      }
-      
-      // check metadata matches
-      var allMetaMatches = operandsMatch({
-        name: 'meta',
-        fieldValue: function(field){
-          return element[field]();
-        },
-        fieldRef: function(field){
-          return 'element.' + field + '()';
-        },
-        fieldUndefined: function(field){
-          return element[field]() == null;
-        },
-        fieldTruthy: function(field){
-          if( element[field]() ){
-            return true;
-          }
-          return false;
-        }
-      });
-      
-      if( !allMetaMatches ){
-        return false;
-      }
-      
-      // check collection
-      if( query.collection != null ){
-        var matchesAny = query.collection._private.ids[ element.id() ] != null;
-        
-        if( !matchesAny ){
-          return false;
-        }
-      }
-      
-      // check filter function
-      if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
-        return false;
-      }
-      
-
-      // check parent/child relations
-      var confirmRelations = function( query, elements ){
-        if( query != null ){
-          var matches = false;
-          elements = elements(); // make elements functional so we save cycles if query == null
-
-          // query must match for at least one element (may be recursive)
-          for(var i = 0; i < elements.size(); i++){
-            if( queryMatches( query, elements.eq(i) ) ){
-              matches = true;
-              break;
-            }
-          }
-
-          return matches;
-        } else {
-          return true;
-        }
-      };
-
-      if (! confirmRelations(query.parent, function(){
-        return element.parent();
-      }) ){ return false; }
-
-      if (! confirmRelations(query.ancestor, function(){
-        return element.parents();
-      }) ){ return false; }
-
-      if (! confirmRelations(query.child, function(){
-        return element.children();
-      }) ){ return false; }
-
-      if (! confirmRelations(query.descendant, function(){
-        return element.descendants();
-      }) ){ return false; }
-
-      // we've reached the end, so we've matched everything for this query
-      return true;
-    }; // queryMatches
-
+  
     var selectorFunction = function(i, element){
       for(var j = 0; j < self.length; j++){
         var query = self[j];
@@ -754,6 +794,26 @@
     var filteredCollection = collection.filter( selectorFunction );
     
     return filteredCollection;
+  }; // filter
+
+  // does selector match a single element?
+  $$.selfn.matches = function(ele){
+    var self = this;
+    
+    // don't bother trying if it's invalid
+    if( self._private.invalid ){
+      return false;
+    }
+  
+    for(var j = 0; j < self.length; j++){
+      var query = self[j];
+      
+      if( queryMatches(query, ele) ){
+        return true;
+      }
+    }
+    
+    return false;
   }; // filter
   
   // ith query to string

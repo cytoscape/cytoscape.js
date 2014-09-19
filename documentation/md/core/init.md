@@ -157,7 +157,7 @@ var cy = cytoscape({
 **`pan`** : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as `fit`, in your layout so that it is not overridden when the layout is applied.
 
 
-### Interaction options:
+### Interaction options
 
 **`minZoom`** : A minimum bound on the zoom level of the graph.  The viewport can not be scaled smaller than this zoom level.
 

@@ -20,14 +20,13 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
 * **Animations** : You will get better performance without animations.  If using animations anyway:
  * Try to limit the number of concurrent animating elements.
  * When using transition animations in the style, make sure `transition-property` is defined only for states that you want to animate.  If you have `transition-property` defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.
-* **Edge selection** : If your app does not need edge selection, you can get performance gains by unselectifying edges (i.e. `edges.unselectify()`).  This disables selection for edges, so their style will not have to be recalculated during box selection et cetera.
 * **Labels** : Drawing labels is expensive.
  * If you can go without them or show them on tap/mouseover, you'll get better performance.
  * Consider not having labels for edges.
  * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
 * **Simplify edge style** : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.
 * **Simplify node style** : Keep your node styles simple to improve performance.  
- * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [https://github.com/scalableminds/gulp-image-resize](gulp) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
+ * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [Gulp](https://github.com/scalableminds/gulp-image-resize) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.
 
 By making these optimisations, you can increase the performance of Cytoscape.js such that you can have high performance graphs several orders of magnitude greater in size.

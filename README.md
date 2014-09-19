@@ -5,7 +5,7 @@
 
 ## Documentation
 
-You can find the documentation and downloads on the [project website](http://cytoscape.github.com/cytoscape.js).  This readme is mostly for developers of Cytoscape.js.
+You can find the documentation and downloads on the [project website](http://cytoscape.github.com/cytoscape.js).
 
 If you're looking to get an old version of the library, you can build off the associated tag or you can [browse the list of old builds](http://cytoscape.github.io/cytoscape.js/download/).  We very strongly recommend you use the latest version.  If you run into a bug on the latest version, report it on [the issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  We'll try to fix the bug as soon as possible, and we'll give you a snapshot build that includes the fix for you to use until the next official bugfix release.
 
@@ -23,7 +23,17 @@ If your pull request is a bugfix, please make changes to the master branch.  Oth
 
 ## Acknowledgements
 
-Arbor was used in one of Cytoscape.js' included layouts.  We made some modifications to the library, written by Samizdat Drafting Co., so that it would work with multiple instances of Cytoscape.js and that it would work on lesser browsers, like IE.  Information about this library can be found at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
+CoSE is a layout in Cytoscape.js.  It's one of the best force-directed layouts in Cytoscape.js in its own right, and it's excellent at arranging compound graphs.  CoSe was implemented by Gerardo Huck and based on an article, ["A layout algorithm for undirected compound graphs"](http://dl.acm.org/citation.cfm?id=1498047&CFID=429377863&CFTOKEN=94691144).
+
+Cola.js is a layout in Cytoscape.js, and it is one of the best force-directed layouts in Cytoscape.js.  [Cola.js](http://marvl.infotech.monash.edu/webcola/) is the work of [Tim Dwyer](http://www.csse.monash.edu.au/~tdwyer/) at the [Monash Adaptive Visualisation Lab](http://marvl.infotech.monash.edu/).
+
+Dagre is a layout in Cytoscape.js, and it's an excellent way to arrange trees and DAGs.  [Dagre](https://github.com/cpettitt/dagre) is the work of Chris Pettitt.
+
+Arbor is used in one of Cytoscape.js' included layouts.  We made some modifications to the library, written by Samizdat Drafting Co., so that it would work with multiple instances of Cytoscape.js and that it would work on lesser browsers, like IE.  Information about this library can be found at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
+
+Springy.js is a layout in Cytoscape.js.  [Springy.js](http://getspringy.com) is the work of Dennis Hotson.
+
+Note: Cytoscape.js does not include any of these libraries directly but allows use of them as layouts if they are included in your app.
 
 
 

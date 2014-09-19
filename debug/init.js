@@ -34,7 +34,7 @@ $(function(){
           // 'background-repeat': 'no-repeat',
           // 'background-clip': 'none',
           //'background-position-x': 5,
-          // 'pie-1-background-size': '33%',
+          // 'pie-1-background-size': 'mapData(weight, 0, 100, 0, 100)',
           // 'pie-1-background-color': 'red',
           // 'pie-2-background-size': '25%',
           // 'pie-2-background-color': 'green',
@@ -123,11 +123,11 @@ $(function(){
     
     elements: {
       nodes: [
-        { data: { id: 'a' } },
-        { data: { id: 'b' } },
-        { data: { id: 'c' } },
-        { data: { id: 'd' } },
-        { data: { id: 'e' } }
+        { data: { id: 'a', weight: 50 } },
+        { data: { id: 'b', weight: 30 } },
+        { data: { id: 'c', weight: 20 } },
+        { data: { id: 'd', weight: 10 } },
+        { data: { id: 'e', weight: 75 } }
       ], 
       
       edges: [

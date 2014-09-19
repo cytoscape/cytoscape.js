@@ -331,7 +331,6 @@
         var context = data.contexts[CanvasRenderer.NODE];
 
         var texture = r.textureCache.texture;
-        var texture = r.textureCache.texture;
         var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
 
@@ -507,7 +506,7 @@
 
           context.setTransform(1, 0, 0, 1, 0, 0);
 
-          context.font = '20px helvetica';
+          //context.font = '20px helvetica';
           context.fillStyle = 'rgba(255, 0, 0, 0.75)';
           context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
           context.lineWidth = 1;

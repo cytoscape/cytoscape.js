@@ -4,8 +4,8 @@ var pexec = bluebird.promisify( require('child_process').exec );
 var configFile = './docmaker.json';
 var config;
 var delay = 3000;
-var width = 400;
-var height = 400;
+var width = 1000;
+var height = 1000;
 
 try {
   config = require(configFile);
@@ -27,6 +27,12 @@ function parseSections( sections ){
 
         demoIds.push( demo.id );
       }
+    }
+
+    if( section.demo ){
+      var demo = section.demo;
+
+      demoIds.push( demo.id );
     }
 
     if( section.sections ){

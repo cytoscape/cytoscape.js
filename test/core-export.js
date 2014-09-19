@@ -8,6 +8,8 @@ describe('Core export', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      styleEnabled: true,
+
       elements: {
         nodes: [
             { data: { id: "n1", foo: "bar" }, classes: "odd one" },
@@ -37,7 +39,14 @@ describe('Core export', function(){
     expect( json ).to.have.property('zoom').that.equals( cy.zoom() );
     expect( json ).to.have.property('pan').that.deep.equals( cy.pan() );
     expect( json ).to.have.property('style');
-    expect( json ).to.have.property('hideEdgesOnViewport');
+
+    // these are optional so not important to check
+    // expect( json ).to.have.property('hideEdgesOnViewport');
+    // expect( json ).to.have.property('hideLabelsOnViewport');
+    // expect( json ).to.have.property('textureOnViewport');
+    // expect( json ).to.have.property('wheelSensitivity');
+    // expect( json ).to.have.property('motionBlur');
+
   });
 
 });

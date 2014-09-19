@@ -42,15 +42,25 @@ $(function(){
 			currentTest.setup();
 		});
 		
+		function randomColor(){
+			function randCh(){
+				return Math.round( Math.random() * 255 );
+			}
+
+			return 'rgb(' + randCh() + ', ' + randCh() + ', ' + randCh() + ')';
+		}
+
 		test({
-			name: "edgehandlesstart",
-			displayName: "Edgehandles force start",
-			description: "Force starts the edgehandles plugin on n0",
+			name: "randomEdgeColors",
+			displayName: "Random edge colours",
+			description: "Set each edge to a random colour",
 			setup: function(){
-				$('#cytoscape').cytoscapeEdgehandles('start', 'n0');
+				cy.edges().each(function(){
+					this.css( 'line-color', randomColor() );
+				});
 			},
 			teardown: function(){
-				
+				cy.edges().removeCss();
 			}
 		});
 
@@ -391,12 +401,71 @@ $(function(){
 
 			teardown: function(){
 				var stylesheet = window.defaultSty;
-				var style = cy.style();
-
-				stylesheet.assignToStyle( style );
-				style.update();
+				
+				cy.style( stylesheet );
 			}
 		});
+
+		test({
+			name: "strStyle",
+			displayName: "Set a string stylesheet",
+			description: "Change the visual style and make sure it takes effect",
+			setup: function(){
+				cy.style('node { background-color: blue; }');
+			},
+
+			teardown: function(){
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
+			}
+		});
+
+		test({
+			name: "addStyle",
+			displayName: "Add to current stylesheet",
+			description: "Add to the visual style and make sure it takes effect",
+			setup: function(){
+				cy.style()
+					.selector('node')
+						.css({
+							'background-color': 'blue'
+						})
+						
+					.update()
+				;
+			},
+
+			teardown: function(){
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
+			}
+		});
+
+		test({
+			name: "redTap",
+			displayName: "Mouseover nodes to toggle red bypass",
+			description: "..",
+			setup: function(){
+				var on = {}; // id => true | false
+
+				cy.on('mouseover', 'node', function(){
+					if( on[ this.id() ] ){
+						this.removeCss();
+						on[ this.id() ] = false;
+					} else {
+						this.css('background-color', 'red');
+						on[ this.id() ] = true;
+					}					
+				});
+			},
+
+			teardown: function(){
+				cy.off('click', 'node');
+			}
+		});
+
 	});
 
 });

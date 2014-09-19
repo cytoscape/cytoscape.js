@@ -20,8 +20,21 @@ describe('Heap', function () {
   var minh1, minh2, minh3, maxh1, maxh2, maxh3, cheap, eheap;
   
   // TODO may have to remove this in future as it references private data (too fragile if impl changes)
-  var checkInternalDataLength = function(heap) {
-    return heap._private.length === heap._private.heap.length && heap._private.length === heap._private.elements.length && heap._private.length === Object.keys(heap._private.pointers).length;
+  var checkInternalDataLength = function(heap) { 
+    var pointersLength = 0;
+    var pointers = heap._private.pointers;
+
+    for( var i in pointers ){
+      if( pointers[i] !== undefined ){
+        pointersLength++;
+      }
+    }
+
+    var ret = heap._private.length === heap._private.heap.length && heap._private.length === heap._private.elements.length && heap._private.length === pointersLength;
+  
+    if( !ret ) debugger;
+
+    return ret;
   };
 
   /* graph is taken from collection-algorithms.js test */
@@ -133,7 +146,7 @@ describe('Heap', function () {
     var prev = minh3.pop();
     expect(minh3.isHeap()).to.be.true;
     expect(prev.value).to.be.equals(1);
-    expect(checkInternalDataLength(minh1)).to.be.true;
+    expect(checkInternalDataLength(minh3)).to.be.true;
     
     while(minh3.size() > 0) {
         var curr = minh3.pop();

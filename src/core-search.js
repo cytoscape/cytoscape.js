@@ -8,17 +8,23 @@
     // - guarantee a returned collection when elements or collection specified
     collection: function( eles ){
 
-      if( $$.is.string(eles) ){
+      if( $$.is.string( eles ) ){
         return this.$( eles );
-      } else if( $$.is.elementOrCollection(eles) ){
+
+      } else if( $$.is.elementOrCollection( eles ) ){
         return eles.collection();
+
+      } else if( $$.is.array( eles ) ){
+        return new $$.Collection( this, eles );
       }
 
       return new $$.Collection( this );
     },
     
     nodes: function( selector ){
-      var nodes = this.$('node');
+      var nodes = this.$(function(){
+        return this.isNode();
+      });
 
       if( selector ){
         return nodes.filter( selector );
@@ -28,7 +34,9 @@
     },
     
     edges: function( selector ){
-      var edges = this.$('edge');
+      var edges = this.$(function(){
+        return this.isEdge();
+      });
 
       if( selector ){
         return edges.filter( selector );

@@ -53,4 +53,19 @@ describe('Collection compound nodes', function(){
     expect( n3.siblings().same( n4 ) ).to.be.true;
   });
 
+  it('nodes.commonAncestors()', function(){
+    var ancestors = n3.add(n4).commonAncestors();
+
+    expect( ancestors.length ).to.equal( 2 );
+    expect( ancestors[0].same( n2 ) ).to.be.true;
+    expect( ancestors[1].same( n1 ) ).to.be.true;
+  });
+
+  it('nodes.orphans()', function(){
+    expect( cy.elements().orphans().same( n1 ) ).to.be.true;
+  });
+
+  it('nodes.nonorphans()', function(){
+    expect( cy.elements().nonorphans().same( n2.add(n3).add(n4) ) ).to.be.true;
+  });
 });

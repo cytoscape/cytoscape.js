@@ -1,6 +1,20 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
+function MockRenderer(){
+  this.notifications = 0;
+}
+
+MockRenderer.prototype.notify = function(){
+  this.notifications++;
+};
+
+MockRenderer.prototype.numNotifications = function(){
+  return this.notifications;
+};
+
+cytoscape('renderer', 'mock', MockRenderer);
+
 describe('Collection data', function(){
 
   var cy;
@@ -8,6 +22,10 @@ describe('Collection data', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      renderer: {
+        name: 'mock'
+      },
+
       elements: {
         nodes: [
             { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
@@ -173,6 +191,47 @@ describe('Collection data', function(){
 
     it('returns true for loop edge', function(){
       expect( cy.$('#n1n1').isLoop() ).to.be.true;
+    });
+
+  });
+
+  describe('eles.batch()', function(){
+
+    it('limits notifications to 1', function(){
+      var numNots = cy.renderer().numNotifications();
+
+      cy.batch(function(){
+        cy.$('#n1')
+          .addClass('foo')
+          .removeClass('bar')
+          .data('foo', 'bar')
+          .select()
+        ;
+      });
+
+      expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+    });
+
+    it('can also be used async style', function(done){
+      var numNots = cy.renderer().numNotifications();
+
+      cy.startBatch();
+
+      setTimeout(function(){
+        cy.$('#n1')
+          .addClass('foo')
+          .removeClass('bar')
+          .data('foo', 'bar')
+          .select()
+        ;
+        
+        cy.endBatch();
+
+        expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+
+        done();
+      }, 10);
+
     });
 
   });

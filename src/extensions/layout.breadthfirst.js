@@ -2,13 +2,17 @@
   
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
-    ready: undefined, // callback on layoutready
-    stop: undefined, // callback on layoutstop
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
+    boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
-    maximalAdjustments: 0 // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+    animate: false, // whether to transition the node positions
+    animationDuration: 500, // duration of animation in ms if enabled
+    ready: undefined, // callback on layoutready
+    stop: undefined // callback on layoutstop
   };
   
   function BreadthFirstLayout( options ){
@@ -20,13 +24,13 @@
     var options = params;
     
     var cy = params.cy;
-    var nodes = cy.nodes();
-    var edges = cy.edges();
-    var graph = nodes.add(edges);
-    var container = cy.container();
+    var eles = options.eles;
+    var nodes = eles.nodes().not(':parent');
+    var graph = eles;
     
-    var width = container.clientWidth;
-    var height = container.clientHeight;
+    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      x1: 0, y1: 0, w: cy.width(), h: cy.height()
+    } );
 
     var roots;
     if( $$.is.elementOrCollection(options.roots) ){
@@ -48,10 +52,35 @@
       if( options.directed ){
         roots = nodes.roots();
       } else {
-        var maxDegree = nodes.maxDegree( false );
-        roots = nodes.filter(function(){
-          return this.degree() === maxDegree;
-        });
+        var components = [];
+        var unhandledNodes = nodes;
+
+        while( unhandledNodes.length > 0 ){
+          var currComp = cy.collection();
+
+          eles.bfs({
+            roots: unhandledNodes[0],
+            visit: function(i, depth, node, edge, pNode){
+              currComp = currComp.add( node );
+            },
+            directed: false
+          });
+
+          unhandledNodes = unhandledNodes.not( currComp );
+          components.push( currComp );
+        }
+
+        roots = cy.collection();
+        for( var i = 0; i < components.length; i++ ){
+          var comp = components[i];
+          var maxDegree = comp.maxDegree( false );
+          var compRoots = comp.filter(function(){
+            return this.degree(false) === maxDegree;
+          });
+
+          roots = roots.add( compRoots );
+        }
+        
       }
     }
 
@@ -59,19 +88,36 @@
     var depths = [];
     var foundByBfs = {};
     var id2depth = {};
+    var prevNode = {};
+    var prevEdge = {};
+    var successors = {};
 
     // find the depths of the nodes
-    graph.bfs(roots, function(i, depth){
-      var ele = this[0];
+    graph.bfs({
+      roots: roots,
+      directed: options.directed,
+      visit: function(i, depth, node, edge, pNode){
+        var ele = this[0];
+        var id = ele.id();
 
-      if( !depths[depth] ){
-        depths[depth] = [];
+        if( !depths[depth] ){
+          depths[depth] = [];
+        }
+
+        depths[depth].push( ele );
+        foundByBfs[ id ] = true;
+        id2depth[ id ] = depth;
+        prevNode[ id ] = pNode;
+        prevEdge[ id ] = edge;
+
+        if( pNode ){
+          var prevId = pNode.id();
+          var succ = successors[ prevId ] = successors[ prevId ] || [];
+          
+          succ.push( node );
+        }
       }
-
-      depths[depth].push( ele );
-      foundByBfs[ ele.id() ] = true;
-      id2depth[ ele.id() ] = depth;
-    }, options.directed);
+    });
 
     // check for nodes not found by bfs
     var orphanNodes = [];
@@ -143,7 +189,7 @@
         for( var j = 0; j < eles.length; j++ ){
           var ele = eles[j];
 
-          ele._private.scratch.BreadthFirstLayout = {
+          ele._private.scratch.breadthfirst = {
             depth: i,
             index: j
           };
@@ -157,13 +203,13 @@
       var edges = node.connectedEdges(function(){
         return this.data('target') === node.id();
       });
-      var thisInfo = node._private.scratch.BreadthFirstLayout;
+      var thisInfo = node._private.scratch.breadthfirst;
       var highestDepthOfOther = 0;
       var highestOther;
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
         var otherNode = edge.source()[0];
-        var otherInfo = otherNode._private.scratch.BreadthFirstLayout;
+        var otherInfo = otherNode._private.scratch.breadthfirst;
 
         if( thisInfo.depth <= otherInfo.depth && highestDepthOfOther < otherInfo.depth ){
           highestDepthOfOther = otherInfo.depth;
@@ -185,7 +231,7 @@
         var nDepth = depth.length;
         for( var j = 0; j < nDepth; j++ ){
           var ele = depth[j];
-          var info = ele._private.scratch.BreadthFirstLayout;
+          var info = ele._private.scratch.breadthfirst;
           var intEle = intersectsDepth(ele);
 
           if( intEle ){
@@ -197,9 +243,9 @@
 
       for( var i = 0; i < elesToMove.length; i++ ){ 
         var ele = elesToMove[i];
-        var info = ele._private.scratch.BreadthFirstLayout;
+        var info = ele._private.scratch.breadthfirst;
         var intEle = info.intEle;
-        var intInfo = intEle._private.scratch.BreadthFirstLayout;
+        var intInfo = intEle._private.scratch.breadthfirst;
 
         depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
 
@@ -219,13 +265,15 @@
 
     // find min distance we need to leave between nodes
     var minDistance = 0;
-    for( var i = 0; i < nodes.length; i++ ){
-      var w = nodes[i].outerWidth();
-      var h = nodes[i].outerHeight();
-      
-      minDistance = Math.max(minDistance, w, h);
+    if( options.avoidOverlap ){
+      for( var i = 0; i < nodes.length; i++ ){
+        var w = nodes[i].outerWidth();
+        var h = nodes[i].outerHeight();
+        
+        minDistance = Math.max(minDistance, w, h);
+      }
+      minDistance *= 1.75; // just to have some nice spacing
     }
-    minDistance *= 1.75; // just to have some nice spacing
 
     // get the weighted percent for an element based on its connectivity to other levels
     var cachedWeightedPercent = {};
@@ -234,15 +282,15 @@
         return cachedWeightedPercent[ ele.id() ];
       }
 
-      var eleDepth = ele._private.scratch.BreadthFirstLayout.depth;
+      var eleDepth = ele._private.scratch.breadthfirst.depth;
       var neighbors = ele.neighborhood().nodes();
       var percent = 0;
       var samples = 0;
 
       for( var i = 0; i < neighbors.length; i++ ){
         var neighbor = neighbors[i];
-        var index = neighbor._private.scratch.BreadthFirstLayout.index;
-        var depth = neighbor._private.scratch.BreadthFirstLayout.depth;
+        var index = neighbor._private.scratch.breadthfirst.index;
+        var depth = neighbor._private.scratch.breadthfirst.depth;
         var nDepth = depths[depth].length;
 
         if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
@@ -281,57 +329,100 @@
 
     }
 
+    var biggestDepthSize = 0;
+    for( var i = 0; i < depths.length; i++ ){
+      biggestDepthSize = Math.max( depths[i].length, biggestDepthSize );
+    }
+
     var center = {
-      x: width/2,
-      y: height/2
+      x: bb.x1 + bb.w/2,
+      y: bb.x1 + bb.h/2
     };
-    nodes.positions(function(){
-      var ele = this[0];
-      var info = ele._private.scratch.BreadthFirstLayout;
+   
+    var getPosition = function( ele, isBottomDepth ){
+      var info = ele._private.scratch.breadthfirst;
       var depth = info.depth;
       var index = info.index;
       var depthSize = depths[depth].length;
 
-      var distanceX = Math.max( width / (depthSize + 1), minDistance );
-      var distanceY = Math.max( height / (depths.length + 1), minDistance );
-      var radiusStepSize = Math.min( width / 2 / depths.length, height / 2 / depths.length );
+      if( options.strictHierarchy ){
+        depthSize = biggestDepthSize;
+      }
+
+      var distanceX = Math.max( bb.w / (depthSize + 1), minDistance );
+      var distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
+      var radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
-      if( options.circle ){
-        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
-        var theta = 2 * Math.PI / depths[depth].length * index;
-
-        if( depth === 0 && depths[0].length === 1 ){
-          radius = 1;
-        }
-
-        return {
-          x: center.x + radius * Math.cos(theta),
-          y: center.y + radius * Math.sin(theta)
-        };
-
-      } else {
-        return {
+      if( options.strictHierarchy && !options.circle ){
+        
+        var epos = {
           x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
           y: (depth + 1) * distanceY
         };
+
+        if( isBottomDepth ){
+          return epos;
+        }
+
+        var succs = successors[ ele.id() ];
+        if( succs ){
+          epos.x = 0;
+
+          for( var i = 0 ; i < succs.length; i++ ){
+            var spos = pos[ succs[i].id() ];
+            
+            epos.x += spos.x;
+          }
+
+          epos.x /= succs.length;
+        } else {
+          //debugger;
+        }
+
+        return epos;
+
+      } else {
+        if( options.circle ){
+          var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
+          var theta = 2 * Math.PI / depths[depth].length * index;
+
+          if( depth === 0 && depths[0].length === 1 ){
+            radius = 1;
+          }
+
+          return {
+            x: center.x + radius * Math.cos(theta),
+            y: center.y + radius * Math.sin(theta)
+          };
+
+        } else {
+          return {
+            x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
+            y: (depth + 1) * distanceY
+          };
+        }
       }
       
+    };
+
+    // get positions in reverse depth order
+    var pos = {};
+    for( var i = depths.length - 1; i >=0; i-- ){
+      var depth = depths[i];
+
+      for( var j = 0; j < depth.length; j++ ){
+        var node = depth[j];
+
+        pos[ node.id() ] = getPosition( node, i === depths.length - 1 );
+      }
+    }
+
+    nodes.layoutPositions(this, options, function(){
+      return pos[ this.id() ];
     });
     
-    if( params.fit ){
-      cy.fit( options.padding );
-    } 
-    
-    cy.one('layoutready', params.ready);
-    cy.trigger('layoutready');
-    
-    cy.one('layoutstop', params.stop);
-    cy.trigger('layoutstop');
-  };
-
-  BreadthFirstLayout.prototype.stop = function(){
-    // not a continuous layout
+    return this; // chaining
   };
   
   $$('layout', 'breadthfirst', BreadthFirstLayout);

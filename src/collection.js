@@ -82,7 +82,7 @@
       single: true, // indicates this is an element
       data: params.data || {}, // data object
       layoutData: {}, // place for layouts to put calculated stats etc for mappers
-      position: params.position || {}, // fields x, y, etc (could be 3d or radial coords; renderer decides)
+      position: params.position || {}, // (x, y) position pair
       autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
       autoHeight: undefined, 
       listeners: [], // array of bound listeners
@@ -145,7 +145,7 @@
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   
   // represents a set of nodes, edges, or both together
-  $$.Collection = function(cy, elements){
+  $$.Collection = function(cy, elements, options){
     if( !(this instanceof $$.Collection) ){
       return new $$.Collection(cy, elements);
     }
@@ -156,6 +156,7 @@
     }
     
     var ids = {};
+    var indexes = {};
     var createdElements = false;
     
     if( !elements ){
@@ -199,8 +200,9 @@
       
       var id = element._private.data.id;
       
-      if( !ids[ id ] ){
+      if( !options || (options.unique && !ids[ id ] ) ){
         ids[ id ] = element;
+        indexes[ id ] = this.length;
 
         this[ this.length ] = element;
         this.length++;
@@ -209,7 +211,8 @@
     
     this._private = {
       cy: cy,
-      ids: ids
+      ids: ids,
+      indexes: indexes
     };
 
     // restore the elements if we created them from json
@@ -240,6 +243,17 @@
     } else { // an element
       return new $$.Collection( this._private.cy, [this] );
     }
+  };
+
+  $$.elesfn.unique = function(){
+    return new $$.Collection( this._private.cy, this, { unique: true } );
+  };
+
+  $$.elesfn.getElementById = function( id ){
+    var cy = this._private.cy;
+    var ele = this._private.ids[ id ];
+
+    return ele ? ele : $$.Collection(cy); // get ele or empty collection
   };
 
   $$.elesfn.json = function(){
@@ -286,6 +300,21 @@
     }
 
     return jsons;
+  };
+
+  $$.elesfn.clone = function(){
+    var cy = this.cy();
+    var elesArr = [];
+
+    for( var i = 0; i < this.length; i++ ){
+      var ele = this[i];
+      var json = ele.json();
+      var clone = new $$.Element(cy, json, false); // NB no restore
+
+      elesArr.push( clone );
+    }
+
+    return new $$.Collection( cy, elesArr );
   };
 
   $$.elesfn.restore = function( notifyRenderer ){
@@ -405,7 +434,7 @@
 
         if( parent.empty() ){
           // non-existant parent; just remove it
-          delete data.parent;
+          data.parent = undefined;
         } else {
           var selfAsParent = false;
           var ancestor = parent;
@@ -413,7 +442,7 @@
             if( node.same(ancestor) ){
               // mark self as parent and remove from data
               selfAsParent = true;
-              delete data.parent; // remove parent reference
+              data.parent = undefined; // remove parent reference
 
               // exit or we loop forever
               break;
@@ -425,6 +454,7 @@
           if( !selfAsParent ){
             // connect with children
             parent[0]._private.children.push( node );
+            node._private.parent = parent[0];
 
             // let the core know we have a compound graph
             cy._private.hasCompoundNodes = true;
@@ -612,6 +642,56 @@
     }
 
     return this;
+  };
+
+  $$.elesfn.move = function( struct ){
+    var cy = this._private.cy;
+
+    if( struct.source !== undefined || struct.target !== undefined ){
+      var srcId = struct.source;
+      var tgtId = struct.target;
+      var srcExists = cy.getElementById(srcId).length > 0;
+      var tgtExists = cy.getElementById(tgtId).length > 0;
+
+      if( srcExists || tgtExists ){
+        var jsons = this.jsons();
+
+        this.remove();
+
+        for( var i = 0; i < jsons.length; i++ ){
+          var json = jsons[i];
+
+          if( json.group === 'edges' ){
+            if( srcExists ){ json.data.source = srcId; }
+            if( tgtExists ){ json.data.target = tgtId; }
+          }
+        }
+
+        return cy.add( jsons );
+      }
+ 
+    } else if( struct.parent !== undefined ){ // move node to new parent
+      var parentId = struct.parent;
+      var parentExists = struct.parent === null || cy.getElementById( parentId ).length > 0;
+    
+      if( parentExists ){
+        var jsons = this.jsons();
+
+        this.remove();
+
+        for( var i = 0; i < this.length; i++ ){
+          var json = jsons[i];
+
+          if( json.group === 'nodes' ){
+            json.data.parent = parentId === null ? undefined : parentId;
+          }
+        }
+      }
+
+      return cy.add( jsons );
+    }
+
+    return this; // if nothing done
   };
   
 })( cytoscape );

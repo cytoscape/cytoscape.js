@@ -33,6 +33,7 @@
     var rs = node._private.rscratch;
     var clip = style['background-clip'].value;
     var shouldClip = clip === 'node';
+    var imgOpacity = style['background-image-opacity'].value;
     
     var w = img.width;
     var h = img.height;
@@ -72,6 +73,10 @@
       nodeY = 0;
     }
 
+    var gAlpha = context.globalAlpha;
+
+    context.globalAlpha = imgOpacity;
+
     if( repeat === 'no-repeat' ){
 
       if( shouldClip ){
@@ -107,6 +112,8 @@
         context.fill();
         context.translate(-x, -y);
     }
+
+    context.globalAlpha = gAlpha;
     
   };
 

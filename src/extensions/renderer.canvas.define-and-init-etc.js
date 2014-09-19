@@ -57,6 +57,7 @@
     //--
     
     this.redraws = 0;
+    this.showFps = options.showFps;
 
     this.bindings = [];
     
@@ -91,12 +92,16 @@
       this.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
       this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
       this.data.bufferCanvases[i].style.visibility = 'hidden';
-      this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
+      //this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
     }
 
     this.hideEdgesOnViewport = options.hideEdgesOnViewport;
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
+    this.wheelSensitivity = options.wheelSensitivity;
+    this.motionBlurEnabled = options.motionBlur;
+    this.forcedPixelRatio = options.pixelRatio;
+    this.motionBlur = true; // for initial kick off
 
     this.load();
   }
@@ -111,34 +116,47 @@
   };
 
   CanvasRenderer.prototype.notify = function(params) {
-    switch( params.type ){
+    var types;
 
-    case 'destroy':
-      this.destroy();
-      return;
+    if( $$.is.array( params.type ) ){
+      types = params.type;
 
-    case 'add':
-    case 'remove':
-    case 'load':
-      this.updateNodesCache();
-      this.updateEdgesCache();
-      break;
-
-    case 'viewport':
-      this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-      break;
-
-    case 'style':
-      this.updateCachedZSortedEles();
-      break;
+    } else {
+      types = [ params.type ];
     }
 
-    if( params.type === 'load' || params.type === 'resize' ){
-      this.invalidateContainerClientCoordsCache();
-      this.matchCanvasSize(this.data.container);
-    }
+    for( var i = 0; i < types.length; i++ ){
+      var type = types[i];
+
+      switch( type ){
+        case 'destroy':
+          this.destroy();
+          return;
+
+        case 'add':
+        case 'remove':
+        case 'load':
+          this.updateNodesCache();
+          this.updateEdgesCache();
+          break;
+
+        case 'viewport':
+          this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          break;
+
+        case 'style':
+          this.updateCachedZSortedEles();
+          break;
+      }
+
+      if( type === 'load' || type === 'resize' ){
+        this.invalidateContainerClientCoordsCache();
+        this.matchCanvasSize(this.data.container);
+      }
+    } // for
     
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+    this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
     this.redraw();
   };

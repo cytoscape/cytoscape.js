@@ -173,25 +173,6 @@ describe('Core graph manipulation', function(){
 
   });
 
-  describe('cy.batchData()', function(){
-
-    it('changes specified nodes with unspecified nodes unchanged', function(){
-      cy.batchData({
-        'n1': { foo: 1 },
-        'n2': { foo: 2 }
-      });
-
-      expect( cy.$('#n1').data('foo') ).to.equal(1);
-      expect( cy.$('#n2').data('foo') ).to.equal(2);
-      expect( cy.$('#n3').data('foo') ).to.equal('three');
-
-      expect( cy.$('#n1').data('weight') ).to.equal(0.25);
-      expect( cy.$('#n2').data('weight') ).to.equal(0.5);
-      expect( cy.$('#n3').data('weight') ).to.equal(0.75);
-    });
-
-  });
-
   describe('cy.collection()', function(){
 
     it('gets an empty collection', function(){

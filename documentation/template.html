@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery {{jqueryVersion}}+, and plain JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -24,8 +24,8 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="description">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery {{jqueryVersion}}+, and plain JavaScript)</span><span class="version">{{version}}</span></h1>
-			<div class="subtitle">An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a> {{jqueryVersion}}+, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js <span class="description">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)</span><span class="version">{{version}}</span></h1>
+			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
@@ -37,11 +37,12 @@
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue or request a feature</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
-				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> |
+				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code help question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/milestones"><span class="icon-calendar"></span> Version milestones/changelogs</a> |
 				<a target="_blank" href="http://cytoscape.org"><span class="icon-desktop"></span> Cytoscape desktop</a>
 			</div>
 
+			<!--
 			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right, which is used for API examples throughout the documentation:</p>
 
 			<div id="demo-source" class="collapsed">
@@ -60,6 +61,7 @@
 
 				<pre><code>{{& demojs}}</code></pre>
 			</div>
+			-->
 
 			<div id="documentation">
 			{{#each sections}}
@@ -77,6 +79,26 @@
 					{{{html}}}
 				{{/if}}
 
+				{{#if demo}}
+
+					<div class="gallery-full-demo">			
+						<button class="run"><span class="icon-play"></span></button>
+
+						<div class="gallery-full-padder"></div>
+
+						<a class="gallery-full-link" target="_blank" href="{{demo.srcUrl}}">
+							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
+						</a>
+						
+					</div>
+
+					{{#if demo.name}}
+						<div class="gallery-full-title">
+							<span class="gallery-full-name">{{demo.name}}</span>
+						</div>
+					{{/if}}
+
+				{{/if}}
 
 				{{#if demos}}
 
@@ -106,17 +128,53 @@
 						{{{html}}}
 					{{/if}}
 
+					{{#if layout}}
+						{{#if demos}}
+							<div class="gallery-demos">
+								{{#each demos}}
+									<div class="gallery-demo">
+										<div class="gallery-title">
+											<span class="gallery-name">{{name}}</span>
+										</div>
+										
+										<a class="gallery-link" target="_blank" href="{{srcUrl}}">
+											<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+										</a>
+										
+									</div>
+								{{/each}}
+							</div>
+						{{/if}}
+
+						<h3>Options</h3>
+						<button class="run run-inline-code"><span class="icon-play"></span></button>
+						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
+					{{/if}}
+
 					{{#each fns}}
 						<div class="function">
 							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
-							<div class="descr" id="{{id}}">{{{descr}}}</div>
+							
+							{{#if pureAliases}}
+							<div class="pure-aliases">
+								Aliases:
+
+								{{#each pureAliases}}
+									<span class="pure-alias">
+										<span class="pure-alias-name">{{this}}()</span><span class="pure-alias-comma">,</span>
+									</span>
+								{{/each}}
+							</div>
+							{{/if}}
+							
+							<div class="descr">{{{descr}}}</div>
 
 							{{#if formats}}
 							<div class="formats">
 								{{#each formats}}
 									<div class="format">
 										{{#if args}}
-											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{name}}{{#if optional}}]{{/if}}{{/each}} )</div>
+											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}} )</div>
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}
@@ -124,16 +182,30 @@
 										<ul class="args">
 											{{#each args}}
 												<li>
-													<span class="name">{{name}}</span>
+													<span class="name">{{{linkedName}}}</span>
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
 													<span class="descr">{{{descr}}}</span>
 
 													{{#if fields}}
 													<ul class="fields">
 														{{#each fields}}
-														<li>&ndash;
-															<span class="name">{{name}}</span>
-															<span class="descr">{{{descr}}}</span>
-														</li>
+															<li>
+																<span class="name">{{{linkedName}}}</span>
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																<span class="descr">{{{descr}}}</span>
+															</li>
+
+															{{#if fields}}
+															<ul class="fields">
+																{{#each fields}}
+																<li>
+																	<span class="name">{{{linkedName}}}</span>
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																	<span class="descr">{{{descr}}}</span>
+																</li>
+																{{/each}}
+															</ul>
+															{{/if}}
 														{{/each}}
 													</ul>
 													{{/if}}
@@ -196,14 +268,15 @@
 
 
 		<div id="cy-title"><pre class="content"></pre></div>
-		<div id="cy"></div>
-		<div id="cy-refresh">
+		<div id="cy-label" class="hidden"><code>window.cy</code></div>
+		<div id="cy" class="hidden"></div>
+		<div id="cy-refresh" class="hidden">
 			<span class="link plain-link icon-refresh"></span>
 		</div>
 		<div id="cy-show">
 			<span class="link plain-link icon-plus"></span>
 		</div>
-		<div id="cy-hide">
+		<div id="cy-hide" class="hidden">
 			<span class="link plain-link icon-minus"></span>
 		</div>
 
@@ -217,6 +290,10 @@
 		<!-- endinject -->
 
 		<script src="js/arbor.js"></script>
+		<script src="js/springy.js"></script>
+		<script src="js/cola.v3.min.js"></script>
+		<script src="js/cola.adaptor.js"></script>
+		<script src="js/dagre.js"></script>
 
 		<script type="text/javascript">
 

@@ -13,6 +13,10 @@
       return this.isEdge() && this.source().id() === this.target().id();
     },
 
+    isSimple: function(){
+      return this.isEdge() && this.source().id() !== this.target().id();
+    },
+
     group: function(){
       var ele = this[0];
 

@@ -26,6 +26,8 @@
         type: 'resize'
       });
 
+      this.trigger('resize');
+
       return this;
     },
     
@@ -45,14 +47,6 @@
         })
       );
        
-    },
-
-    recalculateRenderedStyle: function(){
-      var renderer = this.renderer();
-
-      if( renderer.recalculateRenderedStyle ){
-        renderer.recalculateRenderedStyle();
-      }
     }
     
   });  

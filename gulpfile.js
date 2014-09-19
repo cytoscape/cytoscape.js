@@ -165,7 +165,7 @@ gulp.task('refs', ['debugrefs', 'testrefs', 'testlist'], function(next){
 });
 
 gulp.task('zip', ['version', 'build'], function(){
-  return gulp.src(['build/cytoscape.js', 'build/cytoscape.min.js', 'LGPL-LICENSE.txt', 'lib/arbor.js'])
+  return gulp.src(['build/cytoscape.js', 'build/cytoscape.min.js', 'LGPL-LICENSE.txt', 'lib/*.js'])
     .pipe( zip('cytoscape.js-' + version + '.zip') )
 
     .pipe( gulp.dest('build') )
@@ -192,7 +192,7 @@ gulp.task('docsjs', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js',
-    'lib/arbor.js'
+    'lib/*.js'
   ])
     .pipe( gulp.dest('documentation/js') )
 
@@ -330,8 +330,7 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.min.js',
-    'build/arbor.js'
+    'build/cytoscape.min.js'
   ])
     .pipe( gulp.dest('dist') )
   ;
@@ -348,6 +347,11 @@ gulp.task('tag', shell.task([
 gulp.task('docspush', shell.task([
   './publish-docs.sh'
 ]));
+
+gulp.task('betadocspush', shell.task([
+  './publish-beta-docs.sh'
+]));
+
 
 gulp.task('npm', shell.task([
   './publish-npm.sh'
@@ -367,6 +371,7 @@ gulp.task('watch', function(next){
   next();
 });
 
+// http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
   return gulp.src( paths.sources )
     .pipe( jshint({
@@ -377,7 +382,8 @@ gulp.task('lint', function(){
       unused: 'vars',
       eqnull: true,
       sub: true,
-      shadow: true
+      shadow: true,
+      laxcomma: true
     }) )
 
     .pipe( jshint.reporter(jshStylish) )

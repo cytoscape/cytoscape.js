@@ -16,6 +16,20 @@
       return this;
     },
 
+    forEach: function(fn, thisArg){
+      if( $$.is.fn(fn) ){
+
+        for(var i = 0; i < this.length; i++){
+          var ele = this[i];
+          var ret = fn.apply( thisArg, [ ele, i, this ] );
+
+          if( ret === false ){ break; } // exit each early on return false
+        }
+      }
+
+      return this;
+    },
+
     toArray: function(){
       var array = [];
       
@@ -59,6 +73,14 @@
 
     eq: function(i){
       return this[i] || new $$.Collection( this.cy() );
+    },
+
+    first: function(){
+      return this[0] || new $$.Collection( this.cy() );
+    },
+
+    last: function(){
+      return this[ this.length - 1 ] || new $$.Collection( this.cy() );
     },
 
     empty: function(){

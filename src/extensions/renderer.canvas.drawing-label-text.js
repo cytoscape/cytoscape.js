@@ -6,7 +6,7 @@
   CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
     var text = edge._private.style['content'].strValue;
 
-    if( !edge.visible() || !text || text.match(/^\s+$/) ){
+    if( !text || text.match(/^\s+$/) ){
       return;
     }
 
@@ -24,7 +24,7 @@
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
-    this.recalculateEdgeLabelProjection( edge );
+    // this.recalculateEdgeLabelProjection( edge );
     
     var rs = edge._private.rscratch;
     this.drawText(context, edge, rs.labelX, rs.labelY);
@@ -34,7 +34,7 @@
   CanvasRenderer.prototype.drawNodeText = function(context, node) {
     var text = node._private.style['content'].strValue;
 
-    if ( !node.visible() || !text || text.match(/^\s+$/) ) {
+    if ( !text || text.match(/^\s+$/) ) {
       return;
     }
 
@@ -45,7 +45,7 @@
       return;
     }
       
-    this.recalculateNodeLabelProjection( node );
+    // this.recalculateNodeLabelProjection( node );
 
     var textHalign = node._private.style['text-halign'].strValue;
     var textValign = node._private.style['text-valign'].strValue;
@@ -153,8 +153,9 @@
     if( parentOpacity === 0 ){ return; }
 
     var text = this.setupTextStyle( context, element );
-
+    
     if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
+     
       var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;

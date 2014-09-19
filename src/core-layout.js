@@ -3,40 +3,25 @@
   $$.fn.core({
     
     layout: function( params ){
-      var cy = this;
-      
-      if( this._private.layoutRunning ){ // don't run another layout if one's already going
-        return this;
-      }
+      var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
 
-      // if no params, use the previous ones
-      if( params == null ){
-        params = this._private.options.layout;
-      }
-      
-      this.initLayout( params );
-      
-      cy.trigger('layoutstart');
-      
-      this._private.layoutRunning = true;
-      this.one('layoutstop', function(){
-        cy._private.layoutRunning = false;
-      });
+      layout.run();
 
-      this._private.layout.run();
-      
-      return this;
-      
+      return this; // chaining
+    },
+
+    makeLayout: function( params ){
+      return this.initLayout( params );
     },
     
     initLayout: function( options ){
       if( options == null ){
-        $$.util.error('Layout options must be specified to run a layout');
+        $$.util.error('Layout options must be specified to make a layout');
         return;
       }
       
       if( options.name == null ){
-        $$.util.error('A `name` must be specified to run a layout');
+        $$.util.error('A `name` must be specified to make a layout');
         return;
       }
       
@@ -44,15 +29,29 @@
       var LayoutProto = $$.extension('layout', name);
       
       if( LayoutProto == null ){
-        $$.util.error('Can not apply layout: No such layout `%s` found; did you include its JS file?', name);
+        $$.util.error('Can not apply layout: No such layout `' + name + '` found; did you include its JS file?');
         return;
       }
+
+      options.eles = options.eles != null ? options.eles : this.$();
+
+      if( $$.is.string( options.eles ) ){
+        options.eles = this.$( options.eles );
+      }
       
-      this._private.layout = new LayoutProto( $$.util.extend({}, options, {
-        renderer: this._private.renderer,
+      var layout = new LayoutProto( $$.util.extend({}, options, {
         cy: this
       }) );
-      this._private.options.layout = options; // save options
+
+      // make sure layout has _private for use w/ std apis like .on()
+      if( !$$.is.plainObject(layout._private) ){
+        layout._private = {};
+      }
+
+      layout._private.cy = this;
+      layout._private.listeners = [];
+      
+      return layout;
     }
     
   });

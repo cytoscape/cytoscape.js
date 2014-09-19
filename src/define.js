@@ -1,6 +1,4 @@
 ;(function($$){ 'use strict';
-  
-  // metaprogramming makes me happy
 
   // use this module to cherry pick functions into your prototype
   // (useful for functions shared between the core and collections, for example)
@@ -117,55 +115,6 @@
       }; // function
     }, // data
 
-    batchData: function( params ){
-      var defaults = {
-        field: 'data',
-        event: 'data',
-        triggerFnName: 'trigger',
-        immutableKeys: {}, // key => true if immutable
-        updateStyle: false
-      };
-      var p = $$.util.extend({}, defaults, params);
-
-      return function batchDataImpl( map ){
-        var self = this;
-        var selfIsArrayLike = self.length !== undefined;
-        var eles = selfIsArrayLike ? self : self._private.elements;
-
-        if( eles.length === 0 ){ return self; }
-        var cy = selfIsArrayLike ? eles[0]._private.cy : self; // NB must have at least 1 ele to get cy
-        
-        for( var i = 0; i < eles.length; i++ ){
-          var ele = eles[i];
-          var id = ele._private.data.id;
-          var mapData = map[id];
-
-          if( mapData !== undefined && mapData !== null ){
-            var obj = mapData;
-            var k, v;
-
-            // set the (k, v) pairs from the map
-            for( k in obj ){
-              v = obj[ k ];
-
-              var valid = !p.immutableKeys[k];
-              if( valid ){
-                ele._private[ p.field ][ k ] = v;
-              }
-            }
-          } // if
-        } // for
-
-        // update mappers if asked
-        var coln = new $$.Collection(cy, eles);
-        if( p.updateStyle ){ coln.updateStyle(); }
-
-        coln[ p.triggerFnName ]( p.event );
-
-        return self; // chaining
-      };
-    },
-
     // remove data field
     removeData: function( params ){
       var defaults = { 
@@ -195,7 +144,7 @@
             var valid = !p.immutableKeys[ key ]; // not valid if immutable
             if( valid ){
               for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
-                delete all[ i_a ]._private[ p.field ][ key ];
+                all[ i_a ]._private[ p.field ][ key ] = undefined;
               }
             }
           }
@@ -214,7 +163,7 @@
               var validKeyToDelete = !p.immutableKeys[ key ];
 
               if( validKeyToDelete ){
-                delete _privateFields[ key ];
+                _privateFields[ key ] = undefined;
               }
             }
           }
@@ -406,6 +355,7 @@
         var eventsIsObject = $$.is.plainObject(events);
         var eventsIsEvent = $$.is.event(events);
         var cy = this._private.cy || this;
+        var hasCompounds = cy.hasCompoundNodes();
 
         if( eventsIsString ){ // then make a plain event object for each event name
           var evts = events.split(/\s+/);
@@ -445,7 +395,7 @@
             var triggerer = all[j];
             var listeners = triggerer._private.listeners;
             var triggererIsElement = $$.is.element(triggerer);
-            var bubbleUp = triggererIsElement;
+            var bubbleUp = triggererIsElement || params.layout;
 
             // create the event for this element from the event object
             var evt;
@@ -455,7 +405,6 @@
               
               evt.cyTarget = evt.cyTarget || triggerer;
               evt.cy = evt.cy || cy;
-              evt.namespace = evt.namespace || evtObj.namespace;
 
             } else { // then we have to make one
               evt = new $$.Event( evtObj, {
@@ -465,7 +414,17 @@
               } );
             }
 
-            // Create a rendered position based on the passed position
+            // if a layout was specified, then put it in the typed event
+            if( evtObj.layout ){
+              evt.layout = evtObj.layout;
+            }
+
+            // if triggered by layout, put in event
+            if( params.layout ){
+              evt.layout = triggerer;
+            }
+
+            // create a rendered position based on the passed position
             if( evt.cyPosition ){
               var pos = evt.cyPosition;
               var zoom = cy.zoom();
@@ -489,7 +448,7 @@
               var lis = listeners[k];
               var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
               var typeMatches = lis.type === evt.type;
-              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.filter(evt.cyTarget).length > 0 ) : (true); // we're not going to validate the hierarchy; that's too expensive
+              var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && $$.is.element(evt.cyTarget) && lis.selObj.matches(evt.cyTarget) ) : (true); // we're not going to validate the hierarchy; that's too expensive
               var listenerMatches = nsMatches && typeMatches && targetMatches;
 
               if( listenerMatches ){ // then trigger it
@@ -544,8 +503,8 @@
 
             // bubble up event for elements
             if( bubbleUp ){
-              var parent = triggerer.parent();
-              var hasParent = parent.length !== 0;
+              var parent = hasCompounds ? triggerer._private.parent : null;
+              var hasParent = parent != null && parent.length !== 0;
 
               if( hasParent ){ // then bubble up to parent
                 parent = parent[0];
@@ -560,7 +519,231 @@
         
         return self; // maintain chaining
       }; // function
-    } // trigger
+    }, // trigger
+
+
+    animated: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function animatedImpl(){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return false; }
+
+        var ele = all[0];
+
+        if( ele ){
+          return ele._private.animation.current.length > 0;
+        }
+      };
+    }, // animated
+
+    clearQueue: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function clearQueueImpl(){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+          ele._private.animation.queue = [];
+        }
+
+        return this;
+      };
+    }, // clearQueue
+
+    delay: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function delayImpl( time, complete ){
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        this.animate({
+          delay: time
+        }, {
+          duration: time,
+          complete: complete
+        });
+
+        return this;
+      };
+    }, // delay
+
+    animate: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function animateImpl( properties, params ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+        var isCore = !selfIsArrayLike;
+        var isEles = !isCore;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        var callTime = +new Date();
+        var style = cy.style();
+        var q;
+        
+        if( params === undefined ){
+          params = {};
+        }
+
+        if( params.duration === undefined ){
+          params.duration = 400;
+        }
+        
+        switch( params.duration ){
+        case 'slow':
+          params.duration = 600;
+          break;
+        case 'fast':
+          params.duration = 200;
+          break;
+        }
+        
+        var propertiesEmpty = true;
+        if( properties ){ for( var i in properties ){
+          propertiesEmpty = false;
+          break;
+        } }
+
+        if( propertiesEmpty ){
+          return this; // nothing to animate
+        }
+
+        if( properties.css && isEles ){
+          properties.css = style.getValueStyle( properties.css, { array: true } );
+        }
+
+        if( properties.renderedPosition && isEles ){
+          var rpos = properties.renderedPosition;
+          var pan = cy.pan();
+          var zoom = cy.zoom();
+
+          properties.position = {
+            x: ( rpos.x - pan.x ) /zoom,
+            y: ( rpos.y - pan.y ) /zoom
+          };
+        }
+
+        // override pan w/ panBy if set
+        if( properties.panBy && isCore ){
+          var panBy = properties.panBy;
+          var cyPan = cy.pan();
+
+          properties.pan = {
+            x: cyPan.x + panBy.x,
+            y: cyPan.y + panBy.y
+          };
+        }
+
+        // override pan w/ center if set
+        var center = properties.center || properties.centre;
+        if( center && isCore ){
+          var centerPan = cy.getCenterPan( center.eles );
+
+          if( centerPan ){
+            properties.pan = centerPan;
+          }
+        }
+
+        // override pan & zoom w/ fit if set
+        if( properties.fit && isCore ){
+          var fit = properties.fit;
+          var fitVp = cy.getFitViewport( fit.eles || fit.boundingBox, fit.padding );
+
+          if( fitVp ){
+            properties.pan = fitVp.pan; //{ x: fitVp.pan.x, y: fitVp.pan.y };
+            properties.zoom = fitVp.zoom;
+          }
+        }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+         
+          if( ele.animated() && (params.queue === undefined || params.queue) ){
+            q = ele._private.animation.queue;
+          } else {
+            q = ele._private.animation.current;
+          }
+
+          q.push({
+            properties: properties,
+            duration: params.duration,
+            params: params,
+            callTime: callTime
+          });
+        }
+
+        if( isEles ){
+          cy.addToAnimationPool( this );
+        }
+
+        return this; // chaining
+      };
+    }, // animate
+
+    stop: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function stopImpl( clearQueue, jumpToEnd ){
+        var self = this;
+        var selfIsArrayLike = self.length !== undefined;
+        var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+        var cy = this._private.cy || this;
+
+        if( !cy.styleEnabled() ){ return this; }
+
+        for( var i = 0; i < all.length; i++ ){
+          var ele = all[i];
+          var anis = ele._private.animation.current;
+
+          for( var j = 0; j < anis.length; j++ ){
+            var animation = anis[j];    
+            if( jumpToEnd ){
+              // next iteration of the animation loop, the animation
+              // will go straight to the end and be removed
+              animation.duration = 0; 
+            }
+          }
+          
+          // clear the queue of future animations
+          if( clearQueue ){
+            ele._private.animation.queue = [];
+          }
+
+          if( !jumpToEnd ){
+            ele._private.animation.current = [];
+          }
+        }
+        
+        // we have to notify (the animation loop doesn't do it for us on `stop`)
+        cy.notify({
+          collection: this,
+          type: 'draw'
+        });
+        
+        return this;
+      };
+    } // stop
 
   }; // define
 

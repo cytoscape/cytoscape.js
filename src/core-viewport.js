@@ -1,22 +1,32 @@
 ;(function($$){ 'use strict';
   
   $$.fn.core({
-    
-    autolockNodes: function(bool){
+
+    autolock: function(bool){
       if( bool !== undefined ){
-        this._private.autolockNodes = bool ? true : false;
+        this._private.autolock = bool ? true : false;
       } else {
-        return this._private.autolockNodes;
+        return this._private.autolock;
       }
       
       return this; // chaining
     },
 
-    autoungrabifyNodes: function(bool){
+    autoungrabify: function(bool){
       if( bool !== undefined ){
-        this._private.autoungrabifyNodes = bool ? true : false;
+        this._private.autoungrabify = bool ? true : false;
       } else {
-        return this._private.autoungrabifyNodes;
+        return this._private.autoungrabify;
+      }
+      
+      return this; // chaining
+    },
+
+    autounselectify: function(bool){
+      if( bool !== undefined ){
+        this._private.autounselectify = bool ? true : false;
+      } else {
+        return this._private.autounselectify;
       }
       
       return this; // chaining
@@ -83,14 +93,15 @@
 
       case 1: 
 
-        if( !this._private.panningEnabled ){
-          return this;
-
-        } else if( $$.is.string( args[0] ) ){ // .pan('x')
+        if( $$.is.string( args[0] ) ){ // .pan('x')
           dim = args[0];
           return pan[ dim ];
 
         } else if( $$.is.plainObject( args[0] ) ) { // .pan({ x: 0, y: 100 })
+          if( !this._private.panningEnabled ){
+            return this;
+          }
+
           dims = args[0];
           x = dims.x;
           y = dims.y;
@@ -103,7 +114,7 @@
             pan.y = y;
           }
 
-          this.trigger('pan');
+          this.trigger('pan viewport');
         }
         break;
 
@@ -119,7 +130,7 @@
           pan[dim] = val;
         }
 
-        this.trigger('pan');
+        this.trigger('pan viewport');
         break;
 
       default:
@@ -158,7 +169,7 @@
             pan.y += y;
           }
 
-          this.trigger('pan');
+          this.trigger('pan viewport');
         }
         break;
 
@@ -170,7 +181,7 @@
           pan[dim] += val;
         }
 
-        this.trigger('pan');
+        this.trigger('pan viewport');
         break;
 
       default:
@@ -185,43 +196,14 @@
     },
     
     fit: function( elements, padding ){
-      if( $$.is.number(elements) && padding === undefined ){ // elements is optional
-        padding = elements;
-        elements = undefined;
-      }
+      var viewportState = this.getFitViewport( elements, padding );
 
-      if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
-        return this;
-      }
+      if( viewportState ){
+        var _p = this._private;
+        _p.zoom = viewportState.zoom;
+        _p.pan = viewportState.pan;
 
-      if( $$.is.string(elements) ){
-        var sel = elements;
-        elements = this.$( sel );
-      } else if( !$$.is.elementOrCollection(elements) ){
-        elements = this.elements();
-      }
-
-      var bb = elements.boundingBox();
-      var style = this.style();
-
-      var w = parseFloat( style.containerCss('width') );
-      var h = parseFloat( style.containerCss('height') );
-      var zoom;
-      padding = $$.is.number(padding) ? padding : 0;
-
-      if( !isNaN(w) && !isNaN(h) && elements.length > 0 ){
-        zoom = this._private.zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
-
-        // crop zoom
-        zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
-        zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
-
-        this._private.pan = { // now pan to middle
-          x: (w - zoom*( bb.x1 + bb.x2 ))/2,
-          y: (h - zoom*( bb.y1 + bb.y2 ))/2
-        };
-
-        this.trigger('pan zoom');
+        this.trigger('pan zoom viewport');
 
         this.notify({ // notify the renderer that the viewport changed
           type: 'viewport'
@@ -229,6 +211,66 @@
       }
 
       return this; // chaining
+    },
+
+    getFitViewport: function( elements, padding ){
+      if( $$.is.number(elements) && padding === undefined ){ // elements is optional
+        padding = elements;
+        elements = undefined;
+      }
+
+      if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
+        return;
+      }
+
+      var bb;
+
+      if( $$.is.string(elements) ){
+        var sel = elements;
+        elements = this.$( sel );
+
+      } else if( $$.is.boundingBox(elements) ){ // assume bb
+        var bbe = elements;
+        bb = {
+          x1: bbe.x1,
+          y1: bbe.y1,
+          x2: bbe.x2,
+          y2: bbe.y2
+        };
+
+        bb.w = bb.x2 - bb.x1;
+        bb.h = bb.y2 - bb.y1;
+
+      } else if( !$$.is.elementOrCollection(elements) ){
+        elements = this.elements();
+      }
+
+      bb = bb || elements.boundingBox();
+
+      var w = this.width();
+      var h = this.height();
+      var zoom;
+      padding = $$.is.number(padding) ? padding : 0;
+
+      if( !isNaN(w) && !isNaN(h) && w > 0 && h > 0 && !isNaN(bb.w) && !isNaN(bb.h) &&  bb.w > 0 && bb.h > 0 ){
+        zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
+
+        // crop zoom
+        zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
+        zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
+
+        var pan = { // now pan to middle
+          x: (w - zoom*( bb.x1 + bb.x2 ))/2,
+          y: (h - zoom*( bb.y1 + bb.y2 ))/2
+        };
+
+        return {
+          zoom: zoom, 
+          pan: pan
+        };
+      }
+
+      return;
     },
     
     minZoom: function( zoom ){
@@ -308,11 +350,11 @@
         this._private.pan = pan2;
 
         var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-        this.trigger('zoom' + (posChanged ? ' pan' : '') );
+        this.trigger(' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
       
       } else { // just set the zoom
         this._private.zoom = zoom;
-        this.trigger('zoom');
+        this.trigger('zoom viewport');
       }
 
       this.notify({ // notify the renderer that the viewport changed
@@ -348,7 +390,7 @@
         }
       }
 
-      if( panDefd && !zoomFailed && _p.panningEnabled ){
+      if( panDefd && (!zoomFailed || !opts.cancelOnFailedZoom) && _p.panningEnabled ){
         var p = opts.pan;
 
         if( $$.is.number(p.x) ){
@@ -367,32 +409,36 @@
       }
 
       if( events.length > 0 ){
+        events.push('viewport');
         this.trigger( events.join(' ') );
-      }
 
-      this.notify({
-        type: 'viewport'
-      });
+        this.notify({
+          type: 'viewport'
+        });
+      }
 
       return this; // chaining
     },
     
-    // get the bounding box of the elements (in raw model position)
-    boundingBox: function( selector ){
-      var eles = this.$( selector );
+    center: function( elements ){
+      var pan = this.getCenterPan( elements );
 
-      return eles.boundingBox();
+      if( pan ){
+        this._private.pan = pan;
+
+        this.trigger('pan viewport');
+
+        this.notify({ // notify the renderer that the viewport changed
+          type: 'viewport'
+        });
+      }
+
+      return this; // chaining
     },
 
-    renderedBoundingBox: function( selector ){
-      var eles = this.$( selector );
-
-      return eles.renderedBoundingBox();
-    },
-
-    center: function(elements){
-      if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
-        return this;
+    getCenterPan: function( elements ){
+      if( !this._private.panningEnabled ){
+        return;
       }
 
       if( $$.is.string(elements) ){
@@ -403,23 +449,16 @@
       }
 
       var bb = elements.boundingBox();
-      var style = this.style();
-      var w = parseFloat( style.containerCss('width') );
-      var h = parseFloat( style.containerCss('height') );
+      var w = this.width();
+      var h = this.height();
       var zoom = this._private.zoom;
 
-      this.pan({ // now pan to middle
+      var pan = { // middle
         x: (w - zoom*( bb.x1 + bb.x2 ))/2,
         y: (h - zoom*( bb.y1 + bb.y2 ))/2
-      });
+      };
       
-      this.trigger('pan');
-
-      this.notify({ // notify the renderer that the viewport changed
-        type: 'viewport'
-      });
-
-      return this; // chaining
+      return pan;
     },
     
     reset: function(){
@@ -427,18 +466,72 @@
         return this;
       }
 
-      this.pan({ x: 0, y: 0 });
-
-      if( this._private.maxZoom > 1 && this._private.minZoom < 1 ){
-        this.zoom(1);
-      }
-
-      this.notify({ // notify the renderer that the viewport changed
-        type: 'viewport'
+      this.viewport({
+        pan: { x: 0, y: 0 },
+        zoom: 1
       });
       
       return this; // chaining
+    },
+
+    width: function(){
+      var container = this._private.container;
+
+      if( container ){
+        return container.clientWidth;
+      }
+
+      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    },
+
+    height: function(){
+      var container = this._private.container;
+
+      if( container ){
+        return container.clientHeight;
+      }
+
+      return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    },
+
+    extent: function(){
+      var pan = this._private.pan;
+      var zoom = this._private.zoom;
+      var rb = this.renderedExtent();
+
+      var b = {
+        x1: ( rb.x1 - pan.x )/zoom,
+        x2: ( rb.x2 - pan.x )/zoom,
+        y1: ( rb.y1 - pan.y )/zoom,
+        y2: ( rb.y2 - pan.y )/zoom,
+      };
+
+      b.w = b.x2 - b.x1;
+      b.h = b.y2 - b.y1;
+
+      return b;
+    },
+
+    renderedExtent: function(){
+      var width = this.width();
+      var height = this.height();
+
+      return {
+        x1: 0,
+        y1: 0,
+        x2: width,
+        y2: height,
+        w: width,
+        h: height
+      };
     }
-  });  
-  
+  });
+
+  // aliases
+  $$.corefn.centre = $$.corefn.center;
+
+  // backwards compatibility
+  $$.corefn.autolockNodes = $$.corefn.autolock;
+  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabifyNodes;
+
 })( cytoscape );

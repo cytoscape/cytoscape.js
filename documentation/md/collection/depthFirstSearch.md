@@ -8,8 +8,6 @@ This function returns an object that contains two collections (`{ path: eles, fo
  * If your handler function returns `false`, then the only the path up to that point is returned.
  * The path returned includes edges such that if `path[i]` is a node, then `path[i - 1]` is the edge used to get to that node.
 
-This function has a shorter alias, `eles.dfs()`.
-
 ## Examples
 
 ```js

@@ -7,70 +7,18 @@
   $$.styfn.apply = function( eles ){
     var self = this;
 
+    if( self._private.newStyle ){ // clear style caches
+      this._private.contextStyles = {};
+      this._private.propDiffs = {};
+    }
+
     for( var ie = 0; ie < eles.length; ie++ ){
       var ele = eles[ie];
-      var _p = ele._private;
-      var addedCxts = [];
-      var removedCxts = [];
+      var cxtMeta = self.getContextMeta( ele );
+      var cxtStyle = self.getContextStyle( cxtMeta );
+      var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-      if( self._private.newStyle ){
-        _p.styleCxts = [];
-        _p.style = {};
-      }
-
-      // console.log('APPLYING STYLESHEET\n--\n');
-
-      // apply the styles
-      for( var i = 0; i < this.length; i++ ){
-        var context = this[i];
-        var contextSelectorMatches = context.selector && context.selector.filter( ele ).length > 0; // NB: context.selector may be null for 'core'
-        var props = context.properties;
-        var newCxt = !_p.styleCxts[i];
-
-        // console.log(i + ' : looking at selector: ' + context.selector);
-
-        if( contextSelectorMatches ){ // then apply its properties
-
-          // apply the properties in the context
-          
-          for( var j = 0; j < props.length; j++ ){ // for each prop
-            var prop = props[j];
-            var currentEleProp = _p.style[prop.name];
-            var propIsFirstInEle = currentEleProp && currentEleProp.context === context;
-            var needToUpdateCxtMapping = prop.mapped && propIsFirstInEle;
-
-            //if(prop.mapped) debugger;
-
-            if( newCxt || needToUpdateCxtMapping ){
-              // console.log(i + ' + MATCH: applying property: ' + prop.name);
-              this.applyParsedProperty( ele, prop, context );
-            }
-          }
-
-          // keep a note that this context matches
-          ele._private.styleCxts[i] = context;
-
-          if( self._private.newStyle === false && newCxt ){
-            addedCxts.push( context );
-          }
-          
-        } else {
-
-          // roll back style cxts that don't match now
-          if( _p.styleCxts[i] ){
-            // console.log(i + ' x MISS: rolling back context');
-            this.rollBackContext( ele, context );
-            removedCxts.push( context );
-
-            delete _p.styleCxts[i];
-          }
-        }
-      } // for context
-
-      if( addedCxts.length > 0 || removedCxts.length > 0 ){
-        this.updateTransitions( ele, addedCxts, removedCxts );
-      }
-
+      self.updateTransitions( ele, app.diffProps );
       self.updateStyleHints( ele );
 
     } // for elements
@@ -78,12 +26,162 @@
     self._private.newStyle = false;
   };
 
+  $$.styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
+    var self = this;
+    var cache = self._private.propDiffs = self._private.propDiffs || {};
+    var dualCxtKey = oldCxtKey + '-' + newCxtKey;
+    var cachedVal = cache[dualCxtKey];
+
+    if( cachedVal ){
+      return cachedVal;
+    }
+
+    var diffProps = [];
+    var addedProp = {};
+
+    for( var i = 0; i < self.length; i++ ){
+      var cxt = self[i];
+      var oldHasCxt = oldCxtKey[i] === 't';
+      var newHasCxt = newCxtKey[i] === 't';
+      var cxtHasDiffed = oldHasCxt !== newHasCxt;
+
+      if( cxtHasDiffed ){
+        var props = cxt.properties;
+        for( var j = 0; j < props.length; j++ ){
+          var prop = props[j];
+          var name = prop.name;
+
+          // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
+          // (semi expensive check since it makes this function O(n^2) on context length, but worth it since overall result
+          // is cached)
+          var laterCxtOverrides = false; 
+          for( var k = i + 1; k < self.length; k++ ){
+            var laterCxt = self[k];
+            var hasLaterCxt = newCxtKey[k] === 't';
+
+            if( !hasLaterCxt ){ continue; } // can't override unless the context is active
+
+            laterCxtOverrides = laterCxt.properties[ prop.name ] != null;
+
+            if( laterCxtOverrides ){ break; } // exit early as long as one later context overrides
+          }
+
+          if( !addedProp[name] && !laterCxtOverrides ){
+            addedProp[name] = true;
+            diffProps.push( name );
+          }
+        }
+      }
+    }
+
+    cache[ dualCxtKey ] = diffProps;
+    return diffProps;
+  };
+
+  $$.styfn.getContextMeta = function( ele ){
+    var self = this;
+    var cxtKey = '';
+    var diffProps;
+    var prevKey = ele._private.styleCxtKey || '';
+
+    if( self._private.newStyle ){
+      prevKey = ''; // since we need to apply all style if a fresh stylesheet
+    }
+
+    // get the cxt key
+    for( var i = 0; i < self.length; i++ ){
+      var context = self[i];
+      var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
+
+      if( contextSelectorMatches ){
+        cxtKey += 't';
+      } else {
+        cxtKey += 'f';
+      }
+    } // for context
+
+    diffProps = self.getPropertiesDiff( prevKey, cxtKey );
+
+    ele._private.styleCxtKey = cxtKey;
+
+    return {
+      key: cxtKey,
+      diffPropNames: diffProps
+    };
+  };
+
+  // gets a computed ele style object based on matched contexts
+  $$.styfn.getContextStyle = function( cxtMeta ){
+    var cxtKey = cxtMeta.key;
+    var self = this;
+    var cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
+
+    // if already computed style, returned cached copy
+    if( cxtStyles[cxtKey] ){ return cxtStyles[cxtKey]; }
+
+    var style = {
+      _private: {
+        key: cxtKey
+      }
+    };
+
+    for( var i = 0; i < self.length; i++ ){
+      var cxt = self[i];
+      var hasCxt = cxtKey[i] === 't';
+
+      if( !hasCxt ){ continue; }
+
+      for( var j = 0; j < cxt.properties.length; j++ ){
+        var prop = cxt.properties[j];
+        var styProp = style[ prop.name ] = prop;
+
+        styProp.context = cxt;
+      }
+    }
+
+    cxtStyles[cxtKey] = style;
+    return style;
+  };
+
+  $$.styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
+    var self = this;
+    var diffProps = cxtMeta.diffPropNames;
+    var retDiffProps = {};
+
+    for( var i = 0; i < diffProps.length; i++ ){
+      var diffPropName = diffProps[i];
+      var cxtProp = cxtStyle[ diffPropName ];
+      var eleProp = ele._private.style[ diffPropName ];
+
+      // save cycles when the context prop doesn't need to be applied
+      if( !cxtProp || eleProp === cxtProp ){ continue; }
+
+      var retDiffProp = retDiffProps[ diffPropName ] = {
+        prev: eleProp
+      };
+
+      self.applyParsedProperty( ele, cxtProp );
+
+      retDiffProp.next = ele._private.style[ diffPropName ];
+
+      if( retDiffProp.next.bypass ){
+        retDiffProp.next = retDiffProp.next.bypassed;
+      }
+    }
+
+    return {
+      diffProps: retDiffProps
+    };
+  };
+
   $$.styfn.updateStyleHints = function(ele){
     var _p = ele._private;
+    var self = this;
+    var style = _p.style;
 
     // set whether has pie or not; for greater efficiency
     var hasPie = false;
-    if( _p.group === 'nodes' ){
+    if( _p.group === 'nodes' && self._private.hasPie ){
       for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
         var size = _p.style['pie-' + i + '-background-size'].value;
 
@@ -96,56 +194,41 @@
 
     _p.hasPie = hasPie;
 
-    var transform = _p.style['text-transform'].strValue;
-    var content = _p.style['content'].strValue;
-    var fStyle = _p.style['font-style'].strValue;
-    var size = _p.style['font-size'].pxValue + 'px';
-    var family = _p.style['font-family'].strValue;
-    var variant = _p.style['font-variant'].strValue;
-    var weight = _p.style['font-weight'].strValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ variant +'$'+ weight +'$'+ content +'$'+ transform;
+    var transform = style['text-transform'].strValue;
+    var content = style['content'].strValue;
+    var fStyle = style['font-style'].strValue;
+    var size = style['font-size'].pxValue + 'px';
+    var family = style['font-family'].strValue;
+    // var variant = style['font-variant'].strValue;
+    var weight = style['font-weight'].strValue;
+    var valign = style['text-valign'].strValue;
+    var halign = style['text-valign'].strValue;
+    var oWidth = style['text-outline-width'].pxValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
-  };
 
-  // when a context's selector no longer matches the ele, roll back the context on the ele
-  // (cheaper than having to recalc from the beginning)
-  $$.styfn.rollBackContext = function( ele, context ){
-    for( var j = 0; j < context.properties.length; j++ ){ // for each prop
-      var prop = context.properties[j];
-      var eleProp = ele._private.style[ prop.name ];
+    var width = style['width'].pxValue;
+    var height = style['height'].pxValue;
+    var borderW = style['border-width'].pxValue;
+    _p.boundingBoxKey = width +'$'+ height +'$'+ borderW;
 
-      // because bypasses do not store prevs, look at the bypassed property
-      if( eleProp.bypassed ){
-        eleProp = eleProp.bypassed;
-      }
-
-      var first = true;
-      var lastEleProp;
-      var l = 0;
-      while( eleProp.prev ){
-        var prev = eleProp.prev;
-
-        if( eleProp.context === context ){
-
-          if( first ){
-            ele._private.style[ prop.name ] = prev;
-          } else if( lastEleProp ){
-            lastEleProp.prev = prev;
-          }
-          
-        }
-
-        lastEleProp = eleProp;
-        eleProp = prev;
-        first = false;
-        l++;
-
-        // in case we have a problematic prev list
-        // if( l >= 100 ){
-        //   debugger;
-        // }
-      }
+    if( ele._private.group === 'edges' ){
+      var cpss = style['control-point-step-size'].pxValue;
+      var cpd = style['control-point-distance'] ? style['control-point-distance'].pxValue : undefined;
+      var cpw = style['control-point-weight'].value;
+      var curve = style['curve-style'].strValue;
+      
+      _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
     }
+
+    _p.styleKey = Date.now(); // probably safe to use applied time and much faster
+    // for( var i = 0; i < $$.style.properties.length; i++ ){
+    //   var prop = $$.style.properties[i];
+    //   var eleProp = _p.style[ prop.name ];
+    //   var val = eleProp && eleProp.strValue ? eleProp.strValue : 'undefined';
+
+    //   _p.styleKey += '$' + val;
+    // }
   };
 
   // apply a property to the style (for internal use)
@@ -164,10 +247,7 @@
   // 
   // for parsedProp:{ bypass: true }
   // the generated flattenedProp:{ bypassed: parsedProp } 
-  $$.styfn.applyParsedProperty = function( ele, parsedProp, context ){
-    parsedProp = $$.util.clone( parsedProp ); // copy b/c the same parsedProp may be applied to many elements, BUT
-    // the instances put in each element should be unique to avoid overwriting other the lists of other elements
-
+  $$.styfn.applyParsedProperty = function( ele, parsedProp ){
     var prop = parsedProp;
     var style = ele._private.style;
     var fieldVal, flatProp;
@@ -284,9 +364,12 @@
       }
 
       flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
+
       if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-        flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
-      } 
+        var flatPropVal = origProp ? origProp.strValue : '';
+
+        flatProp = this.parse( prop.name, flatPropVal, prop.bypass, true );
+      }
 
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want
@@ -310,28 +393,12 @@
       style[ prop.name ] = prop; // and set
     
     } else { // prop is not bypass
-      var prevProp;
-
       if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
-        prevProp = origProp.bypassed;
-        
         origProp.bypassed = prop;
       } else { // then just replace the old prop with the new one
-        prevProp = style[ prop.name ];
-
         style[ prop.name ] = prop; 
       }
-
-      if( prevProp && prevProp.mapping && prop.mapping && prevProp.context === context ){
-        prevProp = prevProp.prev;
-      }
-
-      if( prevProp && prevProp !== prop ){
-        prop.prev = prevProp;
-      }
     }
-
-    prop.context = context;
 
     return true;
   };
@@ -365,13 +432,14 @@
     }
   };
 
-  $$.styfn.updateTransitions = function( ele, addedCxts, removedCxts ){
+  // diffProps : { name => { prev, next } }
+  $$.styfn.updateTransitions = function( ele, diffProps, isBypass ){
     var self = this;
     var style = ele._private.style;
 
     var props = style['transition-property'].value;
-    var duration = style['transition-duration'].value * 1000;
-    var delay = style['transition-delay'].value * 1000;
+    var duration = style['transition-duration'].msValue;
+    var delay = style['transition-delay'].msValue;
     var css = {};
 
     if( props.length > 0 && duration > 0 ){
@@ -381,41 +449,16 @@
       for( var i = 0; i < props.length; i++ ){
         var prop = props[i];
         var styProp = style[ prop ];
-        var fromProp = styProp.prev;
-        var toProp = style[ prop ];
+        var diffProp = diffProps[ prop ];
+
+        if( !diffProp ){ continue; }
+
+        var prevProp = diffProp.prev;
+        var fromProp = prevProp;
+        var toProp = diffProp.next != null ? diffProp.next : styProp;
         var diff = false;
-        var fromAddedCxt = false;
-        var fromRemovedCxt = false;
 
-        // see if the prop was added from one of the contexts
-        for( var j = 0; j < addedCxts.length; j++ ){
-          var cxt = addedCxts[j];
-
-          if( cxt === toProp.context ){
-            fromAddedCxt = true;
-            break;
-          }
-        } 
-
-        // see if the prop was removed from one of the contexts
-        for( var j = removedCxts.length - 1; j >= 0; j-- ){ // reverse order b/c last has precedence
-          var cxt = removedCxts[j];
-
-          for( var k = 0; k < cxt.properties.length; k++ ){
-            var cProp = cxt.properties[k];
-
-            if( cProp.name === prop ){
-              fromRemovedCxt = true;
-              fromProp = cProp;
-              break;
-            }
-          }
-
-          if( fromRemovedCxt ){ break; }
-        }
-
-        // if not from changed context, then it's not a state transition but just an overriding part of the stylesheet
-        if( !fromAddedCxt && !fromRemovedCxt ){ continue; }
+        if( !fromProp ){ continue; } 
 
         // consider px values
         if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
@@ -433,7 +476,7 @@
           ;
         }
 
-          // the previous value is good for an animation only if it's different
+        // the previous value is good for an animation only if it's different
         if( diff ){
           css[ prop ] = toProp.strValue; // to val
           this.applyBypass(ele, prop, fromProp.strValue); // from val
@@ -459,7 +502,9 @@
         duration: duration,
         queue: false,
         complete: function(){ 
-          self.removeAllBypasses( ele );
+          if( !isBypass ){
+            self.removeBypasses( ele, props );
+          }
 
           ele._private.transitioning = false;
         }
@@ -468,7 +513,7 @@
     } else if( ele._private.transitioning ){
       ele.stop();
 
-      this.removeAllBypasses( ele );
+      this.removeBypasses( ele, props );
 
       ele._private.transitioning = false;
     }

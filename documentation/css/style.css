@@ -38,12 +38,32 @@ img {
 #cy-title {
 	position: fixed;
 	right: 0;
-	bottom: 300px;
-	width: 300px;
+	bottom: 15em;
+	width: 15em;
+	text-align: left;
+	background: rgba(255, 255, 255, 0.5);
 	overflow: hidden;
 	color: rgba(0, 0, 0, 0.5);
 	text-align: left;
 	font-family: Andale Mono, monospace;
+	display: none;
+}
+
+#cy-title pre {
+	font-size: 0.8em;
+}
+
+#cy-label {
+	position: fixed;
+	bottom: 15em;
+	margin-bottom: -0.666em;
+	right: 0;
+	width: 15em;
+	text-align: center;
+	z-index: 1000;
+}
+
+#cy-label code {
 	font-size: 0.8em;
 }
 
@@ -56,6 +76,10 @@ img {
 	background: transparent;
 }
 
+.hidden {
+	visibility: hidden;
+	pointer-events: none;
+}
 
 #cy-refresh,
 #cy-show,
@@ -67,7 +91,7 @@ img {
 	padding: 4px 6px;
 	color: #333;
 	cursor: pointer;
-	z-index: 1000;
+	z-index: 1001;
 }
 
 #cy-hide {
@@ -80,7 +104,6 @@ img {
 	background: rgba(255, 255, 255, 0.66);
 	border-radius: 0;
 	border: 1px solid #ccc;
-	display: none;
 }
 
 button {
@@ -97,12 +120,20 @@ button:active {
 }
 
 .run {
-	margin-bottom: 0;
+	margin: 0 2em;
+	position: absolute;
+	right: 0;
+	opacity: 0.666;
+	font-size: 0.8em;
+
+	border: 1px solid #4183C4;
+	color: #4183C4;
+	background: transparent;
 }
 
-.run + * {
+/*.run + * {
 	margin-top: 0.25em;
-}
+}*/
 
 .important-indicator {
 	font-family: FontAwesome;
@@ -127,7 +158,7 @@ button:active {
 	top: 0;
 	bottom: 0;
 	width: 14em;
-	background: #f0f0f0;
+	/*border-right: 1px solid #eee;*/
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;
@@ -199,6 +230,23 @@ button:active {
 	width: 200px;
 }
 
+.gallery-full-demo{
+	display: inline-block;
+	position: relative;
+	width: 100%;
+	max-width: 600px;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+}
+
+.gallery-full-title {
+	font-size: 0.8em;
+}
+
+.gallery-full-padder {
+	margin-top: 100%;
+}
+
 .gallery-title {
 	font-size: 0.8em;
 }
@@ -215,12 +263,31 @@ button:active {
 	height: 200px;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
-	background-size: cover;
-	background-color: #fafafa;
+	background-size: contain;
+	background-repeat: no-repeat;
 }
 
-.gallery-link-overlay {
+.gallery-full-embed,
+.gallery-full-link-overlay,
+.gallery-full-preview {
+	display: block;
 	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	border: 1px solid #ddd;
+	border-radius: 0.25em;
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: 50% 0;
+	border-color: transparent;
+}
+
+.gallery-link-overlay,
+.gallery-full-link-overlay {
+	position: absolute;
+	z-index: 1;
 }
 
 .gallery-embed {
@@ -379,7 +446,7 @@ button:active {
 }
 
 .title .version {
-	font-size: 0.25em;
+	font-size: 0.5em;
 	color: #888;
 }
 
@@ -392,12 +459,12 @@ button:active {
 }
 
 .links a {
-	white-space: nowrap;
+	/*white-space: nowrap;*/
 }
 
 .buttons-subtitle {
 	margin: 0.5em 0;
-	font-size: 1.5em;
+	font-size: 1em;
 }
 
 h1 {
@@ -514,10 +581,6 @@ pre code {
 	overflow: auto;
 }
 
-.function .formats ul {
-	list-style-type: none;
-}
-
 .function pre {
 	
 }
@@ -539,6 +602,19 @@ pre code {
 
 .function > .name {
 	font-size: 1.25em;
+}
+
+.function .pure-aliases {
+	color: #888;
+	font-size: 0.8em;
+}
+
+.function .pure-alias-name {
+	font-family: Consolas, "Liberation Mono", Courier, monospace;
+}
+
+.function .pure-alias:last-child .pure-alias-comma {
+	display: none;
 }
 
 .function > .formats,
@@ -566,7 +642,7 @@ pre code {
 }
 
 .function ul.args {
-	margin-left: 1em;
+	margin-left: 2em;
 	font-size: 0.8em;
 }
 
@@ -583,11 +659,15 @@ pre code {
 }
 
 .args .fields {
-	margin-left: 1em;
+	margin-left: 2em;
+}
+
+.args .optional {
+	
 }
 
 .args .fields .name {
-	margin-left: 0.5em;
+	
 }
 
 .build-list {

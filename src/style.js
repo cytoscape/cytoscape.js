@@ -13,7 +13,8 @@
 
     this._private = {
       cy: cy,
-      coreStyle: {}
+      coreStyle: {},
+      newStyle: true
     };
     
     this.length = 0;
@@ -44,12 +45,15 @@
 
     // each visual style property has a type and needs to be validated according to it
     $$.style.types = {
-      time: { number: true, min: 0, units: 's' },
+      time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
       percent: { number: true, min: 0, max: 100, units: '%' },
       zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
       nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-      size: { number: true, min: 0, enums: ['auto'] },
+      position: { enums: ['parent', 'origin'] },
+      autoSize: { number: true, min: 0, enums: ['auto'] },
+      number: { number: true },
+      size: { number: true, min: 0 },
       bgSize: { number: true, min: 0, allowPercent: true },
       bgPos: { number: true, allowPercent: true },
       bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
@@ -57,35 +61,35 @@
       bgClip: { enums: ['none', 'node'] },
       color: { color: true },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
-      curveStyle: { enums: ['bezier', 'haystack'] },
+      borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
+      curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
       fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
-      textTransform: { enums: ['none', 'capitalize', 'uppercase', 'lowercase'] },
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle',
-                           'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
-      arrowShape: { enums: ['tee', 'triangle', 'square', 'circle', 'diamond', 'none'] },
+      textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
+      arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
       visibility: { enums: ['hidden', 'visible'] },
       valign: { enums: ['top', 'center', 'bottom'] },
       halign: { enums: ['left', 'center', 'right'] },
-      cursor: { enums: ['auto', 'crosshair', 'default', 'e-resize', 'n-resize', 'ne-resize', 'nw-resize', 'pointer', 'progress', 's-resize', 'sw-resize', 'text', 'w-resize', 'wait', 'grab', 'grabbing'] },
       text: { string: true },
       data: { mapping: true, regex: data('data') },
       layoutData: { mapping: true, regex: data('layoutData') },
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
-      propList: { propList: true }
+      propList: { propList: true },
+      angle: { number: true, units: 'deg|rad' }
     };
 
     // define visual style properties
     var t = $$.style.types;
-    $$.style.properties = [
-      // these are for elements
+    var props = $$.style.properties = [
+      // labels
       { name: 'text-valign', type: t.valign },
       { name: 'text-halign', type: t.halign },
       { name: 'color', type: t.color },
@@ -94,100 +98,90 @@
       { name: 'text-outline-width', type: t.size },
       { name: 'text-outline-opacity', type: t.zeroOneNumber },
       { name: 'text-opacity', type: t.zeroOneNumber },
-      { name: 'text-decoration', type: t.textDecoration },
+      // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
+      // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
-      { name: 'font-variant', type: t.fontVariant },
+      // { name: 'font-variant', type: t.fontVariant }, // not useful
       { name: 'font-weight', type: t.fontWeight },
       { name: 'font-size', type: t.size },
       { name: 'min-zoomed-font-size', type: t.size },
+
+      // visibility
       { name: 'display', type: t.display },
       { name: 'visibility', type: t.visibility },
       { name: 'opacity', type: t.zeroOneNumber },
       { name: 'z-index', type: t.nonNegativeInt },
+
+      // overlays
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
+
+      // transition anis
       { name: 'transition-property', type: t.propList },
       { name: 'transition-duration', type: t.time },
       { name: 'transition-delay', type: t.time },
 
-      // these are just for nodes
-      { name: 'background-blacken', type: t.nOneOneNumber },
+      // node body
+      { name: 'height', type: t.autoSize },
+      { name: 'width', type: t.autoSize },
+      { name: 'shape', type: t.nodeShape },
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
+      { name: 'background-blacken', type: t.nOneOneNumber },
+
+      // node border
+      { name: 'border-color', type: t.color },
+      { name: 'border-opacity', type: t.zeroOneNumber },
+      { name: 'border-width', type: t.size },
+      { name: 'border-style', type: t.borderStyle },
+      
+      // node background images
       { name: 'background-image', type: t.url },
+      { name: 'background-image-opacity', type: t.zeroOneNumber },
       { name: 'background-position-x', type: t.bgPos },
       { name: 'background-position-y', type: t.bgPos },
       { name: 'background-repeat', type: t.bgRepeat },
       { name: 'background-fit', type: t.bgFit },
       { name: 'background-clip', type: t.bgClip },
-      { name: 'pie-size', type: t.bgSize },
-      { name: 'pie-1-background-color', type: t.color },
-      { name: 'pie-2-background-color', type: t.color },
-      { name: 'pie-3-background-color', type: t.color },
-      { name: 'pie-4-background-color', type: t.color },
-      { name: 'pie-5-background-color', type: t.color },
-      { name: 'pie-6-background-color', type: t.color },
-      { name: 'pie-7-background-color', type: t.color },
-      { name: 'pie-8-background-color', type: t.color },
-      { name: 'pie-9-background-color', type: t.color },
-      { name: 'pie-10-background-color', type: t.color },
-      { name: 'pie-11-background-color', type: t.color },
-      { name: 'pie-12-background-color', type: t.color },
-      { name: 'pie-13-background-color', type: t.color },
-      { name: 'pie-14-background-color', type: t.color },
-      { name: 'pie-15-background-color', type: t.color },
-      { name: 'pie-16-background-color', type: t.color },
-      { name: 'pie-1-background-size', type: t.percent },
-      { name: 'pie-2-background-size', type: t.percent },
-      { name: 'pie-3-background-size', type: t.percent },
-      { name: 'pie-4-background-size', type: t.percent },
-      { name: 'pie-5-background-size', type: t.percent },
-      { name: 'pie-6-background-size', type: t.percent },
-      { name: 'pie-7-background-size', type: t.percent },
-      { name: 'pie-8-background-size', type: t.percent },
-      { name: 'pie-9-background-size', type: t.percent },
-      { name: 'pie-10-background-size', type: t.percent },
-      { name: 'pie-11-background-size', type: t.percent },
-      { name: 'pie-12-background-size', type: t.percent },
-      { name: 'pie-13-background-size', type: t.percent },
-      { name: 'pie-14-background-size', type: t.percent },
-      { name: 'pie-15-background-size', type: t.percent },
-      { name: 'pie-16-background-size', type: t.percent },
-      { name: 'border-color', type: t.color },
-      { name: 'border-opacity', type: t.zeroOneNumber },
-      { name: 'border-width', type: t.size },
-      { name: 'border-style', type: t.lineStyle },
-      { name: 'height', type: t.size },
-      { name: 'width', type: t.size },
+
+      // compound props
       { name: 'padding-left', type: t.size },
       { name: 'padding-right', type: t.size },
       { name: 'padding-top', type: t.size },
       { name: 'padding-bottom', type: t.size },
-      { name: 'shape', type: t.nodeShape },
+      { name: 'position', type: t.position },
 
-      // these are just for edges
-      { name: 'source-arrow-shape', type: t.arrowShape },
-      { name: 'target-arrow-shape', type: t.arrowShape },
-      { name: 'source-arrow-color', type: t.color },
-      { name: 'target-arrow-color', type: t.color },
-      { name: 'source-arrow-fill', type: t.arrowFill },
-      { name: 'target-arrow-fill', type: t.arrowFill },
+      // edge line
       { name: 'line-style', type: t.lineStyle },
       { name: 'line-color', type: t.color },
       { name: 'control-point-step-size', type: t.size },
-      { name: 'control-point-distance', type: t.size },
+      { name: 'control-point-distance', type: t.number },
       { name: 'control-point-weight', type: t.zeroOneNumber },
       { name: 'curve-style', type: t.curveStyle },
+      { name: 'haystack-radius', type: t.zeroOneNumber },
+
+      // edge arrows
+      { name: 'source-arrow-shape', type: t.arrowShape },
+      { name: 'target-arrow-shape', type: t.arrowShape },
+      { name: 'mid-source-arrow-shape', type: t.arrowShape },
+      { name: 'mid-target-arrow-shape', type: t.arrowShape },
+      { name: 'source-arrow-color', type: t.color },
+      { name: 'target-arrow-color', type: t.color },
+      { name: 'mid-source-arrow-color', type: t.color },
+      { name: 'mid-target-arrow-color', type: t.color },
+      { name: 'source-arrow-fill', type: t.arrowFill },
+      { name: 'target-arrow-fill', type: t.arrowFill },
+      { name: 'mid-source-arrow-fill', type: t.arrowFill },
+      { name: 'mid-target-arrow-fill', type: t.arrowFill },
 
       // these are just for the core
       { name: 'selection-box-color', type: t.color },
       { name: 'selection-box-opacity', type: t.zeroOneNumber },
       { name: 'selection-box-border-color', type: t.color },
       { name: 'selection-box-border-width', type: t.size },
-      { name: 'panning-cursor', type: t.cursor },
       { name: 'active-bg-color', type: t.color },
       { name: 'active-bg-opacity', type: t.zeroOneNumber },
       { name: 'active-bg-size', type: t.size },
@@ -195,16 +189,21 @@
       { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
     ];
 
+    // pie backgrounds for nodes
+    $$.style.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
+    props.push({ name: 'pie-size', type: t.bgSize });
+    for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){
+      props.push({ name: 'pie-'+i+'-background-color', type: t.color });
+      props.push({ name: 'pie-'+i+'-background-size', type: t.percent });
+      props.push({ name: 'pie-'+i+'-background-opacity', type: t.zeroOneNumber });
+    }
+
     // allow access of properties by name ( e.g. $$.style.properties.height )
-    var props = $$.style.properties;
     for( var i = 0; i < props.length; i++ ){
       var prop = props[i];
       
       props[ prop.name ] = prop; // allow lookup by name
     }
-
-    // because the pie properties are numbered, give access to a constant N (for renderer use)
-    $$.style.pieBackgroundN = 16;
   })();
 
   // adds the default stylesheet to the current style
@@ -218,7 +217,7 @@
     // delaying the read of these val's is not an opt'n: that would delay init'l load time
     var fontFamily = 'Helvetica' || this.containerPropertyAsString('font-family') || 'sans-serif';
     var fontStyle = 'normal' || this.containerPropertyAsString('font-style') || 'normal';
-    var fontVariant = 'normal' || this.containerPropertyAsString('font-variant') || 'normal';
+    // var fontVariant = 'normal' || this.containerPropertyAsString('font-variant') || 'normal';
     var fontWeight = 'normal' || this.containerPropertyAsString('font-weight') || 'normal';
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
@@ -239,7 +238,7 @@
           'text-transform': textTransform,
           'font-family': fontFamily,
           'font-style': fontStyle,
-          'font-variant': fontVariant,
+          // 'font-variant': fontVariant,
           'font-weight': fontWeight,
           'font-size': fontSize,
           'min-zoomed-font-size': 0,
@@ -271,57 +270,86 @@
           'border-style': 'solid',
           'height': 30,
           'width': 30,
+          'shape': 'ellipse',
+
+          // compound props
           'padding-top': 0,
           'padding-bottom': 0,
           'padding-left': 0,
           'padding-right': 0,
-          'shape': 'ellipse',
+          'position': 'origin',
+          
+
+          // node pie bg
           'pie-size': '100%',
           'pie-1-background-color': 'black',
-          'pie-1-background-size': '0%',
           'pie-2-background-color': 'black',
-          'pie-2-background-size': '0%',
           'pie-3-background-color': 'black',
-          'pie-3-background-size': '0%',
           'pie-4-background-color': 'black',
-          'pie-4-background-size': '0%',
           'pie-5-background-color': 'black',
-          'pie-5-background-size': '0%',
           'pie-6-background-color': 'black',
-          'pie-6-background-size': '0%',
           'pie-7-background-color': 'black',
-          'pie-7-background-size': '0%',
           'pie-8-background-color': 'black',
-          'pie-8-background-size': '0%',
           'pie-9-background-color': 'black',
-          'pie-9-background-size': '0%',
           'pie-10-background-color': 'black',
-          'pie-10-background-size': '0%',
           'pie-11-background-color': 'black',
-          'pie-11-background-size': '0%',
           'pie-12-background-color': 'black',
-          'pie-12-background-size': '0%',
           'pie-13-background-color': 'black',
-          'pie-13-background-size': '0%',
           'pie-14-background-color': 'black',
-          'pie-14-background-size': '0%',
           'pie-15-background-color': 'black',
-          'pie-15-background-size': '0%',
           'pie-16-background-color': 'black',
+          'pie-1-background-size': '0%',
+          'pie-2-background-size': '0%',
+          'pie-3-background-size': '0%',
+          'pie-4-background-size': '0%',
+          'pie-5-background-size': '0%',
+          'pie-6-background-size': '0%',
+          'pie-7-background-size': '0%',
+          'pie-8-background-size': '0%',
+          'pie-9-background-size': '0%',
+          'pie-10-background-size': '0%',
+          'pie-11-background-size': '0%',
+          'pie-12-background-size': '0%',
+          'pie-13-background-size': '0%',
+          'pie-14-background-size': '0%',
+          'pie-15-background-size': '0%',
           'pie-16-background-size': '0%',
+          'pie-1-background-opacity': 1,
+          'pie-2-background-opacity': 1,
+          'pie-3-background-opacity': 1,
+          'pie-4-background-opacity': 1,
+          'pie-5-background-opacity': 1,
+          'pie-6-background-opacity': 1,
+          'pie-7-background-opacity': 1,
+          'pie-8-background-opacity': 1,
+          'pie-9-background-opacity': 1,
+          'pie-10-background-opacity': 1,
+          'pie-11-background-opacity': 1,
+          'pie-12-background-opacity': 1,
+          'pie-13-background-opacity': 1,
+          'pie-14-background-opacity': 1,
+          'pie-15-background-opacity': 1,
+          'pie-16-background-opacity': 1,
 
           // edge props
           'source-arrow-shape': 'none',
+          'mid-source-arrow-shape': 'none',
           'target-arrow-shape': 'none',
-          'source-arrow-color': '#bbb',
-          'target-arrow-color': '#bbb',
+          'mid-target-arrow-shape': 'none',
+          'source-arrow-color': '#ddd',
+          'mid-source-arrow-color': '#ddd',
+          'target-arrow-color': '#ddd',
+          'mid-target-arrow-color': '#ddd',
           'source-arrow-fill': 'filled',
+          'mid-source-arrow-fill': 'filled',
           'target-arrow-fill': 'filled',
+          'mid-target-arrow-fill': 'filled',
           'line-style': 'solid',
-          'line-color': '#bbb',
+          'line-color': '#ddd',
           'control-point-step-size': 40,
           'control-point-weight': 0.5,
-          'curve-style': 'bezier'
+          'curve-style': 'bezier',
+          'haystack-radius': 0.8
         })
       .selector('$node > node') // compound (parent) node properties
         .css({
@@ -350,7 +378,6 @@
           'selection-box-opacity': 0.65,
           'selection-box-border-color': '#aaa',
           'selection-box-border-width': 1,
-          'panning-cursor': 'grabbing',
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
           'active-bg-size': $$.is.touch() ? 40 : 15,
@@ -362,12 +389,11 @@
 
   // remove all contexts
   $$.styfn.clear = function(){
-    this._private.newStyle = true;
-
     for( var i = 0; i < this.length; i++ ){
-      delete this[i];
+      this[i] = undefined;
     }
     this.length = 0;
+    this._private.newStyle = true;
 
     return this; // chaining
   };
@@ -495,25 +521,29 @@
     // check the type and return the appropriate object
     if( type.number ){ 
       var units;
-      var implicitUnit = 'px'; // not set => px
+      var implicitUnits = 'px'; // not set => px
 
       if( type.units ){ // use specified units if set
         units = type.units;
       }
 
+      if( type.implicitUnits ){
+        implicitUnits = type.implicitUnits;
+      }
+
       if( !type.unitless ){
         if( valueIsString ){
-          var unitsRegex = "px|em" + (type.allowPercent ? "|\\%" : '');
+          var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
           if( units ){ unitsRegex = units; } // only allow explicit units if so set 
-          var match = value.match( "^(" + $$.util.regex.number + ")(" + unitsRegex + ")?" + "$" );
+          var match = value.match( '^(' + $$.util.regex.number + ')(' + unitsRegex + ')?' + '$' );
           
           if( match ){
             value = match[1];
-            units = match[2] || implicitUnit;
+            units = match[2] || implicitUnits;
           }
           
-        } else if( !units ) {
-          units = implicitUnit; // implicitly px if unspecified
+        } else if( !units || type.implicitUnits ) {
+          units = implicitUnits; // implicitly px if unspecified
         }
       }
 
@@ -562,13 +592,20 @@
         value: value,
         strValue: '' + value + (units ? units : ''),
         units: units,
-        bypass: propIsBypass 
+        bypass: propIsBypass,
+        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value !== 0 && value !== ''
       };
 
+      // normalise value in pixels
       if( type.unitless || (units !== 'px' && units !== 'em') ){
         // then pxValue does not apply
       } else {
         ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      }
+
+      // normalise value in ms
+      if( units === 'ms' || units === 's' ){
+        ret.msValue = units === 'ms' ? value : 1000 * value;
       }
 
       return ret;
@@ -669,7 +706,8 @@
     var i = this.length++; // new context means new index
     this[i] = {
       selector: selector,
-      properties: []
+      properties: [],
+      index: i
     };
 
     return this; // chaining
@@ -718,6 +756,11 @@
     if( property ){
       var i = this.length - 1;
       this[i].properties.push( property );
+      this[i].properties[ property.name ] = property; // allow access by name as well
+
+      if( property.hasPie ){
+        this._private.hasPie = true;
+      }
 
       // add to core style if necessary
       var currentSelectorIsCore = !this[i].selector;

@@ -1,0 +1,3 @@
+The `cola` layout uses a [force-directed](http://en.wikipedia.org/wiki/Force-directed_graph_drawing) physics simulation with several sophisticated constraints.  For more information about Cola and its parameters, refer to [its documentation](http://marvl.infotech.monash.edu/webcola/).
+
+Because Cola.js is a separate library, the developer must manually include `cola.js` in his app in order to use the `cola` layout.

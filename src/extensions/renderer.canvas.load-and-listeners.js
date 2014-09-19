@@ -29,96 +29,135 @@
   CanvasRenderer.prototype.load = function() {
     var r = this;
 
+    var getDragListIds = function(opts){
+      var listHasId;
+
+      if( opts.addToList && r.data.cy.hasCompoundNodes() ){ // only needed for compound graphs
+        if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
+          opts.addToList.hasId = {};
+
+          for( var i = 0; i < opts.addToList.length; i++ ){
+            var ele = opts.addToList[i];
+
+            opts.addToList.hasId[ ele.id() ] = true;
+          }
+        }
+
+        listHasId = opts.addToList.hasId;
+      }
+
+      return listHasId || {};
+    };
+
     // helper function to determine which child nodes and inner edges
     // of a compound node to be dragged as well as the grabbed and selected nodes
-    var addDescendantsToDrag = function(node, addSelected, dragElements) {
-      if (!addSelected)
-      {
-        var parents = node.parents();
-
-        // do not process descendants for this node,
-        // because those will be handled for the topmost selected parent
-        for (var i=0; i < parents.size(); i++)
-        {
-            if (parents[i]._private.selected)
-            {
-              return;
-            }
-        }
+    var addDescendantsToDrag = function(node, opts){
+      if( !node._private.cy.hasCompoundNodes() ){
+        return;
       }
+
+      var listHasId = getDragListIds( opts );
 
       var innerNodes = node.descendants();
 
       // TODO do not drag hidden children & children of hidden children?
-      for (var i=0; i < innerNodes.size(); i++)
-      {
-        // if addSelected is true, then add node in any case,
-        // if not, then add only non-selected nodes
-        if ( (addSelected || !innerNodes[i]._private.selected) )
-        {
-          innerNodes[i]._private.rscratch.inDragLayer = true;
-          //innerNodes[i].trigger(new $$.Event(e, {type: 'grab'}));
-          //innerNodes[i].trigger(event);
-          dragElements.push(innerNodes[i]);
+      for( var i = 0; i < innerNodes.size(); i++ ){
+        var iNode = innerNodes[i];
+        var _p = iNode._private;
 
-          for (var j=0; j < innerNodes[i]._private.edges.length; j++)
-          {
-            innerNodes[i]._private.edges[j]._private.rscratch.inDragLayer = true;
-          }
+        if( opts.inDragLayer ){
+          _p.rscratch.inDragLayer = true;
+        }
+
+        if( opts.addToList && !listHasId[ iNode.id() ] ){
+          opts.addToList.push( iNode );
+          listHasId[ iNode.id() ] = true;
+
+          _p.grabbed = true; 
+        }
+
+        var edges = _p.edges;
+        for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
+          edges[j]._private.rscratch.inDragLayer = true;
         }
       }
     };
 
     // adds the given nodes, and its edges to the drag layer
-    var addNodeToDrag = function(node, dragElements) {
-      node._private.grabbed = true;
-      node._private.rscratch.inDragLayer = true;
+    var addNodeToDrag = function(node, opts){
 
-      dragElements.push(node);
+      var _p = node._private;
+      var listHasId = getDragListIds( opts );
 
-      for (var i=0;i<node._private.edges.length;i++) {
-        node._private.edges[i]._private.rscratch.inDragLayer = true;
+      if( opts.inDragLayer ){
+        _p.rscratch.inDragLayer = true;
       }
 
-      //node.trigger(new $$.Event(e, {type: 'grab'}));
+      if( opts.addToList && !listHasId[ node.id() ] ){
+        opts.addToList.push( node );
+        listHasId[ node.id() ] = true;
+
+        _p.grabbed = true; 
+      }
+
+      var edges = _p.edges;
+      for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
+        edges[i]._private.rscratch.inDragLayer = true;
+      }
+
+      addDescendantsToDrag( node, opts ); // always add to drag
+
+      // also add nodes and edges related to the topmost ancestor
+      updateAncestorsInDragLayer( node, {
+        inDragLayer: true
+      } );
     };
 
     // helper function to determine which ancestor nodes and edges should go
     // to the drag layer (or should be removed from drag layer).
-    var updateAncestorsInDragLayer = function(node, inDragLayer) {
+    var updateAncestorsInDragLayer = function(node, opts) {
       // find top-level parent
       var parent = node;
 
-      while (parent.parent().nonempty())
-      {
-        parent = parent.parent()[0];
-
-        // var pstyle = parent._private.style;
-        // if( pstyle.width.value !== 'auto' || pstyle.height.value !== 'auto' ){
-        //   parent = node;
-        //   break;
-        // }
-      }
-
-      // no parent node: no node to add to the drag layer
-      if (parent == node && inDragLayer)
-      {
+      if( !node._private.cy.hasCompoundNodes() ){
         return;
       }
 
-      var nodes = parent.descendants().add(parent);
+      while( parent.parent().nonempty() ){
+        parent = parent.parent()[0];
+      }
 
-      for (var i=0; i < nodes.size(); i++)
-      {
+      // no parent node: no nodes to add to the drag layer
+      if( parent == node ){
+        return;
+      }
 
-        nodes[i]._private.rscratch.inDragLayer = inDragLayer;
+      var nodes = parent
+        .descendants()
+        .add( parent )
+        .not( node )
+        .not( node.descendants() )
+      ;
 
-        // TODO when calling this function for a set of nodes, we visit same edges over and over again,
-        // instead of adding edges for each node, it may be better to iterate all edges at once
-        // or another solution is to find out the common ancestors and process only those nodes for edges
-        for (var j=0; j<nodes[i]._private.edges.length; j++) {
-          nodes[i]._private.edges[j]._private.rscratch.inDragLayer = inDragLayer;
+      var edges = nodes.connectedEdges();
+
+      var listHasId = getDragListIds( opts );
+
+      for( var i = 0; i < nodes.size(); i++ ){
+        if( opts.inDragLayer !== undefined ){
+          nodes[i]._private.rscratch.inDragLayer = opts.inDragLayer;
         }
+
+        if( opts.addToList && !listHasId[ nodes[i].id() ] ){
+          opts.addToList.push( nodes[i] );
+          listHasId[ nodes[i].id() ] = true;
+
+          nodes[i]._private.grabbed = true;
+        }
+      }
+
+      for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
+        edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
       }
     };
 
@@ -212,55 +251,27 @@
 
             if( r.nodeIsDraggable(near) ){
 
-              if ( near.isNode() && !near.selected() ) {
+              if ( near.isNode() && !near.selected() ){
 
-                draggedElements = r.dragData.possibleDragElements = [ ];
-                addNodeToDrag(near, draggedElements);
+                draggedElements = r.dragData.possibleDragElements = [];
+                addNodeToDrag( near, { addToList: draggedElements } );
+
                 near.trigger(grabEvent);
 
-                // add descendant nodes only if the compound size is set to auto
-                if (near._private.style['width'].value == 'auto' ||
-                    near._private.style['height'].value == 'auto')
-                {
-                  addDescendantsToDrag(near,
-                    true,
-                    draggedElements);
-                }
-
-                // also add nodes and edges related to the topmost ancestor
-                updateAncestorsInDragLayer(near, true);
-
-              } else if ( near.isNode() && near.selected() ) {
+              } else if ( near.isNode() && near.selected() ){
                 draggedElements = r.dragData.possibleDragElements = [  ];
 
-                var triggeredGrab = false;
-                var selectedNodes = cy.$('node:selected');
+                var selectedNodes = cy.$(function(){ return this.isNode() && this.selected(); });
+
                 for( var i = 0; i < selectedNodes.length; i++ ){
-                  //r.dragData.possibleDragElements.push( selectedNodes[i] );
-                  
+
                   // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-                  if (r.nodeIsDraggable(selectedNodes[i]))
-                  {
-                    addNodeToDrag(selectedNodes[i], draggedElements);
-                    
-                    // only trigger for grabbed node once
-                    if( !triggeredGrab ){
-                      near.trigger(grabEvent);
-                      triggeredGrab = true;
-                    }
-
-                    if (selectedNodes[i]._private.style['width'].value == 'auto' ||
-                      selectedNodes[i]._private.style['height'].value == 'auto')
-                    {
-                      addDescendantsToDrag(selectedNodes[i],
-                        false,
-                        draggedElements);
-                    }
-
-                    // also add nodes and edges related to the topmost ancestor
-                    updateAncestorsInDragLayer(selectedNodes[i], true);
+                  if( r.nodeIsDraggable( selectedNodes[i] ) ){
+                    addNodeToDrag( selectedNodes[i], { addToList: draggedElements } );
                   }
                 }
+
+                near.trigger( grabEvent );
               }
 
               r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -282,9 +293,6 @@
                 cyPosition: { x: pos[0], y: pos[1] }
               }))
             ;
-            
-            // r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
-            // r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
             
           } else if (near == null) {
             cy
@@ -344,8 +352,8 @@
       var preventDefault = false;
       var capture = r.hoverData.capture;
 
-      if (!capture) {
-        
+      // save cycles if mouse events aren't to be captured
+      if ( !capture ){
         var containerPageCoords = r.findContainerClientCoords();
 
         if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
@@ -538,15 +546,18 @@
 
           r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-          r.hoverData.draggingEles = true;
-
           var toTrigger = [];
 
           for( var i = 0; i < draggedElements.length; i++ ){
             var dEle = draggedElements[i];
 
+            // now, add the elements to the drag layer if not done already
+            if( !r.hoverData.draggingEles ){ 
+              addNodeToDrag( dEle, { inDragLayer: true } );
+            }
+
             // Locked nodes not draggable, as well as non-visible nodes
-            if (dEle.isNode() && r.nodeIsDraggable(dEle)) {
+            if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
               var dPos = dEle._private.position;
 
               toTrigger.push( dEle );
@@ -558,6 +569,8 @@
 
             }
           }
+
+          r.hoverData.draggingEles = true;
           
           var tcol = (new $$.Collection(cy, toTrigger));
 
@@ -647,14 +660,9 @@
           && !r.hoverData.dragging // not panning
         ) {
 
-          // console.log('unselect all from bg');
-
-  //++clock+unselect
-  //        var a = time();
-          cy.$(':selected').unselect();
-          
-  //++clock+unselect
-  //        console.log('unselect', time() - a);
+          cy.$(function(){
+            return this.selected();
+          }).unselect();
           
           if (draggedElements.length > 0) {
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
@@ -758,35 +766,12 @@
                 near.select();
               }               
             }
-
-
-            updateAncestorsInDragLayer(near, false);
             
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
             
           }
-        // Ungrab single drag
-        } else if (near == down) {
-          if (near != null && near._private.grabbed) {
-            // console.log('ungrab single drag')
-
-            var grabbedEles = cy.$(':grabbed');
-
-            for(var i = 0; i < grabbedEles.length; i++){
-              var ele = grabbedEles[i];
-
-              ele._private.grabbed = false;
-              
-              var sEdges = ele._private.edges;
-              for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
-
-              // for compound nodes, also remove related nodes and edges from the drag layer
-              updateAncestorsInDragLayer(ele, false);
-            }
-
-            near.trigger('free');
-          }
-        }
+      
+        } 
         
         if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {         
           var newlySelected = [];
@@ -816,9 +801,8 @@
             newlySelCol.select();
           }
 
-          if( newlySelected.length === 0 ){
-            r.redraw();
-          }
+          // always need redraw in case eles unselectable
+          r.redraw();
           
         }
         
@@ -836,19 +820,19 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true; 
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           
-          for (var i=0; i<draggedElements.length; i++) {
+          for (var i=0; i < draggedElements.length; i++) {
             
-            if (draggedElements[i]._private.group == 'nodes') { 
+            if(draggedElements[i]._private.group === 'nodes') { 
               draggedElements[i]._private.rscratch.inDragLayer = false;
               draggedElements[i]._private.grabbed = false;
               
               var sEdges = draggedElements[i]._private.edges;
-              for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
+              for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
 
               // for compound nodes, also remove related nodes and edges from the drag layer
-              updateAncestorsInDragLayer(draggedElements[i], false);
+              updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
               
-            } else if (draggedElements[i]._private.group == 'edges') {
+            } else if( draggedElements[i]._private.group === 'edges' ){
               draggedElements[i]._private.rscratch.inDragLayer = false;
             }
             
@@ -897,6 +881,7 @@
         }, 150);
       
         var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
+        diff = diff * r.wheelSensitivity;
 
         cy.zoom({
           level: cy.zoom() * Math.pow(10, diff),
@@ -1076,60 +1061,32 @@
 
           r.touchData.start = near;
           
-          if (near._private.group == 'nodes' && r.nodeIsDraggable(near))
-          {
+          if( near.isNode() && r.nodeIsDraggable(near) ){
 
             var draggedEles = r.dragData.touchDragEles = [];
-            addNodeToDrag(near, draggedEles);
-            near.trigger('grab');
+            
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
             r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
             if( near.selected() ){
               // reset drag elements, since near will be added again
-              draggedEles = r.dragData.touchDragEles = [];
 
-              var selectedNodes = cy.$('node:selected');
+              var selectedNodes = cy.$(function(){
+                return this.isNode() && this.selected();
+              });
 
               for( var k = 0; k < selectedNodes.length; k++ ){
-
                 var selectedNode = selectedNodes[k];
-                if (r.nodeIsDraggable(selectedNode)) {
-                  draggedEles.push( selectedNode );
-                  selectedNode._private.rscratch.inDragLayer = true;
 
-                  var sEdges = selectedNode._private.edges;
-                  for (var j=0; j<sEdges.length; j++) {
-                    sEdges[j]._private.rscratch.inDragLayer = true;
-                  }
-
-                  if (selectedNode._private.style['width'].value == 'auto' ||
-                      selectedNode._private.style['height'].value == 'auto')
-                  {
-                    addDescendantsToDrag(selectedNode,
-                      false,
-                      draggedEles);
-                  }
-
-                  // also add nodes and edges related to the topmost ancestor
-                  updateAncestorsInDragLayer(selectedNode, true);
+                if( r.nodeIsDraggable(selectedNode) ){
+                  addNodeToDrag( selectedNode, { addToList: draggedEles } );
                 }
               }
             } else {
-              //draggedEles.push( near );
-
-              // add descendant nodes only if the compound size is set to auto
-              if (near._private.style['width'].value == 'auto' ||
-                  near._private.style['height'].value == 'auto')
-              {
-                addDescendantsToDrag(near,
-                  true,
-                  draggedEles);
-              }
-
-              // also add nodes and edges related to the topmost ancestor
-              updateAncestorsInDragLayer(near, true);
+              addNodeToDrag( near, { addToList: draggedEles } );
             }
+
+            near.trigger('grab');
           }
           
           near
@@ -1418,7 +1375,8 @@
 
           cy.viewport({
             zoom: zoom2,
-            pan: pan2
+            pan: pan2,
+            cancelOnFailedZoom: true
           });
 
           distance1 = distance2;  
@@ -1446,12 +1404,16 @@
           for( var k = 0; k < draggedEles.length; k++ ){
             var draggedEle = draggedEles[k];
 
-            if( r.nodeIsDraggable(draggedEle) ){
+            if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
               r.dragData.didDrag = true;
               var dPos = draggedEle._private.position;
 
               dPos.x += disp[0];
               dPos.y += disp[1];
+
+              if( !r.hoverData.draggingEles ){
+                addNodeToDrag( draggedEle, { inDragLayer: true } );
+              }
             }
           }
 
@@ -1464,8 +1426,10 @@
           
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
-          if (r.touchData.startPosition[0] == earlier[0]
-            && r.touchData.startPosition[1] == earlier[1]) {
+          if( 
+               r.touchData.startPosition[0] == earlier[0]
+            && r.touchData.startPosition[1] == earlier[1]
+          ){
             
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           }

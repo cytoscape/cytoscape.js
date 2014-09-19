@@ -1,18 +1,20 @@
 ## Graph model
 
-Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs, and so on.  
+Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs (a type of hypergraph), and so on.  
 
 We are regularly making additions and enhancements to the library, and we gladly accept [feature requests](https://github.com/cytoscape/cytoscape.js/issues/new) and pull requests.
 
 
 ## Architecture & API
 
-There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core and the collection.  In Cytoscape.js, the core is a developer's main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.
+There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core (i.e. a graph instance) and the collection.  In Cytoscape.js, the core is a developer's main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.
 
-The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  A set of functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
+The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
+
+<span class="important-indicator"></span> Note that a collection is immutible by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.
 
 
-## Notation
+## Functions
 
 There are several types that different functions can be executed on, and the variable names used to denote these types in the documentation are outlined below:
 
@@ -26,7 +28,7 @@ There are several types that different functions can be executed on, and the var
 | `edges`       | a collection of one or more edges                       |
 | `edge`        | a collection of a single edge                           |
 
-By default, a function returns a reference back to the calling object to allow for jQuery-like chaining (e.g. `obj.fn1().fn2().fn3()`).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
+By default, a function returns a reference back to the calling object to allow for chaining (e.g. `obj.fn1().fn2().fn3()`).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
 
 For functions that return a value, note that calling a singular &mdash; `ele`, `node`, or `edge` &mdash; function on a collection of more than one element will return the expected value for only the first element.
 
@@ -39,7 +41,7 @@ There is an important distinction to make for position:  A position may be a _mo
 
 A model position &mdash; as its name suggests &mdash; is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.
 
-A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.
+A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.
 
 In this documentation, "position" refers to model position unless otherwise stated.
 
@@ -125,11 +127,49 @@ cytoscape({
 });
 ```
 
+You can alternatively specify separate arrays indexed in a object by the group names so you don't have to specify the `group` property over and over for each element:
+
+```js
+var cy = cytoscape({
+  /* ... */
+
+  container: document.getElementById('cy'),
+
+  elements: {
+    nodes: [
+      { data: { id: 'foo' } }, // NB no group specified
+      
+      { data: { id: 'bar' } },
+      
+      {
+        data: { weight: 100 }, // elided id => autogenerated id 
+        group: 'nodes',
+        position: {
+          x: 100,
+          y: 100
+        },
+        classes: 'className1 className2',
+        selected: true,
+        selectable: true,
+        locked: true,
+        grabbable: true
+      }
+    ],
+
+    edges: [
+      { data: { id: 'baz', source: 'foo', target: 'bar' } } // NB no group specified
+    ]
+  }
+
+  /* ... */
+});
+```
+
 ## Compound nodes
 
 Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.
 
-Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship can not be changed.  Of course, you can clone an element, modify it, and then add it to the graph to effectively "modify" immutable fields while keeping the graph model consistent.
+Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [eles.move](#collection/graph-manipulation/eles.move).
 
 As far as the API is concerned, compound nodes are treated just like regular nodes &mdash; except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
 

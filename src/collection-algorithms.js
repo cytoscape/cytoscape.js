@@ -3,11 +3,33 @@
   // search, spanning trees, etc
   $$.fn.eles({
 
+    // std functional ele first callback style
+    stdBreadthFirstSearch: function( options ){
+      options = $$.util.extend( {}, options, {
+        std: true
+      } );
+
+      return this.breadthFirstSearch( options );
+    },
+
     // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
     breadthFirstSearch: function( roots, fn, directed ){
+      var options;
+      var std;
+      var thisArg;
+      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+        options = roots;
+        roots = options.roots;
+        fn = options.visit;
+        directed = options.directed;
+        std = options.std;
+        thisArg = options.thisArg;
+      }
+
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
+      
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
@@ -34,7 +56,15 @@
       while( Q.length !== 0 ){
         var v = Q.shift();
         var depth = id2depth[ v.id() ];
-        var ret = fn.call(v, j++, depth);
+        var prevEdge = connectedBy[ v.id() ];
+        var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
+        var ret;
+
+        if( std ){
+          ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
+        } else {
+          ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
+        }
 
         if( ret === true ){
           found = v;
@@ -79,14 +109,35 @@
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles ),
-        found: new $$.Collection( cy, found )
+        path: new $$.Collection( cy, connectedEles, { unique: true } ),
+        found: new $$.Collection( cy, found, { unique: true } )
       };
+    },
+
+    // std functional ele first callback style
+    stdDepthFirstSearch: function( options ){
+      options = $$.util.extend( {}, options, {
+        std: true
+      } );
+
+      return this.depthFirstSearch( options );
     },
 
     // do a depth first search on the nodes in the collection
     // from pseudocode on wikipedia (iterative impl)
     depthFirstSearch: function( roots, fn, directed ){
+      var options;
+      var std;
+      var thisArg;
+      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+        options = roots;
+        roots = options.roots;
+        fn = options.visit;
+        directed = options.directed;
+        std = options.std;
+        thisArg = options.thisArg;
+      }
+      
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
@@ -118,8 +169,15 @@
           discovered[ v.id() ] = true;
 
           var depth = id2depth[ v.id() ];
+          var prevEdge = connectedBy[ v.id() ];
+          var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
+          var ret;
 
-          var ret = fn.call(v, j++, depth);
+          if( std ){
+            ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
+          } else {
+            ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
+          }
 
           if( ret === true ){
             found = v;
@@ -164,8 +222,8 @@
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles ),
-        found: new $$.Collection( cy, found )
+        path: new $$.Collection( cy, connectedEles, { unique: true } ),
+        found: new $$.Collection( cy, found, { unique: true } )
       };
     },
 
@@ -197,8 +255,8 @@
 
       var edges = this.edges();
       var S = edges.toArray().sort(function(a, b){
-        var weightA = weightFn.call(a);
-        var weightB = weightFn.call(b);
+        var weightA = weightFn.call(a, a);
+        var weightB = weightFn.call(b, b);
 
         return weightA - weightB;
       });
@@ -224,6 +282,14 @@
     },
 
     dijkstra: function( root, weightFn, directed ){
+      var options;
+      if( $$.is.plainObject(root) && !$$.is.elementOrCollection(root) ){
+        options = root;
+        root = options.root;
+        weightFn = options.weight;
+        directed = options.directed;
+      }
+
       var cy = this._private.cy;
       directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
@@ -257,7 +323,7 @@
 
         for( var i = 0; i < uvs.length; i++ ){
           var edge = uvs[i];
-          var weight = weightFn.call(edge);
+          var weight = weightFn.apply( edge, [edge] );
 
           if( weight < smallestDistance || !smallestEdge ){
             smallestDistance = weight;
@@ -335,5 +401,7 @@
   // nice, short mathemathical alias
   $$.elesfn.bfs = $$.elesfn.breadthFirstSearch;
   $$.elesfn.dfs = $$.elesfn.depthFirstSearch;
+  $$.elesfn.stdBfs = $$.elesfn.stdBreadthFirstSearch;
+  $$.elesfn.stdDfs = $$.elesfn.stdDepthFirstSearch;
   
 })( cytoscape );

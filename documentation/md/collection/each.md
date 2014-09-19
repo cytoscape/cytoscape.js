@@ -1,5 +1,7 @@
 ## Details
 
+This function behaves like the jQuery `.each()` function.  For a more standard implementation, you may want to use [`eles.forEach()`](#collection/iteration/eles.forEach).
+
 <span class="important-indicator"></span> Note that although this function is convenient in some cases, it is less efficient than making your own loop:
 
 ```js

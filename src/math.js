@@ -31,6 +31,35 @@
     };
   };
 
+  $$.math.boundingBoxesIntersect = function( bb1, bb2 ){
+    // case: one bb to right of other
+    if( bb1.x1 > bb2.x2 ){ return false; }
+    if( bb2.x1 > bb1.x2 ){ return false; }
+
+    // case: one bb to left of other
+    if( bb1.x2 < bb2.x1 ){ return false; }
+    if( bb2.x2 < bb1.x1 ){ return false; }
+
+    // case: one bb above other
+    if( bb1.y2 < bb2.y1 ){ return false; }
+    if( bb2.y2 < bb1.y1 ){ return false; }
+
+    // case: one bb below other
+    if( bb1.y1 > bb2.y2 ){ return false; }
+    if( bb2.y1 > bb1.y2 ){ return false; }
+
+    // otherwise, must have some overlap
+    return true;
+  };
+
+  $$.math.inBoundingBox = function( bb, x, y ){
+    return bb.x1 <= x && x <= bb.x2 && bb.y1 <= y && y <= bb.y2;
+  };
+
+  $$.math.pointInBoundingBox = function( bb, pt ){
+    return this.inBoundingBox( bb, pt.x, pt.y );
+  };
+
   $$.math.roundRectangleIntersectLine = function(
     x, y, nodeX, nodeY, width, height, padding) {
     
@@ -332,50 +361,6 @@
     y = (y - centerY) / (height + padding);
     
     return (x * x + y * y) <= farthestPointSqDistance;
-  };
-  
-  $$.math.checkInBoundingBox = function(
-    x, y, points, padding, width, height, centerX, centerY) {
-    
-    // Assumes width, height >= 0, points.length > 0
-    
-    var minX = points[0], minY = points[1];
-    var maxX = points[0], maxY = points[1];
-    
-    for (var i = 1; i < points.length / 2; i++) {
-      
-      if (points[i * 2] < minX) {
-        minX = points[i * 2];
-      } else if (points[i * 2] > maxX) {
-        maxX = points[i * 2];
-      }
-      
-      if (points[i * 2 + 1] < minY) {
-        minY = points[i * 2 + 1];
-      } else if (points[i * 2 + 1] > maxY) {
-        maxY = points[i * 2 + 1];
-      }
-    }
-    
-    x -= centerX;
-    y -= centerY;
-    
-    x /= width;
-    y /= height;
-    
-    if (x < minX) {
-      return false;
-    } else if (x > maxX) {
-      return false;
-    }
-    
-    if (y < minY) {
-      return false;
-    } else if (y > maxY) {
-      return false;
-    }
-    
-    return true;
   };
   
   $$.math.boxInBezierVicinity = function(

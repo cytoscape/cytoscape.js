@@ -39,30 +39,33 @@
     var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
 
     function checkNode(node){
-      var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
-      var borderWO = node._private.style['border-width'].pxValue / 2;
-      var width = self.getNodeWidth( node );
-      var height = self.getNodeHeight( node );
+      var width = node.outerWidth();
+      var height = node.outerHeight();
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
-      var visible = node.visible() && !node.transparent();
-
-      // exit early if invisible edge and must be visible
-      if( visibleElementsOnly && !visible ){
-        return;
-      }
 
       if(
         pos.x - hw <= x && x <= pos.x + hw // bb check x
           &&
         pos.y - hh <= y && y <= pos.y + hh // bb check y
-          && 
-        shape.checkPointRough(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
-          &&
-        shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
       ){
-          near.push( node );
+        var visible = !visibleElementsOnly || ( node.visible() && !node.transparent() );
+
+        // exit early if invisible edge and must be visible
+        if( visibleElementsOnly && !visible ){
+          return;
+        }
+
+        var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
+        var borderWO = node._private.style['border-width'].pxValue / 2;
+
+        if(
+          shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+        ){
+            near.push( node );
+        }
+
       }
     }
 
@@ -72,33 +75,53 @@
       var width = style['width'].pxValue;
       var widthSq = width * width;
       var width2 = width * 2;
-      var visible = edge.visible() && !edge.transparent();
       var src = edge._private.source;
       var tgt = edge._private.target;
+      var inEdgeBB = false;
 
       // exit early if invisible edge and must be visible
-      if( visibleElementsOnly && !visible ){
-        return;
-      }
+      var passedVisibilityCheck;
+      var passesVisibilityCheck = function(){
+        if( passedVisibilityCheck !== undefined ){
+          return passedVisibilityCheck;
+        }
+
+        if( !visibleElementsOnly ){
+          passedVisibilityCheck = true;
+          return true;
+        }
+
+        var visible = edge.visible() && !edge.transparent();
+        if( visible ){
+          passedVisibilityCheck = true;
+          return true;
+        }
+
+        passedVisibilityCheck = false;
+        return false;
+      };
 
       if (rs.edgeType === 'self') {
         if(
             (
-              $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq)
-                &&
+              (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
+                && passesVisibilityCheck() &&
               ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY) )
             )
               ||
             (
-              $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq)
-                &&
+              (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
+                && passesVisibilityCheck() &&
               ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY) )
             )
         ){
           near.push( edge );
         }
       
-      } else if (rs.edgeType == 'haystack') {
+      } else if (rs.edgeType === 'haystack') {
+        var radius = style['haystack-radius'].value;
+        var halfRadius = radius/2; // b/c have to half width/height
+
         var tgtPos = tgt._private.position;
         var tgtW = tgt.width();
         var tgtH = tgt.height();
@@ -106,14 +129,14 @@
         var srcW = src.width();
         var srcH = src.height();
 
-        var startX = srcPos.x + rs.source.x * srcW;
-        var startY = srcPos.y + rs.source.y * srcH;
-        var endX = tgtPos.x + rs.target.x * tgtW;
-        var endY = tgtPos.y + rs.target.y * tgtH;
+        var startX = srcPos.x + rs.source.x * srcW * halfRadius;
+        var startY = srcPos.y + rs.source.y * srcH * halfRadius;
+        var endX = tgtPos.x + rs.target.x * tgtW * halfRadius;
+        var endY = tgtPos.y + rs.target.y * tgtH * halfRadius;
 
         if( 
-          $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2)
-            &&
+          (inEdgeBB = $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2))
+            && passesVisibilityCheck() &&
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY )
         ){
           near.push( edge );
@@ -121,8 +144,8 @@
       
       } else if (rs.edgeType === 'straight') {
         if(
-          $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2)
-            &&
+          (inEdgeBB = $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
+            && passesVisibilityCheck() &&
           widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
         ){
           near.push( edge );
@@ -130,15 +153,15 @@
       
       } else if (rs.edgeType === 'bezier') {
         if(
-          $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq)
-            &&
+          (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
+            && passesVisibilityCheck() &&
           (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
         ){
           near.push( edge );
         }
       }
       
-      if( near.length === 0 || near[near.length - 1] !== edge ){
+      if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
         var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
         var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
 
@@ -157,7 +180,7 @@
         if(
           (
             srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
-              &&
+              && 
             srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
           )
             ||
@@ -412,11 +435,15 @@
       //console.time('cachezorder')
       
       for( var i = 0; i < nodes.length; i++ ){
-        eles.push( nodes[i] );
+        if( nodes[i].visible() && !nodes[i].transparent() ){
+          eles.push( nodes[i] );
+        }
       }
 
       for( var i = 0; i < edges.length; i++ ){
-        eles.push( edges[i] );
+        if( edges[i].visible() && !edges[i].transparent() ){
+          eles.push( edges[i] );
+        }
       }
 
       eles.sort( this.zOrderSort );
@@ -456,10 +483,20 @@
         y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
       });
 
-      bpts.push({
+      var mid = {
         x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
         y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-      });
+      };
+
+      bpts.push( mid );
+
+      if( rs.edgeType === 'self' ){
+        rs.midX = rs.selfEdgeMidX;
+        rs.midY = rs.selfEdgeMidY;
+      } else {
+        rs.midX = mid.x;
+        rs.midY = mid.y;
+      }
 
       bpts.push({
         x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
@@ -551,8 +588,8 @@
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     } else if (rs.edgeType == 'haystack') {
-      var srcPos = edge.source().position();
-      var tgtPos = edge.target().position();
+      var srcPos = edge._private.source._private.position;
+      var tgtPos = edge._private.target._private.position;
 
       edgeCenterX = (srcPos.x + rs.source.x + tgtPos.x + rs.target.x)/2;
       edgeCenterY = (srcPos.y + rs.source.y + tgtPos.y + rs.target.y)/2;
@@ -600,16 +637,16 @@
   };
 
   CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+    var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
     var size = style['font-size'].pxValue + 'px';
     var family = style['font-family'].strValue;
-    var variant = style['font-variant'].strValue;
+    // var variant = style['font-variant'].strValue;
     var weight = style['font-weight'].strValue;
 
-    var rscratch = ele._private.rscratch;
     var cacheKey = ele._private.labelKey;
-    var cache = rscratch.labelDimCache || (rscratch.labelDimCache = {});
+    var cache = r.labelDimCache || (r.labelDimCache = {});
 
     if( cache[cacheKey] ){
       return cache[cacheKey];
@@ -628,7 +665,7 @@
     ds.fontFamily = family;
     ds.fontStyle = fStyle;
     ds.fontSize = size;
-    ds.fontVariant = variant;
+    // ds.fontVariant = variant;
     ds.fontWeight = weight;
 
     // forced style
@@ -651,41 +688,109 @@
     return cache[cacheKey];
   };  
 
-  CanvasRenderer.prototype.recalculateRenderedStyle = function(){
-    this.recalculateEdgeProjections();
-    this.recalculateLabelProjections();
+  CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
+    var edges = [];
+    var nodes = [];
+    var handledEdge = {};
+
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var _p = ele._private;
+      var rs = _p.rscratch;
+      var rstyle = _p.rstyle;
+      var id = _p.data.id;
+      var bbStyleSame = rs.boundingBoxKey != null && _p.boundingBoxKey === rs.boundingBoxKey;
+      var labelStyleSame = rs.labelKey != null && _p.labelKey === rs.labelKey;
+      var styleSame = bbStyleSame && labelStyleSame;
+
+      if( ele._private.group === 'nodes' ){
+        var pos = _p.position;
+        var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
+
+        if( !posSame || !styleSame ){
+          nodes.push( ele );
+        }
+
+        rstyle.nodeX = pos.x;
+        rstyle.nodeY = pos.y;
+      } else { // edges
+
+        var srcPos = ele._private.source._private.position;
+        var tgtPos = ele._private.target._private.position;
+        var srcSame = rstyle.srcX != null && rstyle.srcY != null && srcPos.x === rstyle.srcX && srcPos.y === rstyle.srcY;
+        var tgtSame = rstyle.tgtX != null && rstyle.tgtY != null && tgtPos.x === rstyle.tgtX && tgtPos.y === rstyle.tgtY;
+        var positionsSame = srcSame && tgtSame;
+
+        if( !positionsSame || !styleSame ){
+          var curveType = _p.style['curve-style'].value;
+
+          if( curveType === 'bezier' ){
+            if( !handledEdge[ id ] ){
+              edges.push( ele );
+              handledEdge[ id ] = true;
+
+              var parallelEdges = ele.parallelEdges();
+              for( var i = 0; i < parallelEdges.length; i++ ){
+                var pEdge = parallelEdges[i];
+                var pId = pEdge._private.data.id;
+
+                if( !handledEdge[ pId ] ){
+                  edges.push( pEdge );
+                  handledEdge[ pId ] = true;
+                }
+                
+              }
+            }
+          } else {
+            edges.push( ele );
+          }
+        } // if positions diff
+
+        // update rstyle positions
+        rstyle.srcX = srcPos.x;
+        rstyle.srcY = srcPos.y;
+        rstyle.tgtX = tgtPos.x;
+        rstyle.tgtY = tgtPos.y;
+
+      } // if edges
+
+      rs.boundingBoxKey = _p.boundingBoxKey;
+      rs.labelKey = _p.labelKey;
+    }
+
+    this.recalculateEdgeProjections( edges );
+    this.recalculateLabelProjections( nodes, edges );
   };
 
-  CanvasRenderer.prototype.recalculateLabelProjections = function(){
-    var nodes = this.getCachedNodes();
+  CanvasRenderer.prototype.recalculateLabelProjections = function( nodes, edges ){
     for( var i = 0; i < nodes.length; i++ ){
       this.recalculateNodeLabelProjection( nodes[i] );
     }
 
-    var edges = this.getCachedEdges();
     for( var i = 0; i < edges.length; i++ ){
       this.recalculateEdgeLabelProjection( edges[i] );
     }
   };
 
-  CanvasRenderer.prototype.recalculateEdgeProjections = function(){
-    var edges = this.getCachedEdges();
-
+  CanvasRenderer.prototype.recalculateEdgeProjections = function( edges ){
     this.findEdgeControlPoints( edges );
   };
 
 
   // Find edge control points
   CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
-    var hashTable = {}; var cy = this.data.cy;
+    if( !edges || edges.length === 0 ){ return; }
+
+    var hashTable = {};
     var pairIds = [];
     var haystackEdges = [];
-    
+
     // create a table of edge (src, tgt) => list of edges between them
     var pairId;
     for (var i = 0; i < edges.length; i++){
       var edge = edges[i];
       var style = edge._private.style;
+      var edgeIsUnbundled = style['curve-style'].value === 'unbundled-bezier';
 
       // ignore edges who are not to be displayed
       // they shouldn't take up space
@@ -705,12 +810,20 @@
         tgtId + '-' + srcId :
         srcId + '-' + tgtId ;
 
+      if( edgeIsUnbundled ){
+        pairId = 'unbundled' + edge._private.data.id;
+      }
+
       if (hashTable[pairId] == null) {
         hashTable[pairId] = [];
+        pairIds.push( pairId );
       }
       
       hashTable[pairId].push( edge );
-      pairIds.push( pairId );
+
+      if( edgeIsUnbundled ){
+        hashTable[pairId].hasUnbundled = true;
+      }
     }
 
     var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
@@ -721,9 +834,23 @@
     // Nested for loop is OK; total number of iterations for both loops = edgeCount  
     for (var p = 0; p < pairIds.length; p++) {
       pairId = pairIds[p];
+      var pairEdges = hashTable[pairId];
     
-      src = cy.getElementById( hashTable[pairId][0]._private.data.source );
-      tgt = cy.getElementById( hashTable[pairId][0]._private.data.target );
+      // for each pair id, the edges should be sorted by index
+      pairEdges.sort(function(edge1, edge2){
+        return edge1._private.index - edge2._private.index;
+      });
+
+      src = pairEdges[0]._private.source;
+      tgt = pairEdges[0]._private.target;
+
+      // make sure src/tgt distinction is consistent
+      // (src/tgt in this case are just for ctrlpts and don't actually have to be true src/tgt)
+      if( src._private.data.id > tgt._private.data.id ){
+        var temp = src;
+        src = tgt;
+        tgt = temp;
+      }
 
       srcPos = src._private.position;
       tgtPos = tgt._private.position;
@@ -743,7 +870,7 @@
       badBezier = false;
       
 
-      if (hashTable[pairId].length > 1 && src !== tgt) {
+      if( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ){
 
         // pt outside src shape to calc distance/displacement from src to tgt
         var srcOutside = srcShape.intersectLine(
@@ -806,15 +933,21 @@
       var edge;
       var rs;
       
-      for (var i = 0; i < hashTable[pairId].length; i++) {
-        edge = hashTable[pairId][i];
+      for (var i = 0; i < pairEdges.length; i++) {
+        edge = pairEdges[i];
         rs = edge._private.rscratch;
         
         var edgeIndex1 = rs.lastEdgeIndex;
         var edgeIndex2 = i;
 
         var numEdges1 = rs.lastNumEdges;
-        var numEdges2 = hashTable[pairId].length;
+        var numEdges2 = pairEdges.length;
+
+        var eStyle = edge._private.style;
+        var stepSize = eStyle['control-point-step-size'].pxValue;
+        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
+        var stepWeight = eStyle['control-point-weight'].value;
+        var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
         var srcX1 = rs.lastSrcCtlPtX;
         var srcX2 = srcPos.x;
@@ -842,7 +975,7 @@
 
         if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
         &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
-        &&  edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 ){
+        &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
           // console.log('edge ctrl pt cache HIT')
           continue; // then the control points haven't changed and we can skip calculating them
         } else {
@@ -859,41 +992,62 @@
           // console.log('edge ctrl pt cache MISS')
         }
 
-        var eStyle = edge._private.style;
-        var stepSize = eStyle['control-point-step-size'].pxValue;
-        var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
-        var stepWeight = eStyle['control-point-weight'].value;
-
         // Self-edge
-        if ( src.id() == tgt.id() ) {
+        if ( src === tgt ) {
             
           rs.edgeType = 'self';
           
+          var j = i;
+          var loopDist = stepSize;
+
+          if( edgeIsUnbundled ){
+            j = 0;
+            loopDist = stepDist;
+          }
+
           // New -- fix for large nodes
           rs.cp2ax = srcPos.x;
-          rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * stepSize * (i / 3 + 1);
+          rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1);
           
-          rs.cp2cx = src._private.position.x - (1 + Math.pow(srcW, 1.12) / 100) * stepSize * (i / 3 + 1);
+          rs.cp2cx = src._private.position.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1);
           rs.cp2cy = srcPos.y;
           
           rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
           rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
           
         // Straight edge
-        } else if (hashTable[pairId].length % 2 == 1
-          && i == Math.floor(hashTable[pairId].length / 2)) {
+        } else if (pairEdges.length % 2 === 1
+          && i === Math.floor(pairEdges.length / 2)
+          && !edgeIsUnbundled ) {
           
           rs.edgeType = 'straight';
           
         // Bezier edge
         } else {
-          var normStepDist = (0.5 - hashTable[pairId].length / 2 + i) * stepSize;
-          var manStepDist = stepDist !== undefined ? $$.math.signum( normStepDist ) * stepDist : undefined;
+          var normStepDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
+          var manStepDist;
+          var sign = $$.math.signum( normStepDist );
+
+          if( edgeIsUnbundled ){
+            manStepDist = stepDist;
+          } else {
+            manStepDist = stepDist !== undefined ? sign * stepDist : undefined; 
+          }
+
           var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
           
+          var w1 = (1 - stepWeight);
+          var w2 = stepWeight;
+
+          var swappedDirection = edge._private.source !== src;
+          if( swappedDirection ){
+            w1 = stepWeight;
+            w2 = (1 - stepWeight);
+          }
+
           var adjustedMidpt = {
-            x: midptSrcPts.x1 * (1 - stepWeight) + midptSrcPts.x2 * stepWeight,
-            y: midptSrcPts.y1 * (1 - stepWeight) + midptSrcPts.y2 * stepWeight
+            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
           };
 
           rs.edgeType = 'bezier';
@@ -1006,6 +1160,9 @@
             // recalc endpts
             this.findEndpoints( edge );
           }
+        } else if( rs.edgeType === 'straight' ){
+          rs.midX = ( srcX2 + tgtX2 )/2;
+          rs.midY = ( srcY2 + tgtY2 )/2;
         }
 
         // project the edge into rstyle
@@ -1017,23 +1174,20 @@
     for( var i = 0; i < haystackEdges.length; i++ ){
       var edge = haystackEdges[i];
       var rscratch = edge._private.rscratch;
-      var rFactor = 0.8;
 
       if( !rscratch.haystack ){
-        var srcR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.source = {
-          x: srcR * Math.cos(angle),
-          y: srcR * Math.sin(angle)
+          x: Math.cos(angle),
+          y: Math.sin(angle)
         };
 
-        var tgtR = rFactor * 0.5;
         var angle = Math.random() * 2 * Math.PI;
 
         rscratch.target = {
-          x: tgtR * Math.cos(angle),
-          y: tgtR * Math.sin(angle)
+          x: Math.cos(angle),
+          y: Math.sin(angle)
         };
 
         rscratch.edgeType = 'haystack';
@@ -1263,12 +1417,18 @@
     return adjacentEdges;
   };
 
-  CanvasRenderer.prototype.getArrowWidth = function(edgeWidth) {
-    return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
-  };
-  
-  CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
-    return Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+  CanvasRenderer.prototype.getArrowWidth = CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+    var cache = this.arrowWidthCache = this.arrowWidthCache || {};
+
+    var cachedVal = cache[edgeWidth];
+    if( cachedVal ){
+      return cachedVal;
+    }
+
+    cachedVal =  Math.max(Math.pow(edgeWidth * 13.37, 0.9), 29);
+    cache[edgeWidth] = cachedVal;
+
+    return cachedVal;
   };
 
 

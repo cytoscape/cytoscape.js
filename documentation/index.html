@@ -671,7 +671,7 @@ cy = cytoscape( options = {
 <h3 id="initial-viewport-state">Initial viewport state</h3>
 <p><strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
 <p><strong><code>pan</code></strong> : The initial panning position of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.</p>
-<h3 id="interaction-options-">Interaction options:</h3>
+<h3 id="interaction-options">Interaction options</h3>
 <p><strong><code>minZoom</code></strong> : A minimum bound on the zoom level of the graph.  The viewport can not be scaled smaller than this zoom level.</p>
 <p><strong><code>maxZoom</code></strong> : A maximum bound on the zoom level of the graph.  The viewport can not be scaled larger than this zoom level.</p>
 <p><strong><code>zoomingEnabled</code></strong> : Whether zooming the graph is enabled, both by user events and programmatically.</p>
@@ -11570,6 +11570,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>dagre</code> layout organises the graph using a DAG (directed acyclic graph) system.  It is especially suitable for DAGs and trees.  For more information, please refer to its <a href="https://github.com/cpettitt/dagre">Dagre&#39;s documentation</a>.</p>
+<p>Because Dagre is a separate library, the developer must manually include <code>dagre.js</code> in his app in order to use the <code>dagre</code> layout.</p>
 
 					
 
@@ -11693,6 +11694,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>cola</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation with several sophisticated constraints.  For more information about Cola and its parameters, refer to <a href="http://marvl.infotech.monash.edu/webcola/">its documentation</a>.</p>
+<p>Because Cola.js is a separate library, the developer must manually include <code>cola.js</code> in his app in order to use the <code>cola</code> layout.</p>
 
 					
 
@@ -11819,6 +11821,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>springy</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation.  For more information about Springy and its parameters, refer to <a href="http://getspringy.com">its documentation</a>.</p>
+<p>Because Springy.js is a separate library, the developer must manually include <code>springy.js</code> in his app in order to use the <code>springy</code> layout.</p>
 
 					
 
@@ -12258,7 +12261,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 				
 					<p>Cytoscape.js uses an event-driven model with a core API.  The core has several extensions, each of which is notified of events by the core, as needed.  Extensions modify the elements in the graph and notify the core of any changes.</p>
 <p>The client application accesses Cytoscape.js solely through the <a href="#core">core</a>.  Clients do not access extensions directly, apart from the case where a client wishes to write his own custom extension.</p>
-<p>The following diagram summarises the extensions of Cytoscape.js, which are discussed in further detail <a href="#extensions">elsewhere in this documentation</a>.</p>
+<p>The following diagramme summarises the extensions of Cytoscape.js, which are discussed in further detail <a href="#extensions">elsewhere in this documentation</a>.</p>
 
 				
 
@@ -12312,10 +12315,10 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 <pre><code>cytoscape( <span class="hljs-class"><span class="hljs-keyword">type</span>, <span class="hljs-title">name</span>, <span class="hljs-title">extension</span> );</span>
 </code></pre><p>The value of <code>type</code> can take on the following values:</p>
 <ul>
-<li><code>core</code> : The extension adds a core function.</li>
-<li><code>collection</code> : The extension adds a collection function.</li>
-<li><code>layout</code> : The extension registers a layout prototype.</li>
-<li><code>renderer</code> : The extension registers a renderer prototype.</li>
+<li><code>&#39;core&#39;</code> : The extension adds a core function.</li>
+<li><code>&#39;collection&#39;</code> : The extension adds a collection function.</li>
+<li><code>&#39;layout&#39;</code> : The extension registers a layout prototype.</li>
+<li><code>&#39;renderer&#39;</code> : The extension registers a renderer prototype.</li>
 </ul>
 <p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.</p>
 <h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
@@ -12397,16 +12400,15 @@ cy.elements().foo();
 <li>When using transition animations in the style, make sure <code>transition-property</code> is defined only for states that you want to animate.  If you have <code>transition-property</code> defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.</li>
 </ul>
 </li>
-<li><strong>Edge selection</strong> : If your app does not need edge selection, you can get performance gains by unselectifying edges (i.e. <code>edges.unselectify()</code>).  This disables selection for edges, so their style will not have to be recalculated during box selection et cetera.</li>
 <li><strong>Labels</strong> : Drawing labels is expensive.<ul>
 <li>If you can go without them or show them on tap/mouseover, you&#39;ll get better performance.</li>
 <li>Consider not having labels for edges.</li>
 <li>Consider setting <code>min-zoomed-font-size</code> in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.</li>
 </ul>
 </li>
-<li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.</li>
+<li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="gulp"><a href="https://github.com/scalableminds/gulp-image-resize">https://github.com/scalableminds/gulp-image-resize</a></a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="https://github.com/scalableminds/gulp-image-resize">Gulp</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>

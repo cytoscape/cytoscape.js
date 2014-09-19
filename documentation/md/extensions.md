@@ -10,10 +10,10 @@ cytoscape( type, name, extension );
 
 The value of `type` can take on the following values:
 
- * `core` : The extension adds a core function.
- * `collection` : The extension adds a collection function.
- * `layout` : The extension registers a layout prototype.
- * `renderer` : The extension registers a renderer prototype.
+ * `'core'` : The extension adds a core function.
+ * `'collection'` : The extension adds a collection function.
+ * `'layout'` : The extension registers a layout prototype.
+ * `'renderer'` : The extension registers a renderer prototype.
 
 The `name` argument indicates the name of the extension, which should be a single word in lower case.
 

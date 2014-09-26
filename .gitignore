@@ -6,3 +6,4 @@ build
 build/*
 build/**
 npm-debug.log
+documentation/slimerjs-*/**

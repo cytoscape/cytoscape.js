@@ -39,7 +39,7 @@
   {
     "selector": "edge[company_type = 0]",
     "css": {
-      "line-color": "#00DDFF"
+      "line-color": "#00FFFF"
     }
   },
   
@@ -53,14 +53,14 @@
   {
     "selector": "edge[company_type = 2]",
     "css": {
-      "line-color": "#FFFFFF"
+      "line-color": "white"
     }
   },
   
   {
     "selector": "edge[company_type = 3]",
     "css": {
-      "line-color": "#FF0000"
+      "line-color": "red"
     }
   },
   

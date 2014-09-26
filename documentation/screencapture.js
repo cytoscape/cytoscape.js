@@ -43,7 +43,7 @@ page.clipRect = { top: 0, left: 0, width: viewport.width, height: viewport.heigh
 page.open(url, function(){
 
   window.setTimeout(function(){
-    page.render( filename );
+    page.render( { filename }, { quality: 80 } );
 
     phantom.exit();
   }, delay);

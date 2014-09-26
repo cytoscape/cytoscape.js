@@ -27,6 +27,7 @@
       "demos": [
         { "name": "Initialisation", "id": "urabis" },
         { "name": "Visual style", "id": "aqupun" },
+        { "name": "Linkout example", "id": "pajoc" },
         { "name": "Compound nodes", "id": "domek" },
         { "name": "Animated BFS", "id": "qohop" },
         { "name": "GeneMANIA export", "id": "wuvac" },
@@ -36,7 +37,7 @@
         { "name": "Multiple instances", "id": "zurup" },
         { "name": "Performance tuning", "id": "yeqom" },
         { "name": "AngularJS example", "id": "kewem" },
-        { "name": "Linkout example", "id": "pajoc" }
+        { "name": "Tokyo railway", "id": "suteci" }
       ]
     },
 

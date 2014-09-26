@@ -3,6 +3,8 @@ var bluebird = require("bluebird");
 var pexec = bluebird.promisify( require('child_process').exec );
 var configFile = './docmaker.json';
 var config;
+var phantom = 'phantomjs';
+// var phantom = './slimerjs-0.9.3/slimerjs';
 var delay = 3000;
 var width = 1000;
 var height = 1000;
@@ -47,12 +49,14 @@ module.exports = function( next ){
   var wh = width + '*' + height;
   var execs = [];
 
+  //process.env['SLIMERJSLAUNCHER'] = '/Applications/Firefox.app/Contents/MacOS/firefox';
+
   for( var i = 0; i < demoIds.length; i++ ){
     var id = demoIds[i];
     var url = 'http://jsbin.com/' + id + '/latest';
     var filename = 'img/demos/' + id + '.png';
 
-    execs.push( pexec('phantomjs screencapture.js ' + url + ' ' + filename + ' ' + delay + ' ' + wh) );
+    execs.push( pexec(phantom + ' screencapture.js ' + url + ' ' + filename + ' ' + delay + ' ' + wh) );
   }
 
   Promise.all( execs ).then(function(){

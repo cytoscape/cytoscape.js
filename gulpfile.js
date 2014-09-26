@@ -316,6 +316,10 @@ gulp.task('docspub', function(next){
   runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docs', 'docsmin', next );
 });
 
+gulp.task('docsrebuild', function(next){
+  runSequence( 'docs', 'docsmin', next );
+});
+
 gulp.task('pkgver', ['version'], function(){
   return gulp.src([
     'package.json',

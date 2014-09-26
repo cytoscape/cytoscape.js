@@ -1,0 +1,48 @@
+node {
+  background-color: white;
+  border-color: black;
+  content: data(station_name);
+  width: 20;
+  height: 20;
+  min-zoomed-font-size: 12;
+  color: #fff;
+  font-size: 16;
+}
+
+node:selected {
+  height: 40;
+  width: 40;
+}
+
+edge {
+  min-zoomed-font-size: 12;
+  font-size: 8;
+  color: #fff;
+  content: data(line_name);
+  line-color: green;
+  width: 20;
+  curve-style: haystack;
+  haystack-radius: 0;
+  opacity: 0.5;
+}
+
+edge[company_type = 0] {
+  line-color: #00FFFF;
+}
+
+edge[company_type = 1] {
+  line-color: #00FF33;
+}
+
+edge[company_type = 2] {
+  line-color: white;
+}
+
+edge[company_type = 3] {
+  line-color: red;
+}
+
+core {
+  active-bg-color: #fff;
+  active-bg-opacity: 0.333;
+}

@@ -371,8 +371,8 @@
         for (var i = 0; i < zEles.length; i++) {
           var ele = zEles[i];
           var list;
-          var bb = ele.boundingBox();
-          var insideExtent = $$.math.boundingBoxesIntersect( extent, bb );
+          var bb = forcedContext ? null : ele.boundingBox();
+          var insideExtent = forcedContext ? true : $$.math.boundingBoxesIntersect( extent, bb );
 
           if( !insideExtent ){ continue; } // no need to render
 

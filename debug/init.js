@@ -110,7 +110,7 @@ $(function(){
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
     // motionBlur: true,
-    // pixelRatio: 1,
+    // pixelRatio: 'auto',
     renderer: {
       name: 'canvas',
       showFps: true

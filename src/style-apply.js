@@ -44,9 +44,19 @@
       var oldHasCxt = oldCxtKey[i] === 't';
       var newHasCxt = newCxtKey[i] === 't';
       var cxtHasDiffed = oldHasCxt !== newHasCxt;
+      var cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-      if( cxtHasDiffed ){
-        var props = cxt.properties;
+      if( cxtHasDiffed || cxtHasMappedProps ){
+        var props;
+
+        if( cxtHasDiffed && cxtHasMappedProps ){
+          props = cxt.properties; // suffices b/c mappedProperties is a subset of properties
+        } else if( cxtHasDiffed ){
+          props = cxt.properties; // need to check them all
+        } else if( cxtHasMappedProps ){
+          props = cxt.mappedProperties; // only need to check mapped
+        }
+
         for( var j = 0; j < props.length; j++ ){
           var prop = props[j];
           var name = prop.name;
@@ -70,9 +80,10 @@
             addedProp[name] = true;
             diffProps.push( name );
           }
-        }
-      }
-    }
+        } // for props
+      } // if
+
+    } // for contexts
 
     cache[ dualCxtKey ] = diffProps;
     return diffProps;

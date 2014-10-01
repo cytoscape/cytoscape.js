@@ -710,6 +710,7 @@
     this[i] = {
       selector: selector,
       properties: [],
+      mappedProperties: [],
       index: i
     };
 
@@ -763,6 +764,10 @@
 
       if( property.hasPie ){
         this._private.hasPie = true;
+      }
+
+      if( property.mapped ){
+        this[i].mappedProperties.push( property );
       }
 
       // add to core style if necessary

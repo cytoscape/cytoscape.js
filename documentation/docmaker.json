@@ -78,7 +78,7 @@
 
             {
               "name": "cy.load",
-              "descr": "Load a graph.",
+              "descr": "Empty the graph, add the specified elements, and reapply the initialisation layout.",
               "formats": [
                 { "args": [
                   { "name": "eleObjs", "descr": "An array of plain objects that specify the elements to load." },

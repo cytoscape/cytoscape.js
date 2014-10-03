@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3.1.
+ * This file is part of Cytoscape.js 2.3.2.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3.1';
+  $$.version = '2.3.2';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -4991,6 +4991,8 @@ var cytoscape;
       ( data = new RegExp( $$.style.types.data.regex ).exec( value ) ) ||
       ( layoutData = new RegExp( $$.style.types.layoutData.regex ).exec( value ) )
     ){
+      if( propIsBypass ){ return false; } // mappers not allowed in bypass
+      
       var isLayout = layoutData !== undefined;
       data = data || layoutData;
 
@@ -5008,6 +5010,8 @@ var cytoscape;
       ( mapData = new RegExp( $$.style.types.mapData.regex ).exec( value ) ) ||
       ( mapLayoutData = new RegExp( $$.style.types.mapLayoutData.regex ).exec( value ) )
     ){
+      if( propIsBypass ){ return false; } // mappers not allowed in bypass
+
       var isLayout = mapLayoutData !== undefined;
       mapData = mapData || mapLayoutData;
 
@@ -5248,6 +5252,7 @@ var cytoscape;
     this[i] = {
       selector: selector,
       properties: [],
+      mappedProperties: [],
       index: i
     };
 
@@ -5301,6 +5306,10 @@ var cytoscape;
 
       if( property.hasPie ){
         this._private.hasPie = true;
+      }
+
+      if( property.mapped ){
+        this[i].mappedProperties.push( property );
       }
 
       // add to core style if necessary
@@ -5360,9 +5369,19 @@ var cytoscape;
       var oldHasCxt = oldCxtKey[i] === 't';
       var newHasCxt = newCxtKey[i] === 't';
       var cxtHasDiffed = oldHasCxt !== newHasCxt;
+      var cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-      if( cxtHasDiffed ){
-        var props = cxt.properties;
+      if( cxtHasDiffed || cxtHasMappedProps ){
+        var props;
+
+        if( cxtHasDiffed && cxtHasMappedProps ){
+          props = cxt.properties; // suffices b/c mappedProperties is a subset of properties
+        } else if( cxtHasDiffed ){
+          props = cxt.properties; // need to check them all
+        } else if( cxtHasMappedProps ){
+          props = cxt.mappedProperties; // only need to check mapped
+        }
+
         for( var j = 0; j < props.length; j++ ){
           var prop = props[j];
           var name = prop.name;
@@ -5386,9 +5405,10 @@ var cytoscape;
             addedProp[name] = true;
             diffProps.push( name );
           }
-        }
-      }
-    }
+        } // for props
+      } // if
+
+    } // for contexts
 
     cache[ dualCxtKey ] = diffProps;
     return diffProps;
@@ -6546,7 +6566,7 @@ var cytoscape;
       textureOnViewport: options.textureOnViewport,
       wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
       motionBlur: options.motionBlur,
-      pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : undefined
+      pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1)
     }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
@@ -16681,8 +16701,8 @@ var cytoscape;
         for (var i = 0; i < zEles.length; i++) {
           var ele = zEles[i];
           var list;
-          var bb = ele.boundingBox();
-          var insideExtent = $$.math.boundingBoxesIntersect( extent, bb );
+          var bb = forcedContext ? null : ele.boundingBox();
+          var insideExtent = forcedContext ? true : $$.math.boundingBoxesIntersect( extent, bb );
 
           if( !insideExtent ){ continue; } // no need to render
 

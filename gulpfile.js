@@ -302,6 +302,8 @@ gulp.task('docsrefs', function(){
 });
 
 gulp.task('docsdemoshots', function(next){
+  next(); // disable for now until phantomjs is fixed
+
   var cwd = process.cwd();
 
   process.chdir('./documentation');

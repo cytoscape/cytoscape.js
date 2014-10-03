@@ -36,7 +36,9 @@
         { "name": "Pie style", "id": "yozazu" },
         { "name": "Multiple instances", "id": "zurup" },
         { "name": "Performance tuning", "id": "yeqom" },
-        { "name": "AngularJS example", "id": "kewem" },
+        { "name": "AngularJS example", "id": "kewem" }
+      ],
+      "disabledDemos": [
         { "name": "Tokyo railway", "id": "suteci" }
       ]
     },

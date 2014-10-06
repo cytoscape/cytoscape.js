@@ -2,7 +2,7 @@
   "name": "cytoscape",
   "version": "2.3.3",
   "license": "LGPL-3.0+",
-  "description": "An open-source JavaScript graph theory (a.k.a. network) library for analysis and visualisation",
+  "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
   "homepage": "http://js.cytoscape.org",
   "repository": {
     "type": "git",

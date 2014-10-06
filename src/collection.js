@@ -278,7 +278,9 @@
     
     var classes = [];
     for( var cls in p.classes ){
-      classes.push(cls);
+      if( p.classes[cls] ){
+        classes.push(cls);
+      }
     }
     
     for( var i = 0; i < classes.length; i++ ){

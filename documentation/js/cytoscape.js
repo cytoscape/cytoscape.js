@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3.2.
+ * This file is part of Cytoscape.js 2.3.3.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3.2';
+  $$.version = '2.3.3';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -8427,7 +8427,9 @@ var cytoscape;
     
     var classes = [];
     for( var cls in p.classes ){
-      classes.push(cls);
+      if( p.classes[cls] ){
+        classes.push(cls);
+      }
     }
     
     for( var i = 0; i < classes.length; i++ ){

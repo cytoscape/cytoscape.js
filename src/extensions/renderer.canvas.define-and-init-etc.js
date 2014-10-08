@@ -99,7 +99,7 @@
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur;
+    this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
 

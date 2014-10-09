@@ -206,10 +206,6 @@
     // Primary key
     r.registerBinding(r.data.container, 'mousedown', function(e) { 
       e.preventDefault();
-
-      // manually blur b/c we prevented default
-      if( document.activeElement && document.activeElement.blur ){ document.activeElement.blur(); }
-
       r.hoverData.capture = true;
       r.hoverData.which = e.which;
       
@@ -593,10 +589,10 @@
     
       
       if( preventDefault ){ 
-        //if(e.stopPropagation) e.stopPropagation();
-        if(e.preventDefault) e.preventDefault();
-        //return false;
-      } 
+        if(e.stopPropagation) e.stopPropagation();
+          if(e.preventDefault) e.preventDefault();
+          return false;
+        }
     }, 1000/30), false);
     
     r.registerBinding(window, 'mouseup', function(e) {
@@ -943,9 +939,6 @@
 
       if( e.target !== r.data.link ){
         e.preventDefault();
-
-        // manually blur b/c we prevented default
-        if( document.activeElement && document.activeElement.blur ){ document.activeElement.blur(); }
       }
     
       r.touchData.capture = true;

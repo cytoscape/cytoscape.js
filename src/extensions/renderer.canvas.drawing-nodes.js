@@ -45,19 +45,21 @@
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
-      switch( borderStyle ){
-        case 'dotted':
-          context.setLineDash([ 1, 1 ]);
-          break;
+      if( context.setLineDash ){ // for very outofdate browsers
+        switch( borderStyle ){
+          case 'dotted':
+            context.setLineDash([ 1, 1 ]);
+            break;
 
-        case 'dashed':
-          context.setLineDash([ 4, 2 ]);
-          break;
+          case 'dashed':
+            context.setLineDash([ 4, 2 ]);
+            break;
 
-        case 'solid':
-        case 'double':
-          context.setLineDash([ ]);
-          break;
+          case 'solid':
+          case 'double':
+            context.setLineDash([ ]);
+            break;
+        }
       }
 
       //var image = this.getCachedImage('url');
@@ -197,7 +199,9 @@
       }
 
       // reset in case we changed the border style
-      context.setLineDash([ ]);
+      if( context.setLineDash ){ // for very outofdate browsers
+        context.setLineDash([ ]);
+      }
 
     // draw the overlay
     } else {

@@ -678,7 +678,7 @@
     ds.lineHeight = '1';
 
     // put label content in div
-    div.innerText = text;
+    div.textContent = text;
 
     cache[cacheKey] = {
       width: div.clientWidth,

@@ -22,23 +22,30 @@ img {
 	max-width: 80%;
 }
 
-#cy {
-	position: fixed;
+#cy-etc {
+	position: relative;
+	margin: 1em;
 	z-index: 999;
-	right: 0;
-	bottom: 0;
 	height: 15em;
 	width: 15em;
-	background: rgba(255, 255, 255, 0.66);
+	margin-top: 2.5em;
 	border: 1px solid rgba(127, 127, 127, 0.5);
-	border-right: none;
-	border-bottom: none;
+	background: rgba(255, 255, 255, 0.66);
+}
+
+#cy {
+	position: absolute;
+	z-index: 999;
+	left: 0;
+	top: 0;
+	height: 100%;
+	width: 100%;
 }
 
 #cy-title {
-	position: fixed;
-	right: 0;
-	bottom: 15em;
+	position: absolute;
+	left: 0;
+	bottom: 100%;
 	width: 15em;
 	text-align: left;
 	background: rgba(255, 255, 255, 0.5);
@@ -53,11 +60,24 @@ img {
 	font-size: 0.8em;
 }
 
+#cy-arrow {
+	position: absolute;
+	left: 0;
+	width: 100%;
+	text-align: center;
+	top: -1.33em;
+	font-size: 3em;
+	z-index: 9999;
+	opacity: 0.333;
+	color: #888;
+	pointer-events: none;
+}
+
 #cy-label {
-	position: fixed;
-	bottom: 15em;
-	margin-bottom: -0.666em;
-	right: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin-top: -1em;
 	width: 15em;
 	text-align: center;
 	z-index: 1000;
@@ -84,7 +104,7 @@ img {
 #cy-refresh,
 #cy-show,
 #cy-hide {
-	position: fixed;
+	position: absolute;
 	bottom: 13.75em;
 	right: 13.75em;
 	line-height: 1;
@@ -96,6 +116,7 @@ img {
 
 #cy-hide {
 	right: 0;
+	display: none !important;
 }
 
 #cy-show {
@@ -104,6 +125,7 @@ img {
 	background: rgba(255, 255, 255, 0.66);
 	border-radius: 0;
 	border: 1px solid #ccc;
+	display: none;
 }
 
 button {

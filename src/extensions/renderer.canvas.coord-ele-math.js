@@ -674,6 +674,7 @@
     ds.top = '-9999px';
     ds.zIndex = '-1';
     ds.visibility = 'hidden';
+    ds.pointerEvents = 'none';
     ds.padding = '0';
     ds.lineHeight = '1';
 

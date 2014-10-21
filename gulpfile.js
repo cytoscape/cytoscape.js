@@ -220,7 +220,7 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
   
 });
 
-gulp.task('snapshotpush', ['docsbuildlist'], shell.task([
+gulp.task('snapshotpush', ['docsdl'], shell.task([
   './publish-buildlist.sh'
 ]));
 

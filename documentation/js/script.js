@@ -40,21 +40,28 @@ $(function(){
     $(this).addClass('loaded');
   });
 
-  $('#cy-refresh').on('click', function(){
-    loadCy();
+  $('body').on('mousedown click', '#cy-refresh', function(){
+    loadCy(); 
 
-    $('#cy').attr('style', '');
+    $('#cy').attr('style', ''); // because some example fiddles w/ this
   });
 
-  window.showCy = function(){
+  window.showCy = function( $ele ){
     $('#cy, #cy-hide, #cy-refresh, #cy-label').removeClass('hidden');
     $('#cy-show').addClass('hidden');
+
+    if( $ele ){
+      var $etc = $('#cy-etc');
+
+      $etc.removeClass('hidden').remove();
+      $ele.after( $etc );
+    }
 
     cy.resize();
   };
 
   window.hideCy = function(){
-    $('#cy, #cy-hide, #cy-refresh, #cy-label').addClass('hidden');
+    $('#cy, #cy-hide, #cy-refresh, #cy-label, #cy-etc').addClass('hidden');
     $('#cy-show').removeClass('hidden');
   };
 
@@ -72,9 +79,12 @@ $(function(){
   });
 
   $(document).on('click', '.run.run-inline-code', function(){
-    showCy();
+    var $run = $(this);
+    var $pre = $(this).nextAll('pre:first');
 
-    var text = $(this).nextAll('pre:first').text();
+    showCy( $pre );
+
+    var text = $pre.text();
 
     var $title = $('#cy-title');
     var $content = $title.find('.content');

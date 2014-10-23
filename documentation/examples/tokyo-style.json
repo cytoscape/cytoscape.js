@@ -17,7 +17,8 @@
     "selector": "node:selected",
     "css": {
       "height": 40,
-      "width": 40
+      "width": 40,
+      "min-zoomed-font-size": 0
     }
   },
   

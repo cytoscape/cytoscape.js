@@ -16,9 +16,10 @@
   {
     "selector": "node:selected",
     "css": {
-      "height": 40,
-      "width": 40,
-      "min-zoomed-font-size": 0
+      "height": 60,
+      "width": 60,
+      "min-zoomed-font-size": 0,
+      "font-size": 48
     }
   },
   

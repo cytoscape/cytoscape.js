@@ -75,6 +75,10 @@
       if( options.rankSep ){
         d.rankSep( options.rankSep );
       }
+
+      if( options.rankDir ){
+        d.rankDir( options.rankDir );
+      }
         
       d = d.run(g);
 

@@ -126,8 +126,7 @@ function parseSubsections( section ){
 }
 
 function populateDemo( demo ){
-  demo.embedUrl = 'http://jsbin.com/' + demo.id + '/latest/embed?output';
-  demo.srcUrl = 'http://jsbin.com/' + demo.id + '/latest/edit?js,output';
+  demo.srcUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
 }
 

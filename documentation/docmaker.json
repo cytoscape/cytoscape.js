@@ -1,5 +1,5 @@
 {
-  "version": "2.3-beta",
+  "version": "snapshot-2b6b68b2d5-1414436194149",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -37,7 +37,7 @@
         { "name": "Multiple instances", "id": "zurup" },
         { "name": "Performance tuning", "id": "yeqom" },
         { "name": "AngularJS example", "id": "kewem" },
-        { "name": "Tokyo railway", "id": "suteci" }
+        { "name": "Tokyo railways", "id": "f64e811fc3311414e083" }
       ]
     },
 

@@ -24,19 +24,16 @@
             node.silentPosition({ x: 0, y: 0 });
           }
 
-          layout.one('layoutready', options.ready);
-          layout.trigger({ type: 'layoutready', layout: layout });
-
           node.animate({
             position: newPos
           }, {
             duration: options.animationDuration,
-            step: lastNode ? undefined : function(){
+            step: !lastNode ? undefined : function(){
               if( options.fit ){
                 cy.fit( options.padding );
               } 
             },
-            complete: lastNode ? undefined : function(){
+            complete: !lastNode ? undefined : function(){
               if( options.zoom != null ){
                 cy.zoom( options.zoom );
               }
@@ -54,6 +51,9 @@
             }
           });
         }
+
+        layout.one('layoutready', options.ready);
+        layout.trigger({ type: 'layoutready', layout: layout });
       } else {
         nodes.positions( fn );
 

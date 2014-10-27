@@ -1,5 +1,5 @@
 {
-  "version": "2.3.3",
+  "version": "snapshot-2b6b68b2d5-1414436194149",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -36,10 +36,8 @@
         { "name": "Pie style", "id": "yozazu" },
         { "name": "Multiple instances", "id": "zurup" },
         { "name": "Performance tuning", "id": "yeqom" },
-        { "name": "AngularJS example", "id": "kewem" }
-      ],
-      "disabledDemos": [
-        { "name": "Tokyo railway", "id": "suteci" }
+        { "name": "AngularJS example", "id": "kewem" },
+        { "name": "Tokyo railways", "id": "f64e811fc3311414e083" }
       ]
     },
 

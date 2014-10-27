@@ -3,7 +3,8 @@ require(['cytoscape'], function(rjsCy){
 });
 
 $(function(){
-        
+
+  var addRandomEles = false;        
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
@@ -189,33 +190,35 @@ $(function(){
     return shapes[index];
   }
 
-  for(var i = 0; i < numNodes; i++){
+  if( addRandomEles ){
+    for(var i = 0; i < numNodes; i++){
 
-    options.elements.nodes.push({
-      data: {
-        id: 'n' + i,
-        weight: Math.round( Math.random() * 100 ),
-        shape: randShape()
-      }
-    });
-  }
-  
-  var j = 0;
-  for(var clique = 0; clique < cliques; clique++){
-    for(var i = 0; i < numEdges/cliques; i++){
-      var srcId = randNodeId( clique );
-      var tgtId = randNodeId( clique );
-
-      options.elements.edges.push({
+      options.elements.nodes.push({
         data: {
-          id: 'e' + (j++),
-          source: srcId,
-          target: tgtId,
+          id: 'n' + i,
           weight: Math.round( Math.random() * 100 ),
-          tgtShape: randTgtArrow(),
-          srcShape: randSrcArrow()
+          shape: randShape()
         }
       });
+    }
+    
+    var j = 0;
+    for(var clique = 0; clique < cliques; clique++){
+      for(var i = 0; i < numEdges/cliques; i++){
+        var srcId = randNodeId( clique );
+        var tgtId = randNodeId( clique );
+
+        options.elements.edges.push({
+          data: {
+            id: 'e' + (j++),
+            source: srcId,
+            target: tgtId,
+            weight: Math.round( Math.random() * 100 ),
+            tgtShape: randTgtArrow(),
+            srcShape: randSrcArrow()
+          }
+        });
+      }
     }
   }
   

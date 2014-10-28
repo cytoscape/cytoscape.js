@@ -248,8 +248,10 @@ button:active {
 .gallery-demo {
 	position: relative;
 	float: left;
-	margin: 0 0.5em 1em 0;
+	margin: 0 0.5em 0.5em 0;
 	width: 180px;
+	height: 230px;
+	line-height: 1.15;
 }
 
 .gallery-full-demo{
@@ -275,7 +277,7 @@ button:active {
 
 .gallery-download,
 .gallery-github {
-	margin: 0 0.25em;
+	margin: 0 0.125em;
 }
 
 .gallery-name {

@@ -112,6 +112,11 @@
 					<div class="gallery-demos">
 					{{#each demos}}
 						<div class="gallery-demo">
+						
+							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
+								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+							</a>
+
 							<div class="gallery-title">
 								<span class="gallery-name">{{name}}</span>
 								<span class="gallery-download">
@@ -121,10 +126,6 @@
 									<a href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
 								</span>
 							</div>
-							
-							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
-								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
-							</a>
 							
 						</div>
 					{{/each}}

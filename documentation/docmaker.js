@@ -126,8 +126,10 @@ function parseSubsections( section ){
 }
 
 function populateDemo( demo ){
-  demo.srcUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
+  demo.viewUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
+  demo.githubUrl = 'https://gist.github.com/' + demo.id;
+  demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
 }
 
 function compileConfig( config ){

@@ -858,6 +858,8 @@
     }, false);
     
     var wheelHandler = function(e) { 
+      if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
+
       var cy = r.data.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var rpos = [pos[0] * cy.zoom() + cy.pan().x,
@@ -899,8 +901,18 @@
     
     r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
 
+    // TODO is this even needed?
     r.registerBinding(r.data.container, 'MozMousePixelScroll', function(e){
     }, false);
+
+    r.registerBinding(window, 'scroll', function(e){
+      r.scrollingPage = true;
+
+      clearTimeout( r.scrollingPageTimeout );
+      r.scrollingPageTimeout = setTimeout(function(){
+        r.scrollingPage = false;
+      }, 250);
+    }, true);
     
     // Functions to help with handling mouseout/mouseover on the Cytoscape container
           // Handle mouseout on Cytoscape container

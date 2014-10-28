@@ -25,19 +25,19 @@
     {
       "name": "Demos",
       "demos": [
-        { "name": "Initialisation", "id": "urabis" },
-        { "name": "Visual style", "id": "aqupun" },
-        { "name": "Linkout example", "id": "pajoc" },
-        { "name": "Compound nodes", "id": "domek" },
-        { "name": "Animated BFS", "id": "qohop" },
-        { "name": "GeneMANIA export", "id": "wuvac" },
-        { "name": "Images", "id": "kahar" },
-        { "name": "qTip extension", "id": "royel" },
-        { "name": "Pie style", "id": "yozazu" },
-        { "name": "Multiple instances", "id": "zurup" },
-        { "name": "Performance tuning", "id": "yeqom" },
-        { "name": "AngularJS example", "id": "kewem" },
-        { "name": "Tokyo railways", "id": "f64e811fc3311414e083" }
+        { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
+        { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
+        { "name": "qTip extension", "id": "546dd8ca4872cc87106a" },
+        { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
+        { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
+        { "name": "Images", "id": "aedff159b0df05ccfaa5" },
+        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },       
+        { "name": "Linkout example", "id": "eb861f83fb741628342f" },
+        { "name": "Pie style", "id": "173313aba1f31cae49a5" },
+        { "name": "Multiple instances", "id": "310dca83ba6970812dd0" },
+        { "name": "AngularJS example", "id": "a1aea574f0e248b2b38e" },
+        { "name": "Visual style", "id": "b7c65115947d9e0e8ec8" },
+        { "name": "Initialisation", "id": "621d51ea7de19608127e" }
       ]
     },
 
@@ -2956,7 +2956,7 @@
     {
       "name": "Architecture",
       "md": "architecture",
-      "demo": { "id": "mexemi", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
+      "demo": { "id": "689efca4fcb0fd05671b", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
     },
 
     {

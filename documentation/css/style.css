@@ -248,8 +248,8 @@ button:active {
 .gallery-demo {
 	position: relative;
 	float: left;
-	margin: 0 1em 1em 0;
-	width: 200px;
+	margin: 0 0.5em 1em 0;
+	width: 180px;
 }
 
 .gallery-full-demo{
@@ -273,6 +273,11 @@ button:active {
 	font-size: 0.8em;
 }
 
+.gallery-download,
+.gallery-github {
+	margin: 0 0.25em;
+}
+
 .gallery-name {
 	
 }
@@ -281,8 +286,8 @@ button:active {
 .gallery-link-overlay,
 .gallery-preview {
 	display: block;
-	width: 200px;
-	height: 200px;
+	width: 180px;
+	height: 180px;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	background-size: contain;
@@ -478,10 +483,20 @@ button:active {
 
 .links {
 	color: #ccc;
+	font-weight: 200;
 }
 
 .links a {
 	/*white-space: nowrap;*/
+}
+
+.likes {
+	margin-top: 1em;
+	font-weight: 200;
+}
+
+.like-label {
+	color: #000;
 }
 
 .buttons-subtitle {

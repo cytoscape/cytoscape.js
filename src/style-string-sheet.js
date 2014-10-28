@@ -43,7 +43,7 @@
       // parse the selector
       var selectorStr = selAndBlock[1];
       var selector = new $$.Selector( selectorStr );
-      if( selector._private.invalid ){
+      if( selector._private.invalid && !selectorStr === 'core' ){
         $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
 
         // skip this selector and block

@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3.3.
+ * This file is part of Cytoscape.js 2.3.4.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3.3';
+  $$.version = '2.3.4';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -6254,7 +6254,7 @@ var cytoscape;
       // parse the selector
       var selectorStr = selAndBlock[1];
       var selector = new $$.Selector( selectorStr );
-      if( selector._private.invalid ){
+      if( selector._private.invalid && selectorStr !== 'core' ){
         $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
 
         // skip this selector and block
@@ -12000,19 +12000,16 @@ var cytoscape;
             node.silentPosition({ x: 0, y: 0 });
           }
 
-          layout.one('layoutready', options.ready);
-          layout.trigger({ type: 'layoutready', layout: layout });
-
           node.animate({
             position: newPos
           }, {
             duration: options.animationDuration,
-            step: lastNode ? undefined : function(){
+            step: !lastNode ? undefined : function(){
               if( options.fit ){
                 cy.fit( options.padding );
               } 
             },
-            complete: lastNode ? undefined : function(){
+            complete: !lastNode ? undefined : function(){
               if( options.zoom != null ){
                 cy.zoom( options.zoom );
               }
@@ -12030,6 +12027,9 @@ var cytoscape;
             }
           });
         }
+
+        layout.one('layoutready', options.ready);
+        layout.trigger({ type: 'layoutready', layout: layout });
       } else {
         nodes.positions( fn );
 
@@ -13383,7 +13383,7 @@ var cytoscape;
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur;
+    this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
 
@@ -14596,11 +14596,12 @@ var cytoscape;
     ds.top = '-9999px';
     ds.zIndex = '-1';
     ds.visibility = 'hidden';
+    ds.pointerEvents = 'none';
     ds.padding = '0';
     ds.lineHeight = '1';
 
     // put label content in div
-    div.innerText = text;
+    div.textContent = text;
 
     cache[cacheKey] = {
       width: div.clientWidth,
@@ -15366,7 +15367,7 @@ var cytoscape;
     var usePaths = CanvasRenderer.usePaths();
 
     // if bezier ctrl pts can not be calculated, then die
-    if( rs.badBezier ){
+    if( rs.badBezier || ( (rs.edgeType === 'bezier' || rs.edgeType === 'straight') && isNaN(rs.startX)) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
       return;
     }
 
@@ -15528,18 +15529,20 @@ var cytoscape;
 
     }
 
-    switch( type ){
-      case 'dotted':
-        canvasCxt.setLineDash([ 1, 1 ]);
-        break;
+    if( canvasCxt.setLineDash ){ // for very outofdate browsers
+      switch( type ){
+        case 'dotted':
+          canvasCxt.setLineDash([ 1, 1 ]);
+          break;
 
-      case 'dashed':
-        canvasCxt.setLineDash([ 6, 3 ]);
-        break;
+        case 'dashed':
+          canvasCxt.setLineDash([ 6, 3 ]);
+          break;
 
-      case 'solid':
-        canvasCxt.setLineDash([ ]);
-        break;
+        case 'solid':
+          canvasCxt.setLineDash([ ]);
+          break;
+      }
     }
 
     if( !pathCacheHit ){
@@ -15564,7 +15567,9 @@ var cytoscape;
     }
   
     // reset any line dashes
-    context.setLineDash([ ]);
+    if( context.setLineDash ){ // for very outofdate browsers
+      context.setLineDash([ ]);
+    }
 
   };
 
@@ -16093,19 +16098,21 @@ var cytoscape;
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
-      switch( borderStyle ){
-        case 'dotted':
-          context.setLineDash([ 1, 1 ]);
-          break;
+      if( context.setLineDash ){ // for very outofdate browsers
+        switch( borderStyle ){
+          case 'dotted':
+            context.setLineDash([ 1, 1 ]);
+            break;
 
-        case 'dashed':
-          context.setLineDash([ 4, 2 ]);
-          break;
+          case 'dashed':
+            context.setLineDash([ 4, 2 ]);
+            break;
 
-        case 'solid':
-        case 'double':
-          context.setLineDash([ ]);
-          break;
+          case 'solid':
+          case 'double':
+            context.setLineDash([ ]);
+            break;
+        }
       }
 
       //var image = this.getCachedImage('url');
@@ -16245,7 +16252,9 @@ var cytoscape;
       }
 
       // reset in case we changed the border style
-      context.setLineDash([ ]);
+      if( context.setLineDash ){ // for very outofdate browsers
+        context.setLineDash([ ]);
+      }
 
     // draw the overlay
     } else {
@@ -17934,6 +17943,8 @@ var cytoscape;
     }, false);
     
     var wheelHandler = function(e) { 
+      if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
+
       var cy = r.data.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var rpos = [pos[0] * cy.zoom() + cy.pan().x,
@@ -17975,8 +17986,18 @@ var cytoscape;
     
     r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
 
+    // TODO is this even needed?
     r.registerBinding(r.data.container, 'MozMousePixelScroll', function(e){
     }, false);
+
+    r.registerBinding(window, 'scroll', function(e){
+      r.scrollingPage = true;
+
+      clearTimeout( r.scrollingPageTimeout );
+      r.scrollingPageTimeout = setTimeout(function(){
+        r.scrollingPage = false;
+      }, 250);
+    }, true);
     
     // Functions to help with handling mouseout/mouseover on the Cytoscape container
           // Handle mouseout on Cytoscape container
@@ -22221,6 +22242,10 @@ var cytoscape;
       
       if( options.rankSep ){
         d.rankSep( options.rankSep );
+      }
+
+      if( options.rankDir ){
+        d.rankDir( options.rankDir );
       }
         
       d = d.run(g);

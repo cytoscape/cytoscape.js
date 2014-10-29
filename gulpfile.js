@@ -237,7 +237,7 @@ gulp.task('docs', function(next){
 });
 
 gulp.task('docsmin', function(next){
-  runSequence( 'docs', 'docsminrefs', 'docshtmlmin', next );
+  runSequence( 'docs', 'docsminrefs', next );
 });
 
 gulp.task('docsclean', function(next){

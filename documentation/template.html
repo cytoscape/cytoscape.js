@@ -34,6 +34,7 @@
 			</div>
 
 			<div class="links">
+				<a href="#extensions"><span class="icon-puzzle-piece"></span> Extensions</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue or request a feature</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
@@ -77,7 +78,7 @@
 				{{#if extensions}}
 					<ul>
 					{{#each extensions}}
-						<li><a href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+						<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
 					{{/each}}
 					</ul>
 				{{/if}}
@@ -280,21 +281,23 @@
 		</div>
 
 
-		<div id="cy-etc" class="hidden">
-			<div id="cy-arrow">
-				<span class="icon-arrow-down"></span>
-			</div>
-			<div id="cy-title"><pre class="content"></pre></div>
-			<div id="cy-label" class="hidden"><code>window.cy</code></div>
-			<div id="cy" class="hidden"></div>
-			<div id="cy-refresh" class="hidden">
-				<span class="link plain-link icon-refresh"></span>
-			</div>
-			<div id="cy-show">
-				<span class="link plain-link icon-plus"></span>
-			</div>
-			<div id="cy-hide" class="hidden">
-				<span class="link plain-link icon-minus"></span>
+		<div id="orphaned-cy-container">
+			<div id="cy-etc" class="hidden">
+				<div id="cy-arrow">
+					<span class="icon-arrow-down"></span>
+				</div>
+				<div id="cy-title"><pre class="content"></pre></div>
+				<div id="cy-label" class="hidden"><code>window.cy</code></div>
+				<div id="cy" class="hidden"></div>
+				<div id="cy-refresh" class="hidden">
+					<span class="link plain-link icon-refresh"></span>
+				</div>
+				<div id="cy-show">
+					<span class="link plain-link icon-plus"></span>
+				</div>
+				<div id="cy-hide" class="hidden">
+					<span class="link plain-link icon-minus"></span>
+				</div>
 			</div>
 		</div>
 

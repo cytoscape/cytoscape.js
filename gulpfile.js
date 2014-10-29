@@ -237,7 +237,7 @@ gulp.task('docs', function(next){
 });
 
 gulp.task('docsmin', function(next){
-  runSequence( 'docs', 'docsminrefs', next );
+  runSequence( 'docs', 'docsminrefs', 'docshtmlmin', next );
 });
 
 gulp.task('docsclean', function(next){
@@ -257,7 +257,7 @@ gulp.task('docshtmlmin', function(){
   ;
 });
 
-gulp.task('docsjsmin', ['docs'], function(){
+gulp.task('docsjsmin', function(){
   return gulp.src( paths.docs.js )
     .pipe( concat('all.min.js') )
     
@@ -269,7 +269,7 @@ gulp.task('docsjsmin', ['docs'], function(){
   ;
 });
 
-gulp.task('docscssmin', ['docs'], function(){ 
+gulp.task('docscssmin', function(){ 
   return gulp.src( paths.docs.css )
     .pipe( concat('all.min.css') )
 
@@ -281,7 +281,7 @@ gulp.task('docscssmin', ['docs'], function(){
 
 gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
   return gulp.src('documentation/index.html')
-    .pipe( inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ], { read: false }), {
+    .pipe( inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ] ), {
       addRootSlash: false,
       ignorePath: 'documentation'
     } ) )

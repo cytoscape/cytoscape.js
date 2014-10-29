@@ -22,6 +22,12 @@ img {
 	max-width: 80%;
 }
 
+#orphaned-cy-container {
+	position: absolute;
+	left: -99999px;
+	top: -99999px;
+}
+
 #cy-etc {
 	position: relative;
 	margin: 1em;
@@ -249,8 +255,8 @@ button:active {
 	position: relative;
 	float: left;
 	margin: 0 0.5em 0.5em 0;
-	width: 180px;
-	height: 230px;
+	width: 10em;
+	height: 13em;
 	line-height: 1.15;
 }
 
@@ -288,8 +294,8 @@ button:active {
 .gallery-link-overlay,
 .gallery-preview {
 	display: block;
-	width: 180px;
-	height: 180px;
+	width: 10em;
+	height: 10em;
 	border: 1px solid #ddd;
 	border-radius: 0.25em;
 	background-size: contain;

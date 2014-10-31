@@ -12,7 +12,7 @@ To use Cytoscape.js in your HTML document:
 
 To install Cytoscape.js via npm:
 
-```
+```bash
 npm install cytoscape
 ```
 
@@ -180,7 +180,7 @@ var cy = cytoscape({
 **`autounselectify`** : Whether nodes should be unselectified (immutible selection state) by default (if `true`, overrides individual element state).
 
 
-## Rendering options
+### Rendering options
 
 **`headless`** : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set `headless: true` if you want a headless instance in a browser.
 

@@ -149,6 +149,7 @@ button:active {
 
 .run {
 	margin: 0 2em;
+	margin-top: -2.25em;
 	position: absolute;
 	right: 0;
 	opacity: 0.666;

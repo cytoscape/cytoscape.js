@@ -80,9 +80,9 @@ $(function(){
 
   $(document).on('click', '.run.run-inline-code', function(){
     var $run = $(this);
-    var $pre = $(this).nextAll('pre:first');
+    var $pre = $(this).prevAll('pre:first');
 
-    showCy( $pre );
+    showCy( $run );
 
     var text = $pre.text();
 

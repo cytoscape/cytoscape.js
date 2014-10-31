@@ -20,7 +20,7 @@ mdRend.code = function(code, lang){
     button = '<button class="run run-inline-code"><span class="icon-play"></span></button>';
   }
 
-  return button + rendCode.call(this, code, lang);
+  return rendCode.call(this, code, lang) + button;
 };
 
 try {

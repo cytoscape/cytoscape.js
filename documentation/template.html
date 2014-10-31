@@ -90,13 +90,13 @@
 				{{#if demo}}
 
 					<div class="gallery-full-demo">			
-						<button class="run"><span class="icon-play"></span></button>
-
 						<div class="gallery-full-padder"></div>
 
 						<a class="gallery-full-link" target="_blank" href="{{demo.viewUrl}}">
 							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
 						</a>
+
+						<button class="run"><span class="icon-play"></span></button>
 						
 					</div>
 
@@ -162,8 +162,8 @@
 						{{/if}}
 
 						<h3>Options</h3>
-						<button class="run run-inline-code"><span class="icon-play"></span></button>
 						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
+						<button class="run run-inline-code"><span class="icon-play"></span></button>
 					{{/if}}
 
 					{{#each fns}}

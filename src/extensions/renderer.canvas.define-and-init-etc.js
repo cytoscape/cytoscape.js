@@ -170,6 +170,10 @@
 
       b.target.removeEventListener(b.event, b.handler, b.useCapture);
     }
+
+    if( this.removeObserver ){
+      this.removeObserver.disconnect();
+    }
   };
 
   

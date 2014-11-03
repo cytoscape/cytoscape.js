@@ -227,6 +227,11 @@
     function drawToContext(){ 
       // startTime = +new Date();
       // console.profile('draw' + startTime)
+
+      if( motionBlur && !nodeLayerNeedsMotionClear ){
+        pixelRatio = r.motionBlurPxRatio; // reduce quality on blurry frames for performance
+      }
+
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -264,7 +269,7 @@
       function setContextTransform(context, clear){
         context.setTransform(1, 0, 0, 1, 0, 0);
 
-        if( clear === 'motionBlur' ){
+        if( clear === 'motionBlur' ){ 
           var gco = context.globalCompositeOperation;
 
           context.globalCompositeOperation = 'destination-out';
@@ -275,16 +280,21 @@
         } else if( !forcedContext && (clear === undefined || clear) ){
           context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
         }
+
+        var pxf = 1;
+        if( motionBlur && !nodeLayerNeedsMotionClear && context === data.contexts[CanvasRenderer.SELECT_BOX] ){
+          pxf = r.motionBlurPxRatio;
+        }
         
         if( !drawAllLayers ){
-          context.translate(effectivePan.x, effectivePan.y);
-          context.scale(effectiveZoom, effectiveZoom);
+          context.translate( effectivePan.x/pxf, effectivePan.y/pxf );
+          context.scale( effectiveZoom/pxf, effectiveZoom/pxf );
         }
         if( forcedPan ){
-          context.translate(forcedPan.x, forcedPan.y);
+          context.translate( forcedPan.x/pxf, forcedPan.y/pxf );
         } 
         if( forcedZoom ){
-          context.scale(forcedZoom, forcedZoom);
+          context.scale( forcedZoom/pxf, forcedZoom/pxf );
         }
       }
 
@@ -422,25 +432,25 @@
 
       if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || nodeLayerNeedsMotionClear ){
         // console.log('redrawing node layer');
-        
-        var context = forcedContext || data.contexts[CanvasRenderer.NODE];
 
-        setContextTransform( context, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
+        var context = forcedContext || ( motionBlur && !nodeLayerNeedsMotionClear ? r.data.bufferContexts[ CanvasRenderer.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CanvasRenderer.NODE] );
+
+        setContextTransform( context ); //, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
         drawElements(eles.nondrag, context);
         
-        if( !drawAllLayers ){
+        if( !drawAllLayers && !(motionBlur && !nodeLayerNeedsMotionClear) ){
           needDraw[CanvasRenderer.NODE] = false; 
         }
       }
       
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
         
-        var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
+        var context = forcedContext || ( motionBlur && !nodeLayerNeedsMotionClear ? r.data.bufferContexts[ CanvasRenderer.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CanvasRenderer.DRAG] );
         
-        setContextTransform( context, motionBlur ? 'motionBlur' : undefined );
+        setContextTransform( context ); //, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
         drawElements(eles.drag, context);
         
-        if( !drawAllLayers ){
+        if( !drawAllLayers && !(motionBlur && !nodeLayerNeedsMotionClear) ){
           needDraw[CanvasRenderer.DRAG] = false;
         }
       }
@@ -519,6 +529,44 @@
 
         if( !drawAllLayers ){
           needDraw[CanvasRenderer.SELECT_BOX] = false; 
+        }
+      }
+
+      // motionblur: blit rendered blurry frames
+      if( motionBlur ){
+        var cxtNode = data.contexts[CanvasRenderer.NODE];
+        var txtNode = r.data.bufferCanvases[ CanvasRenderer.MOTIONBLUR_BUFFER_NODE ];
+
+        var cxtDrag = data.contexts[CanvasRenderer.DRAG];
+        var txtDrag = r.data.bufferCanvases[ CanvasRenderer.MOTIONBLUR_BUFFER_DRAG ];
+
+        var drawMotionBlur = function( cxt, txt ){
+          cxt.setTransform(1, 0, 0, 1, 0, 0);
+
+          // trailing frames effect
+          var gco = cxt.globalCompositeOperation;
+          cxt.globalCompositeOperation = 'destination-out';
+          cxt.fillStyle = 'rgba(255, 255, 255, 0.666)';
+          cxt.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
+          cxt.globalCompositeOperation = gco;
+
+          cxt.drawImage( 
+            txt, // img
+            0, 0, // sx, sy
+            r.canvasWidth * pixelRatio, r.canvasHeight * pixelRatio, // sw, sh
+            0, 0, // x, y
+            r.canvasWidth, r.canvasHeight // w, h
+          );
+        }
+
+        if( needDraw[CanvasRenderer.NODE] || nodeLayerNeedsMotionClear ){
+          drawMotionBlur( cxtNode, txtNode );
+          needDraw[CanvasRenderer.NODE] = false;
+        }
+
+        if( needDraw[CanvasRenderer.DRAG] ){
+          drawMotionBlur( cxtDrag, txtDrag );
+          needDraw[CanvasRenderer.DRAG] = false;
         }
       }
 

@@ -161,9 +161,31 @@
       }
     };
 
-    r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
-      r.destroy();
-    });
+    if( MutationObserver ){
+      r.removeObserver = new MutationObserver(function( mutns ){
+        for( var i = 0; i < mutns.length; i++ ){
+          var mutn = mutns[i];
+          var rNodes = mutn.removedNodes;
+
+          if( rNodes ){ for( var j = 0; j < rNodes.length; j++ ){
+            var rNode = rNodes[j];
+
+            if( rNode === r.data.container ){
+              r.destroy();
+              break;
+            }
+          } }
+        }
+      });
+
+      r.removeObserver.observe( r.data.container.parentNode, { childList: true } );
+    } else {
+      r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
+        r.destroy();
+      });
+    }
+
+
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {

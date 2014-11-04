@@ -108,6 +108,7 @@
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
     this.motionBlurPxRatio = 0.666;
+    this.clearedForMotionBlur = [];
 
     this.load();
   }

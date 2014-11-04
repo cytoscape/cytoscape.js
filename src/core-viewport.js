@@ -532,6 +532,6 @@
 
   // backwards compatibility
   $$.corefn.autolockNodes = $$.corefn.autolock;
-  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabifyNodes;
+  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabify;
 
 })( cytoscape );

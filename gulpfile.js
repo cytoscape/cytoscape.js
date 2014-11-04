@@ -23,7 +23,8 @@ var version; // used for marking builds w/ version etc
 var paths = {
   sources: [
     'src/preamble.js',
-    'src/namespace.js', 
+    'src/namespace.js',
+    'src/promise.js',
     'src/is.js', 
     'src/util.js', 
     'src/math.js',  

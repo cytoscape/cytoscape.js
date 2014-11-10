@@ -652,8 +652,8 @@
     if( struct.source !== undefined || struct.target !== undefined ){
       var srcId = struct.source;
       var tgtId = struct.target;
-      var srcExists = cy.getElementById(srcId).length > 0;
-      var tgtExists = cy.getElementById(tgtId).length > 0;
+      var srcExists = cy.getElementById( srcId ).length > 0;
+      var tgtExists = cy.getElementById( tgtId ).length > 0;
 
       if( srcExists || tgtExists ){
         var jsons = this.jsons();
@@ -674,12 +674,14 @@
  
     } else if( struct.parent !== undefined ){ // move node to new parent
       var parentId = struct.parent;
-      var parentExists = struct.parent === null || cy.getElementById( parentId ).length > 0;
+      var parentExists = parentId === null || cy.getElementById( parentId ).length > 0;
     
       if( parentExists ){
         var jsons = this.jsons();
+        var descs = this.descendants();
+        var descsEtc = descs.merge( descs.add(this).connectedEdges() );
 
-        this.remove();
+        this.remove(); // NB: also removes descendants and their connected edges
 
         for( var i = 0; i < this.length; i++ ){
           var json = jsons[i];
@@ -690,7 +692,7 @@
         }
       }
 
-      return cy.add( jsons );
+      return cy.add( jsons ).merge( descsEtc.restore() );
     }
 
     return this; // if nothing done

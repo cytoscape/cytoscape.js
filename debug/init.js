@@ -125,11 +125,11 @@ $(function(){
     
     elements: {
       nodes: [
-        { data: { id: 'a', parent: 'b' } },
-        { data: { id: 'b' } },
-        { data: { id: 'c'} },
-        { data: { id: 'd', parent: 'c' } },
-        { data: { id: 'e' } }
+        { data: { id: 'a', weight: 50 } },
+        { data: { id: 'b', weight: 30 } },
+        { data: { id: 'c', weight: 20 } },
+        { data: { id: 'd', weight: 10 } },
+        { data: { id: 'e', weight: 75 } }
       ], 
       
       edges: [

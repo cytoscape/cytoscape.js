@@ -106,7 +106,7 @@
       return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
     },
 
-    moz: function(){
+    gecko: function(){
       return typeof InstallTrigger !== 'undefined' || ('MozAppearance' in document.documentElement.style);
     },
 
@@ -114,7 +114,7 @@
       return typeof webkitURL !== 'undefined' || ('WebkitAppearance' in document.documentElement.style);
     },
 
-    chrome: function(){
+    chromium: function(){
       return typeof chrome !== 'undefined';
     },
 
@@ -126,8 +126,24 @@
       return $$.is.khtml() || $$.is.webkit() || $$.is.blink();
     },
 
-    ms: function(){
-      return typeof ActiveXObject !== 'undefined' || /*@cc_on!@*/false;
+    trident: function(){
+       return typeof ActiveXObject !== 'undefined' || /*@cc_on!@*/false;
+    },
+
+    windows: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Win/i);
+    },
+
+    mac: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Mac/i);
+    },
+
+    linux: function(){
+      typeof navigator !== 'undefined' && navigator.appVersion.match(/Linux/i);
+    },
+
+    unix: function(){
+      typeof navigator !== 'undefined' && navigator.appVersion.match(/X11/i);
     }
   };  
   

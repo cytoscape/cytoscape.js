@@ -878,7 +878,7 @@
       r.dragData.didDrag = false;
       
     }, false);
-    
+
     var wheelHandler = function(e) { 
       if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
@@ -903,9 +903,14 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           r.redraw();
         }, 150);
-      
-        var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
+
+        var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
         diff = diff * r.wheelSensitivity;
+
+        var needsWheelFix = e.deltaMode === 1;
+        if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows
+          diff *= 33;
+        }
 
         cy.zoom({
           level: cy.zoom() * Math.pow(10, diff),
@@ -919,13 +924,10 @@
     // --
     r.registerBinding(r.data.container, 'wheel', wheelHandler, true);
 
-    r.registerBinding(r.data.container, 'mousewheel', wheelHandler, true);
-    
-    r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
-
-    // TODO is this even needed?
-    r.registerBinding(r.data.container, 'MozMousePixelScroll', function(e){
-    }, false);
+    // disable nonstandard wheel events
+    // r.registerBinding(r.data.container, 'mousewheel', wheelHandler, true);
+    // r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
+    // r.registerBinding(r.data.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
     r.registerBinding(window, 'scroll', function(e){
       r.scrollingPage = true;

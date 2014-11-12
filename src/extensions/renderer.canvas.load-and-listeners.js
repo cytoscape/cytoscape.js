@@ -161,7 +161,7 @@
       }
     };
 
-    if( MutationObserver ){
+    if( typeof MutationObserver !== 'undefined' ){
       r.removeObserver = new MutationObserver(function( mutns ){
         for( var i = 0; i < mutns.length; i++ ){
           var mutn = mutns[i];

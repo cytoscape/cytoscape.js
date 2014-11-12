@@ -22,13 +22,7 @@ If your pull request is a bugfix, please make changes to the master branch.  Oth
 
 ## Authors
 
- * [Max Franz](https://github.com/maxkfranz) : main author
- * [Christian Lopes](https://github.com/chrtannus) : coauthor
- * [Gerardo Huck](https://github.com/gerardohuck) : CoSE layout and advanced graph theory algorithms
- * [Yue Dong](https://github.com/yuedong2) : initial version of the current renderer
- * [Onur Sumer](https://github.com/onursumer) : initial compound node rendering
-
-The list of all contributions to Cytoscape.js can be found in the [Contributors](https://github.com/cytoscape/cytoscape.js/graphs/contributors) section.
+The list of all contributions to Cytoscape.js can be found in the [Contributors](https://github.com/cytoscape/cytoscape.js/graphs/contributors) section on GitHub.
 
 
 ## Acknowledgements

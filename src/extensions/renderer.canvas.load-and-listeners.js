@@ -344,11 +344,23 @@
           var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
 
           clearTimeout( r.bgActiveTimeout );
-          r.bgActiveTimeout = setTimeout(function(){
-            if( near ){
-              near.unactivate();
-            }
 
+          if( cy.boxSelectionEnabled() || ( near && near.isEdge() ) ){
+            r.bgActiveTimeout = setTimeout(function(){
+              if( near ){
+                near.unactivate();
+              }
+
+              r.data.bgActivePosistion = {
+                x: pos[0],
+                y: pos[1]
+              };
+
+              r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+      
+              r.redraw();
+            }, timeUntilActive);
+          } else {
             r.data.bgActivePosistion = {
               x: pos[0],
               y: pos[1]
@@ -356,9 +368,8 @@
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
     
-
             r.redraw();
-          }, timeUntilActive);
+          }
           
         }
       

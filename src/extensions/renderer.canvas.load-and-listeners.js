@@ -787,7 +787,9 @@
             
             // console.log('single selection')
 
-            if( cy.selectionType() === 'additive' || shiftDown ){
+            if( r.hoverData.dragging ){
+              // if panning, don't change selection state
+            } else if( cy.selectionType() === 'additive' || shiftDown ){
               if( near.selected() ){
                 near.unselect();
               } else {

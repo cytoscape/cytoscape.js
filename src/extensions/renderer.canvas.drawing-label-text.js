@@ -112,6 +112,7 @@
     var labelFamily = style['font-family'].strValue;
     var labelWeight = style['font-weight'].strValue;
     var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
+    var outlineOpacity = style['text-outline-opacity'].value * opacity;
     var color = style['color'].value;
     var outlineColor = style['text-outline-color'].value;
 
@@ -141,7 +142,7 @@
 
     this.fillStyle(context, color[0], color[1], color[2], opacity);
     
-    this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], opacity);
+    this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
 
     return text;
   };

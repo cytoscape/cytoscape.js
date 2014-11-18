@@ -657,7 +657,7 @@
         // override pan w/ center if set
         var center = properties.center || properties.centre;
         if( center && isCore ){
-          var centerPan = cy.getCenterPan( center.eles );
+          var centerPan = cy.getCenterPan( center.eles, properties.zoom );
 
           if( centerPan ){
             properties.pan = centerPan;

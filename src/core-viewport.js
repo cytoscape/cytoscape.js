@@ -436,7 +436,7 @@
       return this; // chaining
     },
 
-    getCenterPan: function( elements ){
+    getCenterPan: function( elements, zoom ){
       if( !this._private.panningEnabled ){
         return;
       }
@@ -451,7 +451,7 @@
       var bb = elements.boundingBox();
       var w = this.width();
       var h = this.height();
-      var zoom = this._private.zoom;
+      zoom = zoom === undefined ? this._private.zoom : zoom;
 
       var pan = { // middle
         x: (w - zoom*( bb.x1 + bb.x2 ))/2,

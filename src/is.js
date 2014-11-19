@@ -139,11 +139,11 @@
     },
 
     linux: function(){
-      typeof navigator !== 'undefined' && navigator.appVersion.match(/Linux/i);
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Linux/i);
     },
 
     unix: function(){
-      typeof navigator !== 'undefined' && navigator.appVersion.match(/X11/i);
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/X11/i);
     }
   };  
   

@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3.4.
+ * This file is part of Cytoscape.js 2.3.5.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3.4';
+  $$.version = '2.3.5';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -173,15 +173,55 @@ var cytoscape;
       }
     },
 
-    touch: function(){
-      return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
-    },
-
     boundingBox: function(obj){
       return $$.is.plainObject(obj) && 
         $$.is.number(obj.x1) && $$.is.number(obj.x2) &&
         $$.is.number(obj.y1) && $$.is.number(obj.y2)
       ;
+    },
+
+    touch: function(){
+      return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
+    },
+
+    gecko: function(){
+      return typeof InstallTrigger !== 'undefined' || ('MozAppearance' in document.documentElement.style);
+    },
+
+    webkit: function(){
+      return typeof webkitURL !== 'undefined' || ('WebkitAppearance' in document.documentElement.style);
+    },
+
+    chromium: function(){
+      return typeof chrome !== 'undefined';
+    },
+
+    khtml: function(){
+      return navigator.vendor.match(/kde/i); // TODO probably a better way to detect this...
+    },
+
+    khtmlEtc: function(){
+      return $$.is.khtml() || $$.is.webkit() || $$.is.blink();
+    },
+
+    trident: function(){
+       return typeof ActiveXObject !== 'undefined' || /*@cc_on!@*/false;
+    },
+
+    windows: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Win/i);
+    },
+
+    mac: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Mac/i);
+    },
+
+    linux: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/Linux/i);
+    },
+
+    unix: function(){
+      return typeof navigator !== 'undefined' && navigator.appVersion.match(/X11/i);
     }
   };  
   
@@ -2810,8 +2850,7 @@ var cytoscape;
 
       // Events bubbling up the document may have been marked as prevented
       // by a handler lower down the tree; reflect the correct value.
-      this.isDefaultPrevented = ( src.defaultPrevented || 
-        src.getPreventDefault && src.getPreventDefault() ) ? returnTrue : returnFalse;
+      this.isDefaultPrevented = ( src.defaultPrevented ) ? returnTrue : returnFalse;
 
     // Event type
     } else {
@@ -3543,7 +3582,7 @@ var cytoscape;
         // override pan w/ center if set
         var center = properties.center || properties.centre;
         if( center && isCore ){
-          var centerPan = cy.getCenterPan( center.eles );
+          var centerPan = cy.getCenterPan( center.eles, properties.zoom );
 
           if( centerPan ){
             properties.pan = centerPan;
@@ -8047,7 +8086,7 @@ var cytoscape;
       return this; // chaining
     },
 
-    getCenterPan: function( elements ){
+    getCenterPan: function( elements, zoom ){
       if( !this._private.panningEnabled ){
         return;
       }
@@ -8062,7 +8101,7 @@ var cytoscape;
       var bb = elements.boundingBox();
       var w = this.width();
       var h = this.height();
-      var zoom = this._private.zoom;
+      zoom = zoom === undefined ? this._private.zoom : zoom;
 
       var pan = { // middle
         x: (w - zoom*( bb.x1 + bb.x2 ))/2,
@@ -8143,7 +8182,7 @@ var cytoscape;
 
   // backwards compatibility
   $$.corefn.autolockNodes = $$.corefn.autolock;
-  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabifyNodes;
+  $$.corefn.autoungrabifyNodes = $$.corefn.autoungrabify;
 
 })( cytoscape );
 
@@ -8801,8 +8840,8 @@ var cytoscape;
     if( struct.source !== undefined || struct.target !== undefined ){
       var srcId = struct.source;
       var tgtId = struct.target;
-      var srcExists = cy.getElementById(srcId).length > 0;
-      var tgtExists = cy.getElementById(tgtId).length > 0;
+      var srcExists = cy.getElementById( srcId ).length > 0;
+      var tgtExists = cy.getElementById( tgtId ).length > 0;
 
       if( srcExists || tgtExists ){
         var jsons = this.jsons();
@@ -8823,12 +8862,14 @@ var cytoscape;
  
     } else if( struct.parent !== undefined ){ // move node to new parent
       var parentId = struct.parent;
-      var parentExists = struct.parent === null || cy.getElementById( parentId ).length > 0;
+      var parentExists = parentId === null || cy.getElementById( parentId ).length > 0;
     
       if( parentExists ){
         var jsons = this.jsons();
+        var descs = this.descendants();
+        var descsEtc = descs.merge( descs.add(this).connectedEdges() );
 
-        this.remove();
+        this.remove(); // NB: also removes descendants and their connected edges
 
         for( var i = 0; i < this.length; i++ ){
           var json = jsons[i];
@@ -8839,7 +8880,7 @@ var cytoscape;
         }
       }
 
-      return cy.add( jsons );
+      return cy.add( jsons ).merge( descsEtc.restore() );
     }
 
     return this; // if nothing done
@@ -13454,6 +13495,10 @@ var cytoscape;
 
       b.target.removeEventListener(b.event, b.handler, b.useCapture);
     }
+
+    if( this.removeObserver ){
+      this.removeObserver.disconnect();
+    }
   };
 
   
@@ -15995,6 +16040,7 @@ var cytoscape;
     var labelFamily = style['font-family'].strValue;
     var labelWeight = style['font-weight'].strValue;
     var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
+    var outlineOpacity = style['text-outline-opacity'].value * opacity;
     var color = style['color'].value;
     var outlineColor = style['text-outline-color'].value;
 
@@ -16024,7 +16070,7 @@ var cytoscape;
 
     this.fillStyle(context, color[0], color[1], color[2], opacity);
     
-    this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], opacity);
+    this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
 
     return text;
   };
@@ -17246,9 +17292,31 @@ var cytoscape;
       }
     };
 
-    r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
-      r.destroy();
-    });
+    if( typeof MutationObserver !== 'undefined' ){
+      r.removeObserver = new MutationObserver(function( mutns ){
+        for( var i = 0; i < mutns.length; i++ ){
+          var mutn = mutns[i];
+          var rNodes = mutn.removedNodes;
+
+          if( rNodes ){ for( var j = 0; j < rNodes.length; j++ ){
+            var rNode = rNodes[j];
+
+            if( rNode === r.data.container ){
+              r.destroy();
+              break;
+            }
+          } }
+        }
+      });
+
+      r.removeObserver.observe( r.data.container.parentNode, { childList: true } );
+    } else {
+      r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
+        r.destroy();
+      });
+    }
+
+
 
     // auto resize
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
@@ -17407,11 +17475,23 @@ var cytoscape;
           var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
 
           clearTimeout( r.bgActiveTimeout );
-          r.bgActiveTimeout = setTimeout(function(){
-            if( near ){
-              near.unactivate();
-            }
 
+          if( cy.boxSelectionEnabled() || ( near && near.isEdge() ) ){
+            r.bgActiveTimeout = setTimeout(function(){
+              if( near ){
+                near.unactivate();
+              }
+
+              r.data.bgActivePosistion = {
+                x: pos[0],
+                y: pos[1]
+              };
+
+              r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+      
+              r.redraw();
+            }, timeUntilActive);
+          } else {
             r.data.bgActivePosistion = {
               x: pos[0],
               y: pos[1]
@@ -17419,9 +17499,8 @@ var cytoscape;
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
     
-
             r.redraw();
-          }, timeUntilActive);
+          }
           
         }
       
@@ -17839,7 +17918,9 @@ var cytoscape;
             
             // console.log('single selection')
 
-            if( cy.selectionType() === 'additive' || shiftDown ){
+            if( r.hoverData.dragging ){
+              // if panning, don't change selection state
+            } else if( cy.selectionType() === 'additive' || shiftDown ){
               if( near.selected() ){
                 near.unselect();
               } else {
@@ -17941,7 +18022,7 @@ var cytoscape;
       r.dragData.didDrag = false;
       
     }, false);
-    
+
     var wheelHandler = function(e) { 
       if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
@@ -17966,9 +18047,14 @@ var cytoscape;
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
           r.redraw();
         }, 150);
-      
-        var diff = e.wheelDeltaY / 1000 || e.wheelDelta / 1000 || e.detail / -32 || -e.deltaY / 500;
+
+        var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
         diff = diff * r.wheelSensitivity;
+
+        var needsWheelFix = e.deltaMode === 1;
+        if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows
+          diff *= 33;
+        }
 
         cy.zoom({
           level: cy.zoom() * Math.pow(10, diff),
@@ -17982,13 +18068,10 @@ var cytoscape;
     // --
     r.registerBinding(r.data.container, 'wheel', wheelHandler, true);
 
-    r.registerBinding(r.data.container, 'mousewheel', wheelHandler, true);
-    
-    r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
-
-    // TODO is this even needed?
-    r.registerBinding(r.data.container, 'MozMousePixelScroll', function(e){
-    }, false);
+    // disable nonstandard wheel events
+    // r.registerBinding(r.data.container, 'mousewheel', wheelHandler, true);
+    // r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
+    // r.registerBinding(r.data.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
     r.registerBinding(window, 'scroll', function(e){
       r.scrollingPage = true;

@@ -29,7 +29,7 @@ It is important to note that strings need to be enclosed by quotation marks:
 cy.filter('node[name = "Jerry"]'); // but this does
 ``` 
 
-Note that metacharacters need to be escaped:
+Note that metacharacters ( ^ $ \ / ( ) | ? + * [ ] { } , . ) need to be escaped:
 
 ```js
 cy.filter('#some\\$funky\\@id');

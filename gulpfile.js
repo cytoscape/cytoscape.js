@@ -17,6 +17,8 @@ var jshint = require('gulp-jshint');
 var jshStylish = require('jshint-stylish');
 var exec = require('child_process').exec;
 var runSequence = require('run-sequence');
+var browserify = require('browserify');
+var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 
 var version; // used for marking builds w/ version etc
 
@@ -357,6 +359,14 @@ gulp.task('betadocspush', shell.task([
   './publish-beta-docs.sh'
 ]));
 
+// browserify debug build
+gulp.task('browserify',['build'], function() {
+  var b = browserify({debug: true,hasExports: true});
+  b.add('./build/cytoscape.js', {expose: "cytoscape" });
+  return b.bundle()
+    .pipe(source('cytoscape.browserify.js'))
+    .pipe(gulp.dest('build'));
+});
 
 gulp.task('npm', shell.task([
   './publish-npm.sh'

@@ -360,13 +360,20 @@ gulp.task('betadocspush', shell.task([
 ]));
 
 // browserify debug build
-gulp.task('browserify',['build'], function() {
-  var b = browserify({debug: true,hasExports: true});
-  b.add('./build/cytoscape.js', {expose: "cytoscape" });
+gulp.task('browserify', ['build'], function(){
+  var b = browserify({ debug: true, hasExports: true });
+  
+  b.add('./build/cytoscape.js', { expose: "cytoscape" });
+
   return b.bundle()
-    .pipe(source('cytoscape.browserify.js'))
-    .pipe(gulp.dest('build'));
+    .pipe( source('cytoscape.browserify.js') )
+    .pipe( gulp.dest('build') )
+  ;
 });
+
+gulp.task('sniper', ['browserify'], shell.task([
+  'npm run sniper'
+]));
 
 gulp.task('npm', shell.task([
   './publish-npm.sh'

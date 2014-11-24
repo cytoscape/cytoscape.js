@@ -737,7 +737,7 @@
 
             {
               "name": "cy.makeLayout",
-              "descr": "Get a new layout, which can be used to algorithmically positions the nodes in the graph.",
+              "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph.",
               "formats": [
                 {
                   "args": [

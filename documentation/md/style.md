@@ -171,14 +171,6 @@ These properties affect the styling of an edge's line:
 
 
 
-# Visibility
-
-* **`display`** : Whether to display the element; may be `element` for displayed or `none` for not displayed.  Note that a `display: none` bezier edge does not take up space in its bundle.
-* **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.  Note that a `visibility: hidden` bezier edge still takes up space in its bundle.
-* **`opacity`** : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.
-* **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
-
-
 ## Edge arrow
 
 Towards the source node:
@@ -206,6 +198,16 @@ Towards the target node, positioned in the middle of the edge:
  * **`mid-target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
 
 
+
+## Visibility
+
+* **`display`** : Whether to display the element; may be `element` for displayed or `none` for not displayed.  Note that a `display: none` bezier edge does not take up space in its bundle.
+* **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.  Note that a `visibility: hidden` bezier edge still takes up space in its bundle.
+* **`opacity`** : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.
+* **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
+
+
+
 ## Labels
 
  * **`color`** :  The colour of the element's label.
@@ -221,7 +223,7 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-outline-width`** : The size of the outline on label text.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
 
- These properties can only be used on node labels:
+These properties can only be used on node labels:
 
  * **`text-halign`** : The vertical alignment of a label; may have value `left`, `center`, or `right`.
  * **`text-valign`** : The vertical alignment of a label; may have value `top`, `center`, or `bottom`.

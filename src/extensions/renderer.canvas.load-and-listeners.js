@@ -980,7 +980,7 @@
     }, false);
     
     var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
-    var distance1; // initial distance between finger 1 and finger 2 for pinch-to-zoom
+    var distance1, distance1Sq; // initial distance between finger 1 and finger 2 for pinch-to-zoom
     var center1, modelCenter1; // center point on start pinch to zoom
     var offsetLeft, offsetTop;
     var containerWidth, containerHeight;
@@ -1045,7 +1045,8 @@
         var pan = cy.pan();
         var zoom = cy.zoom();
 
-        distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
+        // distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
+        distance1Sq = (f2x1 - f1x1)*(f2x1 - f1x1) + (f2y1 - f1y1)*(f2y1 - f1y1);
         center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
         modelCenter1 = [ 
           (center1[0] - pan.x) / zoom,
@@ -1053,7 +1054,9 @@
         ];
 
         // consider context tap
-        if( distance1 < 200 && !e.touches[2] ){
+        var cxtDistThreshold = 200;
+        var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
+        if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
 
           var near1 = r.findNearestElement(now[0], now[1], true);
           var near2 = r.findNearestElement(now[2], now[3], true);
@@ -1245,13 +1248,19 @@
       if( capture && r.touchData.cxt ){
         var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
         var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
-        var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        var factor = distance2 / distance1;
+        // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+        var distance2Sq = (f2x2 - f1x2)*(f2x2 - f1x2) + (f2y2 - f1y2)*(f2y2 - f1y2);
+        var factorSq = distance2Sq / distance1Sq;
+
+        var distThreshold = 150;
+        var distThresholdSq = distThreshold * distThreshold;
+        var factorThreshold = 1.5;
+        var factorThresholdSq = factorThreshold * factorThreshold;
 
         //console.log(factor, distance2)
 
         // cancel ctx gestures if the distance b/t the fingers increases
-        if( factor >= 1.5 || distance2 >= 150 ){
+        if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
           r.touchData.cxt = false;
           if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
           r.data.bgActivePosistion = undefined;
@@ -1359,8 +1368,9 @@
         // console.log( f1x2, f1y2 )
         // console.log( f2x2, f2y2 )
 
-        var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        var factor = distance2 / distance1;
+        // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+        var distance2Sq = (f2x2 - f1x2)*(f2x2 - f1x2) + (f2y2 - f1y2)*(f2y2 - f1y2);
+        var factor = Math.sqrt( distance2Sq / distance1Sq );
 
         // console.log(distance2)
         // console.log(factor)

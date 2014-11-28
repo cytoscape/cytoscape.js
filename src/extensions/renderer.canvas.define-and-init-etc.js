@@ -102,6 +102,8 @@
     this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
+    this.tapThreshold = options.tapThreshold;
+    this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
 
     this.load();
   }

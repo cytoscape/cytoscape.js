@@ -415,6 +415,8 @@
       }
 
       var cy = r.data.cy;
+      var zoom = cy.zoom();
+      var pan = cy.pan();
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       
@@ -572,7 +574,14 @@
           r.hoverData.last = near;
         }
         
-        if ( down && down.isNode() && r.nodeIsDraggable(down) ) {
+        var dx = select[2] - select[0];
+        var dx2 = dx * dx;
+        var dy = select[3] - select[1];
+        var dy2 = dy * dy;
+        var dist2 = dx2 + dy2;
+        var rdist2 = dist2 * zoom * zoom;
+
+        if ( down && down.isNode() && r.nodeIsDraggable(down) && (rdist2 > r.tapThreshold2) ){
           if( !r.dragData.didDrag ) {
             r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           }
@@ -619,7 +628,6 @@
       }
       
       select[2] = pos[0]; select[3] = pos[1];
-    
       
       if( preventDefault ){ 
         if(e.stopPropagation) e.stopPropagation();
@@ -1619,6 +1627,7 @@
       r.hoverData.draggingEles = false;
       
       var cy = r.data.cy; 
+      var zoom = cy.zoom();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
 
@@ -1823,12 +1832,19 @@
             ;
           }
         }
+
+        var dx = r.touchData.startPosition[0] - now[0];
+        var dx2 = dx * dx;
+        var dy = r.touchData.startPosition[1] - now[1];
+        var dy2 = dy * dy;
+        var dist2 = dx2 + dy2;
+        var rdist2 = dist2 * zoom * zoom;
         
         // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
         if (start != null 
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable 
-            && (Math.sqrt(Math.pow(r.touchData.startPosition[0] - now[0], 2) + Math.pow(r.touchData.startPosition[1] - now[1], 2))) < 6) {
+            && ( rdist2 < r.tapThreshold2 ) {
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').not( start ).unselect();

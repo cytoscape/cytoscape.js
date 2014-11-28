@@ -1854,7 +1854,7 @@
         if (start != null 
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable 
-            && ( rdist2 < r.tapThreshold2 ) {
+            && rdist2 < r.tapThreshold2 ) {
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').not( start ).unselect();

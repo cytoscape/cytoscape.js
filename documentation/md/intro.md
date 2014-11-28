@@ -1,9 +1,10 @@
 ## Factsheet
 
  * A fully featured graph library written in pure JS
+ * Truely free and open source (LGPL3+)
+ * Designed for users first, for both frontfacing app usercases *and* developer usecases
  * Highly optimised
  * Dependency free
- * Truely free and open source (LGPL3+)
  * Compatible with
   * All modern browsers
   * CommonJS/Node.js
@@ -25,6 +26,7 @@
  * Includes graph theory algorithms, from BFS to PageRank
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
+ * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
 
 
 

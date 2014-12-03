@@ -42,7 +42,6 @@
     context.rotate(-newAngle);
     context.translate(-rs.labelX, -rs.labelY);
 
-    this.drawText(context, edge, rs.labelX, rs.labelY);
   };
 
   // Draw node text

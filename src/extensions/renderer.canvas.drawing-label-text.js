@@ -27,6 +27,21 @@
     // this.recalculateEdgeLabelProjection( edge );
     
     var rs = edge._private.rscratch;
+
+    var deltaX = rs.endX - rs.startX;
+    var deltaY = rs.endY - rs.startY;
+
+    var angleToRotate = Math.atan2(deltaY, deltaX);
+    var fmod = function (x, m) { return ((x % m) + m) % m; };
+    var newAngle = fmod((angleToRotate + Math.PI / 2), Math.PI) - Math.PI / 2;
+
+    context.translate(rs.labelX, rs.labelY);
+    context.rotate(newAngle);
+    // Rotate the label to make it align with the edge
+    this.drawText(context, edge, 0, -7);
+    context.rotate(-newAngle);
+    context.translate(-rs.labelX, -rs.labelY);
+
     this.drawText(context, edge, rs.labelX, rs.labelY);
   };
 

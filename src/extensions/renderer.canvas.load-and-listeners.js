@@ -634,7 +634,7 @@
           if(e.preventDefault) e.preventDefault();
           return false;
         }
-    }, 1000/30), false);
+    }, 1000/30, { leading: true }), false);
     
     r.registerBinding(window, 'mouseup', function(e) {
       // console.log('--\nmouseup', e)
@@ -1607,7 +1607,7 @@
       for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
       //r.redraw();
       
-    }, 1000/30), false);
+    }, 1000/30, { leading: true }), false);
     
     r.registerBinding(window, 'touchcancel', function(e) {
       var start = r.touchData.start;

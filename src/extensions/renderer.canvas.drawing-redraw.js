@@ -451,10 +451,23 @@
       needMbClear[CanvasRenderer.NODE] = !needDraw[CanvasRenderer.NODE] && motionBlur && !r.clearedForMotionBlur[CanvasRenderer.NODE];
       if( needMbClear[CanvasRenderer.NODE] ){ r.clearedForMotionBlur[CanvasRenderer.NODE] = true; }
 
-      // console.log('--');
+      console.log('--');
 
-      if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CanvasRenderer.NODE] ){
-        // console.log('NODE');
+      if( needDraw[CanvasRenderer.DRAG] && motionBlur && needMbClear[CanvasRenderer.NODE] ){
+        console.log('NODE blurclean');
+
+        var context = forcedContext || data.contexts[CanvasRenderer.NODE];
+
+        setContextTransform( context );
+        drawElements(eles.nondrag, context);
+
+        if( !drawAllLayers ){
+          needDraw[CanvasRenderer.NODE] = false; 
+          needMbClear[CanvasRenderer.NODE] = false;
+        }
+
+      } else if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CanvasRenderer.NODE] ){
+        console.log('NODE');
 
         var context = forcedContext || ( motionBlur && !needMbClear[CanvasRenderer.NODE] ? r.data.bufferContexts[ CanvasRenderer.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CanvasRenderer.NODE] );
 
@@ -470,7 +483,7 @@
       if( needMbClear[CanvasRenderer.DRAG] ){ r.clearedForMotionBlur[CanvasRenderer.DRAG] = true; }
 
       if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
-        // console.log('DRAG');
+        console.log('DRAG');
 
         var context = forcedContext || ( motionBlur && !needMbClear[CanvasRenderer.DRAG] ? r.data.bufferContexts[ CanvasRenderer.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CanvasRenderer.DRAG] );
         
@@ -587,11 +600,15 @@
         }
 
         if( needDraw[CanvasRenderer.NODE] || needMbClear[CanvasRenderer.NODE] ){
+          console.log('mb NODE');
+
           drawMotionBlur( cxtNode, txtNode );
           needDraw[CanvasRenderer.NODE] = false;
         }
 
         if( needDraw[CanvasRenderer.DRAG] || needMbClear[CanvasRenderer.DRAG] ){
+          console.log('mb DRAG');
+
           drawMotionBlur( cxtDrag, txtDrag );
           needDraw[CanvasRenderer.DRAG] = false;
           //needMbClear[CanvasRenderer.NODE] = true;

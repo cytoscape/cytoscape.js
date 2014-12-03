@@ -208,7 +208,7 @@
 
     if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
 
-    var nowTime = +new Date();
+    var nowTime = Date.now();
     var timeElapsed = nowTime - this.lastDrawTime;
     var callAfterLimit = timeElapsed >= redrawLimit;
 
@@ -227,14 +227,16 @@
       this.currentlyDrawing = true;
     }
 
+    
 
-    var startTime = +new Date();
+
+    var startTime = Date.now();
 
     //console.log('-- redraw --')
 
 
     function drawToContext(){ 
-      // startTime = +new Date();
+      // startTime = Date.now();
       // console.profile('draw' + startTime)
 
       var edges = r.getCachedEdges();
@@ -622,7 +624,7 @@
       }
 
 
-      var endTime = +new Date();
+      var endTime = Date.now();
 
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;

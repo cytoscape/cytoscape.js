@@ -990,6 +990,10 @@
       return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
     };
 
+    var distanceSq = function(x1, y1, x2, y2){
+      return (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1);
+    };
+
     r.registerBinding(r.data.container, 'touchstart', function(e) {
 
       clearTimeout( this.threeFingerSelectTimeout );
@@ -1045,8 +1049,8 @@
         var pan = cy.pan();
         var zoom = cy.zoom();
 
-        // distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
-        distance1Sq = (f2x1 - f1x1)*(f2x1 - f1x1) + (f2y1 - f1y1)*(f2y1 - f1y1);
+        distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
+        distance1Sq = distanceSq( f1x1, f1y1, f2x1, f2y1 );
         center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
         modelCenter1 = [ 
           (center1[0] - pan.x) / zoom,
@@ -1249,7 +1253,7 @@
         var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
         var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
         // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        var distance2Sq = (f2x2 - f1x2)*(f2x2 - f1x2) + (f2y2 - f1y2)*(f2y2 - f1y2);
+        var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
         var factorSq = distance2Sq / distance1Sq;
 
         var distThreshold = 150;
@@ -1368,9 +1372,10 @@
         // console.log( f1x2, f1y2 )
         // console.log( f2x2, f2y2 )
 
-        // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        var distance2Sq = (f2x2 - f1x2)*(f2x2 - f1x2) + (f2y2 - f1y2)*(f2y2 - f1y2);
-        var factor = Math.sqrt( distance2Sq / distance1Sq );
+        var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+        // var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
+        // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
+        var factor = distance2 / distance1;
 
         // console.log(distance2)
         // console.log(factor)

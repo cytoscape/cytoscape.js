@@ -290,6 +290,10 @@
       }
     }
 
+    var printMappingErr = function(){
+      $$.util.error('Do not assign mappings to elements without corresponding data (e.g. ele `'+ ele.id() +'` for property `'+ prop.name +'` with data field `'+ prop.field +'`); try a `['+ prop.field +']` selector to limit scope to elements with `'+ prop.field +'` defined');
+    };
+
     // put the property in the style objects
     switch( prop.mapped ){ // flatten the property if mapped
     case $$.style.types.mapData:
@@ -355,6 +359,7 @@
         flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
       } 
 
+      if( !flatProp ){ printMappingErr(); }
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want
 
@@ -382,6 +387,7 @@
         flatProp = this.parse( prop.name, flatPropVal, prop.bypass, true );
       }
 
+      if( !flatProp ){ printMappingErr(); }
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want
       break;

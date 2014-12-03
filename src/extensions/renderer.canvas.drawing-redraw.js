@@ -494,6 +494,11 @@
         if( !drawAllLayers && !motionBlur ){
           needDraw[CR.DRAG] = false;
         }
+
+        if( !r.clearedForMotionBlur[CR.NODE] ){
+          needDraw[CR.NODE] = true;
+          needMbClear[CR.NODE] = true;
+        }
       }
       
       if( r.showFps || (!drawOnlyNodeLayer && (needDraw[CR.SELECT_BOX] && !drawAllLayers)) ) {
@@ -653,7 +658,7 @@
       if( motionBlur ){ 
         r.motionBlurTimeout = setTimeout(function(){
           r.motionBlurTimeout = null;
-          // console.log('motion blur clear');
+          console.log('mb CLEAR');
 
           r.clearedForMotionBlur[CR.NODE] = false;
           r.clearedForMotionBlur[CR.DRAG] = false;

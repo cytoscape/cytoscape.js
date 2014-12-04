@@ -454,10 +454,10 @@
       needMbClear[CR.NODE] = !needDraw[CR.NODE] && motionBlur && !r.clearedForMotionBlur[CR.NODE];
       if( needMbClear[CR.NODE] ){ r.clearedForMotionBlur[CR.NODE] = true; }
 
-      console.log('--');
+      // console.log('--');
 
       if( needDraw[CR.DRAG] && motionBlur && needMbClear[CR.NODE] ){
-        console.log('NODE blurclean');
+        // console.log('NODE blurclean');
 
         var context = forcedContext || data.contexts[CR.NODE];
 
@@ -470,7 +470,7 @@
         }
 
       } else if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
-        console.log('NODE');
+        // console.log('NODE');
 
         var context = forcedContext || ( motionBlur && !needMbClear[CR.NODE] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
 
@@ -486,7 +486,7 @@
       if( needMbClear[CR.DRAG] ){ r.clearedForMotionBlur[CR.DRAG] = true; }
 
       if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers) ) {
-        console.log('DRAG');
+        // console.log('DRAG');
 
         var context = forcedContext || ( motionBlur && !needMbClear[CR.DRAG] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CR.DRAG] );
         
@@ -608,14 +608,14 @@
         }
 
         if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
-          console.log('mb NODE');
+          // console.log('mb NODE');
 
           drawMotionBlur( cxtNode, txtNode );
           needDraw[CR.NODE] = false;
         }
 
         if( needDraw[CR.DRAG] || needMbClear[CR.DRAG] ){
-          console.log('mb DRAG');
+          // console.log('mb DRAG');
 
           drawMotionBlur( cxtDrag, txtDrag );
           needDraw[CR.DRAG] = false;
@@ -660,7 +660,7 @@
       if( motionBlur ){ 
         r.motionBlurTimeout = setTimeout(function(){
           r.motionBlurTimeout = null;
-          console.log('mb CLEAR');
+          // console.log('mb CLEAR');
 
           r.clearedForMotionBlur[CR.NODE] = false;
           r.clearedForMotionBlur[CR.DRAG] = false;

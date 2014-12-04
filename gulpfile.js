@@ -37,6 +37,7 @@ var paths = {
     'src/selector.js',
     'src/style.js',
     'src/style-*.js',
+    'src/worker.js',
     'src/core.js',
     'src/core-*.js',
     'src/collection.js',
@@ -46,6 +47,12 @@ var paths = {
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'
   ],
+
+  nodeworkerName: 'worker-node-fork.js',
+  nodeworkerSrc: [
+    'src/preamble.js',
+    'src/worker-node-fork.js'
+  ], 
 
   docs: {
     js: [
@@ -98,7 +105,7 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('concat', ['version'], function(){
+gulp.task('concat', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
     
@@ -108,7 +115,7 @@ gulp.task('concat', ['version'], function(){
   ;
 });
 
-gulp.task('build', ['version'], function(){
+gulp.task('build', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
     
@@ -123,6 +130,16 @@ gulp.task('build', ['version'], function(){
     }) )
 
     .pipe( concat('cytoscape.min.js') )
+    
+    .pipe( gulp.dest('build') )
+  ;
+});
+
+gulp.task('nodeworker', function(){
+  return gulp.src( paths.nodeworkerSrc )
+    .pipe( replace('{{VERSION}}', version) )
+    
+    .pipe( concat(paths.nodeworkerName) )
     
     .pipe( gulp.dest('build') )
   ;
@@ -337,7 +354,8 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.min.js'
+    'build/cytoscape.min.js',
+    'build/' + paths.nodeworkerName
   ])
     .pipe( gulp.dest('dist') )
   ;

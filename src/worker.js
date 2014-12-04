@@ -5,14 +5,14 @@
 
   $$.Worker = function( fn ){
     if( !(this instanceof $$.Worker) ){
-      return new $$.Worker(opts);
+      return new $$.Worker(fn);
     }
 
     var _p = this._private = {
       requires: []
     };
 
-  };
+  };  
 
   $$.worker = $$.Worker;
   $$.wkrfn = $$.Worker.prototype; // short alias
@@ -32,13 +32,9 @@
       return this; // chaining
     },
 
-    run: function( fn ){
+    run: function( fn ){ // fn : optional require; probably used like main()
       var self = this;
       var _p = this._private;
-
-      if( fn ){ // optional require; probably used like main()
-        this.require( fn );
-      }
 
       _p.running = true;
 
@@ -46,12 +42,8 @@
 
       return new $$.Promise(function( resolve, reject ){
 
-        var msgIsResolve( m ){
-          return ( typeof m === 'object' ) && ( '$$resolve' in m );
-        }
-
         // worker code to exec
-        var fnStr = _p.requires.map(function( r ){ return r.toString(); }).join(';\n');
+        var fnStr = [ fn ].concat( _p.requires ).map(function( r ){ return '(' + r.toString() + ')();\n'; }).join('\n');
 
         if( window ){
           // add normalised worker api functions
@@ -66,8 +58,8 @@
 
           // worker messages => events
           ww.addEventListener('message', function( m ){
-            if( msgIsResolve(m) ){
-              resolve( m );
+            if( m && ('$$resolve' in m.data) ){
+              resolve( m.data.$$resolve );
             } else {
               self.trigger( new $$.Event(m, { type: 'message' }) );
             }
@@ -77,12 +69,14 @@
 
         } else if( typeof module !== 'undefined' ){
           // create a new process
+          var path = require('path');
+          var child_process = require('child_process');
           var child = _p.child = child_process.fork( path.join(__dirname, 'worker-node-fork') );
 
           // child process messages => events
           child.on('message', function( m ){
-            if( msgIsResolve(m) ){
-              resolve( m );
+            if( m && ('$$resolve' in m) ){
+              resolve( m.$$resolve );
             } else {
               self.trigger( new $$.Event(m, { type: 'message' }) );
             }
@@ -122,7 +116,8 @@
     stop: function(){
       var _p = this._private;
 
-      if( !_p.running ){ return; } // can stop only if running
+      // TODO may need to allow stop always
+      //if( !_p.running ){ return; } // can stop only if running
 
       if( _p.webworker ){
         _p.webworker.terminate();

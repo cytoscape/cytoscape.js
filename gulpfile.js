@@ -355,8 +355,8 @@ gulp.task('docspush', shell.task([
   './publish-docs.sh'
 ]));
 
-gulp.task('betadocspush', shell.task([
-  './publish-beta-docs.sh'
+gulp.task('unstabledocspush', shell.task([
+  './publish-unstable-docs.sh'
 ]));
 
 // browserify debug build

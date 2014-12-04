@@ -90,7 +90,7 @@ Run `gulp` in the console.  The main targets are:
  * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
  * `docspush` : push the built documentation to [js.cytoscape.org](http://js.cytoscape.org)
- * `betadocspush` : push the built documentation to [js.cytoscape.org/beta](http://js.cytoscape.org/beta)
+ * `unstabledocspush` : push the built documentation to [js.cytoscape.org/unstable](http://js.cytoscape.org/unstable)
 
 
 

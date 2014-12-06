@@ -1,0 +1,1 @@
+The functions that follow are globally accessible inside of worker code (but private to the worker):

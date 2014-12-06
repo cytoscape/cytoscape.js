@@ -27,7 +27,7 @@ The list of all contributions to Cytoscape.js can be found in the [Contributors]
 
 ## Acknowledgements
 
-CoSE is a layout in Cytoscape.js.  It's one of the best force-directed layouts in Cytoscape.js in its own right, and it's excellent at arranging compound graphs.  CoSE was implemented by Gerardo Huck and based on an article, ["A layout algorithm for undirected compound graphs"](http://dl.acm.org/citation.cfm?id=1498047&CFID=429377863&CFTOKEN=94691144).
+CoSE is a layout in Cytoscape.js.  It's one of the best force-directed layouts in Cytoscape.js in its own right, and it's excellent at arranging compound graphs.  CoSE was implemented by [Gerardo Huck](http://linkedin.com/in/gerardohuck/) and based on an article, ["A layout algorithm for undirected compound graphs"](http://dl.acm.org/citation.cfm?id=1498047&CFID=429377863&CFTOKEN=94691144).
 
 Cola.js is a layout in Cytoscape.js, and it is one of the best force-directed layouts in Cytoscape.js.  [Cola.js](http://marvl.infotech.monash.edu/webcola/) is the work of [Tim Dwyer](http://www.csse.monash.edu.au/~tdwyer/) at the [Monash Adaptive Visualisation Lab](http://marvl.infotech.monash.edu/).
 

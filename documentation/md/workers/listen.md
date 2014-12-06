@@ -12,7 +12,7 @@ w.run(function(){
 });
 
 w.on('message', function(e){
-  console.log( 'master heard: ' + e.message );
+  console.log( 'main js entity/thread heard: ' + e.message );
 
   w.stop();
 });

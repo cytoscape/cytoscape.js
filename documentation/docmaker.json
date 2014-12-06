@@ -2963,7 +2963,7 @@
           "fns": [
             {
               "name": "resolve",
-              "descr": "Resolves the worker with a value such that outsiders can read it.",
+              "descr": "Resolves the worker with a single value such that other entities (like the main JS thread or other workers) can read it.",
               "md": "workers/resolve"
             },
 
@@ -2973,7 +2973,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function(m)", "descr": "A function that is called when a message, `msg`, is received." }
+                    { "name": "function(msg)", "descr": "A function that is called when a message, `msg`, is received." }
                   ]
                 }
               ],
@@ -2982,7 +2982,7 @@
 
             {
               "name": "message",
-              "descr": "Broadcast a message to outsiders who are listening to the worker.",
+              "descr": "Broadcast a message to entities who are listening to the worker.",
               "formats": [
                 {
                   "args": [

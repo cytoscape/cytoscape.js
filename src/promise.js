@@ -171,4 +171,40 @@
   // use native promises where possible
   $$.Promise = typeof Promise === 'undefined' ? api : Promise;
 
+  // so we always have Promise.all()
+  $$.Promise.all = $$.Promise.all || function( ps ){
+    return new $$.Promise(function( resolveAll, rejectAll ){
+      var vals = new Array( ps.length );
+      var doneCount = 0;
+
+      var fulfill = function( i, val ){
+        vals[i] = val;
+        doneCount++;
+
+        if( doneCount === ps.length ){
+          resolveAll( vals );
+        }
+      };
+
+      for( var i = 0; i < ps.length; i++ ){
+        (function( i ){
+          var p = ps[i];
+          var isPromise = p.then != null;
+
+          if( isPromise ){
+            p.then(function( val ){
+              fulfill( i, val );
+            }, function( err ){
+              rejectAll( err );
+            });
+          } else {
+            var val = p;
+            fulfill( i, val );
+          }
+        })( i );
+      }
+
+    });
+  };
+
 })( cytoscape );

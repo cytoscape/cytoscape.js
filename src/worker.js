@@ -5,12 +5,16 @@
 
   $$.Worker = function( fn ){
     if( !(this instanceof $$.Worker) ){
-      return new $$.Worker(fn);
+      return new $$.Worker( fn );
     }
 
     var _p = this._private = {
       requires: []
     };
+
+    if( fn ){
+      this.run( fn );
+    }
 
   };  
 
@@ -32,10 +36,17 @@
       return this; // chaining
     },
 
-    run: function( fn ){ // fn : optional require; probably used like main()
+    run: function( fn ){ // fn used like main()
       var self = this;
       var _p = this._private;
 
+      if( _p.ran ){
+        return new $$.Promise(function( resolve, reject ){
+          reject('This worker has already been run!');
+        });
+      }
+
+      _p.ran = true;
       _p.running = true;
 
       self.trigger('run');
@@ -43,12 +54,14 @@
       return new $$.Promise(function( resolve, reject ){
 
         // worker code to exec
-        var fnStr = [ fn ].concat( _p.requires ).map(function( r ){ return '(' + r.toString() + ')();\n'; }).join('\n');
+        var fnStr = _p.requires.map(function( r ){
+          return r.toString() + '\n';
+        }).concat([ '(' + fn.toString() + ')();\n' ]).join('\n');
 
         if( window ){
           // add normalised worker api functions
           fnStr += 'function message(m){ postMessage(m); };\n';
-          fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && m.$$eval ){} else { fn(m); } });  };\n'; 
+          fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && (m.$$eval || m.data === "$$start") ){} else { fn(m.data); } });  };\n'; 
           fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
 
           // create webworker and let it exec the serialised code
@@ -58,14 +71,14 @@
 
           // worker messages => events
           ww.addEventListener('message', function( m ){
-            if( m && ('$$resolve' in m.data) ){
+            if( $$.is.object(m) && $$.is.object( m.data ) && ('$$resolve' in m.data) ){
               resolve( m.data.$$resolve );
             } else {
-              self.trigger( new $$.Event(m, { type: 'message' }) );
+              self.trigger( new $$.Event(m, { type: 'message', message: m.data }) );
             }
           }, false);
 
-          ww.postMessage(''); // start
+          ww.postMessage('$$start'); // start
 
         } else if( typeof module !== 'undefined' ){
           // create a new process
@@ -75,10 +88,10 @@
 
           // child process messages => events
           child.on('message', function( m ){
-            if( m && ('$$resolve' in m) ){
+            if( $$.is.object(m) && ('$$resolve' in m) ){
               resolve( m.$$resolve );
             } else {
-              self.trigger( new $$.Event(m, { type: 'message' }) );
+              self.trigger( new $$.Event({}, { type: 'message', message: m }) );
             }
           });
 

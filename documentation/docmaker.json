@@ -1,5 +1,5 @@
 {
-  "version": "snapshot-2b6b68b2d5-1414436194149",
+  "version": "2.4.0-unstable",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -2950,6 +2950,180 @@
           ]
         }
 
+      ]
+    },
+
+    {
+      "name": "Workers",
+      "md": "workers/intro",
+      "sections": [
+        {
+          "name": "Globals",
+          "md": "workers/globals",
+          "fns": [
+            {
+              "name": "resolve",
+              "descr": "Resolves the worker with a value such that outsiders can read it.",
+              "md": "workers/resolve"
+            },
+
+            {
+              "name": "listen",
+              "descr": "Listen to messages sent to the worker.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function(m)", "descr": "A function that is called when a message, `msg`, is received." }
+                  ]
+                }
+              ],
+              "md": "workers/listen"
+            },
+
+            {
+              "name": "message",
+              "descr": "Broadcast a message to outsiders who are listening to the worker.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "msg", "descr": "A message, e.g. JSON object or string, that is broadcasted." }
+                  ]
+                }
+              ],
+              "md": "workers/message"
+            }
+          ]
+        },
+
+        {
+          "name": "Execution",
+          "fns": [
+            {
+              "name": "worker.require",
+              "descr": "Require a named function into the worker, giving the worker a global reference to the function.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "fn", "descr": "The named function to require (that is copied to the worker)." }
+                  ]
+                }
+              ],
+              "md": "workers/require"
+            },
+
+            {
+              "name": "worker.run",
+              "descr": "Run the specified function in the worker, returning a promise that is resolved when the worker resolves.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "fn", "descr": "The function which will be copied and run in the worker." }
+                  ]
+                }
+              ],
+              "md": "workers/run"
+            },
+
+            {
+              "name": "worker.stop",
+              "descr": "Terminates the worker such that it no longer runs."
+            }
+          ]
+        },
+
+        {
+          "name": "Events",
+          "md": "workers/events",
+          "fns": [
+            {
+              "name": "worker.message",
+              "descr": "Send the worker a message.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the worker." }
+                  ]
+                }
+              ],
+              "md": "workers/message"
+            },
+
+            {
+              "name": "worker.on",
+              "descr": "Bind to events that are emitted by the worker.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "worker.one",
+              "descr": "Bind to events that are emitted by the worker, and trigger the handler only once.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "worker.off",
+              "descr": "Remove event handlers on the worker.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "worker.trigger",
+              "descr": "Trigger one or more events on the worker.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ]
+            }
+          
+          ]
+        }
       ]
     },
 

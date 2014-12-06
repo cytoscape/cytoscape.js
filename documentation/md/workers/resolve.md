@@ -1,6 +1,6 @@
 ## Details
 
-This function allows the developer to pass data back outside of the worker.
+This function allows the developer to pass a single value outside of the worker.
 
 
 ## Examples

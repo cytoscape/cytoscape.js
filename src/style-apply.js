@@ -262,10 +262,12 @@
     var prop = parsedProp;
     var style = ele._private.style;
     var fieldVal, flatProp;
+    var types = $$.style.types;
     var type = $$.style.properties[ prop.name ].type;
     var propIsBypass = prop.bypass;
     var origProp = style[ prop.name ];
     var origPropIsBypass = origProp && origProp.bypass;
+    var _p = ele._private;
 
     // can't apply auto to width or height unless it's a parent node
     if( (parsedProp.name === 'height' || parsedProp.name === 'width') && parsedProp.value === 'auto' && ele.isNode() && !ele.isParent() ){
@@ -296,14 +298,25 @@
 
     // put the property in the style objects
     switch( prop.mapped ){ // flatten the property if mapped
-    case $$.style.types.mapData:
-    case $$.style.types.mapLayoutData:
+    case types.mapData:
+    case types.mapLayoutData:
+    case types.mapScratch:
       
-      var isLayout = prop.mapped === $$.style.types.mapLayoutData;
+      var isLayout = prop.mapped === types.mapLayoutData;
+      var isScratch = prop.mapped === types.mapScratch;
 
       // flatten the field (e.g. data.foo.bar)
       var fields = prop.field.split(".");
-      var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
+      var fieldVal;
+
+      if( isLayout ){
+        fieldVal = _p.layoutData;
+      } else if( isScratch ){
+        fieldVal = _p.scratch;
+      } else {
+        fieldVal = _p.data;
+      }
+      
       for( var i = 0; i < fields.length && fieldVal; i++ ){
         var field = fields[i];
         fieldVal = fieldVal[ field ];
@@ -366,18 +379,28 @@
       break;
 
     // direct mapping  
-    case $$.style.types.data: 
-    case $$.style.types.layoutData: 
-
-      var isLayout = prop.mapped === $$.style.types.layoutData;
+    case types.data: 
+    case types.layoutData: 
+    case types.scratch: 
+      var isLayout = prop.mapped === types.layoutData;
+      var isScratch = prop.mapped === types.scratch;
 
       // flatten the field (e.g. data.foo.bar)
       var fields = prop.field.split(".");
-      var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
-      for( var i = 0; i < fields.length && fieldVal; i++ ){
+      var fieldVal;
+
+      if( isLayout ){
+        fieldVal = _p.layoutData;
+      } else if( isScratch ){
+        fieldVal = _p.scratch;
+      } else {
+        fieldVal = _p.data;
+      }
+
+      if( fieldVal ){ for( var i = 0; i < fields.length; i++ ){
         var field = fields[i];
         fieldVal = fieldVal[ field ];
-      }
+      } }
 
       flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
 

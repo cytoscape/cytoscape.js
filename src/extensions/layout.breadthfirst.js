@@ -5,6 +5,7 @@
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
     padding: 30, // padding on fit
     circle: false, // put depths in concentric circles if true, put depths top down if false
+    spacingFactor: 1.75, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     roots: undefined, // the roots of the trees
@@ -272,7 +273,7 @@
         
         minDistance = Math.max(minDistance, w, h);
       }
-      minDistance *= 1.75; // just to have some nice spacing
+      minDistance *= options.hspacingFactor; // just to have some nice spacing
     }
 
     // get the weighted percent for an element based on its connectivity to other levels

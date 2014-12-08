@@ -29,19 +29,33 @@
     var rs = edge._private.rscratch;
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
-    var deltaX = rs.endX - rs.startX;
-    var deltaY = rs.endY - rs.startY;
+    var style = edge._private.style;
+    var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
+    var theta, dx, dy;
+    
+    if( autorotate ){
+      switch( rs.edgeType ){
+        case 'haystack':
+          dx = rs.haystackPts[2] - rs.haystackPts[0];
+          dy = rs.haystackPts[3] - rs.haystackPts[1];
+          break;
+        default:
+          dx = rs.endX - rs.startX;
+          dy = rs.endY - rs.startY;
+      }
 
-    var angleToRotate = Math.atan2(deltaY, deltaX);
-    var fmod = function (x, m) { return ((x % m) + m) % m; };
-    var newAngle = fmod((angleToRotate + Math.PI / 2), Math.PI) - Math.PI / 2;
+      theta = Math.atan( dy / dx );
 
-    context.translate(rs.labelX, rs.labelY);
-    context.rotate(newAngle);
-    // Rotate the label to make it align with the edge
-    this.drawText(context, edge, 0, -4);
-    context.rotate(-newAngle);
-    context.translate(-rs.labelX, -rs.labelY);
+      context.translate(rs.labelX, rs.labelY);
+      context.rotate(theta);
+
+      this.drawText(context, edge, 0, -4); // make label offset from the edge a bit
+
+      context.rotate(-theta);
+      context.translate(-rs.labelX, -rs.labelY);
+    } else {
+      this.drawText(context, edge, rs.labelX, rs.labelY);
+    }
 
   };
 

@@ -1028,8 +1028,338 @@
 
 
       return res;
-    } // pageRank
+    }, // pageRank
 
+	// options => options object
+        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+        //   directed // default false
+        // retObj => returned object by function
+        // if directed
+        //   indegree_n : function(node) // Returns the normalized indegree of the given node
+        //   outdegree_n: function(node) // Returns the normalized outdegree of the given node
+        // if undirected
+        //   degree_n : function(node) // Returns the normalized degree of the given node
+        degreeCentralityNormalized: function (options) {
+            options = options || {};
+
+            var logDebug = function () {
+                if (debug) {
+                    console.log.apply(console, arguments);
+                }
+            };
+
+            // Parse options
+            // debug - optional
+            if (options.debug != null) {
+                var debug = options.debug;
+            } else {
+                var debug = false;
+            }
+
+            // directed - optional
+            if (options.directed != null) {
+                var directed = options.directed;
+            } else {
+                var directed = false;
+            }
+
+            logDebug("Starting degree centrality...");
+            var nodes = this.nodes();
+            var numNodes = nodes.length;
+            
+            if (!directed) {
+                var degrees = {};
+                var maxDegree = 0;
+
+                for (var i = 0; i < numNodes; i++) {
+                    var node = nodes[i];
+                    // add current node to the current options object and call degreeCentrality 
+                    var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
+                    if (maxDegree < currDegree.degree)
+                        maxDegree = currDegree.degree;
+
+                    degrees[node.id()] = currDegree.degree;
+                }
+
+                return {
+                    degree_n: function (node) {
+                        if ($$.is.string(node)) {
+                            // from is a selector string
+                            var node = (cy.filter(node)[0]).id();
+                        } else {
+                            // from is a node
+                            var node = node.id();
+                        }
+
+                        return degrees[node] / maxDegree;
+                    }
+                }
+            } else {
+                var indegrees = {};
+                var outdegrees = {};
+                var maxIndegree = 0;
+                var maxOutdegree = 0;
+
+                for (var i = 0; i < numNodes; i++) {
+                    var node = nodes[i];
+                    // add current node to the current options object and call degreeCentrality 
+                    var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
+
+                    if (maxIndegree < currDegree.indegree)
+                        maxIndegree = currDegree.indegree;
+
+                    if (maxOutdegree < currDegree.outdegree)
+                        maxOutdegree = currDegree.outdegree;
+
+                    indegrees[node.id()] = currDegree.indegree;
+                    outdegrees[node.id()] = currDegree.outdegree;
+                }
+
+                return {
+                    indegree_n: function (node) {
+                        if ($$.is.string(node)) {
+                            // from is a selector string
+                            var node = (cy.filter(node)[0]).id();
+                        } else {
+                            // from is a node
+                            var node = node.id();
+                        }
+
+                        return indegrees[node] / maxIndegree;
+                    },
+                    outdegree_n: function (node) {
+                        if ($$.is.string(node)) {
+                            // from is a selector string
+                            var node = (cy.filter(node)[0]).id();
+                        } else {
+                            // from is a node
+                            var node = node.id();
+                        }
+
+                        return outdegrees[node] / maxOutdegree;
+                    }
+
+                }
+            }
+
+        }, // degreeCentralityNormalized
+
+        // Implemented from the algorithm in Opsahl's paper "Node centrality in weighted networks: Generalizing degree and shortest paths" check the heading 2 "Degree"
+        // options => options object
+        //   node : focal node
+        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+        //   alpha : alpha value for the algorithm (Benchmark values of alpha: 0 -> disregards the weights focuses on number of edges
+        //                                                                     1 -> disregards the number of edges focuses on total amount of weight 
+        //   directed // default false
+        // retObj => returned object by function
+        // if directed
+        //   indegree : indegree of the given node
+        //   outdegree: outdegree of the given node
+        // if undirected
+        //   degree : degree of the given node
+        degreeCentrality: function (options) {
+            options = options || {};
+
+            var logDebug = function () {
+                if (debug) {
+                    console.log.apply(console, arguments);
+                }
+            };
+
+            // Parse options
+            // debug - optional
+            if (options.debug != null) {
+                var debug = options.debug;
+            } else {
+                var debug = false;
+            }
+
+            logDebug("Starting degree centrality...");
+
+            // root - mandatory!
+            if (options != null && options.root != null) {
+                var root = $$.is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
+                logDebug("Source node: %s", root.id());
+            } else {
+                return undefined;
+            }
+            
+            // weight - optional
+            if (options.weight != null && $$.is.fn(options.weight)) {
+                var weightFn = options.weight;
+            } else {
+                // If not specified, assume each edge has equal weight (1)
+                var weightFn = function (e) {
+                    return 1;
+                };
+            }
+
+            // directed - optional
+            if (options.directed != null) {
+                var directed = options.directed;
+            } else {
+                var directed = false;
+            }
+
+            // alpha - optional
+            if (options.alpha != null && $$.is.number(options.alpha)) {
+                var alpha = options.alpha
+            } else {
+                alpha = 0;
+            }
+
+
+            if (!directed) {
+                var connEdges = root.connectedEdges();
+                var k = connEdges.length;
+                var s = 0;
+                
+                // Now, sum edge weights
+                for (var i = 0; i < connEdges.length; i++) {
+                    var edge = connEdges[i];
+                    s += weightFn.apply(edge, [edge]);
+                }
+
+                return {
+                    degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
+                };
+            } else {
+                var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]');
+                var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]');
+                var k_in = incoming.length;
+                var k_out = outgoing.length;
+                var s_in = 0;
+                var s_out = 0;
+
+                // Now, sum incoming edge weights
+                for (var i = 0; i < incoming.length; i++) {
+                    var edge = incoming[i];
+                    s_in += weightFn.apply(edge, [edge]);
+                }
+
+                // Now, sum outgoing edge weights
+                for (var i = 0; i < outgoing.length; i++) {
+                    var edge = outgoing[i];
+                    s_out += weightFn.apply(edge, [edge]);
+                }
+
+                return {
+                    indegree: Math.pow(k_in, 1 - alpha) * Math.pow(s_in, alpha),
+                    outdegree: Math.pow(k_out, 1 - alpha) * Math.pow(s_out, alpha)
+                };
+            }
+        }, // degreeCentrality
+         
+        // options => options object
+        // weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+        // retObj => returned object by function
+        //   closeness_n : function(node) // Returns the normalized closeness of the given node
+        closenessCentralityNormalized: function (options) {
+            options = options || {};
+
+            var logDebug = function () {
+                if (debug) {
+                    console.log.apply(console, arguments);
+                }
+            };
+
+            // Parse options
+            // debug - optional
+            if (options.debug != null) {
+                var debug = options.debug;
+            } else {
+                var debug = false;
+            }
+
+            logDebug("Starting closeness centrality...");
+
+            var closenesses = {};
+            var maxCloseness = 0;
+            var nodes = this.nodes();
+            var fw = this.floydWarshall({weight: options.weight});
+
+            // Compute closeness for every node and find the maximum closeness
+            nodes.forEach(function (ele) {
+                var currCloseness = 0;
+                for (var i = 0; i < nodes.length; i++) {
+                    if (!(nodes[i].id() == ele.id())) {
+                        currCloseness += 1 / fw.distance(nodes[i], ele);
+                    }
+                }
+
+                if (maxCloseness < currCloseness)
+                    maxCloseness = currCloseness;
+
+                closenesses[ele.id()] = currCloseness;
+            });
+
+            return {
+                closeness_n: function (node) {
+                    if ($$.is.string(node)) {
+                        // from is a selector string
+                        var node = (cy.filter(node)[0]).id();
+                    } else {
+                        // from is a node
+                        var node = node.id();
+                    }
+
+                    return closenesses[node] / maxCloseness;
+                }
+            }
+        },
+        
+        // Implemented from pseudocode from wikipedia
+        // Assumes undirected graph
+        // options => options object
+        //   node : focal node
+        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+        // closeness => returned value by the function. Closeness value of the given node.
+        closenessCentrality: function (options) {
+            options = options || {};
+
+            var logDebug = function () {
+                if (debug) {
+                    console.log.apply(console, arguments);
+                }
+            };
+
+            // Parse options
+            // debug - optional
+            if (options.debug != null) {
+                var debug = options.debug;
+            } else {
+                var debug = false;
+            }
+
+            logDebug("Starting closeness centrality...");
+
+            // root - mandatory!
+            if (options.root != null) {
+                if ($$.is.string(options.root)) {
+                    // use it as a selector, e.g. "#rootID
+                    var root = this.filter(options.root)[0];
+                } else {
+                    var root = options.root[0];
+                }
+                logDebug("Source node: %s", root.id());
+            } else {
+                $$.util.error("options.root required");
+                return undefined;
+            }
+            
+            // we need distance from this node to every other node
+            var dijkstra = this.dijkstra(root, options.weight);
+            var totalDistance = 0;
+
+            this.nodes().forEach(function (ele) {
+                if (ele.id() == root.id())
+                    return;
+
+                totalDistance += 1 / dijkstra.distanceTo(ele);
+            });
+
+            return totalDistance;
+        }
   }); // $$.fn.eles
 
 

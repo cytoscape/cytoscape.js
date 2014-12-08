@@ -27,6 +27,7 @@
     // this.recalculateEdgeLabelProjection( edge );
     
     var rs = edge._private.rscratch;
+    if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
     var deltaX = rs.endX - rs.startX;
     var deltaY = rs.endY - rs.startY;
@@ -38,7 +39,7 @@
     context.translate(rs.labelX, rs.labelY);
     context.rotate(newAngle);
     // Rotate the label to make it align with the edge
-    this.drawText(context, edge, 0, -7);
+    this.drawText(context, edge, 0, -4);
     context.rotate(-newAngle);
     context.translate(-rs.labelX, -rs.labelY);
 
@@ -64,6 +65,7 @@
     var textHalign = node._private.style['text-halign'].strValue;
     var textValign = node._private.style['text-valign'].strValue;
     var rs = node._private.rscratch;
+    if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
     switch( textHalign ){
       case 'left':

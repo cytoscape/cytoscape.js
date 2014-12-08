@@ -103,7 +103,7 @@
         queue: []
       },
       rscratch: {}, // object in which the renderer can store information
-      scratch: {}, // scratch objects
+      scratch: params.scratch || {}, // scratch objects
       edges: [], // array of connected edges
       children: [] // array of children
     };

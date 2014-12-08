@@ -64,6 +64,11 @@ cytoscape({
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
       },
 
+      // scratchpad data (usually temp or nonserialisable data)
+      scratch: {
+        foo: 'bar'
+      },
+
       position: { // the model position of the node (optional on init, mandatory after)
         x: 100,
         y: 100
@@ -169,7 +174,7 @@ var cy = cytoscape({
 
 Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.
 
-Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [eles.move](#collection/graph-manipulation/eles.move).
+Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [eles.move()](#collection/graph-manipulation/eles.move).
 
 As far as the API is concerned, compound nodes are treated just like regular nodes &mdash; except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
 

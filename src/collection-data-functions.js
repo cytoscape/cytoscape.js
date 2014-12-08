@@ -39,15 +39,22 @@
 
     scratch: $$.define.data({
       field: 'scratch',
-      allowBinding: false,
+      bindingEvent: 'scratch',
+      allowBinding: true,
       allowSetting: true,
-      settingTriggersEvent: false,
-      allowGetting: true
+      settingEvent: 'scratch',
+      settingTriggersEvent: true,
+      triggerFnName: 'trigger',
+      allowGetting: true,
+      updateStyle: true
     }),
 
     removeScratch: $$.define.removeData({
       field: 'scratch',
-      triggerEvent: false
+      event: 'scratch',
+      triggerFnName: 'trigger',
+      triggerEvent: true,
+      updateStyle: true
     }),
 
     rscratch: $$.define.data({

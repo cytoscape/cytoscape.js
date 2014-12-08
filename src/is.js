@@ -110,6 +110,10 @@
       ;
     },
 
+    promise: function(obj){
+      return $$.is.object(obj) && $$.is.fn(obj.then);
+    },
+
     touch: function(){
       return window && ( ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch );
     },

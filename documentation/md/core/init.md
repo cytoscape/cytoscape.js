@@ -141,9 +141,9 @@ var cy = cytoscape({
 
 **`container`** : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).
 
-**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).
+**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.
 
-**`style`** : The [stylesheet](#style) used to style the graph.
+**`style`** : The [stylesheet](#style) used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in `options.elements` at initialisation time).
 

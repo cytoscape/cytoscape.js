@@ -413,6 +413,17 @@
       if( !flatProp ){ printMappingErr(); }
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want
+      
+      break;
+
+    case types.fn:
+      var fn = prop.value;
+      var fnRetVal = fn( ele );
+
+      flatProp = this.parse( prop.name, fnRetVal, prop.bypass, true );
+      flatProp.mapping = prop; // keep a reference to the mapping
+      prop = flatProp; // the flattened (mapped) property is the one we want
+
       break;
 
     case undefined:

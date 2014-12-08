@@ -83,6 +83,7 @@
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       mapScratch: { mapping: true, regex: mapData('mapScratch') },
+      fn: { mapping: true, fn: true },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
       propList: { propList: true },
       angle: { number: true, units: 'deg|rad' }
@@ -447,6 +448,20 @@
       };
     }
 
+    var hasPie = name.match(/pie-(\d+)-background-size/);
+
+    // check if value is a function used as a mapper
+    if( $$.is.fn(value) ){
+      return {
+        name: name,
+        value: value,
+        strValue: 'fn',
+        mapped: types.fn,
+        bypass: propIsBypass,
+        hasPie: hasPie
+      };
+    }
+
     // check if value is mapped
     var data, mapData, layoutData, mapLayoutData, scratch, mapScratch;
     if( !valueIsString || propIsFlat ){
@@ -477,7 +492,7 @@
         mapped: mapped,
         field: data[1],
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/)
+        hasPie: hasPie
       };
 
     } else if(
@@ -542,7 +557,7 @@
         valueMin: valueMin.value,
         valueMax: valueMax.value,
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/)
+        hasPie: hasPie
       };
     }
 
@@ -621,7 +636,7 @@
         strValue: '' + value + (units ? units : ''),
         units: units,
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value !== 0 && value !== ''
+        hasPie: hasPie && value != null && value !== 0 && value !== ''
       };
 
       // normalise value in pixels

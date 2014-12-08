@@ -1974,6 +1974,7 @@
           "fns": [
             {
               "name": "eles.add",
+              "pureAliases": [ "eles.and" ],
               "descr": "Get a new collection, resulting from adding the collection with another one",
               "formats": [
                 {

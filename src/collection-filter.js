@@ -283,5 +283,7 @@
       };
     }
   });
+
+  $$.elesfn.and = $$.elesfn.add;
   
 })( cytoscape );

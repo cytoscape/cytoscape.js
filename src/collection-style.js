@@ -253,6 +253,8 @@
 
     transparent: function(){
       var ele = this[0];
+      if( !cy.styleEnabled() ){ return false; }
+
       var hasCompoundNodes = ele.cy().hasCompoundNodes();
 
       if( ele ){
@@ -276,6 +278,15 @@
 
         return ele.isParent() && autoW && autoH;
       }
+    },
+
+    backgrounding: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
+      var ele = this[0];
+
+      return ele._private.backgrounding ? true : false;
     }
 
   });

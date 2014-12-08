@@ -9,6 +9,7 @@
     var nodeWidth, nodeHeight;
     var style = node._private.style;
     var rs = node._private.rscratch;
+    var _p = node._private;
     
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
@@ -126,7 +127,13 @@
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
-        
+
+        var prevBging = _p.backgrounding;
+        _p.backgrounding = !image.complete;
+
+        if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+          node.updateStyle( false );
+        }
       } 
       
       var darkness = style['background-blacken'].value;

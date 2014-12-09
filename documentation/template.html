@@ -259,7 +259,7 @@
 						<span class="icon-caret-down expanded-icon"></span>
 						<span class="icon-caret-right collapsed-icon"></span>
 					</span>{{/if}}
-					<a href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+					<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
 				</div>
 
 				{{#each sections}}
@@ -268,11 +268,11 @@
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>{{/if}}
-						<a href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+						<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
 					</div>
 
 					{{#each fns}}
-						<div class="section lvl3"><a href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+						<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
 					{{/each}}
 				{{/each}}
 			{{/each}}

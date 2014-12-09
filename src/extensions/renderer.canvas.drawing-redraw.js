@@ -184,7 +184,8 @@
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
-    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
+    var inBoxSelection = r.data.select[4] ? true : false;
+    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
 
     if( r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );

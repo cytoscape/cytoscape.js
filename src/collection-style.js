@@ -252,9 +252,10 @@
     },
 
     transparent: function(){
-      var ele = this[0];
+      var cy = this.cy();
       if( !cy.styleEnabled() ){ return false; }
 
+      var ele = this[0];
       var hasCompoundNodes = ele.cy().hasCompoundNodes();
 
       if( ele ){

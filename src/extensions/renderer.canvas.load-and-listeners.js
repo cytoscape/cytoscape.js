@@ -132,11 +132,10 @@
         return;
       }
 
-      var nodes = parent
-        .descendants()
-        .add( parent )
-        .not( node )
-        .not( node.descendants() )
+      var nodes = parent.descendants()
+        .merge( parent )
+        .unmerge( node )
+        .unmerge( node.descendants() )
       ;
 
       var edges = nodes.connectedEdges();
@@ -805,7 +804,7 @@
               }
             } else {
               if( !shiftDown ){
-                cy.$(':selected').not( near ).unselect();
+                cy.$(':selected').unmerge( near ).unselect();
                 near.select();
               }               
             }
@@ -838,7 +837,7 @@
             newlySelCol.select();
           } else {
             if( !shiftDown ){
-              cy.$(':selected').not( newlySelCol ).unselect();
+              cy.$(':selected').unmerge( newlySelCol ).unselect();
             }
 
             newlySelCol.select();
@@ -1717,7 +1716,7 @@
           var newlySelCol = new $$.Collection( cy, newlySelected );
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').not( newlySelCol ).unselect();
+            cy.$(':selected').unmerge( newlySelCol ).unselect();
           }
 
           newlySelCol.select();
@@ -1862,7 +1861,7 @@
             && rdist2 < r.tapThreshold2 ) {
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').not( start ).unselect();
+            cy.$(':selected').unmerge( start ).unselect();
             start.select();
           } else {
             if( start.selected() ){

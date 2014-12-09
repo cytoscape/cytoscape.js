@@ -21,7 +21,7 @@
 
         for(var i = 0; i < this.length; i++){
           var ele = this[i];
-          var ret = fn.apply( thisArg, [ ele, i, this ] );
+          var ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
 
           if( ret === false ){ break; } // exit each early on return false
         }

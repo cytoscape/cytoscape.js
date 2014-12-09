@@ -83,8 +83,7 @@
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
       propList: { propList: true },
-      angle: { number: true, units: 'deg|rad' },
-      textRotation: { enums: ['none', 'autorotate'] }
+      angle: { number: true, units: 'deg|rad' }
     };
 
     // define visual style properties
@@ -108,7 +107,6 @@
       { name: 'font-weight', type: t.fontWeight },
       { name: 'font-size', type: t.size },
       { name: 'min-zoomed-font-size', type: t.size },
-      { name: 'edge-text-rotation', type: t.textRotation },
 
       // visibility
       { name: 'display', type: t.display },
@@ -244,7 +242,6 @@
           'font-weight': fontWeight,
           'font-size': fontSize,
           'min-zoomed-font-size': 0,
-          'edge-text-rotation': 'none',
           'visibility': 'visible',
           'display': 'element',
           'opacity': 1,

@@ -594,19 +594,7 @@
       var tgt = _p.target;
       var srcPos = src._private.position;
       var tgtPos = tgt._private.position;
-      var srcW = src._private.style['width'].pxValue;
-      var tgtW = tgt._private.style['width'].pxValue;
-      var srcH = src._private.style['height'].pxValue;
-      var tgtH = tgt._private.style['height'].pxValue;
-      var radius = style['haystack-radius'].value;
-      var halfRadius = radius/2; // b/c have to half width/height
-      
-      var pts = rs.haystackPts = [
-        rs.source.x * srcW * halfRadius + srcPos.x,
-        rs.source.y * srcH * halfRadius + srcPos.y,
-        rs.target.x * tgtW * halfRadius + tgtPos.x,
-        rs.target.y * tgtH * halfRadius + tgtPos.y
-      ];
+      var pts = rs.haystackPts;
 
       edgeCenterX = ( pts[0] + pts[2] )/2;
       edgeCenterY = ( pts[1] + pts[3] )/2;
@@ -1191,7 +1179,9 @@
       
     for( var i = 0; i < haystackEdges.length; i++ ){
       var edge = haystackEdges[i];
-      var rscratch = edge._private.rscratch;
+      var _p = edge._private;
+      var rscratch = _p.rscratch;
+      var rs = rscratch;
 
       if( !rscratch.haystack ){
         var angle = Math.random() * 2 * Math.PI;
@@ -1210,7 +1200,25 @@
 
         rscratch.edgeType = 'haystack';
         rscratch.haystack = true;
-      }  
+      }
+
+      var src = _p.source;
+      var tgt = _p.target;
+      var srcPos = src._private.position;
+      var tgtPos = tgt._private.position;
+      var srcW = src._private.style['width'].pxValue;
+      var tgtW = tgt._private.style['width'].pxValue;
+      var srcH = src._private.style['height'].pxValue;
+      var tgtH = tgt._private.style['height'].pxValue;
+      var radius = style['haystack-radius'].value;
+      var halfRadius = radius/2; // b/c have to half width/height
+
+      rs.haystackPts = [
+        rs.source.x * srcW * halfRadius + srcPos.x,
+        rs.source.y * srcH * halfRadius + srcPos.y,
+        rs.target.x * tgtW * halfRadius + tgtPos.x,
+        rs.target.y * tgtH * halfRadius + tgtPos.y
+      ];
     }
 
     return hashTable;

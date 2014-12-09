@@ -61,9 +61,9 @@
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
     context.lineWidth = edgeWidth;
     
-    if( rs.edgeType !== 'haystack' ){
-      //this.findEndpoints(edge);
-    }
+    // if( rs.edgeType !== 'haystack' ){
+    //   this.findEndpoints(edge);
+    // }
     
     if( rs.edgeType === 'haystack' ){
       var radius = style['haystack-radius'].value;
@@ -72,12 +72,7 @@
       this.drawStyledEdge(
         edge, 
         context, 
-        rs.haystackPts = [
-          rs.source.x * sourceW * halfRadius + sourcePos.x,
-          rs.source.y * sourceH * halfRadius + sourcePos.y,
-          rs.target.x * targetW * halfRadius + targetPos.x,
-          rs.target.y * targetH * halfRadius + targetPos.y
-        ],
+        rs.haystackPts,
         lineStyle,
         edgeWidth
       );

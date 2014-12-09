@@ -321,7 +321,7 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docsdemoshots', function(next){
+gulp.task('docsdemoshots', function(next){ return next(); // disable for now since phantomjs doesn't work for this usecase
   var cwd = process.cwd();
 
   process.chdir('./documentation');

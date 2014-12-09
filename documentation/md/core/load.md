@@ -1,6 +1,6 @@
 ## Details
 
-This function is merely a convenient way of setting the elements in the graph and applying a layout.  For more control, the developer should use [cy.add()](#core/graph-manipulation/cy.add) and [cy.layout()](#core/layout/cy.layout) etc.
+This function is merely a convenient way of setting the elements in the graph and applying a layout.  For more control, the developer should use [`cy.add()`](#core/graph-manipulation/cy.add) and [`cy.layout()`](#core/layout/cy.layout) etc.
 
 Note that `eleObjs` can be specified as an array with each element specifying its `group`, or alternatively, `eleObjs` can be specified as a `group`-indexed map, following the same format as in [initialisation](#core/initialisation) and outlined in the [element JSON format](#notation/elements-json).
 

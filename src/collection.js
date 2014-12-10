@@ -318,6 +318,7 @@
 
     return new $$.Collection( cy, elesArr );
   };
+  $$.elesfn.copy = $$.elesfn.clone;
 
   $$.elesfn.restore = function( notifyRenderer ){
     var self = this;

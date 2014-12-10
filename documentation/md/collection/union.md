@@ -5,10 +5,10 @@ With a collection:
 var j = cy.$('#j');
 var e = cy.$('#e');
 
-j.add(e);
+j.union(e);
 ```
 
 With a selector:
 ```js
-cy.$('#j').add('#e');
+cy.$('#j').union('#e');
 ```

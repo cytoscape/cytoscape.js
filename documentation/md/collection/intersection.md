@@ -4,5 +4,5 @@
 var jNhd = cy.$('#j').neighborhood();
 var eNhd = cy.$('#e').neighborhood();
 
-jNhd.intersect( eNhd );
+jNhd.intersection( eNhd );
 ```

@@ -793,6 +793,7 @@
 
     return this; // chaining
   };
+  $$.styfn.style = $$.styfn.css;
 
   // add a single css rule to the current context
   $$.styfn.cssRule = function( name, value ){ 

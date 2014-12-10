@@ -1,7 +1,7 @@
 ## Examples
 
 ```js
-cy.nodes().stdFilter(function( ele ){
+cy.nodes().filterFn(function( ele ){
   return ele.data('weight') > 50;
 });
 ```

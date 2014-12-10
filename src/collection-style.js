@@ -293,8 +293,8 @@
   });
 
 
-  $$.elesfn.style = $$.elesfn.css;
+  $$.elesfn.bypass = $$.elesfn.style = $$.elesfn.css;
   $$.elesfn.renderedStyle = $$.elesfn.renderedCss;
-  $$.elesfn.removeStyle = $$.elesfn.removeCss;
+  $$.elesfn.removeBypass = $$.elesfn.removeStyle = $$.elesfn.removeCss;
   
 })( cytoscape );

@@ -170,13 +170,13 @@
 						<div class="function">
 							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
 							
-							{{#if pureAliases}}
+							{{#if processedPureAliases}}
 							<div class="pure-aliases">
 								<span class="important-indicator"></span> Aliases:
 
-								{{#each pureAliases}}
+								{{#each processedPureAliases}}
 									<span class="pure-alias">
-										<span class="pure-alias-name">{{this}}()</span><span class="pure-alias-comma">,</span>
+										<span id="{{id}}" class="pure-alias-name">{{name}}()</span><span class="pure-alias-comma">,</span>
 									</span>
 								{{/each}}
 							</div>
@@ -193,6 +193,19 @@
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}
+
+										{{#if processedPureAliases}}
+										<div class="pure-aliases">
+											<span class="important-indicator"></span> Aliases:
+
+											{{#each processedPureAliases}}
+												<span class="pure-alias">
+													<span id="{{id}}" class="pure-alias-name">{{name}}()</span><span class="pure-alias-comma">,</span>
+												</span>
+											{{/each}}
+										</div>
+										{{/if}}
+										
 										<div class="descr">{{{descr}}}</div>
 										<ul class="args">
 											{{#each args}}

@@ -214,6 +214,7 @@
           "fns": [
             {
               "name": "cy.on",
+              "pureAliases": ["cy.bind", "cy.listen", "cy.addListener"],
               "descr": "Bind to events that occur in the graph.",
               "formats": [
                 {
@@ -262,6 +263,7 @@
 
             {
               "name": "cy.off",
+              "pureAliases": ["cy.unbind", "cy.unlisten", "cy.removeListener"],
               "descr": "Remove event handlers.",
               "formats": [
                 {
@@ -284,6 +286,7 @@
 
             {
               "name": "cy.trigger",
+              "pureAliases": ["cy.emit"],
               "descr": "Trigger one or more events.",
               "formats": [
                 {
@@ -737,6 +740,7 @@
 
             {
               "name": "cy.makeLayout",
+              "pureAliases": ["cy.createLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph.",
               "formats": [
                 {
@@ -847,6 +851,7 @@
 
             {
               "name": "eles.clone",
+              "pureAliases": [ "eles.copy" ],
               "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
             },
 
@@ -889,6 +894,7 @@
           "fns": [
             {
               "name": "eles.on",
+              "pureAliases": ["eles.bind", "eles.listen", "eles.addListener"],
               "descr": "Bind to events that occur on the elements.",
               "formats": [
                 {
@@ -961,6 +967,7 @@
 
             {
               "name": "eles.off",
+              "pureAliases": ["eles.unbind", "eles.unlisten", "eles.removeListener"],
               "descr": "Unbind one or more callback functions on the elements.",
               "formats": [
                 {
@@ -983,6 +990,7 @@
 
             {
               "name": "eles.trigger",
+              "pureAliases": ["eles.emit"],
               "descr": "Trigger events on the elements.",
               "formats": [
                 {
@@ -1002,6 +1010,7 @@
           "fns": [
             {
               "name": "eles.data",
+              "pureAliases": [ "eles.attr" ],
               "descr": "Read and write developer-defined data associated with the elements.",
               "formatsSameFn": true,
               "formats": [
@@ -1038,6 +1047,7 @@
 
             {
               "name": "eles.removeData",
+              "pureAliases": [ "eles.removeAttr" ],
               "descr": "Remove developer-defined data associated with the elements.",
               "formats": [
                 { "descr": "Removes all mutable data fields for the elements." },
@@ -1232,7 +1242,7 @@
           "fns": [
             {
               "name": "node.position",
-              "pureAliases": [ "node.modelPosition" ],
+              "pureAliases": [ "node.modelPosition", "node.point" ],
               "descr": "Get or set the (model) position of a node.",
               "formats": [
                 {
@@ -1266,7 +1276,7 @@
 
             {
               "name": "nodes.positions",
-              "pureAliases": [ "nodes.modelPositions" ],
+              "pureAliases": [ "nodes.modelPositions", "nodes.points" ],
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
@@ -1295,6 +1305,7 @@
 
             {
               "name": "node.renderedPosition",
+              "pureAliases": [ "node.renderedPoint" ],
               "descr": "Get or set the rendered (on-screen) position of a node.",
               "formats": [
                 {
@@ -1349,6 +1360,7 @@
 
             {
               "name": "eles.boundingBox",
+              "pureAliases": [ "eles.boundingbox" ],
               "descr": "Get the bounding box of the elements.",
               "formats": [
                 { 
@@ -1365,7 +1377,16 @@
                       ]
                     }
                   ]
-                },
+                }
+              ],
+              "md": "collection/boundingBox"
+            },
+
+            {
+              "name": "eles.renderedBoundingBox",
+              "pureAliases": [ "eles.renderedBoundingbox" ],
+              "descr": "Get the rendered bounding box of the elements.",
+              "formats": [
                 {
                   "name": "eles.renderedBoundingBox",
                   "descr": "Get the bounding box of the elements in rendered coordinates.",
@@ -1453,6 +1474,7 @@
 
             {
               "name": "eles.makeLayout",
+              "pureAliases": ["eles.createLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
               "formats": [
                 {
@@ -1485,6 +1507,7 @@
 
             {
               "name": "eles.unselect",
+              "pureAliases": ["eles.deselect"],
               "descr": "Make the elements not selected (NB other elements outside the collection are not affected).",
               "md": "collection/unselect"
             },
@@ -1573,24 +1596,24 @@
             },
 
             {
-              "name": "eles.css",
-              "pureAliases": [ "eles.style" ],
+              "name": "eles.style",
+              "pureAliases": [ "eles.css", "eles.bypass" ],
               "descr": "Get the style of the element, or override the style of the elements.",
               "formatsSameFn": true,
               "formats": [
                 {
-                  "name": "ele.css",
+                  "name": "ele.style",
                   "descr": "Get a name-value pair object containing visual style properties and their values for the element."
                 },
 
                 {
-                  "name": "ele.css",
+                  "name": "ele.style",
                   "descr": "Get a particular style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
                 },
 
                 {
-                  "name": "eles.css",
+                  "name": "eles.style",
                   "descr": "Set the specified visual style property for the elements.",
                   "args": [
                     { "name": "name", "descr": "The name of the property to set." },
@@ -1599,17 +1622,17 @@
                 },
 
                 {
-                  "name": "eles.css",
+                  "name": "eles.style",
                   "descr": "Set several visual style properties at once for the elements.",
                   "args": [ { "name": "props", "descr": "An object with name-value pairs representing properties to set on the elements." } ]
                 }
               ],
-              "md": "collection/css"
+              "md": "collection/style"
             },
 
             {
-              "name": "eles.removeCss",
-              "pureAliases": [ "eles.removeStyle" ],
+              "name": "eles.removeStyle",
+              "pureAliases": [ "eles.removeCss", "eles.removeBypass" ],
               "descr": "Removes overridden style of the elements.",
               "formats": [
                 {
@@ -1624,8 +1647,8 @@
             },
 
             {
-              "name": "ele.renderedCss",
-              "pureAliases": [ "eles.renderedStyle" ],
+              "name": "ele.renderedStyle",
+              "pureAliases": [ "eles.renderedCss" ],
               "descr": "Get the style of the element in rendered dimensions.",
               "formats": [
                 {
@@ -1973,8 +1996,8 @@
           "name": "Building & filtering",
           "fns": [
             {
-              "name": "eles.add",
-              "pureAliases": [ "eles.and" ],
+              "name": "eles.union",
+              "pureAliases": [ "eles.add", "eles.or" ],
               "descr": "Get a new collection, resulting from adding the collection with another one",
               "formats": [
                 {
@@ -1995,11 +2018,12 @@
                   ]
                 }
               ],
-              "md": "collection/add"
+              "md": "collection/union"
             },
 
             {
-              "name": "eles.not",
+              "name": "eles.difference",
+              "pureAliases": [ "eles.diff", "eles.not" ],
               "descr": "Get a new collection, resulting from the collection without some specified elements.",
               "formats": [
                 {
@@ -2014,11 +2038,12 @@
                   ]
                 }
               ],
-              "md": "collection/not"
+              "md": "collection/difference"
             },
 
             {
-              "name": "eles.intersect",
+              "name": "eles.intersection",
+              "pureAliases": [ "eles.intersect", "eles.and" ],
               "descr": "Get the elements in both this collection and another specified collection.",
               "formats": [
                 {
@@ -2033,7 +2058,26 @@
                   ]
                 }
               ],
-              "md": "collection/intersect"
+              "md": "collection/intersection"
+            },
+
+            {
+              "name": "eles.symmetricDifference",
+              "pureAliases": [ "eles.symdiff", "eles.xor" ],
+              "descr": "Get the elements that are in the calling collection or the passed collection but not in both.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to apply the symmetric difference with." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements to apply the symmetric difference with.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -2083,7 +2127,8 @@
             },
 
             {
-              "name": "eles.stdFilter",
+              "name": "eles.filterFn",
+              "pureAliases": ["eles.fnFilter", "eles.stdFilter"],
               "descr": "Get a new collection containing elements that are accepted by the specified filter, using an implementation like the standard array namesake.",
               "formats": [
                 {
@@ -2105,7 +2150,7 @@
                   ]
                 }
               ],
-              "md": "collection/stdFilter"
+              "md": "collection/filterFn"
             },
 
             {
@@ -2211,6 +2256,7 @@
               "formats": [
                 {
                   "name": "eles.neighborhood",
+                  "pureAliases": ["eles.neighbourhood"],
                   "descr": "Get the open neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2219,6 +2265,7 @@
 
                 {
                   "name": "eles.openNeighborhood",
+                  "pureAliases": ["eles.openNeighbourhood"],
                   "descr": "Get the open neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2227,6 +2274,7 @@
 
                 {
                   "name": "eles.closedNeighborhood",
+                  "pureAliases": ["eles.closedNeighbourhood"],
                   "descr": "Get the closed neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2873,6 +2921,7 @@
           "fns": [
             {
               "name": "layout.on",
+              "pureAliases": ["layout.bind", "layout.listen", "layout.addListener"],
               "descr": "Bind to events that are emitted by the layout.",
               "formats": [
                 {
@@ -2917,6 +2966,7 @@
 
             {
               "name": "layout.off",
+              "pureAliases": ["layout.unbind", "layout.unlisten", "layout.removeListener"],
               "descr": "Remove event handlers on the layout.",
               "formats": [
                 {
@@ -2937,6 +2987,7 @@
 
             {
               "name": "layout.trigger",
+              "pureAliases": ["layout.emit"],
               "descr": "Trigger one or more events on the layout.",
               "formats": [
                 {
@@ -3051,6 +3102,7 @@
 
             {
               "name": "worker.on",
+              "pureAliases": ["worker.bind", "worker.listen", "worker.addListener"],
               "descr": "Bind to events that are emitted by the worker.",
               "formats": [
                 {
@@ -3093,6 +3145,7 @@
 
             {
               "name": "worker.off",
+              "pureAliases": ["worker.unbind", "worker.unlisten", "worker.removeListener"],
               "descr": "Remove event handlers on the worker.",
               "formats": [
                 {
@@ -3112,6 +3165,7 @@
 
             {
               "name": "worker.trigger",
+              "pureAliases": ["worker.emit"],
               "descr": "Trigger one or more events on the worker.",
               "formats": [
                 {

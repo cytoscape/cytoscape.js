@@ -95,6 +95,14 @@
       return new $$.Collection( cy, elements );
     },
 
+    // TODO test and make faster impl w/ less no calls
+    xor: function( other ){
+      var intn = this.intersect( other );
+      var all = this.union( other );
+
+      return all.not( intn );
+    },  
+
     add: function( toAdd ){
       var cy = this._private.cy;    
       
@@ -284,6 +292,10 @@
     }
   });
 
-  $$.elesfn.and = $$.elesfn.add;
+  $$.elesfn.union = $$.elesfn.or = $$.elesfn.add;
+  $$.elesfn.difference = $$.elesfn.diff = $$.elesfn.not;
+  $$.elesfn.and = $$.elesfn.intersection = $$.elesfn.intersect;
+  $$.elesfn.symmetricDifference = $$.symdiff = $$.elesfn.xor;
+  $$.elesfn.fnFilter = $$.elesfn.filterFn = $$.elesfn.stdFilter;
   
 })( cytoscape );

@@ -272,6 +272,12 @@
       }; // function
     }, // on
 
+    eventAliasesOn: function( proto ){
+      proto.addListener = proto.listen = proto.bind = proto.on;
+      proto.removeListener = proto.unlisten = proto.unbind = proto.off;
+      proto.emit = proto.trigger;
+    },
+
     off: function offImpl( params ){
       var defaults = {
       };

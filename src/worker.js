@@ -153,5 +153,7 @@
     off: $$.define.off(), 
     trigger: $$.define.trigger()
   });
+
+  $$.define.eventAliasesOn( $$.wkrfn );
   
 })( cytoscape, typeof window === 'undefined' ? null : window );

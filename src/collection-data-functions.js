@@ -640,8 +640,13 @@
     }
   }); 
 
-  // in case some users want to be explicit
-  $$.elesfn.modelPosition = $$.elesfn.position;
-  $$.elesfn.modelPositions = $$.elesfn.positions;
+  // aliases
+  $$.elesfn.attr = $$.elesfn.data;
+  $$.elesfn.removeAttr = $$.elesfn.removeData;
+  $$.elesfn.modelPosition = $$.elesfn.point = $$.elesfn.position;
+  $$.elesfn.modelPositions = $$.elesfn.points = $$.elesfn.positions;
+  $$.elesfn.renderedPoint = $$.elesfn.renderedPosition;
+  $$.eles.boundingbox = $$.eles.boundingBox;
+  $$.eles.renderedBoundingbox = $$.eles.renderedBoundingBox;
   
 })( cytoscape );

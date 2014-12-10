@@ -119,6 +119,8 @@
     on: 'selectify',
     off: 'unselectify'
   });
+
+  $$.elesfn.deselect = $$.elesfn.unselect;
   
   $$.elesfn.grabbed = function(){
     var ele = this[0];

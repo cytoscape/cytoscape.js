@@ -57,6 +57,8 @@
     return this; // chaining
   };
 
+  $$.Stylesheet.prototype.style = $$.Stylesheet.prototype.css;
+
   // generate a real style object from the dummy stylesheet
   $$.Stylesheet.prototype.generateStyle = function( cy ){
     var style = new $$.Style(cy);

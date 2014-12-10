@@ -132,6 +132,23 @@ function populateDemo( demo ){
   demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
 }
 
+function compileAliases( section, fn ){
+  if( fn.pureAliases ){
+    var procdAliases = [];
+
+    for( var k = 0; k < fn.pureAliases.length; k++ ){
+      var pa = '' + fn.pureAliases[k];
+
+      procdAliases.push(a = {
+        name: pa,
+        id: section.id + '/' + pa
+      });
+    }
+
+    fn.processedPureAliases = procdAliases;
+  }
+}
+
 function compileConfig( config ){
   var sections = config.sections;
   var parent = config;
@@ -278,6 +295,8 @@ function compileConfig( config ){
             if( format.name !== fn.name ){
               formatsHaveDiffNames = true;
             }
+
+            compileAliases( section, format );
           }
         } // if
 
@@ -285,6 +304,8 @@ function compileConfig( config ){
         if( formatsHaveDiffNames ){
           fn.aliases = true;
         }
+
+        compileAliases( section, fn );
         
       } // for
 

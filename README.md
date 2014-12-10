@@ -22,7 +22,7 @@ If your pull request is a bugfix, please make changes to the master branch.  Oth
 
 ## Authors
 
-The list of all contributions to Cytoscape.js can be found in the [Contributors](https://github.com/cytoscape/cytoscape.js/graphs/contributors) section on GitHub.
+The list of all code contributions to Cytoscape.js can be found in the [Contributors](https://github.com/cytoscape/cytoscape.js/graphs/contributors) section on GitHub.
 
 
 ## Acknowledgements

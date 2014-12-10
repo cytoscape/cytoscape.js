@@ -3,7 +3,7 @@
 }
 
 body {
-	font: 14pt Helvetica Neue, Helvetica, Arial, sans-serif;
+	font: 14pt Helvetica Neue, Helvetica, Adobe Helvetica, DejaVu Sans, Arial, sans-serif;
 	line-height: 1.5;
 	-webkit-text-size-adjust: 100%;
 	background: #fff;
@@ -491,7 +491,6 @@ button:active {
 }
 
 .links {
-	color: #ccc;
 	font-weight: 200;
 }
 
@@ -560,10 +559,16 @@ th, td {
 
 a,
 .link {
-	color: #4183C4;
+	color: inherit;
+	border-bottom: 2px solid rgba(65, 131, 196, 0.333);
 	text-decoration: none;
 	border-radius: 0.125em;
 	cursor: pointer;
+}
+
+a.light,
+a.toclink {
+	border-bottom: 2px solid rgba(65, 131, 196, 0.166);
 }
 
 a.button {
@@ -608,10 +613,10 @@ ul {
 code,
 pre {
 	font-family: Consolas, "Liberation Mono", Courier, monospace;
-	border: 1px solid #ddd;
+	border: 1px solid rgba(221, 221, 221, 0.666);
 	border-radius: 0.25em;
 	font-size: 1em;
-	background: #fafafa;
+	background: rgba(250, 250, 250, 0.2);
 }
 
 pre {

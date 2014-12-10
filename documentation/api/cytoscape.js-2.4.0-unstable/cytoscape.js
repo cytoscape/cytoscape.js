@@ -2930,9 +2930,7 @@ var cytoscape;
       layoutProto.off = $$.define.off({ layout: true });
       layoutProto.trigger = $$.define.trigger({ layout: true });
 
-      // aliases for those folks who like old stuff:
-      layoutProto.bind = layoutProto.on;
-      layoutProto.unbind = layoutProto.off;
+      $$.define.eventAliasesOn( layoutProto );
     }
 
     return $$.util.setMap({
@@ -3419,6 +3417,12 @@ var cytoscape;
         return self; // maintain chaining
       }; // function
     }, // on
+
+    eventAliasesOn: function( proto ){
+      proto.addListener = proto.listen = proto.bind = proto.on;
+      proto.removeListener = proto.unlisten = proto.unbind = proto.off;
+      proto.emit = proto.trigger;
+    },
 
     off: function offImpl( params ){
       var defaults = {
@@ -5599,6 +5603,7 @@ var cytoscape;
 
     return this; // chaining
   };
+  $$.styfn.style = $$.styfn.css;
 
   // add a single css rule to the current context
   $$.styfn.cssRule = function( name, value ){ 
@@ -6754,6 +6759,8 @@ var cytoscape;
     return this; // chaining
   };
 
+  $$.Stylesheet.prototype.style = $$.Stylesheet.prototype.css;
+
   // generate a real style object from the dummy stylesheet
   $$.Stylesheet.prototype.generateStyle = function( cy ){
     var style = new $$.Style(cy);
@@ -6931,6 +6938,8 @@ var cytoscape;
     off: $$.define.off(), 
     trigger: $$.define.trigger()
   });
+
+  $$.define.eventAliasesOn( $$.wkrfn );
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
@@ -7803,9 +7812,7 @@ var cytoscape;
     trigger: $$.define.trigger() // .trigger( events [, extraParams] )
   });
 
-  // aliases for those folks who like old stuff:
-  $$.corefn.bind = $$.corefn.on;
-  $$.corefn.unbind = $$.corefn.off;
+  $$.define.eventAliasesOn( $$.corefn );
 
 })( cytoscape );
 
@@ -7880,6 +7887,8 @@ var cytoscape;
     }
     
   });
+
+  $$.corefn.createLayout = $$.corefn.makeLayout;
   
 })( cytoscape );
 (function($$){ 'use strict';
@@ -8999,6 +9008,7 @@ var cytoscape;
 
     return new $$.Collection( cy, elesArr );
   };
+  $$.elesfn.copy = $$.elesfn.clone;
 
   $$.elesfn.restore = function( notifyRenderer ){
     var self = this;
@@ -12188,9 +12198,14 @@ var cytoscape;
     }
   }); 
 
-  // in case some users want to be explicit
-  $$.elesfn.modelPosition = $$.elesfn.position;
-  $$.elesfn.modelPositions = $$.elesfn.positions;
+  // aliases
+  $$.elesfn.attr = $$.elesfn.data;
+  $$.elesfn.removeAttr = $$.elesfn.removeData;
+  $$.elesfn.modelPosition = $$.elesfn.point = $$.elesfn.position;
+  $$.elesfn.modelPositions = $$.elesfn.points = $$.elesfn.positions;
+  $$.elesfn.renderedPoint = $$.elesfn.renderedPosition;
+  $$.eles.boundingbox = $$.eles.boundingBox;
+  $$.eles.renderedBoundingbox = $$.eles.renderedBoundingBox;
   
 })( cytoscape );
 
@@ -12346,9 +12361,8 @@ var cytoscape;
     }
   });
 
-  // aliases for those folks who like old stuff:
-  $$.elesfn.bind = $$.elesfn.on;
-  $$.elesfn.unbind = $$.elesfn.off;
+  // aliases:
+  $$.define.eventAliasesOn( $$.elesfn );
   
 })( cytoscape );
 
@@ -12448,6 +12462,14 @@ var cytoscape;
       
       return new $$.Collection( cy, elements );
     },
+
+    // TODO test and make faster impl w/ less no calls
+    xor: function( other ){
+      var intn = this.intersect( other );
+      var all = this.union( other );
+
+      return all.not( intn );
+    },  
 
     add: function( toAdd ){
       var cy = this._private.cy;    
@@ -12638,7 +12660,11 @@ var cytoscape;
     }
   });
 
-  $$.elesfn.and = $$.elesfn.add;
+  $$.elesfn.union = $$.elesfn.or = $$.elesfn.add;
+  $$.elesfn.difference = $$.elesfn.diff = $$.elesfn.not;
+  $$.elesfn.and = $$.elesfn.intersection = $$.elesfn.intersect;
+  $$.elesfn.symmetricDifference = $$.symdiff = $$.elesfn.xor;
+  $$.elesfn.fnFilter = $$.elesfn.filterFn = $$.elesfn.stdFilter;
   
 })( cytoscape );
 ;(function($$){ 'use strict';
@@ -12947,6 +12973,9 @@ var cytoscape;
     }
 
   });
+
+  // aliases:
+  $$.elesfn.createLayout = $$.elesfn.makeLayout;
   
 })( cytoscape );
 
@@ -13245,9 +13274,9 @@ var cytoscape;
   });
 
 
-  $$.elesfn.style = $$.elesfn.css;
+  $$.elesfn.bypass = $$.elesfn.style = $$.elesfn.css;
   $$.elesfn.renderedStyle = $$.elesfn.renderedCss;
-  $$.elesfn.removeStyle = $$.elesfn.removeCss;
+  $$.elesfn.removeBypass = $$.elesfn.removeStyle = $$.elesfn.removeCss;
   
 })( cytoscape );
 ;(function($$){ 'use strict';
@@ -13371,6 +13400,8 @@ var cytoscape;
     on: 'selectify',
     off: 'unselectify'
   });
+
+  $$.elesfn.deselect = $$.elesfn.unselect;
   
   $$.elesfn.grabbed = function(){
     var ele = this[0];

@@ -402,7 +402,7 @@
 
             {
               "name": "cy.userPanningEnabled",
-              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
+              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled. If cy.boxSelectionEnabled is set to true, the user must hold left-click to initiate panning.",
               "formats": [
                 {
                   "descr": "Get whether user panning is enabled."
@@ -528,7 +528,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.",
+              "descr": "Get or set whether box selection is enabled. If enabled, the user must hold left-click to initiate panning.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."

@@ -117,6 +117,7 @@ var cy = cytoscape({
   userZoomingEnabled: true,
   panningEnabled: true,
   userPanningEnabled: true,
+  boxSelectionEnabled: true,
   selectionType: (isTouchDevice ? 'additive' : 'single'),
   autolock: false,
   autoungrabify: false,
@@ -170,6 +171,8 @@ var cy = cytoscape({
 **`panningEnabled`** : Whether panning the graph is enabled, both by user events and programmatically.
 
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
+
+**`boxSelectionEnabled`** : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled, the user must taphold to pan the graph.
 
 **`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `'additive'` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `'single'` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
 

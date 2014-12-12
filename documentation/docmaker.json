@@ -399,7 +399,7 @@
 
             {
               "name": "cy.userPanningEnabled",
-              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
+              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled. If cy.boxSelectionEnabled is set to true, the user must hold left-click to initiate panning.",
               "formats": [
                 {
                   "descr": "Get whether user panning is enabled."
@@ -525,7 +525,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.",
+              "descr": "Get or set whether box selection is enabled. If enabled, the user must hold left-click to initiate panning.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."
@@ -2576,7 +2576,7 @@
                   ]
                 }
               ],
-              "md": "collection/floydWarshall"
+              "md": "collection/floydwarshall"
             },
 
             {
@@ -2593,7 +2593,7 @@
                   ]
                 }
               ],
-              "md": "collection/bellmanFord"
+              "md": "collection/bellmanford"
             }, 
 
             {
@@ -2612,7 +2612,7 @@
             {
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
-              "md": "collection/kargerStein"
+              "md": "collection/kargerstein"
             }, 
 
             {
@@ -2629,7 +2629,7 @@
                   ]
                 }
               ],
-              "md": "collection/pageRank"
+              "md": "collection/pagerank"
             }
 
           ]

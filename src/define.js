@@ -273,9 +273,35 @@
     }, // on
 
     eventAliasesOn: function( proto ){
-      proto.addListener = proto.listen = proto.bind = proto.on;
-      proto.removeListener = proto.unlisten = proto.unbind = proto.off;
-      proto.emit = proto.trigger;
+      var p = proto;
+
+      p.addListener = p.listen = p.bind = p.on;
+      p.removeListener = p.unlisten = p.unbind = p.off;
+      p.emit = p.trigger;
+
+      // this is just a wrapper alias of .on()
+      p.pon = p.promiseOn = function( events, selector ){
+        var self = this;
+        var args = Array.prototype.push.apply( [], arguments );
+
+        return new $$.Promise(function( resolve, reject ){
+          var onArgs = args.concat([ callback ]);
+          var offArgs = onArgs.concat([]);
+
+          // remove data from .off(events, selector, data, callback) args
+          if( $$.is.object( offArgs[2] ) ){
+            offArgs.splice( 2, 1 );
+          }
+
+          var callback = function( e ){
+            self.off.apply( self, offArgs );
+
+            resolve( e );
+          };
+
+          self.on.apply( self, onArgs );
+        });
+      };
     },
 
     off: function offImpl( params ){

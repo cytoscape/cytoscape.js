@@ -5,10 +5,10 @@ With a collection:
 var j = cy.$('#j');
 var nodes = cy.nodes();
 
-nodes.diff(j);
+nodes.difference(j);
 ```
 
 With a selector:
 ```js
-cy.nodes().diff('#j');
+cy.nodes().difference('#j');
 ```

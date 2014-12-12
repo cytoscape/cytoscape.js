@@ -37,7 +37,7 @@ var paths = {
     'src/selector.js',
     'src/style.js',
     'src/style-*.js',
-    'src/worker.js',
+    'src/thread.js',
     'src/core.js',
     'src/core-*.js',
     'src/collection.js',
@@ -48,10 +48,10 @@ var paths = {
     'src/extensions/*.js'
   ],
 
-  nodeworkerName: 'worker-node-fork.js',
-  nodeworkerSrc: [
+  nodethreadName: 'thread-node-fork.js',
+  nodethreadSrc: [
     'src/preamble.js',
-    'src/worker-node-fork.js'
+    'src/thread-node-fork.js'
   ], 
 
   docs: {
@@ -136,10 +136,10 @@ gulp.task('build', ['version', 'nodeworker'], function(){
 });
 
 gulp.task('nodeworker', function(){
-  return gulp.src( paths.nodeworkerSrc )
+  return gulp.src( paths.nodethreadSrc )
     .pipe( replace('{{VERSION}}', version) )
     
-    .pipe( concat(paths.nodeworkerName) )
+    .pipe( concat(paths.nodethreadName) )
     
     .pipe( gulp.dest('build') )
   ;
@@ -180,8 +180,8 @@ gulp.task('testlist', function(){
   ;
 });
 
-gulp.task('refs', ['debugrefs', 'testrefs', 'testlist'], function(next){
-  next();
+gulp.task('refs', function(next){
+  runSequence( 'debugrefs', 'testrefs', 'testlist', next );
 });
 
 gulp.task('zip', ['version', 'build'], function(){
@@ -355,7 +355,7 @@ gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js',
-    'build/' + paths.nodeworkerName
+    'build/' + paths.nodethreadName
   ])
     .pipe( gulp.dest('dist') )
   ;

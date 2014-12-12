@@ -1,11 +1,11 @@
-// cross-env worker
-// NB : uses (heavyweight) processes on nodejs so best not to create too many workers
+// cross-env thread/worker
+// NB : uses (heavyweight) processes on nodejs so best not to create too many threads
 
 ;(function($$, window){ 'use strict';
 
-  $$.Worker = function( fn ){
-    if( !(this instanceof $$.Worker) ){
-      return new $$.Worker( fn );
+  $$.Thread = function( fn ){
+    if( !(this instanceof $$.Thread) ){
+      return new $$.Thread( fn );
     }
 
     var _p = this._private = {
@@ -16,19 +16,19 @@
       this.run( fn );
     }
 
-  };  
+  };
 
-  $$.worker = $$.Worker;
-  $$.wkrfn = $$.Worker.prototype; // short alias
+  $$.thread = $$.Thread;
+  $$.thdfn = $$.Thread.prototype; // short alias
 
-  $$.fn.worker = function( fnMap, options ){
+  $$.fn.thread = function( fnMap, options ){
     for( var name in fnMap ){
       var fn = fnMap[name];
-      $$.Worker.prototype[ name ] = fn;
+      $$.Thread.prototype[ name ] = fn;
     }
   };
 
-  $$.fn.worker({
+  $$.fn.thread({
 
     require: function( fn ){
       this._private.requires.push( fn );
@@ -42,7 +42,7 @@
 
       if( _p.ran ){
         return new $$.Promise(function( resolve, reject ){
-          reject('This worker has already been run!');
+          reject('This thread has already been run!');
         });
       }
 
@@ -60,6 +60,7 @@
 
         if( window ){
           // add normalised worker api functions
+          fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
           fnStr += 'function message(m){ postMessage(m); };\n';
           fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && (m.$$eval || m.data === "$$start") ){} else { fn(m.data); } });  };\n'; 
           fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
@@ -84,7 +85,7 @@
           // create a new process
           var path = require('path');
           var child_process = require('child_process');
-          var child = _p.child = child_process.fork( path.join(__dirname, 'worker-node-fork') );
+          var child = _p.child = child_process.fork( path.join(__dirname, 'thread-node-fork') );
 
           // child process messages => events
           child.on('message', function( m ){
@@ -100,7 +101,7 @@
             $$eval: fnStr
           });
         } else {
-          $$.error('Tried to create worker but no underlying tech found');
+          $$.error('Tried to create thread but no underlying tech found');
         }
 
       }).then(function( v ){
@@ -111,7 +112,7 @@
     
     },
 
-    // send the worker a message
+    // send the thread a message
     message: function( m ){
       var _p = this._private;
 
@@ -145,8 +146,16 @@
 
   });
 
+  // aliases
+  var fn = $$.thdfn;
+  fn.promise = fn.run;
+  fn.terminate = fn.halt = fn.stop;
+
+  // higher level alias (in case you like the worker metaphor)
+  $$.worker = $$.Worker = $$.Thread;
+
   // pull in event apis
-  $$.fn.worker({
+  $$.fn.thread({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
     once: $$.define.on({ unbindAllBindersOnTrigger: true }),
@@ -154,6 +163,6 @@
     trigger: $$.define.trigger()
   });
 
-  $$.define.eventAliasesOn( $$.wkrfn );
+  $$.define.eventAliasesOn( $$.thdfn );
   
 })( cytoscape, typeof window === 'undefined' ? null : window );

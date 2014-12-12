@@ -292,10 +292,12 @@
     }
   });
 
-  $$.elesfn.union = $$.elesfn.or = $$.elesfn.add;
-  $$.elesfn.difference = $$.elesfn.diff = $$.elesfn.not;
-  $$.elesfn.and = $$.elesfn.intersection = $$.elesfn.intersect;
-  $$.elesfn.symmetricDifference = $$.symdiff = $$.elesfn.xor;
-  $$.elesfn.fnFilter = $$.elesfn.filterFn = $$.elesfn.stdFilter;
+  // aliases
+  var fn = $$.elesfn;
+  fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
+  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not;
+  fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
+  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = $$.symdiff = fn.xor;
+  fn.fnFilter = fn.filterFn = fn.stdFilter;
   
 })( cytoscape );

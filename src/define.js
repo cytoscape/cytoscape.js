@@ -282,22 +282,17 @@
       // this is just a wrapper alias of .on()
       p.pon = p.promiseOn = function( events, selector ){
         var self = this;
-        var args = Array.prototype.push.apply( [], arguments );
+        var args = Array.prototype.slice.call( arguments, 0 );
 
         return new $$.Promise(function( resolve, reject ){
-          var onArgs = args.concat([ callback ]);
-          var offArgs = onArgs.concat([]);
-
-          // remove data from .off(events, selector, data, callback) args
-          if( $$.is.object( offArgs[2] ) ){
-            offArgs.splice( 2, 1 );
-          }
-
           var callback = function( e ){
             self.off.apply( self, offArgs );
 
             resolve( e );
           };
+
+          var onArgs = args.concat([ callback ]);
+          var offArgs = onArgs.concat([]);
 
           self.on.apply( self, onArgs );
         });

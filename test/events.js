@@ -803,4 +803,49 @@ describe('Events', function(){
 
   });
 
+  describe('eles.promiseOn()', function(){
+
+    var n1;
+
+    beforeEach(function(){
+      n1 = cy.$('#n1');
+    });
+
+    it('should run a then() callback', function( next ){
+      n1.pon('foo').then(function(){
+        next();
+      });
+
+      n1.trigger('foo');
+    });
+
+    it('should receive event obj', function( next ){
+      n1.pon('foo').then(function( e ){
+        expect( e ).to.not.be.undefined;
+        expect( e.type ).to.equal('foo');
+
+        next();
+      });
+
+      n1.trigger('foo');
+    });
+
+    it('should run callback only once', function( next ){
+      var trigs = 0;
+
+      n1.pon('foo').then(function(){
+        trigs++;
+      });
+
+      n1.trigger('foo');
+      n1.trigger('foo');
+
+      setTimeout(function(){
+        expect( trigs ).to.equal(1);
+        next();
+      }, 50);
+    });
+
+  });
+
 });

@@ -1997,7 +1997,7 @@
           "fns": [
             {
               "name": "eles.union",
-              "pureAliases": [ "eles.add", "eles.or" ],
+              "pureAliases": [ "eles.add", "eles.or", "eles['u']", "eles['+']", "eles['|']" ],
               "descr": "Get a new collection, resulting from adding the collection with another one",
               "formats": [
                 {
@@ -2023,7 +2023,7 @@
 
             {
               "name": "eles.difference",
-              "pureAliases": [ "eles.diff", "eles.not" ],
+              "pureAliases": [ "eles.not", "eles['\\\\']", "eles['!']", "eles['-']" ],
               "descr": "Get a new collection, resulting from the collection without some specified elements.",
               "formats": [
                 {
@@ -2043,7 +2043,7 @@
 
             {
               "name": "eles.intersection",
-              "pureAliases": [ "eles.intersect", "eles.and" ],
+              "pureAliases": [ "eles.intersect", "eles.and", "eles['n']", "eles['&']", "eles['.']" ],
               "descr": "Get the elements in both this collection and another specified collection.",
               "formats": [
                 {
@@ -2063,7 +2063,7 @@
 
             {
               "name": "eles.symmetricDifference",
-              "pureAliases": [ "eles.symdiff", "eles.xor" ],
+              "pureAliases": [ "eles.symdiff", "eles.xor", "eles['^']", "eles['(+)']", "eles['(-)']" ],
               "descr": "Get the elements that are in the calling collection or the passed collection but not in both.",
               "formats": [
                 {
@@ -3006,22 +3006,22 @@
     },
 
     {
-      "name": "Workers",
-      "md": "workers/intro",
+      "name": "Threads",
+      "md": "threads/intro",
       "sections": [
         {
           "name": "Globals",
-          "md": "workers/globals",
+          "md": "threads/globals",
           "fns": [
             {
               "name": "resolve",
-              "descr": "Resolves the worker with a single value such that other entities (like the main JS thread or other workers) can read it.",
-              "md": "workers/resolve"
+              "descr": "Resolves the thread with a single value such that other entities (like the main JS thread or other threads) can read it.",
+              "md": "threads/resolve"
             },
 
             {
               "name": "listen",
-              "descr": "Listen to messages sent to the worker.",
+              "descr": "Listen to messages sent to the thread.",
               "formats": [
                 {
                   "args": [
@@ -3029,12 +3029,13 @@
                   ]
                 }
               ],
-              "md": "workers/listen"
+              "md": "threads/listen"
             },
 
             {
-              "name": "message",
-              "descr": "Broadcast a message to entities who are listening to the worker.",
+              "name": "broadcast",
+              "pureAliases": ["message"],
+              "descr": "Broadcast a message to entities who are listening to the thread.",
               "formats": [
                 {
                   "args": [
@@ -3042,7 +3043,7 @@
                   ]
                 }
               ],
-              "md": "workers/message"
+              "md": "threads/listen"
             }
           ]
         },
@@ -3051,33 +3052,35 @@
           "name": "Execution",
           "fns": [
             {
-              "name": "worker.require",
-              "descr": "Require a named function into the worker, giving the worker a global reference to the function.",
+              "name": "thread.require",
+              "descr": "Require a named function into the thread, giving the thread a global reference to the function.",
               "formats": [
                 {
                   "args": [
-                    { "name": "fn", "descr": "The named function to require (that is copied to the worker)." }
+                    { "name": "fn", "descr": "The named function to require (that is copied to the thread)." }
                   ]
                 }
               ],
-              "md": "workers/require"
+              "md": "threads/require"
             },
 
             {
-              "name": "worker.run",
-              "descr": "Run the specified function in the worker, returning a promise that is resolved when the worker resolves.",
+              "name": "thread.run",
+              "pureAliases": ["thread.promise"],
+              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#threads/globals/resolve).",
               "formats": [
                 {
                   "args": [
-                    { "name": "fn", "descr": "The function which will be copied and run in the worker." }
+                    { "name": "fn", "descr": "The function which will be copied and run in the thread." }
                   ]
                 }
               ],
-              "md": "workers/run"
+              "md": "threads/run"
             },
 
             {
-              "name": "worker.stop",
+              "name": "thread.stop",
+              "pureAliases": ["thread.halt", "thread.terminate"],
               "descr": "Terminates the worker such that it no longer runs."
             }
           ]
@@ -3085,25 +3088,25 @@
 
         {
           "name": "Events",
-          "md": "workers/events",
+          "md": "threads/events",
           "fns": [
             {
-              "name": "worker.message",
-              "descr": "Send the worker a message.",
+              "name": "thread.message",
+              "descr": "Send the thread a message.",
               "formats": [
                 {
                   "args": [
-                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the worker." }
+                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the thread." }
                   ]
                 }
               ],
-              "md": "workers/message"
+              "md": "threads/listen"
             },
 
             {
-              "name": "worker.on",
-              "pureAliases": ["worker.bind", "worker.listen", "worker.addListener"],
-              "descr": "Bind to events that are emitted by the worker.",
+              "name": "thread.on",
+              "pureAliases": ["thread.bind", "thread.listen", "thread.addListener"],
+              "descr": "Bind to events that are emitted by the thread.",
               "formats": [
                 {
                   "args": [
@@ -3123,8 +3126,8 @@
             },
 
             {
-              "name": "worker.one",
-              "descr": "Bind to events that are emitted by the worker, and trigger the handler only once.",
+              "name": "thread.one",
+              "descr": "Bind to events that are emitted by the thread, and trigger the handler only once.",
               "formats": [
                 {
                   "args": [
@@ -3144,9 +3147,9 @@
             },
 
             {
-              "name": "worker.off",
-              "pureAliases": ["worker.unbind", "worker.unlisten", "worker.removeListener"],
-              "descr": "Remove event handlers on the worker.",
+              "name": "thread.off",
+              "pureAliases": ["thread.unbind", "thread.unlisten", "thread.removeListener"],
+              "descr": "Remove event handlers on the thread.",
               "formats": [
                 {
                   "args": [
@@ -3164,9 +3167,9 @@
             },
 
             {
-              "name": "worker.trigger",
-              "pureAliases": ["worker.emit"],
-              "descr": "Trigger one or more events on the worker.",
+              "name": "thread.trigger",
+              "pureAliases": ["thread.emit"],
+              "descr": "Trigger one or more events on the thread.",
               "formats": [
                 {
                   "args": [

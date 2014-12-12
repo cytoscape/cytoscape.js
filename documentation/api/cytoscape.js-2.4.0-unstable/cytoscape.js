@@ -6783,14 +6783,14 @@ var cytoscape;
   };
 
 })( cytoscape );
-// cross-env worker
-// NB : uses (heavyweight) processes on nodejs so best not to create too many workers
+// cross-env thread/worker
+// NB : uses (heavyweight) processes on nodejs so best not to create too many threads
 
 ;(function($$, window){ 'use strict';
 
-  $$.Worker = function( fn ){
-    if( !(this instanceof $$.Worker) ){
-      return new $$.Worker( fn );
+  $$.Thread = function( fn ){
+    if( !(this instanceof $$.Thread) ){
+      return new $$.Thread( fn );
     }
 
     var _p = this._private = {
@@ -6801,19 +6801,19 @@ var cytoscape;
       this.run( fn );
     }
 
-  };  
+  };
 
-  $$.worker = $$.Worker;
-  $$.wkrfn = $$.Worker.prototype; // short alias
+  $$.thread = $$.Thread;
+  $$.thdfn = $$.Thread.prototype; // short alias
 
-  $$.fn.worker = function( fnMap, options ){
+  $$.fn.thread = function( fnMap, options ){
     for( var name in fnMap ){
       var fn = fnMap[name];
-      $$.Worker.prototype[ name ] = fn;
+      $$.Thread.prototype[ name ] = fn;
     }
   };
 
-  $$.fn.worker({
+  $$.fn.thread({
 
     require: function( fn ){
       this._private.requires.push( fn );
@@ -6827,7 +6827,7 @@ var cytoscape;
 
       if( _p.ran ){
         return new $$.Promise(function( resolve, reject ){
-          reject('This worker has already been run!');
+          reject('This thread has already been run!');
         });
       }
 
@@ -6845,6 +6845,7 @@ var cytoscape;
 
         if( window ){
           // add normalised worker api functions
+          fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
           fnStr += 'function message(m){ postMessage(m); };\n';
           fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && (m.$$eval || m.data === "$$start") ){} else { fn(m.data); } });  };\n'; 
           fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
@@ -6869,7 +6870,7 @@ var cytoscape;
           // create a new process
           var path = require('path');
           var child_process = require('child_process');
-          var child = _p.child = child_process.fork( path.join(__dirname, 'worker-node-fork') );
+          var child = _p.child = child_process.fork( path.join(__dirname, 'thread-node-fork') );
 
           // child process messages => events
           child.on('message', function( m ){
@@ -6885,7 +6886,7 @@ var cytoscape;
             $$eval: fnStr
           });
         } else {
-          $$.error('Tried to create worker but no underlying tech found');
+          $$.error('Tried to create thread but no underlying tech found');
         }
 
       }).then(function( v ){
@@ -6896,7 +6897,7 @@ var cytoscape;
     
     },
 
-    // send the worker a message
+    // send the thread a message
     message: function( m ){
       var _p = this._private;
 
@@ -6930,8 +6931,16 @@ var cytoscape;
 
   });
 
+  // aliases
+  var fn = $$.thdfn;
+  fn.promise = fn.run;
+  fn.halt = fn.stop;
+
+  // higher level alias (in case you like the worker metaphor)
+  $$.worker = $$.Worker = $$.Thread;
+
   // pull in event apis
-  $$.fn.worker({
+  $$.fn.thread({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
     once: $$.define.on({ unbindAllBindersOnTrigger: true }),
@@ -6939,7 +6948,7 @@ var cytoscape;
     trigger: $$.define.trigger()
   });
 
-  $$.define.eventAliasesOn( $$.wkrfn );
+  $$.define.eventAliasesOn( $$.thdfn );
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
@@ -12199,13 +12208,14 @@ var cytoscape;
   }); 
 
   // aliases
-  $$.elesfn.attr = $$.elesfn.data;
-  $$.elesfn.removeAttr = $$.elesfn.removeData;
-  $$.elesfn.modelPosition = $$.elesfn.point = $$.elesfn.position;
-  $$.elesfn.modelPositions = $$.elesfn.points = $$.elesfn.positions;
-  $$.elesfn.renderedPoint = $$.elesfn.renderedPosition;
-  $$.eles.boundingbox = $$.eles.boundingBox;
-  $$.eles.renderedBoundingbox = $$.eles.renderedBoundingBox;
+  var fn = $$.elesfn;
+  fn.attr = fn.data;
+  fn.removeAttr = fn.removeData;
+  fn.modelPosition = fn.point = fn.position;
+  fn.modelPositions = fn.points = fn.positions;
+  fn.renderedPoint = fn.renderedPosition;
+  fn.boundingbox = fn.boundingBox;
+  fn.renderedBoundingbox = fn.renderedBoundingBox;
   
 })( cytoscape );
 
@@ -12660,11 +12670,13 @@ var cytoscape;
     }
   });
 
-  $$.elesfn.union = $$.elesfn.or = $$.elesfn.add;
-  $$.elesfn.difference = $$.elesfn.diff = $$.elesfn.not;
-  $$.elesfn.and = $$.elesfn.intersection = $$.elesfn.intersect;
-  $$.elesfn.symmetricDifference = $$.symdiff = $$.elesfn.xor;
-  $$.elesfn.fnFilter = $$.elesfn.filterFn = $$.elesfn.stdFilter;
+  // aliases
+  var fn = $$.elesfn;
+  fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
+  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not;
+  fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
+  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = $$.symdiff = fn.xor;
+  fn.fnFilter = fn.filterFn = fn.stdFilter;
   
 })( cytoscape );
 ;(function($$){ 'use strict';

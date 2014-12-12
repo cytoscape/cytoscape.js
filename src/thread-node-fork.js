@@ -1,8 +1,12 @@
-// normalised worker api functions for nodejs
+// normalised thread api functions for nodejs
 
 // expose message() for client code to use
 function message( m ){
   process.send( m );
+}
+
+function broadcast( m ){
+  return message( m );
 }
 
 // expose listen() for client message binding

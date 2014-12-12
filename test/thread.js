@@ -2,7 +2,7 @@ var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 var $$ = cytoscape;
 
-describe('Worker', function(){
+describe('Thread', function(){
 
   var cy;
 
@@ -15,29 +15,29 @@ describe('Worker', function(){
   });
 
   it('resolves a simple value', function( next ){
-    var w = $$.Worker();
+    var t = $$.Thread();
 
-    w.run(function(){
+    t.run(function(){
       resolve( 3 );
     }).then(function( val ){
       expect( val ).to.equal(3);
 
-      w.stop();
+      t.stop();
 
       next();
     });
   });
 
-  it('works with 2 workers at once', function( next ){
-    var w1 = $$.Worker();
-    var w2 = $$.Worker();
+  it('works with 2 threads at once', function( next ){
+    var t1 = $$.Thread();
+    var t2 = $$.Thread();
 
-    $$.Promise.all([ // both workers done
-      w1.run(function(){
+    $$.Promise.all([ // both threads done
+      t1.run(function(){
         resolve( 1 );
       }),
 
-      w2.run(function(){
+      t2.run(function(){
         resolve( 2 );
       })
     ]).then(function( thens ){
@@ -47,75 +47,75 @@ describe('Worker', function(){
       expect( v1 ).to.equal( 1 );
       expect( v2 ).to.equal( 2 );
 
-      w1.stop();
-      w2.stop();
+      t1.stop();
+      t2.stop();
 
       next();
     });
   });
 
   it('hears a message and roundtrips back', function( next ){
-    var w = $$.Worker();
+    var t = $$.Thread();
     var msg;
 
-    w.run(function(){
+    t.run(function(){
       listen(function( m ){
         message(m);
       });
     });
 
-    w.on('message', function(e){
+    t.on('message', function(e){
       expect( e.message ).to.equal('hello there');
 
-      w.stop();
+      t.stop();
 
       next();
     });
 
-    w.message('hello there');
+    t.message('hello there');
   });
 
   it('requires a named function', function( next ){
-    var w = $$.Worker();
+    var t = $$.Thread();
     
     function foo(){
       return 'bar';
     }
 
-    w.require( foo );
+    t.require( foo );
 
-    w.run(function(){
+    t.run(function(){
       message( foo() );
     });
 
-    w.on('message', function(e){
+    t.on('message', function(e){
       expect( e.message ).to.equal('bar');
 
-      w.stop();
+      t.stop();
 
       next();
     });
   });
 
-  it('multiple runs per worker forbidden', function( next ){
-    var w = $$.Worker();
+  it('multiple runs per thread forbidden', function( next ){
+    var t = $$.Thread();
 
     $$.Promise.all([ // both workers done
-      w.run(function(){
+      t.run(function(){
         resolve( 1 );
       }),
 
-      w.run(function(){
+      t.run(function(){
         resolve( 2 );
       })
     ]).then(function( thens ){
       expect( thens ).to.be.undefined;
 
-      w.stop();
+      t.stop();
 
       next();
     }, function( err ){
-      w.stop();
+      t.stop();
 
       next();
     });

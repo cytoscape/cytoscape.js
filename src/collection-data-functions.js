@@ -641,12 +641,13 @@
   }); 
 
   // aliases
-  $$.elesfn.attr = $$.elesfn.data;
-  $$.elesfn.removeAttr = $$.elesfn.removeData;
-  $$.elesfn.modelPosition = $$.elesfn.point = $$.elesfn.position;
-  $$.elesfn.modelPositions = $$.elesfn.points = $$.elesfn.positions;
-  $$.elesfn.renderedPoint = $$.elesfn.renderedPosition;
-  $$.eles.boundingbox = $$.eles.boundingBox;
-  $$.eles.renderedBoundingbox = $$.eles.renderedBoundingBox;
+  var fn = $$.elesfn;
+  fn.attr = fn.data;
+  fn.removeAttr = fn.removeData;
+  fn.modelPosition = fn.point = fn.position;
+  fn.modelPositions = fn.points = fn.positions;
+  fn.renderedPoint = fn.renderedPosition;
+  fn.boundingbox = fn.boundingBox;
+  fn.renderedBoundingbox = fn.renderedBoundingBox;
   
 })( cytoscape );

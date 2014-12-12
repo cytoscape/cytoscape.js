@@ -2576,7 +2576,7 @@
                   ]
                 }
               ],
-              "md": "collection/floydwarshall"
+              "md": "collection/floydWarshall-tmp"
             },
 
             {
@@ -2593,7 +2593,7 @@
                   ]
                 }
               ],
-              "md": "collection/bellmanford"
+              "md": "collection/bellmanFord-tmp"
             }, 
 
             {
@@ -2612,7 +2612,7 @@
             {
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
-              "md": "collection/kargerstein"
+              "md": "collection/kargerStein-tmp"
             }, 
 
             {
@@ -2629,7 +2629,7 @@
                   ]
                 }
               ],
-              "md": "collection/pagerank"
+              "md": "collection/pageRank-tmp"
             }
 
           ]

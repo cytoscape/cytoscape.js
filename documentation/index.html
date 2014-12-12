@@ -24,13 +24,13 @@
 
 		<div id="content">
 
-			<h1 id="top" class="title">Cytoscape.js <span class="version">2.4.0-unstable</span></h1>
+			<h1 id="top" class="title">Cytoscape.js <span class="version">2.3.5</span></h1>
 			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.4.0-unstable.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.3.5.zip"><span class="icon-download-alt"></span> Download</a>
 			</div>
 
 			<div class="links">
@@ -563,11 +563,6 @@ cy = cytoscape( options = {
         parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
       },
 
-      <span class="hljs-comment">// scratchpad data (usually temp or nonserialisable data)</span>
-      scratch: {
-        foo: <span class="hljs-string">'bar'</span>
-      },
-
       position: { <span class="hljs-comment">// the model position of the node (optional on init, mandatory after)</span>
         x: <span class="hljs-number">100</span>,
         y: <span class="hljs-number">100</span>
@@ -667,7 +662,7 @@ cy = cytoscape( options = {
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button><h2 id="notation/compound-nodes">Compound nodes <a href="#notation/compound-nodes"><span class="icon-bookmark"></span></a></h2>
 <p>Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.</p>
-<p>Compound nodes are specified via the <code>parent</code> field in an element&#39;s <code>data</code>.  Similar to the <code>source</code> and <code>target</code> fields of edges, the <code>parent</code> field is immutable:  A node&#39;s parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via <a href="#collection/graph-manipulation/eles.move"><code>eles.move()</code></a>.</p>
+<p>Compound nodes are specified via the <code>parent</code> field in an element&#39;s <code>data</code>.  Similar to the <code>source</code> and <code>target</code> fields of edges, the <code>parent</code> field is immutable:  A node&#39;s parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via <a href="#collection/graph-manipulation/eles.move">eles.move</a>.</p>
 <p>As far as the API is concerned, compound nodes are treated just like regular nodes &mdash; except in <a href="#collection/compound-nodes">explicitly compound functions</a> like <code>node.parent()</code>.  This means that traditional graph theory functions like <code>eles.dijkstra()</code> and <code>eles.neighborhood()</code> do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.</p>
 <p>For instance:</p>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> a = cy.$(<span class="hljs-string">'#a'</span>); <span class="hljs-comment">// assume a compound node</span>
@@ -815,8 +810,8 @@ cy = cytoscape( options = {
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button><h3 id="very-commonly-used-options">Very commonly used options</h3>
 <p><strong><code>container</code></strong> : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).</p>
-<p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.</p>
-<p><strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.</p>
+<p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.</p>
+<p><strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the graph.</p>
 <p><strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout&#39;s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in <code>options.elements</code> at initialisation time).</p>
 <p><strong><code>ready</code></strong> : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.</p>
 <h3 id="initial-viewport-state">Initial viewport state</h3>
@@ -879,9 +874,6 @@ cy = cytoscape( options = {
 										
 											<div class="name">cy.add( <span class="comma">, </span>eleObj )</div>
 										
-
-										
-										
 										<div class="descr"><p>Add a specified element to the graph.</p>
 </div>
 										<ul class="args">
@@ -902,9 +894,6 @@ cy = cytoscape( options = {
 										
 											<div class="name">cy.add( <span class="comma">, </span>eleObjs )</div>
 										
-
-										
-										
 										<div class="descr"><p>Add the specified elements to the graph.</p>
 </div>
 										<ul class="args">
@@ -924,9 +913,6 @@ cy = cytoscape( options = {
 									<div class="format">
 										
 											<div class="name">cy.add( <span class="comma">, </span>eles )</div>
-										
-
-										
 										
 										<div class="descr"><p>Add the specified elements to the graph.</p>
 </div>
@@ -989,9 +975,6 @@ cy = cytoscape( options = {
 										
 											<div class="name">cy.remove( <span class="comma">, </span>eles )</div>
 										
-
-										
-										
 										<div class="descr"><p>Remove the specified elements.</p>
 </div>
 										<ul class="args">
@@ -1011,9 +994,6 @@ cy = cytoscape( options = {
 									<div class="format">
 										
 											<div class="name">cy.remove( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Remove elements in the graph matching the specified selector.</p>
 </div>
@@ -1070,9 +1050,6 @@ cy.remove( collection );
 										
 											<div class="name">cy.load( <span class="comma">, </span>eleObjs [<span class="comma">, </span>load] [<span class="comma">, </span>done] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -1112,7 +1089,7 @@ cy.remove( collection );
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p>This function is merely a convenient way of setting the elements in the graph and applying a layout.  For more control, the developer should use <a href="#core/graph-manipulation/cy.add"><code>cy.add()</code></a> and <a href="#core/layout/cy.layout"><code>cy.layout()</code></a> etc.</p>
+<p>This function is merely a convenient way of setting the elements in the graph and applying a layout.  For more control, the developer should use <a href="#core/graph-manipulation/cy.add">cy.add()</a> and <a href="#core/layout/cy.layout">cy.layout()</a> etc.</p>
 <p>Note that <code>eleObjs</code> can be specified as an array with each element specifying its <code>group</code>, or alternatively, <code>eleObjs</code> can be specified as a <code>group</code>-indexed map, following the same format as in <a href="#core/initialisation">initialisation</a> and outlined in the <a href="#notation/elements-json">element JSON format</a>.</p>
 <h3 id="examples">Examples</h3>
 <p>As an array:</p>
@@ -1170,9 +1147,6 @@ cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span cl
 										
 											<div class="name">cy.collection()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get an empty collection.</p>
 </div>
 										<ul class="args">
@@ -1183,9 +1157,6 @@ cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span cl
 									<div class="format">
 										
 											<div class="name">cy.collection( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get a collection from elements in the graph matching the specified selector.</p>
 </div>
@@ -1206,9 +1177,6 @@ cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span cl
 									<div class="format">
 										
 											<div class="name">cy.collection( <span class="comma">, </span>elesArray )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get a collection from an array of elements.</p>
 </div>
@@ -1260,9 +1228,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 										
 											<div class="name">cy.getElementById( <span class="comma">, </span>id )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -1306,9 +1271,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 										
 											<div class="name">cy.$( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get elements in the graph matching the specified selector.</p>
 </div>
 										<ul class="args">
@@ -1328,9 +1290,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 									<div class="format">
 										
 											<div class="name">cy.elements( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get elements in the graph matching the specified selector.</p>
 </div>
@@ -1352,9 +1311,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 										
 											<div class="name">cy.nodes( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get nodes in the graph matching the specified selector.</p>
 </div>
 										<ul class="args">
@@ -1374,9 +1330,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 									<div class="format">
 										
 											<div class="name">cy.edges( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get edges in the graph matching the specified selector.</p>
 </div>
@@ -1398,9 +1351,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 										
 											<div class="name">cy.filter( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get elements in the graph matching the specified selector.</p>
 </div>
 										<ul class="args">
@@ -1420,9 +1370,6 @@ cy.nodes().on(<span class="hljs-string">"click"</span>, <span class="hljs-functi
 									<div class="format">
 										
 											<div class="name">cy.filter( <span class="comma">, </span>function(i, ele) )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get elements in the graph matching the specified filter function.</p>
 </div>
@@ -1509,9 +1456,6 @@ cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-
 										
 											<div class="name">cy.batch( <span class="comma">, </span>function() )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -1531,9 +1475,6 @@ cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-
 										
 											<div class="name">cy.startBatch()</div>
 										
-
-										
-										
 										<div class="descr"><p>Starts batching manually (useful for asynchronous cases).</p>
 </div>
 										<ul class="args">
@@ -1544,9 +1485,6 @@ cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-
 									<div class="format">
 										
 											<div class="name">cy.endBatch()</div>
-										
-
-										
 										
 										<div class="descr"><p>Ends batching manually (useful for asynchronous cases).</p>
 </div>
@@ -1577,7 +1515,7 @@ cy.filter(<span class="hljs-string">"[weight&gt;50]"</span>); <span class="hljs-
 <p>This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback, </p>
 <ul>
 <li>you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),</li>
-<li>you probably do not want to use <code>eles.style()</code>, <code>eles.show()</code>, et cetera because they force a style bypass rather than a recalculation.</li>
+<li>you probably do not want to use <code>eles.css()</code>, <code>eles.show()</code>, et cetera because they force a style bypass rather than a recalculation.</li>
 </ul>
 <h3 id="examples">Examples</h3>
 <p>Synchronous style:</p>
@@ -1641,24 +1579,6 @@ cy.endBatch();
 							<div class="name" id="core/events/cy.on"><span class="fn-name">cy.on()</span>  <a href="#core/events/cy.on"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.bind" class="pure-alias-name">cy.bind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.listen" class="pure-alias-name">cy.listen()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.addListener" class="pure-alias-name">cy.addListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Bind to events that occur in the graph.</p>
 </div>
@@ -1669,9 +1589,6 @@ cy.endBatch();
 									<div class="format">
 										
 											<div class="name">cy.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -1731,9 +1648,6 @@ cy.endBatch();
 									<div class="format">
 										
 											<div class="name">cy.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -1815,9 +1729,6 @@ cy.endBatch();
 										
 											<div class="name">cy.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -1877,9 +1788,6 @@ cy.endBatch();
 										
 											<div class="name">cy.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -1935,24 +1843,6 @@ cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</sp
 							<div class="name" id="core/events/cy.off"><span class="fn-name">cy.off()</span>  <a href="#core/events/cy.off"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.unbind" class="pure-alias-name">cy.unbind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.unlisten" class="pure-alias-name">cy.unlisten()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.removeListener" class="pure-alias-name">cy.removeListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Remove event handlers.</p>
 </div>
@@ -1963,9 +1853,6 @@ cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</sp
 									<div class="format">
 										
 											<div class="name">cy.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -2003,9 +1890,6 @@ cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</sp
 									<div class="format">
 										
 											<div class="name">cy.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -2066,16 +1950,6 @@ cy.off(<span class="hljs-string">"tap"</span>, handler);
 							<div class="name" id="core/events/cy.trigger"><span class="fn-name">cy.trigger()</span>  <a href="#core/events/cy.trigger"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="core/events/cy.emit" class="pure-alias-name">cy.emit()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Trigger one or more events.</p>
 </div>
@@ -2086,9 +1960,6 @@ cy.off(<span class="hljs-string">"tap"</span>, handler);
 									<div class="format">
 										
 											<div class="name">cy.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -2165,9 +2036,6 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 										
 											<div class="name">cy.ready( <span class="comma">, </span>function() )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -2236,9 +2104,6 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 										
 											<div class="name">cy.center()</div>
 										
-
-										
-										
 										<div class="descr"><p>Centre on all elements in the graph.</p>
 </div>
 										<ul class="args">
@@ -2249,9 +2114,6 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 									<div class="format">
 										
 											<div class="name">cy.center( <span class="comma">, </span>eles )</div>
-										
-
-										
 										
 										<div class="descr"><p>Centre on the specified elements.</p>
 </div>
@@ -2301,9 +2163,6 @@ cy.center( j );
 										
 											<div class="name">cy.fit()</div>
 										
-
-										
-										
 										<div class="descr"><p>Fit to all elements in the graph.</p>
 </div>
 										<ul class="args">
@@ -2314,9 +2173,6 @@ cy.center( j );
 									<div class="format">
 										
 											<div class="name">cy.fit(  [<span class="comma">, </span>eles] [<span class="comma">, </span>padding] )</div>
-										
-
-										
 										
 										<div class="descr"><p>Fit to the specified elements.</p>
 </div>
@@ -2374,9 +2230,6 @@ cy.center( j );
 										
 											<div class="name">cy.reset()</div>
 										
-
-										
-										
 										<div class="descr"><p>Resets the zoom and pan.</p>
 </div>
 										<ul class="args">
@@ -2424,9 +2277,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 										
 											<div class="name">cy.pan()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the current panning position.</p>
 </div>
 										<ul class="args">
@@ -2437,9 +2287,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.pan( <span class="comma">, </span>renderedPosition )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the current panning position.</p>
 </div>
@@ -2493,9 +2340,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 										
 											<div class="name">cy.panBy( <span class="comma">, </span>renderedPosition )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -2545,9 +2389,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 										
 											<div class="name">cy.panningEnabled()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether panning is enabled.</p>
 </div>
 										<ul class="args">
@@ -2558,9 +2399,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.panningEnabled( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether panning is enabled.</p>
 </div>
@@ -2600,7 +2438,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							
 							
 							
-							<div class="descr"><p>Get or set whether panning by user events (e.g. dragging the graph background) is enabled.</p>
+							<div class="descr"><p>Get or set whether panning by user events (e.g. dragging the graph background) is enabled. If cy.boxSelectionEnabled is set to true, the user must hold left-click to initiate panning.</p>
 </div>
 
 							
@@ -2609,9 +2447,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.userPanningEnabled()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get whether user panning is enabled.</p>
 </div>
@@ -2623,9 +2458,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.userPanningEnabled( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether user panning is enabled.</p>
 </div>
@@ -2675,9 +2507,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 										
 											<div class="name">cy.zoom()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the zoom level.</p>
 </div>
 										<ul class="args">
@@ -2688,9 +2517,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.zoom( <span class="comma">, </span>level )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the zoom level.</p>
 </div>
@@ -2711,9 +2537,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 									<div class="format">
 										
 											<div class="name">cy.zoom( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the zoom level.</p>
 </div>
@@ -2822,9 +2645,6 @@ cy.zoom({
 										
 											<div class="name">cy.zoomingEnabled()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether zooming is enabled.</p>
 </div>
 										<ul class="args">
@@ -2835,9 +2655,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.zoomingEnabled( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether zooming is enabled.</p>
 </div>
@@ -2887,9 +2704,6 @@ cy.zoom({
 										
 											<div class="name">cy.userZoomingEnabled()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether user zooming is enabled.</p>
 </div>
 										<ul class="args">
@@ -2900,9 +2714,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.userZoomingEnabled( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether user zooming is enabled.</p>
 </div>
@@ -2952,9 +2763,6 @@ cy.zoom({
 										
 											<div class="name">cy.minZoom()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the minimum zoom level.</p>
 </div>
 										<ul class="args">
@@ -2965,9 +2773,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.minZoom( <span class="comma">, </span>zoom )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the minimum zoom level.</p>
 </div>
@@ -3008,9 +2813,6 @@ cy.zoom({
 										
 											<div class="name">cy.maxZoom()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the maximum zoom level.</p>
 </div>
 										<ul class="args">
@@ -3021,9 +2823,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.maxZoom( <span class="comma">, </span>zoom )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the maximum zoom level.</p>
 </div>
@@ -3063,9 +2862,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.viewport( <span class="comma">, </span>zoom<span class="comma">, </span>pan )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3112,7 +2908,7 @@ cy.zoom({
 							
 							
 							
-							<div class="descr"><p>Get or set whether box selection is enabled.</p>
+							<div class="descr"><p>Get or set whether box selection is enabled. If enabled, the user must hold left-click to initiate panning.</p>
 </div>
 
 							
@@ -3121,9 +2917,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.boxSelectionEnabled()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get whether box selection is enabled.</p>
 </div>
@@ -3135,9 +2928,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.boxSelectionEnabled( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether box selection is enabled.</p>
 </div>
@@ -3236,9 +3026,6 @@ cy.zoom({
 										
 											<div class="name">cy.autolock()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether autolocking is enabled.</p>
 </div>
 										<ul class="args">
@@ -3249,9 +3036,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.autolock( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether autolocking is enabled.</p>
 </div>
@@ -3301,9 +3085,6 @@ cy.zoom({
 										
 											<div class="name">cy.autoungrabify()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether autoungrabifying is enabled.</p>
 </div>
 										<ul class="args">
@@ -3314,9 +3095,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.autoungrabify( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether autoungrabifying is enabled.</p>
 </div>
@@ -3366,9 +3144,6 @@ cy.zoom({
 										
 											<div class="name">cy.autounselectify()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether autounselectifying is enabled.</p>
 </div>
 										<ul class="args">
@@ -3379,9 +3154,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.autounselectify( <span class="comma">, </span>bool )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set whether autounselectifying is enabled.</p>
 </div>
@@ -3495,9 +3267,6 @@ cy.zoom({
 									<div class="format">
 										
 											<div class="name">cy.animate( <span class="comma">, </span>props<span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3687,9 +3456,6 @@ cy.animate({
 										
 											<div class="name">cy.delay( <span class="comma">, </span>duration<span class="comma">, </span>complete )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -3751,9 +3517,6 @@ cy.animate({
 									<div class="format">
 										
 											<div class="name">cy.stop( <span class="comma">, </span>clearQueue<span class="comma">, </span>jumpToEnd )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3840,9 +3603,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">cy.layout( <span class="comma">, </span>options )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -3878,16 +3638,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="name" id="core/layout/cy.makeLayout"><span class="fn-name">cy.makeLayout()</span>  <a href="#core/layout/cy.makeLayout"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="core/layout/cy.createLayout" class="pure-alias-name">cy.createLayout()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the graph.</p>
 </div>
@@ -3898,9 +3648,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">cy.makeLayout( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -3963,9 +3710,6 @@ layout.run();
 										
 											<div class="name">cy.style()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the current style object.</p>
 </div>
 										<ul class="args">
@@ -3976,9 +3720,6 @@ layout.run();
 									<div class="format">
 										
 											<div class="name">cy.style( <span class="comma">, </span>stylesheet )</div>
-										
-
-										
 										
 										<div class="descr"><p>Assign a new stylesheet to replace the existing one.</p>
 </div>
@@ -4084,9 +3825,6 @@ cy.style( stringStylesheet );
 									<div class="format">
 										
 											<div class="name">cy.png( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4290,16 +4028,6 @@ eles.restore();
 							<div class="name" id="collection/graph-manipulation/eles.clone"><span class="fn-name">eles.clone()</span>  <a href="#collection/graph-manipulation/eles.clone"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/graph-manipulation/eles.copy" class="pure-alias-name">eles.copy()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Get a new collection containing clones (i.e. copies) of the elements in the calling collection.</p>
 </div>
@@ -4325,9 +4053,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">edges.move( <span class="comma">, </span>location )</div>
-										
-
-										
 										
 										<div class="descr"><p>Move edges to different nodes.</p>
 </div>
@@ -4370,9 +4095,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">nodes.move( <span class="comma">, </span>location )</div>
-										
-
-										
 										
 										<div class="descr"><p>Move nodes to different parent node.</p>
 </div>
@@ -4443,24 +4165,6 @@ eles.restore();
 							<div class="name" id="collection/events/eles.on"><span class="fn-name">eles.on()</span>  <a href="#collection/events/eles.on"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.bind" class="pure-alias-name">eles.bind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.listen" class="pure-alias-name">eles.listen()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.addListener" class="pure-alias-name">eles.addListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Bind to events that occur on the elements.</p>
 </div>
@@ -4471,9 +4175,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">eles.on( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4533,9 +4234,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">eles.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4602,9 +4300,6 @@ eles.restore();
 										
 											<div class="name">eles.one( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -4663,9 +4358,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">eles.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4734,9 +4426,6 @@ eles.restore();
 										
 											<div class="name">eles.once( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -4796,9 +4485,6 @@ eles.restore();
 										
 											<div class="name">eles.once( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] [<span class="comma">, </span>data] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -4854,24 +4540,6 @@ eles.restore();
 							<div class="name" id="collection/events/eles.off"><span class="fn-name">eles.off()</span>  <a href="#collection/events/eles.off"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.unbind" class="pure-alias-name">eles.unbind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.unlisten" class="pure-alias-name">eles.unlisten()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.removeListener" class="pure-alias-name">eles.removeListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Unbind one or more callback functions on the elements.</p>
 </div>
@@ -4882,9 +4550,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">eles.off( <span class="comma">, </span>events [<span class="comma">, </span>selector] [<span class="comma">, </span>handler] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4922,9 +4587,6 @@ eles.restore();
 									<div class="format">
 										
 											<div class="name">eles.off( <span class="comma">, </span>eventsMap [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -4986,16 +4648,6 @@ j.off(<span class="hljs-string">'tap'</span>);
 							<div class="name" id="collection/events/eles.trigger"><span class="fn-name">eles.trigger()</span>  <a href="#collection/events/eles.trigger"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/events/eles.emit" class="pure-alias-name">eles.emit()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Trigger events on the elements.</p>
 </div>
@@ -5006,9 +4658,6 @@ j.off(<span class="hljs-string">'tap'</span>);
 									<div class="format">
 										
 											<div class="name">eles.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -5068,16 +4717,6 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 							<div class="name" id="collection/data/eles.data"><span class="fn-name">eles.data()</span> et al <a href="#collection/data/eles.data"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/data/eles.attr" class="pure-alias-name">eles.attr()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Read and write developer-defined data associated with the elements.</p>
 </div>
@@ -5089,9 +4728,6 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 										
 											<div class="name">ele.data()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get all data for the element.</p>
 </div>
 										<ul class="args">
@@ -5102,9 +4738,6 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 									<div class="format">
 										
 											<div class="name">ele.data( <span class="comma">, </span>name )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get a particular data field for the element.</p>
 </div>
@@ -5125,9 +4758,6 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 									<div class="format">
 										
 											<div class="name">ele.data( <span class="comma">, </span>name<span class="comma">, </span>value )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set a particular data field for the element.</p>
 </div>
@@ -5157,9 +4787,6 @@ j.trigger(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">//
 									<div class="format">
 										
 											<div class="name">ele.data( <span class="comma">, </span>obj )</div>
-										
-
-										
 										
 										<div class="descr"><p>Update multiple data fields at once via an object.</p>
 </div>
@@ -5212,16 +4839,6 @@ j.data({
 							<div class="name" id="collection/data/eles.removeData"><span class="fn-name">eles.removeData()</span>  <a href="#collection/data/eles.removeData"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/data/eles.removeAttr" class="pure-alias-name">eles.removeAttr()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Remove developer-defined data associated with the elements.</p>
 </div>
@@ -5233,9 +4850,6 @@ j.data({
 										
 											<div class="name">eles.removeData()</div>
 										
-
-										
-										
 										<div class="descr"><p>Removes all mutable data fields for the elements.</p>
 </div>
 										<ul class="args">
@@ -5246,9 +4860,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">eles.removeData( <span class="comma">, </span>names )</div>
-										
-
-										
 										
 										<div class="descr"><p>Removes the specified mutable data fields for the elements.</p>
 </div>
@@ -5298,9 +4909,6 @@ j.data({
 										
 											<div class="name">ele.scratch()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the entire scratchpad object for the element.</p>
 </div>
 										<ul class="args">
@@ -5311,9 +4919,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">ele.scratch( <span class="comma">, </span>namespace )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the scratchpad at a particular namespace.</p>
 </div>
@@ -5334,9 +4939,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">ele.scratch( <span class="comma">, </span>namespace<span class="comma">, </span>value )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the scratchpad at a particular namespace.</p>
 </div>
@@ -5408,9 +5010,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">ele.removeScratch( <span class="comma">, </span>namespace )</div>
-										
-
-										
 										
 										<div class="descr"><p>Remove the scratchpad data at a particular namespace.</p>
 </div>
@@ -5599,9 +5198,6 @@ j.data({
 										
 											<div class="name">node.degree( <span class="comma">, </span>includeLoops )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the degree of a node.</p>
 </div>
 										<ul class="args">
@@ -5621,9 +5217,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">node.indegree( <span class="comma">, </span>includeLoops )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the indegree of a node.</p>
 </div>
@@ -5645,9 +5238,6 @@ j.data({
 										
 											<div class="name">node.outdegree( <span class="comma">, </span>includeLoops )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the outdegree of a node.</p>
 </div>
 										<ul class="args">
@@ -5667,9 +5257,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">nodes.totalDegree( <span class="comma">, </span>includeLoops )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the total degree of a collection of nodes.</p>
 </div>
@@ -5691,9 +5278,6 @@ j.data({
 										
 											<div class="name">nodes.minDegree( <span class="comma">, </span>includeLoops )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the minimum degree of the nodes in the collection.</p>
 </div>
 										<ul class="args">
@@ -5713,9 +5297,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">nodes.maxDegree( <span class="comma">, </span>includeLoops )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the maximum degree of the nodes in the collection.</p>
 </div>
@@ -5737,9 +5318,6 @@ j.data({
 										
 											<div class="name">nodes.minIndegree( <span class="comma">, </span>includeLoops )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the minimum indegree of the nodes in the collection.</p>
 </div>
 										<ul class="args">
@@ -5759,9 +5337,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">nodes.maxIndegree( <span class="comma">, </span>includeLoops )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the maximum indegree of the nodes in the collection.</p>
 </div>
@@ -5783,9 +5358,6 @@ j.data({
 										
 											<div class="name">nodes.minOutdegree( <span class="comma">, </span>includeLoops )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the minimum outdegree of the nodes in the collection.</p>
 </div>
 										<ul class="args">
@@ -5805,9 +5377,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">nodes.maxOutdegree( <span class="comma">, </span>includeLoops )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the maximum outdegree of the nodes in the collection.</p>
 </div>
@@ -5860,11 +5429,7 @@ j.data({
 
 								
 									<span class="pure-alias">
-										<code id="collection/position--dimensions/node.modelPosition" class="pure-alias-name">node.modelPosition()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/position--dimensions/node.point" class="pure-alias-name">node.point()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">node.modelPosition()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -5880,9 +5445,6 @@ j.data({
 										
 											<div class="name">node.position()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the entire position object.</p>
 </div>
 										<ul class="args">
@@ -5893,9 +5455,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">node.position( <span class="comma">, </span>dimension )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the value of a specified position dimension.</p>
 </div>
@@ -5916,9 +5475,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">node.position( <span class="comma">, </span>dimension<span class="comma">, </span>value )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the value of a specified position dimension.</p>
 </div>
@@ -5948,9 +5504,6 @@ j.data({
 									<div class="format">
 										
 											<div class="name">node.position( <span class="comma">, </span>pos )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the position using name-value pairs in the specified object.</p>
 </div>
@@ -6005,11 +5558,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 								
 									<span class="pure-alias">
-										<code id="collection/position--dimensions/nodes.modelPositions" class="pure-alias-name">nodes.modelPositions()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/position--dimensions/nodes.points" class="pure-alias-name">nodes.points()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">nodes.modelPositions()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -6024,9 +5573,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">nodes.positions( <span class="comma">, </span>function(i, ele) )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the positions functionally.</p>
 </div>
@@ -6070,9 +5616,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">nodes.positions( <span class="comma">, </span>pos )</div>
 										
-
-										
-										
 										<div class="descr"><p>Set positions for all nodes based on a single position object.</p>
 </div>
 										<ul class="args">
@@ -6111,16 +5654,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="name" id="collection/position--dimensions/node.renderedPosition"><span class="fn-name">node.renderedPosition()</span>  <a href="#collection/position--dimensions/node.renderedPosition"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/position--dimensions/node.renderedPoint" class="pure-alias-name">node.renderedPoint()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Get or set the rendered (on-screen) position of a node.</p>
 </div>
@@ -6132,9 +5665,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">node.renderedPosition()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the entire rendered position object.</p>
 </div>
 										<ul class="args">
@@ -6145,9 +5675,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">node.renderedPosition( <span class="comma">, </span>dimension )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the value of a specified rendered posisition dimension.</p>
 </div>
@@ -6168,9 +5695,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">node.renderedPosition( <span class="comma">, </span>dimension<span class="comma">, </span>value )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the value of a specified rendered posisition dimension.</p>
 </div>
@@ -6200,9 +5724,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">node.renderedPosition( <span class="comma">, </span>pos )</div>
-										
-
-										
 										
 										<div class="descr"><p>Set the rendered position using name-value pairs in the specified object.</p>
 </div>
@@ -6243,9 +5764,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">ele.width()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the width of the element.</p>
 </div>
 										<ul class="args">
@@ -6256,9 +5774,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">ele.outerWidth()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the outer width of the element (includes width &amp; border).</p>
 </div>
@@ -6271,9 +5786,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">ele.renderedWidth()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the width of the element in rendered dimensions.</p>
 </div>
 										<ul class="args">
@@ -6284,9 +5796,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">ele.renderedOuterWidth()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the outer width of the element (includes width &amp; border) in rendered dimensions.</p>
 </div>
@@ -6318,9 +5827,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">ele.height()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the height of the element.</p>
 </div>
 										<ul class="args">
@@ -6331,9 +5837,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">ele.outerHeight()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the outer height of the element (includes height &amp; border).</p>
 </div>
@@ -6346,9 +5849,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">ele.renderedHeight()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the height of the element in rendered dimensions.</p>
 </div>
 										<ul class="args">
@@ -6359,9 +5859,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">ele.renderedOuterHeight()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the outer height of the element (includes height &amp; border) in rendered dimensions.</p>
 </div>
@@ -6379,18 +5876,8 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/position--dimensions/eles.boundingBox"><span class="fn-name">eles.boundingBox()</span>  <a href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/position--dimensions/eles.boundingBox"><span class="fn-name">eles.boundingBox()</span> et al <a href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/position--dimensions/eles.boundingbox" class="pure-alias-name">eles.boundingbox()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Get the bounding box of the elements.</p>
@@ -6402,9 +5889,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">eles.boundingBox( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the bounding box of the elements in model coordinates.</p>
 </div>
@@ -6453,45 +5937,9 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										</ul>
 									</div>
 								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
-
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/position--dimensions/eles.renderedBoundingBox"><span class="fn-name">eles.renderedBoundingBox()</span>  <a href="#collection/position--dimensions/eles.renderedBoundingBox"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/position--dimensions/eles.renderedBoundingbox" class="pure-alias-name">eles.renderedBoundingbox()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Get the rendered bounding box of the elements.</p>
-</div>
-
-							
-							<div class="formats">
-								
 									<div class="format">
 										
 											<div class="name">eles.renderedBoundingBox( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the bounding box of the elements in rendered coordinates.</p>
 </div>
@@ -6718,9 +6166,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 										
 											<div class="name">eles.layout( <span class="comma">, </span>options )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -6757,16 +6202,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="name" id="collection/layout/eles.makeLayout"><span class="fn-name">eles.makeLayout()</span>  <a href="#collection/layout/eles.makeLayout"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/layout/eles.createLayout" class="pure-alias-name">eles.createLayout()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the collection.</p>
 </div>
@@ -6777,9 +6212,6 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 									<div class="format">
 										
 											<div class="name">eles.makeLayout( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -6866,16 +6298,6 @@ layout.run();
 						<div class="function">
 							<div class="name" id="collection/selection/eles.unselect"><span class="fn-name">eles.unselect()</span>  <a href="#collection/selection/eles.unselect"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/selection/eles.deselect" class="pure-alias-name">eles.deselect()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Make the elements not selected (NB other elements outside the collection are not affected).</p>
@@ -6974,9 +6396,6 @@ layout.run();
 										
 											<div class="name">eles.addClass( <span class="comma">, </span>classes )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7020,9 +6439,6 @@ layout.run();
 										
 											<div class="name">eles.removeClass( <span class="comma">, </span>classes )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7065,9 +6481,6 @@ layout.run();
 									<div class="format">
 										
 											<div class="name">eles.toggleClass( <span class="comma">, </span>classes [<span class="comma">, </span>toggle] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -7128,9 +6541,6 @@ layout.run();
 										
 											<div class="name">eles.flashClass( <span class="comma">, </span>classes [<span class="comma">, </span>duration] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7183,9 +6593,6 @@ layout.run();
 										
 											<div class="name">ele.hasClass( <span class="comma">, </span>className )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7215,7 +6622,7 @@ layout.run();
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/eles.style"><span class="fn-name">eles.style()</span> et al <a href="#collection/style/eles.style"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/style/eles.css"><span class="fn-name">eles.css()</span> et al <a href="#collection/style/eles.css"><span class="icon-bookmark"></span></a></div>
 							
 							
 							<div class="pure-aliases">
@@ -7223,11 +6630,7 @@ layout.run();
 
 								
 									<span class="pure-alias">
-										<code id="collection/style/eles.css" class="pure-alias-name">eles.css()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/style/eles.bypass" class="pure-alias-name">eles.bypass()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">eles.style()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -7241,10 +6644,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">ele.style()</div>
-										
-
-										
+											<div class="name">ele.css()</div>
 										
 										<div class="descr"><p>Get a name-value pair object containing visual style properties and their values for the element.</p>
 </div>
@@ -7255,10 +6655,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">ele.style( <span class="comma">, </span>name )</div>
-										
-
-										
+											<div class="name">ele.css( <span class="comma">, </span>name )</div>
 										
 										<div class="descr"><p>Get a particular style property value.</p>
 </div>
@@ -7278,10 +6675,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">eles.style( <span class="comma">, </span>name<span class="comma">, </span>value )</div>
-										
-
-										
+											<div class="name">eles.css( <span class="comma">, </span>name<span class="comma">, </span>value )</div>
 										
 										<div class="descr"><p>Set the specified visual style property for the elements.</p>
 </div>
@@ -7310,10 +6704,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">eles.style( <span class="comma">, </span>props )</div>
-										
-
-										
+											<div class="name">eles.css( <span class="comma">, </span>props )</div>
 										
 										<div class="descr"><p>Set several visual style properties at once for the elements.</p>
 </div>
@@ -7346,7 +6737,7 @@ layout.run();
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/eles.removeStyle"><span class="fn-name">eles.removeStyle()</span>  <a href="#collection/style/eles.removeStyle"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/style/eles.removeCss"><span class="fn-name">eles.removeCss()</span>  <a href="#collection/style/eles.removeCss"><span class="icon-bookmark"></span></a></div>
 							
 							
 							<div class="pure-aliases">
@@ -7354,11 +6745,7 @@ layout.run();
 
 								
 									<span class="pure-alias">
-										<code id="collection/style/eles.removeCss" class="pure-alias-name">eles.removeCss()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/style/eles.removeBypass" class="pure-alias-name">eles.removeBypass()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">eles.removeStyle()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -7372,10 +6759,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">eles.removeStyle()</div>
-										
-
-										
+											<div class="name">eles.removeCss()</div>
 										
 										<div class="descr"><p>Removes all overridden style of the elements.</p>
 </div>
@@ -7386,10 +6770,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">eles.removeStyle( <span class="comma">, </span>names )</div>
-										
-
-										
+											<div class="name">eles.removeCss( <span class="comma">, </span>names )</div>
 										
 										<div class="descr"><p>Removes particular overridden style properties of the elements.</p>
 </div>
@@ -7416,7 +6797,7 @@ layout.run();
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/ele.renderedStyle"><span class="fn-name">ele.renderedStyle()</span>  <a href="#collection/style/ele.renderedStyle"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/style/ele.renderedCss"><span class="fn-name">ele.renderedCss()</span>  <a href="#collection/style/ele.renderedCss"><span class="icon-bookmark"></span></a></div>
 							
 							
 							<div class="pure-aliases">
@@ -7424,7 +6805,7 @@ layout.run();
 
 								
 									<span class="pure-alias">
-										<code id="collection/style/eles.renderedCss" class="pure-alias-name">eles.renderedCss()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">eles.renderedStyle()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -7438,10 +6819,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">ele.renderedStyle()</div>
-										
-
-										
+											<div class="name">ele.renderedCss()</div>
 										
 										<div class="descr"><p>Get a name-value pair object containing rendered visual style properties and their values for the element.</p>
 </div>
@@ -7452,10 +6830,7 @@ layout.run();
 								
 									<div class="format">
 										
-											<div class="name">ele.renderedStyle( <span class="comma">, </span>name )</div>
-										
-
-										
+											<div class="name">ele.renderedCss( <span class="comma">, </span>name )</div>
 										
 										<div class="descr"><p>Get a particular rendered style property value.</p>
 </div>
@@ -7526,9 +6901,6 @@ layout.run();
 										
 											<div class="name">ele.visible()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether the element is visible.</p>
 </div>
 										<ul class="args">
@@ -7539,9 +6911,6 @@ layout.run();
 									<div class="format">
 										
 											<div class="name">ele.hidden()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get whether the element is hidden.</p>
 </div>
@@ -7628,9 +6997,6 @@ layout.run();
 									<div class="format">
 										
 											<div class="name">eles.animate( <span class="comma">, </span>props<span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -7764,9 +7130,6 @@ layout.run();
 										
 											<div class="name">eles.delay( <span class="comma">, </span>duration<span class="comma">, </span>complete )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7832,9 +7195,6 @@ layout.run();
 									<div class="format">
 										
 											<div class="name">eles.stop( <span class="comma">, </span>clearQueue<span class="comma">, </span>jumpToEnd )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -7928,9 +7288,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">eles.same( <span class="comma">, </span>eles )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -7976,9 +7333,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.anySame( <span class="comma">, </span>eles )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8026,9 +7380,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">eles.allAreNeighbors( <span class="comma">, </span>eles )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -8075,9 +7426,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">eles.is( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -8123,9 +7471,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">eles.allAre( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -8170,9 +7515,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.some( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8261,9 +7603,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.every( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8362,7 +7701,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p><span class="important-indicator"></span> Note that as an alternative, you may read <code>eles.length</code> instead of <code>eles.size()</code>.  The two are interchangeable.</p>
+<p>Note that as an alternative, you may read <code>eles.length</code> instead of <code>eles.size()</code>.  The two are interchangeable.</p>
 
 								
 							</div>		
@@ -8383,9 +7722,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">eles.empty()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get whether the collection is empty.</p>
 </div>
 										<ul class="args">
@@ -8396,9 +7732,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.nonempty()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get whether the collection is nonempty.</p>
 </div>
@@ -8429,9 +7762,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.each( <span class="comma">, </span>function(i, ele) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8509,9 +7839,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">eles.forEach( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8604,9 +7931,6 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 										
 											<div class="name">eles.eq( <span class="comma">, </span>index )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -8626,9 +7950,6 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 										
 											<div class="name">eles.first()</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the first element in the collection.</p>
 </div>
 										<ul class="args">
@@ -8639,9 +7960,6 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 									<div class="format">
 										
 											<div class="name">eles.last()</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the last element in the collection.</p>
 </div>
@@ -8656,7 +7974,7 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
-<p><span class="important-indicator"></span> You may use <code>eles[i]</code> in place of <code>eles.eq(i)</code> as a more performant alternative.</p>
+<p>You may use <code>eles[i]</code> in place of <code>eles.eq(i)</code> as a more performant alternative.</p>
 
 								
 							</div>		
@@ -8676,9 +7994,6 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 									<div class="format">
 										
 											<div class="name">eles.slice(  [<span class="comma">, </span>start] [<span class="comma">, </span>end] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8724,34 +8039,8 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 
 					
 						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.union"><span class="fn-name">eles.union()</span>  <a href="#collection/building--filtering/eles.union"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/building--filtering/eles.add"><span class="fn-name">eles.add()</span>  <a href="#collection/building--filtering/eles.add"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.add" class="pure-alias-name">eles.add()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.or" class="pure-alias-name">eles.or()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;u&#x27;]" class="pure-alias-name">eles[&#x27;u&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;+&#x27;]" class="pure-alias-name">eles[&#x27;+&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;|&#x27;]" class="pure-alias-name">eles[&#x27;|&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Get a new collection, resulting from adding the collection with another one</p>
@@ -8762,10 +8051,7 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 								
 									<div class="format">
 										
-											<div class="name">eles.union( <span class="comma">, </span>eles )</div>
-										
-
-										
+											<div class="name">eles.add( <span class="comma">, </span>eles )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8784,10 +8070,7 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 								
 									<div class="format">
 										
-											<div class="name">eles.union( <span class="comma">, </span>elesArray )</div>
-										
-
-										
+											<div class="name">eles.add( <span class="comma">, </span>elesArray )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8806,10 +8089,7 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 								
 									<div class="format">
 										
-											<div class="name">eles.union( <span class="comma">, </span>selector )</div>
-										
-
-										
+											<div class="name">eles.add( <span class="comma">, </span>selector )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8836,10 +8116,10 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
 <span class="hljs-keyword">var</span> e = cy.$(<span class="hljs-string">'#e'</span>);
 
-j.union(e);
+j.add(e);
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button><p>With a selector:</p>
-<pre><code class="lang-js">cy.$(<span class="hljs-string">'#j'</span>).union(<span class="hljs-string">'#e'</span>);
+<pre><code class="lang-js">cy.$(<span class="hljs-string">'#j'</span>).add(<span class="hljs-string">'#e'</span>);
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button>
 								
@@ -8847,30 +8127,8 @@ j.union(e);
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.difference"><span class="fn-name">eles.difference()</span>  <a href="#collection/building--filtering/eles.difference"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/building--filtering/eles.not"><span class="fn-name">eles.not()</span>  <a href="#collection/building--filtering/eles.not"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.not" class="pure-alias-name">eles.not()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;\\&#x27;]" class="pure-alias-name">eles[&#x27;\\&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;!&#x27;]" class="pure-alias-name">eles[&#x27;!&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;-&#x27;]" class="pure-alias-name">eles[&#x27;-&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Get a new collection, resulting from the collection without some specified elements.</p>
@@ -8881,10 +8139,7 @@ j.union(e);
 								
 									<div class="format">
 										
-											<div class="name">eles.difference( <span class="comma">, </span>eles )</div>
-										
-
-										
+											<div class="name">eles.not( <span class="comma">, </span>eles )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8903,10 +8158,7 @@ j.union(e);
 								
 									<div class="format">
 										
-											<div class="name">eles.difference( <span class="comma">, </span>selector )</div>
-										
-
-										
+											<div class="name">eles.not( <span class="comma">, </span>selector )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -8933,10 +8185,10 @@ j.union(e);
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
 <span class="hljs-keyword">var</span> nodes = cy.nodes();
 
-nodes.difference(j);
+nodes.not(j);
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button><p>With a selector:</p>
-<pre><code class="lang-js">cy.nodes().difference(<span class="hljs-string">'#j'</span>);
+<pre><code class="lang-js">cy.nodes().not(<span class="hljs-string">'#j'</span>);
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button>
 								
@@ -8944,34 +8196,8 @@ nodes.difference(j);
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.intersection"><span class="fn-name">eles.intersection()</span>  <a href="#collection/building--filtering/eles.intersection"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/building--filtering/eles.intersect"><span class="fn-name">eles.intersect()</span>  <a href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.intersect" class="pure-alias-name">eles.intersect()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.and" class="pure-alias-name">eles.and()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;n&#x27;]" class="pure-alias-name">eles[&#x27;n&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;&amp;&#x27;]" class="pure-alias-name">eles[&#x27;&amp;&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;.&#x27;]" class="pure-alias-name">eles[&#x27;.&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Get the elements in both this collection and another specified collection.</p>
@@ -8982,10 +8208,7 @@ nodes.difference(j);
 								
 									<div class="format">
 										
-											<div class="name">eles.intersection( <span class="comma">, </span>eles )</div>
-										
-
-										
+											<div class="name">eles.intersect( <span class="comma">, </span>eles )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9004,10 +8227,7 @@ nodes.difference(j);
 								
 									<div class="format">
 										
-											<div class="name">eles.intersection( <span class="comma">, </span>selector )</div>
-										
-
-										
+											<div class="name">eles.intersect( <span class="comma">, </span>selector )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9033,98 +8253,9 @@ nodes.difference(j);
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> jNhd = cy.$(<span class="hljs-string">'#j'</span>).neighborhood();
 <span class="hljs-keyword">var</span> eNhd = cy.$(<span class="hljs-string">'#e'</span>).neighborhood();
 
-jNhd.intersection( eNhd );
+jNhd.intersect( eNhd );
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.symmetricDifference"><span class="fn-name">eles.symmetricDifference()</span>  <a href="#collection/building--filtering/eles.symmetricDifference"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.symdiff" class="pure-alias-name">eles.symdiff()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.xor" class="pure-alias-name">eles.xor()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;^&#x27;]" class="pure-alias-name">eles[&#x27;^&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;(+)&#x27;]" class="pure-alias-name">eles[&#x27;(+)&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles[&#x27;(-)&#x27;]" class="pure-alias-name">eles[&#x27;(-)&#x27;]()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Get the elements that are in the calling collection or the passed collection but not in both.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">eles.symmetricDifference( <span class="comma">, </span>eles )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#collection">eles</a></span>
-													 
-													<span class="descr"><p>The elements to apply the symmetric difference with.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">eles.symmetricDifference( <span class="comma">, </span>selector )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													 
-													<span class="descr"><p>A selector representing the elements to apply the symmetric difference with.  All elements in the graph matching the selector are used as the passed collection.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
 								
 							</div>		
 						</div>
@@ -9143,9 +8274,6 @@ jNhd.intersection( eNhd );
 									<div class="format">
 										
 											<div class="name">eles.filter( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the elements that match the specified selector.</p>
 </div>
@@ -9166,9 +8294,6 @@ jNhd.intersection( eNhd );
 									<div class="format">
 										
 											<div class="name">eles.filter( <span class="comma">, </span>function(i, ele) )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the elements that match the specified filter function.</p>
 </div>
@@ -9212,9 +8337,6 @@ jNhd.intersection( eNhd );
 										
 											<div class="name">eles.nodes( <span class="comma">, </span>selector )</div>
 										
-
-										
-										
 										<div class="descr"><p>Get the nodes that match the specified selector.</p>
 </div>
 										<ul class="args">
@@ -9234,9 +8356,6 @@ jNhd.intersection( eNhd );
 									<div class="format">
 										
 											<div class="name">eles.edges( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"><p>Get the edges that match the specified selector.</p>
 </div>
@@ -9268,22 +8387,8 @@ jNhd.intersection( eNhd );
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/building--filtering/eles.filterFn"><span class="fn-name">eles.filterFn()</span>  <a href="#collection/building--filtering/eles.filterFn"><span class="icon-bookmark"></span></a></div>
+							<div class="name" id="collection/building--filtering/eles.stdFilter"><span class="fn-name">eles.stdFilter()</span>  <a href="#collection/building--filtering/eles.stdFilter"><span class="icon-bookmark"></span></a></div>
 							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.fnFilter" class="pure-alias-name">eles.fnFilter()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.stdFilter" class="pure-alias-name">eles.stdFilter()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
 							
 							
 							<div class="descr"><p>Get a new collection containing elements that are accepted by the specified filter, using an implementation like the standard array namesake.</p>
@@ -9294,10 +8399,7 @@ jNhd.intersection( eNhd );
 								
 									<div class="format">
 										
-											<div class="name">eles.filterFn( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
+											<div class="name">eles.stdFilter( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9360,7 +8462,7 @@ jNhd.intersection( eNhd );
 							<div class="details">
 								
 									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js">cy.nodes().filterFn(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span></span>{
+<pre><code class="lang-js">cy.nodes().stdFilter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span></span>{
   <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
 });
 </code></pre>
@@ -9383,9 +8485,6 @@ jNhd.intersection( eNhd );
 									<div class="format">
 										
 											<div class="name">eles.sort( <span class="comma">, </span>function(ele1, ele2) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9445,9 +8544,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 									<div class="format">
 										
 											<div class="name">eles.map( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9536,9 +8632,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 									<div class="format">
 										
 											<div class="name">eles.min( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9633,9 +8726,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 									<div class="format">
 										
 											<div class="name">eles.max( <span class="comma">, </span>function(ele, i, eles) [<span class="comma">, </span>thisArg] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9742,19 +8832,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 										
 											<div class="name">eles.neighborhood(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-											
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.neighbourhood" class="pure-alias-name">eles.neighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-											
-										</div>
-										
-										
 										<div class="descr"><p>Get the open neighbourhood of the elements.</p>
 </div>
 										<ul class="args">
@@ -9775,19 +8852,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 										
 											<div class="name">eles.openNeighborhood(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-											
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.openNeighbourhood" class="pure-alias-name">eles.openNeighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-											
-										</div>
-										
-										
 										<div class="descr"><p>Get the open neighbourhood of the elements.</p>
 </div>
 										<ul class="args">
@@ -9807,19 +8871,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 									<div class="format">
 										
 											<div class="name">eles.closedNeighborhood(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-											
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.closedNeighbourhood" class="pure-alias-name">eles.closedNeighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-											
-										</div>
-										
 										
 										<div class="descr"><p>Get the closed neighbourhood of the elements.</p>
 </div>
@@ -9869,9 +8920,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 										
 											<div class="name">nodes.edgesWith( <span class="comma">, </span>eles )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -9890,9 +8938,6 @@ nodes.removeCss().forEach(<span class="hljs-function"><span class="hljs-keyword"
 									<div class="format">
 										
 											<div class="name">nodes.edgesWith( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -9940,9 +8985,6 @@ j.edgesWith(e);
 										
 											<div class="name">nodes.edgesTo( <span class="comma">, </span>eles )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -9961,9 +9003,6 @@ j.edgesWith(e);
 									<div class="format">
 										
 											<div class="name">nodes.edgesTo( <span class="comma">, </span>selector )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10011,9 +9050,6 @@ j.edgesTo(e);
 										
 											<div class="name">edges.connectedNodes(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10058,9 +9094,6 @@ je.connectedNodes();
 									<div class="format">
 										
 											<div class="name">nodes.connectedEdges(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10107,9 +9140,6 @@ j.connectedEdges();
 										
 											<div class="name">edge.source(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10154,9 +9184,6 @@ je.source();
 									<div class="format">
 										
 											<div class="name">edges.sources(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10203,9 +9230,6 @@ edges.sources();
 										
 											<div class="name">edge.target(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10251,9 +9275,6 @@ je.target();
 										
 											<div class="name">edges.targets(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10298,9 +9319,6 @@ edges.targets();
 									<div class="format">
 										
 											<div class="name">edges.parallelEdges(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10352,9 +9370,6 @@ edges.targets();
 										
 											<div class="name">edges.codirectedEdges(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10401,9 +9416,6 @@ edges.targets();
 										
 											<div class="name">nodes.roots(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10442,9 +9454,6 @@ edges.targets();
 										
 											<div class="name">nodes.leaves(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10482,9 +9491,6 @@ edges.targets();
 									<div class="format">
 										
 											<div class="name">nodes.outgoers(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10530,9 +9536,6 @@ edges.targets();
 										
 											<div class="name">nodes.successors(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10577,9 +9580,6 @@ edges.targets();
 										
 											<div class="name">nodes.incomers(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -10623,9 +9623,6 @@ edges.targets();
 									<div class="format">
 										
 											<div class="name">nodes.predecessors(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10676,7 +9673,7 @@ edges.targets();
 
 								
 									<span class="pure-alias">
-										<code id="collection/algorithms/eles.bfs" class="pure-alias-name">eles.bfs()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">eles.bfs()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -10691,9 +9688,6 @@ edges.targets();
 									<div class="format">
 										
 											<div class="name">eles.breadthFirstSearch( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10761,9 +9755,6 @@ edges.targets();
 									<div class="format">
 										
 											<div class="name">eles.breadthFirstSearch( <span class="comma">, </span>roots [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10868,7 +9859,7 @@ path.select();
 
 								
 									<span class="pure-alias">
-										<code id="collection/algorithms/eles.dfs" class="pure-alias-name">eles.dfs()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">eles.dfs()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -10883,9 +9874,6 @@ path.select();
 									<div class="format">
 										
 											<div class="name">eles.depthFirstSearch( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -10953,9 +9941,6 @@ path.select();
 									<div class="format">
 										
 											<div class="name">eles.depthFirstSearch( <span class="comma">, </span>roots [<span class="comma">, </span>function(i, depth)] [<span class="comma">, </span>directed] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11066,9 +10051,6 @@ path.select();
 										
 											<div class="name">eles.dijkstra( <span class="comma">, </span>options )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11117,9 +10099,6 @@ path.select();
 									<div class="format">
 										
 											<div class="name">eles.dijkstra( <span class="comma">, </span>root [<span class="comma">, </span>function(edge)] [<span class="comma">, </span>directed] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11196,9 +10175,6 @@ path.select();
 									<div class="format">
 										
 											<div class="name">eles.aStar( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11307,9 +10283,6 @@ aStar.path.select();
 										
 											<div class="name">eles.floydWarshall( <span class="comma">, </span>options )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11388,9 +10361,6 @@ fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</s
 									<div class="format">
 										
 											<div class="name">eles.bellmanFord( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11484,9 +10454,6 @@ bf.pathTo(<span class="hljs-string">'#g'</span>).select();
 										
 											<div class="name">eles.kruskal(  [<span class="comma">, </span>function(edge)] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11561,9 +10528,6 @@ ks.cut.select();
 									<div class="format">
 										
 											<div class="name">eles.pageRank( <span class="comma">, </span>options )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11690,9 +10654,6 @@ ks.cut.select();
 										
 											<div class="name">nodes.parent(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11725,7 +10686,7 @@ ks.cut.select();
 
 								
 									<span class="pure-alias">
-										<code id="collection/compound-nodes/nodes.ancestors" class="pure-alias-name">nodes.ancestors()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">nodes.ancestors()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -11740,9 +10701,6 @@ ks.cut.select();
 									<div class="format">
 										
 											<div class="name">nodes.parents(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11781,9 +10739,6 @@ ks.cut.select();
 									<div class="format">
 										
 											<div class="name">nodes.commonAncestors(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11827,9 +10782,6 @@ ks.cut.select();
 										
 											<div class="name">nodes.orphans(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11867,9 +10819,6 @@ ks.cut.select();
 									<div class="format">
 										
 											<div class="name">nodes.nonorphans(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -11909,9 +10858,6 @@ ks.cut.select();
 										
 											<div class="name">nodes.children(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11950,9 +10896,6 @@ ks.cut.select();
 										
 											<div class="name">nodes.descendants(  [<span class="comma">, </span>selector] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -11990,9 +10933,6 @@ ks.cut.select();
 									<div class="format">
 										
 											<div class="name">nodes.siblings(  [<span class="comma">, </span>selector] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -12155,9 +11095,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 
 				
 					<p>Style in Cytoscape.js follows CSS conventions as closely as possible.  In most cases, a property has the same name and behaviour as its corresponding CSS namesake.  However, the properties in CSS are not sufficient to specify the style of some parts of the graph.  In that case, additional properties are introduced that are unique to Cytoscape.js.</p>
-<p>It is important to note that in your stylesheet, <a href="http://www.w3.org/TR/css3-selectors/#specificity">specificity rules</a> are completely ignored.  In CSS, specificity often makes stylesheets behave in ways contrary to the developer&#39;s natural mental model.  This is terrible, because it wastes time and overcomplicates things.  Thus, there is no analogue of CSS specificity in Cytoscape.js stylesheets.  For a given style property for a given element, the last matching selector wins.  In general, you should be using something along the lines of <a href="http://oocss.org">OOCSS</a> principles, anyway &mdash; making specificity essentially irrelevant.</p>
+<p>It is important to note that in your stylesheet, <a href="http://www.w3.org/TR/css3-selectors/#specificity">specificity rules</a> are completely ignored.  In CSS, specificity often makes stylesheets behave in ways contrary to developer&#39;s natural mental model.  This is terrible, because it wastes time and overcomplicates things.  Thus, there is no analogue of CSS specificity in Cytoscape.js stylesheets.  For a given style property for a given element, the last matching selector wins.  In general, you should be using something along the lines of <a href="http://oocss.org">OOCSS</a> principles, anyway &mdash; making specificity essentially irrelevant.</p>
 <h2 id="style/format">Format <a href="#style/format"><span class="icon-bookmark"></span></a></h2>
-<p>The style specified at <a href="#core/initialisation">initialisation</a> can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string formats being more useful if you want to pull down the style from the server.  If you pull the style from the server, you probably should initialise Cytoscape.js after the style has been loaded.  (Though you could altenatively modify the existing style or reassign a new style to an existing core instance.)</p>
+<p>The style specified at <a href="#core/initialisation">initialisation</a> can be in a functional format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string formats being more useful if you want to pull down the style from the server.  If you pull the style from the server, you must initialise Cytoscape.js after the style has been loaded.</p>
 <h3 id="string-format">String format</h3>
 <p>Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.</p>
 <p>An example style file:</p>
@@ -12224,15 +11164,9 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <h2 id="style/mappers">Mappers <a href="#style/mappers"><span class="icon-bookmark"></span></a></h2>
 <p>In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.</p>
 <p><span class="important-indicator"></span> If a mapping is defined, either define the mapped data for all elements or use selectors to limit the mapping to elements that have the mapped data defined.  For example, the selector <code>[foo]</code> will apply only to elements with the data field <code>foo</code> defined.</p>
-<ul>
-<li><strong><code>data()</code></strong> specifies a direct mapping to an element&#39;s data field.  For example, <code>data(descr)</code> would map a property to the value in an element&#39;s <code>descr</code> field in its data (i.e. <code>ele.data(&quot;descr&quot;)</code>).  This is useful for mapping to properties like label text content (the <code>content</code> property).</li>
-<li><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</li>
-<li><strong><code>layoutData()</code></strong> specifies a direct mapping like <code>data()</code> but uses special layout defined values (only supported for some layouts).</li>
-<li><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</li>
-<li><strong><code>scratch()</code></strong> specifies a direct mapping like <code>data()</code> but uses scratch data.</li>
-<li><strong><code>mapScratch()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses scratch data.</li>
-<li><strong><code>function( ele ){ ... }</code></strong> A function may be passed as the value of a style property.  The function has a single <code>ele</code> argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute:  The functions are called more often than if the developer writes data by <code>data()</code> or <code>scratch()</code> &mdash; where <code>data()</code> or <code>scratch()</code> would provide an automatic caching mechanism.</li>
-</ul>
+<p><strong><code>data()</code></strong> specifies a direct mapping to an element&#39;s data field.  For example, <code>data(descr)</code> would map a property to the value in an element&#39;s <code>descr</code> field in its data (i.e. <code>ele.data(&quot;descr&quot;)</code>).  This is useful for mapping to properties like label text content (the <code>content</code> property).</p>
+<p><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</p>
+<p><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</p>
 <h2 id="style/node-body">Node body <a href="#style/node-body"><span class="icon-bookmark"></span></a></h2>
 <p>These properties affect the style of a node&#39;s body:</p>
 <ul>
@@ -12285,7 +11219,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>control-point-weight</code></strong> : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
-<li><strong><code>edge-text-rotation</code></strong> : Whether to rotate edge labels as the relative angle of an edge changes; may be <code>none</code> for page-aligned labels or <code>autorotate</code> for edge-aligned labels.  This works best with left-to-right text.</li>
 </ul>
 <h2 id="style/edge-arrow">Edge arrow <a href="#style/edge-arrow"><span class="icon-bookmark"></span></a></h2>
 <p>Towards the source node:</p>
@@ -12484,7 +11417,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><code>free</code> : when an element is freed (i.e. let go from being grabbed)</li>
 <li><code>position</code> : when an element changes position</li>
 <li><code>data</code> : when an element&#39;s data is changed</li>
-<li><code>scratch</code> : when an element&#39;s scratchpad data is changed</li>
 <li><code>style</code> : when an element&#39;s style is changed</li>
 </ul>
 <h2 id="events/graph-events">Graph events <a href="#events/graph-events"><span class="icon-bookmark"></span></a></h2>
@@ -12767,7 +11699,6 @@ cy.layout( options );</code></pre>
   directed: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the tree is directed downwards (or edges can point in any direction if false)</span>
   padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
   circle: <span class="hljs-literal">false</span>, <span class="hljs-comment">// put depths in concentric circles if true, put depths top down if false</span>
-  spacingFactor: <span class="hljs-number">1.75</span>, <span class="hljs-comment">// positive spacing factor, larger =&gt; more space between nodes (N.B. n/a if causes overlap)</span>
   boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
   avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
   roots: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the roots of the trees</span>
@@ -13098,7 +12029,7 @@ cy.layout( options );</code></pre>
 
 								
 									<span class="pure-alias">
-										<code id="layouts/layout-manipulation/layout.start" class="pure-alias-name">layout.start()</code><span class="pure-alias-comma">,</span>
+										<span class="pure-alias-name">layout.start()</span><span class="pure-alias-comma">,</span>
 									</span>
 								
 							</div>
@@ -13168,24 +12099,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="name" id="layouts/layout-events/layout.on"><span class="fn-name">layout.on()</span>  <a href="#layouts/layout-events/layout.on"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.bind" class="pure-alias-name">layout.bind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.listen" class="pure-alias-name">layout.listen()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.addListener" class="pure-alias-name">layout.addListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Bind to events that are emitted by the layout.</p>
 </div>
@@ -13196,9 +12109,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">layout.on( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -13250,9 +12160,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">layout.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -13299,9 +12206,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">layout.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -13353,9 +12257,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">layout.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -13392,24 +12293,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="name" id="layouts/layout-events/layout.off"><span class="fn-name">layout.off()</span>  <a href="#layouts/layout-events/layout.off"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.unbind" class="pure-alias-name">layout.unbind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.unlisten" class="pure-alias-name">layout.unlisten()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.removeListener" class="pure-alias-name">layout.removeListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Remove event handlers on the layout.</p>
 </div>
@@ -13420,9 +12303,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">layout.off( <span class="comma">, </span>events [<span class="comma">, </span>handler] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -13452,9 +12332,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 										
 											<div class="name">layout.off( <span class="comma">, </span>eventsMap )</div>
 										
-
-										
-										
 										<div class="descr"></div>
 										<ul class="args">
 											
@@ -13482,16 +12359,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="name" id="layouts/layout-events/layout.trigger"><span class="fn-name">layout.trigger()</span>  <a href="#layouts/layout-events/layout.trigger"><span class="icon-bookmark"></span></a></div>
 							
 							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="layouts/layout-events/layout.emit" class="pure-alias-name">layout.emit()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
 							
 							<div class="descr"><p>Trigger one or more events on the layout.</p>
 </div>
@@ -13502,836 +12369,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									<div class="format">
 										
 											<div class="name">layout.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names to trigger.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">extraParams</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-
-				
-				
-			
-				<h1 id="threads">Threads <a href="#threads"><span class="icon-bookmark"></span></a></h1>
-
-				
-
-				
-					<p>A thread is a utility object that can be used for multitasking in extensions, like layouts.  It gives a simple and concise API that is consistent across JS environments (using WebWorkers on browsers and forked child processes on Node.js).</p>
-<p>A thread can be created as follows:</p>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> thread = cytoscape.Thread();
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-				
-
-				
-
-				
-
-				
-				
-					<h2 id="threads/globals">Globals <a href="#threads/globals"><span class="icon-bookmark"></span></a></h2>
-
-					
-						<p>The functions that follow are globally accessible inside of thread code (but private to the thread):</p>
-
-					
-
-					
-
-					
-						<div class="function">
-							<div class="name" id="threads/globals/resolve"><span class="fn-name">resolve()</span>  <a href="#threads/globals/resolve"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Resolves the thread with a single value such that other entities (like the main JS thread or other threads) can read it.</p>
-</div>
-
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>This function allows the developer to pass a single value outside of the worker.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-t.promise(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  resolve( <span class="hljs-number">3</span> );
-}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( val )</span></span>{
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'thread resolved with `%s`'</span>, val );
-
-  t.stop();
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/globals/listen"><span class="fn-name">listen()</span>  <a href="#threads/globals/listen"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Listen to messages sent to the thread.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">listen( <span class="comma">, </span>function(msg) )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">function(msg)</span>
-													 
-													<span class="descr"><p>A function that is called when a message, <code>msg</code>, is received.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  listen(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( msg )</span></span>{
-      <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-    broadcast( msg ); <span class="hljs-comment">// just send it back</span>
-  });
-});
-
-t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( e )</span></span>{
-  <span class="hljs-keyword">var</span> msg = e.message;
-
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'main js entity/thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-  t.stop();
-});
-
-t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hljs-string">'world'</span> });
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/globals/broadcast"><span class="fn-name">broadcast()</span>  <a href="#threads/globals/broadcast"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/globals/message" class="pure-alias-name">message()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Broadcast a message to entities who are listening to the thread.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">broadcast( <span class="comma">, </span>msg )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">msg</span>
-													 
-													<span class="descr"><p>A message, e.g. JSON object or string, that is broadcasted.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  listen(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( msg )</span></span>{
-      <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-    broadcast( msg ); <span class="hljs-comment">// just send it back</span>
-  });
-});
-
-t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( e )</span></span>{
-  <span class="hljs-keyword">var</span> msg = e.message;
-
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'main js entity/thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-  t.stop();
-});
-
-t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hljs-string">'world'</span> });
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-
-				
-				
-				
-					<h2 id="threads/execution">Execution <a href="#threads/execution"><span class="icon-bookmark"></span></a></h2>
-
-					
-
-					
-
-					
-						<div class="function">
-							<div class="name" id="threads/execution/thread.require"><span class="fn-name">thread.require()</span>  <a href="#threads/execution/thread.require"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Require a named function into the thread, giving the thread a global reference to the function.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.require( <span class="comma">, </span>fn )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">fn</span>
-													 
-													<span class="descr"><p>The named function to require (that is copied to the thread).</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">foo</span><span class="hljs-params">()</span></span>{
-  <span class="hljs-keyword">return</span> <span class="hljs-string">'bar'</span>;
-}
-
-t.require( foo );
-
-t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  <span class="hljs-keyword">var</span> ret = foo();
-
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'t::foo() return value: '</span> + ret );
-
-  broadcast( ret );
-});
-
-t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( e )</span></span>{
-  <span class="hljs-keyword">var</span> msg = e.message;
-  <span class="hljs-keyword">var</span> ret = msg;
-
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'return value as heard by main JS thread/entity: '</span> + ret );
-
-  t.stop();
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/execution/thread.run"><span class="fn-name">thread.run()</span>  <a href="#threads/execution/thread.run"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/execution/thread.promise" class="pure-alias-name">thread.promise()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Run the specified function in the thread, returning a promise that is resolved when the thread calls <a href="#threads/globals/resolve"><code>resolve()</code></a>.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.run( <span class="comma">, </span>fn )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">fn</span>
-													 
-													<span class="descr"><p>The function which will be copied and run in the thread.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="details">Details</h3>
-<p>Please note that the passed function to <code>thread.run()</code> is copied to the thread, and so it is not possible to make use of references that originate outside of the function itself.  That is, a thread has its own isolated memory space.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  resolve( <span class="hljs-number">3</span> );
-}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( val )</span></span>{
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'resolved value: '</span> + val );
-
-  t.stop();
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/execution/thread.stop"><span class="fn-name">thread.stop()</span>  <a href="#threads/execution/thread.stop"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/execution/thread.halt" class="pure-alias-name">thread.halt()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="threads/execution/thread.terminate" class="pure-alias-name">thread.terminate()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Terminates the worker such that it no longer runs.</p>
-</div>
-
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-
-				
-				
-				
-					<h2 id="threads/events">Events <a href="#threads/events"><span class="icon-bookmark"></span></a></h2>
-
-					
-						<p><span class="important-indicator"></span> For events of <code>evt.type === &#39;message&#39;</code>, the message itself can be found in <code>evt.message</code>.</p>
-
-					
-
-					
-
-					
-						<div class="function">
-							<div class="name" id="threads/events/thread.message"><span class="fn-name">thread.message()</span>  <a href="#threads/events/thread.message"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Send the thread a message.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.message( <span class="comma">, </span>msg )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name">msg</span>
-													 
-													<span class="descr"><p>The message (e.g. JSON object or string) to send to the thread.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-									<h3 id="examples">Examples</h3>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
-
-t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-  listen(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( msg )</span></span>{
-      <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-    broadcast( msg ); <span class="hljs-comment">// just send it back</span>
-  });
-});
-
-t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( e )</span></span>{
-  <span class="hljs-keyword">var</span> msg = e.message;
-
-  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'main js entity/thread heard: '</span> + [msg.foo, msg.bar].join(<span class="hljs-string">' '</span>) );
-
-  t.stop();
-});
-
-t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hljs-string">'world'</span> });
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/events/thread.on"><span class="fn-name">thread.on()</span>  <a href="#threads/events/thread.on"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.bind" class="pure-alias-name">thread.bind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.listen" class="pure-alias-name">thread.listen()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.addListener" class="pure-alias-name">thread.addListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Bind to events that are emitted by the thread.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.on( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">thread.on( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/events/thread.one"><span class="fn-name">thread.one()</span>  <a href="#threads/events/thread.one"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Bind to events that are emitted by the thread, and trigger the handler only once.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.one( <span class="comma">, </span>events [<span class="comma">, </span>data]<span class="comma">, </span>function(evt) )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">function(evt)</span>
-													 
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
-</span>
-
-													
-													<ul class="fields">
-														
-															<li>
-																<span class="name">evt</span>
-																 
-																<span class="descr"><p>The event object.</p>
-</span>
-															</li>
-
-															
-														
-													</ul>
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">thread.one( <span class="comma">, </span>eventsMap [<span class="comma">, </span>data] )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">data</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A plain object which is passed to the handler in the event object argument.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/events/thread.off"><span class="fn-name">thread.off()</span>  <a href="#threads/events/thread.off"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.unbind" class="pure-alias-name">thread.unbind()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.unlisten" class="pure-alias-name">thread.unlisten()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.removeListener" class="pure-alias-name">thread.removeListener()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Remove event handlers on the thread.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.off( <span class="comma">, </span>events [<span class="comma">, </span>handler] )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">events</a></span>
-													 
-													<span class="descr"><p>A space separated list of event names.</p>
-</span>
-
-													
-												</li>
-											
-												<li>
-													<span class="name">handler</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A reference to the handler function to remove.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-									<div class="format">
-										
-											<div class="name">thread.off( <span class="comma">, </span>eventsMap )</div>
-										
-
-										
-										
-										<div class="descr"></div>
-										<ul class="args">
-											
-												<li>
-													<span class="name"><a href="#events">eventsMap</a></span>
-													 
-													<span class="descr"><p>A map of event names to handler functions to remove.</p>
-</span>
-
-													
-												</li>
-											
-										</ul>
-									</div>
-								
-							</div>
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="threads/events/thread.trigger"><span class="fn-name">thread.trigger()</span>  <a href="#threads/events/thread.trigger"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-								
-									<span class="pure-alias">
-										<code id="threads/events/thread.emit" class="pure-alias-name">thread.emit()</code><span class="pure-alias-comma">,</span>
-									</span>
-								
-							</div>
-							
-							
-							<div class="descr"><p>Trigger one or more events on the thread.</p>
-</div>
-
-							
-							<div class="formats">
-								
-									<div class="format">
-										
-											<div class="name">thread.trigger( <span class="comma">, </span>events [<span class="comma">, </span>extraParams] )</div>
-										
-
-										
 										
 										<div class="descr"></div>
 										<ul class="args">
@@ -14956,9 +12993,7 @@ cy.elements().foo();
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/position--dimensions/ele.height"><span class="icon-bookmark bookmark-icon"></span> ele.height() et al</a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark bookmark-icon"></span> eles.boundingBox() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#collection/position--dimensions/eles.renderedBoundingBox"><span class="icon-bookmark bookmark-icon"></span> eles.renderedBoundingBox() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/position--dimensions/eles.boundingBox"><span class="icon-bookmark bookmark-icon"></span> eles.boundingBox() et al</a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/position--dimensions/node.grabbed"><span class="icon-bookmark bookmark-icon"></span> node.grabbed() </a></div>
 					
@@ -15032,11 +13067,11 @@ cy.elements().foo();
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/style/ele.hasClass"><span class="icon-bookmark bookmark-icon"></span> ele.hasClass() </a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.style"><span class="icon-bookmark bookmark-icon"></span> eles.style() et al</a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.css"><span class="icon-bookmark bookmark-icon"></span> eles.css() et al</a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.removeStyle"><span class="icon-bookmark bookmark-icon"></span> eles.removeStyle() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.removeCss"><span class="icon-bookmark bookmark-icon"></span> eles.removeCss() </a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/style/ele.renderedStyle"><span class="icon-bookmark bookmark-icon"></span> ele.renderedStyle() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/style/ele.renderedCss"><span class="icon-bookmark bookmark-icon"></span> ele.renderedCss() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.show"><span class="icon-bookmark bookmark-icon"></span> eles.show() </a></div>
 					
@@ -15124,17 +13159,15 @@ cy.elements().foo();
 					</div>
 
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.union"><span class="icon-bookmark bookmark-icon"></span> eles.union() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.add"><span class="icon-bookmark bookmark-icon"></span> eles.add() </a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.difference"><span class="icon-bookmark bookmark-icon"></span> eles.difference() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.not"><span class="icon-bookmark bookmark-icon"></span> eles.not() </a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.intersection"><span class="icon-bookmark bookmark-icon"></span> eles.intersection() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.symmetricDifference"><span class="icon-bookmark bookmark-icon"></span> eles.symmetricDifference() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.intersect"><span class="icon-bookmark bookmark-icon"></span> eles.intersect() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.filter"><span class="icon-bookmark bookmark-icon"></span> eles.filter() et al</a></div>
 					
-						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.filterFn"><span class="icon-bookmark bookmark-icon"></span> eles.filterFn() </a></div>
+						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.stdFilter"><span class="icon-bookmark bookmark-icon"></span> eles.stdFilter() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/building--filtering/eles.sort"><span class="icon-bookmark bookmark-icon"></span> eles.sort() </a></div>
 					
@@ -15562,68 +13595,6 @@ cy.elements().foo();
 						<div class="section lvl3"><a class="toclink" href="#layouts/layout-events/layout.off"><span class="icon-bookmark bookmark-icon"></span> layout.off() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#layouts/layout-events/layout.trigger"><span class="icon-bookmark bookmark-icon"></span> layout.trigger() </a></div>
-					
-				
-			
-				<div class="section lvl1">
-					<span class="expander">
-						<span class="icon-caret-down expanded-icon"></span>
-						<span class="icon-caret-right collapsed-icon"></span>
-					</span>
-					<a class="toclink" href="#threads"><span class="icon-bookmark bookmark-icon"></span> Threads</a>
-				</div>
-
-				
-					<div class="section lvl2">
-						<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
-						</span>
-						<a class="toclink" href="#threads/globals"><span class="icon-bookmark bookmark-icon"></span> Globals</a>
-					</div>
-
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/globals/resolve"><span class="icon-bookmark bookmark-icon"></span> resolve() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/globals/listen"><span class="icon-bookmark bookmark-icon"></span> listen() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/globals/broadcast"><span class="icon-bookmark bookmark-icon"></span> broadcast() </a></div>
-					
-				
-					<div class="section lvl2">
-						<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
-						</span>
-						<a class="toclink" href="#threads/execution"><span class="icon-bookmark bookmark-icon"></span> Execution</a>
-					</div>
-
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/execution/thread.require"><span class="icon-bookmark bookmark-icon"></span> thread.require() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/execution/thread.run"><span class="icon-bookmark bookmark-icon"></span> thread.run() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/execution/thread.stop"><span class="icon-bookmark bookmark-icon"></span> thread.stop() </a></div>
-					
-				
-					<div class="section lvl2">
-						<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
-						</span>
-						<a class="toclink" href="#threads/events"><span class="icon-bookmark bookmark-icon"></span> Events</a>
-					</div>
-
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/events/thread.message"><span class="icon-bookmark bookmark-icon"></span> thread.message() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/events/thread.on"><span class="icon-bookmark bookmark-icon"></span> thread.on() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/events/thread.one"><span class="icon-bookmark bookmark-icon"></span> thread.one() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/events/thread.off"><span class="icon-bookmark bookmark-icon"></span> thread.off() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#threads/events/thread.trigger"><span class="icon-bookmark bookmark-icon"></span> thread.trigger() </a></div>
 					
 				
 			

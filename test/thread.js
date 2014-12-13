@@ -28,6 +28,20 @@ describe('Thread', function(){
     });
   });
 
+  it('reports as stopped when stopped', function( next ){
+    var t = $$.Thread();
+
+    t.run(function(){
+      resolve( 3 );
+    }).then(function( val ){
+      t.stop();
+
+      expect( t.stopped() ).to.be.true;
+
+      next();
+    });
+  });
+
   it('works with 2 threads at once', function( next ){
     var t1 = $$.Thread();
     var t2 = $$.Thread();
@@ -97,28 +111,144 @@ describe('Thread', function(){
     });
   });
 
-  it('multiple runs per thread forbidden', function( next ){
+  // TODO this isn't supported in the api yet...
+  it('requires a function with a prototype', function( next ){
     var t = $$.Thread();
+    
+    function foo(){
+      
+    }
 
-    $$.Promise.all([ // both workers done
-      t.run(function(){
-        resolve( 1 );
-      }),
+    foo.prototype.bar = function(){
+      return 'baz';
+    };
 
-      t.run(function(){
-        resolve( 2 );
-      })
-    ]).then(function( thens ){
-      expect( thens ).to.be.undefined;
+    t.require( foo );
 
-      t.stop();
+    t.run(function(){
+      message( foo.bar() );
+    });
 
-      next();
-    }, function( err ){
+    t.on('message', function(e){
+      expect( e.message ).to.equal('baz');
+
       t.stop();
 
       next();
     });
+  });
+
+  it('calls multiple runs in order', function( next ){
+    var t = $$.Thread();
+    var thens = [];
+
+    t.run(function(){
+      console.log('resolve(0)');
+
+      resolve( 0 );
+    }).then(function( r ){
+      thens.push( r );
+    });
+
+    t.run(function(){
+      console.log('resolve(1)');
+
+      resolve( 1 );
+    }).then(function( r ){
+      thens.push( r );
+    });
+
+    t.run(function(){
+      console.log('resolve(2)');
+
+      resolve( 2 );
+    }).then(function( r ){
+      thens.push( r );
+    });
+
+    setTimeout(function(){
+      expect( thens ).to.deep.equal([ 0, 1, 2 ]);
+
+      t.stop();
+
+      next();
+    }, 250);
+  });
+
+  it('passes a string param', function( next ){
+    var t = $$.Thread();
+
+    t.pass('foo').run(function( param ){
+      broadcast( param );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('foo');
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('passes an object param', function( next ){
+    var t = $$.Thread();
+
+    t.pass({ foo: 'bar' }).run(function( param ){
+      broadcast( param );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.deep.equal({ foo: 'bar' });
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('passes correctly for multiple runs', function( next ){
+    var t = $$.Thread();
+    var vals = [];
+
+    t.pass('alpha').run(function( param ){
+      resolve( param + '-beta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.pass('gamma').run(function( param ){
+      resolve( param + '-delta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.pass('epsilon').run(function( param ){
+      resolve( param + '-zeta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    setTimeout(function(){
+      expect( vals.length ).to.equal(3);
+
+      for( var i = 0; i < vals.length; i++ ){
+        var val = vals[i];
+        var ls = val.split('-');
+
+        if( ls[0] === 'alpha' ){
+          expect( ls[1] ).to.equal('beta');
+        } else if( ls[0] === 'gamma' ){
+          expect( ls[1] ).to.equal('delta');
+        } else if( ls[0] === 'epsilon' ){
+          expect( ls[1] ).to.equal('zeta');
+        }
+      }
+
+      t.stop();
+      next();
+    }, 250);
+
   });
 
 });

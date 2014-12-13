@@ -38,6 +38,7 @@ var paths = {
     'src/style.js',
     'src/style-*.js',
     'src/thread.js',
+    'src/fabric.js',
     'src/core.js',
     'src/core-*.js',
     'src/collection.js',

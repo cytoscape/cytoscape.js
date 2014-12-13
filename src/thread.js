@@ -9,7 +9,9 @@
     }
 
     var _p = this._private = {
-      requires: []
+      requires: [],
+      queue: null,
+      pass: []
     };
 
     if( fn ){
@@ -36,60 +38,102 @@
       return this; // chaining
     },
 
+    pass: function( data ){
+      this._private.pass.push( data );
+
+      return this; // chaining
+    },
+
     run: function( fn ){ // fn used like main()
       var self = this;
       var _p = this._private;
 
-      if( _p.ran ){
-        return new $$.Promise(function( resolve, reject ){
-          reject('This thread has already been run!');
+      if( _p.stopped ){
+        $$.util.error('Attempted to run a stopped thread!  Start a new thread or do not stop the existing thread and reuse it.');
+        return;
+      }
+
+      if( _p.running ){
+        return _p.queue = _p.queue.then(function(){ // inductive step
+          return self.run( fn );
         });
       }
 
-      _p.ran = true;
-      _p.running = true;
-
       self.trigger('run');
 
-      return new $$.Promise(function( resolve, reject ){
+      var runP = new $$.Promise(function( resolve, reject ){
+
+        _p.running = true;
+
+        var threadTechAlreadyExists = _p.ran;
+        var pass = _p.pass.shift();
 
         // worker code to exec
-        var fnStr = _p.requires.map(function( r ){
+        var fnStr = ( threadTechAlreadyExists ? [] : _p.requires.map(function( r ){
           return r.toString() + '\n';
-        }).concat([ '(' + fn.toString() + ')();\n' ]).join('\n');
+        }) ).concat([ '(' + fn.toString() + ')(' + JSON.stringify(pass) + ');\n' ]).join('\n');
 
         if( window ){
-          // add normalised worker api functions
-          fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
-          fnStr += 'function message(m){ postMessage(m); };\n';
-          fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && (m.$$eval || m.data === "$$start") ){} else { fn(m.data); } });  };\n'; 
-          fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+          var fnBlob, fnUrl;
 
+          // add normalised thread api functions
+          if( !threadTechAlreadyExists ){
+            fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
+            fnStr += 'function message(m){ postMessage(m); };\n';
+            fnStr += 'function listen(fn){\n';
+            fnStr += '  self.addEventListener("message", function(m){ \n';
+            fnStr += '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){\n';
+            fnStr += '    } else { \n';
+            fnStr += '      fn( m.data );\n';
+            fnStr += '    }\n'
+            fnStr += '  });\n'
+            fnStr += '};\n'; 
+            fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
+            fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+            fnStr += 'function $$map';
+          
+            fnBlob = new Blob([ fnStr ], {
+              type: 'application/javascript'
+            });
+            fnUrl = window.URL.createObjectURL( fnBlob );
+          }
           // create webworker and let it exec the serialised code
-          var fnBlob = new Blob([ fnStr ]);
-          var fnUrl = window.URL.createObjectURL( fnBlob );
-          var ww = _p.webworker = new Worker( fnUrl );
+          var ww = _p.webworker = _p.webworker || new Worker( fnUrl );
+
+          if( threadTechAlreadyExists ){ // then just exec new run() code
+            ww.postMessage({
+              $$eval: fnStr
+            });
+          }
 
           // worker messages => events
-          ww.addEventListener('message', function( m ){
+          var cb;
+          ww.addEventListener('message', cb = function( m ){
             if( $$.is.object(m) && $$.is.object( m.data ) && ('$$resolve' in m.data) ){
+              ww.removeEventListener('message', cb); // done listening b/c resolve()
+
               resolve( m.data.$$resolve );
             } else {
               self.trigger( new $$.Event(m, { type: 'message', message: m.data }) );
             }
           }, false);
 
-          ww.postMessage('$$start'); // start
+          if( !threadTechAlreadyExists ){
+            ww.postMessage('$$start'); // start up the worker
+          }
 
         } else if( typeof module !== 'undefined' ){
           // create a new process
           var path = require('path');
           var child_process = require('child_process');
-          var child = _p.child = child_process.fork( path.join(__dirname, 'thread-node-fork') );
+          var child = _p.child = _p.child || child_process.fork( path.join(__dirname, 'thread-node-fork') );
 
           // child process messages => events
-          child.on('message', function( m ){
+          var cb;
+          child.on('message', cb = function( m ){
             if( $$.is.object(m) && ('$$resolve' in m) ){
+              child.removeListener('message', cb); // done listening b/c resolve()
+
               resolve( m.$$resolve );
             } else {
               self.trigger( new $$.Event({}, { type: 'message', message: m }) );
@@ -101,15 +145,23 @@
             $$eval: fnStr
           });
         } else {
-          $$.error('Tried to create thread but no underlying tech found');
+          $$.error('Tried to create thread but no underlying tech found!');
         }
 
       }).then(function( v ){
         _p.running = false;
+        _p.ran = true;
+
+        self.trigger('ran');
 
         return v;
       });
-    
+
+      if( _p.queue == null ){
+        _p.queue = runP; // i.e. first step of inductive promise chain (for queue)
+      }
+
+      return runP;
     },
 
     // send the thread a message
@@ -130,9 +182,6 @@
     stop: function(){
       var _p = this._private;
 
-      // TODO may need to allow stop always
-      //if( !_p.running ){ return; } // can stop only if running
-
       if( _p.webworker ){
         _p.webworker.terminate();
       }
@@ -141,7 +190,13 @@
         _p.child.kill();
       } 
 
+      _p.stopped = true;
+
       return this.trigger('stop'); // chaining
+    },
+
+    stopped: function(){
+      return this._private.stopped;
     }
 
   });

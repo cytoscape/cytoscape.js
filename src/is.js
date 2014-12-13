@@ -75,6 +75,14 @@
       return obj instanceof $$.Event;
     },
 
+    thread: function(obj){
+      return obj instanceof $$.Thread;
+    },
+
+    fabric: function(obj){
+      return obj instanceof $$.Fabric;
+    },
+
     emptyString: function(obj){
       if( !obj ){ // null is empty
         return true; 

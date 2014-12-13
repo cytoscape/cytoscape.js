@@ -3006,17 +3006,17 @@
     },
 
     {
-      "name": "Threads",
-      "md": "threads/intro",
+      "name": "Thread",
+      "md": "thread/intro",
       "sections": [
         {
           "name": "Globals",
-          "md": "threads/globals",
+          "md": "thread/globals",
           "fns": [
             {
               "name": "resolve",
               "descr": "Resolves the thread with a single value such that other entities (like the main JS thread or other threads) can read it.",
-              "md": "threads/resolve"
+              "md": "thread/resolve"
             },
 
             {
@@ -3029,7 +3029,7 @@
                   ]
                 }
               ],
-              "md": "threads/listen"
+              "md": "thread/listen"
             },
 
             {
@@ -3043,7 +3043,7 @@
                   ]
                 }
               ],
-              "md": "threads/listen"
+              "md": "thread/listen"
             }
           ]
         },
@@ -3061,13 +3061,13 @@
                   ]
                 }
               ],
-              "md": "threads/require"
+              "md": "thread/require"
             },
 
             {
               "name": "thread.run",
               "pureAliases": ["thread.promise"],
-              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#threads/globals/resolve).",
+              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve).",
               "formats": [
                 {
                   "args": [
@@ -3075,7 +3075,7 @@
                   ]
                 }
               ],
-              "md": "threads/run"
+              "md": "thread/run"
             },
 
             {
@@ -3088,7 +3088,7 @@
 
         {
           "name": "Events",
-          "md": "threads/events",
+          "md": "thread/events",
           "fns": [
             {
               "name": "thread.message",
@@ -3100,7 +3100,7 @@
                   ]
                 }
               ],
-              "md": "threads/listen"
+              "md": "thread/listen"
             },
 
             {
@@ -3183,6 +3183,11 @@
           ]
         }
       ]
+    },
+
+    {
+      "name": "Fabric",
+      "md": "fabric/intro"
     },
 
     {

@@ -90,7 +90,6 @@
             fnStr += '};\n'; 
             fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
             fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
-            fnStr += 'function $$map';
           
             fnBlob = new Blob([ fnStr ], {
               type: 'application/javascript'

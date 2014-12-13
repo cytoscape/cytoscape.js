@@ -9,7 +9,8 @@
       pass: []
     };
 
-    var N = navigator.hardwareConcurrency || 4; // assume 4 if unreported
+    var defN = 4;
+    var N = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || defN : defN; // assume 4 if unreported
 
     for( var i = 0; i < N; i++ ){
       this[i] = $$.Thread();

@@ -10,6 +10,8 @@ describe('Core initialisation', function(){
 
   it('does not add a node with the same ID as an earlier one', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         nodes: [
           { data: { id: 'n1', foo: 'one' } },
@@ -30,6 +32,8 @@ describe('Core initialisation', function(){
 
   it('loads ok with empty graph', function(done){
     cytoscape({
+      headless: true,
+
       ready: function(){
         var cy = this;
 
@@ -42,6 +46,8 @@ describe('Core initialisation', function(){
 
   it('does not create an edge with bad source and target', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         edges: [ { data: { source: "n1", target: "n2" } } ]
       },
@@ -57,6 +63,8 @@ describe('Core initialisation', function(){
 
   it('does not create an edge with bad target', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         nodes: [ { data: { id: "n1" } } ],
         edges: [ { data: { source: "n1", target: "n2" } } ]
@@ -74,6 +82,8 @@ describe('Core initialisation', function(){
 
   it('creates an edge that specifies good source and target', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
         edges: [ { data: { source: "n1", target: "n2" } } ]
@@ -91,6 +101,8 @@ describe('Core initialisation', function(){
 
   it('adds node with self as parent but as parentless node', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         nodes: [ { data: { id: "n1", parent: "n1" } } ]
       },
@@ -106,6 +118,8 @@ describe('Core initialisation', function(){
 
   it('breaks a parent cycle between two nodes', function(done){
     cytoscape({
+      headless: true,
+
       elements: {
         nodes: [
           { data: { id: "n1", parent: "n2" } },
@@ -127,6 +141,8 @@ describe('Core initialisation', function(){
 
     it('inits via jquery', function(done){
       $('#cy').cytoscape({
+        headless: true,
+
         elements: {
           nodes: [
             { data: { id: "n1" } },
@@ -146,6 +162,8 @@ describe('Core initialisation', function(){
 
     it('gets via jquery', function(done){
       $('#cy').cytoscape({
+        headless: true,
+
         elements: {
           nodes: [
             { data: { id: "n1" } },
@@ -170,6 +188,8 @@ describe('Core initialisation', function(){
 
       function init1(){
         $('#cy').cytoscape({
+          headless: true,
+
           elements: {
             nodes: [
               { data: { id: "n1" } },
@@ -190,6 +210,8 @@ describe('Core initialisation', function(){
 
       function init2(){
         $('#cy').cytoscape({
+          headless: true,
+
           elements: {
             nodes: [
               { data: { id: "n3" } },
@@ -228,6 +250,8 @@ describe('Core initialisation', function(){
 
       function init1(){
         $('#cy').cytoscape({
+          headless: true,
+
           elements: {
             nodes: [
               { data: { id: "n1" } },
@@ -248,6 +272,8 @@ describe('Core initialisation', function(){
 
       function init2(){
         cytoscape({
+          headless: true,
+
           container: $('#cy')[0],
           elements: {
             nodes: [
@@ -287,6 +313,8 @@ describe('Core initialisation', function(){
 
       function init1(){
         cytoscape({
+          headless: true,
+
           container: $('#cy')[0],
           elements: {
             nodes: [
@@ -308,6 +336,8 @@ describe('Core initialisation', function(){
 
       function init2(){
         $('#cy').cytoscape({
+          headless: true,
+
           elements: {
             nodes: [
               { data: { id: "n3" } },
@@ -354,6 +384,8 @@ describe('Core initialisation', function(){
       });
 
       $('#cy').cytoscape({
+        headless: true,
+        
         elements: {
           nodes: [
             { data: { id: "n3" } },

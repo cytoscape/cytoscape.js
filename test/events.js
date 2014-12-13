@@ -4,6 +4,8 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 describe('Events', function(){
 
   var cy;
+  var n1;
+  var triggers;
 
   // test setup
   beforeEach(function(done){
@@ -26,6 +28,8 @@ describe('Events', function(){
       },
       ready: function(){
         cy = this;
+        n1 = cy.$('#n1');
+        triggers = 0;
 
         done();
       }
@@ -36,16 +40,9 @@ describe('Events', function(){
 
   describe('Collection events triggered by functions', function(){
 
-    var triggers = 0;
-    var n1;
     var handler = function(){
       triggers++;
     }
-
-    beforeEach(function(){
-      triggers = 0;
-      n1 = cy.$('#n1');
-    });
 
     it('`add` for new element', function(){
       cy.on('add', handler);

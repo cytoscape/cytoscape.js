@@ -230,6 +230,10 @@ describe('Collection building and filtering', function(){
       both: cy.$('#n2')
     };
 
+    expect( diff.left.length ).to.equal(1);
+    expect( diff.right.length ).to.equal(1);
+    expect( diff.both.length ).to.equal(1);
+
     expect( diff.left.same( exp.left ) ).to.be.true;
     expect( diff.right.same( exp.right ) ).to.be.true;
     expect( diff.both.same( exp.both ) ).to.be.true;

@@ -363,6 +363,14 @@ var cytoscape;
       return obj instanceof $$.Event;
     },
 
+    thread: function(obj){
+      return obj instanceof $$.Thread;
+    },
+
+    fabric: function(obj){
+      return obj instanceof $$.Fabric;
+    },
+
     emptyString: function(obj){
       if( !obj ){ // null is empty
         return true; 
@@ -3419,9 +3427,30 @@ var cytoscape;
     }, // on
 
     eventAliasesOn: function( proto ){
-      proto.addListener = proto.listen = proto.bind = proto.on;
-      proto.removeListener = proto.unlisten = proto.unbind = proto.off;
-      proto.emit = proto.trigger;
+      var p = proto;
+
+      p.addListener = p.listen = p.bind = p.on;
+      p.removeListener = p.unlisten = p.unbind = p.off;
+      p.emit = p.trigger;
+
+      // this is just a wrapper alias of .on()
+      p.pon = p.promiseOn = function( events, selector ){
+        var self = this;
+        var args = Array.prototype.slice.call( arguments, 0 );
+
+        return new $$.Promise(function( resolve, reject ){
+          var callback = function( e ){
+            self.off.apply( self, offArgs );
+
+            resolve( e );
+          };
+
+          var onArgs = args.concat([ callback ]);
+          var offArgs = onArgs.concat([]);
+
+          self.on.apply( self, onArgs );
+        });
+      };
     },
 
     off: function offImpl( params ){
@@ -6794,7 +6823,9 @@ var cytoscape;
     }
 
     var _p = this._private = {
-      requires: []
+      requires: [],
+      queue: null,
+      pass: []
     };
 
     if( fn ){
@@ -6821,60 +6852,101 @@ var cytoscape;
       return this; // chaining
     },
 
+    pass: function( data ){
+      this._private.pass.push( data );
+
+      return this; // chaining
+    },
+
     run: function( fn ){ // fn used like main()
       var self = this;
       var _p = this._private;
 
-      if( _p.ran ){
-        return new $$.Promise(function( resolve, reject ){
-          reject('This thread has already been run!');
+      if( _p.stopped ){
+        $$.util.error('Attempted to run a stopped thread!  Start a new thread or do not stop the existing thread and reuse it.');
+        return;
+      }
+
+      if( _p.running ){
+        return _p.queue = _p.queue.then(function(){ // inductive step
+          return self.run( fn );
         });
       }
 
-      _p.ran = true;
-      _p.running = true;
-
       self.trigger('run');
 
-      return new $$.Promise(function( resolve, reject ){
+      var runP = new $$.Promise(function( resolve, reject ){
+
+        _p.running = true;
+
+        var threadTechAlreadyExists = _p.ran;
+        var pass = _p.pass.shift();
 
         // worker code to exec
-        var fnStr = _p.requires.map(function( r ){
+        var fnStr = ( threadTechAlreadyExists ? [] : _p.requires.map(function( r ){
           return r.toString() + '\n';
-        }).concat([ '(' + fn.toString() + ')();\n' ]).join('\n');
+        }) ).concat([ '(' + fn.toString() + ')(' + JSON.stringify(pass) + ');\n' ]).join('\n');
 
         if( window ){
-          // add normalised worker api functions
-          fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
-          fnStr += 'function message(m){ postMessage(m); };\n';
-          fnStr += 'function listen(fn){ self.addEventListener("message", function(m){  if( typeof m === "object" && (m.$$eval || m.data === "$$start") ){} else { fn(m.data); } });  };\n'; 
-          fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+          var fnBlob, fnUrl;
 
+          // add normalised thread api functions
+          if( !threadTechAlreadyExists ){
+            fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
+            fnStr += 'function message(m){ postMessage(m); };\n';
+            fnStr += 'function listen(fn){\n';
+            fnStr += '  self.addEventListener("message", function(m){ \n';
+            fnStr += '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){\n';
+            fnStr += '    } else { \n';
+            fnStr += '      fn( m.data );\n';
+            fnStr += '    }\n'
+            fnStr += '  });\n'
+            fnStr += '};\n'; 
+            fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
+            fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+          
+            fnBlob = new Blob([ fnStr ], {
+              type: 'application/javascript'
+            });
+            fnUrl = window.URL.createObjectURL( fnBlob );
+          }
           // create webworker and let it exec the serialised code
-          var fnBlob = new Blob([ fnStr ]);
-          var fnUrl = window.URL.createObjectURL( fnBlob );
-          var ww = _p.webworker = new Worker( fnUrl );
+          var ww = _p.webworker = _p.webworker || new Worker( fnUrl );
+
+          if( threadTechAlreadyExists ){ // then just exec new run() code
+            ww.postMessage({
+              $$eval: fnStr
+            });
+          }
 
           // worker messages => events
-          ww.addEventListener('message', function( m ){
+          var cb;
+          ww.addEventListener('message', cb = function( m ){
             if( $$.is.object(m) && $$.is.object( m.data ) && ('$$resolve' in m.data) ){
+              ww.removeEventListener('message', cb); // done listening b/c resolve()
+
               resolve( m.data.$$resolve );
             } else {
               self.trigger( new $$.Event(m, { type: 'message', message: m.data }) );
             }
           }, false);
 
-          ww.postMessage('$$start'); // start
+          if( !threadTechAlreadyExists ){
+            ww.postMessage('$$start'); // start up the worker
+          }
 
         } else if( typeof module !== 'undefined' ){
           // create a new process
           var path = require('path');
           var child_process = require('child_process');
-          var child = _p.child = child_process.fork( path.join(__dirname, 'thread-node-fork') );
+          var child = _p.child = _p.child || child_process.fork( path.join(__dirname, 'thread-node-fork') );
 
           // child process messages => events
-          child.on('message', function( m ){
+          var cb;
+          child.on('message', cb = function( m ){
             if( $$.is.object(m) && ('$$resolve' in m) ){
+              child.removeListener('message', cb); // done listening b/c resolve()
+
               resolve( m.$$resolve );
             } else {
               self.trigger( new $$.Event({}, { type: 'message', message: m }) );
@@ -6886,15 +6958,23 @@ var cytoscape;
             $$eval: fnStr
           });
         } else {
-          $$.error('Tried to create thread but no underlying tech found');
+          $$.error('Tried to create thread but no underlying tech found!');
         }
 
       }).then(function( v ){
         _p.running = false;
+        _p.ran = true;
+
+        self.trigger('ran');
 
         return v;
       });
-    
+
+      if( _p.queue == null ){
+        _p.queue = runP; // i.e. first step of inductive promise chain (for queue)
+      }
+
+      return runP;
     },
 
     // send the thread a message
@@ -6915,9 +6995,6 @@ var cytoscape;
     stop: function(){
       var _p = this._private;
 
-      // TODO may need to allow stop always
-      //if( !_p.running ){ return; } // can stop only if running
-
       if( _p.webworker ){
         _p.webworker.terminate();
       }
@@ -6926,7 +7003,13 @@ var cytoscape;
         _p.child.kill();
       } 
 
+      _p.stopped = true;
+
       return this.trigger('stop'); // chaining
+    },
+
+    stopped: function(){
+      return this._private.stopped;
     }
 
   });
@@ -6934,7 +7017,7 @@ var cytoscape;
   // aliases
   var fn = $$.thdfn;
   fn.promise = fn.run;
-  fn.halt = fn.stop;
+  fn.terminate = fn.halt = fn.stop;
 
   // higher level alias (in case you like the worker metaphor)
   $$.worker = $$.Worker = $$.Thread;
@@ -6949,6 +7032,193 @@ var cytoscape;
   });
 
   $$.define.eventAliasesOn( $$.thdfn );
+  
+})( cytoscape, typeof window === 'undefined' ? null : window );
+
+;(function($$, window){ 'use strict';
+
+  $$.Fabric = function(){
+    if( !(this instanceof $$.Fabric) ){
+      return new $$.Fabric();
+    }
+
+    var _p = this._private = {
+      pass: []
+    };
+
+    var defN = 4;
+    var N = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || defN : defN; // assume 4 if unreported
+
+    for( var i = 0; i < N; i++ ){
+      this[i] = $$.Thread();
+    }
+
+    this.length = N;
+  };
+
+  $$.fabric = $$.Fabric;
+  $$.fabfn = $$.Fabric.prototype; // short alias
+
+  $$.fn.fabric = function( fnMap, options ){
+    for( var name in fnMap ){
+      var fn = fnMap[name];
+      $$.Fabric.prototype[ name ] = fn;
+    }
+  };
+
+  $$.fn.fabric({
+
+    // require fn in all threads
+    require: function( fn ){
+      for( var i = 0; i < this.length; i++ ){
+        var thread = this[i];
+
+        thread.require( fn );
+      }
+
+      return this;
+    },
+
+    // get a random thread
+    random: function(){
+      var i = Math.round( (this.length - 1) * Math.random() );
+      var thread = this[i];
+
+      return thread;
+    },
+
+    // run on random thread
+    run: function( fn ){ 
+      return this.random().run( fn );
+    },
+
+    // sends a random thread a message
+    message: function( m ){
+      return this.random().message( m );
+    },
+
+    // send all threads a message
+    broadcast: function( m ){
+      for( var i = 0; i < this.length; i++ ){
+        var thread = this[i];
+
+        thread.message( m );
+      }
+
+      return this; // chaining
+    },
+
+    // stop all threads
+    stop: function(){
+      for( var i = 0; i < this.length; i++ ){
+        var thread = this[i];
+
+        thread.stop();
+      }
+
+      return this.trigger('stop'); // chaining
+    },
+
+    // pass data to be used with .spread() etc.
+    pass: function( data ){
+      if( $$.is.array(data) ){
+        this._private.pass.push( data );
+      } else if( $$.is.elementOrCollection(data) ){
+        var eles = data;
+        this._private.pass.push( eles.jsons() );
+      } else {
+        $$.util.error('Only arrays or collections may be used with fabric.pass()');
+      }
+
+      return this; // chaining
+    },
+
+    // split the data into slices to spread the data equally among threads
+    spread: function( fn ){
+      var self = this;
+      var _p = self._private;
+      var pass = _p.pass.shift();
+      var runPs = [];
+      var subsize = Math.round( pass.length / this.length ); // number of pass eles to handle in each thread
+
+      subsize = Math.max( 1, subsize ); // don't pass less than one ele to each thread
+
+      for( var i = 0; i < this.length; i++ ){
+        var thread = this[i];
+        var slice = pass.splice( 0, subsize );
+
+        var runP = thread.pass( slice ).run( fn );
+
+        runPs.push( runP );
+
+        var doneEarly = pass.length === 0;
+        if( doneEarly ){ break; }
+      }
+
+      return $$.Promise.all( runPs ).then(function( thens ){
+        var postpass = new Array();
+        var p = 0;
+
+        // fill postpass with the total result joined from all threads
+        for( var i = 0; i < thens.length; i++ ){
+          var then = thens[i]; // array result from thread i
+
+          for( var j = 0; j < then.length; j++ ){
+            var t = then[j]; // array element
+
+            postpass[ p++ ] = t;
+          }
+        }
+
+        return postpass;
+      });
+    },
+
+    // TODO more efficient impl that uses blocks instead of individual values like .spread()
+    // may need to add a helper function directly in the woker/child process for this
+    map: function( fn ){
+      var self = this;
+      var _p = self._private;
+      var pass = _p.pass.shift();
+      var runPs = [];
+      var ti = 0;
+
+      for( var i = 0; i < pass.length; i++ ){
+        var datum = pass[i];
+        var thread = this[ ti ];
+        var runP = thread.pass( datum ).run( fn );
+
+        runPs.push( runP );
+
+        var doneEarly = pass.length === 0;
+        if( doneEarly ){ break; }
+
+        // move on to next thread
+        ti = (ti + 1) % this.length;
+      }
+
+      return $$.Promise.all( runPs );
+    },
+
+    reduce: function(){} // TODO
+
+  });
+
+  // aliases
+  var fn = $$.fabfn;
+  fn.promise = fn.run;
+  fn.terminate = fn.halt = fn.stop;
+
+  // pull in event apis
+  $$.fn.fabric({
+    on: $$.define.on(),
+    one: $$.define.on({ unbindSelfOnTrigger: true }),
+    once: $$.define.on({ unbindAllBindersOnTrigger: true }),
+    off: $$.define.off(), 
+    trigger: $$.define.trigger()
+  });
+
+  $$.define.eventAliasesOn( $$.fabfn );
   
 })( cytoscape, typeof window === 'undefined' ? null : window );
 
@@ -12473,13 +12743,75 @@ var cytoscape;
       return new $$.Collection( cy, elements );
     },
 
-    // TODO test and make faster impl w/ less no calls
     xor: function( other ){
-      var intn = this.intersect( other );
-      var all = this.union( other );
+      var cy = this._private.cy;
 
-      return all.not( intn );
+      if( $$.is.string(other) ){
+        other = cy.$( other );
+      }
+
+      var elements = [];
+      var col1 = this;
+      var col2 = other;
+      
+      var add = function( col, other ){
+
+        for( var i = 0; i < col.length; i++ ){
+          var ele = col[i];
+          var id = ele._private.data.id;
+          var inOther = other._private.ids[ id ];
+          
+          if( !inOther ){
+            elements.push( ele );
+          }
+        }
+
+      };
+
+      add( col1, col2 );
+      add( col2, col1 );
+
+      return new $$.Collection( cy, elements );
     },  
+
+    diff: function( other ){
+      var cy = this._private.cy;
+
+      if( $$.is.string(other) ){
+        other = cy.$( other );
+      }
+
+      var left = [];
+      var right = [];
+      var both = [];
+      var col1 = this;
+      var col2 = other;
+
+      var add = function( col, other, retEles ){
+
+        for( var i = 0; i < col.length; i++ ){
+          var ele = col[i];
+          var id = ele._private.data.id;
+          var inOther = other._private.ids[ id ];
+          
+          if( inOther ){
+            both.push( ele );
+          } else {
+            retEles.push( ele );
+          }
+        }
+
+      };
+
+      add( col1, col2, left );
+      add( col2, col1, right );
+
+      return {
+        left: new $$.Collection( cy, left ),
+        right: new $$.Collection( cy, right ),
+        both: new $$.Collection( cy, both )
+      };
+    },
 
     add: function( toAdd ){
       var cy = this._private.cy;    
@@ -21778,7 +22110,7 @@ var cytoscape;
 
         on: function( type, listener ){}, // dummy; not needed
 
-        drag: function(){} // TODO
+        drag: function(){} // not needed for our case
       });
       layout.adaptor = adaptor;
 

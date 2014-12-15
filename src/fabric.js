@@ -10,7 +10,15 @@
     };
 
     var defN = 4;
-    var N = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || defN : defN; // assume 4 if unreported
+    var N;
+
+    if( typeof navigator !== 'undefined' ){
+      N = navigator.hardwareConcurrency;
+    } else if( typeof module !== 'undefined' ){
+      N = require('os').cpus().length;
+    } else { // TODO could use an estimation here but would the additional expense be worth it?
+      N = defN;
+    }
 
     for( var i = 0; i < N; i++ ){
       this[i] = $$.Thread();
@@ -137,8 +145,8 @@
       });
     },
 
-    // TODO more efficient impl that uses blocks instead of individual values like .spread()
-    // may need to add a helper function directly in the woker/child process for this
+    // parallel version of array.map()
+    // TODO impl with spread() so it doesn't have to pass data so often?
     map: function( fn ){
       var self = this;
       var _p = self._private;
@@ -163,8 +171,34 @@
       return $$.Promise.all( runPs );
     },
 
-    reduce: function(){} // TODO
+    // parallel version of array.filter()
+    filter: function( fn ){}, // TODO
 
+    // sorts the passed array using a divide and conquer algo like mergesort
+    sort: function( fn ){}, // TODO
+
+    // syncs conflicts between threads
+    sync: function( same, handler ){} // TODO
+
+
+  });
+  
+  var defineRandomPasser = function( opts ){
+    opts = opts || {};
+
+    return function( fn ){
+      var pass = this._private.pass.shift();
+
+      return this.random().pass( pass )[ opts.threadFn ]( fn );
+    };
+  };
+
+  $$.fn.fabric({
+    randomMap: defineRandomPasser({ threadFn: 'map' }),
+
+    reduce: defineRandomPasser({ threadFn: 'reduce' }),
+    
+    reduceRight: defineRandomPasser({ threadFn: 'reduceRight' })
   });
 
   // aliases

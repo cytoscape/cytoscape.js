@@ -334,11 +334,11 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
 });
 
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docs', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){
-  runSequence( 'docs', 'docsmin', next );
+  runSequence( 'docsmin', next );
 });
 
 gulp.task('pkgver', ['version'], function(){

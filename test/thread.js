@@ -111,8 +111,7 @@ describe('Thread', function(){
     });
   });
 
-  // TODO this isn't supported in the api yet...
-  it('requires a function with a prototype', function( next ){ return next(); // disable for now
+  it('requires a function with a prototype', function( next ){
     var t = $$.Thread();
     
     function foo(){
@@ -126,7 +125,33 @@ describe('Thread', function(){
     t.require( foo );
 
     t.run(function(){
-      message( foo.bar() );
+      broadcast( ( new foo() ).bar() );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('baz');
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('requires a function with a subfunction', function( next ){
+    var t = $$.Thread();
+    
+    function foo(){
+      
+    }
+
+    foo.bar = function(){
+      return 'baz';
+    };
+
+    t.require( foo );
+
+    t.run(function(){
+      broadcast( foo.bar() );
     });
 
     t.on('message', function(e){
@@ -142,7 +167,7 @@ describe('Thread', function(){
     var t = $$.Thread();
     var thens = [];
 
-    t.run(function(){
+    t.promise(function(){
       // console.log('resolve(0)');
 
       resolve( 0 );
@@ -250,5 +275,116 @@ describe('Thread', function(){
     }, 250);
 
   });
+
+  it('passes correctly for multiple runs with gaps', function( next ){
+    var t = $$.Thread();
+    var vals = [];
+
+    t.pass('alpha').run(function( param ){
+      resolve( param + '-beta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.run(function( param ){
+      resolve( 'gap' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.pass('gamma').run(function( param ){
+      resolve( param + '-delta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.run(function( param ){
+      resolve( 'gap' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    t.pass('epsilon').run(function( param ){
+      resolve( param + '-zeta' );
+    }).then(function( val ){
+      vals.push( val );
+    });
+
+    setTimeout(function(){
+      expect( vals.length ).to.equal(5);
+
+      for( var i = 0; i < vals.length; i++ ){
+        var val = vals[i];
+        var ls = val.split('-');
+
+        if( ls[0] === 'alpha' ){
+          expect( ls[1] ).to.equal('beta');
+        } else if( ls[0] === 'gamma' ){
+          expect( ls[1] ).to.equal('delta');
+        } else if( ls[0] === 'epsilon' ){
+          expect( ls[1] ).to.equal('zeta');
+        } else {
+          expect( val ).to.equal('gap');
+        }
+      }
+
+      t.stop();
+      next();
+    }, 250);
+
+  });
+
+  it('maps correctly', function( next ){
+    var t = $$.Thread();
+    var mapper = function( n ){
+      return Math.pow( 2, n );
+    };
+    var data = [1, 2, 3, 4];
+
+    t.pass( data ).map( mapper ).then(function( mapped ){
+      var expMapped = data.map( mapper );
+
+      expect( mapped ).to.deep.equal( expMapped );
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('reduces correctly', function( next ){
+    var t = $$.Thread();
+    var reducer = function( prev, current ){
+      return prev - current;
+    };
+    var data = [1, 2, 3, 4];
+
+    t.pass( data ).reduce( reducer ).then(function( res ){
+      var exp = data.reduce( reducer );
+
+      expect( res ).to.deep.equal( exp );
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('reduces right correctly', function( next ){
+    var t = $$.Thread();
+    var reducer = function( prev, current ){
+      return prev - current;
+    };
+    var data = [1, 2, 3, 4];
+
+    t.pass( data ).reduceRight( reducer ).then(function( res ){
+      var exp = data.reduceRight( reducer );
+
+      expect( res ).to.deep.equal( exp );
+
+      t.stop();
+      next();
+    });
+  });
+
+  
 
 });

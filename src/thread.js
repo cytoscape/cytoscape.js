@@ -30,6 +30,52 @@
     }
   };
 
+  var stringifyFieldVal = function( val ){
+    var valStr = $$.is.fn( val ) ? val.toString() : 'JSON.parse("' + JSON.stringify(val) + '")';
+
+    return valStr;
+  };
+
+  // allows for requires with prototypes and subobjs etc
+  var fnAsRequire = function( fn ){
+    var req = ( $$.is.string(fn) ? fn : fn.toString() ) + '\n';
+
+    // pull in prototype
+    if( fn.prototype && fn.name != null ){
+
+      var protoStr = '';
+      for( var name in fn.prototype ){
+        var val = fn.prototype[ name ];
+        var valStr = stringifyFieldVal( val );
+
+        protoStr += fn.name + '.prototype.' + name + ' = ' + valStr + ';\n';
+      }
+
+      if( protoStr ){
+        req += protoStr;
+      }
+    
+    }
+
+    // pull in properties for obj/fns
+    if( !$$.is.string(fn) ){ for( var name in fn ){
+      var propsStr = '';
+
+      if( fn.hasOwnProperty(name) ){
+        var val = fn[ name ];
+        var valStr = stringifyFieldVal( val );
+
+        propsStr += fn.name + '["' + name + '"] = ' + valStr + ';\n';
+      }
+
+      if( propsStr ){
+        req += propsStr;
+      }
+    } }
+
+    return req;
+  };
+
   $$.fn.thread({
 
     require: function( fn ){
@@ -39,14 +85,21 @@
     },
 
     pass: function( data ){
+      if( $$.is.element(data) ){
+        data = data.json();
+      } else if( $$.is.collection(data) ){
+        data = data.jsons();
+      }
+
       this._private.pass.push( data );
 
       return this; // chaining
     },
 
-    run: function( fn ){ // fn used like main()
+    run: function( fn, pass ){ // fn used like main()
       var self = this;
       var _p = this._private;
+      pass = pass || _p.pass.shift();
 
       if( _p.stopped ){
         $$.util.error('Attempted to run a stopped thread!  Start a new thread or do not stop the existing thread and reuse it.');
@@ -55,7 +108,7 @@
 
       if( _p.running ){
         return _p.queue = _p.queue.then(function(){ // inductive step
-          return self.run( fn );
+          return self.run( fn, pass );
         });
       }
 
@@ -66,12 +119,14 @@
         _p.running = true;
 
         var threadTechAlreadyExists = _p.ran;
-        var pass = _p.pass.shift();
 
         // worker code to exec
-        var fnStr = ( threadTechAlreadyExists ? [] : _p.requires.map(function( r ){
-          return r.toString() + '\n';
+        var fnStr = ( _p.requires.map(function( r ){
+          return fnAsRequire( r );
         }) ).concat([ '(' + fn.toString() + ')(' + JSON.stringify(pass) + ');\n' ]).join('\n');
+
+        // because we've now consumed the requires, empty the list so we don't dupe on next run()
+        _p.requires = [];
 
         if( window ){
           var fnBlob, fnUrl;
@@ -145,6 +200,7 @@
           });
         } else {
           $$.error('Tried to create thread but no underlying tech found!');
+          // TODO fallback on main JS thread?
         }
 
       }).then(function( v ){
@@ -198,6 +254,52 @@
       return this._private.stopped;
     }
 
+  });
+
+  // return fn impl as string with specified _$_$_name as new function name
+  var $$fnImpl = function( fn, name ){
+    var fnStr = fn.toString();
+    fnStr = fnStr.replace(/function.*\(/, 'function _$_$_' + name + '(');
+
+    return fnStr;
+  };
+
+  $$.fn.thread({
+    reduce: function( fn ){
+      var fnStr = $$fnImpl( fn, 'reduce' );
+
+      this.require( fnStr );
+
+      return this.run(function( data ){
+        var ret = data.reduce( _$_$_reduce );
+
+        resolve( ret );
+      });
+    },
+
+    reduceRight: function( fn ){
+      var fnStr = $$fnImpl( fn, 'reduceRight' );
+
+      this.require( fnStr );
+
+      return this.run(function( data ){
+        var ret = data.reduceRight( _$_$_reduceRight );
+
+        resolve( ret );
+      });
+    },
+
+    map: function( fn ){
+      var fnStr = $$fnImpl( fn, 'map' );
+
+      this.require( fnStr );
+
+      return this.run(function( data ){
+        var ret = data.map( _$_$_map );
+
+        resolve( ret );
+      });
+    }
   });
 
   // aliases

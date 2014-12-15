@@ -159,9 +159,9 @@
       add( col2, col1, right );
 
       return {
-        left: new $$.Collection( cy, left ),
-        right: new $$.Collection( cy, right ),
-        both: new $$.Collection( cy, both )
+        left: new $$.Collection( cy, left, { unique: true } ),
+        right: new $$.Collection( cy, right, { unique: true } ),
+        both: new $$.Collection( cy, both, { unique: true } )
       };
     },
 
@@ -359,7 +359,7 @@
   fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
   fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not;
   fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
-  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = $$.symdiff = fn.xor;
+  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
   fn.fnFilter = fn.filterFn = fn.stdFilter;
   
 })( cytoscape );

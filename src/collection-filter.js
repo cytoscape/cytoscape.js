@@ -95,13 +95,75 @@
       return new $$.Collection( cy, elements );
     },
 
-    // TODO test and make faster impl w/ less no calls
     xor: function( other ){
-      var intn = this.intersect( other );
-      var all = this.union( other );
+      var cy = this._private.cy;
 
-      return all.not( intn );
+      if( $$.is.string(other) ){
+        other = cy.$( other );
+      }
+
+      var elements = [];
+      var col1 = this;
+      var col2 = other;
+      
+      var add = function( col, other ){
+
+        for( var i = 0; i < col.length; i++ ){
+          var ele = col[i];
+          var id = ele._private.data.id;
+          var inOther = other._private.ids[ id ];
+          
+          if( !inOther ){
+            elements.push( ele );
+          }
+        }
+
+      };
+
+      add( col1, col2 );
+      add( col2, col1 );
+
+      return new $$.Collection( cy, elements );
     },  
+
+    diff: function( other ){
+      var cy = this._private.cy;
+
+      if( $$.is.string(other) ){
+        other = cy.$( other );
+      }
+
+      var left = [];
+      var right = [];
+      var both = [];
+      var col1 = this;
+      var col2 = other;
+
+      var add = function( col, other, retEles ){
+
+        for( var i = 0; i < col.length; i++ ){
+          var ele = col[i];
+          var id = ele._private.data.id;
+          var inOther = other._private.ids[ id ];
+          
+          if( inOther ){
+            both.push( ele );
+          } else {
+            retEles.push( ele );
+          }
+        }
+
+      };
+
+      add( col1, col2, left );
+      add( col2, col1, right );
+
+      return {
+        left: new $$.Collection( cy, left ),
+        right: new $$.Collection( cy, right ),
+        both: new $$.Collection( cy, both )
+      };
+    },
 
     add: function( toAdd ){
       var cy = this._private.cy;    

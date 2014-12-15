@@ -2077,7 +2077,27 @@
                     { "name": "selector", "descr": "A selector representing the elements to apply the symmetric difference with.  All elements in the graph matching the selector are used as the passed collection." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/symmetricDifference"
+            },
+
+            {
+              "name": "eles.diff",
+              "descr": "Perform a traditional left/right diff on the two collections.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements on the right side of the diff." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements on the right side of the diff.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ],
+              "md": "collection/diff"
             },
 
             {

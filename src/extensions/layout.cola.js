@@ -196,7 +196,7 @@
 
         on: function( type, listener ){}, // dummy; not needed
 
-        drag: function(){} // TODO
+        drag: function(){} // not needed for our case
       });
       layout.adaptor = adaptor;
 

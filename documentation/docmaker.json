@@ -238,6 +238,21 @@
             },
 
             {
+              "name": "cy.promiseOn",
+              "pureAliases": ["cy.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the graph.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/promiseOn"
+            },
+
+            {
               "name": "cy.one",
               "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
               "formats": [
@@ -915,6 +930,21 @@
                 }
               ],
               "md": "collection/on"
+            },
+
+            {
+              "name": "eles.promiseOn",
+              "pureAliases": ["eles.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on any of the elements in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/promiseOn"
             },
 
             {
@@ -2970,6 +3000,20 @@
             },
 
             {
+              "name": "layout.promiseOn",
+              "pureAliases": ["layout.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the layout.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." }
+                  ]
+                }
+              ],
+              "md": "layout/promiseOn"
+            },
+
+            {
               "name": "layout.one",
               "descr": "Bind to events that are emitted by the layout, and trigger the handler only once.",
               "formats": [
@@ -3150,6 +3194,20 @@
                   ]
                 }
               ]
+            },
+
+            {
+              "name": "thread.promiseOn",
+              "pureAliases": ["thread.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the thread.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." }
+                  ]
+                }
+              ],
+              "md": "thread/promiseOn"
             },
 
             {

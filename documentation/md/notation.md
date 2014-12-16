@@ -84,8 +84,8 @@ cytoscape({
 
       classes: 'foo bar', // a space separated list of class names that the element has
 
-      // NB: you should only use `css` for very special cases; use classes instead
-      css: { 'background-color': 'red' } // overriden style properties
+      // NB: you should only use `style`/`css` for very special cases; use classes instead
+      style: { 'background-color': 'red' } // overriden style properties
     },
 
     { // node n2
@@ -123,7 +123,7 @@ cytoscape({
   style: [
     {
       selector: 'node',
-      css: {
+      style: {
         'content': 'data(id)'
       }
     }

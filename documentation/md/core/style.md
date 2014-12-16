@@ -18,7 +18,7 @@ cy.style()
 
   // and then define new styles
   .selector('node')
-  	.css('background-color', 'magenta')
+  	.style('background-color', 'magenta')
 
   // ...
 
@@ -30,7 +30,7 @@ You can also add to the existing stylesheet:
 ```js
 cy.style()
   .selector('node')
-    .css({
+    .style({
       'background-color': 'yellow'
     })
 
@@ -45,7 +45,7 @@ cy.style()
   .fromJson([
     {
       selector: 'node',
-      css: {
+      style: {
         'background-color': 'red'
       }
     }

@@ -222,8 +222,8 @@
             self.trigger('viewport');
           }
 
-          if( properties.css && isEles ){
-            var props = properties.css;
+          var props = properties.style || properties.css;
+          if( props && isEles ){
 
             for( var i = 0; i < props.length; i++ ){
               var name = props[i].name;
@@ -235,6 +235,7 @@
               
               style.overrideBypass( self, name, easedVal );
             } // for props
+            
           } // if 
 
         }

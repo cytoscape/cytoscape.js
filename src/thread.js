@@ -78,7 +78,11 @@
 
   $$.fn.thread({
 
-    require: function( fn ){
+    require: function( fn, as ){
+      if( as ){
+        fn = fnAs( fn, as );
+      }
+
       this._private.requires.push( fn );
 
       return this; // chaining
@@ -133,6 +137,9 @@
 
           // add normalised thread api functions
           if( !threadTechAlreadyExists ){
+            var fnPre = fnStr + '';
+
+            fnStr = '';
             fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
             fnStr += 'function message(m){ postMessage(m); };\n';
             fnStr += 'function listen(fn){\n';
@@ -146,6 +153,8 @@
             fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
             fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
           
+            fnStr += fnPre;
+
             fnBlob = new Blob([ fnStr ], {
               type: 'application/javascript'
             });
@@ -256,12 +265,16 @@
 
   });
 
-  // return fn impl as string with specified _$_$_name as new function name
-  var $$fnImpl = function( fn, name ){
+  var fnAs = function( fn, name ){
     var fnStr = fn.toString();
-    fnStr = fnStr.replace(/function.*\(/, 'function _$_$_' + name + '(');
+    fnStr = fnStr.replace(/function.*\(/, 'function ' + name + '(');
 
     return fnStr;
+  };
+
+  // return fn impl as string with specified _$_$_name as new function name
+  var $$fnImpl = function( fn, name ){
+    return fnAs( fn, '_$_$_' + name );
   };
 
   $$.fn.thread({

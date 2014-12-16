@@ -40,11 +40,11 @@
   $$.fn.fabric({
 
     // require fn in all threads
-    require: function( fn ){
+    require: function( fn, as ){
       for( var i = 0; i < this.length; i++ ){
         var thread = this[i];
 
-        thread.require( fn );
+        thread.require( fn, as );
       }
 
       return this;
@@ -146,7 +146,6 @@
     },
 
     // parallel version of array.map()
-    // TODO impl with spread() so it doesn't have to pass data so often?
     map: function( fn ){
       var self = this;
       var _p = self._private;
@@ -161,9 +160,6 @@
 
         runPs.push( runP );
 
-        var doneEarly = pass.length === 0;
-        if( doneEarly ){ break; }
-
         // move on to next thread
         ti = (ti + 1) % this.length;
       }
@@ -172,7 +168,25 @@
     },
 
     // parallel version of array.filter()
-    filter: function( fn ){}, // TODO
+    filter: function( fn ){
+      var _p = this._private;
+      var pass = _p.pass[0];
+
+      return this.map( fn ).then(function( include ){
+        var ret = [];
+
+        for( var i = 0; i < pass.length; i++ ){
+          var datum = pass[i];
+          var incDatum = include[i];
+
+          if( incDatum ){
+            ret.push( datum );
+          }
+        }
+
+        return ret;
+      });
+    },
 
     // sorts the passed array using a divide and conquer algo like mergesort
     sort: function( fn ){}, // TODO

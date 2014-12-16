@@ -163,6 +163,23 @@ describe('Thread', function(){
     });
   });
 
+  it('requires a function with a specified name', function( next ){
+    var t = $$.Thread();
+
+    t.require( function(){
+      return 'bar';
+    }, 'bar' );
+
+    t.run(function(){
+      resolve( bar() );
+    }).then(function( ret ){
+      expect( ret ).to.equal('bar');
+
+      t.stop();
+      next();
+    });
+  });
+
   it('calls multiple runs in order', function( next ){
     var t = $$.Thread();
     var thens = [];
@@ -385,6 +402,31 @@ describe('Thread', function(){
     });
   });
 
-  
+  // because .map() etc has to be serialised with a special global name
+  it('allows successive uses of map', function( next ){
+    var t = $$.Thread();
+    var mapper1 = function( n ){
+      return Math.pow( 2, n );
+    };
+    var mapper2 = function( n ){
+      return Math.pow( 3, n );
+    };
+    var data = [1, 2, 3, 4];
+
+    t.pass( data ).map( mapper1 ).then(function( mapped ){
+      var expMapped = data.map( mapper1 );
+
+      expect( mapped ).to.deep.equal( expMapped );
+    });
+
+    t.pass( data ).map( mapper2 ).then(function( mapped ){
+      var expMapped = data.map( mapper2 );
+
+      expect( mapped ).to.deep.equal( expMapped );
+
+      t.stop();
+      next();
+    });
+  });
 
 });

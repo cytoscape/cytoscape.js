@@ -12,7 +12,7 @@
     var defN = 4;
     var N;
 
-    if( typeof navigator !== 'undefined' ){
+    if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
       N = navigator.hardwareConcurrency;
     } else if( typeof module !== 'undefined' ){
       N = require('os').cpus().length;

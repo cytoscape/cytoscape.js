@@ -63,4 +63,13 @@ describe('Fabric', function(){
     });
   });
 
+  it('filters correctly', function( next ){
+    fabric.pass([ -3, -2, -1, 0, 1, 2, 3 ]).filter(function( n ){
+      resolve( n > 0 );
+    }).then(function( filtered ){
+      expect( filtered ).to.deep.equal([ 1, 2, 3 ]);
+      next();
+    });
+  });
+
 });

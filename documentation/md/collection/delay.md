@@ -3,7 +3,7 @@
 ```js
 cy.nodes()
   .animate({
-      css: { 'background-color': 'blue' }
+      style: { 'background-color': 'blue' }
     }, {
       duration: 1000
     })
@@ -11,7 +11,7 @@ cy.nodes()
   .delay( 1000 )
 
   .animate({
-    css: { 'background-color': 'yellow' }
+    style: { 'background-color': 'yellow' }
   })
 ;
 

@@ -48,7 +48,7 @@ cytoscape({
   style: [
     {
       selector: 'node',
-      css: {
+      style: {
         'background-color': 'red'
       }
     }
@@ -70,7 +70,7 @@ cytoscape({
 
   style: cytoscape.stylesheet()
     .selector('node')
-      .css({
+      .style({
         'background-color': 'blue'
       })
 
@@ -80,6 +80,8 @@ cytoscape({
   // , ...
 });
 ```
+
+You may alternatively use `css` in place of `style`, e.g. `.selector( ... ).css( ... )` or `{ selector: ..., css: ... }`.
 
 
 ## Property types

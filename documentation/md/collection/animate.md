@@ -7,7 +7,7 @@ Note that you can specify only one of `position` and `renderedPosition`:  You ca
 ```js
 cy.nodes().animate({
   position: { x: 100, y: 100 },
-  css: { backgroundColor: 'red' }
+  style: { backgroundColor: 'red' }
 }, {
   duration: 1000
 });

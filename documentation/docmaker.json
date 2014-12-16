@@ -659,8 +659,8 @@
                 {
                   "args": [
                     { 
-                      "name": "props", 
-                      "descr": "An object containing the properties to animate.",
+                      "name": "anis", 
+                      "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
                         { "name": "pan", "descr": "A panning position to which the graph will be animated." },
@@ -1738,12 +1738,12 @@
                 {
                   "args": [
                     { 
-                      "name": "props", 
-                      "descr": "An object containing the properties to animate.",
+                      "name": "anis", 
+                      "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
-                        { "name": "css", "descr": "An object containing name-value pairs of style properties to animate." }
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
                       ]
                     },
 

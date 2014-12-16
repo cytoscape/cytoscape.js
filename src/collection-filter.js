@@ -66,6 +66,12 @@
       
     },
 
+    absoluteComplement: function(){
+      var cy = this._private.cy;
+
+      return cy.elements().not( this );
+    },
+
     intersect: function( other ){
       var cy = this._private.cy;
       
@@ -357,9 +363,10 @@
   // aliases
   var fn = $$.elesfn;
   fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
-  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not;
+  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not = relativeComplement;
   fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
   fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
   fn.fnFilter = fn.filterFn = fn.stdFilter;
+  fn.complement = fn.abscomp = fn.absoluteComplement;
   
 })( cytoscape );

@@ -257,7 +257,7 @@
 
       if( ele ){
         if( !hasCompoundNodes ){
-          return ele._private.style.opacity === 0;
+          return ele._private.style.opacity.value === 0;
         } else {
           return ele.effectiveOpacity() === 0;
         }

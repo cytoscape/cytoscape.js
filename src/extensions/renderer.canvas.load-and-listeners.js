@@ -603,9 +603,9 @@
 
               toTrigger.push( dEle );
               
-              if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
-                dPos.x += disp[0];
-                dPos.y += disp[1];
+              if( $$.is.number(pos[0]) && $$.is.number(pos[1]) ){
+                dPos.x = pos[0];
+                dPos.y = pos[1];
               }
 
             }

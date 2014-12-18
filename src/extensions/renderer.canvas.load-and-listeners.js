@@ -616,8 +616,10 @@
                   if( justStartedDrag ){
                     var dragDelta = r.hoverData.dragDelta;
 
-                    dPos.x += dragDelta[0];
-                    dPos.y += dragDelta[1];
+                    if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
+                      dPos.x += dragDelta[0];
+                      dPos.y += dragDelta[1];
+                    }
                   }
                 }
 
@@ -638,7 +640,8 @@
             var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
 
             if( dragDelta.length === 0 ){
-              dragDelta[0] = dragDelta[1] = 0;
+              dragDelta.push(0);
+              dragDelta.push(0);
             } else {
               dragDelta[0] += disp[0];
               dragDelta[1] += disp[1];
@@ -1266,6 +1269,7 @@
     
       var cy = r.data.cy; 
       var now = r.touchData.now; var earlier = r.touchData.earlier;
+      var zoom = cy.zoom();
       
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1494,43 +1498,79 @@
         var last = r.touchData.last;
         var near = near || r.findNearestElement(now[0], now[1], true);
 
-        if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
-          var draggedEles = r.dragData.touchDragEles;
+        if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          for( var k = 0; k < draggedEles.length; k++ ){
-            var draggedEle = draggedEles[k];
+          var startPos = r.touchData.startPosition;
 
-            if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
-              r.dragData.didDrag = true;
-              var dPos = draggedEle._private.position;
+          var dx = now[0] - startPos[0];
+          var dx2 = dx * dx;
+          var dy = now[1] - startPos[1];
+          var dy2 = dy * dy;
+          var dist2 = dx2 + dy2;
+          var rdist2 = dist2 * zoom * zoom;
 
-              dPos.x += disp[0];
-              dPos.y += disp[1];
+          // TODO thresh
+          if( rdist2 >= r.tapThreshold2 ){ // then dragging can happen
+            var draggedEles = r.dragData.touchDragEles;
 
-              if( !r.hoverData.draggingEles ){
-                addNodeToDrag( draggedEle, { inDragLayer: true } );
+            for( var k = 0; k < draggedEles.length; k++ ){
+              var draggedEle = draggedEles[k];
+
+              if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
+                r.dragData.didDrag = true;
+                var dPos = draggedEle._private.position;
+                var justStartedDrag = !r.hoverData.draggingEles;
+
+                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
+                  dPos.x += disp[0];
+                  dPos.y += disp[1];
+                }
+
+                if( justStartedDrag ){
+                  addNodeToDrag( draggedEle, { inDragLayer: true } );
+
+                  var dragDelta = r.touchData.dragDelta;
+
+                  if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
+                    dPos.x += dragDelta[0];
+                    dPos.y += dragDelta[1];
+                  }
+
+                }
               }
             }
-          }
 
-          var tcol = new $$.Collection(cy, draggedEle);
-          
-          tcol.updateCompoundBounds();
-          tcol.trigger('position drag');
-
-          r.hoverData.draggingEles = true;
-          
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-
-          if( 
-               r.touchData.startPosition[0] == earlier[0]
-            && r.touchData.startPosition[1] == earlier[1]
-          ){
+            var tcol = new $$.Collection(cy, draggedEle);
             
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            tcol.updateCompoundBounds();
+            tcol.trigger('position drag');
+
+            r.hoverData.draggingEles = true;
+            
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+            if( 
+                 r.touchData.startPosition[0] == earlier[0]
+              && r.touchData.startPosition[1] == earlier[1]
+            ){
+              
+              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            }
+            
+            r.redraw();
+          } else { // otherise keep track of drag delta for later
+            var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
+
+            if( dragDelta.length === 0 ){
+              dragDelta.push(0);
+              dragDelta.push(0);
+              console.log('init')
+            } else {
+              dragDelta[0] += disp[0];
+              dragDelta[1] += disp[1];
+              console.log('%s, %s', dragDelta[0], dragDelta[1])
+            }
           }
-          
-          r.redraw();
         }
         
         // Touchmove event
@@ -1636,7 +1676,7 @@
       for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
       //r.redraw();
       
-    }, 1000/30, { leading: true }), false);
+    }, 1000/30, { trailing: true }), false);
     
     r.registerBinding(window, 'touchcancel', function(e) {
       var start = r.touchData.start;
@@ -1938,6 +1978,8 @@
       for( var j = 0; j < now.length; j++ ){ earlier[j] = now[j]; }
 
       r.dragData.didDrag = false; // reset for next mousedown
+
+      r.touchData.dragDelta = [];
 
       if( updateStartStyle && start ){
         start.updateStyle(false);

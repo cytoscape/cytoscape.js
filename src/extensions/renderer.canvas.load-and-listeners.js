@@ -1232,6 +1232,8 @@
         
         setTimeout(function() {
           if (r.touchData.singleTouchMoved === false
+              && !r.pinching // if pinching, then taphold unselect shouldn't take effect
+
               // This time double constraint prevents multiple quick taps
               // followed by a taphold triggering multiple taphold events
               && (+new Date()) - r.touchData.singleTouchStartTime > 250) {
@@ -1792,12 +1794,6 @@
         //}, 100);
       }
 
-      if( e.touches.length < 2 ){
-        r.pinching = false;
-        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
-        r.redraw();
-      }
-
       var updateStartStyle = false;
 
       if( start != null ){
@@ -1920,7 +1916,9 @@
         if (start != null 
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable 
-            && rdist2 < r.tapThreshold2 ) {
+            && rdist2 < r.tapThreshold2
+            && !r.pinching // pinch to zoom should not affect selection
+        ) {
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').unmerge( start ).unselect();
@@ -1982,6 +1980,12 @@
 
       if( updateStartStyle && start ){
         start.updateStyle(false);
+      }
+
+      if( e.touches.length < 2 ){
+        r.pinching = false;
+        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+        r.redraw();
       }
 
       //r.redraw();

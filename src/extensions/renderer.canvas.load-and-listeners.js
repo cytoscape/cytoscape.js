@@ -1563,11 +1563,9 @@
             if( dragDelta.length === 0 ){
               dragDelta.push(0);
               dragDelta.push(0);
-              console.log('init')
             } else {
               dragDelta[0] += disp[0];
               dragDelta[1] += disp[1];
-              console.log('%s, %s', dragDelta[0], dragDelta[1])
             }
           }
         }
@@ -1978,7 +1976,9 @@
 
       r.dragData.didDrag = false; // reset for next mousedown
 
-      r.touchData.dragDelta = [];
+      if( e.touches[0] ){
+        r.touchData.dragDelta = [];
+      }
 
       if( updateStartStyle && start ){
         start.updateStyle(false);

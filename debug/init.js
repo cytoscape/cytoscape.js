@@ -4,7 +4,7 @@ require(['cytoscape'], function(rjsCy){
 
 $(function(){
 
-  var addRandomEles = false;        
+  var addRandomEles = true;        
   var height, width;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
@@ -155,8 +155,8 @@ $(function(){
   };
   
   var cliques = 2;
-  var numNodes = 10;
-  var numEdges = 40;
+  var numNodes = 40;
+  var numEdges = 120;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

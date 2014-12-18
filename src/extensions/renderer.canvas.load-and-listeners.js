@@ -581,46 +581,69 @@
         var dist2 = dx2 + dy2;
         var rdist2 = dist2 * zoom * zoom;
 
-        if ( down && down.isNode() && r.nodeIsDraggable(down) && (rdist2 > r.tapThreshold2) ){
-          if( !r.dragData.didDrag ) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          }
+        if( down && down.isNode() && r.nodeIsDraggable(down) ){
 
-          r.dragData.didDrag = true; // indicate that we actually did drag the node
+          if( rdist2 >= r.tapThreshold2 ){ // then drag
 
-          var toTrigger = [];
+            var justStartedDrag = !r.dragData.didDrag;
 
-          for( var i = 0; i < draggedElements.length; i++ ){
-            var dEle = draggedElements[i];
-
-            // now, add the elements to the drag layer if not done already
-            if( !r.hoverData.draggingEles ){ 
-              addNodeToDrag( dEle, { inDragLayer: true } );
+            if( justStartedDrag ) {
+              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
             }
 
-            // Locked nodes not draggable, as well as non-visible nodes
-            if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
-              var dPos = dEle._private.position;
+            r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-              toTrigger.push( dEle );
-              
-              if( $$.is.number(pos[0]) && $$.is.number(pos[1]) ){
-                dPos.x = pos[0];
-                dPos.y = pos[1];
+            var toTrigger = [];
+
+            for( var i = 0; i < draggedElements.length; i++ ){
+              var dEle = draggedElements[i];
+
+              // now, add the elements to the drag layer if not done already
+              if( !r.hoverData.draggingEles ){ 
+                addNodeToDrag( dEle, { inDragLayer: true } );
               }
 
+              // Locked nodes not draggable, as well as non-visible nodes
+              if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
+                var dPos = dEle._private.position;
+
+                toTrigger.push( dEle );
+                
+                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
+                  dPos.x += disp[0];
+                  dPos.y += disp[1];
+
+                  if( justStartedDrag ){
+                    var dragDelta = r.hoverData.dragDelta;
+
+                    dPos.x += dragDelta[0];
+                    dPos.y += dragDelta[1];
+                  }
+                }
+
+              }
+            }
+
+            r.hoverData.draggingEles = true;
+            
+            var tcol = (new $$.Collection(cy, toTrigger));
+
+            tcol.updateCompoundBounds();
+            tcol.trigger('position drag');
+            
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            r.redraw();
+
+          } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
+            var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
+
+            if( dragDelta.length === 0 ){
+              dragDelta[0] = dragDelta[1] = 0;
+            } else {
+              dragDelta[0] += disp[0];
+              dragDelta[1] += disp[1];
             }
           }
-
-          r.hoverData.draggingEles = true;
-          
-          var tcol = (new $$.Collection(cy, toTrigger));
-
-          tcol.updateCompoundBounds();
-          tcol.trigger('position drag');
-          
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          r.redraw();
         }
 
         // prevent the dragging from triggering text selection on the page
@@ -634,7 +657,7 @@
           if(e.preventDefault) e.preventDefault();
           return false;
         }
-    }, 1000/30, { leading: true }), false);
+    }, 1000/30, { trailing: true }), false);
     
     r.registerBinding(window, 'mouseup', function(e) {
       // console.log('--\nmouseup', e)
@@ -897,6 +920,7 @@
 //      console.log('ss', select);
       
       r.dragData.didDrag = false;
+      r.hoverData.dragDelta = [];
       
     }, false);
 

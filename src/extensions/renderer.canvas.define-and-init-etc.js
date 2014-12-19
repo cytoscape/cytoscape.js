@@ -111,6 +111,7 @@
     this.clearedForMotionBlur = [];
     this.tapThreshold = options.tapThreshold;
     this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.tapholdDuration = 500;
 
     this.load();
   }

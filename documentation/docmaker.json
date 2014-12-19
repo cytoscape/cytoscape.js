@@ -3086,8 +3086,14 @@
           "fns": [
             {
               "name": "resolve",
-              "descr": "Resolves the thread with a single value such that other entities (like the main JS thread or other threads) can read it.",
+              "descr": "Resolves the thread's run promise with a single value such that other entities (like the main JS thread or other threads) can read it.",
               "md": "thread/resolve"
+            },
+
+            {
+              "name": "reject",
+              "descr": "Rejects the thread's run promise with a single error value such that other entities (like the main JS thread or other threads) can read it.",
+              "md": "thread/reject"
             },
 
             {
@@ -3136,13 +3142,26 @@
             },
 
             {
+              "name": "thread.pass",
+              "descr": "Pass data to the thread such that it is accessible within `thread.run()` etc callback functions.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "passed", "descr": "Data that is passed to `thread.run()`." }
+                  ]
+                }
+              ],
+              "md": "thread/pass"
+            },
+
+            {
               "name": "thread.run",
               "pureAliases": ["thread.promise"],
               "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve).",
               "formats": [
                 {
                   "args": [
-                    { "name": "fn", "descr": "The function which will be copied and run in the thread." }
+                    { "name": "function( passed )", "descr": "The function which will be copied and run in the thread." }
                   ]
                 }
               ],
@@ -3150,9 +3169,27 @@
             },
 
             {
+              "name": "thread.map",
+              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve).",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function( passed )", "descr": "A mapping function that calls `resolve()` with the resultant mapped value." }
+                  ]
+                }
+              ],
+              "md": "thread/map"
+            },
+
+            {
               "name": "thread.stop",
               "pureAliases": ["thread.halt", "thread.terminate"],
               "descr": "Terminates the worker such that it no longer runs."
+            },
+
+            {
+              "name": "thread.stopped",
+              "descr": "Get whether the thread is stopped (i.e. terminated via `thread.stop()`)."
             }
           ]
         },

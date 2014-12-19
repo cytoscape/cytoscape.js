@@ -104,6 +104,7 @@
     this.motionBlur = true; // for initial kick off
     this.tapThreshold = options.tapThreshold;
     this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.tapholdDuration = 500;
 
     this.load();
   }

@@ -5,16 +5,39 @@ var $$ = cytoscape;
 describe('Thread', function(){
 
   var cy;
+  var n;
+  var eles;
 
   before(function(next){
     cy = cytoscape({
+      elements: [
+        {
+          group: 'nodes',
+          data: { id: 'n', foo: 'bar' }
+        },
+
+        {
+          group: 'edges',
+          data: { id: 'e', source: 'n', target: 'n', foo: 'baz' }
+        }
+      ],
+
       ready: function(){
         next();
       }
     });
+
+    n = cy.$('#n')[0];
+    eles = cy.elements().sort(function(a, b){
+      if( a.id() === 'n' ){
+        return -1;
+      } else {
+        return 1;
+      }
+    });
   });
 
-  it('resolves a simple value', function( next ){
+  it('resolves with a simple value', function( next ){
     var t = $$.Thread();
 
     t.run(function(){
@@ -24,6 +47,21 @@ describe('Thread', function(){
 
       t.stop();
 
+      next();
+    });
+  });
+
+  it('rejects with a simple value', function( next ){
+    var t = $$.Thread();
+
+    t.run(function(){
+      reject( 3 );
+    }).then(function( val ){
+      console.error('Thread resolved but should have rejected');
+    }, function( err ){
+      expect( err ).to.equal( 3 );
+
+      t.stop();
       next();
     });
   });
@@ -423,6 +461,33 @@ describe('Thread', function(){
       var expMapped = data.map( mapper2 );
 
       expect( mapped ).to.deep.equal( expMapped );
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('passes ele properly', function( next ){
+    var t = $$.Thread();
+
+    t.pass( n ).run(function( n ){
+      resolve(n);
+    }).then(function( n ){
+      expect( n.data.foo ).to.equal('bar');
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('passes eles properly', function( next ){
+    var t = $$.Thread();
+
+    t.pass( eles ).run(function( eles ){
+      resolve(eles);
+    }).then(function( eles ){
+      expect( eles[0].data.foo ).to.equal('bar');
+      expect( eles[1].data.foo ).to.equal('baz');
 
       t.stop();
       next();

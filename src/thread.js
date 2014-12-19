@@ -147,11 +147,12 @@
             fnStr += '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){\n';
             fnStr += '    } else { \n';
             fnStr += '      fn( m.data );\n';
-            fnStr += '    }\n'
-            fnStr += '  });\n'
+            fnStr += '    }\n';
+            fnStr += '  });\n';
             fnStr += '};\n'; 
             fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
             fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+            fnStr += 'function reject(v){ postMessage({ $$reject: v }); };\n'; 
           
             fnStr += fnPre;
 
@@ -176,6 +177,10 @@
               ww.removeEventListener('message', cb); // done listening b/c resolve()
 
               resolve( m.data.$$resolve );
+            } else if( $$.is.object(m) && $$.is.object( m.data ) && ('$$reject' in m.data) ){
+              ww.removeEventListener('message', cb); // done listening b/c reject()
+
+              reject( m.data.$$reject );
             } else {
               self.trigger( new $$.Event(m, { type: 'message', message: m.data }) );
             }
@@ -198,6 +203,10 @@
               child.removeListener('message', cb); // done listening b/c resolve()
 
               resolve( m.$$resolve );
+            } else if( $$.is.object(m) && ('$$reject' in m) ){
+              child.removeListener('message', cb); // done listening b/c reject()
+
+              reject( m.$$reject );
             } else {
               self.trigger( new $$.Event({}, { type: 'message', message: m }) );
             }

@@ -1,12 +1,12 @@
 ## Details
 
-This function allows the developer to pass a single value outside of the worker.
+This function allows the developer to pass a single value outside of the thread.
 
 
 ## Examples
 
 ```js
-var t = cytoscape.Thread();
+var t = cytoscape.thread();
 
 t.promise(function(){
   resolve( 3 );

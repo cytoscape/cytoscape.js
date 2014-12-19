@@ -92,11 +92,13 @@
 
     // pass data to be used with .spread() etc.
     pass: function( data ){
+      var pass = this._private.pass;
+
       if( $$.is.array(data) ){
-        this._private.pass.push( data );
+        pass.push( data );
       } else if( $$.is.elementOrCollection(data) ){
         var eles = data;
-        this._private.pass.push( eles.jsons() );
+        pass.push( eles.jsons() );
       } else {
         $$.util.error('Only arrays or collections may be used with fabric.pass()');
       }
@@ -104,15 +106,21 @@
       return this; // chaining
     },
 
+    spreadSize: function(){
+      var subsize =  Math.ceil( this._private.pass[0].length / this.length );
+
+      subsize = Math.max( 1, subsize ); // don't pass less than one ele to each thread
+
+      return subsize;
+    },
+
     // split the data into slices to spread the data equally among threads
     spread: function( fn ){
       var self = this;
       var _p = self._private;
+      var subsize = self.spreadSize(); // number of pass eles to handle in each thread
       var pass = _p.pass.shift();
       var runPs = [];
-      var subsize = Math.round( pass.length / this.length ); // number of pass eles to handle in each thread
-
-      subsize = Math.max( 1, subsize ); // don't pass less than one ele to each thread
 
       for( var i = 0; i < this.length; i++ ){
         var thread = this[i];
@@ -188,11 +196,82 @@
       });
     },
 
-    // sorts the passed array using a divide and conquer algo like mergesort
-    sort: function( fn ){}, // TODO
+    // sorts the passed array using a divide and conquer strategy
+    sort: function( cmp ){
+      var self = this;
+      var subsize = this.spreadSize();
+      var N = this.length;
 
-    // syncs conflicts between threads
-    sync: function( same, handler ){} // TODO
+      cmp = cmp || function( a, b ){ // default comparison function
+        if( a < b ){
+          return -1;
+        } else if( a > b ){
+          return 1;
+        } 
+        
+        return 0;
+      };
+
+      self.require( cmp, '_$_$_sort' );
+
+      return self.spread(function( split ){ // sort each split normally
+        var sortedSplit = split.sort( _$_$_sort );
+        resolve( sortedSplit ); 
+
+      }).then(function( joined ){ // "merge" the splits together, similar to mergesort
+        var ret = new Array( joined.length );
+        var ri = 0;
+        var m = new Array( N ); // thread index => merge index
+        var mMax = new Array( N ); // thread index => max merge index
+
+        // init indices
+        for( var ti = 0; ti < N; ti++ ){ 
+          var m_ti = m[ti] = ti * subsize; // each merge index starts at the split start
+          
+          var mMax_ti = m_ti + subsize - 1;
+          mMax_ti = Math.min( mMax_ti, joined.length - 1 ); // constrain to end of array
+          mMax[ti] = mMax_ti;
+        }
+
+        var next = {
+          val: joined[0],
+          mti: 0,
+          ti: 0
+        };
+
+        // "merges" the next ele to ret
+        var pushNext = function(){
+          for( var ti = 0; ti < N; ti++ ){
+            var mti = m[ ti ];
+            var val = joined[ mti ];
+
+            if( mti > mMax[ ti ] ){ continue; } // => thread done
+
+            var nextCmp = !next ? -1 : cmp( val, next.val );
+
+            if( nextCmp < 0 ){ // then this val supercedes the old one
+              next = {
+                val: val,
+                mti: mti,
+                ti: ti
+              };
+            }
+          } // for
+
+          // now we're sure we have the best next
+          ret[ ri++ ] = next.val; // store sorted val
+          m[ next.ti ]++; // move along corresponding thread
+
+          next = null;
+        } // pushNext
+
+        while( ri < joined.length ){
+          pushNext();
+        }
+
+        return ret;
+      });
+    }
 
 
   });

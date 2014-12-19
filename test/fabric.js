@@ -72,4 +72,53 @@ describe('Fabric', function(){
     });
   });
 
+  it('sorts with no function', function( next ){
+    fabric.pass([ 8, 3, 4, 7, 2, 9, 5, 1, 6, 0 ]).sort().then(function( sorted ){
+      expect( sorted ).to.deep.equal([ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]);
+      next();
+    });
+  });
+
+  it('sorts with a function', function( next ){
+    fabric.pass([ 8, 3, 4, 7, 2, 9, 5, 1, 6, 0 ]).sort(function(a, b){
+      return b - a;
+    }).then(function( sorted ){
+      expect( sorted ).to.deep.equal([ 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 ]);
+      next();
+    });
+  });
+
+  it('passes eles', function( next ){
+    var cy = cytoscape({
+      headless: true,
+      elements: [
+        {
+          group: 'nodes',
+          data: { foo: 'bar' }
+        },
+
+        {
+          group: 'nodes',
+          data: { foo: 'baz' }
+        }
+      ]
+    });
+
+    var eles = cy.elements().sort(function( a, b ){
+      if( a.data('foo') === 'bar' ){
+        return -1;
+      }
+
+      return 1;
+    });
+
+    fabric.pass( eles ).map(function( ele ){
+      resolve( ele.data.foo );
+    }).then(function( mapped ){
+      expect( mapped ).to.deep.equal([ 'bar', 'baz' ]);
+
+      next();
+    });
+  });
+
 });

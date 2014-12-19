@@ -1,7 +1,7 @@
 ## Examples
 
 ```js
-var t = cytoscape.Thread();
+var t = cytoscape.thread();
 
 t.run(function(){
   listen(function( msg ){

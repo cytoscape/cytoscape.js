@@ -26,6 +26,12 @@ function resolve( v ){
   });
 }
 
+function reject( v ){
+  process.send({
+    $$reject: v
+  });
+}
+
 process.on('message', function( m ){
   if( typeof m === 'object' && m.$$eval ){
     eval( m.$$eval );

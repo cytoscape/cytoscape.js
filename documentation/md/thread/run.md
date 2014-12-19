@@ -5,7 +5,7 @@ Please note that the passed function to `thread.run()` is copied to the thread, 
 ## Examples
 
 ```js
-var t = cytoscape.Thread();
+var t = cytoscape.thread();
 
 t.run(function(){
   resolve( 3 );

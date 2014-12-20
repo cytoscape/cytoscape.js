@@ -181,10 +181,6 @@
         resolve = origResolve;
 
         return mapped;
-      }).then(function( ret ){
-        console.log( ret )
-
-        return ret;
       });
 
     },

@@ -124,10 +124,17 @@
 
         var threadTechAlreadyExists = _p.ran;
 
+        var fnImplStr = $$.is.string( fn ) ? fn : fn.toString();
+
         // worker code to exec
         var fnStr = ( _p.requires.map(function( r ){
           return fnAsRequire( r );
-        }) ).concat([ '(' + fn.toString() + ')(' + JSON.stringify(pass) + ');\n' ]).join('\n');
+        }) ).concat([
+          '( function(){',
+            'var ret = (' + fnImplStr + ')(' + JSON.stringify(pass) + ');',
+            'if( ret !== undefined ){ resolve(ret); }', // assume if ran fn returns defined value (incl. null), that we want to resolve to it
+          '} )()\n'
+        ]).join('\n');
 
         // because we've now consumed the requires, empty the list so we don't dupe on next run()
         _p.requires = [];
@@ -139,20 +146,21 @@
           if( !threadTechAlreadyExists ){
             var fnPre = fnStr + '';
 
-            fnStr = '';
-            fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
-            fnStr += 'function message(m){ postMessage(m); };\n';
-            fnStr += 'function listen(fn){\n';
-            fnStr += '  self.addEventListener("message", function(m){ \n';
-            fnStr += '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){\n';
-            fnStr += '    } else { \n';
-            fnStr += '      fn( m.data );\n';
-            fnStr += '    }\n';
-            fnStr += '  });\n';
-            fnStr += '};\n'; 
-            fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
-            fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
-            fnStr += 'function reject(v){ postMessage({ $$reject: v }); };\n'; 
+            fnStr = [
+              'function broadcast(m){ return message(m); };', // alias
+              'function message(m){ postMessage(m); };',
+              'function listen(fn){',
+              '  self.addEventListener("message", function(m){ ',
+              '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){',
+              '    } else { ',
+              '      fn( m.data );',
+              '    }',
+              '  });',
+              '};', 
+              'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });',
+              'function resolve(v){ postMessage({ $$resolve: v }); };', 
+              'function reject(v){ postMessage({ $$reject: v }); };'
+            ].join('\n');
           
             fnStr += fnPre;
 
@@ -281,47 +289,38 @@
     return fnStr;
   };
 
-  // return fn impl as string with specified _$_$_name as new function name
-  var $$fnImpl = function( fn, name ){
-    return fnAs( fn, '_$_$_' + name );
+  var defineFnal = function( opts ){
+    opts = opts || {};
+
+    return function fnalImpl( fn ){
+      var fnStr = fnAs( fn, '_$_$_' + opts.name );
+
+      this.require( fnStr );
+
+      return this.run( [ 
+        'function( data ){',
+        '  var origResolve = resolve;',
+        '  var res = [];',
+        '  ',
+        '  resolve = function( val ){',
+        '    res.push( val );',
+        '  };',
+        '  ',
+        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ' );',
+        '  ',
+        '  resolve = origResolve;',
+        '  resolve( res.length > 0 ? res : ret );',
+        '}'
+      ].join('\n') );
+    };
   };
 
   $$.fn.thread({
-    reduce: function( fn ){
-      var fnStr = $$fnImpl( fn, 'reduce' );
+    reduce: defineFnal({ name: 'reduce' }),
 
-      this.require( fnStr );
+    reduceRight: defineFnal({ name: 'reduceRight' }),
 
-      return this.run(function( data ){
-        var ret = data.reduce( _$_$_reduce );
-
-        resolve( ret );
-      });
-    },
-
-    reduceRight: function( fn ){
-      var fnStr = $$fnImpl( fn, 'reduceRight' );
-
-      this.require( fnStr );
-
-      return this.run(function( data ){
-        var ret = data.reduceRight( _$_$_reduceRight );
-
-        resolve( ret );
-      });
-    },
-
-    map: function( fn ){
-      var fnStr = $$fnImpl( fn, 'map' );
-
-      this.require( fnStr );
-
-      return this.run(function( data ){
-        var ret = data.map( _$_$_map );
-
-        resolve( ret );
-      });
-    }
+    map: defineFnal({ name: 'map' })
   });
 
   // aliases

@@ -51,6 +51,20 @@ describe('Thread', function(){
     });
   });
 
+  it('resolves with a simple value via return', function( next ){
+    var t = $$.Thread();
+
+    t.run(function(){
+      return 3;
+    }).then(function( val ){
+      expect( val ).to.equal(3);
+
+      t.stop();
+
+      next();
+    });
+  });
+
   it('rejects with a simple value', function( next ){
     var t = $$.Thread();
 
@@ -398,6 +412,26 @@ describe('Thread', function(){
 
     t.pass( data ).map( mapper ).then(function( mapped ){
       var expMapped = data.map( mapper );
+
+      expect( mapped ).to.deep.equal( expMapped );
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('maps correctly via resolve()', function( next ){
+    var t = $$.Thread();
+    var mapper = function( n ){
+      resolve( Math.pow( 2, n ) );
+    };
+    var fnmapper = function( n ){
+      return ( Math.pow( 2, n ) );
+    };
+    var data = [1, 2, 3, 4];
+    var expMapped = data.map( fnmapper );
+
+    t.pass( data ).map( mapper ).then(function( mapped ){
 
       expect( mapped ).to.deep.equal( expMapped );
 

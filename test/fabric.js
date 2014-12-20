@@ -63,9 +63,27 @@ describe('Fabric', function(){
     });
   });
 
+  it('maps correctly via return', function( next ){
+    fabric.pass([ 1, 2, 3 ]).map(function( n ){
+      return ( 4 - n );
+    }).then(function( mapped ){
+      expect( mapped ).to.deep.equal([ 3, 2, 1 ]);
+      next();
+    });
+  });
+
   it('filters correctly', function( next ){
     fabric.pass([ -3, -2, -1, 0, 1, 2, 3 ]).filter(function( n ){
       resolve( n > 0 );
+    }).then(function( filtered ){ console.log(filtered)
+      expect( filtered ).to.deep.equal([ 1, 2, 3 ]);
+      next();
+    });
+  });
+
+  it('filters correctly via return', function( next ){
+    fabric.pass([ -3, -2, -1, 0, 1, 2, 3 ]).filter(function( n ){
+      return ( n > 0 );
     }).then(function( filtered ){
       expect( filtered ).to.deep.equal([ 1, 2, 3 ]);
       next();

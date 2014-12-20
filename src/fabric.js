@@ -1,8 +1,8 @@
 ;(function($$, window){ 'use strict';
 
-  $$.Fabric = function(){
+  $$.Fabric = function( N ){
     if( !(this instanceof $$.Fabric) ){
-      return new $$.Fabric();
+      return new $$.Fabric( N );
     }
 
     var _p = this._private = {
@@ -10,9 +10,10 @@
     };
 
     var defN = 4;
-    var N;
 
-    if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
+    if( $$.is.number(N) ){
+      // then use the specified number of threads
+    } if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
       N = navigator.hardwareConcurrency;
     } else if( typeof module !== 'undefined' ){
       N = require('os').cpus().length;
@@ -119,7 +120,7 @@
       var self = this;
       var _p = self._private;
       var subsize = self.spreadSize(); // number of pass eles to handle in each thread
-      var pass = _p.pass.shift();
+      var pass = _p.pass.shift().concat([]); // keep a copy
       var runPs = [];
 
       for( var i = 0; i < this.length; i++ ){
@@ -156,23 +157,36 @@
     // parallel version of array.map()
     map: function( fn ){
       var self = this;
-      var _p = self._private;
-      var pass = _p.pass.shift();
-      var runPs = [];
-      var ti = 0;
 
-      for( var i = 0; i < pass.length; i++ ){
-        var datum = pass[i];
-        var thread = this[ ti ];
-        var runP = thread.pass( datum ).run( fn );
+      self.require( fn, '_$_$_fabmap' );
 
-        runPs.push( runP );
+      return self.spread(function( split ){
+        var mapped = [];
+        var origResolve = resolve;
 
-        // move on to next thread
-        ti = (ti + 1) % this.length;
-      }
+        resolve = function( val ){
+          mapped.push( val );
+        };
 
-      return $$.Promise.all( runPs );
+        for( var i = 0; i < split.length; i++ ){
+          var oldLen = mapped.length;
+          var ret = _$_$_fabmap( split[i] );
+          var nothingInsdByResolve = oldLen === mapped.length;
+          
+          if( nothingInsdByResolve ){
+            mapped.push( ret );
+          }
+        }
+
+        resolve = origResolve;
+
+        return mapped;
+      }).then(function( ret ){
+        console.log( ret )
+
+        return ret;
+      });
+
     },
 
     // parallel version of array.filter()
@@ -199,6 +213,7 @@
     // sorts the passed array using a divide and conquer strategy
     sort: function( cmp ){
       var self = this;
+      var P = this._private.pass[0].length;
       var subsize = this.spreadSize();
       var N = this.length;
 
@@ -212,64 +227,61 @@
         return 0;
       };
 
-      self.require( cmp, '_$_$_sort' );
+      self.require( cmp, '_$_$_cmp' );
 
       return self.spread(function( split ){ // sort each split normally
-        var sortedSplit = split.sort( _$_$_sort );
+        var sortedSplit = split.sort( _$_$_cmp );
         resolve( sortedSplit ); 
 
-      }).then(function( joined ){ // "merge" the splits together, similar to mergesort
-        var ret = new Array( joined.length );
-        var ri = 0;
-        var m = new Array( N ); // thread index => merge index
-        var mMax = new Array( N ); // thread index => max merge index
+      }).then(function( joined ){
+        // do all the merging in the main thread to minimise data transfer
 
-        // init indices
-        for( var ti = 0; ti < N; ti++ ){ 
-          var m_ti = m[ti] = ti * subsize; // each merge index starts at the split start
-          
-          var mMax_ti = m_ti + subsize - 1;
-          mMax_ti = Math.min( mMax_ti, joined.length - 1 ); // constrain to end of array
-          mMax[ti] = mMax_ti;
-        }
+        // TODO could do merging in separate threads but would incur add'l cost of data transfer
+        // for each level of the merge
 
-        var next = {
-          val: joined[0],
-          mti: 0,
-          ti: 0
+        var merge = function( i, j, max ){
+          // don't overflow array
+          j = Math.min( j, P );
+          max = Math.min( max, P );
+
+          // left and right sides of merge
+          var l = i;
+          var r = j;
+
+          var sorted = []; 
+
+          for( var k = l; k < max; k++ ){
+
+            var eleI = joined[i];
+            var eleJ = joined[j];
+
+            if( i < r && ( j >= max || cmp(eleI, eleJ) <= 0 ) ){
+              sorted.push( eleI );
+              i++;
+            } else {
+              sorted.push( eleJ );
+              j++;
+            }
+
+          }
+
+          // in the array proper, put the sorted values
+          for( var k = 0; k < sorted.length; k++ ){ // kth sorted item
+            var index = l + k;
+
+            joined[ index ] = sorted[k];
+          }
         };
 
-        // "merges" the next ele to ret
-        var pushNext = function(){
-          for( var ti = 0; ti < N; ti++ ){
-            var mti = m[ ti ];
-            var val = joined[ mti ];
+        for( var splitL = subsize; splitL < P; splitL *= 2 ){ // merge until array is "split" as 1
 
-            if( mti > mMax[ ti ] ){ continue; } // => thread done
+          for( var i = 0; i < P; i += 2*splitL ){
+            merge( i, i + splitL, i + 2*splitL );
+          }
 
-            var nextCmp = !next ? -1 : cmp( val, next.val );
-
-            if( nextCmp < 0 ){ // then this val supercedes the old one
-              next = {
-                val: val,
-                mti: mti,
-                ti: ti
-              };
-            }
-          } // for
-
-          // now we're sure we have the best next
-          ret[ ri++ ] = next.val; // store sorted val
-          m[ next.ti ]++; // move along corresponding thread
-
-          next = null;
-        } // pushNext
-
-        while( ri < joined.length ){
-          pushNext();
         }
 
-        return ret;
+        return joined;
       });
     }
 

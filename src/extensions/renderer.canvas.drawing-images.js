@@ -38,6 +38,10 @@
     var w = img.width;
     var h = img.height;
 
+    if( w === 0 || h === 0 ){
+      return; // no point in drawing empty image (and chrome is broken in this case)
+    }
+
     if( fit === 'contain' ){
       var scale = Math.min( nodeW/w, nodeH/h );
 

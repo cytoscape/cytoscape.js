@@ -2963,12 +2963,6 @@
       "name": "Extensions",
       "extensions": [
         { 
-          "name": "panzoom", 
-          "github": "cytoscape/cytoscape.js-panzoom",
-          "descr": "A panzoom UI widget."
-        },
-        
-        { 
           "name": "cxtmenu",
           "github": "cytoscape/cytoscape.js-cxtmenu",
           "descr": "A circular context menu."
@@ -2987,9 +2981,21 @@
         },
 
         { 
+          "name": "panzoom", 
+          "github": "cytoscape/cytoscape.js-panzoom",
+          "descr": "A panzoom UI widget."
+        },
+
+        { 
           "name": "qtip", 
           "github": "cytoscape/cytoscape.js-qtip",
           "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
+        },
+
+        {
+          "name": "toolbar",
+          "github": "bdparrish/cytoscape.js-toolbar",
+          "descr": "A plugin for Cytoscape.js that allows a user to create a custom toolbar to add next to a Cytoscape core instance."
         }
       ],
       "md": "extensions"

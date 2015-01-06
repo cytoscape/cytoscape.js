@@ -177,11 +177,11 @@
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
 
-    if( r.motionBlurTimeout ){
+    if( motionBlur && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
     }
 
-    if( this.redrawTimeout ){
+    if( !forcedContext && this.redrawTimeout ){
       clearTimeout( this.redrawTimeout );
     }
     this.redrawTimeout = null;

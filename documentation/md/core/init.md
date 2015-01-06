@@ -184,7 +184,7 @@ var cy = cytoscape({
 
 **`autolock`** : Whether nodes should be locked (not draggable at all) by default (if `true`, overrides individual node state).
 
-**`autounselectify`** : Whether nodes should be unselectified (immutible selection state) by default (if `true`, overrides individual element state).
+**`autounselectify`** : Whether nodes should be unselectified (immutable selection state) by default (if `true`, overrides individual element state).
 
 
 ### Rendering options

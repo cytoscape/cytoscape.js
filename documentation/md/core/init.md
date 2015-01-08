@@ -117,7 +117,7 @@ var cy = cytoscape({
   userZoomingEnabled: true,
   panningEnabled: true,
   userPanningEnabled: true,
-  boxSelectionEnabled: true,
+  boxSelectionEnabled: false,
   selectionType: (isTouchDevice ? 'additive' : 'single'),
   touchTapThreshold: 8,
   desktopTapThreshold: 4,

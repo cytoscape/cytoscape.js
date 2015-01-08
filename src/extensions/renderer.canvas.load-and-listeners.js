@@ -530,8 +530,7 @@
         }
 
       }
-      
-      
+
       // trigger context drag if rmouse down
       if( r.hoverData.which === 3 ){
         var cxtEvt = new $$.Event(e, {
@@ -606,13 +605,14 @@
       // Checks primary button down & out of time & mouse not moved much
       } else if(
           select[4] == 1 && (down == null || down.isEdge())
-          && ( !cy.boxSelectionEnabled() || +new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
-          && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
+          && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay) )
+          //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
+          && !r.hoverData.selecting
           && rdist2 >= r.tapThreshold2
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
-        
         r.hoverData.dragging = true;
+        r.hoverData.selecting = false;
         r.hoverData.justStartedPan = true;
         select[4] = 0;
 
@@ -621,6 +621,7 @@
         if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
           clearTimeout( r.bgActiveTimeout );
           r.data.bgActivePosistion = undefined;
+          r.hoverData.selecting = true;
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
           r.redraw();
@@ -752,6 +753,7 @@
 
       r.hoverData.cxtStarted = false;
       r.hoverData.draggingEles = false;
+      r.hoverData.selecting = false;
 
       if( down ){
         down.unactivate();

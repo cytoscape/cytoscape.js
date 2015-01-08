@@ -606,7 +606,7 @@
       } else if(
           select[4] == 1 && (down == null || down.isEdge())
           && ( !cy.boxSelectionEnabled() || +new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
-          //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
+          && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
           && rdist2 >= r.tapThreshold2
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){

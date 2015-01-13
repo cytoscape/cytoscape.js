@@ -1277,7 +1277,7 @@
       var closenesses = {};
       var maxCloseness = 0;
       var nodes = this.nodes();
-      var fw = this.floydWarshall({weight: options.weight});
+      var fw = this.floydWarshall({weight: options.weight, directed: options.directed});
 
       // Compute closeness for every node and find the maximum closeness
       for(var i = 0; i < nodes.length; i++){
@@ -1313,6 +1313,7 @@
     // options => options object
     //   node : focal node
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
     // closeness => returned value by the function. Closeness value of the given node.
     closenessCentrality: function (options) {
       options = options || {};
@@ -1348,11 +1349,15 @@
       }
 
       // we need distance from this node to every other node
-      var dijkstra = this.dijkstra(root, options.weight);
+      var dijkstra = this.dijkstra({
+        root: root,
+        weight: options.weight,
+        directed: options.directed
+      });
       var totalDistance = 0;
-      
+
       var nodes = this.nodes();
-      for(var i = 0; i < nodes.length; i++)
+      for (var i = 0; i < nodes.length; i++)
         if (nodes[i].id() != root.id())
           totalDistance += 1 / dijkstra.distanceTo(nodes[i]);
 

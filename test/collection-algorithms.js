@@ -848,4 +848,69 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( res["dc_e"].outdegree ).to.equal(0);
   });
 
+  it('eles.closenessCentrality() unweighted undirected', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({root: ele});
+    });
+
+    expect( res["dc_a"] ).to.equal(3);
+    expect( res["dc_b"] ).to.equal(3.5);
+    expect( res["dc_c"] ).to.equal(3.5);
+    expect( res["dc_d"] ).to.equal(3);
+    expect( res["dc_e"] ).to.equal(4);
+  });
+
+  it('eles.closenessCentrality() unweighted directed', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        directed: true
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(2.83); //Rounded to 2 decimals in order to handle irrational number
+    expect( res["dc_b"] ).to.equal(2.5);
+    expect( res["dc_c"] ).to.equal(2);
+    expect( res["dc_d"] ).to.equal(1);
+    expect( res["dc_e"] ).to.equal(0);
+  });
+
+  it('eles.closenessCentrality() weighted undirected', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        }
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.60); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(0.93);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(1.01);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(0.91);
+    expect( +res["dc_e"].toFixed(2) ).to.equal(1.56);
+  });
+
+  it('eles.closenessCentrality() weighted directed', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: true
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.56); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(0.59);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(0.67);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(0.14);
+    expect( res["dc_e"] ).to.equal(0);
+  });
 });

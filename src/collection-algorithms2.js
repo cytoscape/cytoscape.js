@@ -1348,11 +1348,25 @@
         return undefined;
       }
 
+      // weight - optional
+      if (options.weight != null && $$.is.fn(options.weight)) {
+        var weight = options.weight;
+      } else {
+        var weight = function(){return 1;};
+      }
+
+      // directed - optional
+      if (options.directed != null && $$.is.bool(options.directed)) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
       // we need distance from this node to every other node
       var dijkstra = this.dijkstra({
         root: root,
-        weight: options.weight,
-        directed: options.directed
+        weight: weight,
+        directed: directed
       });
       var totalDistance = 0;
 

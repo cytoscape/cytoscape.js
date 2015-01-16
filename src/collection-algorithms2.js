@@ -1252,7 +1252,8 @@
     }, // degreeCentrality
 
     // options => options object
-    // weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
     // retObj => returned object by function
     //   closeness_n : function(node) // Returns the normalized closeness of the given node
     closenessCentralityNormalized: function (options) {
@@ -1309,7 +1310,6 @@
       }
     },
     // Implemented from pseudocode from wikipedia
-    // Assumes undirected graph
     // options => options object
     //   node : focal node
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges

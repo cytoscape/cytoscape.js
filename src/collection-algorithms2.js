@@ -1378,11 +1378,10 @@
       return totalDistance;
     }, // closenessCentrality
 
-    // Implemented from the algorithm in the paper "A Faster Algorithm for Betweenness Centrality" by Ulrik Brandes
-    // Assumes undirected graph
+    // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
     // retObj => returned object by function
-    //   closeness : function(node) // Returns the betweenness centrality of the given node
-    //   closeness_n : function(node) // Returns the normalized betweenness centrality of the given node
+    //   betweenness : function(node) // Returns the betweenness centrality of the given node
+    //   betweenness_n : function(node) // Returns the normalized betweenness centrality of the given node
     betweennessCentrality: function (options) {
       options = options || {};
 
@@ -1402,12 +1401,29 @@
 
       logDebug("Starting betweenness centrality...");
 
-      // debug - optional
-      if (options.normalized != null && $$.is.bool(options.normalized)) {
-        var normalized = options.normalized;
+      // Weight - optional
+      if (options.weight != null && $$.is.fn(options.weight)) {
+        var weightFn = options.weight;
+        var weighted = true;
       } else {
-        var normalized = false;
+        var weighted = false;
       }
+
+      // Directed - default false
+      if (options.directed != null && $$.is.bool(options.directed)) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
+      var priorityInsert = function (queue, ele) {
+        queue.unshift(ele);
+        for (var i = 0; d[queue[i]] < d[queue[i + 1]] && i < queue.length - 1; i++) {
+          var tmp = queue[i];
+          queue[i] = queue[i + 1];
+          queue[i + 1] = tmp;
+        }
+      };
 
       // starting
       var V = this.nodes();
@@ -1416,7 +1432,11 @@
 
       // A contains the neighborhoods of every node
       for (var i = 0; i < V.length; i++) {
-        A[V[i].id()] = V[i].openNeighborhood("node"); // get neighbors of every node
+        if (directed) {
+          A[V[i].id()] = V[i].outgoers("node"); // get outgoers of every node
+        } else {
+          A[V[i].id()] = V[i].openNeighborhood("node"); // get neighbors of every node          
+        }
       }
 
       // C contains the betweenness values
@@ -1435,26 +1455,53 @@
         for (var i = 0; i < V.length; i++) {
           P[V[i].id()] = [];
           g[V[i].id()] = 0;
-          d[V[i].id()] = -1;
+          d[V[i].id()] = Number.POSITIVE_INFINITY;
         }
 
         g[V[s].id()] = 1; // sigma
         d[V[s].id()] = 0; // distance to s
 
         Q.unshift(V[s].id());
+
         while (Q.length > 0) {
           var v = Q.pop();
           S.push(v);
-          A[v].forEach(function (w) {
-            if (d[w.id()] < 0) {
-              Q.unshift(w.id());
-              d[w.id()] = d[v] + 1;
-            }
-            if (d[w.id()] == d[v] + 1) {
-              g[w.id()] = g[w.id()] + g[v];
-              P[w.id()].push(v);
-            }
-          });
+          if (weighted) {
+            A[v].forEach(function (w) {
+              var edge = cy.$('#' + v).edgesTo(w)[0];
+              if (edge == null) {
+                edge = w.edgesTo('#' + v)[0];
+              }
+              var edgeWeight = weightFn.apply(edge, [edge]);
+
+              if (d[w.id()] > d[v] + edgeWeight) {
+                d[w.id()] = d[v] + edgeWeight;
+                if (Q.indexOf(w.id()) < 0) { //if w is not in Q
+                  priorityInsert(Q, w.id());
+                } else { // update position if w is in Q
+                  Q.splice(Q.indexOf(w.id()), 1);
+                  priorityInsert(Q, w.id());
+                }
+                g[w.id()] = 0;
+                P[w.id()] = [];
+              }
+              if (d[w.id()] == d[v] + edgeWeight) {
+                g[w.id()] = g[w.id()] + g[v];
+                P[w.id()].push(v);
+              }
+            });
+          } else {
+            A[v].forEach(function (w) {
+              if (d[w.id()] == Number.POSITIVE_INFINITY) {
+                Q.unshift(w.id());
+                d[w.id()] = d[v] + 1;
+              }
+              if (d[w.id()] == d[v] + 1) {
+                g[w.id()] = g[w.id()] + g[v];
+                P[w.id()].push(v);
+              }
+            });
+          }
         }
 
         var e = {};
@@ -1499,8 +1546,5 @@
         }
       }
     } // betweennessCentrality
-
   }); // $$.fn.eles
-
-
 }) (cytoscape);

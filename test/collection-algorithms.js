@@ -913,4 +913,55 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     expect( +res["dc_d"].toFixed(2) ).to.equal(0.14);
     expect( res["dc_e"] ).to.equal(0);
   });
+
+  it('eles.betweennessCentrality() unweighted undirected', function(){
+    var res = cy.elements().betweennessCentrality();
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(1);
+    expect( res.betweenness(c) ).to.equal(1);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(4);
+  });
+
+  it('eles.betweennessCentrality() unweighted directed', function(){
+    var res = cy.elements().betweennessCentrality({
+      directed:true
+    });
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(2);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(0);
+  });
+
+  it('eles.betweennessCentrality() weighted undirected', function(){
+    var res = cy.elements().betweennessCentrality({
+      weight: function(){
+        return this.data('weight');
+      }
+    });
+
+    expect( res.betweenness(a) ).to.equal(1);
+    expect( res.betweenness(b) ).to.equal(0);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(4);
+  });
+
+  it('eles.betweennessCentrality() weighted directed', function(){
+    var res = cy.elements().betweennessCentrality({
+      weight: function(){
+        return this.data('weight');
+      },
+      directed:true
+    });
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(2);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(0);
+  });
 });

@@ -1470,10 +1470,10 @@
           S.push(v);
           if (weighted) {
             A[v].forEach(function (w) {
-              if (cy.$('#' + v).outgoers('edge[target = "' + w.id() + '"]').length > 0) {
-                var edge = cy.$('#' + v).outgoers('edge[target = "' + w.id() + '"]')[0];
+              if (cy.$('#' + v).edgesTo(w).length > 0) {
+                var edge = cy.$('#' + v).edgesTo(w)[0];
               } else {
-                var edge = w.outgoers('edge[target = "' + v + '"]')[0];
+                var edge = w.edgesTo('#' + v)[0];
               }
               
               var edgeWeight = weightFn.apply(edge, [edge]);

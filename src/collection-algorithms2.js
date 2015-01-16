@@ -1425,6 +1425,8 @@
         }
       };
 
+      var cy = this._private.cy;
+
       // starting
       var V = this.nodes();
       var A = {};
@@ -1468,10 +1470,12 @@
           S.push(v);
           if (weighted) {
             A[v].forEach(function (w) {
-              var edge = cy.$('#' + v).edgesTo(w)[0];
-              if (edge == null) {
-                edge = w.edgesTo('#' + v)[0];
+              if (cy.$('#' + v).outgoers('edge[target = "' + w.id() + '"]').length > 0) {
+                var edge = cy.$('#' + v).outgoers('edge[target = "' + w.id() + '"]')[0];
+              } else {
+                var edge = w.outgoers('edge[target = "' + v + '"]')[0];
               }
+              
               var edgeWeight = weightFn.apply(edge, [edge]);
 
               if (d[w.id()] > d[v] + edgeWeight) {

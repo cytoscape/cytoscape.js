@@ -1379,6 +1379,9 @@
     }, // closenessCentrality
 
     // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
+    // options => options object
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
     // retObj => returned object by function
     //   betweenness : function(node) // Returns the betweenness centrality of the given node
     //   betweenness_n : function(node) // Returns the normalized betweenness centrality of the given node

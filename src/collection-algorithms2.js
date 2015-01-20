@@ -1554,4 +1554,11 @@
       }
     } // betweennessCentrality
   }); // $$.fn.eles
+
+  // nice, short mathemathical alias
+  $$.elesfn.dc = $$.elesfn.degreeCentrality;
+  $$.elesfn.dc_n = $$.elesfn.degreeCentralityNormalized;
+  $$.elesfn.cc = $$.elesfn.closenessCentrality;
+  $$.elesfn.cc_n = $$.elesfn.closenessCentralityNormalized;
+  $$.elesfn.bc = $$.elesfn.betweennessCentrality;
 }) (cytoscape);

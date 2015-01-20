@@ -177,6 +177,10 @@
     if( this.removeObserver ){
       this.removeObserver.disconnect();
     }
+
+    if( this.labelCalcDiv ){
+      document.body.removeChild(this.labelCalcDiv);
+    }
   };
 
   

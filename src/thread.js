@@ -38,23 +38,65 @@
 
   // allows for requires with prototypes and subobjs etc
   var fnAsRequire = function( fn ){
-    var req = ( $$.is.string(fn) ? fn : fn.toString() ) + '\n';
+    var req;
+    var fnName;
+
+    if( $$.is.object(fn) && fn.fn ){ // manual fn
+      req = fnAs( fn.fn, fn.name );
+      fnName = fn.name;
+      fn = fn.fn;
+    } else if( $$.is.fn(fn) ){ // auto fn
+      req = fn.toString();
+      fnName = fn.name;
+    } else if( $$.is.string(fn) ){ // stringified fn
+      req = fn;
+    } else if( $$.is.object(fn) ){ // plain object
+      if( fn.proto ){
+        req = '';
+      } else {
+        req = fn.name + ' = {};';
+      }
+
+      fnName = fn.name;
+      fn = fn.obj;
+    }
+
+    req += '\n';
+
+    var protoreq = function( val, subname ){
+      if( val.prototype ){
+        var protoNonempty = false;
+        for( var prop in val.prototype ){ protoNonempty = true; break; };
+
+        if( protoNonempty ){
+          req += fnAsRequire( {
+            name: subname,
+            obj: val,
+            proto: true
+          }, val );
+        }
+      }
+    };
 
     // pull in prototype
-    if( fn.prototype && fn.name != null ){
+    if( fn.prototype && fnName != null ){
 
-      var protoStr = '';
       for( var name in fn.prototype ){
+        var protoStr = '';
+
         var val = fn.prototype[ name ];
         var valStr = stringifyFieldVal( val );
+        var subname = fnName + '.prototype.' + name;
 
-        protoStr += fn.name + '.prototype.' + name + ' = ' + valStr + ';\n';
-      }
+        protoStr += subname + ' = ' + valStr + ';\n';
 
-      if( protoStr ){
-        req += protoStr;
+        if( protoStr ){
+          req += protoStr;
+        }
+
+        protoreq( val, subname ); // subobject with prototype
       }
-    
+  
     }
 
     // pull in properties for obj/fns
@@ -64,13 +106,16 @@
       if( fn.hasOwnProperty(name) ){
         var val = fn[ name ];
         var valStr = stringifyFieldVal( val );
+        var subname = fnName + '["' + name + '"]';
 
-        propsStr += fn.name + '["' + name + '"] = ' + valStr + ';\n';
+        propsStr += subname + ' = ' + valStr + ';\n';
       }
 
       if( propsStr ){
         req += propsStr;
       }
+
+      protoreq( val, subname ); // subobject with prototype
     } }
 
     return req;
@@ -80,7 +125,16 @@
 
     require: function( fn, as ){
       if( as ){
-        fn = fnAs( fn, as );
+        if( $$.is.fn(fn) ){
+          // disabled b/c doesn't work with forced names on functions w/ prototypes
+          //fn = fnAs( fn, as );
+
+          as = as || fn.name;
+
+          fn = { name: as, fn: fn };
+        } else {
+          fn = { name: as, obj: fn };
+        }
       }
 
       this._private.requires.push( fn );
@@ -127,7 +181,7 @@
         var fnImplStr = $$.is.string( fn ) ? fn : fn.toString();
 
         // worker code to exec
-        var fnStr = ( _p.requires.map(function( r ){
+        var fnStr = '\n' + ( _p.requires.map(function( r ){
           return fnAsRequire( r );
         }) ).concat([
           '( function(){',

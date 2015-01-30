@@ -42,7 +42,7 @@
   $$.styfn.json = function(){
     var json = [];
 
-    for( var i = 0; i < this.length; i++ ){
+    for( var i = this.defaultLength; i < this.length; i++ ){
       var cxt = this[i];
       var selector = cxt.selector;
       var props = cxt.properties;

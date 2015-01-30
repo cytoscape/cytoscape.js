@@ -4,8 +4,12 @@ require(['cytoscape'], function(rjsCy){
 
 $(function(){
 
-  var addRandomEles = true;        
+  var addRandomEles = false;        
   var height, width;
+
+  var cliques = 2;
+  var numNodes = 40;
+  var numEdges = 120;
   
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       // .selector('node, edge')
@@ -77,12 +81,12 @@ $(function(){
           // 'control-point-distance': 100,
           'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
-          // 'target-arrow-shape': 'triangle',
+          'target-arrow-shape': 'triangle',
           // 'mid-target-arrow-shape': 'triangle',
           // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           'opacity': 0.5
           //'content': 'data(weight)'
         })
@@ -100,6 +104,10 @@ $(function(){
           'mid-source-arrow-color': '#000',
           'mid-target-arrow-color': '#000'
         })
+      .selector('.foo')
+        .css({
+          'width': 15
+        })
       // .selector('#ae')
       //   .css({
       //     'curve-style': 'unbundled-bezier',
@@ -108,6 +116,7 @@ $(function(){
   ;
   
   window.options = {
+    boxSelectionEnabled: true,
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
@@ -153,10 +162,6 @@ $(function(){
       console.log(arguments);
     }
   };
-  
-  var cliques = 2;
-  var numNodes = 40;
-  var numEdges = 120;
   
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;

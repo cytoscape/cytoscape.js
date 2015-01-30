@@ -175,7 +175,7 @@
 
       retDiffProp.next = ele._private.style[ diffPropName ];
 
-      if( retDiffProp.next.bypass ){
+      if( retDiffProp.next && retDiffProp.next.bypass ){
         retDiffProp.next = retDiffProp.next.bypassed;
       }
     }

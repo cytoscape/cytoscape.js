@@ -824,9 +824,9 @@
     
     var str = '';
     
-    var clean = function(obj){
+    var clean = function(obj, isValue){
       if( $$.is.string(obj) ){
-        return obj;
+        return isValue ? '"' + obj + '"' : obj;
       } 
       return '';
     };
@@ -841,7 +841,7 @@
         var data = query.data[j];
         
         if( data.value ){
-          str += '[' + data.field + clean(data.operator) + clean(data.value) + ']';
+          str += '[' + data.field + clean(data.operator) + clean(data.value, true) + ']';
         } else {
           str += '[' + clean(data.operator) + data.field + ']';
         }
@@ -849,7 +849,7 @@
 
       for(var j = 0; j < query.meta.length; j++){
         var meta = query.meta[j];
-        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value) + ']]';
+        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value, true) + ']]';
       }
       
       for(var j = 0; j < query.colonSelectors.length; j++){

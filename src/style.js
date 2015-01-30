@@ -386,6 +386,8 @@
           'outside-texture-bg-opacity': 0.125
         })
     ;
+
+    this.defaultLength = defaultLength;
   };
 
   // remove all contexts

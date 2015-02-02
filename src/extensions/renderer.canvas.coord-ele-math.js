@@ -1203,8 +1203,6 @@
           y: Math.sin(angle)
         };
 
-        rscratch.edgeType = 'haystack';
-        rscratch.haystack = true;
       }
 
       var src = _p.source;
@@ -1224,6 +1222,10 @@
         rs.target.x * tgtW * halfRadius + tgtPos.x,
         rs.target.y * tgtH * halfRadius + tgtPos.y
       ];
+
+      // always override as haystack in case set to different type previously
+      rscratch.edgeType = 'haystack';
+      rscratch.haystack = true;
     }
 
     return hashTable;

@@ -1195,10 +1195,11 @@
           x: Math.cos(angle),
           y: Math.sin(angle)
         };
-
-        rscratch.edgeType = 'haystack';
-        rscratch.haystack = true;
       }  
+
+      // always override as haystack in case set to different type previously
+      rscratch.edgeType = 'haystack';
+      rscratch.haystack = true;
     }
 
     return hashTable;

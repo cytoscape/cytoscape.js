@@ -159,26 +159,21 @@
         pData['edges'].push({src:srcNodeId,tgt:tgtNodeId});
       });
 
-    // Then I need to create the parallel environment
-    var parallelSrcPath = $('script[src$="/parallel.js"]').attr('src');
-    if( parallelSrcPath == null ) {
-      throw "In order to use the 'spread' layout you need to load the parallel.js library before the cytoscape.js library.";
-    }
-    var evalScrPath =  parallelSrcPath.substring(0, parallelSrcPath.lastIndexOf('/'))+"/eval.js";
-    var p = new Parallel( pData, { evalPath: evalScrPath } );
-    
+//Decleration
+   var t1 = $$.Thread();
     // And to add the required scripts
-    p.require("foograph.js");
-    //p.require("random.js");
-    //p.require("forcedirected.js");
-    p.require("rhill-voronoi-core.js");
-    p.require(sitesDistance);
-    p.require(cellCentroid);
+    //EXTERNAL 1
+      t1.require(foograph,'foograph');
+    //EXTERNAL 2
+      t1.require(Voronoi);
     
-    // Then I can spawn the execution of the layout
-    p.spawn(
-      function(pData) {
-
+      //Local function
+    t1.require(sitesDistance);
+    t1.require(cellCentroid);
+    
+    
+  $$.Promise.all([ // Untill all threads are completed 
+  t1.pass(pData).run(function(pData){ // WORKER 1      
         // I need to retrieve the important data
         var lWidth    = pData['width'];
         var lHeight   = pData['height']; 
@@ -331,21 +326,21 @@
           pData['vertices'].push({id:fv[i].label,x:fv[i].x,y:fv[i].y});
         }
         return pData;
-      }
-    ).then(
-      function(pData) {
-        // First we retrieve the important data
+     
+     })
+]).then(function( thens ){
+  var pData = thens[0];
+  // First we retrieve the important data
         var expandIteration = pData['expIt'];
-        
         var dataVertices = pData['vertices'];
         var vertices = [];
         for( var i = 0; i < dataVertices.length; ++i ) {
           var dv = dataVertices[i];
           vertices[dv.id] = {x:dv.x,y:dv.y};
-        } 
+        }
         /*
          * FINALLY:
-         * 
+         *
          * We position the nodes based on the calculation
          */
         allNodes.positions(
@@ -376,12 +371,11 @@
         var startTime = pData['startTime'];
         var endTime = new Date();
         console.info("Layout on "+dataVertices.length+" nodes took " + (endTime - startTime) + " ms");
-
         layout.one("layoutstop", options.stop);
         layout.trigger("layoutstop");
-        
-      }
-    );
+t1.stop();
+ next();
+});
     return this;
   };
 
@@ -392,3 +386,4 @@
   
   
 })(cytoscape);
+

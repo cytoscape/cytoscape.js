@@ -834,6 +834,10 @@
     var queryToString = function(query){
       var str = '';
 
+      if( query.subject === query ){
+        str += '$';
+      }
+
       var group = clean(query.group);
       str += group.substring(0, group.length - 1);
       

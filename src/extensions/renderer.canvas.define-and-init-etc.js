@@ -108,6 +108,8 @@
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
     this.motionBlurPxRatio = 0.666;
+    this.minMbLowQualFrames = 4;
+    this.fullQualityMb = false;
     this.clearedForMotionBlur = [];
     this.tapThreshold = options.tapThreshold;
     this.tapThreshold2 = options.tapThreshold * options.tapThreshold;

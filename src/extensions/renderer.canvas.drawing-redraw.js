@@ -86,12 +86,13 @@
     var width = container.clientWidth;
     var height = container.clientHeight;
     var pixelRatio = this.getPixelRatio();
+    var mbPxRatio = this.motionBlurPxRatio;
 
     if(
       container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_NODE] ||
       container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_DRAG]
     ){
-      pixelRatio = this.motionBlurPxRatio;
+      pixelRatio = mbPxRatio;
     }
 
     var canvasWidth = width * pixelRatio;
@@ -184,8 +185,24 @@
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
+    var mbPxRatio = r.motionBlurPxRatio;
     var inBoxSelection = r.data.select[4] ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
+
+    if( motionBlur ){
+      if( r.mbFrames == null ){
+        r.mbFrames = 0;
+      }
+
+      r.mbFrames++;
+
+      // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
+      if( r.mbFrames > r.minMbLowQualFrames ){
+        r.fullQualityMb = false;
+      }
+    } 
+
+    // console.log('mb: %s, mbframes: %s, fq: %s', motionBlur, r.mbFrames, r.fullQualityMb);
 
     if( motionBlur && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
@@ -277,16 +294,16 @@
       function setContextTransform(context, clear){
         var ePan, eZoom, w, h;
 
-        if( context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG] ){
+        if( !r.fullQualityMb && !r.clearingMotionBlur && (context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG]) ){
           ePan = {
-            x: pan.x * r.motionBlurPxRatio,
-            y: pan.y * r.motionBlurPxRatio
+            x: pan.x * mbPxRatio,
+            y: pan.y * mbPxRatio
           };
 
-          eZoom = zoom * r.motionBlurPxRatio;
+          eZoom = zoom * mbPxRatio;
 
-          w = r.canvasWidth * r.motionBlurPxRatio;
-          h = r.canvasHeight * r.motionBlurPxRatio;
+          w = r.canvasWidth * mbPxRatio;
+          h = r.canvasHeight * mbPxRatio;
         } else {
           ePan = effectivePan;
           eZoom = effectiveZoom;
@@ -599,10 +616,12 @@
           cxt.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
           cxt.globalCompositeOperation = gco;
 
+          var pxr = r.fullQualityMb ? 1 : mbPxRatio;
+
           cxt.drawImage( 
             txt, // img
             0, 0, // sx, sy
-            r.canvasWidth * r.motionBlurPxRatio, r.canvasHeight * r.motionBlurPxRatio, // sw, sh
+            r.canvasWidth * pxr, r.canvasHeight * pxr, // sw, sh
             0, 0, // x, y
             r.canvasWidth, r.canvasHeight // w, h
           );
@@ -667,6 +686,8 @@
           r.clearedForMotionBlur[CR.DRAG] = false;
           r.motionBlur = false;
           r.clearingMotionBlur = true;
+          r.mbFrames = 0;
+          //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
 
           needDraw[CR.NODE] = true; 
           needDraw[CR.DRAG] = true; 

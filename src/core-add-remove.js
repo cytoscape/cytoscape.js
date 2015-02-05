@@ -85,13 +85,13 @@
     load: function(elements, onload, ondone){
       var cy = this;
       
+      cy.notifications(false);
+
       // remove old elements
       var oldEles = cy.elements();
       if( oldEles.length > 0 ){
         oldEles.remove();
       }
-
-      cy.notifications(false);
       
       if( elements != null ){
         if( $$.is.plainObject(elements) || $$.is.array(elements) ){

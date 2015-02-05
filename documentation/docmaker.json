@@ -2993,6 +2993,12 @@
         },
 
         {
+          "name": "supportimages",
+          "github": "curupaco/cytoscape.js-supportimages",
+          "descr": "A plugin that enables support images on Cytoscape.js"
+        },
+
+        {
           "name": "toolbar",
           "github": "bdparrish/cytoscape.js-toolbar",
           "descr": "A plugin for Cytoscape.js that allows a user to create a custom toolbar to add next to a Cytoscape core instance."

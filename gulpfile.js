@@ -86,6 +86,7 @@ gulp.task('version', function( next ){
 
   function done(){
     console.log('Using version number `%s` for building', version);
+
     next();
   }
   

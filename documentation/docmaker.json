@@ -2981,6 +2981,12 @@
         },
 
         { 
+          "name": "noderesize", 
+          "github": "curupaco/cytoscape.js-noderesize",
+          "descr": "A plugin that creates a node resize control."
+        },
+
+        { 
           "name": "panzoom", 
           "github": "cytoscape/cytoscape.js-panzoom",
           "descr": "A panzoom UI widget."

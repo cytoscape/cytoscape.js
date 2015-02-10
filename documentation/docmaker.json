@@ -3321,6 +3321,12 @@
     {
       "name": "Extensions",
       "extensions": [
+        {
+          "name": "cerebralweb",
+          "github": "silviafrias/cerebral-web",
+          "descr": "A plugin to enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation."
+        },
+
         { 
           "name": "cxtmenu",
           "github": "cytoscape/cytoscape.js-cxtmenu",

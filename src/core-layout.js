@@ -3,8 +3,16 @@
   $$.fn.core({
     
     layout: function( params ){
-      var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+      var layout;
 
+      // always use a new layout w/ init opts; slightly different backwards compatibility
+      // but fixes layout reuse issues like dagre #819 
+      if( params == null ){ 
+        params = $$.util.extend({}, this._private.options.layout);
+        params.eles = this.$();
+      }
+
+      layout = this.initLayout( params );
       layout.run();
 
       return this; // chaining

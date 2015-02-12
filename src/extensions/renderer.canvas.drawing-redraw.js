@@ -79,6 +79,18 @@
     //   context.strokeStyle = cache.strokeStyle = strokeStyle;
     // }
   };
+  
+  CanvasRenderer.prototype.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+    if (opacity > 0) {
+      context.shadowBlur = blur;
+      context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";
+      context.shadowOffsetX = offsetX;
+      context.shadowOffsetY = offsetY;
+    } else {
+      context.shadowBlur = 0;
+      context.shadowColor = "transparent";
+    }
+  }
 
   // Resize canvas
   CanvasRenderer.prototype.matchCanvasSize = function(container) {

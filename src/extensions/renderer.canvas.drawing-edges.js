@@ -61,6 +61,13 @@
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
     context.lineWidth = edgeWidth;
     
+    var shadowBlur = style['shadow-blur'].pxValue;
+    var shadowOpacity = style['shadow-opacity'].value;
+    var shadowColor = style['shadow-color'].value;
+    var shadowOffsetX = style['shadow-offset-x'].pxValue;
+    var shadowOffsetY = style['shadow-offset-y'].pxValue;
+    this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
+    
     // if( rs.edgeType !== 'haystack' ){
     //   this.findEndpoints(edge);
     // }

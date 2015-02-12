@@ -77,19 +77,6 @@
             },
 
             {
-              "name": "cy.load",
-              "descr": "Empty the graph, add the specified elements, and reapply the initialisation layout.",
-              "formats": [
-                { "args": [
-                  { "name": "eleObjs", "descr": "An array of plain objects that specify the elements to load." },
-                  { "name": "load", "descr": "A callback function called when the graph has loaded.", "optional": true },
-                  { "name": "done", "descr": "A callback function called after the graph is loaded and just after the layout finishes.", "optional": true }
-                ] }
-              ],
-              "md": "core/load"
-            },
-
-            {
               "name": "cy.collection",
               "descr": "Return a new collection.",
               "formats": [

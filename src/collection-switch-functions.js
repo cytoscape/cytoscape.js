@@ -7,6 +7,7 @@
   function defineSwitchFunction(params){
     return function(){
       var args = arguments;
+      var changedEles = [];
       
       // e.g. cy.nodes().select( data, handler )
       if( args.length === 2 ){
@@ -26,6 +27,7 @@
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
           var able = !params.ableField || ele._private[params.ableField];
+          var changed = ele._private[params.field] != params.value;
 
           if( params.overrideAble ){
             var overrideAble = params.overrideAble(ele);
@@ -39,10 +41,16 @@
 
           if( able ){
             ele._private[params.field] = params.value;
+
+            if( changed ){
+              changedEles.push( ele );
+            }
           }
         }
-        this.updateStyle(); // change of state => possible change of style
-        this.trigger( params.event );
+
+        var changedColl = $$.Collection( this.cy(), changedEles );
+        changedColl.updateStyle(); // change of state => possible change of style
+        changedColl.trigger( params.event );
       }
 
       return this;

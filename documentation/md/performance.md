@@ -29,6 +29,7 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
 * **Simplify node style** : Keep your node styles simple to improve performance.  
  * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [Gulp](https://github.com/scalableminds/gulp-image-resize) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.
+* **Set shadow-blur to 0** if you want shadow and offset them to view them since shadow-blur can rapidely decrease performance.
 * **Hide edges during interactivity** : Set `hideEdgesOnViewport` to `true` in your [initialisation options](#core/initialisation).  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.
 * **Hide labels during interactivity** : Set `hideLabelsOnViewport` to `true` in your [initialisation options](#core/initialisation).  This works similarly to hiding edges on viewport operations.
 

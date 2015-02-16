@@ -227,6 +227,11 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
+ * **`text-background-color`** : A color to apply on the text background, may be `none` or a valid color.
+ * **`text-background-opacity`** : The opacity of the label background.
+ * **`text-border-width`** : The border width to put around the label.
+ * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
+ * **`text-border-color`** : The color of the border aound the label.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
 
 These properties can only be used on node labels:

@@ -6,5 +6,5 @@ var weights = cy.nodes().map(function( ele ){
   return ele.data('weight');
 });
 
-console.log(map);
+console.log(weights);
 ```

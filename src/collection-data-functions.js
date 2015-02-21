@@ -115,36 +115,71 @@
         return !ele.locked();
       }
     }),
-
-    positions: function( pos, silent ){
+     positions: function( pos, silent ){
+if( $$.is.plainObject(pos) ){
+this.position(pos);
+} else if( $$.is.fn(pos) ){
+var fn = pos;
+for( var i = 0; i < this.length; i++ ){
+var ele = this[i];
+var pos = fn.apply(ele, [i, ele]);
+if( pos && !ele.locked() ){
+var elePos = ele._private.position;
+elePos.x = pos.x;
+elePos.y = pos.y;
+}
+}
+var updatedEles = this.updateCompoundBounds();
+var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
+if( silent ){
+toTrigger.trigger('position');
+} else {
+toTrigger.rtrigger('position');
+}
+}
+return this; // chaining
+},
+    Threadpositions: function( pos, silent ){
       if( $$.is.plainObject(pos) ){
         this.position(pos);
         
       } else if( $$.is.fn(pos) ){
         var fn = pos;
-        
-        for( var i = 0; i < this.length; i++ ){
-          var ele = this[i];
-
-          var pos = fn.apply(ele, [i, ele]);
-
-          if( pos && !ele.locked() ){
+  var t1 = $$.Thread();
+      t1.require(fn,'fn');
+      var obj_this = this;
+      var Wdata = {'eles':this.jsons() , 'tmpData': this.data('tmpData')};
+    $$.Promise.all([ // Untill all threads are completed 
+  t1.pass(Wdata).run(function(Wdata){ // WORKER 1
+   var pos = [];
+      for( var i = 0; i < Wdata['eles'].length; i++ ){
+          var ele = Wdata['eles'][i];
+     
+          pos[i] = fn(Wdata['tmpData'],ele);
+        }
+      return pos;
+      })
+]).then(function( thens ){
+  var pos = thens[0];
+   for( var i = 0; i < obj_this.length; i++ ){
+          var ele = obj_this[i];
+         if( pos[i] && !ele.locked() ){
             var elePos = ele._private.position;
-            elePos.x = pos.x;
-            elePos.y = pos.y;
+            elePos.x = pos[i].x;
+            elePos.y = pos[i].y;
           }
         }
-
+ 
+t1.stop();
+});
         var updatedEles = this.updateCompoundBounds();
         var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
-
         if( silent ){
           toTrigger.trigger('position');
         } else {
           toTrigger.rtrigger('position');
         }
       }
-
       return this; // chaining
     },
 

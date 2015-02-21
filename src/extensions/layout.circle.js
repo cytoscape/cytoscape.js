@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+     var Worker = true // true for worker
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // the padding on fit
@@ -39,7 +39,6 @@
     var theta = options.startAngle;
     var dTheta = 2 * Math.PI / nodes.length;
     var r;
-
     var minDistance = 0;
     for( var i = 0; i < nodes.length; i++ ){
       var w = nodes[i].outerWidth();
@@ -67,19 +66,53 @@
       r = Math.max( rMin, r );
     }
 
-    var getPos = function( i, ele ){
+   if (Worker)
+    {
+       var getPos = function(Wdata,ele){
+        var r =  Wdata['r'];
+        var theta =  Wdata['theta'];
+        var dTheta =  Wdata['dTheta'];
+        var center=  Wdata['center'];
+        var counterclockwise=  Wdata['counterclockwise'];
       var rx = r * Math.cos( theta );
       var ry = r * Math.sin( theta );
       var pos = {
         x: center.x + rx,
         y: center.y + ry
       };
-
-      theta = options.counterclockwise ? theta - dTheta : theta + dTheta;
+      Wdata['theta'] = counterclockwise ? theta - dTheta : theta + dTheta;
+    
       return pos;
     };
-    
-    nodes.layoutPositions( this, options, getPos );
+  
+  var tmpData  = {
+      'theta'     : theta,
+      'counterclockwise' : options.counterclockwise,
+      'dTheta' : dTheta,
+      'center' : center,
+      'r': r
+      
+  };
+  
+  eles.data('tmpData',tmpData);
+    }
+    else{
+        var getPos = function( i, ele ){
+var rx = r * Math.cos( theta );
+var ry = r * Math.sin( theta );
+var pos = {
+x: center.x + rx,
+y: center.y + ry
+};
+theta = options.counterclockwise ? theta - dTheta : theta + dTheta;
+return pos;
+}; 
+        
+   }
+   
+   
+   
+    nodes.layoutPositions( this, options, getPos ,worker);
 
     return this; // chaining
   };

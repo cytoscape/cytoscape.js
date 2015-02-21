@@ -393,7 +393,7 @@
         })
     ;
 
-    this.defaultLength = defaultLength;
+    this.defaultLength = this.length;
   };
 
   // remove all contexts

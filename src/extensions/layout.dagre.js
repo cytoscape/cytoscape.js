@@ -53,7 +53,9 @@
       }
 
       // add edges to dagre
-      var edges = eles.edges();
+      var edges = eles.edges().stdFilter(function( e ){
+        return !e.source().is(':parent') && !e.target().is(':parent');
+      });
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
 

@@ -145,6 +145,11 @@
     var outlineOpacity = style['text-outline-opacity'].value * opacity;
     var color = style['color'].value;
     var outlineColor = style['text-outline-color'].value;
+    var shadowBlur = style['text-shadow-blur'].pxValue;
+    var shadowOpacity = style['text-shadow-opacity'].value;
+    var shadowColor = style['text-shadow-color'].value;
+    var shadowOffsetX = style['text-shadow-offset-x'].pxValue;
+    var shadowOffsetY = style['text-shadow-offset-y'].pxValue;
 
     var fontCacheKey = element._private.fontKey;
     var cache = this.getFontCache(context);
@@ -173,6 +178,8 @@
     this.fillStyle(context, color[0], color[1], color[2], opacity);
     
     this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
+    
+    this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
     return text;
   };

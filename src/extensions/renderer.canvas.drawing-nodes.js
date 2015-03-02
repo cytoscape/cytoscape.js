@@ -236,6 +236,8 @@
       }
     }
 
+    this.shadowStyle(context, 'transparent', 0); // reset for next guy
+
   };
 
   // does the node have at least one pie piece?

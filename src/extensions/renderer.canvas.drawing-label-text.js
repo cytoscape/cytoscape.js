@@ -201,6 +201,8 @@
       }
 
       context.fillText(text, textX, textY);
+
+      this.shadowStyle(context, 'transparent', 0); // reset for next guy
     }
   };
 

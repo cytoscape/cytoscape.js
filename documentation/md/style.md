@@ -227,6 +227,11 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
+ * **`text-shadow-blur`** : The shadow blur, note that when greater than 0, this could affect performance. Default to 5.
+ * **`text-shadow-color`** : The colour of the shadow.
+ * **`text-shadow-offset-x`** : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
+ * **`text-shadow-offset-y`** : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
+ * **`text-shadow-opacity`** : The opacity of the shadow.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
 
 These properties can only be used on node labels:
@@ -244,7 +249,15 @@ These properties allow for the creation of overlays on top of nodes or edges, an
  * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
  * **`overlay-opacity`** : The opacity of the overlay.
 
+## Shadow
 
+These properties allow for the creation of shadows on top of nodes or edges. Note that shadow-blur could seriously impact performance on large graph.
+
+ * **`shadow-blur`** :The shadow blur, note that if greater than 0, this could impact performance. Default is 10.
+ * **`shadow-color`** : The colour of the shadow.
+ * **`shadow-offset-x`** : The x offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
+ * **`shadow-offset-y`** : The y offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
+ * **`shadow-opacity`** : The opacity of the shadow.
 
 ## Transition animation
 

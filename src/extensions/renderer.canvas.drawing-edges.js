@@ -66,6 +66,7 @@
     var shadowColor = style['shadow-color'].value;
     var shadowOffsetX = style['shadow-offset-x'].pxValue;
     var shadowOffsetY = style['shadow-offset-y'].pxValue;
+
     this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
     
     // if( rs.edgeType !== 'haystack' ){
@@ -132,6 +133,8 @@
     } else if ( rs.noArrowPlacement !== true && rs.startX !== undefined ){
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
+
+    this.shadowStyle(context, 'transparent', 0); // reset for next guy
 
   };
   

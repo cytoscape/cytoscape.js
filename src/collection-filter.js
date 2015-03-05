@@ -292,7 +292,7 @@
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var ret = mapFn.apply( thisArg, [ele, i, eles] );
+        var ret = thisArg ? mapFn.apply( thisArg, [ele, i, eles] ) : mapFn( ele, i, eles );
 
         arr.push( ret );
       }
@@ -307,7 +307,7 @@
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var include = fn.apply( thisArg, [ele, i, eles] );
+        var include = thisArg ? fn.apply( thisArg, [ele, i, eles] ) : fn( ele, i, eles );
 
         if( include ){
           filterEles.push( ele );
@@ -324,7 +324,7 @@
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var val = valFn.apply( thisArg, [ ele, i, eles ] );
+        var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
         if( val > max ){
           max = val;
@@ -345,7 +345,7 @@
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var val = valFn.apply( thisArg, [ ele, i, eles ] );
+        var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
         if( val < min ){
           min = val;

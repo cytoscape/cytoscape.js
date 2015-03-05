@@ -211,6 +211,7 @@
       // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
       if( r.mbFrames > r.minMbLowQualFrames ){
         r.fullQualityMb = false;
+        r.motionBlurPxRatio = r.mbPxRBlurry;
       }
     } 
 
@@ -257,7 +258,11 @@
       this.currentlyDrawing = true;
     }
 
-    
+    if( r.clearingMotionBlur ){
+      //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
+
+      r.motionBlurPxRatio = 1;
+    }
 
 
     var startTime = Date.now();
@@ -699,7 +704,6 @@
           r.motionBlur = false;
           r.clearingMotionBlur = true;
           r.mbFrames = 0;
-          //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
 
           needDraw[CR.NODE] = true; 
           needDraw[CR.DRAG] = true; 

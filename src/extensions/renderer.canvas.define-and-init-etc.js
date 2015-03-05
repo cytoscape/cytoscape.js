@@ -107,7 +107,7 @@
     this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
-    this.motionBlurPxRatio = 0.666;
+    this.motionBlurPxRatio = this.mbPxRBlurry = 0.666;
     this.minMbLowQualFrames = 4;
     this.fullQualityMb = false;
     this.clearedForMotionBlur = [];

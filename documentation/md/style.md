@@ -84,6 +84,41 @@ cytoscape({
 You may alternatively use `css` in place of `style`, e.g. `.selector( ... ).css( ... )` or `{ selector: ..., css: ... }`.
 
 
+### Functional values
+
+In the JSON or functional stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified functionally on a per-element basis.
+
+<span class="important-indicator"></span> Note that if using the JSON stylesheet format, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
+
+Example:
+
+``js
+cytoscape({
+  container: document.getElementById('cy'),
+
+  // ...
+
+  style: cytoscape.stylesheet()
+    .selector('node')
+      .style({
+        'background-color': function( ele ){ return ele.data('bg') }
+
+        // which works the same as
+
+        // 'background-color': 'data(bg)'
+      })
+
+      // ...
+
+
+  // , ...
+});
+```
+
+<span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash [`_.memoize()`](https://lodash.com/docs#memoize) function.
+
+
+
 ## Property types
 
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
@@ -103,8 +138,6 @@ In addition to specifying the value of a property outright, the developer may al
 * **`mapData()`** specifies a linear mapping to an element's data field.  For example, `data(weight, 0, 100, blue, red)` maps an element's weight to gradients between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
 * **`layoutData()`** specifies a direct mapping like `data()` but uses special layout defined values (only supported for some layouts).
 * **`mapLayoutData()`** specifies a linear mapping like `mapData()` but uses special layout defined values (only supported for some layouts).
-* **`scratch()`** specifies a direct mapping like `data()` but uses scratch data.
-* **`mapScratch()`** specifies a linear mapping like `mapData()` but uses scratch data.
 * **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute:  The functions are called more often than if the developer writes data by `data()` or `scratch()` &mdash; where `data()` or `scratch()` would provide an automatic caching mechanism.
 
 

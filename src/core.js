@@ -263,6 +263,7 @@
           for( var j = index; j < elements.length; j++ ){
             var jid = elements[j]._private.data.id;
             id2index[ jid ]--;
+            elements[j]._private.index--;
           }
         }
       }

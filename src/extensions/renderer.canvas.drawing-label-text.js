@@ -188,12 +188,103 @@
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
     var style = element._private.style;
     var parentOpacity = element.effectiveOpacity();
-    if( parentOpacity === 0 ){ return; }
+    if( parentOpacity === 0 || style["text-opacity"].value === 0){ return; }
 
     var text = this.setupTextStyle( context, element );
-    
-    if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
-     
+
+    if ( text != null && !isNaN(textX) && !isNaN(textY)) {
+      var backgroundOpacity = style["text-background-opacity"].value;
+      if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
+        var textBorderWidth = style["text-border-width"].pxValue;
+        var margin = 4 + textBorderWidth/2;
+        if (element.isNode()) {
+          //Move textX, textY to include the background margins
+          if (style["text-valign"].value == "top") {
+            textY -=margin;
+          } else if (style["text-valign"].value == "bottom") {
+            textY +=margin;
+          }
+          if (style["text-halign"].value == "left") {
+            textX -=margin;
+          } else if (style["text-halign"].value == "right") {
+            textX +=margin;
+          }
+        }
+        var bgWidth = context.measureText(text).width;
+        var bgHeight = style['font-size'].pxValue;
+        var bgX = textX;
+        if (style["text-halign"]) {
+          if (style["text-halign"].value == "center") {
+            bgX = bgX - bgWidth / 2;
+          } else if (style["text-halign"].value == "left") {
+            bgX = bgX- bgWidth;
+          }
+        }
+  
+        var bgY = textY;
+        if (element.isNode()) {
+          if (style["text-valign"].value == "top") {
+             bgY = bgY - bgHeight;
+          } else if (style["text-valign"].value == "center") {
+            bgY = bgY- bgHeight / 2;
+          }
+        } else {
+          bgY = bgY - bgHeight / 2;
+        }
+        
+        // Adjust with border width & margin
+        bgX -= margin;
+        bgY -= margin;
+        bgHeight += margin*2;
+        bgWidth += margin*2;
+        
+        if (style["text-background-color"]) {
+          var textFill = context.fillStyle;
+          var textBackgroundColor = style["text-background-color"].value;
+          context.fillStyle = "rgba(" + textBackgroundColor[0] + "," + textBackgroundColor[1] + "," + textBackgroundColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          context.fillRect(bgX,bgY,bgWidth,bgHeight);
+          context.fillStyle = textFill;
+        }
+        
+        if (textBorderWidth > 0) {
+          var textStroke = context.strokeStyle;
+          var textLineWidth = context.lineWidth;
+          var textBorderColor = style["text-border-color"].value;
+          var textBorderStyle = style['text-border-style'].value;
+          context.strokeStyle = "rgba(" + textBorderColor[0] + "," + textBorderColor[1] + "," + textBorderColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          context.lineWidth = textBorderWidth;
+          if( context.setLineDash ){ // for very outofdate browsers
+            switch( textBorderStyle ){
+              case 'dotted':
+                context.setLineDash([ 1, 1 ]);
+                break;
+              case 'dashed':
+                context.setLineDash([ 4, 2 ]);
+                break;
+              case 'double':
+                context.lineWidth = textBorderWidth/4; // 50% reserved for white between the two borders
+              case 'solid':
+                context.setLineDash([ ]);
+                break;
+            }
+          }
+          
+          context.strokeRect(bgX,bgY,bgWidth,bgHeight);
+          
+          if( textBorderStyle === 'double' ){
+            var whiteWidth = textBorderWidth/2;
+            context.strokeRect(bgX+whiteWidth,bgY+whiteWidth,bgWidth-whiteWidth*2,bgHeight-whiteWidth*2);
+          }
+          
+          if( context.setLineDash ){ // for very outofdate browsers
+            context.setLineDash([ ]);
+          }
+          context.lineWidth = textLineWidth;
+          context.strokeStyle = textStroke;
+        }
+        
+      }
+      
       var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;

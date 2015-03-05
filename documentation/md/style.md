@@ -232,6 +232,11 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-shadow-offset-x`** : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-offset-y`** : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-opacity`** : The opacity of the shadow.
+ * **`text-background-color`** : A color to apply on the text background, may be `none` or a valid color.
+ * **`text-background-opacity`** : The opacity of the label background.
+ * **`text-border-width`** : The border width to put around the label.
+ * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
+ * **`text-border-color`** : The color of the border around the label.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
 
 These properties can only be used on node labels:

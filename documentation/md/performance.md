@@ -21,6 +21,7 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
  * If you can go without them or show them on tap/mouseover, you'll get better performance.
  * Consider not having labels for edges.
  * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
+ * Adding background color and borders to your labels makes more shape to draw on the canvas so you might want to remove them
 * **Animations** : You will get better performance without animations.  If using animations anyway:
  * [`eles.flashClass()`](#collection/style/eles.flashClass) is a cheaper alternative than a smooth animation.
  * Try to limit the number of concurrent animating elements.

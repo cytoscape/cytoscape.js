@@ -9317,11 +9317,11 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>text-outline-color</code></strong> : The colour of the outline around the element&#39;s label text.</li>
 <li><strong><code>text-outline-opacity</code></strong> : The opacity of the outline on label text.</li>
 <li><strong><code>text-outline-width</code></strong> : The size of the outline on label text.</li>
-<li><strong><code>text-shadow-blur</code></strong> : The shadow blur, note that when greater than 0, this could affect performance. Default to 5.</li>
-<li><strong><code>text-shadow-color</code></strong> : The colour of the shadow.</li>
-<li><strong><code>text-shadow-offset-x</code></strong> : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
-<li><strong><code>text-shadow-offset-y</code></strong> : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
-<li><strong><code>text-shadow-opacity</code></strong> : The opacity of the shadow.</li>
+<li><strong><code>text-background-color</code></strong> : A color to apply on the text background, may be <code>none</code> or a valid color.</li>
+<li><strong><code>text-background-opacity</code></strong> : The opacity of the label background.</li>
+<li><strong><code>text-border-width</code></strong> : The border width to put around the label.</li>
+<li><strong><code>text-border-style</code></strong> : The style of the border around the label; may be <code>solid</code>, <code>dotted</code>, <code>dashed</code>, or <code>double</code>.</li>
+<li><strong><code>text-border-color</code></strong> : The color of the border aound the label.</li>
 <li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</li>
 </ul>
 <p>These properties can only be used on node labels:</p>
@@ -9335,15 +9335,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>overlay-color</code></strong> : The colour of the overlay.</li>
 <li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
 <li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
-</ul>
-<h2 id="style/shadow">Shadow <a href="#style/shadow"><span class="icon-bookmark"></span></a></h2>
-<p>These properties allow for the creation of shadows on top of nodes or edges. Note that shadow-blur could seriously impact performance on large graph.</p>
-<ul>
-<li><strong><code>shadow-blur</code></strong> :The shadow blur, note that if greater than 0, this could impact performance. Default is 10.</li>
-<li><strong><code>shadow-color</code></strong> : The colour of the shadow.</li>
-<li><strong><code>shadow-offset-x</code></strong> : The x offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
-<li><strong><code>shadow-offset-y</code></strong> : The y offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
-<li><strong><code>shadow-opacity</code></strong> : The opacity of the shadow.</li>
 </ul>
 <h2 id="style/transition-animation">Transition animation <a href="#style/transition-animation"><span class="icon-bookmark"></span></a></h2>
 <ul>
@@ -11136,6 +11127,7 @@ cy.elements().foo();
 <li>If you can go without them or show them on tap/mouseover, you&#39;ll get better performance.</li>
 <li>Consider not having labels for edges.</li>
 <li>Consider setting <code>min-zoomed-font-size</code> in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.</li>
+<li>Adding background color and borders to your labels makes more shape to draw on the canvas so you might want to remove them</li>
 </ul>
 </li>
 <li><strong>Animations</strong> : You will get better performance without animations.  If using animations anyway:<ul>
@@ -11150,7 +11142,6 @@ cy.elements().foo();
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
-<li><strong>Set shadow-blur to 0</strong> if you want shadow and offset them to view them since shadow-blur can rapidely decrease performance.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
 <li><strong>Hide labels during interactivity</strong> : Set <code>hideLabelsOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This works similarly to hiding edges on viewport operations.</li>
 </ul>
@@ -11706,11 +11697,6 @@ cy.elements().foo();
 					<div class="section lvl2">
 						
 						<a class="toclink" href="#style/overlay"><span class="icon-bookmark bookmark-icon"></span> Overlay</a>
-					</div>
-
-					<div class="section lvl2">
-						
-						<a class="toclink" href="#style/shadow"><span class="icon-bookmark bookmark-icon"></span> Shadow</a>
 					</div>
 
 					<div class="section lvl2">

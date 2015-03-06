@@ -49,7 +49,7 @@
       context.translate(rs.labelX, rs.labelY);
       context.rotate(theta);
 
-      this.drawText(context, edge, 0, -4); // make label offset from the edge a bit
+      this.drawText(context, edge, 0, 0); // make label offset from the edge a bit
 
       context.rotate(-theta);
       context.translate(-rs.labelX, -rs.labelY);

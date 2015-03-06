@@ -215,7 +215,7 @@
         var textBorderWidth = style["text-border-width"].pxValue;
         var margin = 4 + textBorderWidth/2;
         var halign = style["text-halign"].value;
-        var valign = valign;
+        var valign = style["text-valign"].value;
         
         if (element.isNode()) {
           //Move textX, textY to include the background margins

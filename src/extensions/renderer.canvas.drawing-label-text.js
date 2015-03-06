@@ -30,7 +30,7 @@
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
     var style = edge._private.style;
-    var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
+    var autorotate = style['edge-text-rotation'].strValue === 'autorotate' || style['edge-text-rotation'].strValue === 'autorotate-with-background';
     var theta, dx, dy;
     
     if( autorotate ){
@@ -49,7 +49,11 @@
       context.translate(rs.labelX, rs.labelY);
       context.rotate(theta);
 
-      this.drawText(context, edge, 0, -4); // make label offset from the edge a bit
+      if (style['edge-text-rotation'].strValue === 'autorotate') {
+        this.drawRotatedText(context, edge, false);
+      } else {
+        this.drawRotatedText(context, edge, true);
+      }
 
       context.rotate(-theta);
       context.translate(-rs.labelX, -rs.labelY);
@@ -329,6 +333,55 @@
       context.fillText(text, textX, textY);
 
       this.shadowStyle(context, 'transparent', 0); // reset for next guy
+    }
+  };
+
+  function roundRect(ctx, x, y, width, height, radius) {
+    var radius = radius || 5;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  CanvasRenderer.prototype.drawRotatedText = function(context, element, background) {
+    var textX = 0,
+        textY = background === true ? 0 : -4;
+    var style = element._private.style;
+    var parentOpacity = element.effectiveOpacity();
+    if( parentOpacity === 0 ){ return; }
+
+    var text = this.setupTextStyle( context, element );
+    
+    if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
+     
+      var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
+      if (lineWidth > 0) {
+        context.lineWidth = lineWidth;
+        context.strokeText(text, textX, textY);
+      }
+      if (!background) {
+        context.fillText(text, textX, textY);
+      } else {
+        var metrics = context.measureText(text);
+        var lineColor = style['line-color'].value;
+        context.fillStyle = this.fillStyle(context, lineColor[0], lineColor[1], lineColor[2], 1);
+        context.strokeStyle  = this.strokeStyle(context, lineColor[0], lineColor[1], lineColor[2], 1);
+        var bgWidth = metrics.width + 4;
+        var bgHeight = style['font-size'].pxValue;
+        roundRect(context, textX - bgWidth / 2, textY - bgHeight / 2, bgWidth, bgHeight, 2);
+        var color = style['color'].value;
+        context.fillStyle = this.fillStyle(context, color[0], color[1], color[2], 1);
+        context.fillText(text, textX, textY);
+      }
     }
   };
 

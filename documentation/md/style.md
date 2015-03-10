@@ -256,6 +256,8 @@ Towards the target node, positioned in the middle of the edge:
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
  * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
  * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
+ * **`text-wrap`** : A wrapping style to apply to the label text; may be `none`, `wrap`.
+ * **`text-max-width`** : The maximum width for wrapped text, applied when **text-wrap** is set to `wrap`. Default to 75 (px).
  * **`text-opacity`** : The opacity of the label text, including its outline.
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.

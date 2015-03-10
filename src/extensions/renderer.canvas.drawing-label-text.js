@@ -194,8 +194,10 @@
 
   // Draw text
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
-    var style = element._private.style;
-    var rstyle = element._private.rstyle;
+    var _p = element._private;
+    var style = _p.style;
+    var rstyle = _p.rstyle;
+    var rscratch = _p.rscratch;
     var parentOpacity = element.effectiveOpacity();
     if( parentOpacity === 0 || style["text-opacity"].value === 0){ return; }
 
@@ -319,7 +321,7 @@
       }
 
       if( element.isNode() && style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
-        var lines = text.split('\n');
+        var lines = rscratch.labelWrapCachedLines;
         var lineHeight = rstyle.labelHeight / lines.length;
 
         //console.log('lines', lines);

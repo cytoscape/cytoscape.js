@@ -160,15 +160,7 @@
       cache.key = fontCacheKey;
     }
 
-    var text = String(style['content'].value);
-    var textTransform = style['text-transform'].value;
-    
-    if (textTransform == 'none') {
-    } else if (textTransform == 'uppercase') {
-      text = text.toUpperCase();
-    } else if (textTransform == 'lowercase') {
-      text = text.toLowerCase();
-    }
+    var text = this.getLabelText( element );
     
     // Calculate text draw position based on text alignment
     
@@ -200,29 +192,6 @@
     ctx.fill();
   }
 
-  function wrapText(context, text, x, y, maxWidth, lineHeight) {
-    var words = text.split(' ');
-    var line = '';
-
-    for(var n = 0; n < words.length; n++) {
-      var testLine = line + words[n] + ' ';
-      var metrics = context.measureText(testLine);
-      var testWidth = metrics.width;
-      testWidth = testWidth / ((lineHeight - 1) / 7);
-      if (testWidth > maxWidth && n > 0) {
-        context.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      }
-      else {
-        line = testLine;
-      }
-    }
-
-    context.fillText(line, x, y);
-  }
-
-
   // Draw text
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
     var style = element._private.style;
@@ -231,14 +200,14 @@
     if( parentOpacity === 0 || style["text-opacity"].value === 0){ return; }
 
     var text = this.setupTextStyle( context, element );
+    var halign = style["text-halign"].value;
+    var valign = style["text-valign"].value;
 
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
       var backgroundOpacity = style["text-background-opacity"].value;
       if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
         var textBorderWidth = style["text-border-width"].pxValue;
         var margin = 4 + textBorderWidth/2;
-        var halign = style["text-halign"].value;
-        var valign = style["text-valign"].value;
         
         if (element.isNode()) {
           //Move textX, textY to include the background margins
@@ -255,7 +224,7 @@
         }
 
         var bgWidth = rstyle.labelWidth;
-        var bgHeight = style['font-size'].pxValue;
+        var bgHeight = rstyle.labelHeight;
         var bgX = textX;
 
         if (halign) {
@@ -342,18 +311,37 @@
         
       }
       
-      var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
+      var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
       
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;
         context.strokeText(text, textX, textY);
       }
 
-      if (element.isNode() && style['text-wrap'].value == 'wrap') {
-        var fontSize = style['font-size'].pxValue;
-        wrapText(context, text, textX, textY, style['text-max-width'].value, fontSize + 1);
+      if( element.isNode() && style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
+        var lines = text.split('\n');
+        var lineHeight = rstyle.labelHeight / lines.length;
+
+        //console.log('lines', lines);
+
+        if( valign === 'top' ){
+          for( var l = lines.length - 1; l >= 0; l-- ){
+            context.fillText( lines[l], textX, textY );
+
+            textY -= lineHeight;
+          }
+        } else {
+          for( var l = 0; l < lines.length; l++ ){
+            context.fillText( lines[l], textX, textY );
+
+            textY += lineHeight;
+          }
+        }
+
+        // var fontSize = style['font-size'].pxValue;
+        // wrapText(context, text, textX, textY, style['text-max-width'].pxValue, fontSize + 1);
       } else {
-        context.fillText(text, textX, textY);
+        context.fillText( text, textX, textY );
       }
 
 

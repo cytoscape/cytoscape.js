@@ -665,15 +665,15 @@
 
           for( var w = 0; w < words.length; w++ ){
             var word = words[w];
-            var testLine = w === 0 ? word : subline + ' ' + word;
+            var testLine = subline.length === 0 ? word : subline + ' ' + word;
             var testDims = this.calculateLabelDimensions( ele, testLine, 'testLine=' + testLine );
             var testW = testDims.width;
 
-            if( testW <= maxW ){
+            if( testW <= maxW ){ // word fits on current line
               subline += word + ' ';
-            } else {
+            } else { // word starts new line
               wrappedLines.push( subline );
-              subline = '';
+              subline = word + ' ';
             }
           }
         } else { // line is already short enough

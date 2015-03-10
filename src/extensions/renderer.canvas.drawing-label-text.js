@@ -49,7 +49,7 @@
       context.translate(rs.labelX, rs.labelY);
       context.rotate(theta);
 
-      this.drawText(context, edge, 0, 0); // make label offset from the edge a bit
+      this.drawText(context, edge, 0, 0);
 
       context.rotate(-theta);
       context.translate(-rs.labelX, -rs.labelY);
@@ -200,6 +200,29 @@
     ctx.fill();
   }
 
+  function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    var words = text.split(' ');
+    var line = '';
+
+    for(var n = 0; n < words.length; n++) {
+      var testLine = line + words[n] + ' ';
+      var metrics = context.measureText(testLine);
+      var testWidth = metrics.width;
+      testWidth = testWidth / ((lineHeight - 1) / 7);
+      if (testWidth > maxWidth && n > 0) {
+        context.fillText(line, x, y);
+        line = words[n] + ' ';
+        y += lineHeight;
+      }
+      else {
+        line = testLine;
+      }
+    }
+
+    context.fillText(line, x, y);
+  }
+
+
   // Draw text
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
     var style = element._private.style;
@@ -326,7 +349,13 @@
         context.strokeText(text, textX, textY);
       }
 
-      context.fillText(text, textX, textY);
+      if (element.isNode() && style['text-wrap'].value == 'wrap') {
+        var fontSize = style['font-size'].pxValue;
+        wrapText(context, text, textX, textY, style['text-max-width'].value, fontSize + 1);
+      } else {
+        context.fillText(text, textX, textY);
+      }
+
 
       this.shadowStyle(context, 'transparent', 0); // reset for next guy
     }

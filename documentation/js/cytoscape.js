@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.3.9.
+ * This file is part of Cytoscape.js 2.3.10.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.3.9';
+  $$.version = '2.3.10';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -6745,6 +6745,7 @@ var cytoscape;
           for( var j = index; j < elements.length; j++ ){
             var jid = elements[j]._private.data.id;
             id2index[ jid ]--;
+            elements[j]._private.index--;
           }
         }
       }
@@ -6907,13 +6908,13 @@ var cytoscape;
     load: function(elements, onload, ondone){
       var cy = this;
       
+      cy.notifications(false);
+
       // remove old elements
       var oldEles = cy.elements();
       if( oldEles.length > 0 ){
         oldEles.remove();
       }
-
-      cy.notifications(false);
       
       if( elements != null ){
         if( $$.is.plainObject(elements) || $$.is.array(elements) ){
@@ -7348,8 +7349,16 @@ var cytoscape;
   $$.fn.core({
     
     layout: function( params ){
-      var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+      var layout;
 
+      // always use a new layout w/ init opts; slightly different backwards compatibility
+      // but fixes layout reuse issues like dagre #819 
+      if( params == null ){ 
+        params = $$.util.extend({}, this._private.options.layout);
+        params.eles = this.$();
+      }
+
+      layout = this.initLayout( params );
       layout.run();
 
       return this; // chaining
@@ -12428,6 +12437,7 @@ var cytoscape;
   function defineSwitchFunction(params){
     return function(){
       var args = arguments;
+      var changedEles = [];
       
       // e.g. cy.nodes().select( data, handler )
       if( args.length === 2 ){
@@ -12447,6 +12457,7 @@ var cytoscape;
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
           var able = !params.ableField || ele._private[params.ableField];
+          var changed = ele._private[params.field] != params.value;
 
           if( params.overrideAble ){
             var overrideAble = params.overrideAble(ele);
@@ -12460,10 +12471,16 @@ var cytoscape;
 
           if( able ){
             ele._private[params.field] = params.value;
+
+            if( changed ){
+              changedEles.push( ele );
+            }
           }
         }
-        this.updateStyle(); // change of state => possible change of style
-        this.trigger( params.event );
+
+        var changedColl = $$.Collection( this.cy(), changedEles );
+        changedColl.updateStyle(); // change of state => possible change of style
+        changedColl.trigger( params.event );
       }
 
       return this;
@@ -22529,7 +22546,9 @@ var cytoscape;
       }
 
       // add edges to dagre
-      var edges = eles.edges();
+      var edges = eles.edges().stdFilter(function( e ){
+        return !e.source().is(':parent') && !e.target().is(':parent');
+      });
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
 

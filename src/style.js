@@ -69,6 +69,7 @@
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
+      textWrap: { enums: ['none', 'wrap'] },
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
@@ -109,6 +110,9 @@
       { name: 'text-border-style', type: t.borderStyle },
       // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
+      { name: 'text-wrap', type: t.textWrap },
+      { name: 'text-max-width', type: t.size },
+
       // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
@@ -246,6 +250,7 @@
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
     var fontSize = 16 || this.containerPropertyAsString('font-size') || 16;
+    var textMaxWidth = 75 || this.containerPropertyAsString('text-max-width') || 75;
 
     // fill the style with the default stylesheet
     this
@@ -260,6 +265,8 @@
           'text-opacity': 1,
           'text-decoration': 'none',          
           'text-transform': textTransform,
+          'text-wrap': 'wrap',
+          'text-max-width': textMaxWidth,
           'text-background-color': 'none',
           'text-background-opacity': 1,
           'text-border-width': 0,

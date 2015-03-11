@@ -929,88 +929,6 @@ cy.remove( collection );
 							</div>		
 						</div>
 						<div class="function">
-							<div class="name" id="core/graph-manipulation/cy.load"><span class="fn-name">cy.load()</span>  <a href="#core/graph-manipulation/cy.load"><span class="icon-bookmark"></span></a></div>
-							
-							
-							<div class="descr"><p>Empty the graph, add the specified elements, and reapply the initialisation layout.</p>
-</div>
-
-							<div class="formats">
-									<div class="format">
-											<div class="name">cy.load( <span class="comma">, </span>eleObjs [<span class="comma">, </span>load] [<span class="comma">, </span>done] )</div>
-
-										
-										<div class="descr"></div>
-										<ul class="args">
-												<li>
-													<span class="name"><a href="#notation/elements-json">eleObjs</a></span>
-													 
-													<span class="descr"><p>An array of plain objects that specify the elements to load.</p>
-</span>
-
-												</li>
-												<li>
-													<span class="name">load</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A callback function called when the graph has loaded.</p>
-</span>
-
-												</li>
-												<li>
-													<span class="name">done</span>
-													<span class="optional">[optional]</span> 
-													<span class="descr"><p>A callback function called after the graph is loaded and just after the layout finishes.</p>
-</span>
-
-												</li>
-										</ul>
-									</div>
-							</div>
-
-							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function is merely a convenient way of setting the elements in the graph and applying a layout.  For more control, the developer should use <a href="#core/graph-manipulation/cy.add"><code>cy.add()</code></a> and <a href="#core/layout/cy.layout"><code>cy.layout()</code></a> etc.</p>
-<p>Note that <code>eleObjs</code> can be specified as an array with each element specifying its <code>group</code>, or alternatively, <code>eleObjs</code> can be specified as a <code>group</code>-indexed map, following the same format as in <a href="#core/initialisation">initialisation</a> and outlined in the <a href="#notation/elements-json">element JSON format</a>.</p>
-<h3 id="examples">Examples</h3>
-<p>As an array:</p>
-<pre><code class="lang-js">cy.load([
-  { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> },
-  { data: { id: <span class="hljs-string">"n2"</span> }, group: <span class="hljs-string">"nodes"</span> },
-  { data: { id: <span class="hljs-string">"e1"</span>, source: <span class="hljs-string">"n1"</span>, target: <span class="hljs-string">"n2"</span> }, group: <span class="hljs-string">"edges"</span> }
-]);
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>As a <code>group</code>-indexed map:</p>
-<pre><code class="lang-js">cy.load({
-  nodes: [
-    { data: { id: <span class="hljs-string">"n1"</span> } },
-    { data: { id: <span class="hljs-string">"n2"</span> } }
-  ],
-
-  edges: [
-    { data: { id: <span class="hljs-string">"e1"</span>, source: <span class="hljs-string">"n1"</span>, target: <span class="hljs-string">"n2"</span> } }
-  ]
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>With specified callbacks:</p>
-<pre><code class="lang-js">cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> } ], <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span></span>{
-  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"cy loaded elements"</span>);
-}, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span></span>{
-  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"cy laid out elements"</span>);
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>This is equivalent to:</p>
-<pre><code class="lang-js">cy.one(<span class="hljs-string">"load"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span></span>{
-  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"cy loaded elements"</span>);
-}).one(<span class="hljs-string">"done"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span></span>{
-  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"cy laid out elements"</span>);
-});
-
-cy.load([ { data: { id: <span class="hljs-string">"n1"</span> }, group: <span class="hljs-string">"nodes"</span> } ]);
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button>
-							</div>		
-						</div>
-						<div class="function">
 							<div class="name" id="core/graph-manipulation/cy.collection"><span class="fn-name">cy.collection()</span>  <a href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark"></span></a></div>
 							
 							
@@ -7218,7 +7136,7 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
   <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'weight'</span>);
 });
 
-<span class="hljs-built_in">console</span>.log(map);
+<span class="hljs-built_in">console</span>.log(weights);
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button>
 							</div>		
@@ -9199,6 +9117,28 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 });
 </code></pre>
 <button class="run run-inline-code"><span class="icon-play"></span></button><p>You may alternatively use <code>css</code> in place of <code>style</code>, e.g. <code>.selector( ... ).css( ... )</code> or <code>{ selector: ..., css: ... }</code>.</p>
+<h3 id="functional-values">Functional values</h3>
+<p>In the JSON or functional stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified functionally on a per-element basis.</p>
+<p><span class="important-indicator"></span> Note that if using the JSON stylesheet format, it will not be possible to serialise and deserialise your stylesheet to JSON proper.</p>
+<p>Example:</p>
+<p>``js
+cytoscape({
+  container: document.getElementById(&#39;cy&#39;),</p>
+<p>  // ...</p>
+<p>  style: cytoscape.stylesheet()
+    .selector(&#39;node&#39;)
+      .style({
+        &#39;background-color&#39;: function( ele ){ return ele.data(&#39;bg&#39;) }</p>
+<pre><code>    // which works the same as
+
+    // <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'data(bg)'</span>
+  })
+
+  // <span class="hljs-keyword">...</span>
+</code></pre><p>  // , ...
+});
+```</p>
+<p><span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash <a href="https://lodash.com/docs#memoize"><code>_.memoize()</code></a> function.</p>
 <h2 id="style/property-types">Property types <a href="#style/property-types"><span class="icon-bookmark"></span></a></h2>
 <ul>
 <li>Colours may be specified by name (e.g. <code>red</code>), hex (e.g. <code>#ff0000</code> or <code>#f00</code>), RGB (e.g. <code>rgb(255, 0, 0)</code>), or HSL (e.g. <code>hsl(0, 100%, 50%)</code>).</li>
@@ -9214,8 +9154,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>mapData()</code></strong> specifies a linear mapping to an element&#39;s data field.  For example, <code>data(weight, 0, 100, blue, red)</code> maps an element&#39;s weight to gradients between blue and red for weights between 0 and 100.  An element with <code>ele.data(&quot;weight&quot;) === 0</code> would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with <code>ele.data(&quot;weight&quot;) === -1</code> would be mapped to blue.</li>
 <li><strong><code>layoutData()</code></strong> specifies a direct mapping like <code>data()</code> but uses special layout defined values (only supported for some layouts).</li>
 <li><strong><code>mapLayoutData()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses special layout defined values (only supported for some layouts).</li>
-<li><strong><code>scratch()</code></strong> specifies a direct mapping like <code>data()</code> but uses scratch data.</li>
-<li><strong><code>mapScratch()</code></strong> specifies a linear mapping like <code>mapData()</code> but uses scratch data.</li>
 <li><strong><code>function( ele ){ ... }</code></strong> A function may be passed as the value of a style property.  The function has a single <code>ele</code> argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute:  The functions are called more often than if the developer writes data by <code>data()</code> or <code>scratch()</code> &mdash; where <code>data()</code> or <code>scratch()</code> would provide an automatic caching mechanism.</li>
 </ul>
 <h2 id="style/node-body">Node body <a href="#style/node-body"><span class="icon-bookmark"></span></a></h2>
@@ -9270,7 +9208,6 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>control-point-weight</code></strong> : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge&#39;s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge&#39;s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
-<li><strong><code>edge-text-rotation</code></strong> : Whether to rotate edge labels as the relative angle of an edge changes; may be <code>none</code> for page-aligned labels or <code>autorotate</code> for edge-aligned labels.  This works best with left-to-right text.</li>
 </ul>
 <h2 id="style/edge-arrow">Edge arrow <a href="#style/edge-arrow"><span class="icon-bookmark"></span></a></h2>
 <p>Towards the source node:</p>
@@ -9313,15 +9250,24 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>font-style</code></strong> : A <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-style">CSS font style</a> to be applied to the label text.</li>
 <li><strong><code>font-weight</code></strong> : A <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight">CSS font weight</a> to be applied to the label text.</li>
 <li><strong><code>text-transform</code></strong> : A transformation to apply to the label text; may be <code>none</code>, <code>uppercase</code>, or <code>lowercase</code>.</li>
+<li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>) or <code>wrap</code> for manual and/or autowrapping.</li>
+<li><strong><code>text-max-width</code></strong> : The maximum width for wrapped text, applied when <code>text-wrap</code> is set to <code>wrap</code>.  For only manual newlines (i.e. <code>\n</code>), set a very large value like <code>1000px</code> such that only your newline characters would apply.</li>
+<li><strong><code>edge-text-rotation</code></strong> : Whether to rotate edge labels as the relative angle of an edge changes; may be <code>none</code> for page-aligned labels or <code>autorotate</code> for edge-aligned labels.  This works best with left-to-right text.</li>
 <li><strong><code>text-opacity</code></strong> : The opacity of the label text, including its outline.</li>
 <li><strong><code>text-outline-color</code></strong> : The colour of the outline around the element&#39;s label text.</li>
 <li><strong><code>text-outline-opacity</code></strong> : The opacity of the outline on label text.</li>
 <li><strong><code>text-outline-width</code></strong> : The size of the outline on label text.</li>
+<li><strong><code>text-shadow-blur</code></strong> : The shadow blur, note that when greater than 0, this could affect performance. Default to 5.</li>
+<li><strong><code>text-shadow-color</code></strong> : The colour of the shadow.</li>
+<li><strong><code>text-shadow-offset-x</code></strong> : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
+<li><strong><code>text-shadow-offset-y</code></strong> : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
+<li><strong><code>text-shadow-opacity</code></strong> : The opacity of the shadow.</li>
 <li><strong><code>text-background-color</code></strong> : A color to apply on the text background, may be <code>none</code> or a valid color.</li>
 <li><strong><code>text-background-opacity</code></strong> : The opacity of the label background.</li>
+<li><strong><code>text-background-shape</code></strong> : The shape to use for the label background, can be rectangle or roundrectangle.</li>
 <li><strong><code>text-border-width</code></strong> : The border width to put around the label.</li>
 <li><strong><code>text-border-style</code></strong> : The style of the border around the label; may be <code>solid</code>, <code>dotted</code>, <code>dashed</code>, or <code>double</code>.</li>
-<li><strong><code>text-border-color</code></strong> : The color of the border aound the label.</li>
+<li><strong><code>text-border-color</code></strong> : The color of the border around the label.</li>
 <li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.</li>
 </ul>
 <p>These properties can only be used on node labels:</p>
@@ -9335,6 +9281,15 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>overlay-color</code></strong> : The colour of the overlay.</li>
 <li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
 <li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
+</ul>
+<h2 id="style/shadow">Shadow <a href="#style/shadow"><span class="icon-bookmark"></span></a></h2>
+<p>These properties allow for the creation of shadows on top of nodes or edges. Note that shadow-blur could seriously impact performance on large graph.</p>
+<ul>
+<li><strong><code>shadow-blur</code></strong> :The shadow blur, note that if greater than 0, this could impact performance. Default is 10.</li>
+<li><strong><code>shadow-color</code></strong> : The colour of the shadow.</li>
+<li><strong><code>shadow-offset-x</code></strong> : The x offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
+<li><strong><code>shadow-offset-y</code></strong> : The y offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
+<li><strong><code>shadow-opacity</code></strong> : The opacity of the shadow.</li>
 </ul>
 <h2 id="style/transition-animation">Transition animation <a href="#style/transition-animation"><span class="icon-bookmark"></span></a></h2>
 <ul>
@@ -11136,12 +11091,14 @@ cy.elements().foo();
 <li>When using transition animations in the style, make sure <code>transition-property</code> is defined only for states that you want to animate.  If you have <code>transition-property</code> defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.</li>
 </ul>
 </li>
+<li><strong>Functional style property values</strong> : While convenient, functional style property values can be expensive.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash <a href="https://lodash.com/docs#memoize"><code>_.memoize()</code></a> function.  If your style property value is a simple passthrough or linear mapping, consider using <code>data()</code> or <code>mapData()</code> instead.</li>
 <li><strong>Simplify edge style</strong> : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.</li>
 <li><strong>Simplify node style</strong> : Keep your node styles simple to improve performance.  <ul>
 <li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="https://github.com/scalableminds/gulp-image-resize">Gulp</a> so it&#39;s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
+<li><strong>Set shadow-blur to 0</strong> if you want shadow and offset them to view them since shadow-blur can rapidely decrease performance.</li>
 <li><strong>Hide edges during interactivity</strong> : Set <code>hideEdgesOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.</li>
 <li><strong>Hide labels during interactivity</strong> : Set <code>hideLabelsOnViewport</code> to <code>true</code> in your <a href="#core/initialisation">initialisation options</a>.  This works similarly to hiding edges on viewport operations.</li>
 </ul>
@@ -11254,7 +11211,6 @@ cy.elements().foo();
 
 						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.add"><span class="icon-bookmark bookmark-icon"></span> cy.add() </a></div>
 						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.remove"><span class="icon-bookmark bookmark-icon"></span> cy.remove() </a></div>
-						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.load"><span class="icon-bookmark bookmark-icon"></span> cy.load() </a></div>
 						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.collection"><span class="icon-bookmark bookmark-icon"></span> cy.collection() </a></div>
 						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.getElementById"><span class="icon-bookmark bookmark-icon"></span> cy.getElementById() </a></div>
 						<div class="section lvl3"><a class="toclink" href="#core/graph-manipulation/cy.$"><span class="icon-bookmark bookmark-icon"></span> cy.$() et al</a></div>
@@ -11697,6 +11653,11 @@ cy.elements().foo();
 					<div class="section lvl2">
 						
 						<a class="toclink" href="#style/overlay"><span class="icon-bookmark bookmark-icon"></span> Overlay</a>
+					</div>
+
+					<div class="section lvl2">
+						
+						<a class="toclink" href="#style/shadow"><span class="icon-bookmark bookmark-icon"></span> Shadow</a>
 					</div>
 
 					<div class="section lvl2">

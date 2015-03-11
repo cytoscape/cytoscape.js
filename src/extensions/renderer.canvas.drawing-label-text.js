@@ -18,21 +18,21 @@
     if( computedSize < minSize ){
       return;
     }
-  
+
     // Calculate text draw position
-    
+
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    
+
     // this.recalculateEdgeLabelProjection( edge );
-    
+
     var rs = edge._private.rscratch;
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
     var style = edge._private.style;
     var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
     var theta, dx, dy;
-    
+
     if( autorotate ){
       switch( rs.edgeType ){
         case 'haystack':
@@ -73,7 +73,7 @@
     if( computedSize < minSize ){
       return;
     }
-      
+
     // this.recalculateNodeLabelProjection( node );
 
     var textHalign = node._private.style['text-halign'].strValue;
@@ -109,7 +109,7 @@
 
     this.drawText(context, node, rs.labelX, rs.labelY);
   };
-  
+
   CanvasRenderer.prototype.getFontCache = function(context){
     var cache;
 
@@ -161,16 +161,16 @@
     }
 
     var text = this.getLabelText( element );
-    
+
     // Calculate text draw position based on text alignment
-    
+
     // so text outlines aren't jagged
     context.lineJoin = 'round';
 
     this.fillStyle(context, color[0], color[1], color[2], opacity);
-    
+
     this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
-    
+
     this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
     return text;
@@ -210,7 +210,7 @@
       if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
         var textBorderWidth = style["text-border-width"].pxValue;
         var margin = 4 + textBorderWidth/2;
-        
+
         if (element.isNode()) {
           //Move textX, textY to include the background margins
           if (valign == "top") {
@@ -236,7 +236,7 @@
             bgX = bgX- bgWidth;
           }
         }
-  
+
         var bgY = textY;
 
         if (element.isNode()) {
@@ -261,16 +261,21 @@
           bgHeight += margin*2;
           bgWidth += margin*2;
         }
-        
+
         if (style["text-background-color"]) {
           var textFill = context.fillStyle;
           var textBackgroundColor = style["text-background-color"].value;
 
           context.fillStyle = "rgba(" + textBackgroundColor[0] + "," + textBackgroundColor[1] + "," + textBackgroundColor[2] + "," + backgroundOpacity * parentOpacity + ")";
-          roundRect(context, bgX, bgY, bgWidth, bgHeight, 2);
+          var styleShape = style['text-background-shape'].strValue;
+          if (styleShape == "roundrectangle") {
+            roundRect(context, bgX, bgY, bgWidth, bgHeight, 2);
+          } else {
+            context.fillRect(bgX,bgY,bgWidth,bgHeight);
+          }
           context.fillStyle = textFill;
         }
-        
+
         if (textBorderWidth > 0) {
           var textStroke = context.strokeStyle;
           var textLineWidth = context.lineWidth;
@@ -279,7 +284,7 @@
 
           context.strokeStyle = "rgba(" + textBorderColor[0] + "," + textBorderColor[1] + "," + textBorderColor[2] + "," + backgroundOpacity * parentOpacity + ")";
           context.lineWidth = textBorderWidth;
-          
+
           if( context.setLineDash ){ // for very outofdate browsers
             switch( textBorderStyle ){
               case 'dotted':
@@ -295,26 +300,26 @@
                 break;
             }
           }
-          
+
           context.strokeRect(bgX,bgY,bgWidth,bgHeight);
-          
+
           if( textBorderStyle === 'double' ){
             var whiteWidth = textBorderWidth/2;
-            
+
             context.strokeRect(bgX+whiteWidth,bgY+whiteWidth,bgWidth-whiteWidth*2,bgHeight-whiteWidth*2);
           }
-          
+
           if( context.setLineDash ){ // for very outofdate browsers
             context.setLineDash([ ]);
           }
           context.lineWidth = textLineWidth;
           context.strokeStyle = textStroke;
         }
-        
+
       }
-      
+
       var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
-      
+
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;
         context.strokeText(text, textX, textY);
@@ -351,5 +356,5 @@
     }
   };
 
-  
+
 })( cytoscape );

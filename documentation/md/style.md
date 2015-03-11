@@ -21,7 +21,7 @@ An example style file:
 node {
   background-color: green;
 }
-``` 
+```
 
 At initialisation:
 
@@ -125,7 +125,7 @@ cytoscape({
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
  * Time is measured in units of ms or s.
- 
+
 
 
  ## Mappers
@@ -269,6 +269,7 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-shadow-opacity`** : The opacity of the shadow.
  * **`text-background-color`** : A color to apply on the text background, may be `none` or a valid color.
  * **`text-background-opacity`** : The opacity of the label background.
+ * **`text-background-shape`** : The shape to use for the label background, can be rectangle or roundrectangle.
  * **`text-border-width`** : The border width to put around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The color of the border around the label.

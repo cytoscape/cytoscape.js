@@ -676,6 +676,11 @@
               subline = word + ' ';
             }
           }
+
+          // if there's remaining text, put it in a wrapped line
+          if( !subline.match(/^\s+$/) ){
+            wrappedLines.push( subline );
+          }
         } else { // line is already short enough
           wrappedLines.push( line );
         }

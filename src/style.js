@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   $$.Style = function( cy ){
 
     if( !(this instanceof $$.Style) ){
@@ -16,7 +16,7 @@
       coreStyle: {},
       newStyle: true
     };
-    
+
     this.length = 0;
 
     this.addDefaultStylesheet();
@@ -70,6 +70,7 @@
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       textWrap: { enums: ['none', 'wrap'] },
+      textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
@@ -108,6 +109,7 @@
       { name: 'text-border-color', type: t.color },
       { name: 'text-border-width', type: t.size },
       { name: 'text-border-style', type: t.borderStyle },
+      { name: 'text-background-shape', type: t.textBackgroundShape},
       // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
       { name: 'text-wrap', type: t.textWrap },
@@ -132,7 +134,7 @@
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
-      
+
       // shadows
       { name: 'shadow-blur', type: t.size },
       { name: 'shadow-color', type: t.color },
@@ -165,7 +167,7 @@
       { name: 'border-opacity', type: t.zeroOneNumber },
       { name: 'border-width', type: t.size },
       { name: 'border-style', type: t.borderStyle },
-      
+
       // node background images
       { name: 'background-image', type: t.url },
       { name: 'background-image-opacity', type: t.zeroOneNumber },
@@ -229,7 +231,7 @@
     // allow access of properties by name ( e.g. $$.style.properties.height )
     for( var i = 0; i < props.length; i++ ){
       var prop = props[i];
-      
+
       props[ prop.name ] = prop; // allow lookup by name
     }
   })();
@@ -238,7 +240,7 @@
   $$.styfn.addDefaultStylesheet = function(){
     // to be nice, we build font related style properties from the core container
     // so that cytoscape matches the style of its container by default
-    // 
+    //
     // unfortunately, this doesn't seem work consistently and can grab the default stylesheet values
     // instead of the developer's values so let's just make it explicit for the dev for now
     //
@@ -263,7 +265,7 @@
           'text-outline-width': 0,
           'text-outline-opacity': 1,
           'text-opacity': 1,
-          'text-decoration': 'none',          
+          'text-decoration': 'none',
           'text-transform': textTransform,
           'text-wrap': 'wrap',
           'text-max-width': textMaxWidth,
@@ -272,6 +274,7 @@
           'text-border-width': 0,
           'text-border-style': 'solid',
           'text-border-color':'#000',
+          'text-background-shape':'rectangle',
           'font-family': fontFamily,
           'font-style': fontStyle,
           // 'font-variant': fontVariant,
@@ -326,7 +329,7 @@
           'padding-left': 0,
           'padding-right': 0,
           'position': 'origin',
-          
+
 
           // node pie bg
           'pie-size': '100%',
@@ -467,12 +470,12 @@
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
   $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
-    
+
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];
     var passedValue = value;
     var types = $$.style.types;
-    
+
     if( !property ){ return null; } // return null on property of unknown name
     if( value === undefined || value === null ){ return null; } // can't assign null
 
@@ -519,13 +522,13 @@
       ( scratch = new RegExp( types.scratch.regex ).exec( value ) )
     ){
       if( propIsBypass ){ return false; } // mappers not allowed in bypass
-      
+
       var mapped;
       if( data ){
         mapped = types.data;
       } else if( layoutData ){
         mapped = types.layoutData;
-      } else { 
+      } else {
         mapped = types.scratch;
       }
 
@@ -571,11 +574,11 @@
       // check if valueMin and valueMax are the same
       if( valueMin.value === valueMax.value ){
         return false; // can't make much of a mapper without a range
-      
+
       } else if( type.color ){
         var c1 = valueMin.value;
         var c2 = valueMax.value;
-        
+
         var same = c1[0] === c2[0] // red
           && c1[1] === c2[1] // green
           && c1[2] === c2[2] // blue
@@ -608,7 +611,7 @@
     }
 
     // check the type and return the appropriate object
-    if( type.number ){ 
+    if( type.number ){
       var units;
       var implicitUnits = 'px'; // not set => px
 
@@ -623,14 +626,14 @@
       if( !type.unitless ){
         if( valueIsString ){
           var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
-          if( units ){ unitsRegex = units; } // only allow explicit units if so set 
+          if( units ){ unitsRegex = units; } // only allow explicit units if so set
           var match = value.match( '^(' + $$.util.regex.number + ')(' + unitsRegex + ')?' + '$' );
-          
+
           if( match ){
             value = match[1];
             units = match[2] || implicitUnits;
           }
-          
+
         } else if( !units || type.implicitUnits ) {
           units = implicitUnits; // implicitly px if unspecified
         }
@@ -670,7 +673,7 @@
       }
 
       // check value is within range
-      if( (type.min !== undefined && value < type.min) 
+      if( (type.min !== undefined && value < type.min)
       || (type.max !== undefined && value > type.max)
       ){
         return null;
@@ -702,8 +705,8 @@
     } else if( type.propList ) {
 
       var props = [];
-      var propsStr = '' + value;      
- 
+      var propsStr = '' + value;
+
       if( propsStr === 'none' ){
         // leave empty
 
@@ -839,7 +842,7 @@
   $$.styfn.style = $$.styfn.css;
 
   // add a single css rule to the current context
-  $$.styfn.cssRule = function( name, value ){ 
+  $$.styfn.cssRule = function( name, value ){
     // name-value pair
     var property = this.parse( name, value );
 

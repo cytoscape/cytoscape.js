@@ -102,6 +102,8 @@
       var drawnNodes = 1;
       var fdRenderer = new Springy.Renderer(sim,
         function clear() {
+          if( self.stopped ){ return; } // because springy is a buggy layout
+          
           if( movedNodes.length > 0 && options.animate ){
             simUpdatingPos = true;
 
@@ -122,6 +124,8 @@
         },
 
         function drawNode(node, p) {
+          if( self.stopped ){ return; } // because springy is a buggy layout
+
           var v = toScreen(p);
           var element = node.data.element;
           
@@ -176,6 +180,8 @@
       var grabbableNodes = nodes.filter(":grabbable");
       
       function start(){
+        self.stopped = false;
+
         // disable grabbing if so set
         if( options.ungrabifyWhileSimulating ){
           grabbableNodes.ungrabify();
@@ -185,6 +191,8 @@
       }
       
       self.stopSystem = function(){
+        self.stopped = true;
+
         graph.filterNodes(function(){
           return false; // remove all nodes
         });

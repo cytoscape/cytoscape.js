@@ -215,7 +215,9 @@
     var valign = style['text-valign'].strValue;
     var halign = style['text-valign'].strValue;
     var oWidth = style['text-outline-width'].pxValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
+    var wrap = style['text-wrap'].strValue;
+    var wrapW = style['text-max-width'].pxValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
     var width = style['width'].pxValue;

@@ -254,7 +254,7 @@
     },
 
     // get/set the position relative to the parent
-    parentPosition: function( dim, val ){
+    relativePosition: function( dim, val ){
       var ele = this[0];
       var cy = this.cy();
       var ppos = $$.is.plainObject( dim ) ? dim : undefined;
@@ -647,6 +647,7 @@
   fn.modelPosition = fn.point = fn.position;
   fn.modelPositions = fn.points = fn.positions;
   fn.renderedPoint = fn.renderedPosition;
+  fn.relativePoint = fn.relativePosition;
   fn.boundingbox = fn.boundingBox;
   fn.renderedBoundingbox = fn.renderedBoundingBox;
   

@@ -211,6 +211,11 @@
     }
   });  
 
+  // aliases
+  $$.elesfn.neighbourhood = $$.elesfn.neighborhood;
+  $$.elesfn.closedNeighbourhood = $$.elesfn.closedNeighborhood;
+  $$.elesfn.openNeighbourhood = $$.elesfn.openNeighborhood;
+
 
   // Edge functions
   /////////////////

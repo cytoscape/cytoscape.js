@@ -1036,10 +1036,10 @@
     //   directed // default false
     // retObj => returned object by function
     // if directed
-    //   indegree_n : function(node) // Returns the normalized indegree of the given node
-    //   outdegree_n: function(node) // Returns the normalized outdegree of the given node
+    //   indegree : function(node) // Returns the normalized indegree of the given node
+    //   outdegree: function(node) // Returns the normalized outdegree of the given node
     // if undirected
-    //   degree_n : function(node) // Returns the normalized degree of the given node
+    //   degree : function(node) // Returns the normalized degree of the given node
     degreeCentralityNormalized: function (options) {
       options = options || {};
 
@@ -1083,7 +1083,7 @@
         }
 
         return {
-          degree_n: function (node) {
+          degree: function (node) {
             if ($$.is.string(node)) {
               // from is a selector string
               var node = (cy.filter(node)[0]).id();
@@ -1117,7 +1117,7 @@
         }
 
         return {
-          indegree_n: function (node) {
+          indegree: function (node) {
             if ($$.is.string(node)) {
               // from is a selector string
               var node = (cy.filter(node)[0]).id();
@@ -1128,7 +1128,7 @@
 
             return indegrees[node] / maxIndegree;
           },
-          outdegree_n: function (node) {
+          outdegree: function (node) {
             if ($$.is.string(node)) {
               // from is a selector string
               var node = (cy.filter(node)[0]).id();
@@ -1160,6 +1160,8 @@
     //   degree : degree of the given node
     degreeCentrality: function (options) {
       options = options || {};
+
+      var callingEles = this;
 
       var logDebug = function () {
         if (debug) {
@@ -1211,7 +1213,7 @@
 
 
       if (!directed) {
-        var connEdges = root.connectedEdges();
+        var connEdges = root.connectedEdges().intersection( callingEles );
         var k = connEdges.length;
         var s = 0;
 
@@ -1225,8 +1227,8 @@
           degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
         };
       } else {
-        var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]');
-        var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]');
+        var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]').intersection( callingEles );
+        var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]').intersection( callingEles );
         var k_in = incoming.length;
         var k_out = outgoing.length;
         var s_in = 0;
@@ -1255,7 +1257,7 @@
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
     //   directed // default false
     // retObj => returned object by function
-    //   closeness_n : function(node) // Returns the normalized closeness of the given node
+    //   closeness : function(node) // Returns the normalized closeness of the given node
     closenessCentralityNormalized: function (options) {
       options = options || {};
 
@@ -1296,7 +1298,7 @@
       }
 
       return {
-        closeness_n: function (node) {
+        closeness: function (node) {
           if ($$.is.string(node)) {
             // from is a selector string
             var node = (cy.filter(node)[0]).id();
@@ -1311,7 +1313,7 @@
     },
     // Implemented from pseudocode from wikipedia
     // options => options object
-    //   node : focal node
+    //   root : focal node
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
     //   directed // default false
     // closeness => returned value by the function. Closeness value of the given node.
@@ -1384,7 +1386,7 @@
     //   directed // default false
     // retObj => returned object by function
     //   betweenness : function(node) // Returns the betweenness centrality of the given node
-    //   betweenness_n : function(node) // Returns the normalized betweenness centrality of the given node
+    //   betweennessNormalized : function(node) // Returns the normalized betweenness centrality of the given node
     betweennessCentrality: function (options) {
       options = options || {};
 
@@ -1532,7 +1534,7 @@
           max = C[key];
       }
 
-      return {
+      var ret = {
         betweenness: function (node) {
           if ($$.is.string(node)) {
             var node = (cy.filter(node)[0]).id();
@@ -1542,7 +1544,8 @@
 
           return C[node];
         },
-        betweenness_n: function (node) {
+
+        betweennessNormalized: function (node) {
           if ($$.is.string(node)) {
             var node = (cy.filter(node)[0]).id();
           } else {
@@ -1551,14 +1554,19 @@
 
           return C[node] / max;
         }
-      }
+      };
+
+      // alias
+      ret.betweennessNormalised = ret.betweennessNormalized;
+
+      return ret;
     } // betweennessCentrality
   }); // $$.fn.eles
 
   // nice, short mathemathical alias
   $$.elesfn.dc = $$.elesfn.degreeCentrality;
-  $$.elesfn.dc_n = $$.elesfn.degreeCentralityNormalized;
+  $$.elesfn.dcn = $$.elesfn.degreeCentralityNormalised = $$.elesfn.degreeCentralityNormalized;
   $$.elesfn.cc = $$.elesfn.closenessCentrality;
-  $$.elesfn.cc_n = $$.elesfn.closenessCentralityNormalized;
+  $$.elesfn.ccn = $$.elesfn.closenessCentralityNormalised = $$.elesfn.closenessCentralityNormalized;
   $$.elesfn.bc = $$.elesfn.betweennessCentrality;
 }) (cytoscape);

@@ -56,5 +56,7 @@
       return this.neighborhood().intersect( collection ).length === collection.length;
     }
   });
+
+  $$.elesfn.allAreNeighbours = $$.elesfn.allAreNeighbors;
   
 })( cytoscape );

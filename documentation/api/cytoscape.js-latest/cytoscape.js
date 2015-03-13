@@ -4760,15 +4760,19 @@ var cytoscape;
     
     var str = '';
     
-    var clean = function(obj){
+    var clean = function(obj, isValue){
       if( $$.is.string(obj) ){
-        return obj;
+        return isValue ? '"' + obj + '"' : obj;
       } 
       return '';
     };
     
     var queryToString = function(query){
       var str = '';
+
+      if( query.subject === query ){
+        str += '$';
+      }
 
       var group = clean(query.group);
       str += group.substring(0, group.length - 1);
@@ -4777,7 +4781,7 @@ var cytoscape;
         var data = query.data[j];
         
         if( data.value ){
-          str += '[' + data.field + clean(data.operator) + clean(data.value) + ']';
+          str += '[' + data.field + clean(data.operator) + clean(data.value, true) + ']';
         } else {
           str += '[' + clean(data.operator) + data.field + ']';
         }
@@ -4785,7 +4789,7 @@ var cytoscape;
 
       for(var j = 0; j < query.meta.length; j++){
         var meta = query.meta[j];
-        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value) + ']]';
+        str += '[[' + meta.field + clean(meta.operator) + clean(meta.value, true) + ']]';
       }
       
       for(var j = 0; j < query.colonSelectors.length; j++){
@@ -4838,7 +4842,7 @@ var cytoscape;
 })( cytoscape );
 
 ;(function($$){ 'use strict';
-  
+
   $$.Style = function( cy ){
 
     if( !(this instanceof $$.Style) ){
@@ -4855,7 +4859,7 @@ var cytoscape;
       coreStyle: {},
       newStyle: true
     };
-    
+
     this.length = 0;
 
     this.addDefaultStylesheet();
@@ -4908,6 +4912,8 @@ var cytoscape;
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
+      textWrap: { enums: ['none', 'wrap'] },
+      textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
@@ -4941,8 +4947,17 @@ var cytoscape;
       { name: 'text-outline-width', type: t.size },
       { name: 'text-outline-opacity', type: t.zeroOneNumber },
       { name: 'text-opacity', type: t.zeroOneNumber },
+      { name: 'text-background-color', type: t.color },
+      { name: 'text-background-opacity', type: t.zeroOneNumber },
+      { name: 'text-border-color', type: t.color },
+      { name: 'text-border-width', type: t.size },
+      { name: 'text-border-style', type: t.borderStyle },
+      { name: 'text-background-shape', type: t.textBackgroundShape},
       // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
+      { name: 'text-wrap', type: t.textWrap },
+      { name: 'text-max-width', type: t.size },
+
       // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
@@ -4963,6 +4978,20 @@ var cytoscape;
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
 
+      // shadows
+      { name: 'shadow-blur', type: t.size },
+      { name: 'shadow-color', type: t.color },
+      { name: 'shadow-opacity', type: t.zeroOneNumber },
+      { name: 'shadow-offset-x', type: t.number },
+      { name: 'shadow-offset-y', type: t.number },
+
+      // label shadows
+      { name: 'text-shadow-blur', type: t.size },
+      { name: 'text-shadow-color', type: t.color },
+      { name: 'text-shadow-opacity', type: t.zeroOneNumber },
+      { name: 'text-shadow-offset-x', type: t.number },
+      { name: 'text-shadow-offset-y', type: t.number },
+
       // transition anis
       { name: 'transition-property', type: t.propList },
       { name: 'transition-duration', type: t.time },
@@ -4981,7 +5010,7 @@ var cytoscape;
       { name: 'border-opacity', type: t.zeroOneNumber },
       { name: 'border-width', type: t.size },
       { name: 'border-style', type: t.borderStyle },
-      
+
       // node background images
       { name: 'background-image', type: t.url },
       { name: 'background-image-opacity', type: t.zeroOneNumber },
@@ -5045,7 +5074,7 @@ var cytoscape;
     // allow access of properties by name ( e.g. $$.style.properties.height )
     for( var i = 0; i < props.length; i++ ){
       var prop = props[i];
-      
+
       props[ prop.name ] = prop; // allow lookup by name
     }
   })();
@@ -5054,7 +5083,7 @@ var cytoscape;
   $$.styfn.addDefaultStylesheet = function(){
     // to be nice, we build font related style properties from the core container
     // so that cytoscape matches the style of its container by default
-    // 
+    //
     // unfortunately, this doesn't seem work consistently and can grab the default stylesheet values
     // instead of the developer's values so let's just make it explicit for the dev for now
     //
@@ -5066,6 +5095,7 @@ var cytoscape;
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
     var fontSize = 16 || this.containerPropertyAsString('font-size') || 16;
+    var textMaxWidth = 75 || this.containerPropertyAsString('text-max-width') || 75;
 
     // fill the style with the default stylesheet
     this
@@ -5080,6 +5110,14 @@ var cytoscape;
           'text-opacity': 1,
           'text-decoration': 'none',
           'text-transform': textTransform,
+          'text-wrap': 'wrap',
+          'text-max-width': textMaxWidth,
+          'text-background-color': 'none',
+          'text-background-opacity': 1,
+          'text-border-width': 0,
+          'text-border-style': 'solid',
+          'text-border-color':'#000',
+          'text-background-shape':'rectangle',
           'font-family': fontFamily,
           'font-style': fontStyle,
           // 'font-variant': fontVariant,
@@ -5095,6 +5133,16 @@ var cytoscape;
           'overlay-opacity': 0,
           'overlay-color': '#000',
           'overlay-padding': 10,
+          'shadow-opacity': 0,
+          'shadow-color': '#000',
+          'shadow-blur': 10,
+          'shadow-offset-x': 0,
+          'shadow-offset-y': 0,
+          'text-shadow-opacity': 0,
+          'text-shadow-color': '#000',
+          'text-shadow-blur': 5,
+          'text-shadow-offset-x': 0,
+          'text-shadow-offset-y': 0,
           'transition-property': 'none',
           'transition-duration': 0,
           'transition-delay': 0,
@@ -5124,7 +5172,7 @@ var cytoscape;
           'padding-left': 0,
           'padding-right': 0,
           'position': 'origin',
-          
+
 
           // node pie bg
           'pie-size': '100%',
@@ -5231,6 +5279,8 @@ var cytoscape;
           'outside-texture-bg-opacity': 0.125
         })
     ;
+
+    this.defaultLength = this.length;
   };
 
   // remove all contexts
@@ -5263,12 +5313,12 @@ var cytoscape;
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
   $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
-    
+
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];
     var passedValue = value;
     var types = $$.style.types;
-    
+
     if( !property ){ return null; } // return null on property of unknown name
     if( value === undefined || value === null ){ return null; } // can't assign null
 
@@ -5315,13 +5365,13 @@ var cytoscape;
       ( scratch = new RegExp( types.scratch.regex ).exec( value ) )
     ){
       if( propIsBypass ){ return false; } // mappers not allowed in bypass
-      
+
       var mapped;
       if( data ){
         mapped = types.data;
       } else if( layoutData ){
         mapped = types.layoutData;
-      } else { 
+      } else {
         mapped = types.scratch;
       }
 
@@ -5367,11 +5417,11 @@ var cytoscape;
       // check if valueMin and valueMax are the same
       if( valueMin.value === valueMax.value ){
         return false; // can't make much of a mapper without a range
-      
+
       } else if( type.color ){
         var c1 = valueMin.value;
         var c2 = valueMax.value;
-        
+
         var same = c1[0] === c2[0] // red
           && c1[1] === c2[1] // green
           && c1[2] === c2[2] // blue
@@ -5404,7 +5454,7 @@ var cytoscape;
     }
 
     // check the type and return the appropriate object
-    if( type.number ){ 
+    if( type.number ){
       var units;
       var implicitUnits = 'px'; // not set => px
 
@@ -5419,14 +5469,14 @@ var cytoscape;
       if( !type.unitless ){
         if( valueIsString ){
           var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
-          if( units ){ unitsRegex = units; } // only allow explicit units if so set 
+          if( units ){ unitsRegex = units; } // only allow explicit units if so set
           var match = value.match( '^(' + $$.util.regex.number + ')(' + unitsRegex + ')?' + '$' );
-          
+
           if( match ){
             value = match[1];
             units = match[2] || implicitUnits;
           }
-          
+
         } else if( !units || type.implicitUnits ) {
           units = implicitUnits; // implicitly px if unspecified
         }
@@ -5466,7 +5516,7 @@ var cytoscape;
       }
 
       // check value is within range
-      if( (type.min !== undefined && value < type.min) 
+      if( (type.min !== undefined && value < type.min)
       || (type.max !== undefined && value > type.max)
       ){
         return null;
@@ -5498,8 +5548,8 @@ var cytoscape;
     } else if( type.propList ) {
 
       var props = [];
-      var propsStr = '' + value;      
- 
+      var propsStr = '' + value;
+
       if( propsStr === 'none' ){
         // leave empty
 
@@ -5635,7 +5685,7 @@ var cytoscape;
   $$.styfn.style = $$.styfn.css;
 
   // add a single css rule to the current context
-  $$.styfn.cssRule = function( name, value ){ 
+  $$.styfn.cssRule = function( name, value ){
     // name-value pair
     var property = this.parse( name, value );
 
@@ -5664,6 +5714,7 @@ var cytoscape;
   };
 
 })( cytoscape );
+
 ;(function($$){ 'use strict';
 
   // (potentially expensive calculation)
@@ -5841,7 +5892,7 @@ var cytoscape;
 
       retDiffProp.next = ele._private.style[ diffPropName ];
 
-      if( retDiffProp.next.bypass ){
+      if( retDiffProp.next && retDiffProp.next.bypass ){
         retDiffProp.next = retDiffProp.next.bypassed;
       }
     }
@@ -5881,7 +5932,9 @@ var cytoscape;
     var valign = style['text-valign'].strValue;
     var halign = style['text-valign'].strValue;
     var oWidth = style['text-outline-width'].pxValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
+    var wrap = style['text-wrap'].strValue;
+    var wrapW = style['text-max-width'].pxValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
     var width = style['width'].pxValue;
@@ -6531,9 +6584,9 @@ var cytoscape;
     for( var i = 0; i < json.length; i++ ){
       var context = json[i];
       var selector = context.selector;
-      var props = context.css;
+      var props = context.style || context.css;
 
-      style.selector(selector); // apply selector
+      style.selector( selector ); // apply selector
 
       for( var name in props ){
         var value = props[name];
@@ -6569,7 +6622,7 @@ var cytoscape;
   $$.styfn.json = function(){
     var json = [];
 
-    for( var i = 0; i < this.length; i++ ){
+    for( var i = this.defaultLength; i < this.length; i++ ){
       var cxt = this[i];
       var selector = cxt.selector;
       var props = cxt.properties;
@@ -6582,7 +6635,7 @@ var cytoscape;
 
       json.push({
         selector: !selector ? 'core' : selector.toString(),
-        css: css
+        style: css
       });
     }
 
@@ -6741,8 +6794,10 @@ var cytoscape;
     this.length = 0;
   };
 
+  $$.sheetfn = $$.Stylesheet.prototype;
+
   // just store the selector to be parsed later
-  $$.Stylesheet.prototype.selector = function( selector ){
+  $$.sheetfn.selector = function( selector ){
     var i = this.length++;
 
     this[i] = {
@@ -6754,7 +6809,7 @@ var cytoscape;
   };
 
   // just store the property to be parsed later
-  $$.Stylesheet.prototype.css = function( name, value ){
+  $$.sheetfn.css = function( name, value ){
     var i = this.length - 1;
 
     if( $$.is.string(name) ){
@@ -6788,10 +6843,10 @@ var cytoscape;
     return this; // chaining
   };
 
-  $$.Stylesheet.prototype.style = $$.Stylesheet.prototype.css;
+  $$.sheetfn.style = $$.sheetfn.css;
 
   // generate a real style object from the dummy stylesheet
-  $$.Stylesheet.prototype.generateStyle = function( cy ){
+  $$.sheetfn.generateStyle = function( cy ){
     var style = new $$.Style(cy);
 
     for( var i = 0; i < this.length; i++ ){
@@ -6844,23 +6899,134 @@ var cytoscape;
     }
   };
 
+  var stringifyFieldVal = function( val ){
+    var valStr = $$.is.fn( val ) ? val.toString() : 'JSON.parse("' + JSON.stringify(val) + '")';
+
+    return valStr;
+  };
+
+  // allows for requires with prototypes and subobjs etc
+  var fnAsRequire = function( fn ){
+    var req;
+    var fnName;
+
+    if( $$.is.object(fn) && fn.fn ){ // manual fn
+      req = fnAs( fn.fn, fn.name );
+      fnName = fn.name;
+      fn = fn.fn;
+    } else if( $$.is.fn(fn) ){ // auto fn
+      req = fn.toString();
+      fnName = fn.name;
+    } else if( $$.is.string(fn) ){ // stringified fn
+      req = fn;
+    } else if( $$.is.object(fn) ){ // plain object
+      if( fn.proto ){
+        req = '';
+      } else {
+        req = fn.name + ' = {};';
+      }
+
+      fnName = fn.name;
+      fn = fn.obj;
+    }
+
+    req += '\n';
+
+    var protoreq = function( val, subname ){
+      if( val.prototype ){
+        var protoNonempty = false;
+        for( var prop in val.prototype ){ protoNonempty = true; break; };
+
+        if( protoNonempty ){
+          req += fnAsRequire( {
+            name: subname,
+            obj: val,
+            proto: true
+          }, val );
+        }
+      }
+    };
+
+    // pull in prototype
+    if( fn.prototype && fnName != null ){
+
+      for( var name in fn.prototype ){
+        var protoStr = '';
+
+        var val = fn.prototype[ name ];
+        var valStr = stringifyFieldVal( val );
+        var subname = fnName + '.prototype.' + name;
+
+        protoStr += subname + ' = ' + valStr + ';\n';
+
+        if( protoStr ){
+          req += protoStr;
+        }
+
+        protoreq( val, subname ); // subobject with prototype
+      }
+  
+    }
+
+    // pull in properties for obj/fns
+    if( !$$.is.string(fn) ){ for( var name in fn ){
+      var propsStr = '';
+
+      if( fn.hasOwnProperty(name) ){
+        var val = fn[ name ];
+        var valStr = stringifyFieldVal( val );
+        var subname = fnName + '["' + name + '"]';
+
+        propsStr += subname + ' = ' + valStr + ';\n';
+      }
+
+      if( propsStr ){
+        req += propsStr;
+      }
+
+      protoreq( val, subname ); // subobject with prototype
+    } }
+
+    return req;
+  };
+
   $$.fn.thread({
 
-    require: function( fn ){
+    require: function( fn, as ){
+      if( as ){
+        if( $$.is.fn(fn) ){
+          // disabled b/c doesn't work with forced names on functions w/ prototypes
+          //fn = fnAs( fn, as );
+
+          as = as || fn.name;
+
+          fn = { name: as, fn: fn };
+        } else {
+          fn = { name: as, obj: fn };
+        }
+      }
+
       this._private.requires.push( fn );
 
       return this; // chaining
     },
 
     pass: function( data ){
+      if( $$.is.element(data) ){
+        data = data.json();
+      } else if( $$.is.collection(data) ){
+        data = data.jsons();
+      }
+
       this._private.pass.push( data );
 
       return this; // chaining
     },
 
-    run: function( fn ){ // fn used like main()
+    run: function( fn, pass ){ // fn used like main()
       var self = this;
       var _p = this._private;
+      pass = pass || _p.pass.shift();
 
       if( _p.stopped ){
         $$.util.error('Attempted to run a stopped thread!  Start a new thread or do not stop the existing thread and reuse it.');
@@ -6869,7 +7035,7 @@ var cytoscape;
 
       if( _p.running ){
         return _p.queue = _p.queue.then(function(){ // inductive step
-          return self.run( fn );
+          return self.run( fn, pass );
         });
       }
 
@@ -6880,31 +7046,47 @@ var cytoscape;
         _p.running = true;
 
         var threadTechAlreadyExists = _p.ran;
-        var pass = _p.pass.shift();
+
+        var fnImplStr = $$.is.string( fn ) ? fn : fn.toString();
 
         // worker code to exec
-        var fnStr = ( threadTechAlreadyExists ? [] : _p.requires.map(function( r ){
-          return r.toString() + '\n';
-        }) ).concat([ '(' + fn.toString() + ')(' + JSON.stringify(pass) + ');\n' ]).join('\n');
+        var fnStr = '\n' + ( _p.requires.map(function( r ){
+          return fnAsRequire( r );
+        }) ).concat([
+          '( function(){',
+            'var ret = (' + fnImplStr + ')(' + JSON.stringify(pass) + ');',
+            'if( ret !== undefined ){ resolve(ret); }', // assume if ran fn returns defined value (incl. null), that we want to resolve to it
+          '} )()\n'
+        ]).join('\n');
+
+        // because we've now consumed the requires, empty the list so we don't dupe on next run()
+        _p.requires = [];
 
         if( window ){
           var fnBlob, fnUrl;
 
           // add normalised thread api functions
           if( !threadTechAlreadyExists ){
-            fnStr += 'function broadcast(m){ return message(m); };\n'; // alias
-            fnStr += 'function message(m){ postMessage(m); };\n';
-            fnStr += 'function listen(fn){\n';
-            fnStr += '  self.addEventListener("message", function(m){ \n';
-            fnStr += '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){\n';
-            fnStr += '    } else { \n';
-            fnStr += '      fn( m.data );\n';
-            fnStr += '    }\n'
-            fnStr += '  });\n'
-            fnStr += '};\n'; 
-            fnStr += 'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });\n';
-            fnStr += 'function resolve(v){ postMessage({ $$resolve: v }); };\n'; 
+            var fnPre = fnStr + '';
+
+            fnStr = [
+              'function broadcast(m){ return message(m); };', // alias
+              'function message(m){ postMessage(m); };',
+              'function listen(fn){',
+              '  self.addEventListener("message", function(m){ ',
+              '    if( typeof m === "object" && (m.data.$$eval || m.data === "$$start") ){',
+              '    } else { ',
+              '      fn( m.data );',
+              '    }',
+              '  });',
+              '};', 
+              'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });',
+              'function resolve(v){ postMessage({ $$resolve: v }); };', 
+              'function reject(v){ postMessage({ $$reject: v }); };'
+            ].join('\n');
           
+            fnStr += fnPre;
+
             fnBlob = new Blob([ fnStr ], {
               type: 'application/javascript'
             });
@@ -6926,6 +7108,10 @@ var cytoscape;
               ww.removeEventListener('message', cb); // done listening b/c resolve()
 
               resolve( m.data.$$resolve );
+            } else if( $$.is.object(m) && $$.is.object( m.data ) && ('$$reject' in m.data) ){
+              ww.removeEventListener('message', cb); // done listening b/c reject()
+
+              reject( m.data.$$reject );
             } else {
               self.trigger( new $$.Event(m, { type: 'message', message: m.data }) );
             }
@@ -6948,6 +7134,10 @@ var cytoscape;
               child.removeListener('message', cb); // done listening b/c resolve()
 
               resolve( m.$$resolve );
+            } else if( $$.is.object(m) && ('$$reject' in m) ){
+              child.removeListener('message', cb); // done listening b/c reject()
+
+              reject( m.$$reject );
             } else {
               self.trigger( new $$.Event({}, { type: 'message', message: m }) );
             }
@@ -6959,6 +7149,7 @@ var cytoscape;
           });
         } else {
           $$.error('Tried to create thread but no underlying tech found!');
+          // TODO fallback on main JS thread?
         }
 
       }).then(function( v ){
@@ -7014,6 +7205,47 @@ var cytoscape;
 
   });
 
+  var fnAs = function( fn, name ){
+    var fnStr = fn.toString();
+    fnStr = fnStr.replace(/function.*\(/, 'function ' + name + '(');
+
+    return fnStr;
+  };
+
+  var defineFnal = function( opts ){
+    opts = opts || {};
+
+    return function fnalImpl( fn ){
+      var fnStr = fnAs( fn, '_$_$_' + opts.name );
+
+      this.require( fnStr );
+
+      return this.run( [ 
+        'function( data ){',
+        '  var origResolve = resolve;',
+        '  var res = [];',
+        '  ',
+        '  resolve = function( val ){',
+        '    res.push( val );',
+        '  };',
+        '  ',
+        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ' );',
+        '  ',
+        '  resolve = origResolve;',
+        '  resolve( res.length > 0 ? res : ret );',
+        '}'
+      ].join('\n') );
+    };
+  };
+
+  $$.fn.thread({
+    reduce: defineFnal({ name: 'reduce' }),
+
+    reduceRight: defineFnal({ name: 'reduceRight' }),
+
+    map: defineFnal({ name: 'map' })
+  });
+
   // aliases
   var fn = $$.thdfn;
   fn.promise = fn.run;
@@ -7037,9 +7269,9 @@ var cytoscape;
 
 ;(function($$, window){ 'use strict';
 
-  $$.Fabric = function(){
+  $$.Fabric = function( N ){
     if( !(this instanceof $$.Fabric) ){
-      return new $$.Fabric();
+      return new $$.Fabric( N );
     }
 
     var _p = this._private = {
@@ -7047,7 +7279,16 @@ var cytoscape;
     };
 
     var defN = 4;
-    var N = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || defN : defN; // assume 4 if unreported
+
+    if( $$.is.number(N) ){
+      // then use the specified number of threads
+    } if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
+      N = navigator.hardwareConcurrency;
+    } else if( typeof module !== 'undefined' ){
+      N = require('os').cpus().length;
+    } else { // TODO could use an estimation here but would the additional expense be worth it?
+      N = defN;
+    }
 
     for( var i = 0; i < N; i++ ){
       this[i] = $$.Thread();
@@ -7069,11 +7310,11 @@ var cytoscape;
   $$.fn.fabric({
 
     // require fn in all threads
-    require: function( fn ){
+    require: function( fn, as ){
       for( var i = 0; i < this.length; i++ ){
         var thread = this[i];
 
-        thread.require( fn );
+        thread.require( fn, as );
       }
 
       return this;
@@ -7121,11 +7362,13 @@ var cytoscape;
 
     // pass data to be used with .spread() etc.
     pass: function( data ){
+      var pass = this._private.pass;
+
       if( $$.is.array(data) ){
-        this._private.pass.push( data );
+        pass.push( data );
       } else if( $$.is.elementOrCollection(data) ){
         var eles = data;
-        this._private.pass.push( eles.jsons() );
+        pass.push( eles.jsons() );
       } else {
         $$.util.error('Only arrays or collections may be used with fabric.pass()');
       }
@@ -7133,15 +7376,21 @@ var cytoscape;
       return this; // chaining
     },
 
+    spreadSize: function(){
+      var subsize =  Math.ceil( this._private.pass[0].length / this.length );
+
+      subsize = Math.max( 1, subsize ); // don't pass less than one ele to each thread
+
+      return subsize;
+    },
+
     // split the data into slices to spread the data equally among threads
     spread: function( fn ){
       var self = this;
       var _p = self._private;
-      var pass = _p.pass.shift();
+      var subsize = self.spreadSize(); // number of pass eles to handle in each thread
+      var pass = _p.pass.shift().concat([]); // keep a copy
       var runPs = [];
-      var subsize = Math.round( pass.length / this.length ); // number of pass eles to handle in each thread
-
-      subsize = Math.max( 1, subsize ); // don't pass less than one ele to each thread
 
       for( var i = 0; i < this.length; i++ ){
         var thread = this[i];
@@ -7174,34 +7423,152 @@ var cytoscape;
       });
     },
 
-    // TODO more efficient impl that uses blocks instead of individual values like .spread()
-    // may need to add a helper function directly in the woker/child process for this
+    // parallel version of array.map()
     map: function( fn ){
       var self = this;
-      var _p = self._private;
-      var pass = _p.pass.shift();
-      var runPs = [];
-      var ti = 0;
 
-      for( var i = 0; i < pass.length; i++ ){
-        var datum = pass[i];
-        var thread = this[ ti ];
-        var runP = thread.pass( datum ).run( fn );
+      self.require( fn, '_$_$_fabmap' );
 
-        runPs.push( runP );
+      return self.spread(function( split ){
+        var mapped = [];
+        var origResolve = resolve;
 
-        var doneEarly = pass.length === 0;
-        if( doneEarly ){ break; }
+        resolve = function( val ){
+          mapped.push( val );
+        };
 
-        // move on to next thread
-        ti = (ti + 1) % this.length;
-      }
+        for( var i = 0; i < split.length; i++ ){
+          var oldLen = mapped.length;
+          var ret = _$_$_fabmap( split[i] );
+          var nothingInsdByResolve = oldLen === mapped.length;
+          
+          if( nothingInsdByResolve ){
+            mapped.push( ret );
+          }
+        }
 
-      return $$.Promise.all( runPs );
+        resolve = origResolve;
+
+        return mapped;
+      });
+
     },
 
-    reduce: function(){} // TODO
+    // parallel version of array.filter()
+    filter: function( fn ){
+      var _p = this._private;
+      var pass = _p.pass[0];
 
+      return this.map( fn ).then(function( include ){
+        var ret = [];
+
+        for( var i = 0; i < pass.length; i++ ){
+          var datum = pass[i];
+          var incDatum = include[i];
+
+          if( incDatum ){
+            ret.push( datum );
+          }
+        }
+
+        return ret;
+      });
+    },
+
+    // sorts the passed array using a divide and conquer strategy
+    sort: function( cmp ){
+      var self = this;
+      var P = this._private.pass[0].length;
+      var subsize = this.spreadSize();
+      var N = this.length;
+
+      cmp = cmp || function( a, b ){ // default comparison function
+        if( a < b ){
+          return -1;
+        } else if( a > b ){
+          return 1;
+        } 
+        
+        return 0;
+      };
+
+      self.require( cmp, '_$_$_cmp' );
+
+      return self.spread(function( split ){ // sort each split normally
+        var sortedSplit = split.sort( _$_$_cmp );
+        resolve( sortedSplit ); 
+
+      }).then(function( joined ){
+        // do all the merging in the main thread to minimise data transfer
+
+        // TODO could do merging in separate threads but would incur add'l cost of data transfer
+        // for each level of the merge
+
+        var merge = function( i, j, max ){
+          // don't overflow array
+          j = Math.min( j, P );
+          max = Math.min( max, P );
+
+          // left and right sides of merge
+          var l = i;
+          var r = j;
+
+          var sorted = []; 
+
+          for( var k = l; k < max; k++ ){
+
+            var eleI = joined[i];
+            var eleJ = joined[j];
+
+            if( i < r && ( j >= max || cmp(eleI, eleJ) <= 0 ) ){
+              sorted.push( eleI );
+              i++;
+            } else {
+              sorted.push( eleJ );
+              j++;
+            }
+
+          }
+
+          // in the array proper, put the sorted values
+          for( var k = 0; k < sorted.length; k++ ){ // kth sorted item
+            var index = l + k;
+
+            joined[ index ] = sorted[k];
+          }
+        };
+
+        for( var splitL = subsize; splitL < P; splitL *= 2 ){ // merge until array is "split" as 1
+
+          for( var i = 0; i < P; i += 2*splitL ){
+            merge( i, i + splitL, i + 2*splitL );
+          }
+
+        }
+
+        return joined;
+      });
+    }
+
+
+  });
+  
+  var defineRandomPasser = function( opts ){
+    opts = opts || {};
+
+    return function( fn ){
+      var pass = this._private.pass.shift();
+
+      return this.random().pass( pass )[ opts.threadFn ]( fn );
+    };
+  };
+
+  $$.fn.fabric({
+    randomMap: defineRandomPasser({ threadFn: 'map' }),
+
+    reduce: defineRandomPasser({ threadFn: 'reduce' }),
+    
+    reduceRight: defineRandomPasser({ threadFn: 'reduceRight' })
   });
 
   // aliases
@@ -7305,7 +7672,7 @@ var cytoscape;
       userZoomingEnabled: defVal(true, options.userZoomingEnabled),
       panningEnabled: defVal(true, options.panningEnabled),
       userPanningEnabled: defVal(true, options.userPanningEnabled),
-      boxSelectionEnabled: defVal(true, options.boxSelectionEnabled),
+      boxSelectionEnabled: defVal(false, options.boxSelectionEnabled),
       autolock: defVal(false, options.autolock, options.autolockNodes),
       autoungrabify: defVal(false, options.autoungrabify, options.autoungrabifyNodes),
       autounselectify: defVal(false, options.autounselectify),
@@ -7384,7 +7751,7 @@ var cytoscape;
         wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
         motionBlur: options.motionBlur,
         pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
-        tapThreshold: $$.is.touch() ? 8 : 4
+        tapThreshold: defVal( $$.is.touch() ? 8 : 4, $$.is.touch() ? options.touchTapThreshold : options.desktopTapThreshold )
       }, options.renderer) );
 
       // trigger the passed function for the `initrender` event
@@ -7513,6 +7880,7 @@ var cytoscape;
           for( var j = index; j < elements.length; j++ ){
             var jid = elements[j]._private.data.id;
             id2index[ jid ]--;
+            elements[j]._private.index--;
           }
         }
       }
@@ -7675,13 +8043,13 @@ var cytoscape;
     load: function(elements, onload, ondone){
       var cy = this;
       
+      cy.notifications(false);
+
       // remove old elements
       var oldEles = cy.elements();
       if( oldEles.length > 0 ){
         oldEles.remove();
       }
-
-      cy.notifications(false);
       
       if( elements != null ){
         if( $$.is.plainObject(elements) || $$.is.array(elements) ){
@@ -7949,8 +8317,8 @@ var cytoscape;
             self.trigger('viewport');
           }
 
-          if( properties.css && isEles ){
-            var props = properties.css;
+          var props = properties.style || properties.css;
+          if( props && isEles ){
 
             for( var i = 0; i < props.length; i++ ){
               var name = props[i].name;
@@ -7962,6 +8330,7 @@ var cytoscape;
               
               style.overrideBypass( self, name, easedVal );
             } // for props
+            
           } // if 
 
         }
@@ -11110,339 +11479,545 @@ var cytoscape;
       return res;
     }, // pageRank
 
-	// options => options object
-        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-        //   directed // default false
-        // retObj => returned object by function
-        // if directed
-        //   indegree_n : function(node) // Returns the normalized indegree of the given node
-        //   outdegree_n: function(node) // Returns the normalized outdegree of the given node
-        // if undirected
-        //   degree_n : function(node) // Returns the normalized degree of the given node
-        degreeCentralityNormalized: function (options) {
-            options = options || {};
 
-            var logDebug = function () {
-                if (debug) {
-                    console.log.apply(console, arguments);
-                }
-            };
+    // options => options object
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
+    // retObj => returned object by function
+    // if directed
+    //   indegree : function(node) // Returns the normalized indegree of the given node
+    //   outdegree: function(node) // Returns the normalized outdegree of the given node
+    // if undirected
+    //   degree : function(node) // Returns the normalized degree of the given node
+    degreeCentralityNormalized: function (options) {
+      options = options || {};
 
-            // Parse options
-            // debug - optional
-            if (options.debug != null) {
-                var debug = options.debug;
-            } else {
-                var debug = false;
-            }
-
-            // directed - optional
-            if (options.directed != null) {
-                var directed = options.directed;
-            } else {
-                var directed = false;
-            }
-
-            logDebug("Starting degree centrality...");
-            var nodes = this.nodes();
-            var numNodes = nodes.length;
-            
-            if (!directed) {
-                var degrees = {};
-                var maxDegree = 0;
-
-                for (var i = 0; i < numNodes; i++) {
-                    var node = nodes[i];
-                    // add current node to the current options object and call degreeCentrality 
-                    var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
-                    if (maxDegree < currDegree.degree)
-                        maxDegree = currDegree.degree;
-
-                    degrees[node.id()] = currDegree.degree;
-                }
-
-                return {
-                    degree_n: function (node) {
-                        if ($$.is.string(node)) {
-                            // from is a selector string
-                            var node = (cy.filter(node)[0]).id();
-                        } else {
-                            // from is a node
-                            var node = node.id();
-                        }
-
-                        return degrees[node] / maxDegree;
-                    }
-                }
-            } else {
-                var indegrees = {};
-                var outdegrees = {};
-                var maxIndegree = 0;
-                var maxOutdegree = 0;
-
-                for (var i = 0; i < numNodes; i++) {
-                    var node = nodes[i];
-                    // add current node to the current options object and call degreeCentrality 
-                    var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
-
-                    if (maxIndegree < currDegree.indegree)
-                        maxIndegree = currDegree.indegree;
-
-                    if (maxOutdegree < currDegree.outdegree)
-                        maxOutdegree = currDegree.outdegree;
-
-                    indegrees[node.id()] = currDegree.indegree;
-                    outdegrees[node.id()] = currDegree.outdegree;
-                }
-
-                return {
-                    indegree_n: function (node) {
-                        if ($$.is.string(node)) {
-                            // from is a selector string
-                            var node = (cy.filter(node)[0]).id();
-                        } else {
-                            // from is a node
-                            var node = node.id();
-                        }
-
-                        return indegrees[node] / maxIndegree;
-                    },
-                    outdegree_n: function (node) {
-                        if ($$.is.string(node)) {
-                            // from is a selector string
-                            var node = (cy.filter(node)[0]).id();
-                        } else {
-                            // from is a node
-                            var node = node.id();
-                        }
-
-                        return outdegrees[node] / maxOutdegree;
-                    }
-
-                }
-            }
-
-        }, // degreeCentralityNormalized
-
-        // Implemented from the algorithm in Opsahl's paper "Node centrality in weighted networks: Generalizing degree and shortest paths" check the heading 2 "Degree"
-        // options => options object
-        //   node : focal node
-        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-        //   alpha : alpha value for the algorithm (Benchmark values of alpha: 0 -> disregards the weights focuses on number of edges
-        //                                                                     1 -> disregards the number of edges focuses on total amount of weight 
-        //   directed // default false
-        // retObj => returned object by function
-        // if directed
-        //   indegree : indegree of the given node
-        //   outdegree: outdegree of the given node
-        // if undirected
-        //   degree : degree of the given node
-        degreeCentrality: function (options) {
-            options = options || {};
-
-            var logDebug = function () {
-                if (debug) {
-                    console.log.apply(console, arguments);
-                }
-            };
-
-            // Parse options
-            // debug - optional
-            if (options.debug != null) {
-                var debug = options.debug;
-            } else {
-                var debug = false;
-            }
-
-            logDebug("Starting degree centrality...");
-
-            // root - mandatory!
-            if (options != null && options.root != null) {
-                var root = $$.is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
-                logDebug("Source node: %s", root.id());
-            } else {
-                return undefined;
-            }
-            
-            // weight - optional
-            if (options.weight != null && $$.is.fn(options.weight)) {
-                var weightFn = options.weight;
-            } else {
-                // If not specified, assume each edge has equal weight (1)
-                var weightFn = function (e) {
-                    return 1;
-                };
-            }
-
-            // directed - optional
-            if (options.directed != null) {
-                var directed = options.directed;
-            } else {
-                var directed = false;
-            }
-
-            // alpha - optional
-            if (options.alpha != null && $$.is.number(options.alpha)) {
-                var alpha = options.alpha
-            } else {
-                alpha = 0;
-            }
-
-
-            if (!directed) {
-                var connEdges = root.connectedEdges();
-                var k = connEdges.length;
-                var s = 0;
-                
-                // Now, sum edge weights
-                for (var i = 0; i < connEdges.length; i++) {
-                    var edge = connEdges[i];
-                    s += weightFn.apply(edge, [edge]);
-                }
-
-                return {
-                    degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
-                };
-            } else {
-                var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]');
-                var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]');
-                var k_in = incoming.length;
-                var k_out = outgoing.length;
-                var s_in = 0;
-                var s_out = 0;
-
-                // Now, sum incoming edge weights
-                for (var i = 0; i < incoming.length; i++) {
-                    var edge = incoming[i];
-                    s_in += weightFn.apply(edge, [edge]);
-                }
-
-                // Now, sum outgoing edge weights
-                for (var i = 0; i < outgoing.length; i++) {
-                    var edge = outgoing[i];
-                    s_out += weightFn.apply(edge, [edge]);
-                }
-
-                return {
-                    indegree: Math.pow(k_in, 1 - alpha) * Math.pow(s_in, alpha),
-                    outdegree: Math.pow(k_out, 1 - alpha) * Math.pow(s_out, alpha)
-                };
-            }
-        }, // degreeCentrality
-         
-        // options => options object
-        // weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-        // retObj => returned object by function
-        //   closeness_n : function(node) // Returns the normalized closeness of the given node
-        closenessCentralityNormalized: function (options) {
-            options = options || {};
-
-            var logDebug = function () {
-                if (debug) {
-                    console.log.apply(console, arguments);
-                }
-            };
-
-            // Parse options
-            // debug - optional
-            if (options.debug != null) {
-                var debug = options.debug;
-            } else {
-                var debug = false;
-            }
-
-            logDebug("Starting closeness centrality...");
-
-            var closenesses = {};
-            var maxCloseness = 0;
-            var nodes = this.nodes();
-            var fw = this.floydWarshall({weight: options.weight});
-
-            // Compute closeness for every node and find the maximum closeness
-            nodes.forEach(function (ele) {
-                var currCloseness = 0;
-                for (var i = 0; i < nodes.length; i++) {
-                    if (!(nodes[i].id() == ele.id())) {
-                        currCloseness += 1 / fw.distance(nodes[i], ele);
-                    }
-                }
-
-                if (maxCloseness < currCloseness)
-                    maxCloseness = currCloseness;
-
-                closenesses[ele.id()] = currCloseness;
-            });
-
-            return {
-                closeness_n: function (node) {
-                    if ($$.is.string(node)) {
-                        // from is a selector string
-                        var node = (cy.filter(node)[0]).id();
-                    } else {
-                        // from is a node
-                        var node = node.id();
-                    }
-
-                    return closenesses[node] / maxCloseness;
-                }
-            }
-        },
-        
-        // Implemented from pseudocode from wikipedia
-        // Assumes undirected graph
-        // options => options object
-        //   node : focal node
-        //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-        // closeness => returned value by the function. Closeness value of the given node.
-        closenessCentrality: function (options) {
-            options = options || {};
-
-            var logDebug = function () {
-                if (debug) {
-                    console.log.apply(console, arguments);
-                }
-            };
-
-            // Parse options
-            // debug - optional
-            if (options.debug != null) {
-                var debug = options.debug;
-            } else {
-                var debug = false;
-            }
-
-            logDebug("Starting closeness centrality...");
-
-            // root - mandatory!
-            if (options.root != null) {
-                if ($$.is.string(options.root)) {
-                    // use it as a selector, e.g. "#rootID
-                    var root = this.filter(options.root)[0];
-                } else {
-                    var root = options.root[0];
-                }
-                logDebug("Source node: %s", root.id());
-            } else {
-                $$.util.error("options.root required");
-                return undefined;
-            }
-            
-            // we need distance from this node to every other node
-            var dijkstra = this.dijkstra(root, options.weight);
-            var totalDistance = 0;
-
-            this.nodes().forEach(function (ele) {
-                if (ele.id() == root.id())
-                    return;
-
-                totalDistance += 1 / dijkstra.distanceTo(ele);
-            });
-
-            return totalDistance;
+      var logDebug = function () {
+        if (debug) {
+          console.log.apply(console, arguments);
         }
+      };
+
+      // Parse options
+      // debug - optional
+      if (options.debug != null) {
+        var debug = options.debug;
+      } else {
+        var debug = false;
+      }
+
+      // directed - optional
+      if (options.directed != null) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
+      logDebug("Starting degree centrality...");
+      var nodes = this.nodes();
+      var numNodes = nodes.length;
+
+      if (!directed) {
+        var degrees = {};
+        var maxDegree = 0;
+
+        for (var i = 0; i < numNodes; i++) {
+          var node = nodes[i];
+          // add current node to the current options object and call degreeCentrality 
+          var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
+          if (maxDegree < currDegree.degree)
+            maxDegree = currDegree.degree;
+
+          degrees[node.id()] = currDegree.degree;
+        }
+
+        return {
+          degree: function (node) {
+            if ($$.is.string(node)) {
+              // from is a selector string
+              var node = (cy.filter(node)[0]).id();
+            } else {
+              // from is a node
+              var node = node.id();
+            }
+
+            return degrees[node] / maxDegree;
+          }
+        }
+      } else {
+        var indegrees = {};
+        var outdegrees = {};
+        var maxIndegree = 0;
+        var maxOutdegree = 0;
+
+        for (var i = 0; i < numNodes; i++) {
+          var node = nodes[i];
+          // add current node to the current options object and call degreeCentrality 
+          var currDegree = this.degreeCentrality($$.util.extend({}, options, {root: node}));
+
+          if (maxIndegree < currDegree.indegree)
+            maxIndegree = currDegree.indegree;
+
+          if (maxOutdegree < currDegree.outdegree)
+            maxOutdegree = currDegree.outdegree;
+
+          indegrees[node.id()] = currDegree.indegree;
+          outdegrees[node.id()] = currDegree.outdegree;
+        }
+
+        return {
+          indegree: function (node) {
+            if ($$.is.string(node)) {
+              // from is a selector string
+              var node = (cy.filter(node)[0]).id();
+            } else {
+              // from is a node
+              var node = node.id();
+            }
+
+            return indegrees[node] / maxIndegree;
+          },
+          outdegree: function (node) {
+            if ($$.is.string(node)) {
+              // from is a selector string
+              var node = (cy.filter(node)[0]).id();
+            } else {
+              // from is a node
+              var node = node.id();
+            }
+
+            return outdegrees[node] / maxOutdegree;
+          }
+
+        }
+      }
+
+    }, // degreeCentralityNormalized
+
+    // Implemented from the algorithm in Opsahl's paper "Node centrality in weighted networks: Generalizing degree and shortest paths" check the heading 2 "Degree"
+    // options => options object
+    //   node : focal node
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   alpha : alpha value for the algorithm (Benchmark values of alpha: 0 -> disregards the weights focuses on number of edges
+    //                                                                     1 -> disregards the number of edges focuses on total amount of weight 
+    //   directed // default false
+    // retObj => returned object by function
+    // if directed
+    //   indegree : indegree of the given node
+    //   outdegree: outdegree of the given node
+    // if undirected
+    //   degree : degree of the given node
+    degreeCentrality: function (options) {
+      options = options || {};
+
+      var callingEles = this;
+
+      var logDebug = function () {
+        if (debug) {
+          console.log.apply(console, arguments);
+        }
+      };
+
+      // Parse options
+      // debug - optional
+      if (options.debug != null) {
+        var debug = options.debug;
+      } else {
+        var debug = false;
+      }
+
+      logDebug("Starting degree centrality...");
+
+      // root - mandatory!
+      if (options != null && options.root != null) {
+        var root = $$.is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
+        logDebug("Source node: %s", root.id());
+      } else {
+        return undefined;
+      }
+
+      // weight - optional
+      if (options.weight != null && $$.is.fn(options.weight)) {
+        var weightFn = options.weight;
+      } else {
+        // If not specified, assume each edge has equal weight (1)
+        var weightFn = function (e) {
+          return 1;
+        };
+      }
+
+      // directed - optional
+      if (options.directed != null) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
+      // alpha - optional
+      if (options.alpha != null && $$.is.number(options.alpha)) {
+        var alpha = options.alpha
+      } else {
+        alpha = 0;
+      }
+
+
+      if (!directed) {
+        var connEdges = root.connectedEdges().intersection( callingEles );
+        var k = connEdges.length;
+        var s = 0;
+
+        // Now, sum edge weights
+        for (var i = 0; i < connEdges.length; i++) {
+          var edge = connEdges[i];
+          s += weightFn.apply(edge, [edge]);
+        }
+
+        return {
+          degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
+        };
+      } else {
+        var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]').intersection( callingEles );
+        var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]').intersection( callingEles );
+        var k_in = incoming.length;
+        var k_out = outgoing.length;
+        var s_in = 0;
+        var s_out = 0;
+
+        // Now, sum incoming edge weights
+        for (var i = 0; i < incoming.length; i++) {
+          var edge = incoming[i];
+          s_in += weightFn.apply(edge, [edge]);
+        }
+
+        // Now, sum outgoing edge weights
+        for (var i = 0; i < outgoing.length; i++) {
+          var edge = outgoing[i];
+          s_out += weightFn.apply(edge, [edge]);
+        }
+
+        return {
+          indegree: Math.pow(k_in, 1 - alpha) * Math.pow(s_in, alpha),
+          outdegree: Math.pow(k_out, 1 - alpha) * Math.pow(s_out, alpha)
+        };
+      }
+    }, // degreeCentrality
+
+    // options => options object
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
+    // retObj => returned object by function
+    //   closeness : function(node) // Returns the normalized closeness of the given node
+    closenessCentralityNormalized: function (options) {
+      options = options || {};
+
+      var logDebug = function () {
+        if (debug) {
+          console.log.apply(console, arguments);
+        }
+      };
+
+      // Parse options
+      // debug - optional
+      if (options.debug != null) {
+        var debug = options.debug;
+      } else {
+        var debug = false;
+      }
+
+      logDebug("Starting closeness centrality...");
+
+      var closenesses = {};
+      var maxCloseness = 0;
+      var nodes = this.nodes();
+      var fw = this.floydWarshall({weight: options.weight, directed: options.directed});
+
+      // Compute closeness for every node and find the maximum closeness
+      for(var i = 0; i < nodes.length; i++){
+        var currCloseness = 0;
+        for (var j = 0; j < nodes.length; j++) {
+          if (i != j) {
+            currCloseness += 1 / fw.distance(nodes[i], nodes[j]);
+          }
+        }
+
+        if (maxCloseness < currCloseness)
+          maxCloseness = currCloseness;
+
+        closenesses[nodes[i].id()] = currCloseness;
+      }
+
+      return {
+        closeness: function (node) {
+          if ($$.is.string(node)) {
+            // from is a selector string
+            var node = (cy.filter(node)[0]).id();
+          } else {
+            // from is a node
+            var node = node.id();
+          }
+
+          return closenesses[node] / maxCloseness;
+        }
+      }
+    },
+    // Implemented from pseudocode from wikipedia
+    // options => options object
+    //   root : focal node
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
+    // closeness => returned value by the function. Closeness value of the given node.
+    closenessCentrality: function (options) {
+      options = options || {};
+
+      var logDebug = function () {
+        if (debug) {
+          console.log.apply(console, arguments);
+        }
+      };
+
+      // Parse options
+      // debug - optional
+      if (options.debug != null) {
+        var debug = options.debug;
+      } else {
+        var debug = false;
+      }
+
+      logDebug("Starting closeness centrality...");
+
+      // root - mandatory!
+      if (options.root != null) {
+        if ($$.is.string(options.root)) {
+          // use it as a selector, e.g. "#rootID
+          var root = this.filter(options.root)[0];
+        } else {
+          var root = options.root[0];
+        }
+        logDebug("Source node: %s", root.id());
+      } else {
+        $$.util.error("options.root required");
+        return undefined;
+      }
+
+      // weight - optional
+      if (options.weight != null && $$.is.fn(options.weight)) {
+        var weight = options.weight;
+      } else {
+        var weight = function(){return 1;};
+      }
+
+      // directed - optional
+      if (options.directed != null && $$.is.bool(options.directed)) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
+      // we need distance from this node to every other node
+      var dijkstra = this.dijkstra({
+        root: root,
+        weight: weight,
+        directed: directed
+      });
+      var totalDistance = 0;
+
+      var nodes = this.nodes();
+      for (var i = 0; i < nodes.length; i++)
+        if (nodes[i].id() != root.id())
+          totalDistance += 1 / dijkstra.distanceTo(nodes[i]);
+
+      return totalDistance;
+    }, // closenessCentrality
+
+    // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
+    // options => options object
+    //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
+    //   directed // default false
+    // retObj => returned object by function
+    //   betweenness : function(node) // Returns the betweenness centrality of the given node
+    //   betweennessNormalized : function(node) // Returns the normalized betweenness centrality of the given node
+    betweennessCentrality: function (options) {
+      options = options || {};
+
+      var logDebug = function () {
+        if (debug) {
+          console.log.apply(console, arguments);
+        }
+      };
+
+      // Parse options
+      // debug - optional
+      if (options.debug != null) {
+        var debug = options.debug;
+      } else {
+        var debug = false;
+      }
+
+      logDebug("Starting betweenness centrality...");
+
+      // Weight - optional
+      if (options.weight != null && $$.is.fn(options.weight)) {
+        var weightFn = options.weight;
+        var weighted = true;
+      } else {
+        var weighted = false;
+      }
+
+      // Directed - default false
+      if (options.directed != null && $$.is.bool(options.directed)) {
+        var directed = options.directed;
+      } else {
+        var directed = false;
+      }
+
+      var priorityInsert = function (queue, ele) {
+        queue.unshift(ele);
+        for (var i = 0; d[queue[i]] < d[queue[i + 1]] && i < queue.length - 1; i++) {
+          var tmp = queue[i];
+          queue[i] = queue[i + 1];
+          queue[i + 1] = tmp;
+        }
+      };
+
+      var cy = this._private.cy;
+
+      // starting
+      var V = this.nodes();
+      var A = {};
+      var C = {};
+
+      // A contains the neighborhoods of every node
+      for (var i = 0; i < V.length; i++) {
+        if (directed) {
+          A[V[i].id()] = V[i].outgoers("node"); // get outgoers of every node
+        } else {
+          A[V[i].id()] = V[i].openNeighborhood("node"); // get neighbors of every node          
+        }
+      }
+
+      // C contains the betweenness values
+      for (var i = 0; i < V.length; i++) {
+        C[V[i].id()] = 0;
+      }
+
+      for (var s = 0; s < V.length; s++) {
+        var S = []; // stack
+        var P = {};
+        var g = {};
+        var d = {};
+        var Q = []; // queue
+
+        // init dictionaries
+        for (var i = 0; i < V.length; i++) {
+          P[V[i].id()] = [];
+          g[V[i].id()] = 0;
+          d[V[i].id()] = Number.POSITIVE_INFINITY;
+        }
+
+        g[V[s].id()] = 1; // sigma
+        d[V[s].id()] = 0; // distance to s
+
+        Q.unshift(V[s].id());
+
+        while (Q.length > 0) {
+          var v = Q.pop();
+          S.push(v);
+          if (weighted) {
+            A[v].forEach(function (w) {
+              if (cy.$('#' + v).edgesTo(w).length > 0) {
+                var edge = cy.$('#' + v).edgesTo(w)[0];
+              } else {
+                var edge = w.edgesTo('#' + v)[0];
+              }
+              
+              var edgeWeight = weightFn.apply(edge, [edge]);
+
+              if (d[w.id()] > d[v] + edgeWeight) {
+                d[w.id()] = d[v] + edgeWeight;
+                if (Q.indexOf(w.id()) < 0) { //if w is not in Q
+                  priorityInsert(Q, w.id());
+                } else { // update position if w is in Q
+                  Q.splice(Q.indexOf(w.id()), 1);
+                  priorityInsert(Q, w.id());
+                }
+                g[w.id()] = 0;
+                P[w.id()] = [];
+              }
+              if (d[w.id()] == d[v] + edgeWeight) {
+                g[w.id()] = g[w.id()] + g[v];
+                P[w.id()].push(v);
+              }
+            });
+          } else {
+            A[v].forEach(function (w) {
+              if (d[w.id()] == Number.POSITIVE_INFINITY) {
+                Q.unshift(w.id());
+                d[w.id()] = d[v] + 1;
+              }
+              if (d[w.id()] == d[v] + 1) {
+                g[w.id()] = g[w.id()] + g[v];
+                P[w.id()].push(v);
+              }
+            });
+          }
+        }
+
+        var e = {};
+        for (var i = 0; i < V.length; i++) {
+          e[V[i].id()] = 0;
+        }
+
+        while (S.length > 0) {
+          var w = S.pop();
+          P[w].forEach(function (v) {
+            e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
+            if (w != V[s].id())
+              C[w] = C[w] + e[w];
+          });
+        }
+      }
+
+      var max = 0;
+      for (var key in C) {
+        if (max < C[key])
+          max = C[key];
+      }
+
+      var ret = {
+        betweenness: function (node) {
+          if ($$.is.string(node)) {
+            var node = (cy.filter(node)[0]).id();
+          } else {
+            var node = node.id();
+          }
+
+          return C[node];
+        },
+
+        betweennessNormalized: function (node) {
+          if ($$.is.string(node)) {
+            var node = (cy.filter(node)[0]).id();
+          } else {
+            var node = node.id();
+          }
+
+          return C[node] / max;
+        }
+      };
+
+      // alias
+      ret.betweennessNormalised = ret.betweennessNormalized;
+
+      return ret;
+    } // betweennessCentrality
   }); // $$.fn.eles
 
-
+  // nice, short mathemathical alias
+  $$.elesfn.dc = $$.elesfn.degreeCentrality;
+  $$.elesfn.dcn = $$.elesfn.degreeCentralityNormalised = $$.elesfn.degreeCentralityNormalized;
+  $$.elesfn.cc = $$.elesfn.closenessCentrality;
+  $$.elesfn.ccn = $$.elesfn.closenessCentralityNormalised = $$.elesfn.closenessCentralityNormalized;
+  $$.elesfn.bc = $$.elesfn.betweennessCentrality;
 }) (cytoscape);
 ;(function( $$ ){ 'use strict';
 
@@ -11459,74 +12034,6 @@ var cytoscape;
 ;(function( $$ ){ 'use strict';
   
   $$.fn.eles({
-    classes: function(opts){
-      var eles = this;
-      var changed = [];
-      var fn;
-
-      if( $$.is.fn(opts) ){
-        fn = opts;
-
-      } else if( !$$.is.plainObject(opts) ){
-        return this; // needs opts or fn
-      } 
-
-      for(var i = 0; i < eles.length; i++){
-        var ele = eles[i];
-        var eleChanged = false;
-
-        opts = fn ? fn.apply(ele, [i, ele]) : opts;
-
-        // add classes
-        if( opts.add ){ for( var j = 0; j < opts.add.length; j++ ){
-          var cls = opts.add[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = true;
-
-          if( !hasClass && !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-
-        // remove classes
-        if( opts.remove ){ for( var j = 0; j < opts.remove.length; j++ ){
-          var cls = opts.remove[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = false;
-
-          if( hasClass && !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-
-        // toggle classes
-        if( opts.toggle ){ for( var j = 0; j < opts.toggle.length; j++ ){
-          var cls = opts.toggle[j];
-          var hasClass = ele._private.classes[cls];
-
-          ele._private.classes[cls] = !hasClass;
-
-          if( !eleChanged ){
-            changed.push( ele );
-            eleChanged = true;
-          }
-        } }
-      }
-
-      if( changed.length > 0 ){
-        new $$.Collection( this.cy(), changed )
-          .updateStyle()
-          .trigger('class')
-        ;
-      }
-
-      return this;
-    },
-
     addClass: function(classes){
       classes = classes.split(/\s+/);
       var self = this;
@@ -11711,6 +12218,8 @@ var cytoscape;
       return this.neighborhood().intersect( collection ).length === collection.length;
     }
   });
+
+  $$.elesfn.allAreNeighbours = $$.elesfn.allAreNeighbors;
   
 })( cytoscape );
 
@@ -12714,6 +13223,12 @@ var cytoscape;
       
     },
 
+    absoluteComplement: function(){
+      var cy = this._private.cy;
+
+      return cy.elements().not( this );
+    },
+
     intersect: function( other ){
       var cy = this._private.cy;
       
@@ -12807,9 +13322,9 @@ var cytoscape;
       add( col2, col1, right );
 
       return {
-        left: new $$.Collection( cy, left ),
-        right: new $$.Collection( cy, right ),
-        both: new $$.Collection( cy, both )
+        left: new $$.Collection( cy, left, { unique: true } ),
+        right: new $$.Collection( cy, right, { unique: true } ),
+        both: new $$.Collection( cy, both, { unique: true } )
       };
     },
 
@@ -12934,7 +13449,7 @@ var cytoscape;
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var ret = mapFn.apply( thisArg, [ele, i, eles] );
+        var ret = thisArg ? mapFn.apply( thisArg, [ele, i, eles] ) : mapFn( ele, i, eles );
 
         arr.push( ret );
       }
@@ -12949,7 +13464,7 @@ var cytoscape;
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var include = fn.apply( thisArg, [ele, i, eles] );
+        var include = thisArg ? fn.apply( thisArg, [ele, i, eles] ) : fn( ele, i, eles );
 
         if( include ){
           filterEles.push( ele );
@@ -12966,7 +13481,7 @@ var cytoscape;
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var val = valFn.apply( thisArg, [ ele, i, eles ] );
+        var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
         if( val > max ){
           max = val;
@@ -12987,7 +13502,7 @@ var cytoscape;
 
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
-        var val = valFn.apply( thisArg, [ ele, i, eles ] );
+        var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
         if( val < min ){
           min = val;
@@ -13005,10 +13520,11 @@ var cytoscape;
   // aliases
   var fn = $$.elesfn;
   fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
-  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.not;
+  fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.relativeComplement = fn.not;
   fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
-  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = $$.symdiff = fn.xor;
+  fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
   fn.fnFilter = fn.filterFn = fn.stdFilter;
+  fn.complement = fn.abscomp = fn.absoluteComplement;
   
 })( cytoscape );
 ;(function($$){ 'use strict';
@@ -13585,7 +14101,7 @@ var cytoscape;
 
       if( ele ){
         if( !hasCompoundNodes ){
-          return ele._private.style.opacity === 0;
+          return ele._private.style.opacity.value === 0;
         } else {
           return ele.effectiveOpacity() === 0;
         }
@@ -13632,6 +14148,7 @@ var cytoscape;
   function defineSwitchFunction(params){
     return function(){
       var args = arguments;
+      var changedEles = [];
       
       // e.g. cy.nodes().select( data, handler )
       if( args.length === 2 ){
@@ -13651,6 +14168,7 @@ var cytoscape;
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
           var able = !params.ableField || ele._private[params.ableField];
+          var changed = ele._private[params.field] != params.value;
 
           if( params.overrideAble ){
             var overrideAble = params.overrideAble(ele);
@@ -13664,10 +14182,16 @@ var cytoscape;
 
           if( able ){
             ele._private[params.field] = params.value;
+
+            if( changed ){
+              changedEles.push( ele );
+            }
           }
         }
-        this.updateStyle(); // change of state => possible change of style
-        this.trigger( params.event );
+
+        var changedColl = $$.Collection( this.cy(), changedEles );
+        changedColl.updateStyle(); // change of state => possible change of style
+        changedColl.trigger( params.event );
       }
 
       return this;
@@ -13981,6 +14505,11 @@ var cytoscape;
       return this.neighborhood( selector );
     }
   });  
+
+  // aliases
+  $$.elesfn.neighbourhood = $$.elesfn.neighborhood;
+  $$.elesfn.closedNeighbourhood = $$.elesfn.closedNeighborhood;
+  $$.elesfn.openNeighbourhood = $$.elesfn.openNeighborhood;
 
 
   // Edge functions
@@ -14651,10 +15180,13 @@ var cytoscape;
     this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
-    this.motionBlurPxRatio = 0.666;
+    this.motionBlurPxRatio = this.mbPxRBlurry = 0.666;
+    this.minMbLowQualFrames = 4;
+    this.fullQualityMb = false;
     this.clearedForMotionBlur = [];
     this.tapThreshold = options.tapThreshold;
     this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.tapholdDuration = 500;
 
     this.load();
   }
@@ -14726,6 +15258,10 @@ var cytoscape;
 
     if( this.removeObserver ){
       this.removeObserver.disconnect();
+    }
+
+    if( this.labelCalcDiv ){
+      document.body.removeChild(this.labelCalcDiv);
     }
   };
 
@@ -15821,10 +16357,11 @@ var cytoscape;
     rs.labelHeight = labelDims.height;
   };
 
-  CanvasRenderer.prototype.getLabelText = function( ele ){
+  CanvasRenderer.prototype.getLabelText = function( ele ){ 
     var style = ele._private.style;
     var text = ele._private.style['content'].strValue;
     var textTransform = style['text-transform'].value;
+    var rscratch = ele._private.rscratch;
     
     if (textTransform == 'none') {
     } else if (textTransform == 'uppercase') {
@@ -15833,10 +16370,64 @@ var cytoscape;
       text = text.toLowerCase();
     }
 
+    if( ele.isNode() && style['text-wrap'].value === 'wrap' ){
+      //console.log('wrap'); 
+      
+      // save recalc if the label is the same as before
+      if( rscratch.labelWrapKey === rscratch.labelKey ){ 
+        // console.log('wrap cache hit');
+        return rscratch.labelWrapCachedText;
+      }
+      // console.log('wrap cache miss');
+
+      var lines = text.split('\n');
+      var maxW = style['text-max-width'].pxValue;
+      var wrappedText;
+      var wrappedLines = [];
+
+      for( var l = 0; l < lines.length; l++ ){
+        var line = lines[l];
+        var lineDims = this.calculateLabelDimensions( ele, line, 'line=' + line );
+        var lineW = lineDims.width;
+
+        if( lineW > maxW ){ // line is too long
+          var words = line.split(/\s+/); // NB: assume collapsed whitespace into single space
+          var subline = '';
+
+          for( var w = 0; w < words.length; w++ ){
+            var word = words[w];
+            var testLine = subline.length === 0 ? word : subline + ' ' + word;
+            var testDims = this.calculateLabelDimensions( ele, testLine, 'testLine=' + testLine );
+            var testW = testDims.width;
+
+            if( testW <= maxW ){ // word fits on current line
+              subline += word + ' ';
+            } else { // word starts new line
+              wrappedLines.push( subline );
+              subline = word + ' ';
+            }
+          }
+
+          // if there's remaining text, put it in a wrapped line
+          if( !subline.match(/^\s+$/) ){
+            wrappedLines.push( subline );
+          }
+        } else { // line is already short enough
+          wrappedLines.push( line );
+        }
+      } // for
+
+      rscratch.labelWrapCachedLines = wrappedLines;
+      rscratch.labelWrapCachedText = text = wrappedLines.join('\n');
+      rscratch.labelWrapKey = rscratch.labelKey;
+
+      // console.log(text)
+    } // if wrap
+
     return text;
   };
 
-  CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+  CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text, extraKey ){
     var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
@@ -15846,6 +16437,11 @@ var cytoscape;
     var weight = style['font-weight'].strValue;
 
     var cacheKey = ele._private.labelKey;
+
+    if( extraKey ){
+      cacheKey += '$@$' + extraKey;
+    }
+
     var cache = r.labelDimCache || (r.labelDimCache = {});
 
     if( cache[cacheKey] ){
@@ -15877,6 +16473,12 @@ var cytoscape;
     ds.pointerEvents = 'none';
     ds.padding = '0';
     ds.lineHeight = '1';
+
+    if( ele.isNode() && style['text-wrap'].value === 'wrap' ){
+      ds.whiteSpace = 'pre'; // so newlines are taken into account
+    } else {
+      ds.whiteSpace = 'normal';
+    }
 
     // put label content in div
     div.textContent = text;
@@ -16168,6 +16770,9 @@ var cytoscape;
         var tgtH1 = rs.lastTgtCtlPtH;
         var tgtH2 = tgt.outerHeight();
 
+        var width1 = rs.lastW;
+        var width2 = eStyle['control-point-step-size'].pxValue;
+
         if( badBezier ){
           rs.badBezier = true;
         } else {
@@ -16176,6 +16781,7 @@ var cytoscape;
 
         if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
         &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
+        &&  width1 === width2
         &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
           // console.log('edge ctrl pt cache HIT')
           continue; // then the control points haven't changed and we can skip calculating them
@@ -16190,6 +16796,7 @@ var cytoscape;
           rs.lastTgtCtlPtH = tgtH2;
           rs.lastEdgeIndex = edgeIndex2;
           rs.lastNumEdges = numEdges2;
+          rs.lastWidth = width2;
           // console.log('edge ctrl pt cache MISS')
         }
 
@@ -16393,8 +17000,6 @@ var cytoscape;
           y: Math.sin(angle)
         };
 
-        rscratch.edgeType = 'haystack';
-        rscratch.haystack = true;
       }
 
       var src = _p.source;
@@ -16414,6 +17019,10 @@ var cytoscape;
         rs.target.x * tgtW * halfRadius + tgtPos.x,
         rs.target.y * tgtH * halfRadius + tgtPos.y
       ];
+
+      // always override as haystack in case set to different type previously
+      rscratch.edgeType = 'haystack';
+      rscratch.haystack = true;
     }
 
     return hashTable;
@@ -16718,6 +17327,14 @@ var cytoscape;
     var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
     context.lineWidth = edgeWidth;
     
+    var shadowBlur = style['shadow-blur'].pxValue;
+    var shadowOpacity = style['shadow-opacity'].value;
+    var shadowColor = style['shadow-color'].value;
+    var shadowOffsetX = style['shadow-offset-x'].pxValue;
+    var shadowOffsetY = style['shadow-offset-y'].pxValue;
+
+    this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
+    
     // if( rs.edgeType !== 'haystack' ){
     //   this.findEndpoints(edge);
     // }
@@ -16782,6 +17399,8 @@ var cytoscape;
     } else if ( rs.noArrowPlacement !== true && rs.startX !== undefined ){
       this.drawArrowheads(context, edge, drawOverlayInstead);
     }
+
+    this.shadowStyle(context, 'transparent', 0); // reset for next guy
 
   };
   
@@ -17093,6 +17712,10 @@ var cytoscape;
     var w = img.width;
     var h = img.height;
 
+    if( w === 0 || h === 0 ){
+      return; // no point in drawing empty image (and chrome is broken in this case)
+    }
+
     if( fit === 'contain' ){
       var scale = Math.min( nodeW/w, nodeH/h );
 
@@ -17194,21 +17817,21 @@ var cytoscape;
     if( computedSize < minSize ){
       return;
     }
-  
+
     // Calculate text draw position
-    
+
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    
+
     // this.recalculateEdgeLabelProjection( edge );
-    
+
     var rs = edge._private.rscratch;
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
     var style = edge._private.style;
     var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
     var theta, dx, dy;
-    
+
     if( autorotate ){
       switch( rs.edgeType ){
         case 'haystack':
@@ -17225,7 +17848,7 @@ var cytoscape;
       context.translate(rs.labelX, rs.labelY);
       context.rotate(theta);
 
-      this.drawText(context, edge, 0, -4); // make label offset from the edge a bit
+      this.drawText(context, edge, 0, 0);
 
       context.rotate(-theta);
       context.translate(-rs.labelX, -rs.labelY);
@@ -17249,7 +17872,7 @@ var cytoscape;
     if( computedSize < minSize ){
       return;
     }
-      
+
     // this.recalculateNodeLabelProjection( node );
 
     var textHalign = node._private.style['text-halign'].strValue;
@@ -17285,7 +17908,7 @@ var cytoscape;
 
     this.drawText(context, node, rs.labelX, rs.labelY);
   };
-  
+
   CanvasRenderer.prototype.getFontCache = function(context){
     var cache;
 
@@ -17321,6 +17944,11 @@ var cytoscape;
     var outlineOpacity = style['text-outline-opacity'].value * opacity;
     var color = style['color'].value;
     var outlineColor = style['text-outline-color'].value;
+    var shadowBlur = style['text-shadow-blur'].pxValue;
+    var shadowOpacity = style['text-shadow-opacity'].value;
+    var shadowColor = style['text-shadow-color'].value;
+    var shadowOffsetX = style['text-shadow-offset-x'].pxValue;
+    var shadowOffsetY = style['text-shadow-offset-y'].pxValue;
 
     var fontCacheKey = element._private.fontKey;
     var cache = this.getFontCache(context);
@@ -17331,50 +17959,205 @@ var cytoscape;
       cache.key = fontCacheKey;
     }
 
-    var text = String(style['content'].value);
-    var textTransform = style['text-transform'].value;
-    
-    if (textTransform == 'none') {
-    } else if (textTransform == 'uppercase') {
-      text = text.toUpperCase();
-    } else if (textTransform == 'lowercase') {
-      text = text.toLowerCase();
-    }
-    
+    var text = this.getLabelText( element );
+
     // Calculate text draw position based on text alignment
-    
+
     // so text outlines aren't jagged
     context.lineJoin = 'round';
 
     this.fillStyle(context, color[0], color[1], color[2], opacity);
-    
+
     this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
+
+    this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
     return text;
   };
 
+  function roundRect(ctx, x, y, width, height, radius) {
+    var radius = radius || 5;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // Draw text
   CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
-    var style = element._private.style;
+    var _p = element._private;
+    var style = _p.style;
+    var rstyle = _p.rstyle;
+    var rscratch = _p.rscratch;
     var parentOpacity = element.effectiveOpacity();
-    if( parentOpacity === 0 ){ return; }
+    if( parentOpacity === 0 || style["text-opacity"].value === 0){ return; }
 
     var text = this.setupTextStyle( context, element );
-    
-    if ( text != null && !isNaN(textX) && !isNaN(textY) ) {
-     
-      var lineWidth = 2  * style['text-outline-width'].value; // *2 b/c the stroke is drawn centred on the middle
+    var halign = style["text-halign"].value;
+    var valign = style["text-valign"].value;
+
+    if ( text != null && !isNaN(textX) && !isNaN(textY)) {
+      var backgroundOpacity = style["text-background-opacity"].value;
+      if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
+        var textBorderWidth = style["text-border-width"].pxValue;
+        var margin = 4 + textBorderWidth/2;
+
+        if (element.isNode()) {
+          //Move textX, textY to include the background margins
+          if (valign == "top") {
+            textY -=margin;
+          } else if (valign == "bottom") {
+            textY +=margin;
+          }
+          if (halign == "left") {
+            textX -=margin;
+          } else if (halign == "right") {
+            textX +=margin;
+          }
+        }
+
+        var bgWidth = rstyle.labelWidth;
+        var bgHeight = rstyle.labelHeight;
+        var bgX = textX;
+
+        if (halign) {
+          if (halign == "center") {
+            bgX = bgX - bgWidth / 2;
+          } else if (halign == "left") {
+            bgX = bgX- bgWidth;
+          }
+        }
+
+        var bgY = textY;
+
+        if (element.isNode()) {
+          if (valign == "top") {
+             bgY = bgY - bgHeight;
+          } else if (valign == "center") {
+            bgY = bgY- bgHeight / 2;
+          }
+        } else {
+          bgY = bgY - bgHeight / 2;
+        }
+
+        if (style['edge-text-rotation'].strValue === 'autorotate') {
+          textY = 0;
+          bgWidth += 4;
+          bgX = textX - bgWidth / 2;
+          bgY = textY - bgHeight / 2;
+        } else {
+          // Adjust with border width & margin
+          bgX -= margin;
+          bgY -= margin;
+          bgHeight += margin*2;
+          bgWidth += margin*2;
+        }
+
+        if (style["text-background-color"]) {
+          var textFill = context.fillStyle;
+          var textBackgroundColor = style["text-background-color"].value;
+
+          context.fillStyle = "rgba(" + textBackgroundColor[0] + "," + textBackgroundColor[1] + "," + textBackgroundColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          var styleShape = style['text-background-shape'].strValue;
+          if (styleShape == "roundrectangle") {
+            roundRect(context, bgX, bgY, bgWidth, bgHeight, 2);
+          } else {
+            context.fillRect(bgX,bgY,bgWidth,bgHeight);
+          }
+          context.fillStyle = textFill;
+        }
+
+        if (textBorderWidth > 0) {
+          var textStroke = context.strokeStyle;
+          var textLineWidth = context.lineWidth;
+          var textBorderColor = style["text-border-color"].value;
+          var textBorderStyle = style['text-border-style'].value;
+
+          context.strokeStyle = "rgba(" + textBorderColor[0] + "," + textBorderColor[1] + "," + textBorderColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          context.lineWidth = textBorderWidth;
+
+          if( context.setLineDash ){ // for very outofdate browsers
+            switch( textBorderStyle ){
+              case 'dotted':
+                context.setLineDash([ 1, 1 ]);
+                break;
+              case 'dashed':
+                context.setLineDash([ 4, 2 ]);
+                break;
+              case 'double':
+                context.lineWidth = textBorderWidth/4; // 50% reserved for white between the two borders
+              case 'solid':
+                context.setLineDash([ ]);
+                break;
+            }
+          }
+
+          context.strokeRect(bgX,bgY,bgWidth,bgHeight);
+
+          if( textBorderStyle === 'double' ){
+            var whiteWidth = textBorderWidth/2;
+
+            context.strokeRect(bgX+whiteWidth,bgY+whiteWidth,bgWidth-whiteWidth*2,bgHeight-whiteWidth*2);
+          }
+
+          if( context.setLineDash ){ // for very outofdate browsers
+            context.setLineDash([ ]);
+          }
+          context.lineWidth = textLineWidth;
+          context.strokeStyle = textStroke;
+        }
+
+      }
+
+      var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
+
       if (lineWidth > 0) {
         context.lineWidth = lineWidth;
         context.strokeText(text, textX, textY);
       }
 
-      context.fillText(text, textX, textY);
+      if( element.isNode() && style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
+        var lines = rscratch.labelWrapCachedLines;
+        var lineHeight = rstyle.labelHeight / lines.length;
+
+        //console.log('lines', lines);
+
+        if( valign === 'top' ){
+          for( var l = lines.length - 1; l >= 0; l-- ){
+            context.fillText( lines[l], textX, textY );
+
+            textY -= lineHeight;
+          }
+        } else {
+          for( var l = 0; l < lines.length; l++ ){
+            context.fillText( lines[l], textX, textY );
+
+            textY += lineHeight;
+          }
+        }
+
+        // var fontSize = style['font-size'].pxValue;
+        // wrapText(context, text, textX, textY, style['text-max-width'].pxValue, fontSize + 1);
+      } else {
+        context.fillText( text, textX, textY );
+      }
+
+
+      this.shadowStyle(context, 'transparent', 0); // reset for next guy
     }
   };
 
-  
+
 })( cytoscape );
+
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
@@ -17420,6 +18203,14 @@ var cytoscape;
       this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
       
       this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+      
+      var shadowBlur = style['shadow-blur'].pxValue;
+      var shadowOpacity = style['shadow-opacity'].value;
+      var shadowColor = style['shadow-color'].value;
+      var shadowOffsetX = style['shadow-offset-x'].pxValue;
+      var shadowOffsetY = style['shadow-offset-y'].pxValue;
+
+      this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -17605,6 +18396,8 @@ var cytoscape;
       }
     }
 
+    this.shadowStyle(context, 'transparent', 0); // reset for next guy
+
   };
 
   // does the node have at least one pie piece?
@@ -17751,6 +18544,18 @@ var cytoscape;
     //   context.strokeStyle = cache.strokeStyle = strokeStyle;
     // }
   };
+  
+  CanvasRenderer.prototype.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+    if (opacity > 0) {
+      context.shadowBlur = blur;
+      context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";
+      context.shadowOffsetX = offsetX;
+      context.shadowOffsetY = offsetY;
+    } else {
+      context.shadowBlur = 0;
+      context.shadowColor = "transparent";
+    }
+  }
 
   // Resize canvas
   CanvasRenderer.prototype.matchCanvasSize = function(container) {
@@ -17758,12 +18563,13 @@ var cytoscape;
     var width = container.clientWidth;
     var height = container.clientHeight;
     var pixelRatio = this.getPixelRatio();
+    var mbPxRatio = this.motionBlurPxRatio;
 
     if(
       container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_NODE] ||
       container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_DRAG]
     ){
-      pixelRatio = this.motionBlurPxRatio;
+      pixelRatio = mbPxRatio;
     }
 
     var canvasWidth = width * pixelRatio;
@@ -17856,14 +18662,31 @@ var cytoscape;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
+    var mbPxRatio = r.motionBlurPxRatio;
     var inBoxSelection = r.data.select[4] ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
 
-    if( r.motionBlurTimeout ){
+    if( motionBlur ){
+      if( r.mbFrames == null ){
+        r.mbFrames = 0;
+      }
+
+      r.mbFrames++;
+
+      // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
+      if( r.mbFrames > r.minMbLowQualFrames ){
+        r.fullQualityMb = false;
+        r.motionBlurPxRatio = r.mbPxRBlurry;
+      }
+    } 
+
+    // console.log('mb: %s, mbframes: %s, fq: %s', motionBlur, r.mbFrames, r.fullQualityMb);
+
+    if( motionBlur && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
     }
 
-    if( this.redrawTimeout ){
+    if( !forcedContext && this.redrawTimeout ){
       clearTimeout( this.redrawTimeout );
     }
     this.redrawTimeout = null;
@@ -17900,7 +18723,11 @@ var cytoscape;
       this.currentlyDrawing = true;
     }
 
-    
+    if( r.clearingMotionBlur ){
+      //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
+
+      r.motionBlurPxRatio = 1;
+    }
 
 
     var startTime = Date.now();
@@ -17949,16 +18776,16 @@ var cytoscape;
       function setContextTransform(context, clear){
         var ePan, eZoom, w, h;
 
-        if( context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG] ){
+        if( !r.fullQualityMb && !r.clearingMotionBlur && (context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG]) ){
           ePan = {
-            x: pan.x * r.motionBlurPxRatio,
-            y: pan.y * r.motionBlurPxRatio
+            x: pan.x * mbPxRatio,
+            y: pan.y * mbPxRatio
           };
 
-          eZoom = zoom * r.motionBlurPxRatio;
+          eZoom = zoom * mbPxRatio;
 
-          w = r.canvasWidth * r.motionBlurPxRatio;
-          h = r.canvasHeight * r.motionBlurPxRatio;
+          w = r.canvasWidth * mbPxRatio;
+          h = r.canvasHeight * mbPxRatio;
         } else {
           ePan = effectivePan;
           eZoom = effectiveZoom;
@@ -18183,7 +19010,7 @@ var cytoscape;
 
         setContextTransform( context );
 
-        if (data.select[4] == 1) {
+        if( data.select[4] == 1 && r.hoverData.selecting ){
           var zoom = data.cy.zoom();
           var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
           
@@ -18215,7 +19042,7 @@ var cytoscape;
           }
         }
 
-        if( data.bgActivePosistion ){
+        if( data.bgActivePosistion && !r.hoverData.selecting ){
           var zoom = data.cy.zoom();
           var pos = data.bgActivePosistion;
 
@@ -18271,10 +19098,12 @@ var cytoscape;
           cxt.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
           cxt.globalCompositeOperation = gco;
 
+          var pxr = r.fullQualityMb ? 1 : mbPxRatio;
+
           cxt.drawImage( 
             txt, // img
             0, 0, // sx, sy
-            r.canvasWidth * r.motionBlurPxRatio, r.canvasHeight * r.motionBlurPxRatio, // sw, sh
+            r.canvasWidth * pxr, r.canvasHeight * pxr, // sw, sh
             0, 0, // x, y
             r.canvasWidth, r.canvasHeight // w, h
           );
@@ -18339,6 +19168,7 @@ var cytoscape;
           r.clearedForMotionBlur[CR.DRAG] = false;
           r.motionBlur = false;
           r.clearingMotionBlur = true;
+          r.mbFrames = 0;
 
           needDraw[CR.NODE] = true; 
           needDraw[CR.DRAG] = true; 
@@ -18749,11 +19579,41 @@ var cytoscape;
       r.hoverData.capture = true;
       r.hoverData.which = e.which;
       
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY);
+      var cy = r.data.cy; 
+      var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true);
       var draggedElements = r.dragData.possibleDragElements;
-      var grabEvent = new $$.Event('grab');
+
+      r.hoverData.mdownPos = pos;
+
+      var checkForTaphold = function(){
+        r.hoverData.tapholdCancelled = false;
+
+        clearTimeout( r.hoverData.tapholdTimeout );
+
+        r.hoverData.tapholdTimeout = setTimeout(function(){
+
+          if( r.hoverData.tapholdCancelled ){
+            return;
+          } else {
+            var ele = r.hoverData.down;
+
+            if( ele ){
+              ele.trigger( new $$.Event(e, {
+                type: 'taphold',
+                cyPosition: { x: pos[0], y: pos[1] }
+              }) );
+            } else {
+              cy.trigger( new $$.Event(e, {
+                type: 'taphold',
+                cyPosition: { x: pos[0], y: pos[1] }
+              }) );
+            }
+          }
+
+        }, r.tapholdDuration);
+      };
 
       // Right click button
       if( e.which == 3 ){
@@ -18790,6 +19650,11 @@ var cytoscape;
           if (near != null) {
 
             if( r.nodeIsDraggable(near) ){
+
+              var grabEvent = new $$.Event(e, {
+                type: 'grab',
+                cyPosition: { x: pos[0], y: pos[1] }
+              });
 
               if ( near.isNode() && !near.selected() ){
 
@@ -18874,6 +19739,8 @@ var cytoscape;
                 y: pos[1]
               };
 
+              checkForTaphold();
+
               r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
       
               r.redraw();
@@ -18883,6 +19750,8 @@ var cytoscape;
               x: pos[0],
               y: pos[1]
             };
+
+            checkForTaphold();
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
     
@@ -18948,6 +19817,27 @@ var cytoscape;
       var disp = [pos[0] - select[2], pos[1] - select[3]];
 
       var draggedElements = r.dragData.possibleDragElements;
+
+      var dx = select[2] - select[0];
+      var dx2 = dx * dx;
+      var dy = select[3] - select[1];
+      var dy2 = dy * dy;
+      var dist2 = dx2 + dy2;
+      var rdist2 = dist2 * zoom * zoom;
+
+      r.hoverData.tapholdCancelled = true;
+
+      var updateDragDelta = function(){
+        var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
+
+        if( dragDelta.length === 0 ){
+          dragDelta.push(0);
+          dragDelta.push(0);
+        } else {
+          dragDelta[0] += disp[0];
+          dragDelta[1] += disp[1];
+        }
+      };
       
 
       preventDefault = true;
@@ -18988,8 +19878,7 @@ var cytoscape;
         }
 
       }
-      
-      
+
       // trigger context drag if rmouse down
       if( r.hoverData.which === 3 ){
         var cxtEvt = new $$.Event(e, {
@@ -19034,21 +19923,45 @@ var cytoscape;
         preventDefault = true;
 
         if( cy.panningEnabled() && cy.userPanningEnabled() ){
-          var deltaP = {x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()};
+          var deltaP;
+
+          if( r.hoverData.justStartedPan ){
+            var mdPos = r.hoverData.mdownPos;
+
+            deltaP = {
+              x: ( pos[0] - mdPos[0] ) * zoom,
+              y: ( pos[1] - mdPos[1] ) * zoom
+            };
+
+            r.hoverData.justStartedPan = false;
+
+          } else {
+            deltaP = {
+              x: disp[0] * zoom,
+              y: disp[1] * zoom
+            };
+
+          }
 
           cy.panBy( deltaP );
+          
         }
         
         // Needs reproject due to pan changing viewport
         pos = r.projectIntoViewport(e.clientX, e.clientY);
 
       // Checks primary button down & out of time & mouse not moved much
-      } else if (select[4] == 1 && (down == null || down.isEdge())
-          && ( !cy.boxSelectionEnabled() || +new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay )
-          && (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
-          && cy.panningEnabled() && cy.userPanningEnabled() ) {
-        
+      } else if(
+          select[4] == 1 && (down == null || down.isEdge())
+          && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay) )
+          //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
+          && !r.hoverData.selecting
+          && rdist2 >= r.tapThreshold2
+          && cy.panningEnabled() && cy.userPanningEnabled()
+      ){
         r.hoverData.dragging = true;
+        r.hoverData.selecting = false;
+        r.hoverData.justStartedPan = true;
         select[4] = 0;
 
       } else {
@@ -19056,6 +19969,7 @@ var cytoscape;
         if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
           clearTimeout( r.bgActiveTimeout );
           r.data.bgActivePosistion = undefined;
+          r.hoverData.selecting = true;
 
           r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
           r.redraw();
@@ -19091,54 +20005,65 @@ var cytoscape;
           
           r.hoverData.last = near;
         }
-        
-        var dx = select[2] - select[0];
-        var dx2 = dx * dx;
-        var dy = select[3] - select[1];
-        var dy2 = dy * dy;
-        var dist2 = dx2 + dy2;
-        var rdist2 = dist2 * zoom * zoom;
 
-        if ( down && down.isNode() && r.nodeIsDraggable(down) && (rdist2 > r.tapThreshold2) ){
-          if( !r.dragData.didDrag ) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          }
+        if( down && down.isNode() && r.nodeIsDraggable(down) ){
 
-          r.dragData.didDrag = true; // indicate that we actually did drag the node
+          if( rdist2 >= r.tapThreshold2 ){ // then drag
 
-          var toTrigger = [];
+            var justStartedDrag = !r.dragData.didDrag;
 
-          for( var i = 0; i < draggedElements.length; i++ ){
-            var dEle = draggedElements[i];
-
-            // now, add the elements to the drag layer if not done already
-            if( !r.hoverData.draggingEles ){ 
-              addNodeToDrag( dEle, { inDragLayer: true } );
+            if( justStartedDrag ) {
+              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
             }
 
-            // Locked nodes not draggable, as well as non-visible nodes
-            if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
-              var dPos = dEle._private.position;
+            r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-              toTrigger.push( dEle );
-              
-              if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
-                dPos.x += disp[0];
-                dPos.y += disp[1];
+            var toTrigger = [];
+
+            for( var i = 0; i < draggedElements.length; i++ ){
+              var dEle = draggedElements[i];
+
+              // now, add the elements to the drag layer if not done already
+              if( !r.hoverData.draggingEles ){ 
+                addNodeToDrag( dEle, { inDragLayer: true } );
               }
 
+              // Locked nodes not draggable, as well as non-visible nodes
+              if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
+                var dPos = dEle._private.position;
+
+                toTrigger.push( dEle );
+                
+                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
+                  dPos.x += disp[0];
+                  dPos.y += disp[1];
+
+                  if( justStartedDrag ){
+                    var dragDelta = r.hoverData.dragDelta;
+
+                    if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
+                      dPos.x += dragDelta[0];
+                      dPos.y += dragDelta[1];
+                    }
+                  }
+                }
+
+              }
             }
+
+            r.hoverData.draggingEles = true;
+            
+            var tcol = (new $$.Collection(cy, toTrigger));
+
+            tcol.updateCompoundBounds();
+            tcol.trigger('position drag');
+            
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            r.redraw();
+
+          } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
+            updateDragDelta();
           }
-
-          r.hoverData.draggingEles = true;
-          
-          var tcol = (new $$.Collection(cy, toTrigger));
-
-          tcol.updateCompoundBounds();
-          tcol.trigger('position drag');
-          
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          r.redraw();
         }
 
         // prevent the dragging from triggering text selection on the page
@@ -19152,7 +20077,7 @@ var cytoscape;
           if(e.preventDefault) e.preventDefault();
           return false;
         }
-    }, 1000/30, { leading: true }), false);
+    }, 1000/30, { trailing: true }), false);
     
     r.registerBinding(window, 'mouseup', function(e) {
       // console.log('--\nmouseup', e)
@@ -19176,6 +20101,7 @@ var cytoscape;
 
       r.hoverData.cxtStarted = false;
       r.hoverData.draggingEles = false;
+      r.hoverData.selecting = false;
 
       if( down ){
         down.unactivate();
@@ -19415,6 +20341,7 @@ var cytoscape;
 //      console.log('ss', select);
       
       r.dragData.didDrag = false;
+      r.hoverData.dragDelta = [];
       
     }, false);
 
@@ -19524,13 +20451,16 @@ var cytoscape;
       r.data.bgActivePosistion = undefined;
 
       var cy = r.data.cy; 
-      var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
-      var now = r.touchData.now; var earlier = r.touchData.earlier;
+      var nodes = r.getCachedNodes();
+      var edges = r.getCachedEdges();
+      var now = r.touchData.now;
+      var earlier = r.touchData.earlier;
       
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
       if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
-      
+    
+
       // record starting points for pinch-to-zoom
       if( e.touches[1] ){
 
@@ -19668,7 +20598,10 @@ var cytoscape;
               addNodeToDrag( near, { addToList: draggedEles } );
             }
 
-            near.trigger('grab');
+            near.trigger( new $$.Event(e, {
+              type: 'grab',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
           }
           
           near
@@ -19722,11 +20655,16 @@ var cytoscape;
         r.touchData.singleTouchMoved = false;
         r.touchData.singleTouchStartTime = +new Date();
         
-        setTimeout(function() {
-          if (r.touchData.singleTouchMoved === false
+        clearTimeout( r.touchData.tapholdTimeout );
+        r.touchData.tapholdTimeout = setTimeout(function() {
+          if(
+              r.touchData.singleTouchMoved === false
+              && !r.pinching // if pinching, then taphold unselect shouldn't take effect
+
               // This time double constraint prevents multiple quick taps
               // followed by a taphold triggering multiple taphold events
-              && (+new Date()) - r.touchData.singleTouchStartTime > 250) {
+              //&& Date.now() - r.touchData.singleTouchStartTime > 250
+          ){
             if (r.touchData.start) {
               r.touchData.start.trigger( new $$.Event(e, {
                 type: 'taphold',
@@ -19743,7 +20681,7 @@ var cytoscape;
 
 //            console.log('taphold');
           }
-        }, 1000);
+        }, r.tapholdDuration);
       }
       
       //r.redraw();
@@ -19760,12 +20698,21 @@ var cytoscape;
     
       var cy = r.data.cy; 
       var now = r.touchData.now; var earlier = r.touchData.earlier;
+      var zoom = cy.zoom();
       
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
       if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
       var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
       
+      var startPos = r.touchData.startPosition;
+
+      var dx = now[0] - startPos[0];
+      var dx2 = dx * dx;
+      var dy = now[1] - startPos[1];
+      var dy2 = dy * dy;
+      var dist2 = dx2 + dy2;
+      var rdist2 = dist2 * zoom * zoom;
 
       if( capture && r.touchData.cxt ){
         var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
@@ -19988,43 +20935,67 @@ var cytoscape;
         var last = r.touchData.last;
         var near = near || r.findNearestElement(now[0], now[1], true);
 
-        if ( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start)) {
-          var draggedEles = r.dragData.touchDragEles;
+        if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          for( var k = 0; k < draggedEles.length; k++ ){
-            var draggedEle = draggedEles[k];
+          if( rdist2 >= r.tapThreshold2 ){ // then dragging can happen
+            var draggedEles = r.dragData.touchDragEles;
 
-            if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
-              r.dragData.didDrag = true;
-              var dPos = draggedEle._private.position;
+            for( var k = 0; k < draggedEles.length; k++ ){
+              var draggedEle = draggedEles[k];
 
-              dPos.x += disp[0];
-              dPos.y += disp[1];
+              if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
+                r.dragData.didDrag = true;
+                var dPos = draggedEle._private.position;
+                var justStartedDrag = !r.hoverData.draggingEles;
 
-              if( !r.hoverData.draggingEles ){
-                addNodeToDrag( draggedEle, { inDragLayer: true } );
+                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
+                  dPos.x += disp[0];
+                  dPos.y += disp[1];
+                }
+
+                if( justStartedDrag ){
+                  addNodeToDrag( draggedEle, { inDragLayer: true } );
+
+                  var dragDelta = r.touchData.dragDelta;
+
+                  if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
+                    dPos.x += dragDelta[0];
+                    dPos.y += dragDelta[1];
+                  }
+
+                }
               }
             }
-          }
 
-          var tcol = new $$.Collection(cy, draggedEle);
-          
-          tcol.updateCompoundBounds();
-          tcol.trigger('position drag');
-
-          r.hoverData.draggingEles = true;
-          
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-
-          if( 
-               r.touchData.startPosition[0] == earlier[0]
-            && r.touchData.startPosition[1] == earlier[1]
-          ){
+            var tcol = new $$.Collection(cy, draggedEle);
             
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            tcol.updateCompoundBounds();
+            tcol.trigger('position drag');
+
+            r.hoverData.draggingEles = true;
+            
+            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+            if( 
+                 r.touchData.startPosition[0] == earlier[0]
+              && r.touchData.startPosition[1] == earlier[1]
+            ){
+              
+              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            }
+            
+            r.redraw();
+          } else { // otherise keep track of drag delta for later
+            var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
+
+            if( dragDelta.length === 0 ){
+              dragDelta.push(0);
+              dragDelta.push(0);
+            } else {
+              dragDelta[0] += disp[0];
+              dragDelta[1] += disp[1];
+            }
           }
-          
-          r.redraw();
         }
         
         // Touchmove event
@@ -20102,7 +21073,27 @@ var cytoscape;
           }
         }
         
-        if ( capture && (start == null || start.isEdge()) && cy.panningEnabled() && cy.userPanningEnabled() ) {
+        if(
+            capture
+            && ( start == null || start.isEdge() )
+            && cy.panningEnabled() && cy.userPanningEnabled()
+        ){
+
+          if( r.swipePanning ){
+            cy.panBy({
+              x: disp[0] * zoom,
+              y: disp[1] * zoom
+            });
+
+          } else if( rdist2 >= r.tapThreshold2 ){
+            r.swipePanning = true;
+
+            cy.panBy({
+              x: dx * zoom,
+              y: dy * zoom
+            });
+          }
+
           if( start ){
             start.unactivate();
 
@@ -20117,9 +21108,6 @@ var cytoscape;
 
             r.touchData.start = null;
           }
-
-          cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
-          r.swipePanning = true;
           
           // Re-project
           var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
@@ -20130,7 +21118,7 @@ var cytoscape;
       for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
       //r.redraw();
       
-    }, 1000/30, { leading: true }), false);
+    }, 1000/30, { trailing: true }), false);
     
     r.registerBinding(window, 'touchcancel', function(e) {
       var start = r.touchData.start;
@@ -20247,12 +21235,6 @@ var cytoscape;
           }
 
         //}, 100);
-      }
-
-      if( e.touches.length < 2 ){
-        r.pinching = false;
-        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
-        r.redraw();
       }
 
       var updateStartStyle = false;
@@ -20377,7 +21359,9 @@ var cytoscape;
         if (start != null 
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable 
-            && rdist2 < r.tapThreshold2 ) {
+            && rdist2 < r.tapThreshold2
+            && !r.pinching // pinch to zoom should not affect selection
+        ) {
 
           if( cy.selectionType() === 'single' ){
             cy.$(':selected').unmerge( start ).unselect();
@@ -20433,8 +21417,18 @@ var cytoscape;
 
       r.dragData.didDrag = false; // reset for next mousedown
 
+      if( e.touches[0] ){
+        r.touchData.dragDelta = [];
+      }
+
       if( updateStartStyle && start ){
         start.updateStyle(false);
+      }
+
+      if( e.touches.length < 2 ){
+        r.pinching = false;
+        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true; 
+        r.redraw();
       }
 
       //r.redraw();
@@ -23723,7 +24717,9 @@ var cytoscape;
       }
 
       // add edges to dagre
-      var edges = eles.edges();
+      var edges = eles.edges().stdFilter(function( e ){
+        return !e.source().is(':parent') && !e.target().is(':parent');
+      });
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
 
@@ -24348,26 +25344,21 @@ var cytoscape;
         pData['edges'].push({src:srcNodeId,tgt:tgtNodeId});
       });
 
-    // Then I need to create the parallel environment
-    var parallelSrcPath = $('script[src$="/parallel.js"]').attr('src');
-    if( parallelSrcPath == null ) {
-      throw "In order to use the 'spread' layout you need to load the parallel.js library before the cytoscape.js library.";
-    }
-    var evalScrPath =  parallelSrcPath.substring(0, parallelSrcPath.lastIndexOf('/'))+"/eval.js";
-    var p = new Parallel( pData, { evalPath: evalScrPath } );
-    
+//Decleration
+   var t1 = $$.Thread();
     // And to add the required scripts
-    p.require("foograph.js");
-    //p.require("random.js");
-    //p.require("forcedirected.js");
-    p.require("rhill-voronoi-core.js");
-    p.require(sitesDistance);
-    p.require(cellCentroid);
+    //EXTERNAL 1
+      t1.require(foograph,'foograph');
+    //EXTERNAL 2
+      t1.require(Voronoi);
     
-    // Then I can spawn the execution of the layout
-    p.spawn(
-      function(pData) {
-
+      //Local function
+    t1.require(sitesDistance);
+    t1.require(cellCentroid);
+    
+    
+  $$.Promise.all([ // Untill all threads are completed 
+  t1.pass(pData).run(function(pData){ // WORKER 1      
         // I need to retrieve the important data
         var lWidth    = pData['width'];
         var lHeight   = pData['height']; 
@@ -24520,21 +25511,21 @@ var cytoscape;
           pData['vertices'].push({id:fv[i].label,x:fv[i].x,y:fv[i].y});
         }
         return pData;
-      }
-    ).then(
-      function(pData) {
-        // First we retrieve the important data
+     
+     })
+]).then(function( thens ){
+  var pData = thens[0];
+  // First we retrieve the important data
         var expandIteration = pData['expIt'];
-        
         var dataVertices = pData['vertices'];
         var vertices = [];
         for( var i = 0; i < dataVertices.length; ++i ) {
           var dv = dataVertices[i];
           vertices[dv.id] = {x:dv.x,y:dv.y};
-        } 
+        }
         /*
          * FINALLY:
-         * 
+         *
          * We position the nodes based on the calculation
          */
         allNodes.positions(
@@ -24565,12 +25556,11 @@ var cytoscape;
         var startTime = pData['startTime'];
         var endTime = new Date();
         console.info("Layout on "+dataVertices.length+" nodes took " + (endTime - startTime) + " ms");
-
         layout.one("layoutstop", options.stop);
         layout.trigger("layoutstop");
-        
-      }
-    );
+t1.stop();
+ next();
+});
     return this;
   };
 
@@ -24581,6 +25571,7 @@ var cytoscape;
   
   
 })(cytoscape);
+
 
 ;(function($$){ 'use strict';
   

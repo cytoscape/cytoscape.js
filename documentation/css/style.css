@@ -191,7 +191,9 @@ button:active {
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;
+	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
+	white-space: nowrap
 }
 
 #navigation .toc {

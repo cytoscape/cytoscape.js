@@ -1,6 +1,6 @@
-require(['cytoscape'], function(rjsCy){
-  console.log( 'requirejs cytoscape OK? ' + (rjsCy === window.cytoscape) );
-});
+// require(['cytoscape'], function(rjsCy){
+//   console.log( 'requirejs cytoscape OK? ' + (rjsCy === window.cytoscape) );
+// });
 
 $(function(){
 

@@ -84,7 +84,7 @@
         lineStyle,
         edgeWidth
       );
-    } else if (rs.edgeType === 'self') {
+    } else if (rs.edgeType === 'self' || rs.edgeType === 'compound') {
       
       var details = edge._private.rscratch;
       var points = [details.startX, details.startY, details.cp2ax,
@@ -92,7 +92,6 @@
         details.selfEdgeMidX, details.selfEdgeMidY,
         details.cp2cx, details.cp2cy, details.endX, details.endY];
 
-      var details = edge._private.rscratch;
       this.drawStyledEdge(edge, context, points, lineStyle, edgeWidth);
       
     } else if (rs.edgeType === 'straight') {

@@ -56,6 +56,8 @@
         return;
       }
 
+      if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
+
       var listHasId = getDragListIds( opts );
 
       var innerNodes = node.descendants();
@@ -109,13 +111,16 @@
 
       // also add nodes and edges related to the topmost ancestor
       updateAncestorsInDragLayer( node, {
-        inDragLayer: true
+        inDragLayer: opts.inDragLayer
       } );
     };
 
     // helper function to determine which ancestor nodes and edges should go
     // to the drag layer (or should be removed from drag layer).
     var updateAncestorsInDragLayer = function(node, opts) {
+
+      if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
+
       // find top-level parent
       var parent = node;
 

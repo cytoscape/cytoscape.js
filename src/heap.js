@@ -330,7 +330,7 @@
     }
   };
 
-  $$.heapfn.delete = function (eles) {
+  $$.heapfn.remove = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
     
     for (var i = 0; i < elements.length; i += 1) {

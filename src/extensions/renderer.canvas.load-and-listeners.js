@@ -395,7 +395,7 @@
                 y: pos[1]
               };
 
-              checkForTaphold();
+              //checkForTaphold();
 
               r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
       
@@ -407,7 +407,7 @@
               y: pos[1]
             };
 
-            checkForTaphold();
+            //checkForTaphold();
 
             r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
     
@@ -415,6 +415,8 @@
           }
           
         }
+      
+        checkForTaphold();
       
       } 
       

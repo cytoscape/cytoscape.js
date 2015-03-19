@@ -4099,6 +4099,24 @@ cy.style( stringStylesheet );
 
 															
 														
+															<li>
+																<span class="name">maxWidth</span>
+																 
+																<span class="descr"><p>Specifies the scale automatically in combination with <code>maxHeight</code> such that the resultant image is no wider than <code>maxWidth</code>.</p>
+</span>
+															</li>
+
+															
+														
+															<li>
+																<span class="name">maxHeight</span>
+																 
+																<span class="descr"><p>Specifies the scale automatically in combination with <code>maxWidth</code> such that the resultant image is no taller than <code>maxHeight</code>.</p>
+</span>
+															</li>
+
+															
+														
 													</ul>
 													
 												</li>
@@ -13628,6 +13646,7 @@ cy.layout( options );</code></pre>
   rankSep: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the separation between adjacent nodes in the same rank</span>
   rankDir: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// 'TB' for top to bottom flow, 'LR' for left to right</span>
   minLen: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( edge )</span></span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>; }, <span class="hljs-comment">// number of ranks to keep between the source and target of the edge</span>
+  edgeWeight: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( edge )</span></span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>; }, <span class="hljs-comment">// higher weight edges are generally made shorter and straighter than lower weight edges</span>
   
   <span class="hljs-comment">// general layout options</span>
   fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>

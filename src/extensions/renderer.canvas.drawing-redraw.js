@@ -198,7 +198,7 @@
     var needDraw = data.canvasNeedsRedraw;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
     var mbPxRatio = r.motionBlurPxRatio;
-    var inBoxSelection = r.data.select[4] ? true : false;
+    var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
 
     if( motionBlur ){
@@ -711,6 +711,7 @@
           r.redraw();
         }, CanvasRenderer.motionBlurDelay);
       }
+
     } // draw to context
 
     if( !forcedContext ){

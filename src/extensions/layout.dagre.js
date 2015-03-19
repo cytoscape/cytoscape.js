@@ -77,7 +77,7 @@
           name: node.id()
         } );
 
-        console.log( g.node(node.id()) );
+        // console.log( g.node(node.id()) );
       }
 
       // set compound parents
@@ -90,14 +90,19 @@
       }
 
       // add edges to dagre
-      var edges = eles.edges();
+      var edges = eles.edges().stdFilter(function( edge ){
+        return !edge.source().isParent() && !edge.target().isParent(); // dagre can't handle edges on compound nodes
+      });
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
 
         g.setEdge( edge.source().id(), edge.target().id(), {
           minlen: getVal( edge, options.minLen ),
-          weight: getVal( edge, options.edgeWeight )
+          weight: getVal( edge, options.edgeWeight ),
+          name: edge.id()
         }, edge.id() );
+
+        // console.log( g.edge(edge.source().id(), edge.target().id(), edge.id()) );
       }
 
       var d = dagre.layout( g );

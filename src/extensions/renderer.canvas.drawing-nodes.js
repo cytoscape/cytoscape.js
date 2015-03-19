@@ -34,6 +34,28 @@
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
+      var url = style['background-image'].value[2] ||
+        style['background-image'].value[1];
+      var image;
+
+      if (url !== undefined) {
+        
+        // get image, and if not loaded then ask to redraw when later loaded
+        image = this.getCachedImage(url, function(){
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+          
+          r.redraw();
+        });
+        
+        var prevBging = _p.backgrounding;
+        _p.backgrounding = !image.complete;
+
+        if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+          node.updateStyle( false );
+        }
+      } 
+
       // Node color & opacity
 
       var bgColor = style['background-color'].value;
@@ -71,10 +93,6 @@
         }
       }
 
-      //var image = this.getCachedImage('url');
-      
-      var url = style['background-image'].value[2] ||
-        style['background-image'].value[1];
       
       var styleShape = style['shape'].strValue;
 
@@ -123,24 +141,8 @@
       }
 
       if (url !== undefined) {
-        
-        // get image, and if not loaded then ask to redraw when later loaded
-        var image = this.getCachedImage(url, function(){
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          
-          r.redraw();
-        });
-        
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
-        }
-
-        var prevBging = _p.backgrounding;
-        _p.backgrounding = !image.complete;
-
-        if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-          node.updateStyle( false );
         }
       } 
       

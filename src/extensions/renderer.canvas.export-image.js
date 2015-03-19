@@ -23,6 +23,23 @@
       height *= options.scale;
 
       scale = options.scale;
+    } else if( $$.is.number(options.maxWidth) || $$.is.number(options.maxHeight) ){
+      var maxScale = scale;
+      var maxScaleW = Infinity;
+      var maxScaleH = Infinity;
+
+      if( $$.is.number(options.maxWidth) ){
+        maxScaleW = scale * options.maxWidth / width;
+      }
+
+      if( $$.is.number(options.maxHeight) ){
+        maxScaleH = scale * options.maxHeight / height;
+      }
+
+      scale = Math.min( maxScaleW, maxScaleH );
+
+      width *= scale;
+      height *= scale;
     }
 
     var buffCanvas = document.createElement('canvas');

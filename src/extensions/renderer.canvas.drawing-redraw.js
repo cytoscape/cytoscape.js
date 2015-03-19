@@ -243,7 +243,7 @@
     var timeElapsed = nowTime - this.lastDrawTime;
     var callAfterLimit = timeElapsed >= redrawLimit;
 
-    if( !forcedContext ){
+    if( !forcedContext && !r.clearingMotionBlur ){
       if( !callAfterLimit || this.currentlyDrawing ){
         // console.log('-- skip');
 

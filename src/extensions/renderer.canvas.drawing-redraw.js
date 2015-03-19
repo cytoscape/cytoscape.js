@@ -210,7 +210,7 @@
 
       // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
       if( r.mbFrames > r.minMbLowQualFrames ){
-        r.fullQualityMb = false;
+        //r.fullQualityMb = false;
         r.motionBlurPxRatio = r.mbPxRBlurry;
       }
     } 
@@ -311,7 +311,7 @@
       function setContextTransform(context, clear){
         var ePan, eZoom, w, h;
 
-        if( !r.fullQualityMb && !r.clearingMotionBlur && (context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG]) ){
+        if( /*!r.fullQualityMb &&*/ !r.clearingMotionBlur && (context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG]) ){
           ePan = {
             x: pan.x * mbPxRatio,
             y: pan.y * mbPxRatio
@@ -633,7 +633,7 @@
           cxt.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
           cxt.globalCompositeOperation = gco;
 
-          var pxr = r.fullQualityMb ? 1 : mbPxRatio;
+          var pxr = /*r.fullQualityMb ? 1 :*/ mbPxRatio;
 
           cxt.drawImage( 
             txt, // img

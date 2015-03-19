@@ -395,6 +395,8 @@
                 y: pos[1]
               };
 
+              r.hoverData.dragging = true;
+
               //checkForTaphold();
 
               r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
@@ -406,6 +408,8 @@
               x: pos[0],
               y: pos[1]
             };
+
+            r.hoverData.dragging = true;
 
             //checkForTaphold();
 
@@ -624,7 +628,7 @@
 
       } else {
         // deactivate bg on box selection
-        if (cy.boxSelectionEnabled() && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
+        if (cy.boxSelectionEnabled() && !r.hoverData.dragging && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
           clearTimeout( r.bgActiveTimeout );
           r.data.bgActivePosistion = undefined;
           r.hoverData.selecting = true;

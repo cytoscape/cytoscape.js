@@ -1473,6 +1473,7 @@
         }
 
         select[4] = 1;
+        r.touchData.selecting = true;
 
         r.redraw();
 
@@ -1862,6 +1863,8 @@
 
       // no more box selection if we don't have three fingers
       if( !e.touches[2] && cy.boxSelectionEnabled() ){
+        r.touchData.selecting = false;
+
         clearTimeout( this.threeFingerSelectTimeout );
         //this.threeFingerSelectTimeout = setTimeout(function(){
           var newlySelected = [];

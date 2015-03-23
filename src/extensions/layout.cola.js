@@ -2,7 +2,7 @@
 
   // default layout options
   var defaults = {
-    animate: true, // whether to show the layout as it's running
+    animate: false, // whether to show the layout as it's running
     refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
@@ -77,22 +77,33 @@
           var node = nodes[i];
           var scratch = node._private.scratch.cola;
 
-          x.min = Math.min( x.min, scratch.x );
-          x.max = Math.max( x.max, scratch.x );
+          x.min = Math.min( x.min, scratch.x || 0 );
+          x.max = Math.max( x.max, scratch.x || 0 );
 
-          y.min = Math.min( y.min, scratch.y );
-          y.max = Math.max( y.max, scratch.y );
+          y.min = Math.min( y.min, scratch.y || 0 );
+          y.max = Math.max( y.max, scratch.y || 0 );
         }
 
         nodes.positions(function(i, node){
           var pos = node._private.position;
           var scratch = node._private.scratch.cola;
+          var retPos;
 
-          if( !node.grabbed() ){
-            pos.x = bb.x1 + scratch.x - x.min;
-            pos.y = bb.y1 + scratch.y - y.min;
+          if( !node.grabbed() && !node.isParent() ){
+            retPos = {
+              x: bb.x1 + scratch.x - x.min,
+              y: bb.y1 + scratch.y - y.min
+            }
+
+            if( !$$.is.number(retPos.x) || !$$.is.number(retPos.y) ){
+              retPos = undefined;
+            }
           }
+
+          return retPos;
         });
+
+        nodes.updateCompoundBounds(); // because the way this layout sets positions is buggy for some reason; ref #878
 
         if( !ready ){
           onReady();
@@ -324,7 +335,7 @@
         node._private.scratch.cola = {
           index: i,
 
-          leaves: node.children().stdFilter(function( child ){
+          leaves: node.descendants().stdFilter(function( child ){
             return !child.isParent();
           }).map(function( child ){
             return child[0]._private.scratch.cola.index;
@@ -333,7 +344,7 @@
 
         return node;
       }).map(function( node ){ // add subgroups
-        node._private.scratch.cola.groups = node.children().stdFilter(function( child ){
+        node._private.scratch.cola.groups = node.descendants().stdFilter(function( child ){
           return child.isParent();
         }).map(function( child ){
           return child._private.scratch.cola.index;

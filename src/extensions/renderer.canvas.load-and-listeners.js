@@ -465,7 +465,6 @@
 
       var cy = r.data.cy;
       var zoom = cy.zoom();
-      var pan = cy.pan();
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
       

@@ -85,7 +85,6 @@
         }
 
         nodes.positions(function(i, node){
-          var pos = node._private.position;
           var scratch = node._private.scratch.cola;
           var retPos;
 
@@ -93,7 +92,7 @@
             retPos = {
               x: bb.x1 + scratch.x - x.min,
               y: bb.y1 + scratch.y - y.min
-            }
+            };
 
             if( !$$.is.number(retPos.x) || !$$.is.number(retPos.y) ){
               retPos = undefined;

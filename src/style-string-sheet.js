@@ -42,13 +42,15 @@
 
       // parse the selector
       var selectorStr = selAndBlock[1];
-      var selector = new $$.Selector( selectorStr );
-      if( selector._private.invalid && selectorStr !== 'core' ){
-        $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
+      if( selectorStr !== 'core' ){
+        var selector = new $$.Selector( selectorStr );
+        if( selector._private.invalid ){
+          $$.util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
 
-        // skip this selector and block
-        removeSelAndBlockFromRemaining();
-        continue; 
+          // skip this selector and block
+          removeSelAndBlockFromRemaining();
+          continue; 
+        }
       }
 
       // parse the block of properties and values

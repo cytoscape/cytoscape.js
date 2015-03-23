@@ -212,19 +212,19 @@ describe('Heap', function () {
   });
 
   it('removes elements', function () {
-    minh3.delete(new cytoscape.Collection(cy, [a, b, c]));
+    minh3.remove(new cytoscape.Collection(cy, [a, b, c]));
     expect(minh3.isHeap()).to.be.true;
     expect(minh3.size()).is.equals(2);
     expect(minh3.top()).to.have.property('value').that.is.equals(3);
     expect(checkInternalDataLength(minh3)).to.be.true;
     
-    maxh2.delete(['b', 'e']);
+    maxh2.remove(['b', 'e']);
     expect(maxh2.isHeap()).to.be.true;
     expect(maxh2.size()).is.equals(1);
     expect(maxh2.top()).to.have.property('value').that.is.equals(2);
     expect(checkInternalDataLength(maxh2)).to.be.true;
     
-    cheap.delete(c);
+    cheap.remove(c);
     expect(cheap.isHeap()).to.be.true;
     expect(cheap.size()).is.equals(0);
     expect(cheap.top()).to.be.undefined;

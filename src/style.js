@@ -55,6 +55,7 @@
       number: { number: true },
       size: { number: true, min: 0 },
       bgSize: { number: true, min: 0, allowPercent: true },
+      bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
       bgPos: { number: true, allowPercent: true },
       bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
       bgFit: { enums: ['none', 'contain', 'cover'] },
@@ -176,6 +177,8 @@
       { name: 'background-repeat', type: t.bgRepeat },
       { name: 'background-fit', type: t.bgFit },
       { name: 'background-clip', type: t.bgClip },
+      { name: 'background-width', type: t.bgWH },
+      { name: 'background-height', type: t.bgWH },
 
       // compound props
       { name: 'padding-left', type: t.size },
@@ -315,6 +318,8 @@
           'background-repeat': 'no-repeat',
           'background-fit': 'none',
           'background-clip': 'node',
+          'background-width': 'auto',
+          'background-height': 'auto',
           'border-color': '#000',
           'border-opacity': 1,
           'border-width': 0,

@@ -42,6 +42,24 @@
       return; // no point in drawing empty image (and chrome is broken in this case)
     }
 
+    var bgW = style['background-width'];
+    if( bgW !== 'auto' ){
+      if( bgW.units === '%' ){
+        w = bgW.value/100 * nodeW;
+      } else {
+        w = bgW.pxValue;
+      }
+    }
+
+    var bgH = style['background-height'];
+    if( bgH !== 'auto' ){
+      if( bgH.units === '%' ){
+        h = bgH.value/100 * nodeH;
+      } else {
+        h = bgH.pxValue;
+      }
+    }
+
     if( fit === 'contain' ){
       var scale = Math.min( nodeW/w, nodeH/h );
 

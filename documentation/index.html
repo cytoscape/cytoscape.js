@@ -13109,24 +13109,28 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <p>In the JSON or functional stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified functionally on a per-element basis.</p>
 <p><span class="important-indicator"></span> Note that if using the JSON stylesheet format, it will not be possible to serialise and deserialise your stylesheet to JSON proper.</p>
 <p>Example:</p>
-<p>``js
-cytoscape({
-  container: document.getElementById(&#39;cy&#39;),</p>
-<p>  // ...</p>
-<p>  style: cytoscape.stylesheet()
-    .selector(&#39;node&#39;)
+<pre><code class="lang-js">cytoscape({
+  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>),
+
+  <span class="hljs-comment">// ...</span>
+
+  style: cytoscape.stylesheet()
+    .selector(<span class="hljs-string">'node'</span>)
       .style({
-        &#39;background-color&#39;: function( ele ){ return ele.data(&#39;bg&#39;) }</p>
-<pre><code>    // which works the same as
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( ele )</span></span>{ <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'bg'</span>) }
 
-    // <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'data(bg)'</span>
-  })
+        <span class="hljs-comment">// which works the same as</span>
 
-  // <span class="hljs-keyword">...</span>
-</code></pre><p>  // , ...
+        <span class="hljs-comment">// 'background-color': 'data(bg)'</span>
+      })
+
+      <span class="hljs-comment">// ...</span>
+
+
+  <span class="hljs-comment">// , ...</span>
 });
-```</p>
-<p><span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash <a href="https://lodash.com/docs#memoize"><code>_.memoize()</code></a> function.</p>
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p><span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash <a href="https://lodash.com/docs#memoize"><code>_.memoize()</code></a> function.</p>
 <h2 id="style/property-types">Property types <a href="#style/property-types"><span class="icon-bookmark"></span></a></h2>
 <ul>
 <li>Colours may be specified by name (e.g. <code>red</code>), hex (e.g. <code>#ff0000</code> or <code>#f00</code>), RGB (e.g. <code>rgb(255, 0, 0)</code>), or HSL (e.g. <code>hsl(0, 100%, 50%)</code>).</li>
@@ -13170,6 +13174,8 @@ cytoscape({
 <ul>
 <li><strong><code>background-image</code></strong> : The URL that points to the image that should be used as the node&#39;s background.  PNG, JPG, and SVG are supported formats.  You may use a <a href="https://en.wikipedia.org/wiki/Data_URI_scheme">data URI</a> to use embedded images, thereby saving a HTTP request.</li>
 <li><strong><code>background-image-opacity</code></strong> : The opacity of the background image.</li>
+<li><strong><code>background-width</code></strong> : Specifies the width of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image width relative to the node width.  If used in combination with <code>background-fit</code>, then this value overrides the width of the image in calculating the fitting &mdash; thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the width of the image.</li>
+<li><strong><code>background-height</code></strong> : Specifies the height of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image height relative to the node height.  If used in combination with <code>background-fit</code>, then this value overrides the height of the image in calculating the fitting &mdash; thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the height of the image.</li>
 <li><strong><code>background-fit</code></strong> : How the background image is fit to the node; may be <code>none</code> for original size, <code>contain</code> to fit inside node, or <code>cover</code> to cover the node.</li>
 <li><strong><code>background-repeat</code></strong> : Whether to repeat the background image; may be <code>no-repeat</code>, <code>repeat-x</code>, <code>repeat-y</code>, or <code>repeat</code>.</li>
 <li><strong><code>background-position-x</code></strong> : The x position of the background image, measured in percent (e.g. <code>50%</code>) or pixels (e.g. <code>10px</code>).</li>

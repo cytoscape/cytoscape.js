@@ -724,6 +724,10 @@
       r.initrender = true;
       cy.trigger('initrender');
     }
+
+    if( !forcedContext ){
+      cy.triggerOnRender();
+    }
     
   };
 

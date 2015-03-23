@@ -2123,6 +2123,102 @@ cy.trigger(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'f
 						</div>
 					
 						<div class="function">
+							<div class="name" id="core/events/cy.onRender"><span class="fn-name">cy.onRender()</span>  <a href="#core/events/cy.onRender"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Run a handler function every time a frame is rendered.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.onRender( <span class="comma">, </span>function() )</div>
+										
+
+										
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">function()</span>
+													 
+													<span class="descr"><p>The handler function to call on each frame.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.onRender(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'frame rendered'</span>);
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button>
+								
+							</div>		
+						</div>
+					
+						<div class="function">
+							<div class="name" id="core/events/cy.offRender"><span class="fn-name">cy.offRender()</span>  <a href="#core/events/cy.offRender"><span class="icon-bookmark"></span></a></div>
+							
+							
+							
+							<div class="descr"><p>Remove handlers function bound via <code>cy.onRender()</code>.</p>
+</div>
+
+							
+							<div class="formats">
+								
+									<div class="format">
+										
+											<div class="name">cy.offRender(  [<span class="comma">, </span>handler] )</div>
+										
+
+										
+										
+										<div class="descr"></div>
+										<ul class="args">
+											
+												<li>
+													<span class="name">handler</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>A reference to the handler function to remove.  All handlers are removed if this is unspecified.</p>
+</span>
+
+													
+												</li>
+											
+										</ul>
+									</div>
+								
+							</div>
+							
+
+							<div class="details">
+								
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js">cy.onRender(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'frame rendered'</span>);
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button>
+								
+							</div>		
+						</div>
+					
+						<div class="function">
 							<div class="name" id="core/events/cy.ready"><span class="fn-name">cy.ready()</span>  <a href="#core/events/cy.ready"><span class="icon-bookmark"></span></a></div>
 							
 							
@@ -12885,11 +12981,13 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <li><strong><code>:locked</code></strong> : Matches locked elements.</li>
 <li><strong><code>:unlocked</code></strong> : Matches elements that aren&#39;t locked.</li>
 </ul>
-<p><strong>Visibility</strong></p>
+<p><strong>Style</strong></p>
 <ul>
 <li><strong><code>:visible</code></strong> : Matches elements that are visible (i.e. <code>display: element</code> and <code>visibility: visible</code>).</li>
 <li><strong><code>:hidden</code></strong> : Matches elements that are hidden (i.e. <code>display: none</code> or <code>visibility: hidden</code>).</li>
 <li><strong><code>:transparent</code></strong> : Matches elements that are transparent (i.e. <code>opacity: 0</code> for self or parents).</li>
+<li><strong><code>:backgrounding</code></strong> : Matches an element if its background image is currently loading.</li>
+<li><strong><code>:nonbackgrounding</code></strong> : Matches an element if its background image not currently loading; i.e. there is no image or the image is already loaded).</li>
 </ul>
 <p><strong>User interaction:</strong></p>
 <ul>
@@ -15845,6 +15943,10 @@ cy.elements().foo();
 						<div class="section lvl3"><a class="toclink" href="#core/events/cy.trigger"><span class="icon-bookmark bookmark-icon"></span> cy.trigger() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#core/events/cy.initrender"><span class="icon-bookmark bookmark-icon"></span> cy.initrender() </a></div>
+					
+						<div class="section lvl3"><a class="toclink" href="#core/events/cy.onRender"><span class="icon-bookmark bookmark-icon"></span> cy.onRender() </a></div>
+					
+						<div class="section lvl3"><a class="toclink" href="#core/events/cy.offRender"><span class="icon-bookmark bookmark-icon"></span> cy.offRender() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#core/events/cy.ready"><span class="icon-bookmark bookmark-icon"></span> cy.ready() </a></div>
 					

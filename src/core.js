@@ -70,6 +70,7 @@
       elements: [], // array of elements
       id2index: {}, // element id => index in elements array
       listeners: [], // list of listeners
+      onRenders: [], // rendering listeners
       aniEles: $$.Collection(this), // elements being animated
       scratch: {}, // scratch object for core
       layout: null,

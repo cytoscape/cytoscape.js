@@ -287,10 +287,10 @@
   var defineRandomPasser = function( opts ){
     opts = opts || {};
 
-    return function( fn ){
+    return function( fn, arg1 ){
       var pass = this._private.pass.shift();
 
-      return this.random().pass( pass )[ opts.threadFn ]( fn );
+      return this.random().pass( pass )[ opts.threadFn ]( fn, arg1 );
     };
   };
 

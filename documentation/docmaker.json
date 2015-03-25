@@ -3268,11 +3268,12 @@
           "fns": [
             {
               "name": "thread.require",
-              "descr": "Require a named function into the thread, giving the thread a global reference to the function.",
+              "descr": "Require a named function into the thread, giving the thread a global reference to the function.  Plain objects or simple objects with a prototype (that can be inpected and serialised live) are also supported.",
               "formats": [
                 {
                   "args": [
-                    { "name": "fn", "descr": "The named function to require (that is copied to the thread)." }
+                    { "name": "obj", "descr": "The named function or simple object to require that is serialised and copied to the thread." },
+                    { "name": "as", "descr": "The name of the object as available in the thread.  This is mandatory for an object that is not a named function, because its name can not be automatically inferred.", "optional": true }
                   ]
                 }
               ],
@@ -3285,7 +3286,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "passed", "descr": "Data that is passed to `thread.run()`." }
+                    { "name": "passed", "descr": "JSON serialisable data that is passed to `thread.run()`." }
                   ]
                 }
               ],
@@ -3295,7 +3296,7 @@
             {
               "name": "thread.run",
               "pureAliases": ["thread.promise"],
-              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve).",
+              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve) or when the specified function returns a value.",
               "formats": [
                 {
                   "args": [
@@ -3308,11 +3309,11 @@
 
             {
               "name": "thread.map",
-              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve).",
+              "descr": "Get a mapping from the thread using the specified mapping function that uses [`resolve()`](#thread/globals/resolve) or a return value to specify the mapped value for each element.",
               "formats": [
                 {
                   "args": [
-                    { "name": "function( passed )", "descr": "A mapping function that calls `resolve()` with the resultant mapped value." }
+                    { "name": "function( passed )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value." }
                   ]
                 }
               ],

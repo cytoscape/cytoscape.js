@@ -517,7 +517,7 @@ describe('Thread', function(){
   it('passes eles properly', function( next ){
     var t = $$.Thread();
 
-    t.pass( eles ).run(function( eles ){
+    t.pass( eles.jsons() ).run(function( eles ){
       resolve(eles);
     }).then(function( eles ){
       expect( eles[0].data.foo ).to.equal('bar');

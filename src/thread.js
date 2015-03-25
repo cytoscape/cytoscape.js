@@ -143,12 +143,6 @@
     },
 
     pass: function( data ){
-      if( $$.is.element(data) ){
-        data = data.json();
-      } else if( $$.is.collection(data) ){
-        data = data.jsons();
-      }
-
       this._private.pass.push( data );
 
       return this; // chaining
@@ -346,7 +340,7 @@
   var defineFnal = function( opts ){
     opts = opts || {};
 
-    return function fnalImpl( fn ){
+    return function fnalImpl( fn, arg1 ){
       var fnStr = fnAs( fn, '_$_$_' + opts.name );
 
       this.require( fnStr );
@@ -360,7 +354,7 @@
         '    res.push( val );',
         '  };',
         '  ',
-        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ' );',
+        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ', ' + JSON.stringify(arg1) + ' );',
         '  ',
         '  resolve = origResolve;',
         '  resolve( res.length > 0 ? res : ret );',

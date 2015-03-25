@@ -13869,7 +13869,7 @@ cy.layout( options );</code></pre>
 						<pre><code class="lang-js"><span class="hljs-keyword">var</span> options = {
   name: <span class="hljs-string">'cola'</span>,
 
-  animate: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
+  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
   refresh: <span class="hljs-number">1</span>, <span class="hljs-comment">// number of ticks per frame; higher is faster but more jerky</span>
   maxSimulationTime: <span class="hljs-number">4000</span>, <span class="hljs-comment">// max length in ms to run the layout</span>
   ungrabifyWhileSimulating: <span class="hljs-literal">false</span>, <span class="hljs-comment">// so you can't drag nodes during layout</span>
@@ -14792,7 +14792,7 @@ t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hlj
 							
 							
 							
-							<div class="descr"><p>Require a named function into the thread, giving the thread a global reference to the function.</p>
+							<div class="descr"><p>Require a named function into the thread, giving the thread a global reference to the function.  Plain objects or simple objects with a prototype (that can be inpected and serialised live) are also supported.</p>
 </div>
 
 							
@@ -14800,7 +14800,7 @@ t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hlj
 								
 									<div class="format">
 										
-											<div class="name">thread.require( <span class="comma">, </span>fn )</div>
+											<div class="name">thread.require( <span class="comma">, </span>obj [<span class="comma">, </span>as] )</div>
 										
 
 										
@@ -14809,9 +14809,18 @@ t.message({ foo: <span class="hljs-string">'hello'</span>, bar: <span class="hlj
 										<ul class="args">
 											
 												<li>
-													<span class="name">fn</span>
+													<span class="name">obj</span>
 													 
-													<span class="descr"><p>The named function to require (that is copied to the thread).</p>
+													<span class="descr"><p>The named function or simple object to require that is serialised and copied to the thread.</p>
+</span>
+
+													
+												</li>
+											
+												<li>
+													<span class="name">as</span>
+													<span class="optional">[optional]</span> 
+													<span class="descr"><p>The name of the object as available in the thread.  This is mandatory for an object that is not a named function, because its name can not be automatically inferred.</p>
 </span>
 
 													
@@ -14880,7 +14889,7 @@ t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><sp
 												<li>
 													<span class="name">passed</span>
 													 
-													<span class="descr"><p>Data that is passed to <code>thread.run()</code>.</p>
+													<span class="descr"><p>JSON serialisable data that is passed to <code>thread.run()</code>.</p>
 </span>
 
 													
@@ -14893,6 +14902,24 @@ t.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><sp
 							
 
 							<div class="details">
+								
+									<h3 id="details">Details</h3>
+<p>This function allows for sending data to the thread.  The data must be serialisable via <code>JSON.stringify()</code>.</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
+
+t.pass( { foo: <span class="hljs-number">1</span>, bar: <span class="hljs-number">2</span> } ).run(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( data )</span></span>{
+  data.foo++;
+  data.bar++;
+
+  resolve(data);
+}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( data )</span></span>{
+  <span class="hljs-built_in">console</span>.log( data );
+
+  t1.stop();
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button>
 								
 							</div>		
 						</div>

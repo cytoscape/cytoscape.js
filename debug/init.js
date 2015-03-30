@@ -116,7 +116,7 @@ $(function(){
   ;
   
   window.options = {
-    boxSelectionEnabled: true,
+    // boxSelectionEnabled: true,
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,

@@ -409,7 +409,7 @@
               y: pos[1]
             };
 
-            r.hoverData.dragging = true;
+            //r.hoverData.dragging = true;
 
             //checkForTaphold();
 
@@ -606,6 +606,7 @@
 
           cy.panBy( deltaP );
           
+          r.hoverData.dragged = true;
         }
         
         // Needs reproject due to pan changing viewport
@@ -803,7 +804,7 @@
         if ( (down == null) // not mousedown on node
           && !r.dragData.didDrag // didn't move the node around
           && !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
-          && !r.hoverData.dragging // not panning
+          && !r.hoverData.dragged // didn't pan
         ) {
 
           cy.$(function(){
@@ -1002,6 +1003,7 @@
 //      console.log('ss', select);
       
       r.dragData.didDrag = false;
+      r.hoverData.dragged = false;
       r.hoverData.dragDelta = [];
       
     }, false);

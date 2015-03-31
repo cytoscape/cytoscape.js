@@ -345,16 +345,12 @@
       var index = info.index;
       var depthSize = depths[depth].length;
 
-      if( options.strictHierarchy ){
-        depthSize = biggestDepthSize;
-      }
-
       var distanceX = Math.max( bb.w / (depthSize + 1), minDistance );
       var distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
       var radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
-      if( options.strictHierarchy && !options.circle ){
+      if( !options.circle ){
         
         var epos = {
           x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,

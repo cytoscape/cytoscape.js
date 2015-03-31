@@ -23,9 +23,7 @@
 
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-
-    // this.recalculateEdgeLabelProjection( edge );
-
+    
     var rs = edge._private.rscratch;
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 

@@ -1741,16 +1741,6 @@
             },
 
             {
-              "name": "eles.show",
-              "descr": "Override the style of the elements such that they are visible (i.e. `display: element`)."
-            },
-
-            {
-              "name": "eles.hide",
-              "descr": "Override the style of the elements such that they are hidden (i.e. `display: none`)."
-            },
-
-            {
               "name": "ele.visible",
               "descr": "Get whether the element is visible (i.e. `display: element` and `visibility: visible`).",
               "formats": [

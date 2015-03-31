@@ -81,11 +81,13 @@
   };
   
   CanvasRenderer.prototype.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+    var zoom = this.data.cy.zoom();
+
     if (opacity > 0) {
-      context.shadowBlur = blur;
+      context.shadowBlur = blur * zoom;
       context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";
-      context.shadowOffsetX = offsetX;
-      context.shadowOffsetY = offsetY;
+      context.shadowOffsetX = offsetX * zoom;
+      context.shadowOffsetY = offsetY * zoom;
     } else {
       context.shadowBlur = 0;
       context.shadowColor = "transparent";

@@ -140,6 +140,8 @@
         context.fill();
       }
 
+      this.shadowStyle(context, 'transparent', 0); // reset for next guy
+
       if (url !== undefined) {
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
@@ -237,8 +239,6 @@
         context.fill();
       }
     }
-
-    this.shadowStyle(context, 'transparent', 0); // reset for next guy
 
   };
 

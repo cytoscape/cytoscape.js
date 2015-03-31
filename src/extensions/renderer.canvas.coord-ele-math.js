@@ -1293,6 +1293,7 @@
 
         // project the edge into rstyle
         this.projectBezier( edge );
+        this.recalculateEdgeLabelProjection( edge );
 
       }
     }
@@ -1341,6 +1342,8 @@
       // always override as haystack in case set to different type previously
       rscratch.edgeType = 'haystack';
       rscratch.haystack = true;
+
+      this.recalculateEdgeLabelProjection( edge );
     }
 
     return hashTable;
@@ -1422,7 +1425,7 @@
         
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
-  //      return;
+        // return;
       } else {
         rs.noArrowPlacement = false;
       }
@@ -1451,7 +1454,7 @@
       
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
-  //      return;
+       // return;
       } else {
         rs.noArrowPlacement = false;
       }

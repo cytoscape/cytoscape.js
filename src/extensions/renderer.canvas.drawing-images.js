@@ -37,9 +37,7 @@
     
     var w = img.width;
     var h = img.height;
-
-    // debugger;
-
+    
     if( w === 0 || h === 0 ){
       return; // no point in drawing empty image (and chrome is broken in this case)
     }

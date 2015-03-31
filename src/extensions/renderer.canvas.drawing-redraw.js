@@ -310,6 +310,16 @@
         }
       };
 
+      function mbclear( context, x, y, w, h ){
+        var gco = context.globalCompositeOperation;
+
+          context.globalCompositeOperation = 'destination-out';
+          r.fillStyle( context, 255, 255, 255, 0.666 );
+          context.fillRect(x, y, w, h);
+
+          context.globalCompositeOperation = gco;
+      }
+
       function setContextTransform(context, clear){
         var ePan, eZoom, w, h;
 
@@ -334,13 +344,7 @@
         context.setTransform(1, 0, 0, 1, 0, 0);
 
         if( clear === 'motionBlur' ){ 
-          var gco = context.globalCompositeOperation;
-
-          context.globalCompositeOperation = 'destination-out';
-          r.fillStyle( context, 255, 255, 255, 0.666 );
-          context.fillRect(0, 0, w, h);
-
-          context.globalCompositeOperation = gco;
+          mbclear(context, 0, 0, w, h);
         } else if( !forcedContext && (clear === undefined || clear) ){
           context.clearRect(0, 0, w, h);
         }
@@ -404,7 +408,12 @@
         bb = r.textureCache.bb;
 
         context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, vp.width, vp.height);
+
+        if( motionBlur ){
+          mbclear(context, 0, 0, vp.width, vp.height);
+        } else {
+          context.clearRect(0, 0, vp.width, vp.height);
+        }
 
         var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
         var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;

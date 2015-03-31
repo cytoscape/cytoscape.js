@@ -38,12 +38,14 @@
     var w = img.width;
     var h = img.height;
 
+    // debugger;
+
     if( w === 0 || h === 0 ){
       return; // no point in drawing empty image (and chrome is broken in this case)
     }
 
     var bgW = style['background-width'];
-    if( bgW !== 'auto' ){
+    if( bgW.value !== 'auto' ){
       if( bgW.units === '%' ){
         w = bgW.value/100 * nodeW;
       } else {
@@ -52,7 +54,7 @@
     }
 
     var bgH = style['background-height'];
-    if( bgH !== 'auto' ){
+    if( bgH.value !== 'auto' ){
       if( bgH.units === '%' ){
         h = bgH.value/100 * nodeH;
       } else {

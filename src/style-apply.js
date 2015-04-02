@@ -311,9 +311,7 @@
       var fields = prop.field.split(".");
       var fieldVal;
 
-      if( isLayout ){
-        fieldVal = _p.layoutData;
-      } else if( isScratch ){
+      if( isScratch || isLayout ){
         fieldVal = _p.scratch;
       } else {
         fieldVal = _p.data;
@@ -391,9 +389,7 @@
       var fields = prop.field.split(".");
       var fieldVal;
 
-      if( isLayout ){
-        fieldVal = _p.layoutData;
-      } else if( isScratch ){
+      if( isScratch || isLayout ){
         fieldVal = _p.scratch;
       } else {
         fieldVal = _p.data;

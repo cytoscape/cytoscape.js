@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // @O Polygon drawing
-  CanvasRenderer.prototype.drawPolygonPath = function(
+  CRp.drawPolygonPath = function(
     context, x, y, width, height, points) {
 
     var halfW = width / 2;
@@ -20,7 +21,7 @@
     context.closePath();
   };
   
-  CanvasRenderer.prototype.drawPolygon = function(
+  CRp.drawPolygon = function(
     context, x, y, width, height, points) {
 
     // Draw path
@@ -31,7 +32,7 @@
   };
   
   // Round rectangle drawing
-  CanvasRenderer.prototype.drawRoundRectanglePath = function(
+  CRp.drawRoundRectanglePath = function(
     context, x, y, width, height, radius) {
     
     var halfWidth = width / 2;
@@ -57,7 +58,7 @@
     context.closePath();
   };
   
-  CanvasRenderer.prototype.drawRoundRectangle = function(
+  CRp.drawRoundRectangle = function(
     context, x, y, width, height, radius) {
     
     this.drawRoundRectanglePath(context, x, y, width, height, radius);

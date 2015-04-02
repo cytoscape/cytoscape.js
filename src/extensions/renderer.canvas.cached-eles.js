@@ -1,8 +1,9 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.getCachedNodes = function() {
+  CRp.getCachedNodes = function() {
     var data = this.data; var cy = this.data.cy;
     
     if (data.cache == null) {
@@ -16,7 +17,7 @@
     return data.cache.cachedNodes;
   };
   
-  CanvasRenderer.prototype.updateNodesCache = function() {
+  CRp.updateNodesCache = function() {
     var data = this.data; var cy = this.data.cy;
     
     if (data.cache == null) {
@@ -26,7 +27,7 @@
     data.cache.cachedNodes = cy.nodes();
   };
   
-  CanvasRenderer.prototype.getCachedEdges = function() {
+  CRp.getCachedEdges = function() {
     var data = this.data; var cy = this.data.cy;
     
     if (data.cache == null) {
@@ -40,7 +41,7 @@
     return data.cache.cachedEdges;
   };
   
-  CanvasRenderer.prototype.updateEdgesCache = function() {
+  CRp.updateEdgesCache = function() {
     var data = this.data; var cy = this.data.cy;
     
     if (data.cache == null) {

@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Draw edge text
-  CanvasRenderer.prototype.drawEdgeText = function(context, edge) {
+  CRp.drawEdgeText = function(context, edge) {
     var text = edge._private.style['content'].strValue;
 
     if( !text || text.match(/^\s+$/) ){
@@ -58,7 +59,7 @@
   };
 
   // Draw node text
-  CanvasRenderer.prototype.drawNodeText = function(context, node) {
+  CRp.drawNodeText = function(context, node) {
     var text = node._private.style['content'].strValue;
 
     if ( !text || text.match(/^\s+$/) ) {
@@ -108,7 +109,7 @@
     this.drawText(context, node, rs.labelX, rs.labelY);
   };
 
-  CanvasRenderer.prototype.getFontCache = function(context){
+  CRp.getFontCache = function(context){
     var cache;
 
     this.fontCaches = this.fontCaches || [];
@@ -131,7 +132,7 @@
 
   // set up canvas context with font
   // returns transformed text string
-  CanvasRenderer.prototype.setupTextStyle = function( context, element ){
+  CRp.setupTextStyle = function( context, element ){
     // Font style
     var parentOpacity = element.effectiveOpacity();
     var style = element._private.style;
@@ -191,7 +192,7 @@
   }
 
   // Draw text
-  CanvasRenderer.prototype.drawText = function(context, element, textX, textY) {
+  CRp.drawText = function(context, element, textX, textY) {
     var _p = element._private;
     var style = _p.style;
     var rstyle = _p.rstyle;

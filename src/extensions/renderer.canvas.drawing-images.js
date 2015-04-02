@@ -1,8 +1,9 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.getCachedImage = function(url, onLoad) {
+  CRp.getCachedImage = function(url, onLoad) {
     var r = this;
     var imageCache = r.imageCache = r.imageCache || {};
 
@@ -19,7 +20,7 @@
     return image;
   };
     
-  CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
+  CRp.drawInscribedImage = function(context, img, node) {
     var r = this;
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;

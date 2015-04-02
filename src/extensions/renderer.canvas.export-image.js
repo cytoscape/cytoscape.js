@@ -1,8 +1,9 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.createBuffer = function(w, h) {
+  CRp.createBuffer = function(w, h) {
     var buffer = document.createElement('canvas');
     buffer.width = w;
     buffer.height = h;
@@ -10,7 +11,7 @@
     return [buffer, buffer.getContext('2d')];
   };
 
-  CanvasRenderer.prototype.bufferCanvasImage = function( options ){
+  CRp.bufferCanvasImage = function( options ){
     var data = this.data;
     var cy = data.cy;
     var bb = cy.elements().boundingBox();
@@ -94,7 +95,7 @@
     return buffCanvas;
   }; 
 
-  CanvasRenderer.prototype.png = function( options ){
+  CRp.png = function( options ){
     return this.bufferCanvasImage( options ).toDataURL('image/png');
   };
 

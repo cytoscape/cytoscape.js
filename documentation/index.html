@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/io.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -25,7 +25,7 @@
 		<div id="content">
 
 			<h1 id="top" class="title">Cytoscape.js <span class="version">2.4.0-unstable</span></h1>
-			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
 			
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
@@ -49,109 +49,6 @@
 				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="icon-twitter"></span> Share it on Twitter</a> |
 				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="icon-google-plus"></span> Share it on Google+</a>
 			</div>
-
-			<!--
-			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right, which is used for API examples throughout the documentation:</p>
-
-			<div id="demo-source" class="collapsed">
-				<div class="expander">
-					<div class="text">
-						<span class="icon-arrow-down"></span> Show all the code...
-					</div>
-				</div>
-
-				<div class="collapser">
-					<div class="text">
-						<span class="icon-arrow-up"></span> Less code...
-					</div>
-				</div>
-
-
-				<pre><code><span class="hljs-comment">// initialise cytoscape.js on a html dom element with some options:</span>
-cy = cytoscape( options = {
-  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>),
-
-  minZoom: <span class="hljs-number">0.5</span>,
-  maxZoom: <span class="hljs-number">2</span>,
-
-  <span class="hljs-comment">// style can be specified as plain JSON, a stylesheet string (probably a CSS-like</span>
-  <span class="hljs-comment">// file pulled from the server), or in a functional format</span>
-  style: [
-    {
-      selector: <span class="hljs-string">'node'</span>,
-      css: {
-        <span class="hljs-string">'content'</span>: <span class="hljs-string">'data(name)'</span>,
-        <span class="hljs-string">'font-family'</span>: <span class="hljs-string">'helvetica'</span>,
-        <span class="hljs-string">'font-size'</span>: <span class="hljs-number">14</span>,
-        <span class="hljs-string">'text-outline-width'</span>: <span class="hljs-number">3</span>,
-        <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#888'</span>,
-        <span class="hljs-string">'text-valign'</span>: <span class="hljs-string">'center'</span>,
-        <span class="hljs-string">'color'</span>: <span class="hljs-string">'#fff'</span>,
-        <span class="hljs-string">'width'</span>: <span class="hljs-string">'mapData(weight, 30, 80, 20, 50)'</span>,
-        <span class="hljs-string">'height'</span>: <span class="hljs-string">'mapData(height, 0, 200, 10, 45)'</span>,
-        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'#fff'</span>
-      }
-    },
-
-    {
-      selector: <span class="hljs-string">':selected'</span>,
-      css: {
-        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#000'</span>,
-        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#000'</span>,
-        <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#000'</span>,
-        <span class="hljs-string">'text-outline-color'</span>: <span class="hljs-string">'#000'</span>
-      }
-    },
-
-    {
-      selector: <span class="hljs-string">'edge'</span>,
-      css: {
-        <span class="hljs-string">'width'</span>: <span class="hljs-number">2</span>,
-        <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
-      }
-    },
-
-    {
-      selector: <span class="hljs-string">'.foo'</span>,
-      css: {
-        <span class="hljs-string">'border-width'</span>: <span class="hljs-number">4</span>,
-        <span class="hljs-string">'border-color'</span>: <span class="hljs-string">'red'</span>
-      }
-    }
-  ],
-
-  <span class="hljs-comment">// specify the elements in the graph</span>
-  elements: {
-    nodes: [
-      { data: { id: <span class="hljs-string">'j'</span>, name: <span class="hljs-string">'Jerry'</span>, weight: <span class="hljs-number">65</span>, height: <span class="hljs-number">174</span> } },
-      { data: { id: <span class="hljs-string">'e'</span>, name: <span class="hljs-string">'Elaine'</span>, weight: <span class="hljs-number">48</span>, height: <span class="hljs-number">160</span> } },
-      { data: { id: <span class="hljs-string">'k'</span>, name: <span class="hljs-string">'Kramer'</span>, weight: <span class="hljs-number">75</span>, height: <span class="hljs-number">185</span> } },
-      { data: { id: <span class="hljs-string">'g'</span>, name: <span class="hljs-string">'George'</span>, weight: <span class="hljs-number">70</span>, height: <span class="hljs-number">150</span> } }
-    ],
-
-    edges: [
-      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'e'</span>, id: <span class="hljs-string">'je'</span> } },
-      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'k'</span>, id: <span class="hljs-string">'jk'</span> } },
-      { data: { source: <span class="hljs-string">'j'</span>, target: <span class="hljs-string">'g'</span>, id: <span class="hljs-string">'jg'</span> } },
-
-      { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'j'</span>, id: <span class="hljs-string">'ej'</span> } },
-      { data: { source: <span class="hljs-string">'e'</span>, target: <span class="hljs-string">'k'</span>, id: <span class="hljs-string">'ek'</span> } },
-
-      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'j'</span>, id: <span class="hljs-string">'kj'</span> } },
-      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'e'</span>, id: <span class="hljs-string">'ke'</span> } },
-      { data: { source: <span class="hljs-string">'k'</span>, target: <span class="hljs-string">'g'</span>, id: <span class="hljs-string">'kg'</span> } },
-
-      { data: { source: <span class="hljs-string">'g'</span>, target: <span class="hljs-string">'j'</span>, id: <span class="hljs-string">'gj'</span> } }
-    ],
-  },
-
-  
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
-    <span class="hljs-comment">// when layout has set initial node positions etc</span>
-  }
-} );</code></pre>
-			</div>
-			-->
 
 			<div id="documentation">
 			
@@ -7756,36 +7653,6 @@ layout.run();
 						</div>
 					
 						<div class="function">
-							<div class="name" id="collection/style/eles.show"><span class="fn-name">eles.show()</span>  <a href="#collection/style/eles.show"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Override the style of the elements such that they are visible (i.e. <code>display: element</code>).</p>
-</div>
-
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
-							<div class="name" id="collection/style/eles.hide"><span class="fn-name">eles.hide()</span>  <a href="#collection/style/eles.hide"><span class="icon-bookmark"></span></a></div>
-							
-							
-							
-							<div class="descr"><p>Override the style of the elements such that they are hidden (i.e. <code>display: none</code>).</p>
-</div>
-
-							
-
-							<div class="details">
-								
-							</div>		
-						</div>
-					
-						<div class="function">
 							<div class="name" id="collection/style/ele.visible"><span class="fn-name">ele.visible()</span> et al <a href="#collection/style/ele.visible"><span class="icon-bookmark"></span></a></div>
 							
 							
@@ -13279,7 +13146,7 @@ Matches element with the matching ID (e.g. <code>#foo</code> is the same as <cod
 <h2 id="style/shadow">Shadow <a href="#style/shadow"><span class="icon-bookmark"></span></a></h2>
 <p>These properties allow for the creation of shadows on top of nodes or edges. Note that shadow-blur could seriously impact performance on large graph.</p>
 <ul>
-<li><strong><code>shadow-blur</code></strong> :The shadow blur, note that if greater than 0, this could impact performance. Default is 10.</li>
+<li><strong><code>shadow-blur</code></strong> :The shadow blur, note that if greater than 0, this could impact performance.</li>
 <li><strong><code>shadow-color</code></strong> : The colour of the shadow.</li>
 <li><strong><code>shadow-offset-x</code></strong> : The x offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
 <li><strong><code>shadow-offset-y</code></strong> : The y offset relative to the node/edge where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.</li>
@@ -13733,7 +13600,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>dagre</code> layout organises the graph using a DAG (directed acyclic graph) system, written by <a href="https://www.linkedin.com/in/chrismpettitt">Chris Pettitt</a>.  It is especially suitable for DAGs and trees.  For more information, please refer to its <a href="https://github.com/cpettitt/dagre">Dagre&#39;s documentation</a>.</p>
-<p>Because Dagre is a separate library, the developer must manually include <code>dagre.js</code> in his app in order to use the <code>dagre</code> layout.</p>
+<p>Because Dagre is a separate library, the developer must manually include <code>dagre.js</code> in their app in order to use the <code>dagre</code> layout.</p>
 
 					
 
@@ -13858,7 +13725,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>cola</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation with several sophisticated constraints, written by <a href="http://www.csse.monash.edu.au/~tdwyer/">Tim Dwyer</a>.  For more information about Cola and its parameters, refer to <a href="http://marvl.infotech.monash.edu/webcola/">its documentation</a>.</p>
-<p>Because Cola.js is a separate library, the developer must manually include <code>cola.js</code> in his app in order to use the <code>cola</code> layout.</p>
+<p>Because Cola.js is a separate library, the developer must manually include <code>cola.js</code> in their app in order to use the <code>cola</code> layout.</p>
 
 					
 
@@ -13985,7 +13852,7 @@ cy.layout( options );</code></pre>
 
 					
 						<p>The <code>springy</code> layout uses a <a href="http://en.wikipedia.org/wiki/Force-directed_graph_drawing">force-directed</a> physics simulation, written by <a href="http://dhotson.tumblr.com/">Dennis Hotson</a>.  For more information about Springy and its parameters, refer to <a href="http://getspringy.com">its documentation</a>.</p>
-<p>Because Springy.js is a separate library, the developer must manually include <code>springy.js</code> in his app in order to use the <code>springy</code> layout.</p>
+<p>Because Springy.js is a separate library, the developer must manually include <code>springy.js</code> in their app in order to use the <code>springy</code> layout.</p>
 
 					
 
@@ -14939,7 +14806,7 @@ t.pass( { foo: <span class="hljs-number">1</span>, bar: <span class="hljs-number
 							</div>
 							
 							
-							<div class="descr"><p>Run the specified function in the thread, returning a promise that is resolved when the thread calls <a href="#thread/globals/resolve"><code>resolve()</code></a>.</p>
+							<div class="descr"><p>Run the specified function in the thread, returning a promise that is resolved when the thread calls <a href="#thread/globals/resolve"><code>resolve()</code></a> or when the specified function returns a value.</p>
 </div>
 
 							
@@ -14995,7 +14862,7 @@ t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><spa
 							
 							
 							
-							<div class="descr"><p>Run the specified function in the thread, returning a promise that is resolved when the thread calls <a href="#thread/globals/resolve"><code>resolve()</code></a>.</p>
+							<div class="descr"><p>Get a mapping from the thread using the specified mapping function that uses <a href="#thread/globals/resolve"><code>resolve()</code></a> or a return value to specify the mapped value for each element.</p>
 </div>
 
 							
@@ -15014,7 +14881,7 @@ t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><spa
 												<li>
 													<span class="name">function( passed )</span>
 													 
-													<span class="descr"><p>A mapping function that calls <code>resolve()</code> with the resultant mapped value.</p>
+													<span class="descr"><p>A mapping function that specifies the resultant mapped value via <code>resolve()</code> or a return value.</p>
 </span>
 
 													
@@ -15028,8 +14895,18 @@ t.run(<span class="hljs-function"><span class="hljs-keyword">function</span><spa
 
 							<div class="details">
 								
-									<p>TODO</p>
+									<h3 id="examples">Examples</h3>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> t = cytoscape.Thread();
 
+t.pass([ <span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span> ]).map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( n )</span></span>{
+  <span class="hljs-keyword">return</span> n*n;
+}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( data )</span></span>{
+  <span class="hljs-built_in">console</span>.log( data ); <span class="hljs-comment">// [1, 4, 9]</span>
+
+  t1.stop();
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button>
 								
 							</div>		
 						</div>
@@ -15621,7 +15498,7 @@ thread.run(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 				
 					<p>Cytoscape.js uses an event-driven model with a core API.  The core has several extensions, each of which is notified of events by the core, as needed.  Extensions modify the elements in the graph and notify the core of any changes.</p>
-<p>The client application accesses Cytoscape.js solely through the <a href="#core">core</a>.  Clients do not access extensions directly, apart from the case where a client wishes to write his own custom extension.</p>
+<p>The client application accesses Cytoscape.js solely through the <a href="#core">core</a>.  Clients do not access extensions directly, apart from the case where a client wishes to write their own custom extension.</p>
 <p>The following diagramme summarises the extensions of Cytoscape.js, which are discussed in further detail <a href="#extensions">elsewhere in this documentation</a>.</p>
 
 				
@@ -16302,10 +16179,6 @@ cy.elements().foo();
 						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.removeStyle"><span class="icon-bookmark bookmark-icon"></span> eles.removeStyle() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/style/ele.renderedStyle"><span class="icon-bookmark bookmark-icon"></span> ele.renderedStyle() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.show"><span class="icon-bookmark bookmark-icon"></span> eles.show() </a></div>
-					
-						<div class="section lvl3"><a class="toclink" href="#collection/style/eles.hide"><span class="icon-bookmark bookmark-icon"></span> eles.hide() </a></div>
 					
 						<div class="section lvl3"><a class="toclink" href="#collection/style/ele.visible"><span class="icon-bookmark bookmark-icon"></span> ele.visible() et al</a></div>
 					

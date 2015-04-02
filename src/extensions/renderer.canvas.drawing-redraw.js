@@ -2,10 +2,11 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var CR = CanvasRenderer;
+  var CRp = CanvasRenderer.prototype;
 
   // var isFirefox = typeof InstallTrigger !== 'undefined';
 
-  CanvasRenderer.prototype.getPixelRatio = function(){ 
+  CRp.getPixelRatio = function(){ 
     var context = this.data.contexts[0];
 
     if( this.forcedPixelRatio != null ){
@@ -28,7 +29,7 @@
     return (window.devicePixelRatio || 1) / backingStore;
   };
 
-  CanvasRenderer.prototype.paintCache = function(context){
+  CRp.paintCache = function(context){
     var caches = this.paintCaches = this.paintCaches || [];
     var needToCreateCache = true;
     var cache;
@@ -52,7 +53,7 @@
     return cache;
   };
 
-  CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
+  CRp.fillStyle = function(context, r, g, b, a){
     context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     
     // turn off for now, seems context does its own caching
@@ -66,7 +67,7 @@
     // }
   };
 
-  CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
+  CRp.strokeStyle = function(context, r, g, b, a){
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     
     // turn off for now, seems context does its own caching
@@ -80,7 +81,7 @@
     // }
   };
   
-  CanvasRenderer.prototype.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+  CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
     var zoom = this.data.cy.zoom();
 
     if (opacity > 0) {
@@ -95,7 +96,7 @@
   }
 
   // Resize canvas
-  CanvasRenderer.prototype.matchCanvasSize = function(container) {
+  CRp.matchCanvasSize = function(container) {
     var data = this.data;
     var width = container.clientWidth;
     var height = container.clientHeight;
@@ -165,7 +166,7 @@
 
   };
 
-  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan, pxRatio ){
+  CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
     this.redraw({
       forcedContext: cxt,
       forcedZoom: zoom,
@@ -175,7 +176,7 @@
     });
   };
 
-  CanvasRenderer.prototype.timeToRender = function(){
+  CRp.timeToRender = function(){
     return this.redrawTotalTime / this.redrawCount;
   };
 
@@ -184,7 +185,7 @@
   CanvasRenderer.motionBlurDelay = 100;
 
   // Redraw frame
-  CanvasRenderer.prototype.redraw = function( options ) {
+  CRp.redraw = function( options ) {
     options = options || {};
 
     // console.log('redraw');

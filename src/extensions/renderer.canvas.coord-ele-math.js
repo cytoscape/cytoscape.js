@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Project mouse
-  CanvasRenderer.prototype.projectIntoViewport = function(clientX, clientY) {
+  CRp.projectIntoViewport = function(clientX, clientY) {
     var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
@@ -15,7 +16,7 @@
     return [x, y];
   };
 
-  CanvasRenderer.prototype.findContainerClientCoords = function() {
+  CRp.findContainerClientCoords = function() {
     var container = this.data.container;
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
@@ -23,12 +24,12 @@
     return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   };
 
-  CanvasRenderer.prototype.invalidateContainerClientCoordsCache = function(){
+  CRp.invalidateContainerClientCoordsCache = function(){
     this.containerBB = null;
   };
 
   // Find nearest element
-  CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly){
+  CRp.findNearestElement = function(x, y, visibleElementsOnly){
     var self = this;
     var eles = this.getCachedZSortedEles();
     var near = [];
@@ -224,7 +225,7 @@
   }; 
 
   // 'Give me everything from this box'
-  CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
+  CRp.getAllInBox = function(x1, y1, x2, y2) {
     var nodes = this.getCachedNodes();
     var edges = this.getCachedEdges();
     var box = [];
@@ -338,7 +339,7 @@
    * @param node          a node
    * @return {number}     width of the node
    */
-  CanvasRenderer.prototype.getNodeWidth = function(node)
+  CRp.getNodeWidth = function(node)
   {
     return node.width();
   };
@@ -350,7 +351,7 @@
    * @param node          a node
    * @return {number}     width of the node
    */
-  CanvasRenderer.prototype.getNodeHeight = function(node)
+  CRp.getNodeHeight = function(node)
   {
     return node.height();
   };
@@ -362,7 +363,7 @@
    * @param node          a node
    * @return {String}     shape of the node
    */
-  CanvasRenderer.prototype.getNodeShape = function(node)
+  CRp.getNodeShape = function(node)
   {
     // TODO only allow rectangle for a compound node?
 //    if (node._private.style['width'].value == 'auto' ||
@@ -385,7 +386,7 @@
   };
 
 
-  CanvasRenderer.prototype.getNodePadding = function(node)
+  CRp.getNodePadding = function(node)
   {
     var left = node._private.style['padding-left'].pxValue;
     var right = node._private.style['padding-right'].pxValue;
@@ -418,13 +419,13 @@
       bottom : bottom};
   };
 
-  CanvasRenderer.prototype.zOrderSort = $$.Collection.zIndexSort;
+  CRp.zOrderSort = $$.Collection.zIndexSort;
 
-  CanvasRenderer.prototype.updateCachedZSortedEles = function(){
+  CRp.updateCachedZSortedEles = function(){
     this.getCachedZSortedEles( true );
   };
 
-  CanvasRenderer.prototype.getCachedZSortedEles = function( forceRecalc ){
+  CRp.getCachedZSortedEles = function( forceRecalc ){
     var lastNodes = this.lastZOrderCachedNodes;
     var lastEdges = this.lastZOrderCachedEdges;
     var nodes = this.getCachedNodes();
@@ -462,7 +463,7 @@
     return eles;
   };
 
-  CanvasRenderer.prototype.projectBezier = function(edge){
+  CRp.projectBezier = function(edge){
     var qbezierAt = $$.math.qbezierAt;
     var rs = edge._private.rscratch;
     var bpts = edge._private.rstyle.bezierPts = [];
@@ -522,7 +523,7 @@
     }
   };
 
-  CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
+  CRp.recalculateNodeLabelProjection = function( node ){
     var content = node._private.style['content'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -569,7 +570,7 @@
     this.applyLabelDimensions( node );
   };
 
-  CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
+  CRp.recalculateEdgeLabelProjection = function( edge ){
     var content = edge._private.style['content'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -612,7 +613,7 @@
     this.applyLabelDimensions( edge );
   };
 
-  CanvasRenderer.prototype.applyLabelDimensions = function( ele ){
+  CRp.applyLabelDimensions = function( ele ){
     var rs = ele._private.rscratch;
     var rstyle = ele._private.rstyle;
 
@@ -626,7 +627,7 @@
     rs.labelHeight = labelDims.height;
   };
 
-  CanvasRenderer.prototype.getLabelText = function( ele ){ 
+  CRp.getLabelText = function( ele ){ 
     var style = ele._private.style;
     var text = ele._private.style['content'].strValue;
     var textTransform = style['text-transform'].value;
@@ -696,7 +697,7 @@
     return text;
   };
 
-  CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text, extraKey ){
+  CRp.calculateLabelDimensions = function( ele, text, extraKey ){
     var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
@@ -760,7 +761,7 @@
     return cache[cacheKey];
   };  
 
-  CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
+  CRp.recalculateRenderedStyle = function( eles ){
     var edges = [];
     var nodes = [];
     var handledEdge = {};
@@ -834,7 +835,7 @@
     this.recalculateLabelProjections( nodes, edges );
   };
 
-  CanvasRenderer.prototype.recalculateLabelProjections = function( nodes, edges ){
+  CRp.recalculateLabelProjections = function( nodes, edges ){
     for( var i = 0; i < nodes.length; i++ ){
       this.recalculateNodeLabelProjection( nodes[i] );
     }
@@ -844,13 +845,13 @@
     }
   };
 
-  CanvasRenderer.prototype.recalculateEdgeProjections = function( edges ){
+  CRp.recalculateEdgeProjections = function( edges ){
     this.findEdgeControlPoints( edges );
   };
 
 
   // Find edge control points
-  CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+  CRp.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
     var cy = this.data.cy;
@@ -1349,7 +1350,7 @@
     return hashTable;
   };
 
-  CanvasRenderer.prototype.findEndpoints = function(edge) {
+  CRp.findEndpoints = function(edge) {
     var intersect;
 
     var source = edge.source()[0];
@@ -1546,7 +1547,7 @@
   };
 
   // Find adjacent edges
-  CanvasRenderer.prototype.findEdges = function(nodeSet) {
+  CRp.findEdges = function(nodeSet) {
     
     var edges = this.getCachedEdges();
     
@@ -1568,7 +1569,7 @@
     return adjacentEdges;
   };
 
-  CanvasRenderer.prototype.getArrowWidth = CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+  CRp.getArrowWidth = CRp.getArrowHeight = function(edgeWidth) {
     var cache = this.arrowWidthCache = this.arrowWidthCache || {};
 
     var cachedVal = cache[edgeWidth];

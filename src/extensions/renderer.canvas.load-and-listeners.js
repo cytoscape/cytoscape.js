@@ -1,8 +1,9 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.registerBinding = function(target, event, handler, useCapture){
+  CRp.registerBinding = function(target, event, handler, useCapture){
     this.bindings.push({
       target: target,
       event: event,
@@ -13,7 +14,7 @@
     target.addEventListener(event, handler, useCapture);
   };
 
-  CanvasRenderer.prototype.nodeIsDraggable = function(node) {
+  CRp.nodeIsDraggable = function(node) {
     if (node._private.style['opacity'].value !== 0
       && node._private.style['visibility'].value == 'visible'
       && node._private.style['display'].value == 'element'
@@ -26,7 +27,7 @@
     return false;
   };
 
-  CanvasRenderer.prototype.load = function() {
+  CRp.load = function() {
     var r = this;
 
     var getDragListIds = function(opts){

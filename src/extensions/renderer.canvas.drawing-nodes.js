@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Draw node
-  CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
+  CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     var r = this;
     var nodeWidth, nodeHeight;
@@ -243,13 +244,13 @@
   };
 
   // does the node have at least one pie piece?
-  CanvasRenderer.prototype.hasPie = function(node){
+  CRp.hasPie = function(node){
     node = node[0]; // ensure ele ref
     
     return node._private.hasPie;
   };
 
-  CanvasRenderer.prototype.drawPie = function(context, node){
+  CRp.drawPie = function(context, node){
     node = node[0]; // ensure ele ref
 
     var pieSize = node._private.style['pie-size'];

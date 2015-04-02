@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
 // Draw edge
-  CanvasRenderer.prototype.drawEdge = function(context, edge, drawOverlayInstead) {
+  CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     var rs = edge._private.rscratch;
     var usePaths = CanvasRenderer.usePaths();
 
@@ -138,7 +139,7 @@
   };
   
   
-  CanvasRenderer.prototype.drawStyledEdge = function(
+  CRp.drawStyledEdge = function(
       edge, context, pts, type, width) {
 
     // 3 points given -> assume Bezier
@@ -218,7 +219,7 @@
 
   };
 
-  CanvasRenderer.prototype.drawArrowheads = function(context, edge, drawOverlayInstead) {
+  CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
     if( drawOverlayInstead ){ return; } // don't do anything for overlays 
 
     var rs = edge._private.rscratch;
@@ -331,7 +332,7 @@
   };
   
   // Draw arrowshape
-  CanvasRenderer.prototype.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
+  CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
     var usePaths = CanvasRenderer.usePaths();
     var rs = edge._private.rscratch;
     var pathCacheHit = false;

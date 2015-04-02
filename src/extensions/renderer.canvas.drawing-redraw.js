@@ -314,11 +314,11 @@
       function mbclear( context, x, y, w, h ){
         var gco = context.globalCompositeOperation;
 
-          context.globalCompositeOperation = 'destination-out';
-          r.fillStyle( context, 255, 255, 255, 0.666 );
-          context.fillRect(x, y, w, h);
+        context.globalCompositeOperation = 'destination-out';
+        r.fillStyle( context, 255, 255, 255, 0.666 );
+        context.fillRect(x, y, w, h);
 
-          context.globalCompositeOperation = gco;
+        context.globalCompositeOperation = gco;
       }
 
       function setContextTransform(context, clear){
@@ -504,23 +504,22 @@
       needMbClear[CR.DRAG] = !needDraw[CR.DRAG] && motionBlur && !r.clearedForMotionBlur[CR.DRAG] || r.clearingMotionBlur;
       if( needMbClear[CR.DRAG] ){ r.clearedForMotionBlur[CR.DRAG] = true; }
 
-      // console.log('--');
+      console.log('--');
 
-      if( needDraw[CR.DRAG] && motionBlur && needMbClear[CR.NODE] ){
-        // console.log('NODE blurclean');
+      // if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] ){
+      //   console.log('NODE blurclean');
 
-        var context = forcedContext || data.contexts[CR.NODE];
+      //   var context = data.contexts[CR.NODE];
 
-        setContextTransform( context );
-        drawElements(eles.nondrag, context);
+      //   setContextTransform( context, true );
+      //   drawElements(eles.nondrag, context);
 
-        if( !drawAllLayers ){
-          needDraw[CR.NODE] = false; 
-          needMbClear[CR.NODE] = false;
-        }
+      //   needDraw[CR.NODE] = false; 
+      //   needMbClear[CR.NODE] = false;
 
-      } else if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
-        // console.log('NODE');
+      // } else 
+      if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
+        console.log('NODE', needDraw[CR.NODE], needMbClear[CR.NODE]);
 
         var context = forcedContext || ( motionBlur && !needMbClear[CR.NODE] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
 
@@ -532,8 +531,8 @@
         }
       }
 
-      if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers) ) {
-        // console.log('DRAG');
+      if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers || needMbClear[CR.DRAG]) ) {
+        console.log('DRAG');
 
         var context = forcedContext || ( motionBlur && !needMbClear[CR.DRAG] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CR.DRAG] );
         
@@ -542,11 +541,6 @@
         
         if( !drawAllLayers && !motionBlur ){
           needDraw[CR.DRAG] = false;
-        }
-
-        if( !r.clearedForMotionBlur[CR.NODE] ){
-          needDraw[CR.NODE] = true;
-          needMbClear[CR.NODE] = true;
         }
       }
       
@@ -638,12 +632,7 @@
         var drawMotionBlur = function( cxt, txt ){
           cxt.setTransform(1, 0, 0, 1, 0, 0);
 
-          // trailing frames effect
-          var gco = cxt.globalCompositeOperation;
-          cxt.globalCompositeOperation = 'destination-out';
-          cxt.fillStyle = 'rgba(255, 255, 255, 0.666)';
-          cxt.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
-          cxt.globalCompositeOperation = gco;
+          mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
 
           var pxr = /*r.fullQualityMb ? 1 :*/ mbPxRatio;
 
@@ -657,14 +646,14 @@
         }
 
         if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
-          // console.log('mb NODE');
+          console.log('mb NODE');
 
           drawMotionBlur( cxtNode, txtNode );
           needDraw[CR.NODE] = false;
         }
 
         if( needDraw[CR.DRAG] || needMbClear[CR.DRAG] ){
-          // console.log('mb DRAG');
+          console.log('mb DRAG');
 
           drawMotionBlur( cxtDrag, txtDrag );
           needDraw[CR.DRAG] = false;

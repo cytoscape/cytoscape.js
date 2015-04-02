@@ -501,6 +501,9 @@
       needMbClear[CR.NODE] = !needDraw[CR.NODE] && motionBlur && !r.clearedForMotionBlur[CR.NODE];
       if( needMbClear[CR.NODE] ){ r.clearedForMotionBlur[CR.NODE] = true; }
 
+      needMbClear[CR.DRAG] = !needDraw[CR.DRAG] && motionBlur && !r.clearedForMotionBlur[CR.DRAG];
+      if( needMbClear[CR.DRAG] ){ r.clearedForMotionBlur[CR.DRAG] = true; }
+
       // console.log('--');
 
       if( needDraw[CR.DRAG] && motionBlur && needMbClear[CR.NODE] ){
@@ -528,9 +531,6 @@
           needDraw[CR.NODE] = false; 
         }
       }
-      
-      needMbClear[CR.DRAG] = !needDraw[CR.DRAG] && motionBlur && !r.clearedForMotionBlur[CR.DRAG];
-      if( needMbClear[CR.DRAG] ){ r.clearedForMotionBlur[CR.DRAG] = true; }
 
       if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers) ) {
         // console.log('DRAG');

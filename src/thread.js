@@ -354,7 +354,7 @@
         '    res.push( val );',
         '  };',
         '  ',
-        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ', ' + JSON.stringify(arg1) + ' );',
+        '  var ret = data.' + opts.name + '( _$_$_' + opts.name + ( arguments.length > 1 ? ', ' + JSON.stringify(arg1) : '' ) + ' );',
         '  ',
         '  resolve = origResolve;',
         '  resolve( res.length > 0 ? res : ret );',
@@ -383,7 +383,6 @@
   $$.fn.thread({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
-    once: $$.define.on({ unbindAllBindersOnTrigger: true }),
     off: $$.define.off(), 
     trigger: $$.define.trigger()
   });

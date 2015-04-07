@@ -20,6 +20,30 @@ describe('Fabric', function(){
     expect( $$.is.thread(t) ).to.be.true;
   });
 
+  it('runs on a random thread', function( next ){
+    var t = fabric.random();
+
+    t.promise(function(){
+      return 1;
+    }).then(function( n ){
+      expect( n ).to.equal(1);
+
+      next();
+    });
+  });
+
+  it('runs with passed data on a random thread', function( next ){
+    var t = fabric.random();
+
+    t.pass( 1 ).promise(function( n ){
+      return n;
+    }).then(function( n ){
+      expect( n ).to.equal(1);
+
+      next();
+    });
+  });
+
   it('spreads correctly', function( next ){
     fabric.pass([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]).spread(function( split ){
       var ns = [];
@@ -75,7 +99,7 @@ describe('Fabric', function(){
   it('filters correctly', function( next ){
     fabric.pass([ -3, -2, -1, 0, 1, 2, 3 ]).filter(function( n ){
       resolve( n > 0 );
-    }).then(function( filtered ){ console.log(filtered)
+    }).then(function( filtered ){
       expect( filtered ).to.deep.equal([ 1, 2, 3 ]);
       next();
     });
@@ -102,39 +126,6 @@ describe('Fabric', function(){
       return b - a;
     }).then(function( sorted ){
       expect( sorted ).to.deep.equal([ 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 ]);
-      next();
-    });
-  });
-
-  it('passes eles', function( next ){
-    var cy = cytoscape({
-      headless: true,
-      elements: [
-        {
-          group: 'nodes',
-          data: { foo: 'bar' }
-        },
-
-        {
-          group: 'nodes',
-          data: { foo: 'baz' }
-        }
-      ]
-    });
-
-    var eles = cy.elements().sort(function( a, b ){
-      if( a.data('foo') === 'bar' ){
-        return -1;
-      }
-
-      return 1;
-    });
-
-    fabric.pass( eles ).map(function( ele ){
-      resolve( ele.data.foo );
-    }).then(function( mapped ){
-      expect( mapped ).to.deep.equal([ 'bar', 'baz' ]);
-
       next();
     });
   });

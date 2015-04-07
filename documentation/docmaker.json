@@ -1,5 +1,5 @@
 {
-  "version": "2.4.0-unstable",
+  "version": "2.4.0",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -3303,7 +3303,11 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function( passed )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value." }
+                    { "name": "function( currVal, index, array )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value.", "fields": [
+                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
+                      { "name": "array", "descr": "The passed array `map()` was called upon.", "optional": true }
+                    ] }
                   ]
                 }
               ],
@@ -3311,9 +3315,53 @@
             },
 
             {
+              "name": "thread.reduce",
+              "descr": "Apply a function against an accumulator and each value of the passed array (from left-to-right) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#thread/globals/resolve) or a return value.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( prevVal, currVal, index, array )", 
+                      "descr": "The accumulator function.",
+                      "fields": [
+                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
+                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
+                        { "name": "array", "descr": "The passed array `reduce()` was called upon." }
+                      ]
+                    },
+                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "thread.reduceRight",
+              "descr": "Apply a function against an accumulator and each value of the passed array (from right-to-left) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#thread/globals/resolve) or a return value.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( prevVal, currVal, index, array )", 
+                      "descr": "The accumulator function.",
+                      "fields": [
+                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
+                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
+                        { "name": "array", "descr": "The passed array `reduceRight()` was called upon." }
+                      ]
+                    },
+                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "thread.stop",
               "pureAliases": ["thread.halt", "thread.terminate"],
-              "descr": "Terminates the worker such that it no longer runs."
+              "descr": "Terminates the thread such that it no longer runs."
             },
 
             {
@@ -3438,7 +3486,311 @@
 
     {
       "name": "Fabric",
-      "md": "fabric/intro"
+      "md": "fabric/intro",
+      "sections": [
+        {
+          "name": "Execution",
+          "fns": [
+            {
+              "name": "fabric.require",
+              "descr": "Require a named function into each thread in the fabric, giving a global reference to the function.  Plain objects or simple objects with a prototype (that can be inpected and serialised live) are also supported.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "obj", "descr": "The named function or simple object to require that is serialised and copied to the fabric." },
+                    { "name": "as", "descr": "The name of the object as available in the fabric.  This is mandatory for an object that is not a named function, because its name can not be automatically inferred.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "fabric/require"
+            },
+
+            {
+              "name": "fabric.pass",
+              "descr": "Pass data to the fabric such that it is accessible within `fabric.spread()` etc callback functions.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "passed", "descr": "JSON serialisable data that is passed to functions like `fabric.spread()`." }
+                  ]
+                }
+              ],
+              "md": "fabric/pass"
+            },
+
+            {
+              "name": "fabric.random",
+              "descr": "Get a random thread from the fabric.",
+              "md": "fabric/random"
+            },
+
+            {
+              "name": "fabric.run",
+              "pureAliases": ["fabric.promise"],
+              "descr": "Run the specified function in a random thread of the fabric, returning a promise that is resolved when the thread calls [`resolve()`](#fabric/globals/resolve) or when the specified function returns a value.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function( passed )", "descr": "The function which will be copied and run in the fabric." }
+                  ]
+                }
+              ],
+              "md": "fabric/run"
+            },
+
+            {
+              "name": "fabric.map",
+              "descr": "Get a mapping from the fabric using the specified mapping function that uses [`resolve()`](#fabric/globals/resolve) or a return value to specify the mapped value for each element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function( currVal, index, array )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value.", "fields": [
+                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
+                      { "name": "array", "descr": "The passed array `map()` was called upon.", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "fabric/map"
+            },
+
+            {
+              "name": "fabric.filter",
+              "descr": "Filters the passed array, giving a resultant array that contains the elements which pass the specified test function.  The test function returns or [`resolve()`s](#fabric/globals/resolve) to specify the test result.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function( currVal, index, array )", "descr": "The test function that returns or `resolve()`s a truthy value to specify whether the specified value passes the test.", "fields": [
+                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
+                      { "name": "array", "descr": "The passed array `filter()` was called upon.", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "fabric/filter"
+            },
+
+            {
+              "name": "fabric.reduce",
+              "descr": "Apply a function against an accumulator and each value of the passed array (from left-to-right) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#fabric/globals/resolve) or a return value.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( prevVal, currVal, index, array )", 
+                      "descr": "The accumulator function.",
+                      "fields": [
+                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
+                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
+                        { "name": "array", "descr": "The passed array `reduce()` was called upon." }
+                      ]
+                    },
+                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "fabric/reduce"
+            },
+
+            {
+              "name": "fabric.reduceRight",
+              "descr": "Apply a function against an accumulator and each value of the passed array (from right-to-left) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#fabric/globals/resolve) or a return value.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( prevVal, currVal, index, array )", 
+                      "descr": "The accumulator function.",
+                      "fields": [
+                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
+                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
+                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
+                        { "name": "array", "descr": "The passed array `reduceRight()` was called upon." }
+                      ]
+                    },
+                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "fabric/reduceRight"
+            },
+
+            {
+              "name": "fabric.sort",
+              "descr": "Sort the passed array.",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( a, b )", 
+                      "descr": "The sorting comparison function that returns a negative value for `a` before `b`, zero for `a` the same as `b`, and a positive value for `a` after `b`.",
+                      "fields": [
+                        { "name": "a", "descr": "The first value to compare." },
+                        { "name": "b", "descr": "The second value to compare." }
+                      ],
+                      "optional": true
+                    }
+                  ]
+                }
+              ],
+              "md": "fabric/sort"
+            },
+
+            {
+              "name": "fabric.spread",
+              "descr": "Split the passed data into slices to spread the data equally among the threads of the fabric.  The passed processing function specifies the resultant array slice via a return value or [`resolve()`](#fabric/globals/resolve).",
+              "formats": [
+                {
+                  "args": [
+                    { 
+                      "name": "function( slice )", 
+                      "descr": "The processing function which is run on each slice of passed data.",
+                      "fields": [
+                        { "name": "slice", "descr": "An array containing a slice of the passed data." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "fabric/spread"
+            },
+
+            {
+              "name": "fabric.stop",
+              "pureAliases": ["fabric.halt", "fabric.terminate"],
+              "descr": "Terminates the fabric such that all its threads no longer run.",
+              "md": "fabric/run"
+            }
+          ]
+        },
+
+        {
+          "name": "Events",
+          "md": "fabric/events",
+          "fns": [
+            {
+              "name": "fabric.message",
+              "descr": "Send a random thread in the fabric a message.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the thread." }
+                  ]
+                }
+              ],
+              "md": "fabric/message"
+            },
+
+            {
+              "name": "fabric.broadcast",
+              "descr": "Send all threads in the fabric a message.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the threads." }
+                  ]
+                }
+              ],
+              "md": "fabric/broadcast"
+            },
+
+            {
+              "name": "fabric.on",
+              "pureAliases": ["fabric.bind", "fabric.listen", "fabric.addListener"],
+              "descr": "Bind to events that are emitted by the fabric.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "fabric.promiseOn",
+              "pureAliases": ["fabric.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the fabric.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." }
+                  ]
+                }
+              ],
+              "md": "fabric/promiseOn"
+            },
+
+            {
+              "name": "fabric.one",
+              "descr": "Bind to events that are emitted by the fabric, and trigger the handler only once.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
+                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
+                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "fabric.off",
+              "pureAliases": ["fabric.unbind", "fabric.unlisten", "fabric.removeListener"],
+              "descr": "Remove event handlers on the fabric.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "fabric.trigger",
+              "pureAliases": ["fabric.emit"],
+              "descr": "Trigger one or more events on the fabric.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
+                  ]
+                }
+              ]
+            }
+          
+          ]
+        }
+      ]
     },
 
     {

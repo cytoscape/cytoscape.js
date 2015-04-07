@@ -61,7 +61,9 @@
 
     // run on random thread
     run: function( fn ){ 
-      return this.random().run( fn );
+      var pass = this._private.pass.shift();
+
+      return this.random().pass( pass ).run( fn );
     },
 
     // sends a random thread a message
@@ -97,9 +99,6 @@
 
       if( $$.is.array(data) ){
         pass.push( data );
-      } else if( $$.is.elementOrCollection(data) ){
-        var eles = data;
-        pass.push( eles.jsons() );
       } else {
         $$.util.error('Only arrays or collections may be used with fabric.pass()');
       }
@@ -311,7 +310,6 @@
   $$.fn.fabric({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
-    once: $$.define.on({ unbindAllBindersOnTrigger: true }),
     off: $$.define.off(), 
     trigger: $$.define.trigger()
   });

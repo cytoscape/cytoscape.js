@@ -706,6 +706,10 @@ pre code {
 	font-size: 0.8em;
 }
 
+.args-summary {
+	font-size: 0.8em;
+}
+
 .args .name {
 	margin-right: 0.25em;
 }

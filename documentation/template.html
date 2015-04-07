@@ -168,7 +168,7 @@
 								{{#each formats}}
 									<div class="format">
 										{{#if args}}
-											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}} )</div>
+											<div class="name">{{name}}( <span class="args-summary">{{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}}</span> )</div>
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}

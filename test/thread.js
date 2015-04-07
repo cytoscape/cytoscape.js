@@ -442,7 +442,7 @@ describe('Thread', function(){
 
   it('reduces correctly', function( next ){
     var t = $$.Thread();
-    var reducer = function( prev, current ){
+    var reducer = function( prev, current, index, array ){
       return prev - current;
     };
     var data = [1, 2, 3, 4];
@@ -504,7 +504,7 @@ describe('Thread', function(){
   it('passes ele properly', function( next ){
     var t = $$.Thread();
 
-    t.pass( n ).run(function( n ){
+    t.pass( n.json() ).run(function( n ){
       resolve(n);
     }).then(function( n ){
       expect( n.data.foo ).to.equal('bar');

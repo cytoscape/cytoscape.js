@@ -523,7 +523,7 @@
     }
   };
 
-  CRp.recalculateNodeLabelProjection = function( node ){
+  CRp.recalculateNodeLabelProjection = function( node ){ 
     var content = node._private.style['content'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -769,6 +769,7 @@
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
       var _p = ele._private;
+      var style = _p.style;
       var rs = _p.rscratch;
       var rstyle = _p.rstyle;
       var id = _p.data.id;
@@ -779,13 +780,17 @@
       if( ele._private.group === 'nodes' ){
         var pos = _p.position;
         var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
+        var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pxValue;
+        var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pxValue;
 
-        if( !posSame || !styleSame ){
+        if( !posSame || !styleSame || !wSame || !hSame ){
           nodes.push( ele );
         }
 
         rstyle.nodeX = pos.x;
         rstyle.nodeY = pos.y;
+        rstyle.nodeW = style['width'].pxValue;
+        rstyle.nodeH = style['height'].pxValue;
       } else { // edges
 
         var srcPos = ele._private.source._private.position;

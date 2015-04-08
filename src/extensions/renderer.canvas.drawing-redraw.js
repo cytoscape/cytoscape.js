@@ -201,6 +201,7 @@
     var needDraw = data.canvasNeedsRedraw;
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
     var mbPxRatio = r.motionBlurPxRatio;
+    var inNodeDragGesture = r.hoverData.draggingEles;
     var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
 
@@ -272,7 +273,6 @@
 
     //console.log('-- redraw --')
 
-
     function drawToContext(){ 
       // startTime = Date.now();
       // console.profile('draw' + startTime)
@@ -287,6 +287,21 @@
         x: pan.x,
         y: pan.y
       };
+
+      var vp = {
+        zoom: zoom,
+        pan: {
+          x: pan.x,
+          y: pan.y
+        }
+      };
+      var prevVp = r.prevViewport;
+      var viewportIsDiff = prevVp === undefined || vp.zoom !== prevVp.zoom || vp.pan.x !== prevVp.pan.x || vp.pan.y !== prevVp.pan.y;
+
+      // we want the low quality motionblur only when the viewport is being manipulated etc (where it's not noticed)
+      if( !viewportIsDiff && !inNodeDragGesture ){
+        r.motionBlurPxRatio = 1;
+      }
 
       if( forcedPan ){
         effectivePan = forcedPan;
@@ -506,18 +521,18 @@
 
       // console.log('--');
 
-      // if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] ){
-      //   console.log('NODE blurclean');
+      if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] && inNodeDragGesture ){
+        // console.log('NODE blurclean');
 
-      //   var context = data.contexts[CR.NODE];
+        var context = data.contexts[CR.NODE];
 
-      //   setContextTransform( context, true );
-      //   drawElements(eles.nondrag, context);
+        setContextTransform( context, true );
+        drawElements(eles.nondrag, context);
 
-      //   needDraw[CR.NODE] = false; 
-      //   needMbClear[CR.NODE] = false;
+        needDraw[CR.NODE] = false; 
+        needMbClear[CR.NODE] = false;
 
-      // } else 
+      } else 
       if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
         // console.log('NODE', needDraw[CR.NODE], needMbClear[CR.NODE]);
 
@@ -629,11 +644,15 @@
         var cxtDrag = data.contexts[CR.DRAG];
         var txtDrag = r.data.bufferCanvases[ CR.MOTIONBLUR_BUFFER_DRAG ];
 
-        var drawMotionBlur = function( cxt, txt ){
+        var drawMotionBlur = function( cxt, txt, needClear ){
           cxt.setTransform(1, 0, 0, 1, 0, 0);
 
-          mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
-
+          if( needClear ){
+            cxt.clearRect( 0, 0, r.canvasWidth, r.canvasHeight );
+          } else {
+            mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
+          }
+          
           var pxr = /*r.fullQualityMb ? 1 :*/ mbPxRatio;
 
           cxt.drawImage( 
@@ -646,16 +665,16 @@
         }
 
         if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
-          // console.log('mb NODE');
+          // console.log('mb NODE', needMbClear[CR.NODE]);
 
-          drawMotionBlur( cxtNode, txtNode );
+          drawMotionBlur( cxtNode, txtNode, needMbClear[CR.NODE] );
           needDraw[CR.NODE] = false;
         }
 
         if( needDraw[CR.DRAG] || needMbClear[CR.DRAG] ){
           // console.log('mb DRAG');
 
-          drawMotionBlur( cxtDrag, txtDrag );
+          drawMotionBlur( cxtDrag, txtDrag, needMbClear[CR.DRAG] );
           needDraw[CR.DRAG] = false;
           //needMbClear[CR.NODE] = true;
         }
@@ -686,6 +705,8 @@
       //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
 
       r.currentlyDrawing = false;
+
+      r.prevViewport = vp;
 
       // console.profileEnd('draw' + startTime)
 

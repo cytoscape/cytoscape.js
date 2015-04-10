@@ -20,6 +20,8 @@
     aStar: function(options) {
       options = options || {};
 
+      var cy = this.cy();
+
       var logDebug = function() {
         if (debug) {
           console.log.apply(console, arguments);
@@ -79,7 +81,7 @@
         var debug = false;
       }
 
-      logDebug("Starting aStar..."); 
+      // logDebug("Starting aStar..."); 
       var cy = this._private.cy;
 
       // root - mandatory!
@@ -88,7 +90,7 @@
           // use it as a selector, e.g. "#rootID
           this.filter(options.root)[0] : 
           options.root[0];
-        logDebug("Source node: %s", source.id()); 
+        // logDebug("Source node: %s", source.id()); 
       } else {
         return undefined;
       }
@@ -99,7 +101,7 @@
           // use it as a selector, e.g. "#goalID
           this.filter(options.goal)[0] : 
           options.goal[0];
-        logDebug("Target node: %s", target.id()); 
+        // logDebug("Target node: %s", target.id()); 
       } else {
         return undefined;
       }
@@ -138,7 +140,7 @@
       gScore[source.id()] = 0;
       fScore[source.id()] = heuristic(source);
       
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
       var nodes = this.nodes();
 
       // Counter
@@ -147,18 +149,18 @@
       // Main loop 
       while (openSet.length > 0) {
         var minPos = findMin(openSet, fScore);
-        var cMin = this.filter("#" + openSet[minPos])[0];
+        var cMin = cy.getElementById( openSet[minPos] );
         steps++;
 
-        logDebug("\nStep: %s", steps);
-        logDebug("Processing node: %s, fScore = %s", cMin.id(), fScore[cMin.id()]);
+        // logDebug("\nStep: %s", steps);
+        // logDebug("Processing node: %s, fScore = %s", cMin.id(), fScore[cMin.id()]);
         
         // If we've found our goal, then we are done
         if (cMin.id() == target.id()) {
-          logDebug("Found goal node!");
+          // logDebug("Found goal node!");
           var rPath = reconstructPath(source.id(), target.id(), cameFrom, []);
           rPath.reverse();
-          logDebug("Path: %s", rPath);
+          // logDebug("Path: %s", rPath);
           return {
             found : true,
             distance : gScore[cMin.id()],
@@ -171,27 +173,29 @@
         closedSet.push(cMin.id());
         // Remove cMin from boundary nodes
         openSet.splice(minPos, 1);
-        logDebug("Added node to closedSet, removed from openSet.");
-        logDebug("Processing neighbors...");
+        // logDebug("Added node to closedSet, removed from openSet.");
+        // logDebug("Processing neighbors...");
 
         // Update scores for neighbors of cMin
         // Take into account if graph is directed or not
-        var vwEdges = cMin.connectedEdges(directed ? '[source = "' + cMin.id() + '"]' 
-                         : undefined).intersect(edges);         
+        var vwEdges = cMin.connectedEdges();
+        if( directed ){ vwEdges = vwEdges.stdFilter(function(ele){ return ele.data('source') === cMin.id(); }); }
+        vwEdges = vwEdges.intersect(edges);  
+        
         for (var i = 0; i < vwEdges.length; i++) {
           var e = vwEdges[i];
-          var w = e.connectedNodes('[id != "' + cMin.id() + '"]').intersect(nodes);
+          var w = e.connectedNodes().stdFilter(function(n){ return n.id() !== cMin.id(); }).intersect(nodes);
 
-          logDebug("   processing neighbor: %s", w.id());
+          // logDebug("   processing neighbor: %s", w.id());
           // if node is in closedSet, ignore it
           if (closedSet.indexOf(w.id()) != -1) {
-            logDebug("   already in closedSet, ignoring it.");
+            // logDebug("   already in closedSet, ignoring it.");
             continue;
           }
           
           // New tentative score for node w
           var tempScore = gScore[cMin.id()] + weightFn.apply(e, [e]);
-          logDebug("   tentative gScore: %d", tempScore);
+          // logDebug("   tentative gScore: %d", tempScore);
 
           // Update gScore for node w if:
           //   w not present in openSet
@@ -205,8 +209,8 @@
             openSet.push(w.id()); // Add node to openSet
             cameFrom[w.id()] = cMin.id();
             cameFromEdge[w.id()] = e.id();
-            logDebug("   not in openSet, adding it. ");
-            logDebug("   fScore(%s) = %s", w.id(), tempScore);
+            // logDebug("   not in openSet, adding it. ");
+            // logDebug("   fScore(%s) = %s", w.id(), tempScore);
             continue;
           }
           // w already in openSet, but with greater gScore
@@ -214,8 +218,8 @@
             gScore[w.id()] = tempScore;
             fScore[w.id()] = tempScore + heuristic(w);
             cameFrom[w.id()] = cMin.id();
-            logDebug("   better score, replacing gScore. ");
-            logDebug("   fScore(%s) = %s", w.id(), tempScore);
+            // logDebug("   better score, replacing gScore. ");
+            // logDebug("   fScore(%s) = %s", w.id(), tempScore);
           }
 
         } // End of neighbors update
@@ -223,7 +227,7 @@
       } // End of main loop
 
       // If we've reached here, then we've not reached our goal
-      logDebug("Reached end of computation without finding our goal");
+      // logDebug("Reached end of computation without finding our goal");
       return {
         found : false,
         distance : undefined,
@@ -256,7 +260,7 @@
       } else {
         var debug = false;
       }
-      logDebug("Starting floydWarshall..."); 
+      // logDebug("Starting floydWarshall..."); 
 
       var cy = this._private.cy;
 
@@ -275,7 +279,7 @@
         var directed = false;
       }
 
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
       var nodes = this.nodes();
       var numNodes = nodes.length;
 
@@ -465,7 +469,7 @@
       } else {
         var debug = false;
       }
-      logDebug("Starting bellmanFord..."); 
+      // logDebug("Starting bellmanFord..."); 
 
       // Weight function - optional
       if (options.weight != null && $$.is.fn(options.weight)) {       
@@ -490,14 +494,14 @@
         } else {
           var source = options.root[0];
         }
-        logDebug("Source node: %s", source.id()); 
+        // logDebug("Source node: %s", source.id()); 
       } else {
         $$.util.error("options.root required");
         return undefined;
       }
 
       var cy = this._private.cy;
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
       var nodes = this.nodes();
       var numNodes = nodes.length;
 
@@ -739,10 +743,10 @@
       } else {
         var debug = false;
       }
-      logDebug("Starting kargerStein..."); 
+      // logDebug("Starting kargerStein..."); 
 
       var cy = this._private.cy;
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
       var nodes = this.nodes();
       var numNodes = nodes.length;
       var numEdges = edges.length;
@@ -871,7 +875,7 @@
       } else {
         var debug = false;
       }
-      logDebug("Starting pageRank..."); 
+      // logDebug("Starting pageRank..."); 
 
       // dampingFactor - optional
       if (options != null && 
@@ -908,7 +912,7 @@
       }
 
       var cy = this._private.cy;
-      var edges = this.edges().not(':loop');
+      var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
       var nodes = this.nodes();
       var numNodes = nodes.length;
       var numEdges = edges.length;
@@ -1005,12 +1009,12 @@
         
         // If difference is less than the desired threshold, stop iterating
         if (diff < epsilon) {
-          logDebug("Stoped at iteration %s", iter);
+          // logDebug("Stoped at iteration %s", iter);
           break;
         }
       }
             
-      logDebug("Result:\n" + eigenvector);
+      // logDebug("Result:\n" + eigenvector);
 
       // Construct result
       var res = {

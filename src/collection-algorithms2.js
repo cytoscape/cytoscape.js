@@ -20,8 +20,6 @@
     aStar: function(options) {
       options = options || {};
 
-      var cy = this.cy();
-
       var logDebug = function() {
         if (debug) {
           console.log.apply(console, arguments);

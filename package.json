@@ -64,6 +64,7 @@
   },
   "main": "dist/cytoscape.js",
   "scripts": {
+    "test": "./node_modules/gulp/bin/gulp.js test",
     "sniper": "biojs-sniper ." 
   },
   "devDependencies": {

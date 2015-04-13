@@ -64,6 +64,7 @@
     "gulpfile.js",
     "*.sh",
     "package.json",
-    "README.md"
+    "README.md",
+    "build"
   ]
 }

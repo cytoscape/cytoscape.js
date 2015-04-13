@@ -96,5 +96,8 @@
   "sniper": {
     "js": ["http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js", "/build/cytoscape.browserify.js"],
     "first": "images"
+  },
+  "spm": {
+    "main": "dist/cytoscape.js"
   }
 }

@@ -493,8 +493,8 @@
         var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
 
         if( dragDelta.length === 0 ){
-          dragDelta.push(0);
-          dragDelta.push(0);
+          dragDelta.push( disp[0] );
+          dragDelta.push( disp[1] );
         } else {
           dragDelta[0] += disp[0];
           dragDelta[1] += disp[1];
@@ -1653,8 +1653,8 @@
             var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
             if( dragDelta.length === 0 ){
-              dragDelta.push(0);
-              dragDelta.push(0);
+              dragDelta.push( disp[0] );
+              dragDelta.push( disp[1] );
             } else {
               dragDelta[0] += disp[0];
               dragDelta[1] += disp[1];

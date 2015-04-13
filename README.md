@@ -2,6 +2,13 @@
 
 
 
+## Test status
+
+Master : [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=master)](https://travis-ci.org/cytoscape/cytoscape.js)
+
+Unstable : [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=unstable)](https://travis-ci.org/cytoscape/cytoscape.js)
+
+
 
 ## Documentation
 

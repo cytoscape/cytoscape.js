@@ -65,6 +65,7 @@
     "*.sh",
     "package.json",
     "README.md",
-    "build"
+    "build",
+    "node_modules"
   ]
 }

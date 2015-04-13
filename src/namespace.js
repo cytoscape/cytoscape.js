@@ -57,3 +57,6 @@ var cytoscape;
   }
   
 })( typeof window === 'undefined' ? null : window );
+
+// extra set to `this` is necessary for meteor
+this.cytoscape = cytoscape;

@@ -6,3 +6,4 @@ gulpfile.js
 *.sh
 bower.json
 README.md
+build

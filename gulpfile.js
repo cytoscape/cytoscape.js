@@ -399,6 +399,15 @@ gulp.task('npm', shell.task([
   './publish-npm.sh'
 ]));
 
+gulp.task('meteor', shell.task([
+  './publish-meteor.sh'
+]));
+
+gulp.task('spm', shell.task([
+  './publish-spm.sh'
+]));
+
+
 gulp.task('watch', function(next){
   var watcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
   watcher.on('added deleted', function(event){

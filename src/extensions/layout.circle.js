@@ -8,6 +8,7 @@
     radius: undefined, // the radius of the circle
     startAngle: 3/2 * Math.PI, // the position of the first node
     counterclockwise: false, // whether the layout should go counterclockwise (true) or clockwise (false)
+    sort: undefined, // a sorting comparison function to order the nodes in the circle
     animate: false, // whether to transition the node positions
     animationDuration: 500, // duration of animation in ms if enabled
     ready: undefined, // callback on layoutready
@@ -26,6 +27,10 @@
     var eles = options.eles;
       
     var nodes = eles.nodes().not(':parent');
+
+    if( options.sort ){
+      nodes = nodes.sort( options.sort );
+    }
     
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()

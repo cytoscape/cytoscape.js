@@ -204,6 +204,11 @@
     var halign = style["text-halign"].value;
     var valign = style["text-valign"].value;
 
+    if( element.isEdge() ){
+      halign = 'center';
+      valign = 'center';
+    }
+
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
       var backgroundOpacity = style["text-background-opacity"].value;
       if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
@@ -319,34 +324,47 @@
 
       var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
 
-      if (lineWidth > 0) {
+      if( lineWidth > 0 ){
         context.lineWidth = lineWidth;
-        context.strokeText(text, textX, textY);
       }
 
-      if( element.isNode() && style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
+      if( style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
         var lines = rscratch.labelWrapCachedLines;
         var lineHeight = rstyle.labelHeight / lines.length;
 
         //console.log('lines', lines);
 
-        if( valign === 'top' ){
-          for( var l = lines.length - 1; l >= 0; l-- ){
-            context.fillText( lines[l], textX, textY );
+        switch( valign ){
+          case 'top':
+            textY -= (lines.length - 1) * lineHeight;
+            break;
 
-            textY -= lineHeight;
-          }
-        } else {
-          for( var l = 0; l < lines.length; l++ ){
-            context.fillText( lines[l], textX, textY );
+          case 'bottom':
+            // nothing required
+            break;
 
-            textY += lineHeight;
+          default:
+          case 'center':
+            textY -= (lines.length - 1) * lineHeight / 2;
+        }
+
+        for( var l = 0; l < lines.length; l++ ){
+          if( lineWidth > 0 ){
+            context.strokeText( lines[l], textX, textY );
           }
+
+          context.fillText( lines[l], textX, textY );
+
+          textY += lineHeight;
         }
 
         // var fontSize = style['font-size'].pxValue;
         // wrapText(context, text, textX, textY, style['text-max-width'].pxValue, fontSize + 1);
       } else {
+        if( lineWidth > 0 ){
+          context.strokeText( text, textX, textY );
+        }
+
         context.fillText( text, textX, textY );
       }
 

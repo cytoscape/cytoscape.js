@@ -640,7 +640,7 @@
       text = text.toLowerCase();
     }
 
-    if( ele.isNode() && style['text-wrap'].value === 'wrap' ){
+    if( style['text-wrap'].value === 'wrap' ){
       //console.log('wrap'); 
       
       // save recalc if the label is the same as before
@@ -744,7 +744,7 @@
     ds.padding = '0';
     ds.lineHeight = '1';
 
-    if( ele.isNode() && style['text-wrap'].value === 'wrap' ){
+    if( style['text-wrap'].value === 'wrap' ){
       ds.whiteSpace = 'pre'; // so newlines are taken into account
     } else {
       ds.whiteSpace = 'normal';

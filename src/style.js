@@ -255,7 +255,7 @@
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
     var fontSize = 16 || this.containerPropertyAsString('font-size') || 16;
-    var textMaxWidth = 75 || this.containerPropertyAsString('text-max-width') || 75;
+    var textMaxWidth = 9999 || this.containerPropertyAsString('text-max-width') || 9999;
 
     // fill the style with the default stylesheet
     this
@@ -270,7 +270,7 @@
           'text-opacity': 1,
           'text-decoration': 'none',
           'text-transform': textTransform,
-          'text-wrap': 'wrap',
+          'text-wrap': 'none',
           'text-max-width': textMaxWidth,
           'text-background-color': 'none',
           'text-background-opacity': 1,

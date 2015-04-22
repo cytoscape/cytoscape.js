@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+  var worker = true;
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
@@ -414,10 +414,24 @@
         pos[ node.id() ] = getPosition( node, i === depths.length - 1 );
       }
     }
-
-    nodes.layoutPositions(this, options, function(){
+if (worker)
+{
+    var getpos = function(Wdata,ele){
+      var pos =  Wdata['pos'];
+      return pos[ele['data']['id']];
+    }
+    var tmpData  = {
+      'pos'     : pos    
+  };
+  
+  eles.data('tmpData',tmpData); 
+}else{
+    var getpos = function(){
       return pos[ this.id() ];
-    });
+    }
+}
+
+    nodes.layoutPositions(this, options, getpos,worker);
     
     return this; // chaining
   };

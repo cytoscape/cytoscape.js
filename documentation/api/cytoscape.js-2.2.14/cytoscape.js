@@ -10694,6 +10694,7 @@ var cytoscape;
     }),
 
     positions: function( pos, silent ){
+    
       if( $$.is.plainObject(pos) ){
         this.position(pos);
         
@@ -11882,7 +11883,9 @@ var cytoscape;
   $$.fn.eles({
 
     // using standard layout options, apply position function (w/ or w/o animation)
-    layoutPositions: function( layout, options, fn ){
+    
+    layoutPositions: function( layout, options, fn ,worker){
+    if (worker === undefined) worker = false;
       var nodes = this.nodes();
       var cy = this.cy();
 
@@ -11931,8 +11934,13 @@ var cytoscape;
           });
         }
       } else {
-        nodes.positions( fn );
-
+    if (worker)
+    {
+          nodes.Threadpositions( fn );  
+    }else{
+            nodes.positions( fn );
+    }
+        
         if( options.fit ){
           cy.fit( options.padding );
         }

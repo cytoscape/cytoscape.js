@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+  var Worker = true // true for worker
   var defaults = {
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
@@ -24,14 +24,32 @@
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
 
-    var getPos = function( i, node ){
+
+    if (Worker)
+    {
+   var tmpData  = {
+      'bb'     : bb
+    };
+   eles.data('tmpData',tmpData);
+    var getPos = function( tmpData ,ele){
+        var bb= tmpData['bb'];
       return {
         x: bb.x1 + Math.round( Math.random() * bb.w ),
         y: bb.y1 + Math.round( Math.random() * bb.h )
       };
     };
+    }
+    else{
+         var getPos = function( i, node ){
+      return {
+        x: bb.x1 + Math.round( Math.random() * bb.w ),
+        y: bb.y1 + Math.round( Math.random() * bb.h )
+      };
+    };
+   }
 
-    nodes.layoutPositions( this, options, getPos );
+    nodes.layoutPositions( this, options, getPos,Worker );
+    
 
     return this; // chaining
   };

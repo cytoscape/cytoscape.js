@@ -88,6 +88,8 @@ Run `gulp` in the console.  The main targets are:
 **Testing:**
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via jshint
+ * `benchmark` : run benchmark regression tests
+ * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
  * `watch` : update JS refs in HTML files (debug page, test page) automatically when JS files are added or deleted
 
 **Documentation:**
@@ -129,15 +131,13 @@ Mocha tests are found in the [test directory](https://github.com/cytoscape/cytos
 
 Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:
 
-[ISB](http://www.systemsbiology.org) | 
-[UCSD](http://www.ucsd.edu) | 
-[MSKCC](http://cbio.mskcc.org) | 
-[Pasteur](http://www.pasteur.fr) | 
-[Agilent](http://www.agilent.com/) | 
+[ISB](http://www.systemsbiology.org) |
+[UCSD](http://www.ucsd.edu) |
+[MSKCC](http://cbio.mskcc.org) |
+[Pasteur](http://www.pasteur.fr) |
+[Agilent](http://www.agilent.com/) |
 [UCSF](http://www.ucsf.edu/) |
 [Unilever](http://www.unilever.com) |
 [Toronto](http://www.utoronto.ca) |
 [NCIBI](http://portal.ncibi.org/gateway/index.html) |
 [NRNB](http://nrnb.org)
-
-

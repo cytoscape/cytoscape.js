@@ -65,17 +65,20 @@
   "main": "dist/cytoscape.js",
   "scripts": {
     "test": "./node_modules/gulp/bin/gulp.js test",
-    "sniper": "biojs-sniper ." 
+    "sniper": "biojs-sniper ."
   },
   "devDependencies": {
+    "benchmark": "^1.0.0",
     "biojs-sniper": "^0.1.1",
     "bluebird": "^2.0.2",
     "browserify": "^6.3.2",
     "chai": "^1.9.0",
     "gulp": "^3.5.2",
+    "gulp-benchmark": "^1.1.1",
     "gulp-clean": "^0.2.4",
     "gulp-concat": "^2.2.0",
     "gulp-cssmin": "^0.1.4",
+    "gulp-download": "0.0.1",
     "gulp-htmlmin": "^0.1.2",
     "gulp-inject": "^0.4.1",
     "gulp-jshint": "^1.5.5",
@@ -95,7 +98,10 @@
     "vinyl-source-stream": "^1.0.0"
   },
   "sniper": {
-    "js": ["http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js", "/build/cytoscape.browserify.js"],
+    "js": [
+      "http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js",
+      "/build/cytoscape.browserify.js"
+    ],
     "first": "images"
   },
   "spm": {

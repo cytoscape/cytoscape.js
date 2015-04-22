@@ -19,6 +19,11 @@ var exec = require('child_process').exec;
 var runSequence = require('run-sequence');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
+var benchmark = require('gulp-benchmark');
+var download = require("gulp-download");
+
+var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
+var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
 var version; // used for marking builds w/ version etc
 
@@ -27,9 +32,9 @@ var paths = {
     'src/preamble.js',
     'src/namespace.js',
     'src/promise.js',
-    'src/is.js', 
-    'src/util.js', 
-    'src/math.js',  
+    'src/is.js',
+    'src/util.js',
+    'src/math.js',
     'src/extension.js',
     'src/jquery-plugin.js',
     'src/event.js',
@@ -53,7 +58,7 @@ var paths = {
   nodethreadSrc: [
     'src/preamble.js',
     'src/thread-node-fork.js'
-  ], 
+  ],
 
   docs: {
     js: [
@@ -75,7 +80,7 @@ var paths = {
 
 
 gulp.task('default', ['build'], function(){
-  
+
 });
 
 gulp.task('version', function( next ){
@@ -98,7 +103,7 @@ gulp.task('version', function( next ){
 
     next();
   }
-  
+
 });
 
 gulp.task('clean', function(){
@@ -110,9 +115,9 @@ gulp.task('clean', function(){
 gulp.task('concat', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
-    
+
     .pipe( concat('cytoscape.js') )
-    
+
     .pipe( gulp.dest('build') )
   ;
 });
@@ -120,11 +125,11 @@ gulp.task('concat', ['version', 'nodeworker'], function(){
 gulp.task('build', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
-    
+
     .pipe( concat('cytoscape.js') )
-    
+
     .pipe( gulp.dest('build') )
-    
+
     .pipe( uglify({
       mangle: true,
 
@@ -132,7 +137,7 @@ gulp.task('build', ['version', 'nodeworker'], function(){
     }) )
 
     .pipe( concat('cytoscape.min.js') )
-    
+
     .pipe( gulp.dest('build') )
   ;
 });
@@ -140,9 +145,9 @@ gulp.task('build', ['version', 'nodeworker'], function(){
 gulp.task('nodeworker', function(){
   return gulp.src( paths.nodethreadSrc )
     .pipe( replace('{{VERSION}}', version) )
-    
+
     .pipe( concat(paths.nodethreadName) )
-    
+
     .pipe( gulp.dest('build') )
   ;
 });
@@ -202,6 +207,23 @@ gulp.task('test', ['concat'], function(){
   ;
 });
 
+gulp.task('benchmark-old-ver', function(){
+  return download( benchmarkVersionUrl )
+    .pipe(gulp.dest("benchmark/CySuite"));
+});
+
+gulp.task('benchmark', ['concat', 'benchmark-old-ver'], function(next){
+  gulp.src('benchmark/*.js')
+    .pipe( benchmark() )
+  ;
+});
+
+gulp.task('benchmark-single', ['concat', 'benchmark-old-ver'], function(next){
+  gulp.src('benchmark/single/index.js')
+    .pipe( benchmark() )
+  ;
+});
+
 gulp.task('docsver', ['version'], function(){
   return gulp.src('documentation/docmaker.json')
     .pipe( replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
@@ -239,7 +261,7 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
 
     next();
   });
-  
+
 });
 
 gulp.task('snapshotpush', ['docsdl'], shell.task([
@@ -255,7 +277,7 @@ gulp.task('docs', function(next){
 
     next();
   } );
-  
+
 });
 
 gulp.task('docsmin', function(next){
@@ -282,7 +304,7 @@ gulp.task('docshtmlmin', function(){
 gulp.task('docsjsmin', function(){
   return gulp.src( paths.docs.js )
     .pipe( concat('all.min.js') )
-    
+
     .pipe( uglify({
       mangle: true
     }) )
@@ -291,7 +313,7 @@ gulp.task('docsjsmin', function(){
   ;
 });
 
-gulp.task('docscssmin', function(){ 
+gulp.task('docscssmin', function(){
   return gulp.src( paths.docs.css )
     .pipe( concat('all.min.css') )
 
@@ -382,7 +404,7 @@ gulp.task('unstabledocspush', shell.task([
 // browserify debug build
 gulp.task('browserify', ['build'], function(){
   var b = browserify({ debug: true, hasExports: true });
-  
+
   b.add('./build/cytoscape.js', { expose: "cytoscape" });
 
   return b.bundle()

@@ -31,7 +31,7 @@
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
         { "name": "Images", "id": "aedff159b0df05ccfaa5" },
-        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },       
+        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "173313aba1f31cae49a5" },
         { "name": "Multiple instances", "id": "310dca83ba6970812dd0" },
@@ -80,18 +80,18 @@
               "name": "cy.collection",
               "descr": "Return a new collection.",
               "formats": [
-                { 
+                {
                   "descr": "Get an empty collection."
                 },
 
-                { 
+                {
                   "descr": "Get a collection from elements in the graph matching the specified selector.",
                   "args": [
                     { "name": "selector", "descr": "Elements matching this selector are in the returned collection." }
-                  ] 
+                  ]
                 },
 
-                { 
+                {
                   "descr": "Get a collection from an array of elements.",
                   "args": [
                     { "name": "elesArray", "descr": "The elements in this array are in the returned collection." }
@@ -150,8 +150,8 @@
                   "name": "cy.filter",
                   "descr": "Get elements in the graph matching the specified filter function.",
                   "args": [
-                    { 
-                      "name": "function(i, ele)", 
+                    {
+                      "name": "function(i, ele)",
                       "descr": "The filter function that returns true for elements that should be returned.",
                       "fields": [
                         { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
@@ -355,12 +355,12 @@
           ]
         },
 
-        { 
+        {
           "name": "Viewport manipulation",
 
           "fns": [
             {
-              "name": "cy.center", 
+              "name": "cy.center",
               "descr": "Pan the graph to the centre of a collection.",
               "formats": [
                 { "descr": "Centre on all elements in the graph." },
@@ -370,20 +370,20 @@
             },
 
             {
-              "name": "cy.fit", 
+              "name": "cy.fit",
               "descr": "Pan and zooms the graph to fit to a collection.",
               "formats": [
                 { "descr": "Fit to all elements in the graph." },
                 {
-                  "descr": "Fit to the specified elements.", 
-                  "args": [ { "name": "eles", "descr": "The collection to fit to.", "optional": true }, { "name": "padding", "descr": "An amount of padding (in pixels) to have around the graph", "optional": true } ] 
+                  "descr": "Fit to the specified elements.",
+                  "args": [ { "name": "eles", "descr": "The collection to fit to.", "optional": true }, { "name": "padding", "descr": "An amount of padding (in pixels) to have around the graph", "optional": true } ]
                 }
               ],
               "md": "core/fit"
             },
 
             {
-              "name": "cy.reset", 
+              "name": "cy.reset",
               "descr": "Reset the graph to the default zoom level and panning position.",
               "formats": [
                 { "descr": "Resets the zoom and pan." }
@@ -392,7 +392,7 @@
             },
 
             {
-              "name": "cy.pan", 
+              "name": "cy.pan",
               "descr": "Get or set the panning position of the graph.",
               "formats": [
                 { "descr": "Get the current panning position." },
@@ -402,7 +402,7 @@
             },
 
             {
-              "name": "cy.panBy", 
+              "name": "cy.panBy",
               "descr": "Relatively pan the graph by a specified rendered position vector.",
               "formats": [
                 { "args": [ { "name": "renderedPosition", "descr": "The rendered position vector to pan the graph by." } ] }
@@ -447,7 +447,7 @@
             },
 
             {
-              "name": "cy.zoom", 
+              "name": "cy.zoom",
               "descr": "Get or set the zoom level of the graph.",
               "formats": [
                 { "descr": "Get the zoom level." },
@@ -455,7 +455,7 @@
                 {
                   "descr": "Set the zoom level.",
                   "args": [
-                    { 
+                    {
                       "name": "options",
                       "descr": "The options for zooming.",
                       "fields": [
@@ -671,8 +671,8 @@
               "formats": [
                 {
                   "args": [
-                    { 
-                      "name": "anis", 
+                    {
+                      "name": "anis",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
@@ -985,7 +985,7 @@
               ],
               "md": "collection/one"
             },
-            
+
             {
               "name": "eles.once",
               "descr": "Bind a callback function that is triggered once per event per collection.",
@@ -1046,7 +1046,7 @@
                 }
               ],
               "md": "collection/trigger"
-            }      
+            }
           ]
         },
 
@@ -1327,8 +1327,8 @@
                 {
                   "descr": "Set the positions functionally.",
                   "args": [
-                    { 
-                      "name": "function(i, ele)", 
+                    {
+                      "name": "function(i, ele)",
                       "descr": "A callback function that returns the position to set for each element.",
                       "fields": [
                         { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." },
@@ -1441,12 +1441,12 @@
               "pureAliases": [ "eles.boundingbox" ],
               "descr": "Get the bounding box of the elements.",
               "formats": [
-                { 
-                  "name": "eles.boundingBox", 
+                {
+                  "name": "eles.boundingBox",
                   "descr": "Get the bounding box of the elements in model coordinates.",
                   "args": [
-                    { 
-                      "name": "options", 
+                    {
+                      "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
@@ -1469,8 +1469,8 @@
                   "name": "eles.renderedBoundingBox",
                   "descr": "Get the bounding box of the elements in rendered coordinates.",
                   "args": [
-                    { 
-                      "name": "options", 
+                    {
+                      "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
@@ -1505,7 +1505,7 @@
               "descr": "Disallow the user to grab the nodes.",
               "md": "collection/ungrabify"
             },
-            
+
             {
               "name": "node.locked",
               "descr": "Get whether a node is locked, meaning that its position can not be changed."
@@ -1775,8 +1775,8 @@
               "formats": [
                 {
                   "args": [
-                    { 
-                      "name": "anis", 
+                    {
+                      "name": "anis",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
@@ -2339,7 +2339,7 @@
               ],
               "md": "collection/max"
             }
-            
+
           ]
         },
 
@@ -2739,7 +2739,7 @@
                 }
               ],
               "md": "collection/bellmanFord"
-            }, 
+            },
 
             {
               "name": "eles.kruskal",
@@ -2758,14 +2758,14 @@
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
-            }, 
+            },
 
             {
               "name": "eles.pageRank",
               "descr": "Rank the nodes in the collection using the Page Rank algorithm.",
               "formats": [
                 {
-                  "args": [ 
+                  "args": [
                     { "name": "options", "fields": [
                       { "name": "dampingFactor", "descr": "Numeric parameter for the algorithm.", "optional": true},
                       { "name": "precision", "descr": "Numeric parameter that represents the required precision.", "optional": true },
@@ -2980,7 +2980,7 @@
                 }
               ]
             }
-            
+
           ]
         }
 
@@ -3064,6 +3064,13 @@
           "md": "layouts/cola",
           "layout": {
             "name": "cola"
+          }
+        },
+
+        {
+          "md": "layouts/spread",
+          "layout": {
+            "name": "spread"
           }
         },
 
@@ -3205,595 +3212,6 @@
     },
 
     {
-      "name": "Thread",
-      "md": "thread/intro",
-      "sections": [
-        {
-          "name": "Globals",
-          "md": "thread/globals",
-          "fns": [
-            {
-              "name": "resolve",
-              "descr": "Resolves the thread's run promise with a single value such that other entities (like the main JS thread or other threads) can read it.",
-              "md": "thread/resolve"
-            },
-
-            {
-              "name": "reject",
-              "descr": "Rejects the thread's run promise with a single error value such that other entities (like the main JS thread or other threads) can read it.",
-              "md": "thread/reject"
-            },
-
-            {
-              "name": "listen",
-              "descr": "Listen to messages sent to the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function(msg)", "descr": "A function that is called when a message, `msg`, is received." }
-                  ]
-                }
-              ],
-              "md": "thread/listen"
-            },
-
-            {
-              "name": "broadcast",
-              "pureAliases": ["message"],
-              "descr": "Broadcast a message to entities who are listening to the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "msg", "descr": "A message, e.g. JSON object or string, that is broadcasted." }
-                  ]
-                }
-              ],
-              "md": "thread/listen"
-            }
-          ]
-        },
-
-        {
-          "name": "Execution",
-          "fns": [
-            {
-              "name": "thread.require",
-              "descr": "Require a named function into the thread, giving the thread a global reference to the function.  Plain objects or simple objects with a prototype (that can be inpected and serialised live) are also supported.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "obj", "descr": "The named function or simple object to require that is serialised and copied to the thread." },
-                    { "name": "as", "descr": "The name of the object as available in the thread.  This is mandatory for an object that is not a named function, because its name can not be automatically inferred.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "thread/require"
-            },
-
-            {
-              "name": "thread.pass",
-              "descr": "Pass data to the thread such that it is accessible within `thread.run()` etc callback functions.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "passed", "descr": "JSON serialisable data that is passed to `thread.run()`." }
-                  ]
-                }
-              ],
-              "md": "thread/pass"
-            },
-
-            {
-              "name": "thread.run",
-              "pureAliases": ["thread.promise"],
-              "descr": "Run the specified function in the thread, returning a promise that is resolved when the thread calls [`resolve()`](#thread/globals/resolve) or when the specified function returns a value.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function( passed )", "descr": "The function which will be copied and run in the thread." }
-                  ]
-                }
-              ],
-              "md": "thread/run"
-            },
-
-            {
-              "name": "thread.map",
-              "descr": "Get a mapping from the thread using the specified mapping function that uses [`resolve()`](#thread/globals/resolve) or a return value to specify the mapped value for each element.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function( currVal, index, array )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value.", "fields": [
-                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
-                      { "name": "array", "descr": "The passed array `map()` was called upon.", "optional": true }
-                    ] }
-                  ]
-                }
-              ],
-              "md": "thread/map"
-            },
-
-            {
-              "name": "thread.reduce",
-              "descr": "Apply a function against an accumulator and each value of the passed array (from left-to-right) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#thread/globals/resolve) or a return value.",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( prevVal, currVal, index, array )", 
-                      "descr": "The accumulator function.",
-                      "fields": [
-                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
-                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
-                        { "name": "array", "descr": "The passed array `reduce()` was called upon." }
-                      ]
-                    },
-                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "thread.reduceRight",
-              "descr": "Apply a function against an accumulator and each value of the passed array (from right-to-left) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#thread/globals/resolve) or a return value.",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( prevVal, currVal, index, array )", 
-                      "descr": "The accumulator function.",
-                      "fields": [
-                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
-                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
-                        { "name": "array", "descr": "The passed array `reduceRight()` was called upon." }
-                      ]
-                    },
-                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "thread.stop",
-              "pureAliases": ["thread.halt", "thread.terminate"],
-              "descr": "Terminates the thread such that it no longer runs."
-            },
-
-            {
-              "name": "thread.stopped",
-              "descr": "Get whether the thread is stopped (i.e. terminated via `thread.stop()`)."
-            }
-          ]
-        },
-
-        {
-          "name": "Events",
-          "md": "thread/events",
-          "fns": [
-            {
-              "name": "thread.message",
-              "descr": "Send the thread a message.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the thread." }
-                  ]
-                }
-              ],
-              "md": "thread/listen"
-            },
-
-            {
-              "name": "thread.on",
-              "pureAliases": ["thread.bind", "thread.listen", "thread.addListener"],
-              "descr": "Bind to events that are emitted by the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "thread.promiseOn",
-              "pureAliases": ["thread.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." }
-                  ]
-                }
-              ],
-              "md": "thread/promiseOn"
-            },
-
-            {
-              "name": "thread.one",
-              "descr": "Bind to events that are emitted by the thread, and trigger the handler only once.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "thread.off",
-              "pureAliases": ["thread.unbind", "thread.unlisten", "thread.removeListener"],
-              "descr": "Remove event handlers on the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "thread.trigger",
-              "pureAliases": ["thread.emit"],
-              "descr": "Trigger one or more events on the thread.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
-                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
-                  ]
-                }
-              ]
-            }
-          
-          ]
-        }
-      ]
-    },
-
-    {
-      "name": "Fabric",
-      "md": "fabric/intro",
-      "sections": [
-        {
-          "name": "Execution",
-          "fns": [
-            {
-              "name": "fabric.require",
-              "descr": "Require a named function into each thread in the fabric, giving a global reference to the function.  Plain objects or simple objects with a prototype (that can be inpected and serialised live) are also supported.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "obj", "descr": "The named function or simple object to require that is serialised and copied to the fabric." },
-                    { "name": "as", "descr": "The name of the object as available in the fabric.  This is mandatory for an object that is not a named function, because its name can not be automatically inferred.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "fabric/require"
-            },
-
-            {
-              "name": "fabric.pass",
-              "descr": "Pass data to the fabric such that it is accessible within `fabric.spread()` etc callback functions.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "passed", "descr": "JSON serialisable data that is passed to functions like `fabric.spread()`." }
-                  ]
-                }
-              ],
-              "md": "fabric/pass"
-            },
-
-            {
-              "name": "fabric.random",
-              "descr": "Get a random thread from the fabric.",
-              "md": "fabric/random"
-            },
-
-            {
-              "name": "fabric.run",
-              "pureAliases": ["fabric.promise"],
-              "descr": "Run the specified function in a random thread of the fabric, returning a promise that is resolved when the thread calls [`resolve()`](#fabric/globals/resolve) or when the specified function returns a value.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function( passed )", "descr": "The function which will be copied and run in the fabric." }
-                  ]
-                }
-              ],
-              "md": "fabric/run"
-            },
-
-            {
-              "name": "fabric.map",
-              "descr": "Get a mapping from the fabric using the specified mapping function that uses [`resolve()`](#fabric/globals/resolve) or a return value to specify the mapped value for each element.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function( currVal, index, array )", "descr": "A mapping function that specifies the resultant mapped value via `resolve()` or a return value.", "fields": [
-                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
-                      { "name": "array", "descr": "The passed array `map()` was called upon.", "optional": true }
-                    ] }
-                  ]
-                }
-              ],
-              "md": "fabric/map"
-            },
-
-            {
-              "name": "fabric.filter",
-              "descr": "Filters the passed array, giving a resultant array that contains the elements which pass the specified test function.  The test function returns or [`resolve()`s](#fabric/globals/resolve) to specify the test result.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function( currVal, index, array )", "descr": "The test function that returns or `resolve()`s a truthy value to specify whether the specified value passes the test.", "fields": [
-                      { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                      { "name": "index", "descr": "The index of the current element being processed in the passed array.", "optional": true },
-                      { "name": "array", "descr": "The passed array `filter()` was called upon.", "optional": true }
-                    ] }
-                  ]
-                }
-              ],
-              "md": "fabric/filter"
-            },
-
-            {
-              "name": "fabric.reduce",
-              "descr": "Apply a function against an accumulator and each value of the passed array (from left-to-right) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#fabric/globals/resolve) or a return value.",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( prevVal, currVal, index, array )", 
-                      "descr": "The accumulator function.",
-                      "fields": [
-                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
-                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
-                        { "name": "array", "descr": "The passed array `reduce()` was called upon." }
-                      ]
-                    },
-                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "fabric/reduce"
-            },
-
-            {
-              "name": "fabric.reduceRight",
-              "descr": "Apply a function against an accumulator and each value of the passed array (from right-to-left) has to reduce it to a single value.  THe function specifies the resultant value via [`resolve()`](#fabric/globals/resolve) or a return value.",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( prevVal, currVal, index, array )", 
-                      "descr": "The accumulator function.",
-                      "fields": [
-                        { "name": "prevVal", "descr": "The value previously returned in the last invocation of the accumulator function, or initVal if supplied." },
-                        { "name": "currVal", "descr": "The current element being processed in the passed array." },
-                        { "name": "index", "descr": "The index of the current element being processed in the passed array." },
-                        { "name": "array", "descr": "The passed array `reduceRight()` was called upon." }
-                      ]
-                    },
-                    { "name": "initVal", "descr": "Value to use as the first argument to the first call of the accumulator function.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "fabric/reduceRight"
-            },
-
-            {
-              "name": "fabric.sort",
-              "descr": "Sort the passed array.",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( a, b )", 
-                      "descr": "The sorting comparison function that returns a negative value for `a` before `b`, zero for `a` the same as `b`, and a positive value for `a` after `b`.",
-                      "fields": [
-                        { "name": "a", "descr": "The first value to compare." },
-                        { "name": "b", "descr": "The second value to compare." }
-                      ],
-                      "optional": true
-                    }
-                  ]
-                }
-              ],
-              "md": "fabric/sort"
-            },
-
-            {
-              "name": "fabric.spread",
-              "descr": "Split the passed data into slices to spread the data equally among the threads of the fabric.  The passed processing function specifies the resultant array slice via a return value or [`resolve()`](#fabric/globals/resolve).",
-              "formats": [
-                {
-                  "args": [
-                    { 
-                      "name": "function( slice )", 
-                      "descr": "The processing function which is run on each slice of passed data.",
-                      "fields": [
-                        { "name": "slice", "descr": "An array containing a slice of the passed data." }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "md": "fabric/spread"
-            },
-
-            {
-              "name": "fabric.stop",
-              "pureAliases": ["fabric.halt", "fabric.terminate"],
-              "descr": "Terminates the fabric such that all its threads no longer run.",
-              "md": "fabric/run"
-            }
-          ]
-        },
-
-        {
-          "name": "Events",
-          "md": "fabric/events",
-          "fns": [
-            {
-              "name": "fabric.message",
-              "descr": "Send a random thread in the fabric a message.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the thread." }
-                  ]
-                }
-              ],
-              "md": "fabric/message"
-            },
-
-            {
-              "name": "fabric.broadcast",
-              "descr": "Send all threads in the fabric a message.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "msg", "descr": "The message (e.g. JSON object or string) to send to the threads." }
-                  ]
-                }
-              ],
-              "md": "fabric/broadcast"
-            },
-
-            {
-              "name": "fabric.on",
-              "pureAliases": ["fabric.bind", "fabric.listen", "fabric.addListener"],
-              "descr": "Bind to events that are emitted by the fabric.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "fabric.promiseOn",
-              "pureAliases": ["fabric.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the fabric.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." }
-                  ]
-                }
-              ],
-              "md": "fabric/promiseOn"
-            },
-
-            {
-              "name": "fabric.one",
-              "descr": "Bind to events that are emitted by the fabric, and trigger the handler only once.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
-                    { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "fabric.off",
-              "pureAliases": ["fabric.unbind", "fabric.unlisten", "fabric.removeListener"],
-              "descr": "Remove event handlers on the fabric.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "name": "fabric.trigger",
-              "pureAliases": ["fabric.emit"],
-              "descr": "Trigger one or more events on the fabric.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
-                    { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
-                  ]
-                }
-              ]
-            }
-          
-          ]
-        }
-      ]
-    },
-
-    {
       "name": "Architecture",
       "md": "architecture",
       "demo": { "id": "689efca4fcb0fd05671b", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
@@ -3808,7 +3226,7 @@
           "descr": "A plugin to enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation."
         },
 
-        { 
+        {
           "name": "cxtmenu",
           "github": "cytoscape/cytoscape.js-cxtmenu",
           "descr": "A circular context menu."
@@ -3817,29 +3235,29 @@
         {
           "name": "edgehandles",
           "github": "cytoscape/cytoscape.js-edgehandles",
-          "descr": "UI for connecting nodes with edges." 
+          "descr": "UI for connecting nodes with edges."
         },
 
-        { 
+        {
           "name": "navigator",
           "github": "cytoscape/cytoscape.js-navigator",
           "descr": "A bird's eye view widget of the graph."
         },
 
-        { 
-          "name": "noderesize", 
+        {
+          "name": "noderesize",
           "github": "curupaco/cytoscape.js-noderesize",
           "descr": "A plugin that creates a node resize control."
         },
 
-        { 
-          "name": "panzoom", 
+        {
+          "name": "panzoom",
           "github": "cytoscape/cytoscape.js-panzoom",
           "descr": "A panzoom UI widget."
         },
 
-        { 
-          "name": "qtip", 
+        {
+          "name": "qtip",
           "github": "cytoscape/cytoscape.js-qtip",
           "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
         },

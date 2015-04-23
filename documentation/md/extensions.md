@@ -19,6 +19,11 @@ The `name` argument indicates the name of the extension, which should be a singl
 There exists [a Slush project for Cytoscape.js](https://github.com/cytoscape/slush-cytoscape-extension) such that the full project scaffolding for a new extension is automatically generated for you.  By following the included instructions, you can easily create Cytoscape.js extensions that are well organised, easily maintained, and published to npm and bower.
 
 
+## Multitasking
+
+Multitasking APIs are built into Cytoscape.js for extensions like layouts &mdash; making layout much faster, for example.  The APIs are pulled in from the [Weaver](http://weaver.js.org) library and put on the `cytoscape` object instead of `weaver`.  For example, you can make a thread via `cytoscape.thread()` instead of the usual `weaver.thread()`. 
+
+
 ## Functions
 
 Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to `return this;` at the end of your function.

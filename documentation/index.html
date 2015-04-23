@@ -3830,6 +3830,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 								
 									<h3 id="details">Details</h3>
 <p>For layouts included with Cytoscape.js, you can find their options documented in the <a href="#layouts">Layouts section</a>.  For external layouts, please refer to their accompanying documentation.</p>
+<p>An analogue to run a layout on a subset of the graph exists as <a href="#collection/layout/eles.layout"><code>eles.layout()</code></a>.</p>
 <h3 id="examples">Examples</h3>
 <p>Run the grid layout:</p>
 <pre><code class="lang-js">cy.layout({ name: <span class="hljs-string">'grid'</span> });
@@ -3888,8 +3889,9 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="details">
 								
 									<p>You must specify <code>options.name</code> with the name of the layout you wish to use.</p>
-<p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously. </p>
+<p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously.</p>
 <p><span class="important-indicator"></span> Note that you must call <a href="#layouts/layout-manipulation/layout.run"><code>layout.run()</code></a> in order for it to affect the graph.</p>
+<p>An analogue to make a layout on a subset of the graph exists as <a href="#collection/layout/eles.makeLayout"><code>eles.makeLayout()</code></a>.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> layout = cy.makeLayout({
   name: <span class="hljs-string">'random'</span>
@@ -13461,6 +13463,7 @@ cy.layout( options );</code></pre>
   rows: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of rows in the grid</span>
   columns: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of cols in the grid</span>
   position: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">( node )</span></span>{}, <span class="hljs-comment">// returns { row, col } for element</span>
+  sort: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
   animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
   animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
   ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
@@ -13497,6 +13500,7 @@ cy.layout( options );</code></pre>
   radius: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the radius of the circle</span>
   startAngle: <span class="hljs-number">3</span>/<span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// the position of the first node</span>
   counterclockwise: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the layout should go counterclockwise (true) or clockwise (false)</span>
+  sort: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
   animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
   animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
   ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
@@ -13535,8 +13539,8 @@ cy.layout( options );</code></pre>
   avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
   height: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// height of layout area (overrides container height)</span>
   width: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// width of layout area (overrides container width)</span>
-  concentric: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{ <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.degree();
+  concentric: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(node)</span></span>{ <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
+    <span class="hljs-keyword">return</span> node.degree();
   },
   levelWidth: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(nodes)</span></span>{ <span class="hljs-comment">// the variation of concentric values in each level</span>
     <span class="hljs-keyword">return</span> nodes.maxDegree() / <span class="hljs-number">4</span>;
@@ -13734,7 +13738,7 @@ cy.layout( options );</code></pre>
 						<pre><code class="lang-js"><span class="hljs-keyword">var</span> options = {
   name: <span class="hljs-string">'cola'</span>,
 
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
+  animate: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
   refresh: <span class="hljs-number">1</span>, <span class="hljs-comment">// number of ticks per frame; higher is faster but more jerky</span>
   maxSimulationTime: <span class="hljs-number">4000</span>, <span class="hljs-comment">// max length in ms to run the layout</span>
   ungrabifyWhileSimulating: <span class="hljs-literal">false</span>, <span class="hljs-comment">// so you can't drag nodes during layout</span>

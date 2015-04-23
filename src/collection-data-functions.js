@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var borderWidthMultiplier = 2 * 0.5;
   var borderWidthAdjustment = 0;
 
@@ -119,10 +119,10 @@
     positions: function( pos, silent ){
       if( $$.is.plainObject(pos) ){
         this.position(pos);
-        
+
       } else if( $$.is.fn(pos) ){
         var fn = pos;
-        
+
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
 
@@ -162,7 +162,7 @@
       function update( parent ){
         var children = parent.children();
         var style = parent._private.style;
-        var bb = children.boundingBox({ includeLabels: false, includeEdges: false });
+        var bb = children.boundingBox({ includeLabels: true, includeEdges: true });
         var padding = {
           top: style['padding-top'].pxValue,
           bottom: style['padding-bottom'].pxValue,
@@ -370,7 +370,7 @@
     },
 
     // convenience function to get a numerical value for the height of the node
-    height: function(){ 
+    height: function(){
       var ele = this[0];
       var cy = ele._private.cy;
       var styleEnabled = cy._private.styleEnabled;
@@ -474,7 +474,7 @@
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;
 
-        if( display === 'none' ){ continue; } // then ele doesn't take up space      
+        if( display === 'none' ){ continue; } // then ele doesn't take up space
 
         if( isNode && includeNodes ){
           includedEle = true;
@@ -500,7 +500,7 @@
           y1 = ey1 < y1 ? ey1 : y1;
           y2 = ey2 > y2 ? ey2 : y2;
 
-        } else if( ele.isEdge() && includeEdges ){ 
+        } else if( ele.isEdge() && includeEdges ){
           includedEle = true;
 
           var n1pos = ele._private.source._private.position;
@@ -638,7 +638,7 @@
         h: y2 - y1
       };
     }
-  }); 
+  });
 
   // aliases
   var fn = $$.elesfn;
@@ -650,5 +650,5 @@
   fn.relativePoint = fn.relativePosition;
   fn.boundingbox = fn.boundingBox;
   fn.renderedBoundingbox = fn.renderedBoundingBox;
-  
+
 })( cytoscape );

@@ -9,6 +9,9 @@
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
 
+		<link rel="shortcut icon" href="img/cytoscape-logo.ico" />
+		<link rel="shortcut icon" href="img/cytoscape-logo.svg" type="image/svg" />
+
 		<title>Cytoscape.js</title>
 
 		<!-- inject:css -->
@@ -11573,7 +11576,7 @@ aStar.path.select();
 							
 							
 							
-							<div class="descr"><p>Perform Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.</p>
+							<div class="descr"><p>Perform the Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.</p>
 </div>
 
 							
@@ -11655,7 +11658,7 @@ fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</s
 							
 							
 							
-							<div class="descr"><p>Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.</p>
+							<div class="descr"><p>Perform the Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.</p>
 </div>
 
 							
@@ -13798,16 +13801,17 @@ cy.layout( options );</code></pre>
   name: <span class="hljs-string">'spread'</span>,
 
   animate: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to show the layout as it's running</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Callback on layoutready </span>
+  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Callback on layoutready</span>
   stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Callback on layoutstop</span>
   fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// Reset viewport to fit default simulationBounds</span>
   minDist: <span class="hljs-number">20</span>, <span class="hljs-comment">// Minimum distance between nodes</span>
-  padding: <span class="hljs-number">20</span>, <span class="hljs-comment">// Padding </span>
+  padding: <span class="hljs-number">20</span>, <span class="hljs-comment">// Padding</span>
   expandingFactor: -<span class="hljs-number">1.0</span>, <span class="hljs-comment">// If the network does not satisfy the minDist</span>
   <span class="hljs-comment">// criterium then it expands the network of this amount</span>
   <span class="hljs-comment">// If it is set to -1.0 the amount of expansion is automatically</span>
   <span class="hljs-comment">// calculated based on the minDist, the aspect ratio and the</span>
   <span class="hljs-comment">// number of nodes</span>
+  maxFruchtermanReingoldIterations: <span class="hljs-number">50</span>, <span class="hljs-comment">// Maximum number of initial force-directed iterations</span>
   maxExpandIterations: <span class="hljs-number">4</span>, <span class="hljs-comment">// Maximum number of expanding iterations</span>
   boundingBox: <span class="hljs-literal">undefined</span> <span class="hljs-comment">// Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
 };
@@ -14531,6 +14535,8 @@ layout.run();
 <p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.</p>
 <h2 id="extensions/autoscaffolding">Autoscaffolding <a href="#extensions/autoscaffolding"><span class="icon-bookmark"></span></a></h2>
 <p>There exists <a href="https://github.com/cytoscape/slush-cytoscape-extension">a Slush project for Cytoscape.js</a> such that the full project scaffolding for a new extension is automatically generated for you.  By following the included instructions, you can easily create Cytoscape.js extensions that are well organised, easily maintained, and published to npm and bower.</p>
+<h2 id="extensions/multitasking">Multitasking <a href="#extensions/multitasking"><span class="icon-bookmark"></span></a></h2>
+<p>Multitasking APIs are built into Cytoscape.js for extensions like layouts &mdash; making layout much faster, for example.  The APIs are pulled in from the <a href="http://weaver.js.org">Weaver</a> library and put on the <code>cytoscape</code> object instead of <code>weaver</code>.  For example, you can make a thread via <code>cytoscape.thread()</code> instead of the usual <code>weaver.thread()</code>. </p>
 <h2 id="extensions/functions">Functions <a href="#extensions/functions"><span class="icon-bookmark"></span></a></h2>
 <p>Functions should be chainable, unless they need to return some other value.  To make a function chainable, make sure to <code>return this;</code> at the end of your function.</p>
 <p>Here is an example collection function:</p>
@@ -14570,6 +14576,9 @@ cy.elements().foo();
 
 				
 
+				
+				
+				
 				
 				
 				
@@ -15722,6 +15731,13 @@ cy.elements().foo();
 					<div class="section lvl2">
 						
 						<a class="toclink" href="#extensions/autoscaffolding"><span class="icon-bookmark bookmark-icon"></span> Autoscaffolding</a>
+					</div>
+
+					
+				
+					<div class="section lvl2">
+						
+						<a class="toclink" href="#extensions/multitasking"><span class="icon-bookmark bookmark-icon"></span> Multitasking</a>
 					</div>
 
 					

@@ -762,10 +762,6 @@
       r.data.bgActivePosistion = undefined; // not active bg now
       clearTimeout( r.bgActiveTimeout );
 
-      r.hoverData.cxtStarted = false;
-      r.hoverData.draggingEles = false;
-      r.hoverData.selecting = false;
-
       if( down ){
         down.unactivate();
       }
@@ -927,7 +923,7 @@
 
         }
 
-        if ( cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
+        if ( r.hoverData.selecting && cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
           var newlySelected = [];
           var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
@@ -1007,6 +1003,9 @@
 //      console.log('mu', pos[0], pos[1]);
 //      console.log('ss', select);
 
+      r.hoverData.cxtStarted = false;
+      r.hoverData.draggingEles = false;
+      r.hoverData.selecting = false;
       r.dragData.didDrag = false;
       r.hoverData.dragged = false;
       r.hoverData.dragDelta = [];
@@ -1465,6 +1464,7 @@
         r.data.bgActivePosistion = undefined;
         clearTimeout( this.threeFingerSelectTimeout );
         this.lastThreeTouch = +new Date();
+        r.touchData.selecting = true;
 
         r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
 
@@ -1867,7 +1867,8 @@
       }
 
       // no more box selection if we don't have three fingers
-      if( !e.touches[2] && cy.boxSelectionEnabled() ){
+      if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
+        r.touchData.selecting = false;
         clearTimeout( this.threeFingerSelectTimeout );
         //this.threeFingerSelectTimeout = setTimeout(function(){
           var newlySelected = [];

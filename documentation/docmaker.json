@@ -2710,7 +2710,7 @@
 
             {
               "name": "eles.floydWarshall",
-              "descr": "Perform Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
+              "descr": "Perform the Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
               "formats": [
                 {
                   "args": [
@@ -2726,7 +2726,7 @@
 
             {
               "name": "eles.bellmanFord",
-              "descr": "Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
+              "descr": "Perform the Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
               "formats": [
                 {
                   "args": [

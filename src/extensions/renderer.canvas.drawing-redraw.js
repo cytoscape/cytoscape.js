@@ -566,7 +566,7 @@
 
         setContextTransform( context );
 
-        if( data.select[4] == 1 && r.hoverData.selecting ){
+        if( data.select[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
           var zoom = data.cy.zoom();
           var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
           

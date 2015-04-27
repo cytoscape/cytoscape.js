@@ -60,7 +60,7 @@
     },
 
     // run on random thread
-    run: function( fn ){ 
+    run: function( fn ){
       var pass = this._private.pass.shift();
 
       return this.random().pass( pass ).run( fn );
@@ -90,7 +90,7 @@
         thread.stop();
       }
 
-      return this.trigger('stop'); // chaining
+      return this; // chaining
     },
 
     // pass data to be used with .spread() etc.
@@ -171,7 +171,7 @@
           var oldLen = mapped.length;
           var ret = _$_$_fabmap( split[i] );
           var nothingInsdByResolve = oldLen === mapped.length;
-          
+
           if( nothingInsdByResolve ){
             mapped.push( ret );
           }
@@ -217,8 +217,8 @@
           return -1;
         } else if( a > b ){
           return 1;
-        } 
-        
+        }
+
         return 0;
       };
 
@@ -226,7 +226,7 @@
 
       return self.spread(function( split ){ // sort each split normally
         var sortedSplit = split.sort( _$_$_cmp );
-        resolve( sortedSplit ); 
+        resolve( sortedSplit );
 
       }).then(function( joined ){
         // do all the merging in the main thread to minimise data transfer
@@ -243,7 +243,7 @@
           var l = i;
           var r = j;
 
-          var sorted = []; 
+          var sorted = [];
 
           for( var k = l; k < max; k++ ){
 
@@ -282,7 +282,7 @@
 
 
   });
-  
+
   var defineRandomPasser = function( opts ){
     opts = opts || {};
 
@@ -297,7 +297,7 @@
     randomMap: defineRandomPasser({ threadFn: 'map' }),
 
     reduce: defineRandomPasser({ threadFn: 'reduce' }),
-    
+
     reduceRight: defineRandomPasser({ threadFn: 'reduceRight' })
   });
 
@@ -305,15 +305,16 @@
   var fn = $$.fabfn;
   fn.promise = fn.run;
   fn.terminate = fn.halt = fn.stop;
+  fn.include = fn.require;
 
   // pull in event apis
   $$.fn.fabric({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
-    off: $$.define.off(), 
+    off: $$.define.off(),
     trigger: $$.define.trigger()
   });
 
   $$.define.eventAliasesOn( $$.fabfn );
-  
+
 })( cytoscape, typeof window === 'undefined' ? null : window );

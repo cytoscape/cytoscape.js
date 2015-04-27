@@ -25,6 +25,24 @@ var download = require("gulp-download");
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
+var weaverVersion = 'master';
+var weaverUrlBase = 'https://raw.githubusercontent.com/maxkfranz/weaver/' + weaverVersion + '/';
+
+var addWeaverUrlBase = function( path ){
+  return weaverUrlBase + path;
+};
+
+var weaverSrc = [
+  'src/thread.js',
+  'src/fabric.js',
+  'src/thread-node-fork.js'
+].map( addWeaverUrlBase );
+
+var weaverTest = [
+  'test/thread.js',
+  'test/fabric.js'
+].map( addWeaverUrlBase );
+
 var version; // used for marking builds w/ version etc
 
 var paths = {
@@ -78,6 +96,23 @@ var paths = {
   }
 };
 
+// update these if you don't have a unix like env or these programmes aren't in your $PATH
+var replaceShellVars = function( cmds ){
+  return cmds.map(function( cmd ){
+    return cmd
+      .replace('$VERSION', version)
+      .replace('$GIT', 'git')
+      .replace('$CD', 'cd')
+      .replace('$RM', 'rm -rf')
+      .replace('$CP', 'cp -R')
+      .replace('$TEMP_DIR', '/tmp')
+      .replace('$DOC_DIR', 'documentation')
+      .replace('$NPM', 'npm')
+      .replace('$METEOR', 'meteor')
+      .replace('$SPM', 'spm')
+    ;
+  });
+};
 
 gulp.task('default', ['build'], function(){
 
@@ -199,12 +234,42 @@ gulp.task('zip', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('test', ['concat'], function(){
-  return gulp.src('test/*.js')
+gulp.task('test', ['concat'], function(next){
+  var cwd = process.cwd();
+
+  process.chdir('./test');
+
+  return gulp.src('*.js')
     .pipe( mocha({
       reporter: 'spec'
     }) )
+    
+    .once('end', function(){
+      process.chdir( cwd );
+    })
   ;
+});
+
+gulp.task('weaver-src', function(){
+  
+  return download( weaverSrc )
+    .pipe( replace('weaver', 'cytoscape') )
+    .pipe( gulp.dest('src') )
+  ;
+  
+});
+
+gulp.task('weaver-test', function(){
+  
+  return download( weaverTest )
+    .pipe( replace('weaver', 'cytoscape') )
+    .pipe( gulp.dest('test') )
+  ;
+  
+});
+
+gulp.task('weaver', function(next){
+  return runSequence(['weaver-src', 'weaver-test'], next);
 });
 
 gulp.task('benchmark-old-ver', function(){
@@ -264,9 +329,15 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
 
 });
 
-gulp.task('snapshotpush', ['docsdl'], shell.task([
-  './publish-buildlist.sh'
-]));
+gulp.task('snapshotpush', ['docsdl'], shell.task( replaceShellVars([
+  '$RM $TEMP_DIR/cytoscape.js',
+  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+  '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
+  '$CD $TEMP_DIR/cytoscape.js',
+  '$GIT add -A',
+  '$GIT commit -a -m "updating list of builds"',
+  '$GIT push origin'
+]) ));
 
 gulp.task('docs', function(next){
   var cwd = process.cwd();
@@ -385,21 +456,44 @@ gulp.task('dist', ['build'], function(){
   ;
 });
 
-gulp.task('pub', function(next){
-  runSequence('pkgver', 'dist', 'docspub', next);
+gulp.task('pubprep', function(next){
+  runSequence('pkgver', 'dist', 'docspub', 'pubpush', next);
 });
 
-gulp.task('tag', shell.task([
-  './publish-tag.sh'
-]));
+gulp.task('pubpush', shell.task( replaceShellVars([
+  '$GIT add -A',
+  '$GIT commit -m "preparing to publish $VERSION"',
+  '$GIT push'
+]) ));
 
-gulp.task('docspush', shell.task([
-  './publish-docs.sh'
-]));
+gulp.task('publish', ['pubprep'], function(next){
+  runSequence('pubpush', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
+});
 
-gulp.task('unstabledocspush', shell.task([
-  './publish-unstable-docs.sh'
-]));
+gulp.task('tag', shell.task( replaceShellVars([
+  '$GIT tag -a v$VERSION -m "v$VERSION"',
+  '$GIT push origin v$VERSION'
+]) ));
+
+gulp.task('docspush', shell.task( replaceShellVars([
+  '$RM $TEMP_DIR/cytoscape.js',
+  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+  '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
+  '$CD $TEMP_DIR/cytoscape.js',
+  '$GIT add -A',
+  '$GIT commit -a -m "updating docs to $VERSION"',
+  '$GIT push origin'
+]) ));
+
+gulp.task('unstabledocspush', shell.task( replaceShellVars([
+  '$RM $TEMP_DIR/cytoscape.js',
+  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+  '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
+  '$CD $TEMP_DIR/cytoscape.js',
+  '$GIT add -A',
+  '$GIT commit -a -m "updating unstable docs to $VERSION"',
+  '$GIT push origin'
+]) ));
 
 // browserify debug build
 gulp.task('browserify', ['build'], function(){
@@ -413,21 +507,22 @@ gulp.task('browserify', ['build'], function(){
   ;
 });
 
-gulp.task('sniper', ['browserify'], shell.task([
-  'npm run sniper'
-]));
+gulp.task('sniper', ['browserify'], shell.task( replaceShellVars([
+  '$NPM run sniper'
+]) ));
 
-gulp.task('npm', shell.task([
-  './publish-npm.sh'
-]));
+gulp.task('npm', shell.task( replaceShellVars([
+  '$NPM publish .'
+]) ));
 
-gulp.task('meteor', shell.task([
-  './publish-meteor.sh'
-]));
+gulp.task('meteor', shell.task( replaceShellVars([
+  '$METEOR publish'
+]) ));
 
-gulp.task('spm', shell.task([
-  './publish-spm.sh'
-]));
+gulp.task('spm', shell.task( replaceShellVars([
+  '$SPM publish'
+]) ));
+
 
 
 gulp.task('watch', function(next){

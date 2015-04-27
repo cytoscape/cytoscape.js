@@ -107,6 +107,7 @@ var replaceShellVars = function( cmds ){
       .replace('$CP', 'cp -R')
       .replace('$TEMP_DIR', '/tmp')
       .replace('$DOC_DIR', 'documentation')
+      .replace('$DL_DIR', 'download')
       .replace('$NPM', 'npm')
       .replace('$METEOR', 'meteor')
       .replace('$SPM', 'spm')

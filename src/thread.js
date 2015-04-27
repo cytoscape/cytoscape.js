@@ -10,6 +10,7 @@
 
     var _p = this._private = {
       requires: [],
+      files: [],
       queue: null,
       pass: []
     };
@@ -120,10 +121,20 @@
 
     return req;
   };
+  
+  var isPathStr = function( str ){
+    return $$.is.string(str) && str.match(/\.js$/);
+  };
 
   $$.fn.thread({
 
     require: function( fn, as ){
+      if( isPathStr(fn) ){
+        this._private.files.push( fn );
+        
+        return this;
+      }
+        
       if( as ){
         if( $$.is.fn(fn) ){
           // disabled b/c doesn't work with forced names on functions w/ prototypes
@@ -163,6 +174,9 @@
           return self.run( fn, pass );
         });
       }
+      
+      var useWW = window != null;
+      var useNode = typeof module !== 'undefined';
 
       self.trigger('run');
 
@@ -177,6 +191,21 @@
         // worker code to exec
         var fnStr = '\n' + ( _p.requires.map(function( r ){
           return fnAsRequire( r );
+        }) ).concat( _p.files.map(function( f ){
+          if( useWW ){
+            var wwifyFile = function( file ){
+              if( file.match(/^\.\//) || file.match(/^\.\./) ){
+                return window.location.origin + window.location.pathname + file;
+              } else if( file.match(/^\//) ){
+                return window.location.origin + '/' + file;
+              }
+              return file;
+            }
+            
+            return 'importScripts("' + wwifyFile(f) + '");';
+          } else if( useNode ) {
+            return 'eval( require("fs").readFileSync("' + f + '", { encoding: "utf8" }) );';
+          }
         }) ).concat([
           '( function(){',
             'var ret = (' + fnImplStr + ')(' + JSON.stringify(pass) + ');',
@@ -186,8 +215,9 @@
 
         // because we've now consumed the requires, empty the list so we don't dupe on next run()
         _p.requires = [];
+        _p.files = [];
 
-        if( window ){
+        if( useWW ){
           var fnBlob, fnUrl;
 
           // add normalised thread api functions
@@ -229,11 +259,13 @@
           // worker messages => events
           var cb;
           ww.addEventListener('message', cb = function( m ){
-            if( $$.is.object(m) && $$.is.object( m.data ) && ('$$resolve' in m.data) ){
+            var isObject = $$.is.object(m) && $$.is.object( m.data );
+            
+            if( isObject && ('$$resolve' in m.data) ){
               ww.removeEventListener('message', cb); // done listening b/c resolve()
 
               resolve( m.data.$$resolve );
-            } else if( $$.is.object(m) && $$.is.object( m.data ) && ('$$reject' in m.data) ){
+            } else if( isObject && ('$$reject' in m.data) ){
               ww.removeEventListener('message', cb); // done listening b/c reject()
 
               reject( m.data.$$reject );
@@ -246,7 +278,7 @@
             ww.postMessage('$$start'); // start up the worker
           }
 
-        } else if( typeof module !== 'undefined' ){
+        } else if( useNode ){
           // create a new process
           var path = require('path');
           var child_process = require('child_process');
@@ -375,6 +407,7 @@
   var fn = $$.thdfn;
   fn.promise = fn.run;
   fn.terminate = fn.halt = fn.stop;
+  fn.include = fn.require;
 
   // higher level alias (in case you like the worker metaphor)
   $$.worker = $$.Worker = $$.Thread;

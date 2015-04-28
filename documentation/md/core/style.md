@@ -71,4 +71,5 @@ You can also get the current style as JSON:
 
 ```js
 var styleJson = cy.style().json(); 
+var serializedJson = JSON.stringify( styleJson );
 ```

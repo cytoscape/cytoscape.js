@@ -66,3 +66,9 @@ cy.style()
   .update() // update the elements in the graph with the new style
 ;
 ```
+
+You can also get the current style as JSON:
+
+```js
+var styleJson = cy.style().json(); 
+```

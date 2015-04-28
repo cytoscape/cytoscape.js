@@ -537,7 +537,7 @@ h2 {
 }
 
 h2 a,
-.function .name a {
+.function > .name > a {
 	font-size: 0.8em;
 }
 

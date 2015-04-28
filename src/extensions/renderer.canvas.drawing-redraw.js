@@ -330,7 +330,7 @@
         var gco = context.globalCompositeOperation;
 
         context.globalCompositeOperation = 'destination-out';
-        r.fillStyle( context, 255, 255, 255, 0.666 );
+        r.fillStyle( context, 255, 255, 255, r.motionBlurTransparency );
         context.fillRect(x, y, w, h);
 
         context.globalCompositeOperation = gco;

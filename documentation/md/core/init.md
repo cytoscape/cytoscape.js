@@ -144,6 +144,7 @@ var cy = cytoscape({
   hideLabelsOnViewport: false,
   textureOnViewport: false,
   motionBlur: false,
+  motionBlurOpacity: 0.2,
   wheelSensitivity: 1,
   pixelRatio: 1,
   initrender: function(evt){ /* ... */ },
@@ -212,6 +213,8 @@ var cy = cytoscape({
 **`textureOnViewport`** : When set to `true`, the renderer uses a texture (if supported) during panning and zooming instead of drawing the elements, making large graphs more responsive.
 
 **`motionBlur`** : When set to `true`, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.
+
+**`motionBlurOpacity`** : When `motionBlur: true`, this value controls the opacity of motion blur frames.  Higher values make the motion blur effect more pronounced.
 
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 

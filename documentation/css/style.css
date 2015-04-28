@@ -22,6 +22,7 @@ img {
 	max-width: 80%;
 }
 
+
 #orphaned-cy-container {
 	position: absolute;
 	left: -99999px;
@@ -193,7 +194,12 @@ button:active {
 	overflow-y: auto;
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
-	white-space: nowrap
+	white-space: nowrap;
+	background: #fff;
+	z-index: 999999;
+	opacity: 1;
+	
+	transition: opacity ease-out 150ms;
 }
 
 #navigation .toc {
@@ -530,7 +536,8 @@ h2 {
 	font-weight: 600;
 }
 
-h2 a {
+h2 a,
+.function .name a {
 	font-size: 0.8em;
 }
 
@@ -730,6 +737,16 @@ pre code {
 	margin: 0.25em;
 }
 
+#open-navigation {
+	display: none;
+	position: fixed;
+	right: 0;
+	top: 0;
+	margin: 1em 0.75em;
+	padding: 0 0.25em;
+	cursor: pointer;
+}
+
 
 @media only screen 
 and (max-width : 800px) {
@@ -748,11 +765,16 @@ and (max-width : 800px) {
 	}
 
 	#navigation {
-		display: none;
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	#content {
 		margin-left: 0.5em;
+	}
+	
+	#open-navigation {
+		display: block;
 	}
 
 }
@@ -762,12 +784,18 @@ and (max-width : 800px)
 and (orientation:landscape) {
 
 	#navigation {
-		display: block;
+		opacity: 1;
+		pointer-events: auto;
 	}
 
 	#content {
 		margin-left: 16em;
 	}
+	
+	#open-navigation {
+		display: none;
+	}
+
 
 }
 
@@ -779,4 +807,24 @@ and (orientation:portrait) {
 
 	}
 
+}
+
+#open-navigation-bg {
+	position: fixed;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 9999;
+	opacity: 0;
+	pointer-events: none;
+	
+	transition: opacity ease-out 150ms;
+}
+
+.navigation-open #open-navigation-bg,
+.navigation-open #navigation {
+	opacity: 1;
+	pointer-events: auto;
 }

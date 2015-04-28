@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/io.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/io.js, AMD/Require.js, npm, Bower, spm, Meteor/Atmosphere, jQuery, and plain JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -26,14 +26,28 @@
 	<body>
 
 		<div id="content">
+			
+			<div id="open-navigation" class="activatable"><span class="icon-reorder"></span></div>
+			<div id="open-navigation-bg"></div>
 
-			<h1 id="top" class="title">Cytoscape.js <span class="version">{{version}}</span></h1>
-			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js</h1>
+			<div class="subtitle">
+				Graph theory (a.k.a. network) library for analysis and visualisation
+				(compatible with 
+				<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>,
+				<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
+				<a target="_blank" href="http://jquery.com/">jQuery</a>,
+				<a target="_blank" href="http://npmjs.org">npm</a>,
+				<a target="_blank" href="http://bower.io">Bower</a>,
+				<a target="_blank" href="http://spmjs.io">spm</a>,
+				<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
+				and plain JavaScript)
+			</div>
 			
 			<div class="buttons-subtitle">
-				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
+				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download {{version}}</a>
 			</div>
 
 			<div class="links">
@@ -51,6 +65,10 @@
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-star"></span> Star it on GitHub</a> |
 				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="icon-twitter"></span> Share it on Twitter</a> |
 				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="icon-google-plus"></span> Share it on Google+</a>
+			</div>
+			
+			<div class="links likes">
+				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a> 
 			</div>
 
 			<div id="documentation">

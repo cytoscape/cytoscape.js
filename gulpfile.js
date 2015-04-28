@@ -1,7 +1,6 @@
 var gulp = require('gulp');
 var path = require('path');
 var tap = require('gulp-tap');
-var clean = require('gulp-clean');
 var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
 var replace = require('gulp-replace');
@@ -21,6 +20,9 @@ var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var benchmark = require('gulp-benchmark');
 var download = require("gulp-download");
+var del = require('del');
+var vinylPaths = require('vinyl-paths');
+var clean = function(){ return vinylPaths(del) };
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';

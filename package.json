@@ -73,9 +73,9 @@
     "bluebird": "^2.0.2",
     "browserify": "^6.3.2",
     "chai": "^1.9.0",
+    "del": "^1.1.1",
     "gulp": "^3.5.2",
     "gulp-benchmark": "^1.1.1",
-    "gulp-clean": "^0.2.4",
     "gulp-concat": "^2.2.0",
     "gulp-cssmin": "^0.1.4",
     "gulp-download": "0.0.1",
@@ -95,6 +95,7 @@
     "marked": "^0.3.1",
     "mocha": "^1.17.1",
     "run-sequence": "^0.3.6",
+    "vinyl-paths": "^1.0.0",
     "vinyl-source-stream": "^1.0.0"
   },
   "sniper": {

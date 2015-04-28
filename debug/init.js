@@ -132,55 +132,25 @@ $(function(){
     // },
     style: defaultSty,
     
-    elements: 
-    
-    {
-    nodes: [
-      { data: { id: 'cat' } },
-      { data: { id: 'bird' } },
-      { data: { id: 'ladybug' } },
-      { data: { id: 'aphid' } },
-      { data: { id: 'rose' } },
-      { data: { id: 'grasshopper' } },
-      { data: { id: 'plant' } },
-      { data: { id: 'wheat' } }
-    ],
-    edges: [
-      { data: { source: 'cat', target: 'bird' } },
-      { data: { source: 'bird', target: 'ladybug' } },
-      { data: { source: 'bird', target: 'grasshopper' } },
-      { data: { source: 'grasshopper', target: 'plant' } },
-      { data: { source: 'grasshopper', target: 'wheat' } },
-      { data: { source: 'ladybug', target: 'aphid' } },
-      { data: { source: 'aphid', target: 'rose' } }
-    ]
-  },
-  
-  layout:  {
-    name: 'breadthfirst',
-    directed: true,
-    padding: 10
-  },
-    
-    // {
-    //   nodes: [
-    //     { data: { id: 'a', weight: 50 } },
-    //     { data: { id: 'b', weight: 30 } },
-    //     { data: { id: 'c', weight: 20 } },
-    //     { data: { id: 'd', weight: 10 } },
-    //     { data: { id: 'e', weight: 75 } }
-    //   ], 
-    //   
-    //   edges: [
-    //     { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
-    //     { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
-    //     { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
-    //     { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
-    //     { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
-    //     { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-    //     { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
-    //   ]
-    // },
+    elements: {
+      nodes: [
+        { data: { id: 'a', weight: 50 } },
+        { data: { id: 'b', weight: 30 } },
+        { data: { id: 'c', weight: 20 } },
+        { data: { id: 'd', weight: 10 } },
+        { data: { id: 'e', weight: 75 } }
+      ], 
+      
+      edges: [
+        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
+        { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
+        { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
+        { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
+        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+      ]
+    },
     ready: function(){
       console.log('cy ready');
 

@@ -36,6 +36,18 @@ To install Cytoscape.js via Bower (in the terminal):
 bower install cytoscape
 ```
 
+To install Cytoscape.js via spm (in the terminal):
+
+```bash
+spm install cytoscape
+```
+
+To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
+
+```bash
+meteor add maxkfranz:cytoscape
+```
+
 ### Getting started
 
 An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
@@ -210,4 +222,3 @@ var cy = cytoscape({
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 
 * **`renderer.name`** : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
-

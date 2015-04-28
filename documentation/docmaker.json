@@ -24,6 +24,7 @@
   "sections": [
     {
       "name": "Demos",
+      "md": "demos",
       "demos": [
         { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
         { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
@@ -330,7 +331,7 @@
                   ]
                 }
               ],
-              "md": "core/onRender"
+              "md": "core/offRender"
             },
 
             {

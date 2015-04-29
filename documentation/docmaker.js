@@ -126,10 +126,11 @@ function parseSubsections( section ){
 }
 
 function populateDemo( demo ){
-  demo.viewUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
+  demo.jsbinUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
   demo.githubUrl = 'https://gist.github.com/' + demo.id;
   demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
+  demo.viewUrl = 'demos/' + demo.id;
 }
 
 function compileAliases( section, fn ){
@@ -333,5 +334,3 @@ module.exports = function( next ){
 
   next && next();
 };
-
-

@@ -23,6 +23,9 @@ var download = require("gulp-download");
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del) };
+var tar = require('tar-stream');
+var decompress = require('gulp-decompress');
+var rename = require("gulp-rename");
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -238,18 +241,10 @@ gulp.task('zip', ['version', 'build'], function(){
 });
 
 gulp.task('test', ['concat'], function(next){
-  var cwd = process.cwd();
-
-  process.chdir('./test');
-
-  return gulp.src('*.js')
+  return gulp.src('test/*.js')
     .pipe( mocha({
       reporter: 'spec'
     }) )
-    
-    .once('end', function(){
-      process.chdir( cwd );
-    })
   ;
 });
 
@@ -430,8 +425,26 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
   } );
 });
 
+gulp.task('docsdemodl', function(){
+  var demos = require('./documentation/docmaker.json').sections.filter(function(s){
+    return s.demos != null;
+  })[0].demos.map(function(d){
+    return 'https://gist.github.com/' + d.id + '/download';
+  });
+  
+  return download( demos )
+    .pipe( decompress() )
+    
+    .pipe( rename(function( path ){
+      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
+    }) )
+    
+    .pipe( gulp.dest('documentation/demos') )
+  ;
+});
+
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsdemodl', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){

@@ -469,6 +469,8 @@ gulp.task('docsdemodl', function(){
       path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
     }) )
     
+    .pipe( replace('http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js', '../../js/cytoscape.min.js') )
+    
     .pipe( gulp.dest('documentation/demos') )
   ;
 });

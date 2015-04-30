@@ -5,7 +5,7 @@
       return new $$.Fabric( N );
     }
 
-    var _p = this._private = {
+    this._private = {
       pass: []
     };
 
@@ -135,7 +135,7 @@
       }
 
       return $$.Promise.all( runPs ).then(function( thens ){
-        var postpass = new Array();
+        var postpass = [];
         var p = 0;
 
         // fill postpass with the total result joined from all threads
@@ -210,7 +210,6 @@
       var self = this;
       var P = this._private.pass[0].length;
       var subsize = this.spreadSize();
-      var N = this.length;
 
       cmp = cmp || function( a, b ){ // default comparison function
         if( a < b ){

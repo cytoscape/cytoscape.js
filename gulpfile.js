@@ -106,20 +106,29 @@ var paths = {
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
+var $GIT = 'git';
+var $RM = 'rm -rf';
+var $CP = 'cp -R';
+var $TEMP_DIR = '/tmp';
+var $DOC_DIR = 'documentation';
+var $DL_DIR  = 'download';
+var $NPM = 'npm';
+var $METEOR = 'meteor';
+var $SPM = 'spm';
+
 var replaceShellVars = function( cmds ){
   return cmds.map(function( cmd ){
     return cmd
-      .replace('$VERSION', version)
-      .replace('$GIT', 'git')
-      .replace('$CD', 'cd')
-      .replace('$RM', 'rm -rf')
-      .replace('$CP', 'cp -R')
-      .replace('$TEMP_DIR', '/tmp')
-      .replace('$DOC_DIR', 'documentation')
-      .replace('$DL_DIR', 'download')
-      .replace('$NPM', 'npm')
-      .replace('$METEOR', 'meteor')
-      .replace('$SPM', 'spm')
+      //.replace(/\$VERSION/g, version)
+      .replace(/\$GIT/, 'git')
+      .replace(/\$RM/, 'rm -rf')
+      .replace(/\$CP/, 'cp -R')
+      .replace(/\$TEMP_DIR/, '/tmp')
+      .replace(/\$DOC_DIR/, 'documentation')
+      .replace(/\$DL_DIR/, 'download')
+      .replace(/\$NPM/, 'npm')
+      .replace(/\$METEOR/, 'meteor')
+      .replace(/\$SPM/, 'spm')
     ;
   });
 };
@@ -339,15 +348,24 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
 
 });
 
-gulp.task('snapshotpush', ['docsdl'], shell.task( replaceShellVars([
-  '$RM $TEMP_DIR/cytoscape.js',
-  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-  '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
-  '$CD $TEMP_DIR/cytoscape.js',
-  '$GIT add -A',
-  '$GIT commit -a -m "updating list of builds"',
-  '$GIT push origin'
-]) ));
+gulp.task('snapshotpush', ['docsdl'], function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating list of builds"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
+
+
+
 
 gulp.task('docs', function(next){
   var cwd = process.cwd();
@@ -503,25 +521,37 @@ gulp.task('tag', shell.task( replaceShellVars([
   '$GIT push origin v$VERSION'
 ]) ));
 
-gulp.task('docspush', shell.task( replaceShellVars([
-  '$RM $TEMP_DIR/cytoscape.js',
-  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-  '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
-  '$CD $TEMP_DIR/cytoscape.js',
-  '$GIT add -A',
-  '$GIT commit -a -m "updating docs to $VERSION"',
-  '$GIT push origin'
-]) ));
+gulp.task('docspush', function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating docs to $VERSION"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
 
-gulp.task('unstabledocspush', shell.task( replaceShellVars([
-  '$RM $TEMP_DIR/cytoscape.js',
-  '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-  '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
-  '$CD $TEMP_DIR/cytoscape.js',
-  '$GIT add -A',
-  '$GIT commit -a -m "updating unstable docs to $VERSION"',
-  '$GIT push origin'
-]) ));
+gulp.task('unstabledocspush', function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating unstable docs to $VERSION"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
 
 // browserify debug build
 gulp.task('browserify', ['build'], function(){

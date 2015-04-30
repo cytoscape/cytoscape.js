@@ -8,7 +8,7 @@
       return new $$.Thread( fn );
     }
 
-    var _p = this._private = {
+    this._private = {
       requires: [],
       files: [],
       queue: null,
@@ -67,7 +67,7 @@
     var protoreq = function( val, subname ){
       if( val.prototype ){
         var protoNonempty = false;
-        for( var prop in val.prototype ){ protoNonempty = true; break; };
+        for( var prop in val.prototype ){ protoNonempty = true; break; }
 
         if( protoNonempty ){
           req += fnAsRequire( {
@@ -200,7 +200,7 @@
                 return window.location.origin + '/' + file;
               }
               return file;
-            }
+            };
             
             return 'importScripts("' + wwifyFile(f) + '");';
           } else if( useNode ) {

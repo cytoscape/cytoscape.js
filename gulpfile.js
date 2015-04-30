@@ -23,7 +23,6 @@ var download = require("gulp-download");
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del) };
-var tar = require('tar-stream');
 var decompress = require('gulp-decompress');
 var rename = require("gulp-rename");
 
@@ -45,7 +44,12 @@ var weaverSrc = [
 
 var weaverTest = [
   'test/thread.js',
-  'test/fabric.js'
+  'test/fabric.js',
+  'test/requires/foo.js'
+].map( addWeaverUrlBase );
+
+var weaverTestReqs = [
+  'test/requires/foo.js'
 ].map( addWeaverUrlBase );
 
 var version; // used for marking builds w/ version etc
@@ -266,8 +270,16 @@ gulp.task('weaver-test', function(){
   
 });
 
+gulp.task('weaver-test-reqs', function(){
+  
+  return download( weaverTestReqs )
+    .pipe( gulp.dest('test/requires') )
+  ;
+  
+});
+
 gulp.task('weaver', function(next){
-  return runSequence(['weaver-src', 'weaver-test'], next);
+  return runSequence(['weaver-src', 'weaver-test', 'weaver-test-reqs'], next);
 });
 
 gulp.task('benchmark-old-ver', function(){

@@ -82,6 +82,10 @@
       var simulationBounds = options.boundingBox ? $$.util.makeBoundingBox( options.boundingBox ) : null;
       var padding = options.padding;
       var simBBFactor = Math.max( 1, Math.log(nodes.length) * 0.8 );
+      
+      if( nodes.length < 100 ){
+        simBBFactor /= 2;
+      }
 
       layout.trigger( {
         type: 'layoutstart',

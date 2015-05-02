@@ -46,6 +46,8 @@
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
           
+          r.drawingImage = true;
+          
           r.redraw();
         });
         

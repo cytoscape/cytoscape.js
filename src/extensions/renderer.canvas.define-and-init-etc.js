@@ -104,12 +104,13 @@
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
+    this.motionBlurEnabled = options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
-    this.motionBlurOpacity = options.motionBlurOpacity === undefined ? 0.2 : options.motionBlurOpacity;
+    this.motionBlurOpacity = options.motionBlurOpacity;
     this.motionBlurTransparency = 1 - this.motionBlurOpacity;
-    this.motionBlurPxRatio = this.mbPxRBlurry = 0.666;
+    this.motionBlurPxRatio = 1;
+    this.mbPxRBlurry = 0.8;
     this.minMbLowQualFrames = 4;
     this.fullQualityMb = false;
     this.clearedForMotionBlur = [];

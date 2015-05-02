@@ -199,29 +199,16 @@
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
+    var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
     var mbPxRatio = r.motionBlurPxRatio;
+    var hasCompoundNodes = cy.hasCompoundNodes();
     var inNodeDragGesture = r.hoverData.draggingEles;
     var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
+    var motionBlurFadeEffect = motionBlur;
 
-    if( motionBlur ){
-      if( r.mbFrames == null ){
-        r.mbFrames = 0;
-      }
-
-      r.mbFrames++;
-
-      // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
-      if( r.mbFrames > r.minMbLowQualFrames ){
-        //r.fullQualityMb = false;
-        r.motionBlurPxRatio = r.mbPxRBlurry;
-      }
-    } 
-
-    // console.log('mb: %s, mbframes: %s, fq: %s', motionBlur, r.mbFrames, r.fullQualityMb);
-
-    if( motionBlur && r.motionBlurTimeout ){
+    if( !forcedContext && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
     }
 
@@ -262,6 +249,28 @@
       this.currentlyDrawing = true;
     }
 
+    if( motionBlur ){
+      if( r.mbFrames == null ){
+        r.mbFrames = 0;
+      }
+
+      if( !r.drawingImage ){ // image loading frames don't count towards motion blur blurry frames
+        r.mbFrames++;
+      }
+      
+      if( r.mbFrames < 3 ){ // need several frames before even high quality motionblur
+        motionBlurFadeEffect = false;
+      }
+
+      // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
+      if( r.mbFrames > r.minMbLowQualFrames ){
+        //r.fullQualityMb = false;
+        r.motionBlurPxRatio = r.mbPxRBlurry;
+      }
+    } 
+
+    // console.log('mb: %s, N: %s, q: %s', motionBlur, r.mbFrames, r.motionBlurPxRatio);
+
     if( r.clearingMotionBlur ){
       //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
 
@@ -299,7 +308,7 @@
       var viewportIsDiff = prevVp === undefined || vp.zoom !== prevVp.zoom || vp.pan.x !== prevVp.pan.x || vp.pan.y !== prevVp.pan.y;
 
       // we want the low quality motionblur only when the viewport is being manipulated etc (where it's not noticed)
-      if( !viewportIsDiff && !inNodeDragGesture ){
+      if( !viewportIsDiff && !(inNodeDragGesture && !hasCompoundNodes) ){
         r.motionBlurPxRatio = 1;
       }
 
@@ -376,8 +385,6 @@
           context.scale( forcedZoom, forcedZoom );
         }
       }
-
-      var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
 
       if( textureDraw ){
 
@@ -647,7 +654,7 @@
         var drawMotionBlur = function( cxt, txt, needClear ){
           cxt.setTransform(1, 0, 0, 1, 0, 0);
 
-          if( needClear ){
+          if( needClear || !motionBlurFadeEffect ){
             cxt.clearRect( 0, 0, r.canvasWidth, r.canvasHeight );
           } else {
             mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
@@ -724,7 +731,7 @@
           r.clearedForMotionBlur[CR.NODE] = false;
           r.clearedForMotionBlur[CR.DRAG] = false;
           r.motionBlur = false;
-          r.clearingMotionBlur = true;
+          r.clearingMotionBlur = !textureDraw;
           r.mbFrames = 0;
 
           needDraw[CR.NODE] = true; 
@@ -733,6 +740,8 @@
           r.redraw();
         }, CanvasRenderer.motionBlurDelay);
       }
+
+      r.drawingImage = false;
 
     } // draw to context
 

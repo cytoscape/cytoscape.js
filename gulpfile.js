@@ -455,12 +455,18 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
   } );
 });
 
-gulp.task('docsdemodl', function(){
+var demoGistUrls = function(){
   var demos = require('./documentation/docmaker.json').sections.filter(function(s){
     return s.demos != null;
   })[0].demos.map(function(d){
     return 'https://gist.github.com/' + d.id + '/download';
   });
+  
+  return demos;
+}
+
+gulp.task('docsdemodl', function(){
+  var demos = demoGistUrls();
   
   return download( demos )
     .pipe( decompress() )
@@ -469,7 +475,23 @@ gulp.task('docsdemodl', function(){
       path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
     }) )
     
-    .pipe( replace('http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js', '../../js/cytoscape.min.js') )
+    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
+    
+    .pipe( gulp.dest('documentation/demos') )
+  ;
+});
+
+gulp.task('docsdemodltest', function(){
+  var demos = demoGistUrls();
+  
+  return download( demos )
+    .pipe( decompress() )
+    
+    .pipe( rename(function( path ){
+      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
+    }) )
+    
+    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../../build/cytoscape.js"') )
     
     .pipe( gulp.dest('documentation/demos') )
   ;
@@ -586,14 +608,19 @@ gulp.task('spm', shell.task( replaceShellVars([
 
 
 gulp.task('watch', function(next){
-  var watcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
-  watcher.on('added deleted', function(event){
+  var refWatcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
+  refWatcher.on('added deleted', function(event){
     console.log('File ' + event.path + ' was ' + event.type + ', updating lib refs in pages...');
   });
 
   var testWatcher = gulp.watch('test/*.js', ['testlist']);
   testWatcher.on('added deleted', function(event){
     console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
+  });
+  
+  var watcher = gulp.watch(paths.sources, ['concat']);
+  watcher.on('change', function(event){
+    console.log('File ' + event.path + ' was changed, building...');
   });
 
   next();

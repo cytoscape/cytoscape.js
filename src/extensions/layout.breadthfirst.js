@@ -284,14 +284,15 @@
       }
 
       var eleDepth = ele._private.scratch.breadthfirst.depth;
-      var neighbors = ele.neighborhood().nodes();
+      var neighbors = ele.neighborhood().nodes().not(':parent');
       var percent = 0;
       var samples = 0;
 
       for( var i = 0; i < neighbors.length; i++ ){
         var neighbor = neighbors[i];
-        var index = neighbor._private.scratch.breadthfirst.index;
-        var depth = neighbor._private.scratch.breadthfirst.depth;
+        var bf = neighbor._private.scratch.breadthfirst;
+        var index = bf.index;
+        var depth = bf.depth;
         var nDepth = depths[depth].length;
 
         if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above

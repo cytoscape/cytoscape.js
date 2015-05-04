@@ -188,7 +188,7 @@
   CRp.redraw = function( options ) {
     options = options || {};
 
-    // console.log('redraw');
+    // console.log('redraw()');
 
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
@@ -207,6 +207,9 @@
     var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
     motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
     var motionBlurFadeEffect = motionBlur;
+
+    // console.log('textureDraw?', textureDraw);
+
 
     if( !forcedContext && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
@@ -236,7 +239,7 @@
 
     if( !forcedContext && !r.clearingMotionBlur ){
       if( !callAfterLimit || this.currentlyDrawing ){
-        // console.log('-- skip');
+        // console.log('-- skip', redrawLimit);
 
         // we have new things to draw but we're busy, so try again when possibly free
         this.redrawTimeout = setTimeout(function(){
@@ -280,11 +283,21 @@
 
     var startTime = Date.now();
 
-    //console.log('-- redraw --')
-
+    // console.log('-- redraw --')
+    
     function drawToContext(){ 
       // startTime = Date.now();
       // console.profile('draw' + startTime)
+      
+      // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
+      // because a rogue async texture frame would clear needDraw
+      if( r.textureDrawLastFrame && !textureDraw ){
+        needDraw[CR.NODE] = true;
+        needDraw[CR.SELECT_BOX] = true;
+      }
+      
+      // console.log('drawToContext()');
+      // console.log( 'needDraw', needDraw[CR.NODE], needDraw[CR.DRAG], needDraw[CR.SELECT_BOX] );
 
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
@@ -386,7 +399,14 @@
         }
       }
 
+      if( !textureDraw ){
+        r.textureDrawLastFrame = false;
+      }
+
       if( textureDraw ){
+        // console.log('textureDraw')
+        
+        r.textureDrawLastFrame = true;
 
         var bb;
 

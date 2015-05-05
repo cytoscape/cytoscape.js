@@ -72,7 +72,7 @@
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       textWrap: { enums: ['none', 'wrap'] },
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },

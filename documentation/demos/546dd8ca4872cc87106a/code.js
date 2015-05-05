@@ -26,6 +26,10 @@ var cy = cytoscape({
 // see http://qtip2.com/
 cy.$('#n').qtip({
   content: 'Hello!',
+  position: {
+    my: 'top center',
+    at: 'bottom center'
+  },
   style: {
     classes: 'qtip-bootstrap',
     tip: {

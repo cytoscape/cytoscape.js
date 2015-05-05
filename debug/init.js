@@ -119,9 +119,10 @@ $(function(){
     // boxSelectionEnabled: true,
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
-    textureOnViewport: true,
-    motionBlur: false,
+    // textureOnViewport: true,
+    // motionBlur: false,
     // pixelRatio: 'auto',
+    // motionBlurOpacity: 0.5,
     renderer: {
       name: 'canvas',
       showFps: true

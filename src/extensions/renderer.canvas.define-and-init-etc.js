@@ -110,7 +110,7 @@
     this.motionBlurOpacity = options.motionBlurOpacity;
     this.motionBlurTransparency = 1 - this.motionBlurOpacity;
     this.motionBlurPxRatio = 1;
-    this.mbPxRBlurry = 0.8;
+    this.mbPxRBlurry = 1; //0.8;
     this.minMbLowQualFrames = 4;
     this.fullQualityMb = false;
     this.clearedForMotionBlur = [];

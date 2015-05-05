@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js snapshot-6cfb6046d8-1430761511852.
+ * This file is part of Cytoscape.js 2.4.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = 'snapshot-6cfb6046d8-1430761511852';
+  $$.version = '2.4.0';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -7789,7 +7789,7 @@ this.cytoscape = cytoscape;
         textureOnViewport: options.textureOnViewport,
         wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
         motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
-        motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.2 : options.motionBlurOpacity,
+        motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
         pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
         tapThreshold: defVal( $$.is.touch() ? 8 : 4, $$.is.touch() ? options.touchTapThreshold : options.desktopTapThreshold )
       }, options.renderer) );

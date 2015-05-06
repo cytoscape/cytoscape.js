@@ -22,6 +22,10 @@ img {
 	max-width: 80%;
 }
 
+form {
+	display: inline-block;
+}
+
 #orphaned-cy-container {
 	position: absolute;
 	left: -99999px;
@@ -559,6 +563,9 @@ th, td {
 
 a,
 .link {
+	background: transparent;
+	padding: 0;
+	margin: 0;
 	color: inherit;
 	border-bottom: 2px solid rgba(65, 131, 196, 0.333);
 	text-decoration: none;
@@ -571,7 +578,7 @@ a.toclink {
 	border-bottom: 2px solid rgba(65, 131, 196, 0.166);
 }
 
-a.button {
+.button {
 	font: inherit;
 	border: 0;
 	background: #4183C4;
@@ -584,11 +591,22 @@ a.button {
 	display: inline-block;
 }
 
-a.button.green {
+.button.small {
+	padding: 0.0625em 0.125em;
+}
+
+.button.hollow {
+	border: 1px solid #4183C4;
+	background: transparent;
+	color: #4183C4;
+}
+
+.button.green {
 	background: #41C483;
 }
 
 a:active,
+.button:active,
 .link:active {
 	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
 }

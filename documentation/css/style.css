@@ -26,6 +26,10 @@ form {
 	display: inline-block;
 }
 
+.footnote {
+	font-size: 0.65em;
+}
+
 #orphaned-cy-container {
 	position: absolute;
 	left: -99999px;

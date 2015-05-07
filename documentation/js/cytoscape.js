@@ -8513,11 +8513,23 @@ this.cytoscape = cytoscape;
       options = options || {};
 
       return renderer.png( options );      
+    },
+    
+    jpg: function( options ){
+      var renderer = this._private.renderer;
+      options = options || {};
+      
+      options.bg = options.bg || '#fff';
+
+      return renderer.jpg( options );      
     }
     
   });
   
+  $$.corefn.jpeg = $$.corefn.jpg;
+  
 })( cytoscape );
+
 ;(function($$){ 'use strict';
   
   $$.fn.core({
@@ -19605,8 +19617,13 @@ this.cytoscape = cytoscape;
   CRp.png = function( options ){
     return this.bufferCanvasImage( options ).toDataURL('image/png');
   };
+  
+  CRp.jpg = function( options ){
+    return this.bufferCanvasImage( options ).toDataURL('image/jpeg');
+  };
 
 })( cytoscape );
+
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');

@@ -838,6 +838,30 @@
               ],
               "md": "core/png"
             },
+            
+            {
+              "name": "cy.jpg",
+              "pureAliases": ["cy.jpeg"],
+              "descr": "Export the current graph view as a JPG image in Base64 representation.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The export options.",
+                      "fields": [
+                        { "name": "bg", "descr": "The background colour of the image (white by default)." },
+                        { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
+                        { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
+                        { "name": "maxWidth", "descr": "Specifies the scale automatically in combination with `maxHeight` such that the resultant image is no wider than `maxWidth`." },
+                        { "name": "maxHeight", "descr": "Specifies the scale automatically in combination with `maxWidth` such that the resultant image is no taller than `maxHeight`." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "core/jpg"
+            },
 
             {
               "name": "cy.json",

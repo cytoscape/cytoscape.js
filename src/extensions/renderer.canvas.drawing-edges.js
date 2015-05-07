@@ -256,11 +256,6 @@
 
       var gco = context.globalCompositeOperation;
 
-      context.globalCompositeOperation = 'destination-out';
-      
-      self.fillStyle(context, 255, 255, 255, 1);
-
-
       var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
       var arrowFill = style[prefix + '-arrow-fill'].value;
 
@@ -269,12 +264,18 @@
         arrowClearFill = 'hollow';
       }
 
-      self.drawArrowShape( edge, prefix, context, 
-        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
-        x, y, dispX, dispY
-      );
+      if( style.opacity.value !== 1 ){ // then extra clear is needed
+        context.globalCompositeOperation = 'destination-out';
+        
+        self.fillStyle(context, 255, 255, 255, 1);
+        
+        self.drawArrowShape( edge, prefix, context, 
+          arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+          x, y, dispX, dispY
+        );
 
-      context.globalCompositeOperation = gco;
+        context.globalCompositeOperation = gco;
+      } // otherwise, the opaque arrow clears it for free :)
 
       var color = style[prefix + '-arrow-color'].value;
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);

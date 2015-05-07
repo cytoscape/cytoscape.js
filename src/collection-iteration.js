@@ -110,18 +110,26 @@
       var ele = this[0];
       if( !ele ){ return undefined; }
 
+      var cy = ele.cy();
+      var hasCompoundNodes = cy.hasCompoundNodes();
       var _p = ele._private;
       var group = _p.group;
 
       if( group === 'nodes' ){
-        return _p.data.parent ? ele.parents().size() : 0;
+        var depth = _p.data.parent ? ele.parents().size() : 0;
+        
+        if( !ele.isParent() ){
+          return Number.MAX_VALUE; // childless nodes always on top
+        }
+        
+        return depth;
       } else {
         var src = _p.source;
         var tgt = _p.target;
-        var srcDepth = src._private.data.parent ? src.parents().size() : 0;
-        var tgtDepth = tgt._private.data.parent ? tgt.parents().size() : 0;
+        var srcDepth = src.zDepth();
+        var tgtDepth = tgt.zDepth();
 
-        return Math.max( srcDepth - 1, tgtDepth - 1, 0 ) + 0.5; // depth of deepest parent and just a bit above
+        return Math.max( srcDepth, tgtDepth, 0 ); // depth of deepest parent
       }
     }
   });
@@ -150,13 +158,13 @@
 
     if( sameDepth ){
       
-      if( aIsNode && bIsEdge ){
+      if( aIsNode && bIsEdge ){      
         return 1; // 'a' is a node, it should be drawn later       
       
       } else if( aIsEdge && bIsNode ){
         return -1; // 'a' is an edge, it should be drawn first
 
-      } else { // both nodes or both edges
+      } else { // both nodes or both edges        
         if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
           return a_p.index - b_p.index;
         } else {
@@ -165,7 +173,7 @@
       }
     
     // elements on different level
-    } else {
+    } else {      
       return depthDiff; // deeper element should be drawn later
     }
 

@@ -1331,10 +1331,10 @@
       var tgt = _p.target;
       var srcPos = src._private.position;
       var tgtPos = tgt._private.position;
-      var srcW = src._private.style['width'].pxValue;
-      var tgtW = tgt._private.style['width'].pxValue;
-      var srcH = src._private.style['height'].pxValue;
-      var tgtH = tgt._private.style['height'].pxValue;
+      var srcW = src.width();
+      var tgtW = tgt.width();
+      var srcH = src.height();
+      var tgtH = tgt.height();
       var radius = style['haystack-radius'].value;
       var halfRadius = radius/2; // b/c have to half width/height
 

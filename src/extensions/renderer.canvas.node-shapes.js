@@ -315,5 +315,19 @@
   star5Points = $$.math.fitPolygonToSquare( star5Points );
   
   generatePolygon( 'star', star5Points );
+  
+  generatePolygon( 'vee', [
+    -1, -1,
+    0, -0.333,
+    1, -1,
+    0, 1
+  ] );
+  
+  generatePolygon( 'rhomboid', [
+    -1, -1,
+    0.333, -1,
+    1, 1,
+    -0.333, 1
+  ] );
 
 })( cytoscape );

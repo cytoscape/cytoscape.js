@@ -120,15 +120,15 @@ var replaceShellVars = function( cmds ){
   return cmds.map(function( cmd ){
     return cmd
       //.replace(/\$VERSION/g, version)
-      .replace(/\$GIT/, 'git')
-      .replace(/\$RM/, 'rm -rf')
-      .replace(/\$CP/, 'cp -R')
-      .replace(/\$TEMP_DIR/, '/tmp')
-      .replace(/\$DOC_DIR/, 'documentation')
-      .replace(/\$DL_DIR/, 'download')
-      .replace(/\$NPM/, 'npm')
-      .replace(/\$METEOR/, 'meteor')
-      .replace(/\$SPM/, 'spm')
+      .replace(/\$GIT/g, 'git')
+      .replace(/\$RM/g, 'rm -rf')
+      .replace(/\$CP/g, 'cp -R')
+      .replace(/\$TEMP_DIR/g, '/tmp')
+      .replace(/\$DOC_DIR/g, 'documentation')
+      .replace(/\$DL_DIR/g, 'download')
+      .replace(/\$NPM/g, 'npm')
+      .replace(/\$METEOR/g, 'meteor')
+      .replace(/\$SPM/g, 'spm')
     ;
   });
 };

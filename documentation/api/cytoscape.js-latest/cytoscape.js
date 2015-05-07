@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.0.
+ * This file is part of Cytoscape.js 2.4.0-pre.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.0';
+  $$.version = '2.4.0-pre';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -4921,7 +4921,7 @@ this.cytoscape = cytoscape;
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       textWrap: { enums: ['none', 'wrap'] },
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
@@ -13762,18 +13762,26 @@ this.cytoscape = cytoscape;
       var ele = this[0];
       if( !ele ){ return undefined; }
 
+      var cy = ele.cy();
+      var hasCompoundNodes = cy.hasCompoundNodes();
       var _p = ele._private;
       var group = _p.group;
 
       if( group === 'nodes' ){
-        return _p.data.parent ? ele.parents().size() : 0;
+        var depth = _p.data.parent ? ele.parents().size() : 0;
+        
+        if( !ele.isParent() ){
+          return Number.MAX_VALUE; // childless nodes always on top
+        }
+        
+        return depth;
       } else {
         var src = _p.source;
         var tgt = _p.target;
-        var srcDepth = src._private.data.parent ? src.parents().size() : 0;
-        var tgtDepth = tgt._private.data.parent ? tgt.parents().size() : 0;
+        var srcDepth = src.zDepth();
+        var tgtDepth = tgt.zDepth();
 
-        return Math.max( srcDepth - 1, tgtDepth - 1, 0 ) + 0.5; // depth of deepest parent and just a bit above
+        return Math.max( srcDepth, tgtDepth, 0 ); // depth of deepest parent
       }
     }
   });
@@ -13802,13 +13810,13 @@ this.cytoscape = cytoscape;
 
     if( sameDepth ){
       
-      if( aIsNode && bIsEdge ){
+      if( aIsNode && bIsEdge ){      
         return 1; // 'a' is a node, it should be drawn later       
       
       } else if( aIsEdge && bIsNode ){
         return -1; // 'a' is an edge, it should be drawn first
 
-      } else { // both nodes or both edges
+      } else { // both nodes or both edges        
         if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
           return a_p.index - b_p.index;
         } else {
@@ -13817,7 +13825,7 @@ this.cytoscape = cytoscape;
       }
     
     // elements on different level
-    } else {
+    } else {      
       return depthDiff; // deeper element should be drawn later
     }
 
@@ -17158,10 +17166,10 @@ this.cytoscape = cytoscape;
       var tgt = _p.target;
       var srcPos = src._private.position;
       var tgtPos = tgt._private.position;
-      var srcW = src._private.style['width'].pxValue;
-      var tgtW = tgt._private.style['width'].pxValue;
-      var srcH = src._private.style['height'].pxValue;
-      var tgtH = tgt._private.style['height'].pxValue;
+      var srcW = src.width();
+      var tgtW = tgt.width();
+      var srcH = src.height();
+      var tgtH = tgt.height();
       var radius = style['haystack-radius'].value;
       var halfRadius = radius/2; // b/c have to half width/height
 
@@ -17676,11 +17684,6 @@ this.cytoscape = cytoscape;
 
       var gco = context.globalCompositeOperation;
 
-      context.globalCompositeOperation = 'destination-out';
-      
-      self.fillStyle(context, 255, 255, 255, 1);
-
-
       var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
       var arrowFill = style[prefix + '-arrow-fill'].value;
 
@@ -17689,12 +17692,18 @@ this.cytoscape = cytoscape;
         arrowClearFill = 'hollow';
       }
 
-      self.drawArrowShape( edge, prefix, context, 
-        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
-        x, y, dispX, dispY
-      );
+      if( style.opacity.value !== 1 ){ // then extra clear is needed
+        context.globalCompositeOperation = 'destination-out';
+        
+        self.fillStyle(context, 255, 255, 255, 1);
+        
+        self.drawArrowShape( edge, prefix, context, 
+          arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+          x, y, dispX, dispY
+        );
 
-      context.globalCompositeOperation = gco;
+        context.globalCompositeOperation = gco;
+      } // otherwise, the opaque arrow clears it for free :)
 
       var color = style[prefix + '-arrow-color'].value;
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
@@ -22063,6 +22072,20 @@ this.cytoscape = cytoscape;
   star5Points = $$.math.fitPolygonToSquare( star5Points );
   
   generatePolygon( 'star', star5Points );
+  
+  generatePolygon( 'vee', [
+    -1, -1,
+    0, -0.333,
+    1, -1,
+    0, 1
+  ] );
+  
+  generatePolygon( 'rhomboid', [
+    -1, -1,
+    0.333, -1,
+    1, 1,
+    -0.333, 1
+  ] );
 
 })( cytoscape );
 

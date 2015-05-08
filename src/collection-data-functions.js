@@ -162,7 +162,8 @@
       function update( parent ){
         var children = parent.children();
         var style = parent._private.style;
-        var bb = children.boundingBox({ includeLabels: true, includeEdges: true });
+        var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
+        var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
         var padding = {
           top: style['padding-top'].pxValue,
           bottom: style['padding-bottom'].pxValue,

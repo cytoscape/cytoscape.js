@@ -162,6 +162,7 @@ These node body properties only apply to compound nodes (i.e. nodes who have emb
  * **`padding-right`** : The size of the area on the right of the compound node that can not be occupied by child nodes.
  * **`padding-top`** : The size of the area on the top of the compound node that can not be occupied by child nodes.
  * **`padding-bottom`** : The size of the area on the bottom of the compound node that can not be occupied by child nodes.
+ * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
 
 
 

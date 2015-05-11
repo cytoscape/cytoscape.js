@@ -1066,7 +1066,7 @@
         var directed = false;
       }
 
-      logDebug("Starting degree centrality...");
+      // logDebug("Starting degree centrality...");
       var nodes = this.nodes();
       var numNodes = nodes.length;
 
@@ -1179,12 +1179,12 @@
       //   var debug = false;
       // }
 
-      logDebug("Starting degree centrality...");
+      // logDebug("Starting degree centrality...");
 
       // root - mandatory!
       if (options != null && options.root != null) {
         var root = $$.is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
-        logDebug("Source node: %s", root.id());
+        // logDebug("Source node: %s", root.id());
       } else {
         return undefined;
       }
@@ -1277,7 +1277,7 @@
       //   var debug = false;
       // }
 
-      logDebug("Starting closeness centrality...");
+      // logDebug("Starting closeness centrality...");
 
       var closenesses = {};
       var maxCloseness = 0;
@@ -1336,7 +1336,7 @@
       //   var debug = false;
       // }
 
-      logDebug("Starting closeness centrality...");
+      // logDebug("Starting closeness centrality...");
 
       // root - mandatory!
       if (options.root != null) {
@@ -1346,7 +1346,7 @@
         } else {
           var root = options.root[0];
         }
-        logDebug("Source node: %s", root.id());
+        // logDebug("Source node: %s", root.id());
       } else {
         $$.util.error("options.root required");
         return undefined;
@@ -1406,7 +1406,7 @@
       //   var debug = false;
       // }
 
-      logDebug("Starting betweenness centrality...");
+      // logDebug("Starting betweenness centrality...");
 
       // Weight - optional
       if (options.weight != null && $$.is.fn(options.weight)) {

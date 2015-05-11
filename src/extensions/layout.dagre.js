@@ -105,7 +105,7 @@
         // console.log( g.edge(edge.source().id(), edge.target().id(), edge.id()) );
       }
 
-      var d = dagre.layout( g );
+      dagre.layout( g );
 
       var gNodeIds = g.nodes();
       for( var i = 0; i < gNodeIds.length; i++ ){

@@ -299,6 +299,8 @@
                 break;
               case 'double':
                 context.lineWidth = textBorderWidth/4; // 50% reserved for white between the two borders
+                context.setLineDash([ ]);
+                break;
               case 'solid':
                 context.setLineDash([ ]);
                 break;

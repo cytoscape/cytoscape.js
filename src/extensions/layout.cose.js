@@ -562,7 +562,7 @@
     nodes.positions(function(i, ele) {
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
       // s = "Node: " + lnode.id + ". Refreshed position: (" + 
-      lnode.positionX + ", " + lnode.positionY + ").";
+      // lnode.positionX + ", " + lnode.positionY + ").";
       // logDebug(s);
 
       if( options.boundingBox ){ // then add extra bounding box constraint
@@ -1136,11 +1136,11 @@
   /**
    * @brief : Logs a debug message in JS console, if DEBUG is ON
    */
-  var logDebug = function(text) {
-    if (DEBUG) {
-      console.debug(text);
-    }
-  };
+  // var logDebug = function(text) {
+  //   if (DEBUG) {
+  //     console.debug(text);
+  //   }
+  // };
 
 
   // register the layout

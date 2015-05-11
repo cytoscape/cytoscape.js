@@ -10,8 +10,8 @@
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     height: undefined, // height of layout area (overrides container height)
     width: undefined, // width of layout area (overrides container width)
-    concentric: function(){ // returns numeric value for each node, placing higher nodes in levels towards the centre
-      return this.degree();
+    concentric: function(node){ // returns numeric value for each node, placing higher nodes in levels towards the centre
+      return node.degree();
     },
     levelWidth: function(nodes){ // the variation of concentric values in each level
       return nodes.maxDegree() / 4;
@@ -53,14 +53,14 @@
       var value;
       
       // calculate the node value
-      value = options.concentric.call(node);
+      value = options.concentric.apply(node, [ node ]);
       nodeValues.push({
         value: value,
         node: node
       });
 
       // for style mapping
-      node._private.layoutData.concentric = value;
+      node._private.scratch.concentric = value;
     }
 
     // in case we used the `concentric` in style
@@ -126,7 +126,7 @@
 
       for( var j = 0; j < level.length; j++ ){
         var val = level[j];
-        var theta = options.startAngle + (options.counterclockwise ? 1 : -1) * dTheta * j;
+        var theta = options.startAngle + (options.counterclockwise ? -1 : 1) * dTheta * j;
 
         var p = {
           x: center.x + r * Math.cos(theta),

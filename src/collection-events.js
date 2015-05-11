@@ -24,8 +24,7 @@
     }
   });
 
-  // aliases for those folks who like old stuff:
-  $$.elesfn.bind = $$.elesfn.on;
-  $$.elesfn.unbind = $$.elesfn.off;
+  // aliases:
+  $$.define.eventAliasesOn( $$.elesfn );
   
 })( cytoscape );

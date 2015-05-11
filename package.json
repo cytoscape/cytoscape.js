@@ -1,6 +1,6 @@
 {
   "name": "cytoscape",
-  "version": "2.3.16",
+  "version": "2.4.0-unstable",
   "license": "LGPL-3.0+",
   "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
   "homepage": "http://js.cytoscape.org",
@@ -65,26 +65,31 @@
   "main": "dist/cytoscape.js",
   "scripts": {
     "test": "./node_modules/gulp/bin/gulp.js test",
-    "sniper": "biojs-sniper ." 
+    "sniper": "biojs-sniper ."
   },
   "devDependencies": {
+    "benchmark": "^1.0.0",
     "biojs-sniper": "^0.1.1",
     "bluebird": "^2.0.2",
     "browserify": "^6.3.2",
     "chai": "^1.9.0",
+    "del": "^1.1.1",
     "gulp": "^3.5.2",
-    "gulp-clean": "^0.2.4",
+    "gulp-benchmark": "^1.1.1",
     "gulp-concat": "^2.2.0",
     "gulp-cssmin": "^0.1.4",
+    "gulp-decompress": "^1.0.2",
+    "gulp-download": "0.0.1",
     "gulp-htmlmin": "^0.1.2",
     "gulp-inject": "^0.4.1",
     "gulp-jshint": "^1.5.5",
-    "gulp-mocha": "^0.4.1",
+    "gulp-mocha": "^2.0.1",
+    "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.2.0",
     "gulp-shell": "^0.2.4",
     "gulp-tap": "^0.1.1",
     "gulp-uglify": "^1.1.0",
-    "gulp-zip": "^0.1.2",
+    "gulp-zip": "^3.0.0",
     "handlebars": "^1.3.0",
     "highlight.js": "^8.0.0",
     "jshint-stylish": "^0.2.0",
@@ -92,10 +97,14 @@
     "marked": "^0.3.1",
     "mocha": "^1.17.1",
     "run-sequence": "^0.3.6",
+    "vinyl-paths": "^1.0.0",
     "vinyl-source-stream": "^1.0.0"
   },
   "sniper": {
-    "js": ["http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js", "/build/cytoscape.browserify.js"],
+    "js": [
+      "http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js",
+      "/build/cytoscape.browserify.js"
+    ],
     "first": "images"
   },
   "spm": {

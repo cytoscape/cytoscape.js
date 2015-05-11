@@ -81,7 +81,6 @@
       cy: cy,
       single: true, // indicates this is an element
       data: params.data || {}, // data object
-      layoutData: {}, // place for layouts to put calculated stats etc for mappers
       position: params.position || {}, // (x, y) position pair
       autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
       autoHeight: undefined, 
@@ -103,7 +102,7 @@
         queue: []
       },
       rscratch: {}, // object in which the renderer can store information
-      scratch: {}, // scratch objects
+      scratch: params.scratch || {}, // scratch objects
       edges: [], // array of connected edges
       children: [] // array of children
     };
@@ -318,6 +317,7 @@
 
     return new $$.Collection( cy, elesArr );
   };
+  $$.elesfn.copy = $$.elesfn.clone;
 
   $$.elesfn.restore = function( notifyRenderer ){
     var self = this;

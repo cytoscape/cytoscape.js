@@ -1,9 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Project mouse
-  CanvasRenderer.prototype.projectIntoViewport = function(clientX, clientY) {
+  CRp.projectIntoViewport = function(clientX, clientY) {
     var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
@@ -15,7 +16,7 @@
     return [x, y];
   };
 
-  CanvasRenderer.prototype.findContainerClientCoords = function() {
+  CRp.findContainerClientCoords = function() {
     var container = this.data.container;
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
@@ -23,12 +24,12 @@
     return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   };
 
-  CanvasRenderer.prototype.invalidateContainerClientCoordsCache = function(){
+  CRp.invalidateContainerClientCoordsCache = function(){
     this.containerBB = null;
   };
 
   // Find nearest element
-  CanvasRenderer.prototype.findNearestElement = function(x, y, visibleElementsOnly){
+  CRp.findNearestElement = function(x, y, visibleElementsOnly){
     var self = this;
     var eles = this.getCachedZSortedEles();
     var near = [];
@@ -224,7 +225,7 @@
   }; 
 
   // 'Give me everything from this box'
-  CanvasRenderer.prototype.getAllInBox = function(x1, y1, x2, y2) {
+  CRp.getAllInBox = function(x1, y1, x2, y2) {
     var nodes = this.getCachedNodes();
     var edges = this.getCachedEdges();
     var box = [];
@@ -338,7 +339,7 @@
    * @param node          a node
    * @return {number}     width of the node
    */
-  CanvasRenderer.prototype.getNodeWidth = function(node)
+  CRp.getNodeWidth = function(node)
   {
     return node.width();
   };
@@ -350,7 +351,7 @@
    * @param node          a node
    * @return {number}     width of the node
    */
-  CanvasRenderer.prototype.getNodeHeight = function(node)
+  CRp.getNodeHeight = function(node)
   {
     return node.height();
   };
@@ -362,7 +363,7 @@
    * @param node          a node
    * @return {String}     shape of the node
    */
-  CanvasRenderer.prototype.getNodeShape = function(node)
+  CRp.getNodeShape = function(node)
   {
     // TODO only allow rectangle for a compound node?
 //    if (node._private.style['width'].value == 'auto' ||
@@ -385,7 +386,7 @@
   };
 
 
-  CanvasRenderer.prototype.getNodePadding = function(node)
+  CRp.getNodePadding = function(node)
   {
     var left = node._private.style['padding-left'].pxValue;
     var right = node._private.style['padding-right'].pxValue;
@@ -418,13 +419,13 @@
       bottom : bottom};
   };
 
-  CanvasRenderer.prototype.zOrderSort = $$.Collection.zIndexSort;
+  CRp.zOrderSort = $$.Collection.zIndexSort;
 
-  CanvasRenderer.prototype.updateCachedZSortedEles = function(){
+  CRp.updateCachedZSortedEles = function(){
     this.getCachedZSortedEles( true );
   };
 
-  CanvasRenderer.prototype.getCachedZSortedEles = function( forceRecalc ){
+  CRp.getCachedZSortedEles = function( forceRecalc ){
     var lastNodes = this.lastZOrderCachedNodes;
     var lastEdges = this.lastZOrderCachedEdges;
     var nodes = this.getCachedNodes();
@@ -462,7 +463,7 @@
     return eles;
   };
 
-  CanvasRenderer.prototype.projectBezier = function(edge){
+  CRp.projectBezier = function(edge){
     var qbezierAt = $$.math.qbezierAt;
     var rs = edge._private.rscratch;
     var bpts = edge._private.rstyle.bezierPts = [];
@@ -522,7 +523,7 @@
     }
   };
 
-  CanvasRenderer.prototype.recalculateNodeLabelProjection = function( node ){
+  CRp.recalculateNodeLabelProjection = function( node ){ 
     var content = node._private.style['content'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -569,14 +570,16 @@
     this.applyLabelDimensions( node );
   };
 
-  CanvasRenderer.prototype.recalculateEdgeLabelProjection = function( edge ){
+  CRp.recalculateEdgeLabelProjection = function( edge ){
     var content = edge._private.style['content'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;  
     var edgeCenterX, edgeCenterY;
-    var rs = edge._private.rscratch;
-    var rstyle = edge._private.rstyle;
+    var _p = edge._private;
+    var rs = _p.rscratch;
+    var style = _p.style;
+    var rstyle = _p.rstyle;
     
     if (rs.edgeType == 'self') {
       edgeCenterX = rs.selfEdgeMidX;
@@ -588,11 +591,14 @@
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     } else if (rs.edgeType == 'haystack') {
-      var srcPos = edge._private.source._private.position;
-      var tgtPos = edge._private.target._private.position;
+      var src = _p.source;
+      var tgt = _p.target;
+      var srcPos = src._private.position;
+      var tgtPos = tgt._private.position;
+      var pts = rs.haystackPts;
 
-      edgeCenterX = (srcPos.x + rs.source.x + tgtPos.x + rs.target.x)/2;
-      edgeCenterY = (srcPos.y + rs.source.y + tgtPos.y + rs.target.y)/2;
+      edgeCenterX = ( pts[0] + pts[2] )/2;
+      edgeCenterY = ( pts[1] + pts[3] )/2;
     }
     
     textX = edgeCenterX;
@@ -607,7 +613,7 @@
     this.applyLabelDimensions( edge );
   };
 
-  CanvasRenderer.prototype.applyLabelDimensions = function( ele ){
+  CRp.applyLabelDimensions = function( ele ){
     var rs = ele._private.rscratch;
     var rstyle = ele._private.rstyle;
 
@@ -621,10 +627,11 @@
     rs.labelHeight = labelDims.height;
   };
 
-  CanvasRenderer.prototype.getLabelText = function( ele ){
+  CRp.getLabelText = function( ele ){ 
     var style = ele._private.style;
     var text = ele._private.style['content'].strValue;
     var textTransform = style['text-transform'].value;
+    var rscratch = ele._private.rscratch;
     
     if (textTransform == 'none') {
     } else if (textTransform == 'uppercase') {
@@ -633,10 +640,64 @@
       text = text.toLowerCase();
     }
 
+    if( style['text-wrap'].value === 'wrap' ){
+      //console.log('wrap'); 
+      
+      // save recalc if the label is the same as before
+      if( rscratch.labelWrapKey === rscratch.labelKey ){ 
+        // console.log('wrap cache hit');
+        return rscratch.labelWrapCachedText;
+      }
+      // console.log('wrap cache miss');
+
+      var lines = text.split('\n');
+      var maxW = style['text-max-width'].pxValue;
+      var wrappedText;
+      var wrappedLines = [];
+
+      for( var l = 0; l < lines.length; l++ ){
+        var line = lines[l];
+        var lineDims = this.calculateLabelDimensions( ele, line, 'line=' + line );
+        var lineW = lineDims.width;
+
+        if( lineW > maxW ){ // line is too long
+          var words = line.split(/\s+/); // NB: assume collapsed whitespace into single space
+          var subline = '';
+
+          for( var w = 0; w < words.length; w++ ){
+            var word = words[w];
+            var testLine = subline.length === 0 ? word : subline + ' ' + word;
+            var testDims = this.calculateLabelDimensions( ele, testLine, 'testLine=' + testLine );
+            var testW = testDims.width;
+
+            if( testW <= maxW ){ // word fits on current line
+              subline += word + ' ';
+            } else { // word starts new line
+              wrappedLines.push( subline );
+              subline = word + ' ';
+            }
+          }
+
+          // if there's remaining text, put it in a wrapped line
+          if( !subline.match(/^\s+$/) ){
+            wrappedLines.push( subline );
+          }
+        } else { // line is already short enough
+          wrappedLines.push( line );
+        }
+      } // for
+
+      rscratch.labelWrapCachedLines = wrappedLines;
+      rscratch.labelWrapCachedText = text = wrappedLines.join('\n');
+      rscratch.labelWrapKey = rscratch.labelKey;
+
+      // console.log(text)
+    } // if wrap
+
     return text;
   };
 
-  CanvasRenderer.prototype.calculateLabelDimensions = function( ele, text ){
+  CRp.calculateLabelDimensions = function( ele, text, extraKey ){
     var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
@@ -646,6 +707,11 @@
     var weight = style['font-weight'].strValue;
 
     var cacheKey = ele._private.labelKey;
+
+    if( extraKey ){
+      cacheKey += '$@$' + extraKey;
+    }
+
     var cache = r.labelDimCache || (r.labelDimCache = {});
 
     if( cache[cacheKey] ){
@@ -678,6 +744,12 @@
     ds.padding = '0';
     ds.lineHeight = '1';
 
+    if( style['text-wrap'].value === 'wrap' ){
+      ds.whiteSpace = 'pre'; // so newlines are taken into account
+    } else {
+      ds.whiteSpace = 'normal';
+    }
+
     // put label content in div
     div.textContent = text;
 
@@ -689,7 +761,7 @@
     return cache[cacheKey];
   };  
 
-  CanvasRenderer.prototype.recalculateRenderedStyle = function( eles ){
+  CRp.recalculateRenderedStyle = function( eles ){
     var edges = [];
     var nodes = [];
     var handledEdge = {};
@@ -697,6 +769,7 @@
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
       var _p = ele._private;
+      var style = _p.style;
       var rs = _p.rscratch;
       var rstyle = _p.rstyle;
       var id = _p.data.id;
@@ -707,13 +780,17 @@
       if( ele._private.group === 'nodes' ){
         var pos = _p.position;
         var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
+        var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pxValue;
+        var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pxValue;
 
-        if( !posSame || !styleSame ){
+        if( !posSame || !styleSame || !wSame || !hSame ){
           nodes.push( ele );
         }
 
         rstyle.nodeX = pos.x;
         rstyle.nodeY = pos.y;
+        rstyle.nodeW = style['width'].pxValue;
+        rstyle.nodeH = style['height'].pxValue;
       } else { // edges
 
         var srcPos = ele._private.source._private.position;
@@ -763,7 +840,7 @@
     this.recalculateLabelProjections( nodes, edges );
   };
 
-  CanvasRenderer.prototype.recalculateLabelProjections = function( nodes, edges ){
+  CRp.recalculateLabelProjections = function( nodes, edges ){
     for( var i = 0; i < nodes.length; i++ ){
       this.recalculateNodeLabelProjection( nodes[i] );
     }
@@ -773,13 +850,13 @@
     }
   };
 
-  CanvasRenderer.prototype.recalculateEdgeProjections = function( edges ){
+  CRp.recalculateEdgeProjections = function( edges ){
     this.findEdgeControlPoints( edges );
   };
 
 
   // Find edge control points
-  CanvasRenderer.prototype.findEdgeControlPoints = function(edges) {
+  CRp.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
     var cy = this.data.cy;
@@ -1222,13 +1299,16 @@
 
         // project the edge into rstyle
         this.projectBezier( edge );
+        this.recalculateEdgeLabelProjection( edge );
 
       }
     }
       
     for( var i = 0; i < haystackEdges.length; i++ ){
       var edge = haystackEdges[i];
-      var rscratch = edge._private.rscratch;
+      var _p = edge._private;
+      var rscratch = _p.rscratch;
+      var rs = rscratch;
 
       if( !rscratch.haystack ){
         var angle = Math.random() * 2 * Math.PI;
@@ -1244,17 +1324,38 @@
           x: Math.cos(angle),
           y: Math.sin(angle)
         };
-      }  
+
+      }
+
+      var src = _p.source;
+      var tgt = _p.target;
+      var srcPos = src._private.position;
+      var tgtPos = tgt._private.position;
+      var srcW = src.width();
+      var tgtW = tgt.width();
+      var srcH = src.height();
+      var tgtH = tgt.height();
+      var radius = style['haystack-radius'].value;
+      var halfRadius = radius/2; // b/c have to half width/height
+
+      rs.haystackPts = [
+        rs.source.x * srcW * halfRadius + srcPos.x,
+        rs.source.y * srcH * halfRadius + srcPos.y,
+        rs.target.x * tgtW * halfRadius + tgtPos.x,
+        rs.target.y * tgtH * halfRadius + tgtPos.y
+      ];
 
       // always override as haystack in case set to different type previously
       rscratch.edgeType = 'haystack';
       rscratch.haystack = true;
+
+      this.recalculateEdgeLabelProjection( edge );
     }
 
     return hashTable;
   };
 
-  CanvasRenderer.prototype.findEndpoints = function(edge) {
+  CRp.findEndpoints = function(edge) {
     var intersect;
 
     var source = edge.source()[0];
@@ -1330,7 +1431,7 @@
         
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
-  //      return;
+        // return;
       } else {
         rs.noArrowPlacement = false;
       }
@@ -1359,7 +1460,7 @@
       
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
-  //      return;
+       // return;
       } else {
         rs.noArrowPlacement = false;
       }
@@ -1451,7 +1552,7 @@
   };
 
   // Find adjacent edges
-  CanvasRenderer.prototype.findEdges = function(nodeSet) {
+  CRp.findEdges = function(nodeSet) {
     
     var edges = this.getCachedEdges();
     
@@ -1473,7 +1574,7 @@
     return adjacentEdges;
   };
 
-  CanvasRenderer.prototype.getArrowWidth = CanvasRenderer.prototype.getArrowHeight = function(edgeWidth) {
+  CRp.getArrowWidth = CRp.getArrowHeight = function(edgeWidth) {
     var cache = this.arrowWidthCache = this.arrowWidthCache || {};
 
     var cachedVal = cache[edgeWidth];

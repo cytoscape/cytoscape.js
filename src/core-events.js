@@ -8,8 +8,6 @@
     trigger: $$.define.trigger() // .trigger( events [, extraParams] )
   });
 
-  // aliases for those folks who like old stuff:
-  $$.corefn.bind = $$.corefn.on;
-  $$.corefn.unbind = $$.corefn.off;
+  $$.define.eventAliasesOn( $$.corefn );
 
 })( cytoscape );

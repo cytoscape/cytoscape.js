@@ -126,10 +126,28 @@ function parseSubsections( section ){
 }
 
 function populateDemo( demo ){
-  demo.viewUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
+  demo.jsbinUrl = 'http://jsbin.com/gist/' + demo.id + '?js,output';
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
   demo.githubUrl = 'https://gist.github.com/' + demo.id;
   demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
+  demo.viewUrl = 'demos/' + demo.id;
+}
+
+function compileAliases( section, fn ){
+  if( fn.pureAliases ){
+    var procdAliases = [];
+
+    for( var k = 0; k < fn.pureAliases.length; k++ ){
+      var pa = '' + fn.pureAliases[k];
+
+      procdAliases.push(a = {
+        name: pa,
+        id: section.id + '/' + pa
+      });
+    }
+
+    fn.processedPureAliases = procdAliases;
+  }
 }
 
 function compileConfig( config ){
@@ -278,6 +296,8 @@ function compileConfig( config ){
             if( format.name !== fn.name ){
               formatsHaveDiffNames = true;
             }
+
+            compileAliases( section, format );
           }
         } // if
 
@@ -285,6 +305,8 @@ function compileConfig( config ){
         if( formatsHaveDiffNames ){
           fn.aliases = true;
         }
+
+        compileAliases( section, fn );
         
       } // for
 
@@ -312,5 +334,3 @@ module.exports = function( next ){
 
   next && next();
 };
-
-

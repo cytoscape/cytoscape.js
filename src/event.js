@@ -36,6 +36,7 @@
       this.namespace = props.namespace;
       this.layout = props.layout;
       this.data = props.data;
+      this.message = props.message;
     }
 
     // Create a timestamp if incoming event doesn't have one

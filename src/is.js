@@ -2,17 +2,21 @@
 
 ;(function($$, window){ 'use strict';
 
+  var typeofstr = typeof '';
+  var typeofobj = typeof {};
+  var typeoffn = typeof function(){};
+
   $$.is = {
     defined: function(obj){
       return obj != null; // not undefined or null
     },
 
     string: function(obj){
-      return obj != null && typeof obj == typeof '';
+      return obj != null && typeof obj == typeofstr;
     },
     
     fn: function(obj){
-      return obj != null && typeof obj === typeof function(){};
+      return obj != null && typeof obj === typeoffn;
     },
     
     array: function(obj){
@@ -20,7 +24,11 @@
     },
     
     plainObject: function(obj){
-      return obj != null && typeof obj === typeof {} && !$$.is.array(obj) && obj.constructor === Object;
+      return obj != null && typeof obj === typeofobj && !$$.is.array(obj) && obj.constructor === Object;
+    },
+
+    object: function(obj){
+      return obj != null && typeof obj === typeofobj;
     },
     
     number: function(obj){
@@ -67,6 +75,14 @@
       return obj instanceof $$.Event;
     },
 
+    thread: function(obj){
+      return obj instanceof $$.Thread;
+    },
+
+    fabric: function(obj){
+      return obj instanceof $$.Fabric;
+    },
+
     emptyString: function(obj){
       if( !obj ){ // null is empty
         return true; 
@@ -100,6 +116,10 @@
         $$.is.number(obj.x1) && $$.is.number(obj.x2) &&
         $$.is.number(obj.y1) && $$.is.number(obj.y2)
       ;
+    },
+
+    promise: function(obj){
+      return $$.is.object(obj) && $$.is.fn(obj.then);
     },
 
     touch: function(){

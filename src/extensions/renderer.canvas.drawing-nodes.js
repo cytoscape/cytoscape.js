@@ -1,14 +1,16 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Draw node
-  CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
+  CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     var r = this;
     var nodeWidth, nodeHeight;
     var style = node._private.style;
     var rs = node._private.rscratch;
+    var _p = node._private;
     
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
@@ -33,6 +35,30 @@
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
+      var url = style['background-image'].value[2] ||
+        style['background-image'].value[1];
+      var image;
+
+      if (url !== undefined) {
+        
+        // get image, and if not loaded then ask to redraw when later loaded
+        image = this.getCachedImage(url, function(){
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+          
+          r.drawingImage = true;
+          
+          r.redraw();
+        });
+        
+        var prevBging = _p.backgrounding;
+        _p.backgrounding = !image.complete;
+
+        if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+          node.updateStyle( false );
+        }
+      } 
+
       // Node color & opacity
 
       var bgColor = style['background-color'].value;
@@ -42,6 +68,14 @@
       this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
       
       this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+      
+      var shadowBlur = style['shadow-blur'].pxValue;
+      var shadowOpacity = style['shadow-opacity'].value;
+      var shadowColor = style['shadow-color'].value;
+      var shadowOffsetX = style['shadow-offset-x'].pxValue;
+      var shadowOffsetY = style['shadow-offset-y'].pxValue;
+
+      this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -62,10 +96,6 @@
         }
       }
 
-      //var image = this.getCachedImage('url');
-      
-      var url = style['background-image'].value[2] ||
-        style['background-image'].value[1];
       
       var styleShape = style['shape'].strValue;
 
@@ -113,20 +143,12 @@
         context.fill();
       }
 
+      this.shadowStyle(context, 'transparent', 0); // reset for next guy
+
       if (url !== undefined) {
-        
-        // get image, and if not loaded then ask to redraw when later loaded
-        var image = this.getCachedImage(url, function(){
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          
-          r.redraw();
-        });
-        
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
-        
       } 
       
       var darkness = style['background-blacken'].value;
@@ -224,13 +246,13 @@
   };
 
   // does the node have at least one pie piece?
-  CanvasRenderer.prototype.hasPie = function(node){
+  CRp.hasPie = function(node){
     node = node[0]; // ensure ele ref
     
     return node._private.hasPie;
   };
 
-  CanvasRenderer.prototype.drawPie = function(context, node){
+  CRp.drawPie = function(context, node){
     node = node[0]; // ensure ele ref
 
     var pieSize = node._private.style['pie-size'];

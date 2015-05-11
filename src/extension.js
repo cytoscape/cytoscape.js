@@ -42,9 +42,7 @@
       layoutProto.off = $$.define.off({ layout: true });
       layoutProto.trigger = $$.define.trigger({ layout: true });
 
-      // aliases for those folks who like old stuff:
-      layoutProto.bind = layoutProto.on;
-      layoutProto.unbind = layoutProto.off;
+      $$.define.eventAliasesOn( layoutProto );
     }
 
     return $$.util.setMap({

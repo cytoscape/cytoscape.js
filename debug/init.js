@@ -1,16 +1,16 @@
-require(['cytoscape'], function(rjsCy){
-  console.log( 'requirejs cytoscape OK? ' + (rjsCy === window.cytoscape) );
-});
+// require(['cytoscape'], function(rjsCy){
+//   console.log( 'requirejs cytoscape OK? ' + (rjsCy === window.cytoscape) );
+// });
 
 $(function(){
 
-  var addRandomEles = false;        
+  var addRandomEles = false;
   var height, width;
 
   var cliques = 2;
   var numNodes = 40;
   var numEdges = 120;
-  
+
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       // .selector('node, edge')
       //   .css({
@@ -59,15 +59,15 @@ $(function(){
           'font-style': 'italic',
           'background-color': '#B7E1ED',
           'padding-left': 10,
-          'padding-right': 20,
-          'padding-top': 5,
-          'padding-bottom': 30,
+          'padding-right': 10,
+          'padding-top': 10,
+          'padding-bottom': 10,
           // 'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
-          'width': 100,
-          'height': 50,
+          'width': 10,
+          'height': 10,
           'shape': 'triangle'
           })
       .selector('edge')
@@ -114,14 +114,15 @@ $(function(){
       //     'control-point-distance': 100
       //   })
   ;
-  
+
   window.options = {
     // boxSelectionEnabled: true,
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
-    // motionBlur: true,
+    // motionBlur: false,
     // pixelRatio: 'auto',
+    // motionBlurOpacity: 0.5,
     renderer: {
       name: 'canvas',
       showFps: true
@@ -131,7 +132,7 @@ $(function(){
     //   infinite: true
     // },
     style: defaultSty,
-    
+
     elements: {
       nodes: [
         { data: { id: 'a', weight: 50 } },
@@ -139,8 +140,8 @@ $(function(){
         { data: { id: 'c', weight: 20 } },
         { data: { id: 'd', weight: 10 } },
         { data: { id: 'e', weight: 75 } }
-      ], 
-      
+      ],
+
       edges: [
         { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
@@ -162,7 +163,7 @@ $(function(){
       console.log(arguments);
     }
   };
-  
+
   function randNodeId( clique ){
     var min = numNodes * clique / cliques;
     var max = numNodes * (clique + 1) / cliques - (cliques == 1 ? 0 : 1);
@@ -171,7 +172,7 @@ $(function(){
 
     return id;
   }
-  
+
   function randShape(){
     var r = Math.random();
     var shapes = ['ellipse', 'triangle', 'rectangle', 'roundrectangle', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'];
@@ -207,7 +208,7 @@ $(function(){
         }
       });
     }
-    
+
     var j = 0;
     for(var clique = 0; clique < cliques; clique++){
       for(var i = 0; i < numEdges/cliques; i++){
@@ -227,15 +228,15 @@ $(function(){
       }
     }
   }
-  
+
   var $container = $('#cytoscape');
   var $container2 = $('#cytoscape2');
-  
+
   $container.cy(options).cy(function(){
-    
+
     height = $container.height();
     width = $container.width();
-    
+
     // test renderTo
     var $d = $('#dummy-canvas');
     if( $d.length > 0 ){
@@ -246,30 +247,30 @@ $(function(){
         cy.renderTo( dc, 0.5, { x: 0, y: 0 } );
       }, 1000/30);
     }
-    
+
     function number(group){
       var input = $('#' + group + '-number');
       var val = parseInt( input.val() );
-      
+
       if( isNaN(val) ){
         return 0;
       }
-      
+
       return val;
     }
-    
+
     function time(callback){
       var start = new Date();
       callback();
       var end = new Date();
-      
+
       $('#add-remove-time').html( (end - start) + ' ms' );
     }
-    
+
     $('#add-elements-button').click(function(){
       var n = number('nodes');
       var e = number('edges');
-      
+
       var nodes = [];
       for(var i = 0; i < n; i++){
         nodes.push({
@@ -279,17 +280,17 @@ $(function(){
         });
       }
       numNodes += n;
-      
+
       function nodeId(){
         return randNodeId( Math.round( Math.random() * (cliques - 1) ) );
       }
-      
+
       var edges = [];
       for(var i = 0; i < e; i++){
         edges.push({
           group: 'edges',
           data: {
-            id: 'e' + (i + numEdges), 
+            id: 'e' + (i + numEdges),
             weight: Math.round( Math.random() * 100 ),
             source: nodeId(),
             target: nodeId()
@@ -297,25 +298,25 @@ $(function(){
         });
       }
       numEdges += e;
-      
+
       time(function(){
         cy.add( nodes.concat(edges) );
       });
     });
 
-    
+
     $('#remove-elements-button').click(function(){
       var n = number('nodes');
       var e = number('edges');
-      
+
       time(function(){
         cy.nodes().slice(0, n).remove();
         cy.edges().slice(0, e).remove();
       });
-      
+
 
     });
-    
+
     $('#remove-selected-button').click(function(){
       cy.elements(':selected').remove();
     });
@@ -408,5 +409,5 @@ $(function(){
 
   init2();
 
-  
+
 });

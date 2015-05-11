@@ -64,7 +64,7 @@
           // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
           // (semi expensive check since it makes this function O(n^2) on context length, but worth it since overall result
           // is cached)
-          var laterCxtOverrides = false; 
+          var laterCxtOverrides = false;
           for( var k = i + 1; k < self.length; k++ ){
             var laterCxt = self[k];
             var hasLaterCxt = newCxtKey[k] === 't';
@@ -215,7 +215,9 @@
     var valign = style['text-valign'].strValue;
     var halign = style['text-valign'].strValue;
     var oWidth = style['text-outline-width'].pxValue;
-    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth;
+    var wrap = style['text-wrap'].strValue;
+    var wrapW = style['text-max-width'].pxValue;
+    _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
     _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
     var width = style['width'].pxValue;
@@ -228,7 +230,7 @@
       var cpd = style['control-point-distance'] ? style['control-point-distance'].pxValue : undefined;
       var cpw = style['control-point-weight'].value;
       var curve = style['curve-style'].strValue;
-      
+
       _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
     }
 
@@ -255,21 +257,27 @@
   //
   // for parsedProp:{ mapped: truthy }
   // the generated flattenedProp:{ mapping: prop }
-  // 
+  //
   // for parsedProp:{ bypass: true }
-  // the generated flattenedProp:{ bypassed: parsedProp } 
+  // the generated flattenedProp:{ bypassed: parsedProp }
   $$.styfn.applyParsedProperty = function( ele, parsedProp ){
     var prop = parsedProp;
     var style = ele._private.style;
     var fieldVal, flatProp;
+    var types = $$.style.types;
     var type = $$.style.properties[ prop.name ].type;
     var propIsBypass = prop.bypass;
     var origProp = style[ prop.name ];
     var origPropIsBypass = origProp && origProp.bypass;
+    var _p = ele._private;
 
     // can't apply auto to width or height unless it's a parent node
-    if( (parsedProp.name === 'height' || parsedProp.name === 'width') && parsedProp.value === 'auto' && ele.isNode() && !ele.isParent() ){
-      return false;
+    if( (parsedProp.name === 'height' || parsedProp.name === 'width') && ele.isNode() ){
+      if( parsedProp.value === 'auto' && !ele.isParent() ){
+        return false;
+      } else if( parsedProp.value !== 'auto' && ele.isParent() ){
+        prop = parsedProp = this.parse( parsedProp.name, 'auto', propIsBypass );
+      }
     }
 
     // check if we need to delete the current bypass
@@ -280,11 +288,11 @@
       if( !currentProp ){
         return true; // property is already not defined
       } else if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
-        
+
         // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
         style[ prop.name ] = currentProp.bypassed;
         return true;
-      
+
       } else {
         return false; // we're unsuccessful deleting the bypass
       }
@@ -296,14 +304,23 @@
 
     // put the property in the style objects
     switch( prop.mapped ){ // flatten the property if mapped
-    case $$.style.types.mapData:
-    case $$.style.types.mapLayoutData:
-      
-      var isLayout = prop.mapped === $$.style.types.mapLayoutData;
+    case types.mapData:
+    case types.mapLayoutData:
+    case types.mapScratch:
+
+      var isLayout = prop.mapped === types.mapLayoutData;
+      var isScratch = prop.mapped === types.mapScratch;
 
       // flatten the field (e.g. data.foo.bar)
       var fields = prop.field.split(".");
-      var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
+      var fieldVal;
+
+      if( isScratch || isLayout ){
+        fieldVal = _p.scratch;
+      } else {
+        fieldVal = _p.data;
+      }
+
       for( var i = 0; i < fields.length && fieldVal; i++ ){
         var field = fields[i];
         fieldVal = fieldVal[ field ];
@@ -346,18 +363,18 @@
           value: clr,
           strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
         };
-      
+
       } else if( type.number ){
         var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
         flatProp = this.parse( prop.name, calcValue, prop.bypass, true );
-      
+
       } else {
         return false; // can only map to colours and numbers
       }
 
       if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
         flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
-      } 
+      }
 
       if( !flatProp ){ printMappingErr(); }
       flatProp.mapping = prop; // keep a reference to the mapping
@@ -365,19 +382,27 @@
 
       break;
 
-    // direct mapping  
-    case $$.style.types.data: 
-    case $$.style.types.layoutData: 
-
-      var isLayout = prop.mapped === $$.style.types.layoutData;
+    // direct mapping
+    case types.data:
+    case types.layoutData:
+    case types.scratch:
+      var isLayout = prop.mapped === types.layoutData;
+      var isScratch = prop.mapped === types.scratch;
 
       // flatten the field (e.g. data.foo.bar)
       var fields = prop.field.split(".");
-      var fieldVal = isLayout ? ele._private.layoutData : ele._private.data;
-      for( var i = 0; i < fields.length && fieldVal; i++ ){
+      var fieldVal;
+
+      if( isScratch || isLayout ){
+        fieldVal = _p.scratch;
+      } else {
+        fieldVal = _p.data;
+      }
+
+      if( fieldVal ){ for( var i = 0; i < fields.length; i++ ){
         var field = fields[i];
         fieldVal = fieldVal[ field ];
-      }
+      } }
 
       flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
 
@@ -390,12 +415,23 @@
       if( !flatProp ){ printMappingErr(); }
       flatProp.mapping = prop; // keep a reference to the mapping
       prop = flatProp; // the flattened (mapped) property is the one we want
+
+      break;
+
+    case types.fn:
+      var fn = prop.value;
+      var fnRetVal = fn( ele );
+
+      flatProp = this.parse( prop.name, fnRetVal, prop.bypass, true );
+      flatProp.mapping = prop; // keep a reference to the mapping
+      prop = flatProp; // the flattened (mapped) property is the one we want
+
       break;
 
     case undefined:
       break; // just set the property
 
-    default: 
+    default:
       return false; // not a valid mapping
     }
 
@@ -408,12 +444,12 @@
       }
 
       style[ prop.name ] = prop; // and set
-    
+
     } else { // prop is not bypass
       if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
         origProp.bypassed = prop;
       } else { // then just replace the old prop with the new one
-        style[ prop.name ] = prop; 
+        style[ prop.name ] = prop;
       }
     }
 
@@ -475,7 +511,7 @@
         var toProp = diffProp.next != null ? diffProp.next : styProp;
         var diff = false;
 
-        if( !fromProp ){ continue; } 
+        if( !fromProp ){ continue; }
 
         // consider px values
         if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
@@ -499,12 +535,12 @@
           this.applyBypass(ele, prop, fromProp.strValue); // from val
           anyPrev = true;
         }
-        
+
       } // end if props allow ani
 
       // can't transition if there's nothing previous to transition from
       if( !anyPrev ){ return; }
-      
+
       ele._private.transitioning = true;
 
       ele.stop();
@@ -518,7 +554,7 @@
       }, {
         duration: duration,
         queue: false,
-        complete: function(){ 
+        complete: function(){
           if( !isBypass ){
             self.removeBypasses( ele, props );
           }
@@ -534,6 +570,6 @@
 
       ele._private.transitioning = false;
     }
-  }; 
+  };
 
 })( cytoscape );

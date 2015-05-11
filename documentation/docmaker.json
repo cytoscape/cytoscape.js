@@ -1,5 +1,5 @@
 {
-  "version": "2.3.16",
+  "version": "2.4.0-pre",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -24,6 +24,7 @@
   "sections": [
     {
       "name": "Demos",
+      "md": "demos",
       "demos": [
         { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
         { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
@@ -31,7 +32,7 @@
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
         { "name": "Images", "id": "aedff159b0df05ccfaa5" },
-        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },       
+        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "173313aba1f31cae49a5" },
         { "name": "Multiple instances", "id": "310dca83ba6970812dd0" },
@@ -77,34 +78,21 @@
             },
 
             {
-              "name": "cy.load",
-              "descr": "Empty the graph, add the specified elements, and reapply the initialisation layout.",
-              "formats": [
-                { "args": [
-                  { "name": "eleObjs", "descr": "An array of plain objects that specify the elements to load." },
-                  { "name": "load", "descr": "A callback function called when the graph has loaded.", "optional": true },
-                  { "name": "done", "descr": "A callback function called after the graph is loaded and just after the layout finishes.", "optional": true }
-                ] }
-              ],
-              "md": "core/load"
-            },
-
-            {
               "name": "cy.collection",
               "descr": "Return a new collection.",
               "formats": [
-                { 
+                {
                   "descr": "Get an empty collection."
                 },
 
-                { 
+                {
                   "descr": "Get a collection from elements in the graph matching the specified selector.",
                   "args": [
                     { "name": "selector", "descr": "Elements matching this selector are in the returned collection." }
-                  ] 
+                  ]
                 },
 
-                { 
+                {
                   "descr": "Get a collection from an array of elements.",
                   "args": [
                     { "name": "elesArray", "descr": "The elements in this array are in the returned collection." }
@@ -163,8 +151,8 @@
                   "name": "cy.filter",
                   "descr": "Get elements in the graph matching the specified filter function.",
                   "args": [
-                    { 
-                      "name": "function(i, ele)", 
+                    {
+                      "name": "function(i, ele)",
                       "descr": "The filter function that returns true for elements that should be returned.",
                       "fields": [
                         { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
@@ -214,6 +202,7 @@
           "fns": [
             {
               "name": "cy.on",
+              "pureAliases": ["cy.bind", "cy.listen", "cy.addListener"],
               "descr": "Bind to events that occur in the graph.",
               "formats": [
                 {
@@ -234,6 +223,21 @@
                 }
               ],
               "md": "core/on"
+            },
+
+            {
+              "name": "cy.promiseOn",
+              "pureAliases": ["cy.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the graph.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/promiseOn"
             },
 
             {
@@ -262,6 +266,7 @@
 
             {
               "name": "cy.off",
+              "pureAliases": ["cy.unbind", "cy.unlisten", "cy.removeListener"],
               "descr": "Remove event handlers.",
               "formats": [
                 {
@@ -284,6 +289,7 @@
 
             {
               "name": "cy.trigger",
+              "pureAliases": ["cy.emit"],
               "descr": "Trigger one or more events.",
               "formats": [
                 {
@@ -300,6 +306,32 @@
               "name": "cy.initrender",
               "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
               "md": "core/initrender"
+            },
+
+            {
+              "name": "cy.onRender",
+              "descr": "Run a handler function every time a frame is rendered.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "function()", "descr": "The handler function to call on each frame." }
+                  ]
+                }
+              ],
+              "md": "core/onRender"
+            },
+
+            {
+              "name": "cy.offRender",
+              "descr": "Remove handlers function bound via `cy.onRender()`.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "handler", "descr": "A reference to the handler function to remove.  All handlers are removed if this is unspecified.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "core/offRender"
             },
 
             {
@@ -324,12 +356,12 @@
           ]
         },
 
-        { 
+        {
           "name": "Viewport manipulation",
 
           "fns": [
             {
-              "name": "cy.center", 
+              "name": "cy.center",
               "descr": "Pan the graph to the centre of a collection.",
               "formats": [
                 { "descr": "Centre on all elements in the graph." },
@@ -339,20 +371,20 @@
             },
 
             {
-              "name": "cy.fit", 
+              "name": "cy.fit",
               "descr": "Pan and zooms the graph to fit to a collection.",
               "formats": [
                 { "descr": "Fit to all elements in the graph." },
                 {
-                  "descr": "Fit to the specified elements.", 
-                  "args": [ { "name": "eles", "descr": "The collection to fit to.", "optional": true }, { "name": "padding", "descr": "An amount of padding (in pixels) to have around the graph", "optional": true } ] 
+                  "descr": "Fit to the specified elements.",
+                  "args": [ { "name": "eles", "descr": "The collection to fit to.", "optional": true }, { "name": "padding", "descr": "An amount of padding (in pixels) to have around the graph", "optional": true } ]
                 }
               ],
               "md": "core/fit"
             },
 
             {
-              "name": "cy.reset", 
+              "name": "cy.reset",
               "descr": "Reset the graph to the default zoom level and panning position.",
               "formats": [
                 { "descr": "Resets the zoom and pan." }
@@ -361,7 +393,7 @@
             },
 
             {
-              "name": "cy.pan", 
+              "name": "cy.pan",
               "descr": "Get or set the panning position of the graph.",
               "formats": [
                 { "descr": "Get the current panning position." },
@@ -371,7 +403,7 @@
             },
 
             {
-              "name": "cy.panBy", 
+              "name": "cy.panBy",
               "descr": "Relatively pan the graph by a specified rendered position vector.",
               "formats": [
                 { "args": [ { "name": "renderedPosition", "descr": "The rendered position vector to pan the graph by." } ] }
@@ -416,7 +448,7 @@
             },
 
             {
-              "name": "cy.zoom", 
+              "name": "cy.zoom",
               "descr": "Get or set the zoom level of the graph.",
               "formats": [
                 { "descr": "Get the zoom level." },
@@ -424,7 +456,7 @@
                 {
                   "descr": "Set the zoom level.",
                   "args": [
-                    { 
+                    {
                       "name": "options",
                       "descr": "The options for zooming.",
                       "fields": [
@@ -640,9 +672,9 @@
               "formats": [
                 {
                   "args": [
-                    { 
-                      "name": "props", 
-                      "descr": "An object containing the properties to animate.",
+                    {
+                      "name": "anis",
+                      "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
                         { "name": "pan", "descr": "A panning position to which the graph will be animated." },
@@ -737,6 +769,7 @@
 
             {
               "name": "cy.makeLayout",
+              "pureAliases": ["cy.createLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph.",
               "formats": [
                 {
@@ -795,13 +828,39 @@
                       "fields": [
                         { "name": "bg", "descr": "The background colour of the image (transparent by default)." },
                         { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
-                        { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." }
+                        { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
+                        { "name": "maxWidth", "descr": "Specifies the scale automatically in combination with `maxHeight` such that the resultant image is no wider than `maxWidth`." },
+                        { "name": "maxHeight", "descr": "Specifies the scale automatically in combination with `maxWidth` such that the resultant image is no taller than `maxHeight`." }
                       ]
                     }
                   ]
                 }
               ],
               "md": "core/png"
+            },
+            
+            {
+              "name": "cy.jpg",
+              "pureAliases": ["cy.jpeg"],
+              "descr": "Export the current graph view as a JPG image in Base64 representation.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The export options.",
+                      "fields": [
+                        { "name": "bg", "descr": "The background colour of the image (white by default)." },
+                        { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
+                        { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
+                        { "name": "maxWidth", "descr": "Specifies the scale automatically in combination with `maxHeight` such that the resultant image is no wider than `maxWidth`." },
+                        { "name": "maxHeight", "descr": "Specifies the scale automatically in combination with `maxWidth` such that the resultant image is no taller than `maxHeight`." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "core/jpg"
             },
 
             {
@@ -847,6 +906,7 @@
 
             {
               "name": "eles.clone",
+              "pureAliases": [ "eles.copy" ],
               "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
             },
 
@@ -889,6 +949,7 @@
           "fns": [
             {
               "name": "eles.on",
+              "pureAliases": ["eles.bind", "eles.listen", "eles.addListener"],
               "descr": "Bind to events that occur on the elements.",
               "formats": [
                 {
@@ -909,6 +970,21 @@
                 }
               ],
               "md": "collection/on"
+            },
+
+            {
+              "name": "eles.promiseOn",
+              "pureAliases": ["eles.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on any of the elements in the collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                  ]
+                }
+              ],
+              "md": "collection/promiseOn"
             },
 
             {
@@ -934,7 +1010,7 @@
               ],
               "md": "collection/one"
             },
-            
+
             {
               "name": "eles.once",
               "descr": "Bind a callback function that is triggered once per event per collection.",
@@ -961,6 +1037,7 @@
 
             {
               "name": "eles.off",
+              "pureAliases": ["eles.unbind", "eles.unlisten", "eles.removeListener"],
               "descr": "Unbind one or more callback functions on the elements.",
               "formats": [
                 {
@@ -983,6 +1060,7 @@
 
             {
               "name": "eles.trigger",
+              "pureAliases": ["eles.emit"],
               "descr": "Trigger events on the elements.",
               "formats": [
                 {
@@ -993,7 +1071,7 @@
                 }
               ],
               "md": "collection/trigger"
-            }      
+            }
           ]
         },
 
@@ -1002,6 +1080,7 @@
           "fns": [
             {
               "name": "eles.data",
+              "pureAliases": [ "eles.attr" ],
               "descr": "Read and write developer-defined data associated with the elements.",
               "formatsSameFn": true,
               "formats": [
@@ -1038,6 +1117,7 @@
 
             {
               "name": "eles.removeData",
+              "pureAliases": [ "eles.removeAttr" ],
               "descr": "Remove developer-defined data associated with the elements.",
               "formats": [
                 { "descr": "Removes all mutable data fields for the elements." },
@@ -1232,7 +1312,7 @@
           "fns": [
             {
               "name": "node.position",
-              "pureAliases": [ "node.modelPosition" ],
+              "pureAliases": [ "node.modelPosition", "node.point" ],
               "descr": "Get or set the (model) position of a node.",
               "formats": [
                 {
@@ -1266,14 +1346,14 @@
 
             {
               "name": "nodes.positions",
-              "pureAliases": [ "nodes.modelPositions" ],
+              "pureAliases": [ "nodes.modelPositions", "nodes.points" ],
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
                   "descr": "Set the positions functionally.",
                   "args": [
-                    { 
-                      "name": "function(i, ele)", 
+                    {
+                      "name": "function(i, ele)",
                       "descr": "A callback function that returns the position to set for each element.",
                       "fields": [
                         { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." },
@@ -1295,6 +1375,7 @@
 
             {
               "name": "node.renderedPosition",
+              "pureAliases": [ "node.renderedPoint" ],
               "descr": "Get or set the rendered (on-screen) position of a node.",
               "formats": [
                 {
@@ -1326,6 +1407,39 @@
             },
 
             {
+              "name": "node.relativePosition",
+              "pureAliases": [ "node.relativePoint" ],
+              "descr": "Get or set the position of a node, relative to its compound parent.",
+              "formats": [
+                {
+                  "descr": "Get the entire relative position object."
+                },
+
+                {
+                  "descr": "Get the value of a specified relative posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to get." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the value of a specified relative posisition dimension.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to set." },
+                    { "name": "value", "descr": "The value to set to the dimension." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the relative position using name-value pairs in the specified object.",
+                  "args": [
+                    { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to set." }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "ele.width",
               "descr": "Get the width of the element.",
               "formats": [
@@ -1349,14 +1463,15 @@
 
             {
               "name": "eles.boundingBox",
+              "pureAliases": [ "eles.boundingbox" ],
               "descr": "Get the bounding box of the elements.",
               "formats": [
-                { 
-                  "name": "eles.boundingBox", 
+                {
+                  "name": "eles.boundingBox",
                   "descr": "Get the bounding box of the elements in model coordinates.",
                   "args": [
-                    { 
-                      "name": "options", 
+                    {
+                      "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
@@ -1365,13 +1480,22 @@
                       ]
                     }
                   ]
-                },
+                }
+              ],
+              "md": "collection/boundingBox"
+            },
+
+            {
+              "name": "eles.renderedBoundingBox",
+              "pureAliases": [ "eles.renderedBoundingbox" ],
+              "descr": "Get the rendered bounding box of the elements.",
+              "formats": [
                 {
                   "name": "eles.renderedBoundingBox",
                   "descr": "Get the bounding box of the elements in rendered coordinates.",
                   "args": [
-                    { 
-                      "name": "options", 
+                    {
+                      "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
@@ -1406,7 +1530,7 @@
               "descr": "Disallow the user to grab the nodes.",
               "md": "collection/ungrabify"
             },
-            
+
             {
               "name": "node.locked",
               "descr": "Get whether a node is locked, meaning that its position can not be changed."
@@ -1453,6 +1577,7 @@
 
             {
               "name": "eles.makeLayout",
+              "pureAliases": ["eles.createLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
               "formats": [
                 {
@@ -1485,6 +1610,7 @@
 
             {
               "name": "eles.unselect",
+              "pureAliases": ["eles.deselect"],
               "descr": "Make the elements not selected (NB other elements outside the collection are not affected).",
               "md": "collection/unselect"
             },
@@ -1573,24 +1699,24 @@
             },
 
             {
-              "name": "eles.css",
-              "pureAliases": [ "eles.style" ],
+              "name": "eles.style",
+              "pureAliases": [ "eles.css", "eles.bypass" ],
               "descr": "Get the style of the element, or override the style of the elements.",
               "formatsSameFn": true,
               "formats": [
                 {
-                  "name": "ele.css",
+                  "name": "ele.style",
                   "descr": "Get a name-value pair object containing visual style properties and their values for the element."
                 },
 
                 {
-                  "name": "ele.css",
+                  "name": "ele.style",
                   "descr": "Get a particular style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
                 },
 
                 {
-                  "name": "eles.css",
+                  "name": "eles.style",
                   "descr": "Set the specified visual style property for the elements.",
                   "args": [
                     { "name": "name", "descr": "The name of the property to set." },
@@ -1599,17 +1725,17 @@
                 },
 
                 {
-                  "name": "eles.css",
+                  "name": "eles.style",
                   "descr": "Set several visual style properties at once for the elements.",
                   "args": [ { "name": "props", "descr": "An object with name-value pairs representing properties to set on the elements." } ]
                 }
               ],
-              "md": "collection/css"
+              "md": "collection/style"
             },
 
             {
-              "name": "eles.removeCss",
-              "pureAliases": [ "eles.removeStyle" ],
+              "name": "eles.removeStyle",
+              "pureAliases": [ "eles.removeCss", "eles.removeBypass" ],
               "descr": "Removes overridden style of the elements.",
               "formats": [
                 {
@@ -1624,8 +1750,8 @@
             },
 
             {
-              "name": "ele.renderedCss",
-              "pureAliases": [ "eles.renderedStyle" ],
+              "name": "ele.renderedStyle",
+              "pureAliases": [ "eles.renderedCss" ],
               "descr": "Get the style of the element in rendered dimensions.",
               "formats": [
                 {
@@ -1637,16 +1763,6 @@
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
                 }
               ]
-            },
-
-            {
-              "name": "eles.show",
-              "descr": "Override the style of the elements such that they are visible (i.e. `display: element`)."
-            },
-
-            {
-              "name": "eles.hide",
-              "descr": "Override the style of the elements such that they are hidden (i.e. `display: none`)."
             },
 
             {
@@ -1684,13 +1800,13 @@
               "formats": [
                 {
                   "args": [
-                    { 
-                      "name": "props", 
-                      "descr": "An object containing the properties to animate.",
+                    {
+                      "name": "anis",
+                      "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
-                        { "name": "css", "descr": "An object containing name-value pairs of style properties to animate." }
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
                       ]
                     },
 
@@ -1776,6 +1892,7 @@
 
             {
               "name": "eles.allAreNeighbors",
+              "pureAliases": ["eles.allAreNeighbours"],
               "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
               "formats": [
                 {
@@ -1973,7 +2090,8 @@
           "name": "Building & filtering",
           "fns": [
             {
-              "name": "eles.add",
+              "name": "eles.union",
+              "pureAliases": [ "eles.add", "eles.or", "eles['u']", "eles['+']", "eles['|']" ],
               "descr": "Get a new collection, resulting from adding the collection with another one",
               "formats": [
                 {
@@ -1994,11 +2112,12 @@
                   ]
                 }
               ],
-              "md": "collection/add"
+              "md": "collection/union"
             },
 
             {
-              "name": "eles.not",
+              "name": "eles.difference",
+              "pureAliases": [ "eles.not", "eles.relativeComplement", "eles['\\\\']", "eles['!']", "eles['-']" ],
               "descr": "Get a new collection, resulting from the collection without some specified elements.",
               "formats": [
                 {
@@ -2013,11 +2132,19 @@
                   ]
                 }
               ],
-              "md": "collection/not"
+              "md": "collection/difference"
             },
 
             {
-              "name": "eles.intersect",
+              "name": "eles.absoluteComplement",
+              "pureAliases": [ "eles.abscomp", "eles.complement" ],
+              "descr": "Get all elements in the graph that are not in the calling collection.",
+              "md": "collection/absoluteComplement"
+            },
+
+            {
+              "name": "eles.intersection",
+              "pureAliases": [ "eles.intersect", "eles.and", "eles['n']", "eles['&']", "eles['.']" ],
               "descr": "Get the elements in both this collection and another specified collection.",
               "formats": [
                 {
@@ -2032,7 +2159,46 @@
                   ]
                 }
               ],
-              "md": "collection/intersect"
+              "md": "collection/intersection"
+            },
+
+            {
+              "name": "eles.symmetricDifference",
+              "pureAliases": [ "eles.symdiff", "eles.xor", "eles['^']", "eles['(+)']", "eles['(-)']" ],
+              "descr": "Get the elements that are in the calling collection or the passed collection but not in both.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to apply the symmetric difference with." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements to apply the symmetric difference with.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ],
+              "md": "collection/symmetricDifference"
+            },
+
+            {
+              "name": "eles.diff",
+              "descr": "Perform a traditional left/right diff on the two collections.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements on the right side of the diff." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements on the right side of the diff.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ],
+              "md": "collection/diff"
             },
 
             {
@@ -2082,7 +2248,8 @@
             },
 
             {
-              "name": "eles.stdFilter",
+              "name": "eles.filterFn",
+              "pureAliases": ["eles.fnFilter", "eles.stdFilter"],
               "descr": "Get a new collection containing elements that are accepted by the specified filter, using an implementation like the standard array namesake.",
               "formats": [
                 {
@@ -2104,7 +2271,7 @@
                   ]
                 }
               ],
-              "md": "collection/stdFilter"
+              "md": "collection/filterFn"
             },
 
             {
@@ -2197,7 +2364,7 @@
               ],
               "md": "collection/max"
             }
-            
+
           ]
         },
 
@@ -2210,6 +2377,7 @@
               "formats": [
                 {
                   "name": "eles.neighborhood",
+                  "pureAliases": ["eles.neighbourhood"],
                   "descr": "Get the open neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2218,6 +2386,7 @@
 
                 {
                   "name": "eles.openNeighborhood",
+                  "pureAliases": ["eles.openNeighbourhood"],
                   "descr": "Get the open neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2226,6 +2395,7 @@
 
                 {
                   "name": "eles.closedNeighborhood",
+                  "pureAliases": ["eles.closedNeighbourhood"],
                   "descr": "Get the closed neighbourhood of the elements.",
                   "args": [
                     { "name": "selector", "descr": "An optional selector that is used to filter the resultant collection.", "optional": true }
@@ -2467,9 +2637,12 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                      { "name": "visit: function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                      { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                        { "name": "v", "descr": "The current node." },
+                        { "name": "e", "descr": "The edge connecting the previous node to the current node." },
+                        { "name": "u", "descr": "The previous node." }
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
@@ -2478,9 +2651,12 @@
                 {
                   "args": [
                     { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                      { "name": "v", "descr": "The current node." },
+                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
+                      { "name": "u", "descr": "The previous node." }
                     ] },
                     { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
@@ -2500,7 +2676,10 @@
                       { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
                       { "name": "visit: function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                        { "name": "v", "descr": "The current node." },
+                        { "name": "e", "descr": "The edge connecting the previous node to the current node." },
+                        { "name": "u", "descr": "The previous node." }
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
@@ -2511,7 +2690,10 @@
                     { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
                     { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
+                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                      { "name": "v", "descr": "The current node." },
+                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
+                      { "name": "u", "descr": "The previous node." }
                     ] },
                     { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
@@ -2565,7 +2747,7 @@
 
             {
               "name": "eles.floydWarshall",
-              "descr": "Perform Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
+              "descr": "Perform the Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
               "formats": [
                 {
                   "args": [
@@ -2581,7 +2763,7 @@
 
             {
               "name": "eles.bellmanFord",
-              "descr": "Perform Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
+              "descr": "Perform the Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2594,7 +2776,7 @@
                 }
               ],
               "md": "collection/bellmanFord"
-            }, 
+            },
 
             {
               "name": "eles.kruskal",
@@ -2613,14 +2795,14 @@
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
-            }, 
+            },
 
             {
               "name": "eles.pageRank",
               "descr": "Rank the nodes in the collection using the Page Rank algorithm.",
               "formats": [
                 {
-                  "args": [ 
+                  "args": [
                     { "name": "options", "fields": [
                       { "name": "dampingFactor", "descr": "Numeric parameter for the algorithm.", "optional": true},
                       { "name": "precision", "descr": "Numeric parameter that represents the required precision.", "optional": true },
@@ -2630,6 +2812,95 @@
                 }
               ],
               "md": "collection/pageRank"
+            },
+
+            {
+              "name": "eles.degreeCentrality",
+              "pureAliases": ["eles.dc"],
+              "descr": "Considering only the elements in the calling collection, calculate the degree centrality of the specified root node.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) for which the centrality calculation is made." },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "alpha", "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/degreeCentrality"
+            },
+
+            {
+              "name": "eles.degreeCentralityNormalized",
+              "pureAliases": ["eles.dcn", "eles.degreeCentralityNormalised"],
+              "descr": "Considering only the elements in the calling collection, calculate the normalised degree centrality of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "alpha", "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/degreeCentralityNormalized"
+            },
+
+            {
+              "name": "eles.closenessCentrality",
+              "pureAliases": ["eles.cc"],
+              "descr": "Considering only the elements in the calling collection, calculate the closeness centrality of the specified root node.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) for which the centrality calculation is made." },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/closenessCentrality"
+            },
+
+            {
+              "name": "eles.closenessCentralityNormalized",
+              "pureAliases": ["eles.ccn", "eles.closenessCentralityNormalised"],
+              "descr": "Considering only the elements in the calling collection, calculate the closeness centrality of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/closenessCentralityNormalized"
+            },
+
+            {
+              "name": "eles.betweennessCentrality",
+              "pureAliases": ["eles.bc"],
+              "descr": "Considering only the elements in the calling collection, calculate the betweenness centrality of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/betweennessCentrality"
             }
 
           ]
@@ -2746,7 +3017,7 @@
                 }
               ]
             }
-            
+
           ]
         }
 
@@ -2834,6 +3105,13 @@
         },
 
         {
+          "md": "layouts/spread",
+          "layout": {
+            "name": "spread"
+          }
+        },
+
+        {
           "md": "layouts/arbor",
           "layout": {
             "name": "arbor"
@@ -2872,6 +3150,7 @@
           "fns": [
             {
               "name": "layout.on",
+              "pureAliases": ["layout.bind", "layout.listen", "layout.addListener"],
               "descr": "Bind to events that are emitted by the layout.",
               "formats": [
                 {
@@ -2890,6 +3169,20 @@
                 }
               ],
               "md": "layout/on"
+            },
+
+            {
+              "name": "layout.promiseOn",
+              "pureAliases": ["layout.pon"],
+              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the layout.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "events", "descr": "A space separated list of event names." }
+                  ]
+                }
+              ],
+              "md": "layout/promiseOn"
             },
 
             {
@@ -2916,6 +3209,7 @@
 
             {
               "name": "layout.off",
+              "pureAliases": ["layout.unbind", "layout.unlisten", "layout.removeListener"],
               "descr": "Remove event handlers on the layout.",
               "formats": [
                 {
@@ -2936,6 +3230,7 @@
 
             {
               "name": "layout.trigger",
+              "pureAliases": ["layout.emit"],
               "descr": "Trigger one or more events on the layout.",
               "formats": [
                 {
@@ -2968,7 +3263,7 @@
           "descr": "A plugin to enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation."
         },
 
-        { 
+        {
           "name": "cxtmenu",
           "github": "cytoscape/cytoscape.js-cxtmenu",
           "descr": "A circular context menu."
@@ -2977,29 +3272,29 @@
         {
           "name": "edgehandles",
           "github": "cytoscape/cytoscape.js-edgehandles",
-          "descr": "UI for connecting nodes with edges." 
+          "descr": "UI for connecting nodes with edges."
         },
 
-        { 
+        {
           "name": "navigator",
           "github": "cytoscape/cytoscape.js-navigator",
           "descr": "A bird's eye view widget of the graph."
         },
 
-        { 
-          "name": "noderesize", 
+        {
+          "name": "noderesize",
           "github": "curupaco/cytoscape.js-noderesize",
           "descr": "A plugin that creates a node resize control."
         },
 
-        { 
-          "name": "panzoom", 
+        {
+          "name": "panzoom",
           "github": "cytoscape/cytoscape.js-panzoom",
           "descr": "A panzoom UI widget."
         },
 
-        { 
-          "name": "qtip", 
+        {
+          "name": "qtip",
           "github": "cytoscape/cytoscape.js-qtip",
           "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
         },

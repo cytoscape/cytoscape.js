@@ -25,7 +25,6 @@
 
       scale = options.scale;
     } else if( $$.is.number(options.maxWidth) || $$.is.number(options.maxHeight) ){
-      var maxScale = scale;
       var maxScaleW = Infinity;
       var maxScaleH = Infinity;
 

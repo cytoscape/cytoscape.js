@@ -50,12 +50,12 @@
     source = startNode = edge._private.source;
     target = endNode = edge._private.target;
 
-    var targetPos = target._private.position;
-    var targetW = target.width();
-    var targetH = target.height();
-    var sourcePos = source._private.position;
-    var sourceW = source.width();
-    var sourceH = source.height();
+    // var targetPos = target._private.position;
+    // var targetW = target.width();
+    // var targetH = target.height();
+    // var sourcePos = source._private.position;
+    // var sourceW = source.width();
+    // var sourceH = source.height();
 
 
     var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
@@ -75,8 +75,8 @@
     // }
     
     if( rs.edgeType === 'haystack' ){
-      var radius = style['haystack-radius'].value;
-      var halfRadius = radius/2; // b/c have to half width/height
+      // var radius = style['haystack-radius'].value;
+      // var halfRadius = radius/2; // b/c have to half width/height
 
       this.drawStyledEdge(
         edge, 

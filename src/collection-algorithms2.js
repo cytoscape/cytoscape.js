@@ -20,11 +20,11 @@
     aStar: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Reconstructs the path from Start to End, acumulating the result in pathAcum
       var reconstructPath = function(start, end, cameFromMap, pathAcum) {
@@ -73,11 +73,11 @@
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       // logDebug("Starting aStar..."); 
       var cy = this._private.cy;
@@ -245,19 +245,19 @@
     floydWarshall: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting floydWarshall..."); 
 
       var cy = this._private.cy;
@@ -454,19 +454,19 @@
     bellmanFord: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting bellmanFord..."); 
 
       // Weight function - optional
@@ -661,11 +661,11 @@
     kargerStein: function(options) {
       options = options || {};
       
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Function which colapses 2 (meta) nodes into one
       // Updates the remaining edge lists
@@ -736,11 +736,11 @@
 
       // Parse options
       // debug - optional
-      if (options != null && options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options != null && options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting kargerStein..."); 
 
       var cy = this._private.cy;
@@ -859,20 +859,20 @@
         }
       };
       
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
       
       // Parse options
       // debug - optional
-      if (options != null && 
-        options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options != null && 
+      //   options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting pageRank..."); 
 
       // dampingFactor - optional
@@ -1045,19 +1045,19 @@
     degreeCentralityNormalized: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       // directed - optional
       if (options.directed != null) {
@@ -1096,7 +1096,7 @@
 
             return degrees[node] / maxDegree;
           }
-        }
+        };
       } else {
         var indegrees = {};
         var outdegrees = {};
@@ -1142,7 +1142,7 @@
             return outdegrees[node] / maxOutdegree;
           }
 
-        }
+        };
       }
 
     }, // degreeCentralityNormalized
@@ -1165,19 +1165,19 @@
 
       var callingEles = this;
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       logDebug("Starting degree centrality...");
 
@@ -1208,7 +1208,7 @@
 
       // alpha - optional
       if (options.alpha != null && $$.is.number(options.alpha)) {
-        var alpha = options.alpha
+        var alpha = options.alpha;
       } else {
         alpha = 0;
       }
@@ -1263,19 +1263,19 @@
     closenessCentralityNormalized: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       logDebug("Starting closeness centrality...");
 
@@ -1311,7 +1311,7 @@
 
           return closenesses[node] / maxCloseness;
         }
-      }
+      };
     },
     // Implemented from pseudocode from wikipedia
     // options => options object
@@ -1322,19 +1322,19 @@
     closenessCentrality: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       logDebug("Starting closeness centrality...");
 
@@ -1392,19 +1392,19 @@
     betweennessCentrality: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       logDebug("Starting betweenness centrality...");
 

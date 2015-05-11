@@ -6,14 +6,19 @@
 
 (function($$) { 'use strict';
 
-  function CanvasRenderer(options) {
-    
-    CanvasRenderer.CANVAS_LAYERS = 5;
-    CanvasRenderer.SELECT_BOX = 0;
-    CanvasRenderer.DRAG = 2;
-    CanvasRenderer.NODE = 4;
-    CanvasRenderer.TEXTURE_BUFFER = 0;
-    CanvasRenderer.BUFFER_COUNT = 2;
+  CanvasRenderer.CANVAS_LAYERS = 3;
+  //
+  CanvasRenderer.SELECT_BOX = 0;
+  CanvasRenderer.DRAG = 1;
+  CanvasRenderer.NODE = 2;
+
+  CanvasRenderer.BUFFER_COUNT = 3;
+  //
+  CanvasRenderer.TEXTURE_BUFFER = 0;
+  CanvasRenderer.MOTIONBLUR_BUFFER_NODE = 1;
+  CanvasRenderer.MOTIONBLUR_BUFFER_DRAG = 2;
+
+  function CanvasRenderer(options) {  
 
     this.options = options;
 
@@ -99,9 +104,16 @@
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
+    this.motionBlurEnabled = options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
+    this.motionBlurOpacity = options.motionBlurOpacity;
+    this.motionBlurTransparency = 1 - this.motionBlurOpacity;
+    this.motionBlurPxRatio = 1;
+    this.mbPxRBlurry = 1; //0.8;
+    this.minMbLowQualFrames = 4;
+    this.fullQualityMb = false;
+    this.clearedForMotionBlur = [];
     this.tapThreshold = options.tapThreshold;
     this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
     this.tapholdDuration = 500;

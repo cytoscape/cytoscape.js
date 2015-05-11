@@ -63,5 +63,7 @@
     }
     
   });
+
+  $$.corefn.createLayout = $$.corefn.makeLayout;
   
 })( cytoscape );

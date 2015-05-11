@@ -259,7 +259,10 @@
               };
 
               for( var j = 0; j < all.length; j++ ){
-                all[j]._private.listeners.push( listener );
+                var _p = all[j]._private;
+
+                _p.listeners = _p.listeners || [];
+                _p.listeners.push( listener );
               }
             }
           } // for events array
@@ -268,6 +271,33 @@
         return self; // maintain chaining
       }; // function
     }, // on
+
+    eventAliasesOn: function( proto ){
+      var p = proto;
+
+      p.addListener = p.listen = p.bind = p.on;
+      p.removeListener = p.unlisten = p.unbind = p.off;
+      p.emit = p.trigger;
+
+      // this is just a wrapper alias of .on()
+      p.pon = p.promiseOn = function( events, selector ){
+        var self = this;
+        var args = Array.prototype.slice.call( arguments, 0 );
+
+        return new $$.Promise(function( resolve, reject ){
+          var callback = function( e ){
+            self.off.apply( self, offArgs );
+
+            resolve( e );
+          };
+
+          var onArgs = args.concat([ callback ]);
+          var offArgs = onArgs.concat([]);
+
+          self.on.apply( self, onArgs );
+        });
+      };
+    },
 
     off: function offImpl( params ){
       var defaults = {
@@ -318,7 +348,7 @@
               var namespace = match[2] ? match[2] : undefined;
 
               for( var i = 0; i < all.length; i++ ){ //
-                var listeners = all[i]._private.listeners;
+                var listeners = all[i]._private.listeners = all[i]._private.listeners || [];
 
                 for( var j = 0; j < listeners.length; j++ ){
                   var listener = listeners[j];
@@ -354,8 +384,8 @@
         var eventsIsString = $$.is.string(events);
         var eventsIsObject = $$.is.plainObject(events);
         var eventsIsEvent = $$.is.event(events);
-        var cy = this._private.cy || this;
-        var hasCompounds = cy.hasCompoundNodes();
+        var cy = this._private.cy || ( $$.is.core(this) ? this : null );
+        var hasCompounds = cy ? cy.hasCompoundNodes() : false;
 
         if( eventsIsString ){ // then make a plain event object for each event name
           var evts = events.split(/\s+/);
@@ -393,7 +423,7 @@
           
           for( var j = 0; j < all.length; j++ ){ // for each
             var triggerer = all[j];
-            var listeners = triggerer._private.listeners;
+            var listeners = triggerer._private.listeners = triggerer._private.listeners || [];
             var triggererIsElement = $$.is.element(triggerer);
             var bubbleUp = triggererIsElement || params.layout;
 

@@ -134,11 +134,13 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 * **`:unlocked`** : Matches elements that aren't locked.
 
 
-**Visibility**
+**Style**
 
 * **`:visible`** : Matches elements that are visible (i.e. `display: element` and `visibility: visible`).
 * **`:hidden`** : Matches elements that are hidden (i.e. `display: none` or `visibility: hidden`).
 * **`:transparent`** : Matches elements that are transparent (i.e. `opacity: 0` for self or parents).
+* **`:backgrounding`** : Matches an element if its background image is currently loading.
+* **`:nonbackgrounding`** : Matches an element if its background image not currently loading; i.e. there is no image or the image is already loaded).
 
 
 **User interaction:**

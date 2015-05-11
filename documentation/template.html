@@ -4,10 +4,13 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, Bower, npm, jQuery, and plain JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/io.js, AMD/Require.js, npm, Bower, spm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
+
+		<link rel="shortcut icon" href="img/cytoscape-logo.ico" />
+		<link rel="shortcut icon" href="img/cytoscape-logo.svg" type="image/svg" />
 
 		<title>Cytoscape.js</title>
 
@@ -23,14 +26,28 @@
 	<body>
 
 		<div id="content">
+			
+			<a id="open-navigation" class="activatable"><span class="icon-reorder"></span></a>
+			<div id="open-navigation-bg"></div>
 
-			<h1 id="top" class="title">Cytoscape.js <span class="version">{{version}}</span></h1>
-			<div class="subtitle">Graph theory (a.k.a. network) library for analysis and visualisation (compatible with <a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>, <a target="_blank" href="http://requirejs.org">AMD/Require.js</a>, <a target="_blank" href="http://jquery.com/">jQuery</a>, <a target="_blank" href="http://bower.io">Bower</a>, <a target="_blank" href="http://npmjs.org">npm</a>, and plain JavaScript)</div>
+			<h1 id="top" class="title">Cytoscape.js</h1>
+			<div class="subtitle">
+				Graph theory (a.k.a. network) library for analysis and visualisation
+				(compatible with 
+				<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>,
+				<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
+				<a target="_blank" href="http://jquery.com/">jQuery</a>,
+				<a target="_blank" href="http://npmjs.org">npm</a>,
+				<a target="_blank" href="http://bower.io">Bower</a>,
+				<a target="_blank" href="http://spmjs.io">spm</a>,
+				<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
+				and plain JS/JavaScript)
+			</div>
 			
 			<div class="buttons-subtitle">
-				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> View on GitHub</a>
+				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download {{version}}</a>
 			</div>
 
 			<div class="links">
@@ -51,6 +68,10 @@
 			</div>
 			
 			<div class="links likes">
+				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a> 
+			</div>
+			
+			<div class="links likes">
 				<span class="like-label">Want to participate in our student programme to help make improvements and add new features?</span>&nbsp;|&nbsp;<form action="http://nrnb.org/academy.html" method="get" target="_blank">
 					<button type="submit" class="link"><i class="icon-plus"></i> Join as a student</button>
 				</form>&nbsp;|&nbsp;<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
@@ -61,27 +82,6 @@
 				
 				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
 			</div>
-
-			<!--
-			<p>This is how easy it is to get started with Cytoscape.js.  This code creates the instance you see on the bottom-right, which is used for API examples throughout the documentation:</p>
-
-			<div id="demo-source" class="collapsed">
-				<div class="expander">
-					<div class="text">
-						<span class="icon-arrow-down"></span> Show all the code...
-					</div>
-				</div>
-
-				<div class="collapser">
-					<div class="text">
-						<span class="icon-arrow-up"></span> Less code...
-					</div>
-				</div>
-
-
-				<pre><code>{{& demojs}}</code></pre>
-			</div>
-			-->
 
 			<div id="documentation">
 			{{#each sections}}
@@ -131,12 +131,15 @@
 							</a>
 
 							<div class="gallery-title">
-								<span class="gallery-name">{{name}}</span>
+								<span class="gallery-name">{{name}}</span><br />
+								<span class="gallery-jsbin">
+									<a target="_blank"href="{{jsbinUrl}}"><span class="icon-code"></span></a>
+								</span>
 								<span class="gallery-download">
 									<a href="{{downloadUrl}}"><span class="icon-download-alt"></span></a>
 								</span>
 								<span class="gallery-github">
-									<a href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
+									<a target="_blank" href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
 								</span>
 							</div>
 							
@@ -182,13 +185,13 @@
 						<div class="function">
 							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
 							
-							{{#if pureAliases}}
+							{{#if processedPureAliases}}
 							<div class="pure-aliases">
 								<span class="important-indicator"></span> Aliases:
 
-								{{#each pureAliases}}
+								{{#each processedPureAliases}}
 									<span class="pure-alias">
-										<span class="pure-alias-name">{{this}}()</span><span class="pure-alias-comma">,</span>
+										<code id="{{id}}" class="pure-alias-name">{{name}}()</code><span class="pure-alias-comma">,</span>
 									</span>
 								{{/each}}
 							</div>
@@ -201,10 +204,23 @@
 								{{#each formats}}
 									<div class="format">
 										{{#if args}}
-											<div class="name">{{name}}( {{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}} )</div>
+											<div class="name">{{name}}( <span class="args-summary">{{#each args}}{{#if optional}} [{{/if}}<span class="comma">, </span>{{{name}}}{{#if optional}}]{{/if}}{{/each}}</span> )</div>
 										{{else}}
 											<div class="name">{{name}}()</div>
 										{{/if}}
+
+										{{#if processedPureAliases}}
+										<div class="pure-aliases">
+											<span class="important-indicator"></span> Aliases:
+
+											{{#each processedPureAliases}}
+												<span class="pure-alias">
+													<span id="{{id}}" class="pure-alias-name">{{name}}()</span><span class="pure-alias-comma">,</span>
+												</span>
+											{{/each}}
+										</div>
+										{{/if}}
+										
 										<div class="descr">{{{descr}}}</div>
 										<ul class="args">
 											{{#each args}}

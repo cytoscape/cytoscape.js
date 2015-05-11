@@ -676,4 +676,292 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       expect(Math.abs(sum - 1)).to.be.below(0.0001);
   });
 
+  it('eles.degreeCentrality() unweighted undirected alpha = 0', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        directed: false,
+        alpha: 0
+      });
+    });
+
+    expect( res["dc_a"].degree ).to.equal(2);
+    expect( res["dc_b"].degree ).to.equal(3);
+    expect( res["dc_c"].degree ).to.equal(3);
+    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_e"].degree ).to.equal(4);
+  });
+
+  it('eles.degreeCentrality() unweighted undirected alpha = 1', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        directed: false,
+        alpha: 1
+      });
+    });
+    // Changing alpha will not change the expectations because graph is unweighted
+    expect( res["dc_a"].degree ).to.equal(2);
+    expect( res["dc_b"].degree ).to.equal(3);
+    expect( res["dc_c"].degree ).to.equal(3);
+    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_e"].degree ).to.equal(4);
+  });
+
+  it('eles.degreeCentrality() weighted undirected alpha = 0', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: false,
+        alpha: 0
+      });
+    });
+
+    expect( res["dc_a"].degree ).to.equal(2);
+    expect( res["dc_b"].degree ).to.equal(3);
+    expect( res["dc_c"].degree ).to.equal(3);
+    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_e"].degree ).to.equal(4);
+  });
+
+  it('eles.degreeCentrality() weighted undirected alpha = 1', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: false,
+        alpha: 1
+      });
+    });
+
+    expect( res["dc_a"].degree ).to.equal(4);
+    expect( res["dc_b"].degree ).to.equal(12);
+    expect( res["dc_c"].degree ).to.equal(13);
+    expect( res["dc_d"].degree ).to.equal(9);
+    expect( res["dc_e"].degree ).to.equal(18);
+  });
+
+  it('eles.degreeCentrality() unweighted directed alpha = 0', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        directed: true,
+        alpha: 0
+      });
+    });
+
+    expect( res["dc_a"].indegree ).to.equal(0);
+    expect( res["dc_b"].indegree ).to.equal(1);
+    expect( res["dc_c"].indegree ).to.equal(1);
+    expect( res["dc_d"].indegree ).to.equal(1);
+    expect( res["dc_e"].indegree ).to.equal(4);
+
+    expect( res["dc_a"].outdegree ).to.equal(2);
+    expect( res["dc_b"].outdegree ).to.equal(2);
+    expect( res["dc_c"].outdegree ).to.equal(2);
+    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_e"].outdegree ).to.equal(0);
+  });
+
+  it('eles.degreeCentrality() unweighted directed alpha = 1', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        directed: true,
+        alpha: 1
+      });
+    });
+    // Changing alpha will not change the expectations because graph is unweighted
+    expect( res["dc_a"].indegree ).to.equal(0);
+    expect( res["dc_b"].indegree ).to.equal(1);
+    expect( res["dc_c"].indegree ).to.equal(1);
+    expect( res["dc_d"].indegree ).to.equal(1);
+    expect( res["dc_e"].indegree ).to.equal(4);
+
+    expect( res["dc_a"].outdegree ).to.equal(2);
+    expect( res["dc_b"].outdegree ).to.equal(2);
+    expect( res["dc_c"].outdegree ).to.equal(2);
+    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_e"].outdegree ).to.equal(0);
+  });
+
+  it('eles.degreeCentrality() weighted directed alpha = 0', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: true,
+        alpha: 0
+      });
+    });
+
+    expect( res["dc_a"].indegree ).to.equal(0);
+    expect( res["dc_b"].indegree ).to.equal(1);
+    expect( res["dc_c"].indegree ).to.equal(1);
+    expect( res["dc_d"].indegree ).to.equal(1);
+    expect( res["dc_e"].indegree ).to.equal(4);
+
+    expect( res["dc_a"].outdegree ).to.equal(2);
+    expect( res["dc_b"].outdegree ).to.equal(2);
+    expect( res["dc_c"].outdegree ).to.equal(2);
+    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_e"].outdegree ).to.equal(0);
+  });
+
+  it('eles.degreeCentrality() weighted directed alpha = 1', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().degreeCentrality({ 
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: true,
+        alpha: 1
+      });
+    });
+
+    expect( res["dc_a"].indegree ).to.equal(0);
+    expect( res["dc_b"].indegree ).to.equal(3);
+    expect( res["dc_c"].indegree ).to.equal(5);
+    expect( res["dc_d"].indegree ).to.equal(2);
+    expect( res["dc_e"].indegree ).to.equal(18);
+
+    expect( res["dc_a"].outdegree ).to.equal(4);
+    expect( res["dc_b"].outdegree ).to.equal(9);
+    expect( res["dc_c"].outdegree ).to.equal(8);
+    expect( res["dc_d"].outdegree ).to.equal(7);
+    expect( res["dc_e"].outdegree ).to.equal(0);
+  });
+
+  it('eles.closenessCentrality() unweighted undirected', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({root: ele});
+    });
+
+    expect( res["dc_a"] ).to.equal(3);
+    expect( res["dc_b"] ).to.equal(3.5);
+    expect( res["dc_c"] ).to.equal(3.5);
+    expect( res["dc_d"] ).to.equal(3);
+    expect( res["dc_e"] ).to.equal(4);
+  });
+
+  it('eles.closenessCentrality() unweighted directed', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        directed: true
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(2.83); //Rounded to 2 decimals in order to handle irrational number
+    expect( res["dc_b"] ).to.equal(2.5);
+    expect( res["dc_c"] ).to.equal(2);
+    expect( res["dc_d"] ).to.equal(1);
+    expect( res["dc_e"] ).to.equal(0);
+  });
+
+  it('eles.closenessCentrality() weighted undirected', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        }
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.60); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(0.93);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(1.01);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(0.91);
+    expect( +res["dc_e"].toFixed(2) ).to.equal(1.56);
+  });
+
+  it('eles.closenessCentrality() weighted directed', function(){
+    var res = {};
+    cy.nodes().forEach(function (ele) {
+      res["dc_" + ele.id()] = cy.elements().closenessCentrality({
+        root: ele,
+        weight: function(){
+          return this.data('weight');
+        },
+        directed: true
+      });
+    });
+
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.56); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(0.59);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(0.67);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(0.14);
+    expect( res["dc_e"] ).to.equal(0);
+  });
+
+  it('eles.betweennessCentrality() unweighted undirected', function(){
+    var res = cy.elements().betweennessCentrality();
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(1);
+    expect( res.betweenness(c) ).to.equal(1);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(4);
+  });
+
+  it('eles.betweennessCentrality() unweighted directed', function(){
+    var res = cy.elements().betweennessCentrality({
+      directed:true
+    });
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(2);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(0);
+  });
+
+  it('eles.betweennessCentrality() weighted undirected', function(){
+    var res = cy.elements().betweennessCentrality({
+      weight: function(){
+        return this.data('weight');
+      }
+    });
+
+    expect( res.betweenness(a) ).to.equal(1);
+    expect( res.betweenness(b) ).to.equal(0);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(4);
+  });
+
+  it('eles.betweennessCentrality() weighted directed', function(){
+    var res = cy.elements().betweennessCentrality({
+      weight: function(){
+        return this.data('weight');
+      },
+      directed:true
+    });
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(2);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(0);
+    expect( res.betweenness(e) ).to.equal(0);
+  });
 });

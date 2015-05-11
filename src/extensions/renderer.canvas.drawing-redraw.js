@@ -1,10 +1,12 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CR = CanvasRenderer;
+  var CRp = CanvasRenderer.prototype;
 
   // var isFirefox = typeof InstallTrigger !== 'undefined';
 
-  CanvasRenderer.prototype.getPixelRatio = function(){ 
+  CRp.getPixelRatio = function(){ 
     var context = this.data.contexts[0];
 
     if( this.forcedPixelRatio != null ){
@@ -27,7 +29,7 @@
     return (window.devicePixelRatio || 1) / backingStore;
   };
 
-  CanvasRenderer.prototype.paintCache = function(context){
+  CRp.paintCache = function(context){
     var caches = this.paintCaches = this.paintCaches || [];
     var needToCreateCache = true;
     var cache;
@@ -51,7 +53,7 @@
     return cache;
   };
 
-  CanvasRenderer.prototype.fillStyle = function(context, r, g, b, a){
+  CRp.fillStyle = function(context, r, g, b, a){
     context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     
     // turn off for now, seems context does its own caching
@@ -65,7 +67,7 @@
     // }
   };
 
-  CanvasRenderer.prototype.strokeStyle = function(context, r, g, b, a){
+  CRp.strokeStyle = function(context, r, g, b, a){
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     
     // turn off for now, seems context does its own caching
@@ -78,13 +80,36 @@
     //   context.strokeStyle = cache.strokeStyle = strokeStyle;
     // }
   };
+  
+  CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+    var zoom = this.data.cy.zoom();
+
+    if (opacity > 0) {
+      context.shadowBlur = blur * zoom;
+      context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";
+      context.shadowOffsetX = offsetX * zoom;
+      context.shadowOffsetY = offsetY * zoom;
+    } else {
+      context.shadowBlur = 0;
+      context.shadowColor = "transparent";
+    }
+  }
 
   // Resize canvas
-  CanvasRenderer.prototype.matchCanvasSize = function(container) {
+  CRp.matchCanvasSize = function(container) {
     var data = this.data;
     var width = container.clientWidth;
     var height = container.clientHeight;
     var pixelRatio = this.getPixelRatio();
+    var mbPxRatio = this.motionBlurPxRatio;
+
+    if(
+      container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_NODE] ||
+      container === this.data.bufferCanvases[CR.MOTIONBLUR_BUFFER_DRAG]
+    ){
+      pixelRatio = mbPxRatio;
+    }
+
     var canvasWidth = width * pixelRatio;
     var canvasHeight = height * pixelRatio;
     var canvas;
@@ -141,7 +166,7 @@
 
   };
 
-  CanvasRenderer.prototype.renderTo = function( cxt, zoom, pan, pxRatio ){
+  CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
     this.redraw({
       forcedContext: cxt,
       forcedZoom: zoom,
@@ -151,7 +176,7 @@
     });
   };
 
-  CanvasRenderer.prototype.timeToRender = function(){
+  CRp.timeToRender = function(){
     return this.redrawTotalTime / this.redrawCount;
   };
 
@@ -160,10 +185,10 @@
   CanvasRenderer.motionBlurDelay = 100;
 
   // Redraw frame
-  CanvasRenderer.prototype.redraw = function( options ) {
+  CRp.redraw = function( options ) {
     options = options || {};
 
-    // console.log('redraw');
+    // console.log('redraw()');
 
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
@@ -174,10 +199,19 @@
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
     var cy = r.data.cy; var data = r.data; 
     var needDraw = data.canvasNeedsRedraw;
+    var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
-    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled;
+    var mbPxRatio = r.motionBlurPxRatio;
+    var hasCompoundNodes = cy.hasCompoundNodes();
+    var inNodeDragGesture = r.hoverData.draggingEles;
+    var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
+    motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
+    var motionBlurFadeEffect = motionBlur;
 
-    if( motionBlur && r.motionBlurTimeout ){
+    // console.log('textureDraw?', textureDraw);
+
+
+    if( !forcedContext && r.motionBlurTimeout ){
       clearTimeout( r.motionBlurTimeout );
     }
 
@@ -199,13 +233,13 @@
 
     if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
 
-    var nowTime = +new Date();
+    var nowTime = Date.now();
     var timeElapsed = nowTime - this.lastDrawTime;
     var callAfterLimit = timeElapsed >= redrawLimit;
 
-    if( !forcedContext ){
+    if( !forcedContext && !r.clearingMotionBlur ){
       if( !callAfterLimit || this.currentlyDrawing ){
-        // console.log('-- skip');
+        // console.log('-- skip', redrawLimit);
 
         // we have new things to draw but we're busy, so try again when possibly free
         this.redrawTimeout = setTimeout(function(){
@@ -218,15 +252,53 @@
       this.currentlyDrawing = true;
     }
 
+    if( motionBlur ){
+      if( r.mbFrames == null ){
+        r.mbFrames = 0;
+      }
 
-    var startTime = +new Date();
+      if( !r.drawingImage ){ // image loading frames don't count towards motion blur blurry frames
+        r.mbFrames++;
+      }
+      
+      if( r.mbFrames < 3 ){ // need several frames before even high quality motionblur
+        motionBlurFadeEffect = false;
+      }
 
-    //console.log('-- redraw --')
+      // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
+      if( r.mbFrames > r.minMbLowQualFrames ){
+        //r.fullQualityMb = false;
+        r.motionBlurPxRatio = r.mbPxRBlurry;
+      }
+    } 
+
+    // console.log('mb: %s, N: %s, q: %s', motionBlur, r.mbFrames, r.motionBlurPxRatio);
+
+    if( r.clearingMotionBlur ){
+      //r.fullQualityMb = true; // TODO enable when doesn't cause scaled flashing issue
+
+      r.motionBlurPxRatio = 1;
+    }
 
 
+    var startTime = Date.now();
+
+    // console.log('-- redraw --')
+    
     function drawToContext(){ 
-      // startTime = +new Date();
+      // startTime = Date.now();
       // console.profile('draw' + startTime)
+      
+      // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
+      // because a rogue async texture frame would clear needDraw
+      if( r.textureDrawLastFrame && !textureDraw ){
+        needDraw[CR.NODE] = true;
+        needDraw[CR.SELECT_BOX] = true;
+      }
+      
+      // console.log('drawToContext()');
+      // console.log( 'needDraw', needDraw[CR.NODE], needDraw[CR.DRAG], needDraw[CR.SELECT_BOX] );
+
       var edges = r.getCachedEdges();
       var coreStyle = cy.style()._private.coreStyle;
       
@@ -237,6 +309,21 @@
         x: pan.x,
         y: pan.y
       };
+
+      var vp = {
+        zoom: zoom,
+        pan: {
+          x: pan.x,
+          y: pan.y
+        }
+      };
+      var prevVp = r.prevViewport;
+      var viewportIsDiff = prevVp === undefined || vp.zoom !== prevVp.zoom || vp.pan.x !== prevVp.pan.x || vp.pan.y !== prevVp.pan.y;
+
+      // we want the low quality motionblur only when the viewport is being manipulated etc (where it's not noticed)
+      if( !viewportIsDiff && !(inNodeDragGesture && !hasCompoundNodes) ){
+        r.motionBlurPxRatio = 1;
+      }
 
       if( forcedPan ){
         effectivePan = forcedPan;
@@ -261,36 +348,65 @@
         }
       };
 
+      function mbclear( context, x, y, w, h ){
+        var gco = context.globalCompositeOperation;
+
+        context.globalCompositeOperation = 'destination-out';
+        r.fillStyle( context, 255, 255, 255, r.motionBlurTransparency );
+        context.fillRect(x, y, w, h);
+
+        context.globalCompositeOperation = gco;
+      }
+
       function setContextTransform(context, clear){
+        var ePan, eZoom, w, h;
+
+        if( /*!r.fullQualityMb &&*/ !r.clearingMotionBlur && (context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[CR.MOTIONBLUR_BUFFER_DRAG]) ){
+          ePan = {
+            x: pan.x * mbPxRatio,
+            y: pan.y * mbPxRatio
+          };
+
+          eZoom = zoom * mbPxRatio;
+
+          w = r.canvasWidth * mbPxRatio;
+          h = r.canvasHeight * mbPxRatio;
+        } else {
+          ePan = effectivePan;
+          eZoom = effectiveZoom;
+
+          w = r.canvasWidth;
+          h = r.canvasHeight;
+        }
+
         context.setTransform(1, 0, 0, 1, 0, 0);
 
-        if( clear === 'motionBlur' ){
-          var gco = context.globalCompositeOperation;
-
-          context.globalCompositeOperation = 'destination-out';
-          r.fillStyle( context, 255, 255, 255, 0.666 );
-          context.fillRect(0, 0, r.canvasWidth, r.canvasHeight);
-
-          context.globalCompositeOperation = gco;
+        if( clear === 'motionBlur' ){ 
+          mbclear(context, 0, 0, w, h);
         } else if( !forcedContext && (clear === undefined || clear) ){
-          context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+          context.clearRect(0, 0, w, h);
         }
         
         if( !drawAllLayers ){
-          context.translate(effectivePan.x, effectivePan.y);
-          context.scale(effectiveZoom, effectiveZoom);
+          context.translate( ePan.x, ePan.y );
+          context.scale( eZoom, eZoom );
         }
         if( forcedPan ){
-          context.translate(forcedPan.x, forcedPan.y);
+          context.translate( forcedPan.x, forcedPan.y );
         } 
         if( forcedZoom ){
-          context.scale(forcedZoom, forcedZoom);
+          context.scale( forcedZoom, forcedZoom );
         }
       }
 
-      var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+      if( !textureDraw ){
+        r.textureDrawLastFrame = false;
+      }
 
       if( textureDraw ){
+        // console.log('textureDraw')
+        
+        r.textureDrawLastFrame = true;
 
         var bb;
 
@@ -325,17 +441,22 @@
           };
         }
 
-        needDraw[CanvasRenderer.DRAG] = false;
-        needDraw[CanvasRenderer.NODE] = false;
+        needDraw[CR.DRAG] = false;
+        needDraw[CR.NODE] = false;
 
-        var context = data.contexts[CanvasRenderer.NODE];
+        var context = data.contexts[CR.NODE];
 
         var texture = r.textureCache.texture;
         var vp = r.textureCache.viewport;
         bb = r.textureCache.bb;
 
         context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, vp.width, vp.height);
+
+        if( motionBlur ){
+          mbclear(context, 0, 0, vp.width, vp.height);
+        } else {
+          context.clearRect(0, 0, vp.width, vp.height);
+        }
 
         var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
         var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;
@@ -357,7 +478,7 @@
       var hideEdges = r.hideEdgesOnViewport && vpManip;
       var hideLabels = r.hideLabelsOnViewport && vpManip;
 
-      if (needDraw[CanvasRenderer.DRAG] || needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer) {
+      if (needDraw[CR.DRAG] || needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer) {
         //NB : VERY EXPENSIVE
 
         if( hideEdges ){ 
@@ -417,38 +538,60 @@
 
       }
 
-      var nodeLayerNeedsMotionClear = needDraw[CanvasRenderer.DRAG] && !needDraw[CanvasRenderer.NODE] && motionBlur && !r.clearedNodeLayerForMotionBlur;
-      if( nodeLayerNeedsMotionClear ){ r.clearedNodeLayerForMotionBlur = true; }
+      var needMbClear = [];
 
-      if( needDraw[CanvasRenderer.NODE] || drawAllLayers || drawOnlyNodeLayer || nodeLayerNeedsMotionClear ){
-        // console.log('redrawing node layer');
-        
-        var context = forcedContext || data.contexts[CanvasRenderer.NODE];
+      needMbClear[CR.NODE] = !needDraw[CR.NODE] && motionBlur && !r.clearedForMotionBlur[CR.NODE] || r.clearingMotionBlur;
+      if( needMbClear[CR.NODE] ){ r.clearedForMotionBlur[CR.NODE] = true; }
 
-        setContextTransform( context, motionBlur && !nodeLayerNeedsMotionClear ? 'motionBlur' : undefined );
+      needMbClear[CR.DRAG] = !needDraw[CR.DRAG] && motionBlur && !r.clearedForMotionBlur[CR.DRAG] || r.clearingMotionBlur;
+      if( needMbClear[CR.DRAG] ){ r.clearedForMotionBlur[CR.DRAG] = true; }
+
+      // console.log('--');
+
+      if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] && inNodeDragGesture ){
+        // console.log('NODE blurclean');
+
+        var context = data.contexts[CR.NODE];
+
+        setContextTransform( context, true );
+        drawElements(eles.nondrag, context);
+
+        needDraw[CR.NODE] = false; 
+        needMbClear[CR.NODE] = false;
+
+      } else 
+      if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
+        // console.log('NODE', needDraw[CR.NODE], needMbClear[CR.NODE]);
+
+        var useBuffer = motionBlur && !needMbClear[CR.NODE] && mbPxRatio !== 1;
+        var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
+
+        setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
         drawElements(eles.nondrag, context);
         
-        if( !drawAllLayers ){
-          needDraw[CanvasRenderer.NODE] = false; 
+        if( !drawAllLayers && !motionBlur ){
+          needDraw[CR.NODE] = false; 
         }
       }
-      
-      if ( !drawOnlyNodeLayer && (needDraw[CanvasRenderer.DRAG] || drawAllLayers) ) {
+
+      if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers || needMbClear[CR.DRAG]) ) {
+        // console.log('DRAG');
+
+        var useBuffer = motionBlur && !needMbClear[CR.DRAG] && mbPxRatio !== 1;
+        var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CR.DRAG] );
         
-        var context = forcedContext || data.contexts[CanvasRenderer.DRAG];
-        
-        setContextTransform( context, motionBlur ? 'motionBlur' : undefined );
+        setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
         drawElements(eles.drag, context);
         
-        if( !drawAllLayers ){
-          needDraw[CanvasRenderer.DRAG] = false;
+        if( !drawAllLayers && !motionBlur ){
+          needDraw[CR.DRAG] = false;
         }
       }
       
-      if( r.showFps || (!drawOnlyNodeLayer && (needDraw[CanvasRenderer.SELECT_BOX] && !drawAllLayers)) ) {
+      if( r.showFps || (!drawOnlyNodeLayer && (needDraw[CR.SELECT_BOX] && !drawAllLayers)) ) {
         // console.log('redrawing selection box');
         
-        var context = forcedContext || data.contexts[CanvasRenderer.SELECT_BOX];
+        var context = forcedContext || data.contexts[CR.SELECT_BOX];
 
         setContextTransform( context );
 
@@ -518,12 +661,56 @@
         }
 
         if( !drawAllLayers ){
-          needDraw[CanvasRenderer.SELECT_BOX] = false; 
+          needDraw[CR.SELECT_BOX] = false; 
+        }
+      }
+
+      // motionblur: blit rendered blurry frames
+      if( motionBlur && mbPxRatio !== 1 ){
+        var cxtNode = data.contexts[CR.NODE];
+        var txtNode = r.data.bufferCanvases[ CR.MOTIONBLUR_BUFFER_NODE ];
+
+        var cxtDrag = data.contexts[CR.DRAG];
+        var txtDrag = r.data.bufferCanvases[ CR.MOTIONBLUR_BUFFER_DRAG ];
+
+        var drawMotionBlur = function( cxt, txt, needClear ){
+          cxt.setTransform(1, 0, 0, 1, 0, 0);
+
+          if( needClear || !motionBlurFadeEffect ){
+            cxt.clearRect( 0, 0, r.canvasWidth, r.canvasHeight );
+          } else {
+            mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
+          }
+          
+          var pxr = /*r.fullQualityMb ? 1 :*/ mbPxRatio;
+
+          cxt.drawImage( 
+            txt, // img
+            0, 0, // sx, sy
+            r.canvasWidth * pxr, r.canvasHeight * pxr, // sw, sh
+            0, 0, // x, y
+            r.canvasWidth, r.canvasHeight // w, h
+          );
+        }
+
+        if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
+          // console.log('mb NODE', needMbClear[CR.NODE]);
+
+          drawMotionBlur( cxtNode, txtNode, needMbClear[CR.NODE] );
+          needDraw[CR.NODE] = false;
+        }
+
+        if( needDraw[CR.DRAG] || needMbClear[CR.DRAG] ){
+          // console.log('mb DRAG');
+
+          drawMotionBlur( cxtDrag, txtDrag, needMbClear[CR.DRAG] );
+          needDraw[CR.DRAG] = false;
+          //needMbClear[CR.NODE] = true;
         }
       }
 
 
-      var endTime = +new Date();
+      var endTime = Date.now();
 
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;
@@ -548,6 +735,8 @@
 
       r.currentlyDrawing = false;
 
+      r.prevViewport = vp;
+
       // console.profileEnd('draw' + startTime)
 
       if( r.clearingMotionBlur ){
@@ -559,18 +748,23 @@
       if( motionBlur ){ 
         r.motionBlurTimeout = setTimeout(function(){
           r.motionBlurTimeout = null;
-          // console.log('motion blur clear');
+          // console.log('mb CLEAR');
 
-          r.clearedNodeLayerForMotionBlur = false;
+          r.clearedForMotionBlur[CR.NODE] = false;
+          r.clearedForMotionBlur[CR.DRAG] = false;
           r.motionBlur = false;
-          r.clearingMotionBlur = true;
+          r.clearingMotionBlur = !textureDraw;
+          r.mbFrames = 0;
 
-          needDraw[CanvasRenderer.NODE] = true; 
-          needDraw[CanvasRenderer.DRAG] = true; 
+          needDraw[CR.NODE] = true; 
+          needDraw[CR.DRAG] = true; 
 
           r.redraw();
         }, CanvasRenderer.motionBlurDelay);
       }
+
+      r.drawingImage = false;
+
     } // draw to context
 
     if( !forcedContext ){
@@ -582,6 +776,10 @@
     if( !forcedContext && !r.initrender ){
       r.initrender = true;
       cy.trigger('initrender');
+    }
+
+    if( !forcedContext ){
+      cy.triggerOnRender();
     }
     
   };

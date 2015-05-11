@@ -36,6 +36,18 @@ To install Cytoscape.js via Bower (in the terminal):
 bower install cytoscape
 ```
 
+To install Cytoscape.js via spm (in the terminal):
+
+```bash
+spm install cytoscape
+```
+
+To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
+
+```bash
+meteor add maxkfranz:cytoscape
+```
+
 ### Getting started
 
 An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
@@ -132,6 +144,7 @@ var cy = cytoscape({
   hideLabelsOnViewport: false,
   textureOnViewport: false,
   motionBlur: false,
+  motionBlurOpacity: 0.2,
   wheelSensitivity: 1,
   pixelRatio: 1,
   initrender: function(evt){ /* ... */ },
@@ -144,9 +157,9 @@ var cy = cytoscape({
 
 **`container`** : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).
 
-**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).
+**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.
 
-**`style`** : The [stylesheet](#style) used to style the graph.
+**`style`** : The [stylesheet](#style) used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in `options.elements` at initialisation time).
 
@@ -201,6 +214,8 @@ var cy = cytoscape({
 
 **`motionBlur`** : When set to `true`, the renderer will use a motion blur effect to make the transition between frames seem smoother.  This can significantly increase the perceived performance for a large graphs.
 
+**`motionBlurOpacity`** : When `motionBlur: true`, this value controls the opacity of motion blur frames.  Higher values make the motion blur effect more pronounced.
+
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 
 **`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` or `0.666` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered.  If you want to use the hardware's actual pixel ratio at the expense of performance, you can set `pixelRatio: 'auto'`.
@@ -210,4 +225,3 @@ var cy = cytoscape({
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 
 * **`renderer.name`** : The name of the renderer to use.  By default, the `'canvas'` renderer is used.  If you [build and register](#extensions) your own renderer, then you can specify its name here.
-

@@ -8,9 +8,9 @@ var nodes = cy.nodes().sort(function( a, b ){
 
 // show order via animations
 var duration = 1000;
-nodes.removeCss().forEach(function( node, i ){
+nodes.removeStyle().forEach(function( node, i ){
   node.delay( i * duration ).animate({
-    css: {
+    style: {
       'border-width': 4,
       'border-color': 'green'
     }

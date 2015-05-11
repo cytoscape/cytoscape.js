@@ -11,7 +11,9 @@
   * AMD/Require.js
   * jQuery
   * npm
-  * bower
+  * Bower
+  * spm
+  * Meteor/Atmosphere
  * Has a full suite of unit tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON

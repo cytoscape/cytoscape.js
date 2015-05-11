@@ -1,7 +1,6 @@
 var gulp = require('gulp');
 var path = require('path');
 var tap = require('gulp-tap');
-var clean = require('gulp-clean');
 var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
 var replace = require('gulp-replace');
@@ -19,16 +18,50 @@ var exec = require('child_process').exec;
 var runSequence = require('run-sequence');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
+var benchmark = require('gulp-benchmark');
+var download = require("gulp-download");
+var del = require('del');
+var vinylPaths = require('vinyl-paths');
+var clean = function(){ return vinylPaths(del) };
+var decompress = require('gulp-decompress');
+var rename = require("gulp-rename");
+
+var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
+var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
+
+var weaverVersion = 'master';
+var weaverUrlBase = 'https://raw.githubusercontent.com/maxkfranz/weaver/' + weaverVersion + '/';
+
+var addWeaverUrlBase = function( path ){
+  return weaverUrlBase + path;
+};
+
+var weaverSrc = [
+  'src/thread.js',
+  'src/fabric.js',
+  'src/thread-node-fork.js'
+].map( addWeaverUrlBase );
+
+var weaverTest = [
+  'test/thread.js',
+  'test/fabric.js',
+  'test/requires/foo.js'
+].map( addWeaverUrlBase );
+
+var weaverTestReqs = [
+  'test/requires/foo.js'
+].map( addWeaverUrlBase );
 
 var version; // used for marking builds w/ version etc
 
 var paths = {
   sources: [
     'src/preamble.js',
-    'src/namespace.js', 
-    'src/is.js', 
-    'src/util.js', 
-    'src/math.js',  
+    'src/namespace.js',
+    'src/promise.js',
+    'src/is.js',
+    'src/util.js',
+    'src/math.js',
     'src/extension.js',
     'src/jquery-plugin.js',
     'src/event.js',
@@ -36,6 +69,8 @@ var paths = {
     'src/selector.js',
     'src/style.js',
     'src/style-*.js',
+    'src/thread.js',
+    'src/fabric.js',
     'src/core.js',
     'src/core-*.js',
     'src/collection.js',
@@ -44,6 +79,12 @@ var paths = {
     'src/extensions/renderer.canvas.define-and-init-etc.js',
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'
+  ],
+
+  nodethreadName: 'thread-node-fork.js',
+  nodethreadSrc: [
+    'src/preamble.js',
+    'src/thread-node-fork.js'
   ],
 
   docs: {
@@ -64,9 +105,36 @@ var paths = {
   }
 };
 
+// update these if you don't have a unix like env or these programmes aren't in your $PATH
+var $GIT = 'git';
+var $RM = 'rm -rf';
+var $CP = 'cp -R';
+var $TEMP_DIR = '/tmp';
+var $DOC_DIR = 'documentation';
+var $DL_DIR  = 'download';
+var $NPM = 'npm';
+var $METEOR = 'meteor';
+var $SPM = 'spm';
+
+var replaceShellVars = function( cmds ){
+  return cmds.map(function( cmd ){
+    return cmd
+      //.replace(/\$VERSION/g, version)
+      .replace(/\$GIT/g, 'git')
+      .replace(/\$RM/g, 'rm -rf')
+      .replace(/\$CP/g, 'cp -R')
+      .replace(/\$TEMP_DIR/g, '/tmp')
+      .replace(/\$DOC_DIR/g, 'documentation')
+      .replace(/\$DL_DIR/g, 'download')
+      .replace(/\$NPM/g, 'npm')
+      .replace(/\$METEOR/g, 'meteor')
+      .replace(/\$SPM/g, 'spm')
+    ;
+  });
+};
 
 gulp.task('default', ['build'], function(){
-  
+
 });
 
 gulp.task('version', function( next ){
@@ -89,7 +157,7 @@ gulp.task('version', function( next ){
 
     next();
   }
-  
+
 });
 
 gulp.task('clean', function(){
@@ -98,24 +166,24 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('concat', ['version'], function(){
+gulp.task('concat', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
-    
+
     .pipe( concat('cytoscape.js') )
-    
+
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('build', ['version'], function(){
+gulp.task('build', ['version', 'nodeworker'], function(){
   return gulp.src( paths.sources )
     .pipe( replace('{{VERSION}}', version) )
-    
+
     .pipe( concat('cytoscape.js') )
-    
+
     .pipe( gulp.dest('build') )
-    
+
     .pipe( uglify({
       mangle: true,
 
@@ -123,7 +191,17 @@ gulp.task('build', ['version'], function(){
     }) )
 
     .pipe( concat('cytoscape.min.js') )
-    
+
+    .pipe( gulp.dest('build') )
+  ;
+});
+
+gulp.task('nodeworker', function(){
+  return gulp.src( paths.nodethreadSrc )
+    .pipe( replace('{{VERSION}}', version) )
+
+    .pipe( concat(paths.nodethreadName) )
+
     .pipe( gulp.dest('build') )
   ;
 });
@@ -163,8 +241,8 @@ gulp.task('testlist', function(){
   ;
 });
 
-gulp.task('refs', ['debugrefs', 'testrefs', 'testlist'], function(next){
-  next();
+gulp.task('refs', function(next){
+  runSequence( 'debugrefs', 'testrefs', 'testlist', next );
 });
 
 gulp.task('zip', ['version', 'build'], function(){
@@ -175,11 +253,58 @@ gulp.task('zip', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('test', ['concat'], function(){
+gulp.task('test', ['concat'], function(next){
   return gulp.src('test/*.js')
     .pipe( mocha({
       reporter: 'spec'
     }) )
+  ;
+});
+
+gulp.task('weaver-src', function(){
+  
+  return download( weaverSrc )
+    .pipe( replace('weaver', 'cytoscape') )
+    .pipe( gulp.dest('src') )
+  ;
+  
+});
+
+gulp.task('weaver-test', function(){
+  
+  return download( weaverTest )
+    .pipe( replace('weaver', 'cytoscape') )
+    .pipe( gulp.dest('test') )
+  ;
+  
+});
+
+gulp.task('weaver-test-reqs', function(){
+  
+  return download( weaverTestReqs )
+    .pipe( gulp.dest('test/requires') )
+  ;
+  
+});
+
+gulp.task('weaver', function(next){
+  return runSequence(['weaver-src', 'weaver-test', 'weaver-test-reqs'], next);
+});
+
+gulp.task('benchmark-old-ver', function(){
+  return download( benchmarkVersionUrl )
+    .pipe(gulp.dest("benchmark/CySuite"));
+});
+
+gulp.task('benchmark', ['concat', 'benchmark-old-ver'], function(next){
+  gulp.src('benchmark/*.js')
+    .pipe( benchmark() )
+  ;
+});
+
+gulp.task('benchmark-single', ['concat', 'benchmark-old-ver'], function(next){
+  gulp.src('benchmark/single/index.js')
+    .pipe( benchmark() )
   ;
 });
 
@@ -220,12 +345,27 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
 
     next();
   });
-  
+
 });
 
-gulp.task('snapshotpush', ['docsdl'], shell.task([
-  './publish-buildlist.sh'
-]));
+gulp.task('snapshotpush', ['docsdl'], function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating list of builds"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
+
+
+
 
 gulp.task('docs', function(next){
   var cwd = process.cwd();
@@ -236,7 +376,7 @@ gulp.task('docs', function(next){
 
     next();
   } );
-  
+
 });
 
 gulp.task('docsmin', function(next){
@@ -263,7 +403,7 @@ gulp.task('docshtmlmin', function(){
 gulp.task('docsjsmin', function(){
   return gulp.src( paths.docs.js )
     .pipe( concat('all.min.js') )
-    
+
     .pipe( uglify({
       mangle: true
     }) )
@@ -272,7 +412,7 @@ gulp.task('docsjsmin', function(){
   ;
 });
 
-gulp.task('docscssmin', function(){ 
+gulp.task('docscssmin', function(){
   return gulp.src( paths.docs.css )
     .pipe( concat('all.min.css') )
 
@@ -304,10 +444,7 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docsdemoshots', function(next){
-  next(); // disable for now until phantomjs is fixed
-  return;
-
+gulp.task('docsdemoshots', function(next){ return next(); // disable for now since phantomjs doesn't work for this usecase
   var cwd = process.cwd();
 
   process.chdir('./documentation');
@@ -318,12 +455,54 @@ gulp.task('docsdemoshots', function(next){
   } );
 });
 
+var demoGistUrls = function(){
+  var demos = require('./documentation/docmaker.json').sections.filter(function(s){
+    return s.demos != null;
+  })[0].demos.map(function(d){
+    return 'https://gist.github.com/' + d.id + '/download';
+  });
+  
+  return demos;
+}
+
+gulp.task('docsdemodl', function(){
+  var demos = demoGistUrls();
+  
+  return download( demos )
+    .pipe( decompress() )
+    
+    .pipe( rename(function( path ){
+      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
+    }) )
+    
+    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
+    
+    .pipe( gulp.dest('documentation/demos') )
+  ;
+});
+
+gulp.task('docsdemodltest', function(){
+  var demos = demoGistUrls();
+  
+  return download( demos )
+    .pipe( decompress() )
+    
+    .pipe( rename(function( path ){
+      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
+    }) )
+    
+    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../../build/cytoscape.js"') )
+    
+    .pipe( gulp.dest('documentation/demos') )
+  ;
+});
+
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsdemodl', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){
-  runSequence( 'docs', 'docsmin', next );
+  runSequence( 'docsmin', next );
 });
 
 gulp.task('pkgver', ['version'], function(){
@@ -340,32 +519,68 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.min.js'
+    'build/cytoscape.min.js',
+    'build/' + paths.nodethreadName
   ])
     .pipe( gulp.dest('dist') )
   ;
 });
 
-gulp.task('pub', function(next){
-  runSequence('pkgver', 'dist', 'docspub', next);
+gulp.task('pubprep', function(next){
+  runSequence('pkgver', 'dist', 'docspub', 'pubpush', next);
 });
 
-gulp.task('tag', shell.task([
-  './publish-tag.sh'
-]));
+gulp.task('pubpush', shell.task( replaceShellVars([
+  '$GIT add -A',
+  '$GIT commit -m "preparing to publish $VERSION"',
+  '$GIT push'
+]) ));
 
-gulp.task('docspush', shell.task([
-  './publish-docs.sh'
-]));
+gulp.task('publish', ['pubprep'], function(next){
+  runSequence('pubpush', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
+});
 
-gulp.task('unstabledocspush', shell.task([
-  './publish-unstable-docs.sh'
-]));
+gulp.task('tag', shell.task( replaceShellVars([
+  '$GIT tag -a v$VERSION -m "v$VERSION"',
+  '$GIT push origin v$VERSION'
+]) ));
+
+gulp.task('docspush', function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating docs to $VERSION"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
+
+gulp.task('unstabledocspush', function(){
+  return gulp.src('')
+    .pipe( shell( replaceShellVars([
+      '$RM $TEMP_DIR/cytoscape.js',
+      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
+    ]) ) )
+    
+    .pipe( shell( replaceShellVars([
+      '$GIT add -A',
+      '$GIT commit -a -m "updating unstable docs to $VERSION"',
+      '$GIT push origin'
+    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
+  ;
+});
 
 // browserify debug build
 gulp.task('browserify', ['build'], function(){
   var b = browserify({ debug: true, hasExports: true });
-  
+
   b.add('./build/cytoscape.js', { expose: "cytoscape" });
 
   return b.bundle()
@@ -374,32 +589,38 @@ gulp.task('browserify', ['build'], function(){
   ;
 });
 
-gulp.task('sniper', ['browserify'], shell.task([
-  'npm run sniper'
-]));
+gulp.task('sniper', ['browserify'], shell.task( replaceShellVars([
+  '$NPM run sniper'
+]) ));
 
-gulp.task('npm', shell.task([
-  './publish-npm.sh'
-]));
+gulp.task('npm', shell.task( replaceShellVars([
+  '$NPM publish .'
+]) ));
 
-gulp.task('meteor', shell.task([
-  './publish-meteor.sh'
-]));
+gulp.task('meteor', shell.task( replaceShellVars([
+  '$METEOR publish'
+]) ));
 
-gulp.task('spm', shell.task([
-  './publish-spm.sh'
-]));
+gulp.task('spm', shell.task( replaceShellVars([
+  '$SPM publish'
+]) ));
+
 
 
 gulp.task('watch', function(next){
-  var watcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
-  watcher.on('added deleted', function(event){
+  var refWatcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
+  refWatcher.on('added deleted', function(event){
     console.log('File ' + event.path + ' was ' + event.type + ', updating lib refs in pages...');
   });
 
   var testWatcher = gulp.watch('test/*.js', ['testlist']);
   testWatcher.on('added deleted', function(event){
     console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
+  });
+  
+  var watcher = gulp.watch(paths.sources, ['concat']);
+  watcher.on('change', function(event){
+    console.log('File ' + event.path + ' was changed, building...');
   });
 
   next();

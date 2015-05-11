@@ -98,5 +98,8 @@
     }
 
   });
+
+  // aliases:
+  $$.elesfn.createLayout = $$.elesfn.makeLayout;
   
 })( cytoscape );

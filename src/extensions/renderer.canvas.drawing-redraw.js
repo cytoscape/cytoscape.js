@@ -93,7 +93,7 @@
       context.shadowBlur = 0;
       context.shadowColor = "transparent";
     }
-  }
+  };
 
   // Resize canvas
   CRp.matchCanvasSize = function(container) {
@@ -691,7 +691,7 @@
             0, 0, // x, y
             r.canvasWidth, r.canvasHeight // w, h
           );
-        }
+        };
 
         if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
           // console.log('mb NODE', needMbClear[CR.NODE]);

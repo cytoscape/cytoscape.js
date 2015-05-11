@@ -110,8 +110,7 @@
       var ele = this[0];
       if( !ele ){ return undefined; }
 
-      var cy = ele.cy();
-      var hasCompoundNodes = cy.hasCompoundNodes();
+      // var cy = ele.cy();
       var _p = ele._private;
       var group = _p.group;
 

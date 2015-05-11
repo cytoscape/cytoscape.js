@@ -578,7 +578,7 @@
     var edgeCenterX, edgeCenterY;
     var _p = edge._private;
     var rs = _p.rscratch;
-    var style = _p.style;
+    //var style = _p.style;
     var rstyle = _p.rstyle;
     
     if (rs.edgeType == 'self') {
@@ -591,10 +591,10 @@
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     } else if (rs.edgeType == 'haystack') {
-      var src = _p.source;
-      var tgt = _p.target;
-      var srcPos = src._private.position;
-      var tgtPos = tgt._private.position;
+      // var src = _p.source;
+      // var tgt = _p.target;
+      // var srcPos = src._private.position;
+      // var tgtPos = tgt._private.position;
       var pts = rs.haystackPts;
 
       edgeCenterX = ( pts[0] + pts[2] )/2;
@@ -652,7 +652,6 @@
 
       var lines = text.split('\n');
       var maxW = style['text-max-width'].pxValue;
-      var wrappedText;
       var wrappedLines = [];
 
       for( var l = 0; l < lines.length; l++ ){

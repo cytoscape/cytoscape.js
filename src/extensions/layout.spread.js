@@ -1,4 +1,4 @@
-;( function( $$ ) {
+;( function( $$ ){ 'use strict';
 
   /*
    * This layout combines several algorithms:
@@ -67,13 +67,13 @@
   SpreadLayout.prototype.run = function() {
 
     var layout = this;
-    var self = this;
+    // var self = this;
     var options = this.options;
 
     $$.util.requires(['foograph', 'Voronoi'], function(foograph, Voronoi){
 
       var cy = options.cy;
-      var allNodes = cy.nodes();
+      // var allNodes = cy.nodes();
       var nodes = cy.nodes();
       //var allEdges = cy.edges();
       var edges = cy.edges();
@@ -189,7 +189,7 @@
 
       function setPositions( pData ){ //console.log('set posns')
         // First we retrieve the important data
-        var expandIteration = pData[ 'expIt' ];
+        // var expandIteration = pData[ 'expIt' ];
         var dataVertices = pData[ 'vertices' ];
         var vertices = [];
         for( var i = 0; i < dataVertices.length; ++i ) {
@@ -207,7 +207,7 @@
         nodes.positions(
           function( i, node ) {
             var id = node._private.data.id;
-            var pos = node._private.position;
+            // var pos = node._private.position;
             var vertex = vertices[ id ];
 
             return {
@@ -378,7 +378,7 @@
         var voronoiIteration = 0;
         var expandIteration = 0;
 
-        var initWidth = lWidth;
+        // var initWidth = lWidth;
 
         while( !bStop ) {
           ++voronoiIteration;
@@ -432,7 +432,7 @@
         return pData;
 
       } ).then( function( pData ) {
-        var expandIteration = pData[ 'expIt' ];
+        // var expandIteration = pData[ 'expIt' ];
         var dataVertices = pData[ 'vertices' ];
 
         setPositions( pData );

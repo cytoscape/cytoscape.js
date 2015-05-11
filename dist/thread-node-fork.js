@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.0-unstable.
+ * This file is part of Cytoscape.js 2.4.0.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free

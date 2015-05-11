@@ -4913,7 +4913,7 @@ this.cytoscape = cytoscape;
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
       curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
-      fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
+      fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
@@ -4921,7 +4921,8 @@ this.cytoscape = cytoscape;
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       textWrap: { enums: ['none', 'wrap'] },
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid'] },
+      compoundIncludeLabels: { enums: ['include', 'exclude'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
@@ -5035,6 +5036,7 @@ this.cytoscape = cytoscape;
       { name: 'padding-top', type: t.size },
       { name: 'padding-bottom', type: t.size },
       { name: 'position', type: t.position },
+      { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
 
       // edge line
       { name: 'line-style', type: t.lineStyle },
@@ -5183,6 +5185,7 @@ this.cytoscape = cytoscape;
           'padding-left': 0,
           'padding-right': 0,
           'position': 'origin',
+          'compound-sizing-wrt-labels': 'include',
 
 
           // node pie bg
@@ -8535,8 +8538,16 @@ this.cytoscape = cytoscape;
   $$.fn.core({
     
     layout: function( params ){
-      var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+      var layout;
 
+      // always use a new layout w/ init opts; slightly different backwards compatibility
+      // but fixes layout reuse issues like dagre #819 
+      if( params == null ){ 
+        params = $$.util.extend({}, this._private.options.layout);
+        params.eles = this.$();
+      }
+
+      layout = this.initLayout( params );
       layout.run();
 
       return this; // chaining
@@ -10558,11 +10569,11 @@ this.cytoscape = cytoscape;
     aStar: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Reconstructs the path from Start to End, acumulating the result in pathAcum
       var reconstructPath = function(start, end, cameFromMap, pathAcum) {
@@ -10611,11 +10622,11 @@ this.cytoscape = cytoscape;
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       // logDebug("Starting aStar..."); 
       var cy = this._private.cy;
@@ -10783,19 +10794,19 @@ this.cytoscape = cytoscape;
     floydWarshall: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting floydWarshall..."); 
 
       var cy = this._private.cy;
@@ -10992,19 +11003,19 @@ this.cytoscape = cytoscape;
     bellmanFord: function(options) {
       options = options || {};
 
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting bellmanFord..."); 
 
       // Weight function - optional
@@ -11199,11 +11210,11 @@ this.cytoscape = cytoscape;
     kargerStein: function(options) {
       options = options || {};
       
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Function which colapses 2 (meta) nodes into one
       // Updates the remaining edge lists
@@ -11274,11 +11285,11 @@ this.cytoscape = cytoscape;
 
       // Parse options
       // debug - optional
-      if (options != null && options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options != null && options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting kargerStein..."); 
 
       var cy = this._private.cy;
@@ -11397,20 +11408,20 @@ this.cytoscape = cytoscape;
         }
       };
       
-      var logDebug = function() {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function() {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
       
       // Parse options
       // debug - optional
-      if (options != null && 
-        options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options != null && 
+      //   options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
       // logDebug("Starting pageRank..."); 
 
       // dampingFactor - optional
@@ -11583,19 +11594,19 @@ this.cytoscape = cytoscape;
     degreeCentralityNormalized: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
       // directed - optional
       if (options.directed != null) {
@@ -11604,7 +11615,7 @@ this.cytoscape = cytoscape;
         var directed = false;
       }
 
-      logDebug("Starting degree centrality...");
+      // logDebug("Starting degree centrality...");
       var nodes = this.nodes();
       var numNodes = nodes.length;
 
@@ -11634,7 +11645,7 @@ this.cytoscape = cytoscape;
 
             return degrees[node] / maxDegree;
           }
-        }
+        };
       } else {
         var indegrees = {};
         var outdegrees = {};
@@ -11680,7 +11691,7 @@ this.cytoscape = cytoscape;
             return outdegrees[node] / maxOutdegree;
           }
 
-        }
+        };
       }
 
     }, // degreeCentralityNormalized
@@ -11703,26 +11714,26 @@ this.cytoscape = cytoscape;
 
       var callingEles = this;
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
-      logDebug("Starting degree centrality...");
+      // logDebug("Starting degree centrality...");
 
       // root - mandatory!
       if (options != null && options.root != null) {
         var root = $$.is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
-        logDebug("Source node: %s", root.id());
+        // logDebug("Source node: %s", root.id());
       } else {
         return undefined;
       }
@@ -11746,7 +11757,7 @@ this.cytoscape = cytoscape;
 
       // alpha - optional
       if (options.alpha != null && $$.is.number(options.alpha)) {
-        var alpha = options.alpha
+        var alpha = options.alpha;
       } else {
         alpha = 0;
       }
@@ -11801,21 +11812,21 @@ this.cytoscape = cytoscape;
     closenessCentralityNormalized: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
-      logDebug("Starting closeness centrality...");
+      // logDebug("Starting closeness centrality...");
 
       var closenesses = {};
       var maxCloseness = 0;
@@ -11849,7 +11860,7 @@ this.cytoscape = cytoscape;
 
           return closenesses[node] / maxCloseness;
         }
-      }
+      };
     },
     // Implemented from pseudocode from wikipedia
     // options => options object
@@ -11860,21 +11871,21 @@ this.cytoscape = cytoscape;
     closenessCentrality: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
-      logDebug("Starting closeness centrality...");
+      // logDebug("Starting closeness centrality...");
 
       // root - mandatory!
       if (options.root != null) {
@@ -11884,7 +11895,7 @@ this.cytoscape = cytoscape;
         } else {
           var root = options.root[0];
         }
-        logDebug("Source node: %s", root.id());
+        // logDebug("Source node: %s", root.id());
       } else {
         $$.util.error("options.root required");
         return undefined;
@@ -11930,21 +11941,21 @@ this.cytoscape = cytoscape;
     betweennessCentrality: function (options) {
       options = options || {};
 
-      var logDebug = function () {
-        if (debug) {
-          console.log.apply(console, arguments);
-        }
-      };
+      // var logDebug = function () {
+      //   if (debug) {
+      //     console.log.apply(console, arguments);
+      //   }
+      // };
 
       // Parse options
       // debug - optional
-      if (options.debug != null) {
-        var debug = options.debug;
-      } else {
-        var debug = false;
-      }
+      // if (options.debug != null) {
+      //   var debug = options.debug;
+      // } else {
+      //   var debug = false;
+      // }
 
-      logDebug("Starting betweenness centrality...");
+      // logDebug("Starting betweenness centrality...");
 
       // Weight - optional
       if (options.weight != null && $$.is.fn(options.weight)) {
@@ -12110,6 +12121,7 @@ this.cytoscape = cytoscape;
   $$.elesfn.ccn = $$.elesfn.closenessCentralityNormalised = $$.elesfn.closenessCentralityNormalized;
   $$.elesfn.bc = $$.elesfn.betweennessCentrality;
 }) (cytoscape);
+
 ;(function( $$ ){ 'use strict';
 
   $$.fn.eles({
@@ -12599,7 +12611,8 @@ this.cytoscape = cytoscape;
       function update( parent ){
         var children = parent.children();
         var style = parent._private.style;
-        var bb = children.boundingBox({ includeLabels: true, includeEdges: true });
+        var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
+        var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
         var padding = {
           top: style['padding-top'].pxValue,
           bottom: style['padding-bottom'].pxValue,
@@ -13762,18 +13775,25 @@ this.cytoscape = cytoscape;
       var ele = this[0];
       if( !ele ){ return undefined; }
 
+      // var cy = ele.cy();
       var _p = ele._private;
       var group = _p.group;
 
       if( group === 'nodes' ){
-        return _p.data.parent ? ele.parents().size() : 0;
+        var depth = _p.data.parent ? ele.parents().size() : 0;
+        
+        if( !ele.isParent() ){
+          return Number.MAX_VALUE; // childless nodes always on top
+        }
+        
+        return depth;
       } else {
         var src = _p.source;
         var tgt = _p.target;
-        var srcDepth = src._private.data.parent ? src.parents().size() : 0;
-        var tgtDepth = tgt._private.data.parent ? tgt.parents().size() : 0;
+        var srcDepth = src.zDepth();
+        var tgtDepth = tgt.zDepth();
 
-        return Math.max( srcDepth - 1, tgtDepth - 1, 0 ) + 0.5; // depth of deepest parent and just a bit above
+        return Math.max( srcDepth, tgtDepth, 0 ); // depth of deepest parent
       }
     }
   });
@@ -13802,13 +13822,13 @@ this.cytoscape = cytoscape;
 
     if( sameDepth ){
       
-      if( aIsNode && bIsEdge ){
+      if( aIsNode && bIsEdge ){      
         return 1; // 'a' is a node, it should be drawn later       
       
       } else if( aIsEdge && bIsNode ){
         return -1; // 'a' is an edge, it should be drawn first
 
-      } else { // both nodes or both edges
+      } else { // both nodes or both edges        
         if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
           return a_p.index - b_p.index;
         } else {
@@ -13817,7 +13837,7 @@ this.cytoscape = cytoscape;
       }
     
     // elements on different level
-    } else {
+    } else {      
       return depthDiff; // deeper element should be drawn later
     }
 
@@ -16405,7 +16425,7 @@ this.cytoscape = cytoscape;
     var edgeCenterX, edgeCenterY;
     var _p = edge._private;
     var rs = _p.rscratch;
-    var style = _p.style;
+    //var style = _p.style;
     var rstyle = _p.rstyle;
     
     if (rs.edgeType == 'self') {
@@ -16418,10 +16438,10 @@ this.cytoscape = cytoscape;
       edgeCenterX = $$.math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
       edgeCenterY = $$.math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
     } else if (rs.edgeType == 'haystack') {
-      var src = _p.source;
-      var tgt = _p.target;
-      var srcPos = src._private.position;
-      var tgtPos = tgt._private.position;
+      // var src = _p.source;
+      // var tgt = _p.target;
+      // var srcPos = src._private.position;
+      // var tgtPos = tgt._private.position;
       var pts = rs.haystackPts;
 
       edgeCenterX = ( pts[0] + pts[2] )/2;
@@ -16479,7 +16499,6 @@ this.cytoscape = cytoscape;
 
       var lines = text.split('\n');
       var maxW = style['text-max-width'].pxValue;
-      var wrappedText;
       var wrappedLines = [];
 
       for( var l = 0; l < lines.length; l++ ){
@@ -17158,10 +17177,10 @@ this.cytoscape = cytoscape;
       var tgt = _p.target;
       var srcPos = src._private.position;
       var tgtPos = tgt._private.position;
-      var srcW = src._private.style['width'].pxValue;
-      var tgtW = tgt._private.style['width'].pxValue;
-      var srcH = src._private.style['height'].pxValue;
-      var tgtH = tgt._private.style['height'].pxValue;
+      var srcW = src.width();
+      var tgtW = tgt.width();
+      var srcH = src.height();
+      var tgtH = tgt.height();
       var radius = style['haystack-radius'].value;
       var halfRadius = radius/2; // b/c have to half width/height
 
@@ -17470,12 +17489,12 @@ this.cytoscape = cytoscape;
     source = startNode = edge._private.source;
     target = endNode = edge._private.target;
 
-    var targetPos = target._private.position;
-    var targetW = target.width();
-    var targetH = target.height();
-    var sourcePos = source._private.position;
-    var sourceW = source.width();
-    var sourceH = source.height();
+    // var targetPos = target._private.position;
+    // var targetW = target.width();
+    // var targetH = target.height();
+    // var sourcePos = source._private.position;
+    // var sourceW = source.width();
+    // var sourceH = source.height();
 
 
     var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
@@ -17495,8 +17514,8 @@ this.cytoscape = cytoscape;
     // }
     
     if( rs.edgeType === 'haystack' ){
-      var radius = style['haystack-radius'].value;
-      var halfRadius = radius/2; // b/c have to half width/height
+      // var radius = style['haystack-radius'].value;
+      // var halfRadius = radius/2; // b/c have to half width/height
 
       this.drawStyledEdge(
         edge, 
@@ -17676,11 +17695,6 @@ this.cytoscape = cytoscape;
 
       var gco = context.globalCompositeOperation;
 
-      context.globalCompositeOperation = 'destination-out';
-      
-      self.fillStyle(context, 255, 255, 255, 1);
-
-
       var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
       var arrowFill = style[prefix + '-arrow-fill'].value;
 
@@ -17689,12 +17703,18 @@ this.cytoscape = cytoscape;
         arrowClearFill = 'hollow';
       }
 
-      self.drawArrowShape( edge, prefix, context, 
-        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
-        x, y, dispX, dispY
-      );
+      if( style.opacity.value !== 1 ){ // then extra clear is needed
+        context.globalCompositeOperation = 'destination-out';
+        
+        self.fillStyle(context, 255, 255, 255, 1);
+        
+        self.drawArrowShape( edge, prefix, context, 
+          arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
+          x, y, dispX, dispY
+        );
 
-      context.globalCompositeOperation = gco;
+        context.globalCompositeOperation = gco;
+      } // otherwise, the opaque arrow clears it for free :)
 
       var color = style[prefix + '-arrow-color'].value;
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
@@ -17888,6 +17908,10 @@ this.cytoscape = cytoscape;
       } else {
         h = bgH.pxValue;
       }
+    }
+
+    if( w === 0 || h === 0 ){
+      return; // no point in drawing empty image (and chrome is broken in this case)
     }
 
     if( fit === 'contain' ){
@@ -18272,6 +18296,8 @@ this.cytoscape = cytoscape;
                 break;
               case 'double':
                 context.lineWidth = textBorderWidth/4; // 50% reserved for white between the two borders
+                context.setLineDash([ ]);
+                break;
               case 'solid':
                 context.setLineDash([ ]);
                 break;
@@ -18755,7 +18781,7 @@ this.cytoscape = cytoscape;
       context.shadowBlur = 0;
       context.shadowColor = "transparent";
     }
-  }
+  };
 
   // Resize canvas
   CRp.matchCanvasSize = function(container) {
@@ -19225,9 +19251,10 @@ this.cytoscape = cytoscape;
       if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
         // console.log('NODE', needDraw[CR.NODE], needMbClear[CR.NODE]);
 
-        var context = forcedContext || ( motionBlur && !needMbClear[CR.NODE] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
+        var useBuffer = motionBlur && !needMbClear[CR.NODE] && mbPxRatio !== 1;
+        var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
 
-        setContextTransform( context ); //, motionBlur && !needMbClear[CR.NODE] ? 'motionBlur' : undefined );
+        setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
         drawElements(eles.nondrag, context);
         
         if( !drawAllLayers && !motionBlur ){
@@ -19238,9 +19265,10 @@ this.cytoscape = cytoscape;
       if ( !drawOnlyNodeLayer && (needDraw[CR.DRAG] || drawAllLayers || needMbClear[CR.DRAG]) ) {
         // console.log('DRAG');
 
-        var context = forcedContext || ( motionBlur && !needMbClear[CR.DRAG] ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CR.DRAG] );
+        var useBuffer = motionBlur && !needMbClear[CR.DRAG] && mbPxRatio !== 1;
+        var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[CR.DRAG] );
         
-        setContextTransform( context ); //, motionBlur && !needMbClear[CR.NODE] ? 'motionBlur' : undefined );
+        setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
         drawElements(eles.drag, context);
         
         if( !drawAllLayers && !motionBlur ){
@@ -19326,7 +19354,7 @@ this.cytoscape = cytoscape;
       }
 
       // motionblur: blit rendered blurry frames
-      if( motionBlur ){
+      if( motionBlur && mbPxRatio !== 1 ){
         var cxtNode = data.contexts[CR.NODE];
         var txtNode = r.data.bufferCanvases[ CR.MOTIONBLUR_BUFFER_NODE ];
 
@@ -19351,7 +19379,7 @@ this.cytoscape = cytoscape;
             0, 0, // x, y
             r.canvasWidth, r.canvasHeight // w, h
           );
-        }
+        };
 
         if( needDraw[CR.NODE] || needMbClear[CR.NODE] ){
           // console.log('mb NODE', needMbClear[CR.NODE]);
@@ -19544,7 +19572,6 @@ this.cytoscape = cytoscape;
 
       scale = options.scale;
     } else if( $$.is.number(options.maxWidth) || $$.is.number(options.maxHeight) ){
-      var maxScale = scale;
       var maxScaleW = Infinity;
       var maxScaleH = Infinity;
 
@@ -22063,6 +22090,20 @@ this.cytoscape = cytoscape;
   star5Points = $$.math.fitPolygonToSquare( star5Points );
   
   generatePolygon( 'star', star5Points );
+  
+  generatePolygon( 'vee', [
+    -1, -1,
+    0, -0.333,
+    1, -1,
+    0, 1
+  ] );
+  
+  generatePolygon( 'rhomboid', [
+    -1, -1,
+    0.333, -1,
+    1, 1,
+    -0.333, 1
+  ] );
 
 })( cytoscape );
 
@@ -22956,7 +22997,7 @@ this.cytoscape = cytoscape;
 
   // default layout options
   var defaults = {
-    animate: true, // whether to show the layout as it's running
+    animate: false, // whether to show the layout as it's running
     refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
@@ -24133,7 +24174,7 @@ this.cytoscape = cytoscape;
     nodes.positions(function(i, ele) {
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
       // s = "Node: " + lnode.id + ". Refreshed position: (" + 
-      lnode.positionX + ", " + lnode.positionY + ").";
+      // lnode.positionX + ", " + lnode.positionY + ").";
       // logDebug(s);
 
       if( options.boundingBox ){ // then add extra bounding box constraint
@@ -24707,11 +24748,11 @@ this.cytoscape = cytoscape;
   /**
    * @brief : Logs a debug message in JS console, if DEBUG is ON
    */
-  var logDebug = function(text) {
-    if (DEBUG) {
-      console.debug(text);
-    }
-  };
+  // var logDebug = function(text) {
+  //   if (DEBUG) {
+  //     console.debug(text);
+  //   }
+  // };
 
 
   // register the layout
@@ -24826,7 +24867,7 @@ this.cytoscape = cytoscape;
         // console.log( g.edge(edge.source().id(), edge.target().id(), edge.id()) );
       }
 
-      var d = dagre.layout( g );
+      dagre.layout( g );
 
       var gNodeIds = g.nodes();
       for( var i = 0; i < gNodeIds.length; i++ ){
@@ -24888,6 +24929,7 @@ this.cytoscape = cytoscape;
   $$('layout', 'dagre', DagreLayout);
 
 })(cytoscape);
+
 ;(function($$){ 'use strict';
   
   var defaults = {
@@ -25272,7 +25314,7 @@ this.cytoscape = cytoscape;
   
 })(cytoscape);
 
-;( function( $$ ) {
+;( function( $$ ){ 'use strict';
 
   /*
    * This layout combines several algorithms:
@@ -25341,13 +25383,13 @@ this.cytoscape = cytoscape;
   SpreadLayout.prototype.run = function() {
 
     var layout = this;
-    var self = this;
+    // var self = this;
     var options = this.options;
 
     $$.util.requires(['foograph', 'Voronoi'], function(foograph, Voronoi){
 
       var cy = options.cy;
-      var allNodes = cy.nodes();
+      // var allNodes = cy.nodes();
       var nodes = cy.nodes();
       //var allEdges = cy.edges();
       var edges = cy.edges();
@@ -25463,7 +25505,7 @@ this.cytoscape = cytoscape;
 
       function setPositions( pData ){ //console.log('set posns')
         // First we retrieve the important data
-        var expandIteration = pData[ 'expIt' ];
+        // var expandIteration = pData[ 'expIt' ];
         var dataVertices = pData[ 'vertices' ];
         var vertices = [];
         for( var i = 0; i < dataVertices.length; ++i ) {
@@ -25481,7 +25523,7 @@ this.cytoscape = cytoscape;
         nodes.positions(
           function( i, node ) {
             var id = node._private.data.id;
-            var pos = node._private.position;
+            // var pos = node._private.position;
             var vertex = vertices[ id ];
 
             return {
@@ -25652,7 +25694,7 @@ this.cytoscape = cytoscape;
         var voronoiIteration = 0;
         var expandIteration = 0;
 
-        var initWidth = lWidth;
+        // var initWidth = lWidth;
 
         while( !bStop ) {
           ++voronoiIteration;
@@ -25706,7 +25748,7 @@ this.cytoscape = cytoscape;
         return pData;
 
       } ).then( function( pData ) {
-        var expandIteration = pData[ 'expIt' ];
+        // var expandIteration = pData[ 'expIt' ];
         var dataVertices = pData[ 'vertices' ];
 
         setPositions( pData );

@@ -666,7 +666,7 @@
       }
 
       // motionblur: blit rendered blurry frames
-      if( motionBlur && !mbPxRatio === 1 ){
+      if( motionBlur && mbPxRatio !== 1 ){
         var cxtNode = data.contexts[CR.NODE];
         var txtNode = r.data.bufferCanvases[ CR.MOTIONBLUR_BUFFER_NODE ];
 

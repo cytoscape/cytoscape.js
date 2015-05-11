@@ -537,7 +537,7 @@ gulp.task('pubpush', shell.task( replaceShellVars([
 ]) ));
 
 gulp.task('publish', ['pubprep'], function(next){
-  runSequence('pubpush', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
+  runSequence('tag', 'docspush', 'npm', 'spm', 'meteor', next);
 });
 
 gulp.task('tag', shell.task( replaceShellVars([

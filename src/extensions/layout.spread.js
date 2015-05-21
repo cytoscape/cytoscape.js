@@ -243,6 +243,10 @@
       layout.one( "layoutready", options.ready );
 
       t1.pass( pData ).run( function( pData ) {
+        
+        foograph = eval('foograph');
+        Voronoi = eval('Voronoi');
+        
         // I need to retrieve the important data
         var lWidth = pData[ 'width' ];
         var lHeight = pData[ 'height' ];

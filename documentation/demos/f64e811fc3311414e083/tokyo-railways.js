@@ -160,16 +160,39 @@ $(function(){
   }
 
   function bindRouters(){
-    var $ctr = $('<div class="select-buttons"></div>');
-    var $start = $('<button id="start">START</button>');
-    var $end = $('<button id="end">END</button>');
+    
     var $clear = $('#clear');
-
-    $ctr.append( $start ).append( $end );
 
     cy.nodes().qtip({
       content: {
-        text: $ctr
+        text: function(){
+          var $ctr = $('<div class="select-buttons"></div>');
+          var $start = $('<button id="start">START</button>');
+          var $end = $('<button id="end">END</button>');
+          
+          $start.on('click', function(){
+            var n = cy.$('node:selected');
+
+            selectStart( n );
+
+            n.qtip('api').hide();
+          });
+
+          $end.on('click', function(){
+            var n = cy.$('node:selected');
+
+            selectEnd( n );
+
+            n.qtip('api').hide();
+          });
+          
+          $ctr.append( $start ).append( $end );
+          
+          return $ctr;
+        }
+      },
+      show: {
+        solo: true
       },
       position: {
         my: 'top center',
@@ -185,22 +208,6 @@ $(function(){
           height: 8
         }
       }
-    });
-
-    $start.on('click', function(){
-      var n = cy.$('node:selected');
-
-      selectStart( n );
-
-      n.qtip('api').hide();
-    });
-
-    $end.on('click', function(){
-      var n = cy.$('node:selected');
-
-      selectEnd( n );
-
-      n.qtip('api').hide();
     });
 
     $clear.on('click', clear);

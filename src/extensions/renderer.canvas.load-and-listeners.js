@@ -1634,6 +1634,8 @@
 
                 if( justStartedDrag ){
                   addNodeToDrag( draggedEle, { inDragLayer: true } );
+                  
+                  needsRedraw[CR.NODE] = true;
 
                   var dragDelta = r.touchData.dragDelta;
 

@@ -2101,7 +2101,7 @@
 
       r.dragData.didDrag = false; // reset for next mousedown
 
-      if( e.touches[0] ){
+      if( e.touches.length === 0 ){
         r.touchData.dragDelta = [];
       }
 

@@ -470,6 +470,7 @@
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
         var _p = ele._private;
+        var style = _p.style;
         var display = styleEnabled ? _p.style['display'].value : 'element';
         var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
@@ -504,19 +505,27 @@
         } else if( ele.isEdge() && includeEdges ){
           includedEle = true;
 
-          var n1pos = ele._private.source._private.position;
-          var n2pos = ele._private.target._private.position;
+          var n1 = _p.source;
+          var n1_p = n1._private;
+          var n1pos = n1_p.position;
+          var n1w = n1_p.style.width.pxValue;
+          
+          var n2 = _p.target;
+          var n2_p = n2._private;
+          var n2pos = n2_p.position;
+          var n2w = n2_p.style.width.pxValue;
+          
 
           // handle edge dimensions (rough box estimate)
           //////////////////////////////////////////////
 
-          var rstyle = ele._private.rstyle || {};
+          var rstyle = _p.rstyle || {};
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
           ey1 = n1pos.y;
           ey2 = n2pos.y;
-
+          
           if( ex1 > ex2 ){
             var temp = ex1;
             ex1 = ex2;
@@ -540,7 +549,7 @@
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
 
-            var w = ele._private.style['width'].pxValue;
+            var w = style['width'].pxValue;
             var wHalf = w/2;
 
             for( var j = 0; j < bpts.length; j++ ){
@@ -557,8 +566,38 @@
               y2 = ey2 > y2 ? ey2 : y2;
             }
           }
+          
+          // precise haystacks (sanity check)
+          ///////////////////////////////////
+          
+          if( styleEnabled && style['curve-style'].strValue === 'haystack' ){
+            var hpts = _p.rscratch.haystackPts;
+            
+            ex1 = hpts[0];
+            ey1 = hpts[1];
+            ex2 = hpts[2];
+            ey2 = hpts[3];
+
+            if( ex1 > ex2 ){
+              var temp = ex1;
+              ex1 = ex2;
+              ex2 = temp;
+            }
+
+            if( ey1 > ey2 ){
+              var temp = ey1;
+              ey1 = ey2;
+              ey2 = temp;
+            }
+
+            x1 = ex1 < x1 ? ex1 : x1;
+            x2 = ex2 > x2 ? ex2 : x2;
+            y1 = ey1 < y1 ? ey1 : y1;
+            y2 = ey2 > y2 ? ey2 : y2;  
+          }
 
         } // edges
+            
 
         // handle label dimensions
         //////////////////////////

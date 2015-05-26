@@ -508,12 +508,10 @@
           var n1 = _p.source;
           var n1_p = n1._private;
           var n1pos = n1_p.position;
-          var n1w = n1_p.style.width.pxValue;
           
           var n2 = _p.target;
           var n2_p = n2._private;
           var n2pos = n2_p.position;
-          var n2w = n2_p.style.width.pxValue;
           
 
           // handle edge dimensions (rough box estimate)

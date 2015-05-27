@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.0.
+ * This file is part of Cytoscape.js 2.4.1.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.0';
+  $$.version = '2.4.1';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -12919,6 +12919,7 @@ this.cytoscape = cytoscape;
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
         var _p = ele._private;
+        var style = _p.style;
         var display = styleEnabled ? _p.style['display'].value : 'element';
         var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
@@ -12953,19 +12954,25 @@ this.cytoscape = cytoscape;
         } else if( ele.isEdge() && includeEdges ){
           includedEle = true;
 
-          var n1pos = ele._private.source._private.position;
-          var n2pos = ele._private.target._private.position;
+          var n1 = _p.source;
+          var n1_p = n1._private;
+          var n1pos = n1_p.position;
+          
+          var n2 = _p.target;
+          var n2_p = n2._private;
+          var n2pos = n2_p.position;
+          
 
           // handle edge dimensions (rough box estimate)
           //////////////////////////////////////////////
 
-          var rstyle = ele._private.rstyle || {};
+          var rstyle = _p.rstyle || {};
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
           ey1 = n1pos.y;
           ey2 = n2pos.y;
-
+          
           if( ex1 > ex2 ){
             var temp = ex1;
             ex1 = ex2;
@@ -12989,7 +12996,7 @@ this.cytoscape = cytoscape;
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
 
-            var w = ele._private.style['width'].pxValue;
+            var w = style['width'].pxValue;
             var wHalf = w/2;
 
             for( var j = 0; j < bpts.length; j++ ){
@@ -13006,8 +13013,38 @@ this.cytoscape = cytoscape;
               y2 = ey2 > y2 ? ey2 : y2;
             }
           }
+          
+          // precise haystacks (sanity check)
+          ///////////////////////////////////
+          
+          if( styleEnabled && style['curve-style'].strValue === 'haystack' ){
+            var hpts = _p.rscratch.haystackPts;
+            
+            ex1 = hpts[0];
+            ey1 = hpts[1];
+            ex2 = hpts[2];
+            ey2 = hpts[3];
+
+            if( ex1 > ex2 ){
+              var temp = ex1;
+              ex1 = ex2;
+              ex2 = temp;
+            }
+
+            if( ey1 > ey2 ){
+              var temp = ey1;
+              ey1 = ey2;
+              ey2 = temp;
+            }
+
+            x1 = ex1 < x1 ? ex1 : x1;
+            x2 = ex2 > x2 ? ex2 : x2;
+            y1 = ey1 < y1 ? ey1 : y1;
+            y2 = ey2 > y2 ? ey2 : y2;  
+          }
 
         } // edges
+            
 
         // handle label dimensions
         //////////////////////////
@@ -19236,25 +19273,30 @@ this.cytoscape = cytoscape;
 
       // console.log('--');
 
-      if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] && inNodeDragGesture ){
-        // console.log('NODE blurclean');
-
-        var context = data.contexts[CR.NODE];
-
-        setContextTransform( context, true );
-        drawElements(eles.nondrag, context);
-
-        needDraw[CR.NODE] = false; 
-        needMbClear[CR.NODE] = false;
-
-      } else 
+      // if( needDraw[CR.DRAG] && motionBlur && needDraw[CR.NODE] && inNodeDragGesture ){
+      //   console.log('NODE blurclean');
+      // 
+      //   var context = data.contexts[CR.NODE];
+      // 
+      //   setContextTransform( context, true );
+      //   drawElements(eles.nondrag, context);
+      // 
+      //   needDraw[CR.NODE] = false; 
+      //   needMbClear[CR.NODE] = false;
+      // 
+      // } else 
       if( needDraw[CR.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[CR.NODE] ){
         // console.log('NODE', needDraw[CR.NODE], needMbClear[CR.NODE]);
 
         var useBuffer = motionBlur && !needMbClear[CR.NODE] && mbPxRatio !== 1;
         var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
+        var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
-        setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
+        if( needDraw[CR.DRAG] && needDraw[CR.NODE] ){
+          clear = true;
+        }
+
+        setContextTransform( context, clear );
         drawElements(eles.nondrag, context);
         
         if( !drawAllLayers && !motionBlur ){
@@ -19768,6 +19810,30 @@ this.cytoscape = cytoscape;
       updateAncestorsInDragLayer( node, {
         inDragLayer: opts.inDragLayer
       } );
+    };
+    
+    var freeDraggedElements = function( draggedElements ){
+      if( !draggedElements ){ return; }
+      
+      for (var i=0; i < draggedElements.length; i++) {
+
+        var dEi_p = draggedElements[i]._private;
+
+        if(dEi_p.group === 'nodes') {
+          dEi_p.rscratch.inDragLayer = false;
+          dEi_p.grabbed = false;
+
+          var sEdges = dEi_p.edges;
+          for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
+
+          // for compound nodes, also remove related nodes and edges from the drag layer
+          updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
+
+        } else if( dEi_p.group === 'edges' ){
+          dEi_p.rscratch.inDragLayer = false;
+        }
+
+      }
     };
 
     // helper function to determine which ancestor nodes and edges should go
@@ -20630,23 +20696,7 @@ this.cytoscape = cytoscape;
           needsRedraw[CR.DRAG] = true;
           needsRedraw[CR.NODE] = true;
 
-          for (var i=0; i < draggedElements.length; i++) {
-
-            if(draggedElements[i]._private.group === 'nodes') {
-              draggedElements[i]._private.rscratch.inDragLayer = false;
-              draggedElements[i]._private.grabbed = false;
-
-              var sEdges = draggedElements[i]._private.edges;
-              for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
-
-              // for compound nodes, also remove related nodes and edges from the drag layer
-              updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
-
-            } else if( draggedElements[i]._private.group === 'edges' ){
-              draggedElements[i]._private.rscratch.inDragLayer = false;
-            }
-
-          }
+          freeDraggedElements( draggedElements );
 
           if( down ){ down.trigger('free'); }
 
@@ -21226,13 +21276,16 @@ this.cytoscape = cytoscape;
             var draggedEles = r.dragData.touchDragEles;
 
             if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
-              draggedEles[i]._private.grabbed = false;
-              draggedEles[i]._private.rscratch.inDragLayer = false;
+              var dEi_p = draggedEles[i]._private;
+              
+              dEi_p.grabbed = false;
+              dEi_p.rscratch.inDragLayer = false;
             } }
 
-            r.touchData.start._private.active = false;
-            r.touchData.start._private.grabbed = false;
-            r.touchData.start._private.rscratch.inDragLayer = false;
+            var start_p = r.touchData.start._private;
+            start_p.active = false;
+            start_p.grabbed = false;
+            start_p.rscratch.inDragLayer = false;
 
             needsRedraw[CR.DRAG] = true;
 
@@ -21287,6 +21340,8 @@ this.cytoscape = cytoscape;
 
                 if( justStartedDrag ){
                   addNodeToDrag( draggedEle, { inDragLayer: true } );
+                  
+                  needsRedraw[CR.NODE] = true;
 
                   var dragDelta = r.touchData.dragDelta;
 
@@ -21592,39 +21647,21 @@ this.cytoscape = cytoscape;
 
         r.data.bgActivePosistion = undefined;
         needsRedraw[CR.SELECT_BOX] = true;
+        
+        var draggedEles = r.dragData.touchDragEles;
 
         if (start != null ) {
 
-          if( start._private.grabbed ){
-            start._private.grabbed = false;
-            start.trigger('free');
-            start._private.rscratch.inDragLayer = false;
-          }
-
-          var sEdges = start._private.edges;
-          for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
-          updateAncestorsInDragLayer(start, false);
-
-          if( start.selected() ){
-            var selectedNodes = cy.$('node:selected');
-
-            for( var k = 0; k < selectedNodes.length; k++ ){
-
-              var selectedNode = selectedNodes[k];
-              selectedNode._private.rscratch.inDragLayer = false;
-              selectedNode._private.grabbed = false;
-
-              var sEdges = selectedNode._private.edges;
-              for (var j=0; j<sEdges.length; j++) {
-                sEdges[j]._private.rscratch.inDragLayer = false;
-              }
-
-              updateAncestorsInDragLayer(selectedNode, false);
-            }
-          }
+          var startWasGrabbed = start._private.grabbed;
+          
+          freeDraggedElements( draggedEles );
 
           needsRedraw[CR.DRAG] = true;
           needsRedraw[CR.NODE] = true;
+          
+          if( startWasGrabbed ){
+            start.trigger('free');
+          }
 
           start
             .trigger(new $$.Event(e, {
@@ -21752,7 +21789,7 @@ this.cytoscape = cytoscape;
 
       r.dragData.didDrag = false; // reset for next mousedown
 
-      if( e.touches[0] ){
+      if( e.touches.length === 0 ){
         r.touchData.dragDelta = [];
       }
 
@@ -22997,7 +23034,7 @@ this.cytoscape = cytoscape;
 
   // default layout options
   var defaults = {
-    animate: false, // whether to show the layout as it's running
+    animate: true, // whether to show the layout as it's running
     refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
@@ -23042,6 +23079,8 @@ this.cytoscape = cytoscape;
   ColaLayout.prototype.run = function(){
     var layout = this;
     var options = this.options;
+    
+    layout.manuallyStopped = false;
 
     $$.util.require('cola', function(cola){
 
@@ -23110,8 +23149,6 @@ this.cytoscape = cytoscape;
       };
 
       var onDone = function(){
-        layout.manuallyStopped = false;
-
         if( options.ungrabifyWhileSimulating ){
           grabbableNodes.grabify();
         }
@@ -23140,7 +23177,7 @@ this.cytoscape = cytoscape;
         ticksPerFrame = Math.max( 1, ticksPerFrame ); // at least 1
       }
 
-      var adaptor = cola.adaptor({
+      var adaptor = layout.adaptor = cola.adaptor({
         trigger: function( e ){ // on sim event
           switch( e.type ){
             case 'tick':
@@ -23151,7 +23188,7 @@ this.cytoscape = cytoscape;
 
             case 'end': 
               updateNodePositions();
-              if( !options.infinite || layout.manuallyStopped ){ onDone(); }           
+              if( !options.infinite ){ onDone(); }           
               break;
           }
         },
@@ -23160,6 +23197,12 @@ this.cytoscape = cytoscape;
           var skip = 0;
 
           var inftick = function(){
+            if( layout.manuallyStopped ){
+              onDone();
+              
+              return true;
+            }
+            
             var ret = tick();
 
             if( ret && options.infinite ){ // resume layout if done
@@ -23173,11 +23216,11 @@ this.cytoscape = cytoscape;
             var ret;
 
             // skip ticks to slow down layout for debugging
-            var thisSkip = skip;
-            skip = (skip + 1) % tickSkip;
-            if( thisSkip !== 0 ){
-              return false;
-            }
+            // var thisSkip = skip;
+            // skip = (skip + 1) % tickSkip;
+            // if( thisSkip !== 0 ){
+            //   return false;
+            // }
 
             for( var i = 0; i < ticksPerFrame && !ret; i++ ){
               ret = ret || inftick(); // pick up true ret vals => sim done
@@ -23421,17 +23464,19 @@ this.cytoscape = cytoscape;
         adaptor.flowLayout( flow.axis , flow.minSeparation );
       }
 
+      layout.trigger({ type: 'layoutstart', layout: layout });
+
       adaptor
         .avoidOverlaps( options.avoidOverlap )
         .handleDisconnected( options.handleDisconnected )
         .start( options.unconstrIter, options.userConstIter, options.allConstIter)
       ;
 
-      layout.trigger({ type: 'layoutstart', layout: layout });
-
       if( !options.infinite ){
         setTimeout(function(){
-          adaptor.stop();
+          if( !layout.manuallyStopped ){
+            adaptor.stop();
+          }
         }, options.maxSimulationTime);
       }
 
@@ -23454,6 +23499,7 @@ this.cytoscape = cytoscape;
   $$('layout', 'cola', ColaLayout);
 
 })(cytoscape);
+
 ;(function($$){ 'use strict';
   
   var defaults = {
@@ -25559,6 +25605,10 @@ this.cytoscape = cytoscape;
       layout.one( "layoutready", options.ready );
 
       t1.pass( pData ).run( function( pData ) {
+        
+        foograph = eval('foograph');
+        Voronoi = eval('Voronoi');
+        
         // I need to retrieve the important data
         var lWidth = pData[ 'width' ];
         var lHeight = pData[ 'height' ];

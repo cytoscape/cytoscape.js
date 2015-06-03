@@ -264,10 +264,11 @@
         arrowClearFill = 'hollow';
       }
 
-      if( style.opacity.value !== 1 ){ // then extra clear is needed
+      if( style.opacity.value !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
         context.globalCompositeOperation = 'destination-out';
         
         self.fillStyle(context, 255, 255, 255, 1);
+        self.strokeStyle(context, 255, 255, 255, 1);
         
         self.drawArrowShape( edge, prefix, context, 
           arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 
@@ -279,6 +280,7 @@
 
       var color = style[prefix + '-arrow-color'].value;
       self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
+      self.strokeStyle(context, color[0], color[1], color[2], style.opacity.value);
 
       self.drawArrowShape( edge, prefix, context, 
         arrowFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value, 

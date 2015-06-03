@@ -61,7 +61,8 @@
         
         edge.scratch('springy', {
           model: graph.newEdge(fdSrc, fdTgt, {
-            element: edge
+            element: edge,
+            length: (typeof options.edgeLength === "function") ? options.edgeLength.call(edge, edge) : edge.data('length')
           })
         });
       });

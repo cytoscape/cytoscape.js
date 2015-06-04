@@ -68,12 +68,12 @@
       }
 
       // arbor doesn't work with just 1 node 
-      if( cy.nodes().size() <= 1 ){
+      if( eles.nodes().size() <= 1 ){
         if( options.fit ){
           cy.reset();
         }
 
-        cy.nodes().position({
+        eles.nodes().position({
           x: Math.round( (bb.x1 + bb.x2)/2 ),
           y: Math.round( (bb.y1 + bb.y2)/2 )
         });

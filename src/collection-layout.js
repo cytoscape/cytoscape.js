@@ -30,7 +30,7 @@
             duration: options.animationDuration,
             step: !lastNode ? undefined : function(){
               if( options.fit ){
-                cy.fit( options.padding );
+                cy.fit( options.eles, options.padding );
               } 
             },
             complete: !lastNode ? undefined : function(){
@@ -43,7 +43,7 @@
               } 
 
               if( options.fit ){
-                cy.fit( options.padding );
+                cy.fit( options.eles, options.padding );
               } 
               
               layout.one('layoutstop', options.stop);
@@ -58,7 +58,7 @@
         nodes.positions( fn );
 
         if( options.fit ){
-          cy.fit( options.padding );
+          cy.fit( options.eles, options.padding );
         }
 
         if( options.zoom != null ){

@@ -1481,6 +1481,12 @@
       
       rs.arrowStartX = arrowStart[0];
       rs.arrowStartY = arrowStart[1];
+      
+      if( !$$.is.number(rs.startX) || !$$.is.number(rs.startY) || !$$.is.number(rs.endX) || !$$.is.number(rs.endY) ){
+        rs.badLine = true;
+      } else {
+        rs.badLine = false;
+      }
             
     } else if (rs.edgeType == 'bezier') {
       // if( window.badArrow) debugger;

@@ -12,10 +12,17 @@
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
 
-    // springy forces
+    // springy forces and config
     stiffness: 400,
     repulsion: 400,
-    damping: 0.5
+    damping: 0.5,
+    edgeLength: function( edge ){
+      var length = edge.data('length');
+      
+      if( length !== undefined && !isNaN(length) ){
+        return length;
+      }
+    }
   };
 
   function SpringyLayout( options ){
@@ -62,7 +69,7 @@
         edge.scratch('springy', {
           model: graph.newEdge(fdSrc, fdTgt, {
             element: edge,
-            length: (typeof options.edgeLength === "function") ? options.edgeLength.call(edge, edge) : edge.data('length')
+            length: options.edgeLength.call(edge, edge)
           })
         });
       });

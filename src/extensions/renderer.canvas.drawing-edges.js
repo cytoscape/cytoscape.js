@@ -195,12 +195,12 @@
       if( context.beginPath ){ context.beginPath(); }
       context.moveTo(pts[0], pts[1]);
       
-      if (pts.length === 3 * 2) { // bezier
+      if( pts.length === 6 && !rs.badBezier ){ // bezier
         context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-      } else if( pts.length === 3 * 2 * 2 ){ // double bezier loop
+      } else if( pts.length === 12 && !rs.badBezier ){ // double bezier loop
         context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
         context.quadraticCurveTo(pts[8], pts[9], pts[10], pts[11]);
-      } else { // line
+      } else if( pts.length === 4 && !rs.badLine ){ // line
         context.lineTo(pts[2], pts[3]);
       }
     }

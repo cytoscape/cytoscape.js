@@ -46,12 +46,28 @@ describe('Collection traversing', function(){
     expect( n1.edgesWith(n3).empty() ).to.be.true;
     expect( n2.edgesWith(n3).same(n2n3) ).to.be.true;
   });
+  
+  it('eles.edgesWith() same eles', function(){
+    expect( cy.$('#n1, #n2').edgesWith('#n1, #n2').same(n1n2) ).to.be.true;
+  });
+  
+  it('eles.edgesWith() intersecting eles', function(){
+    expect( cy.$('#n1, #n2').edgesWith('#n1').same(n1n2) ).to.be.true;
+  });
 
   it('eles.edgesTo()', function(){
     expect( n1.edgesTo(n2).same(n1n2) ).to.be.true;
     expect( n1.edgesTo(n3).empty() ).to.be.true;
     expect( n2.edgesTo(n3).same(n2n3) ).to.be.true;
     expect( n3.edgesTo(n2).empty() ).to.be.true;
+  });
+  
+  it('eles.edgesTo() same eles', function(){
+    expect( cy.$('#n1, #n2').edgesTo('#n1, #n2').same(n1n2) ).to.be.true;
+  });
+  
+  it('eles.edgesTo() intersecting eles', function(){
+    expect( cy.$('#n1, #n2').edgesTo('#n2').same(n1n2) ).to.be.true;
   });
 
   it('eles.connectedNodes()', function(){

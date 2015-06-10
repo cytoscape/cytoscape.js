@@ -290,22 +290,28 @@
         otherNodes = cy.$( otherNodes );
       }
       
-      var edges = otherNodes.connectedEdges();
       var thisIds = this._private.ids;
+      var otherIds = otherNodes._private.ids;
       
-      for( var i = 0; i < edges.length; i++ ){
-        var edge = edges[i];
-        var foundId;
-        var edgeData = edge._private.data;
-
-        if( p.thisIs ){
-          var idToFind = edgeData[ p.thisIs ];
-          foundId = thisIds[ idToFind ];
-        } else {
-          foundId = thisIds[ edgeData.source ] || thisIds[ edgeData.target ];
-        }
+      for( var h = 0; h < otherNodes.length; h++ ){
+        var edges = otherNodes[h]._private.edges;
         
-        if( foundId ){
+        for( var i = 0; i < edges.length; i++ ){
+          var edge = edges[i];
+          var foundId;
+          var edgeData = edge._private.data;
+          var thisToOther = thisIds[ edgeData.source ] && otherIds[ edgeData.target ];
+          var otherToThis = otherIds[ edgeData.source ] && thisIds[ edgeData.target ];
+          var edgeConnectsThisAndOther = thisToOther || otherToThis;
+
+          if( !edgeConnectsThisAndOther ){ continue; }
+
+          if( p.thisIs ){
+            if( p.thisIs === 'source' && !thisToOther ){ continue; }
+            
+            if( p.thisIs === 'target' && !otherToThis ){ continue; }
+          }
+          
           elements.push( edge );
         }
       }

@@ -198,11 +198,11 @@
     var rstyle = _p.rstyle;
     var rscratch = _p.rscratch;
     var parentOpacity = element.effectiveOpacity();
-    if( parentOpacity === 0 || style["text-opacity"].value === 0){ return; }
+    if( parentOpacity === 0 || style['text-opacity'].value === 0){ return; }
 
     var text = this.setupTextStyle( context, element );
-    var halign = style["text-halign"].value;
-    var valign = style["text-valign"].value;
+    var halign = style['text-halign'].value;
+    var valign = style['text-valign'].value;
 
     if( element.isEdge() ){
       halign = 'center';
@@ -210,21 +210,21 @@
     }
 
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
-      var backgroundOpacity = style["text-background-opacity"].value;
-      if ((style["text-background-color"] && style["text-background-color"].value != "none" || style["text-border-width"].pxValue > 0) && backgroundOpacity > 0) {
-        var textBorderWidth = style["text-border-width"].pxValue;
+      var backgroundOpacity = style['text-background-opacity'].value;
+      if ((style['text-background-color'] || style['text-border-width'].pxValue > 0) && backgroundOpacity > 0) {
+        var textBorderWidth = style['text-border-width'].pxValue;
         var margin = 4 + textBorderWidth/2;
 
         if (element.isNode()) {
           //Move textX, textY to include the background margins
-          if (valign == "top") {
+          if (valign == 'top') {
             textY -=margin;
-          } else if (valign == "bottom") {
+          } else if (valign == 'bottom') {
             textY +=margin;
           }
-          if (halign == "left") {
+          if (halign == 'left') {
             textX -=margin;
-          } else if (halign == "right") {
+          } else if (halign == 'right') {
             textX +=margin;
           }
         }
@@ -234,9 +234,9 @@
         var bgX = textX;
 
         if (halign) {
-          if (halign == "center") {
+          if (halign == 'center') {
             bgX = bgX - bgWidth / 2;
-          } else if (halign == "left") {
+          } else if (halign == 'left') {
             bgX = bgX- bgWidth;
           }
         }
@@ -244,9 +244,9 @@
         var bgY = textY;
 
         if (element.isNode()) {
-          if (valign == "top") {
+          if (valign == 'top') {
              bgY = bgY - bgHeight;
-          } else if (valign == "center") {
+          } else if (valign == 'center') {
             bgY = bgY- bgHeight / 2;
           }
         } else {
@@ -266,13 +266,13 @@
           bgWidth += margin*2;
         }
 
-        if (style["text-background-color"]) {
+        if (style['text-background-color']) {
           var textFill = context.fillStyle;
-          var textBackgroundColor = style["text-background-color"].value;
+          var textBackgroundColor = style['text-background-color'].value;
 
-          context.fillStyle = "rgba(" + textBackgroundColor[0] + "," + textBackgroundColor[1] + "," + textBackgroundColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
           var styleShape = style['text-background-shape'].strValue;
-          if (styleShape == "roundrectangle") {
+          if (styleShape == 'roundrectangle') {
             roundRect(context, bgX, bgY, bgWidth, bgHeight, 2);
           } else {
             context.fillRect(bgX,bgY,bgWidth,bgHeight);
@@ -283,10 +283,10 @@
         if (textBorderWidth > 0) {
           var textStroke = context.strokeStyle;
           var textLineWidth = context.lineWidth;
-          var textBorderColor = style["text-border-color"].value;
+          var textBorderColor = style['text-border-color'].value;
           var textBorderStyle = style['text-border-style'].value;
 
-          context.strokeStyle = "rgba(" + textBorderColor[0] + "," + textBorderColor[1] + "," + textBorderColor[2] + "," + backgroundOpacity * parentOpacity + ")";
+          context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
           context.lineWidth = textBorderWidth;
 
           if( context.setLineDash ){ // for very outofdate browsers

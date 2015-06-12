@@ -344,12 +344,6 @@
                   ]
                 }
               ]
-            },
-
-            {
-              "name": "cy.initrender",
-              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
-              "md": "core/initrender"
             }
 
 

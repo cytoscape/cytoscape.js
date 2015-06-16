@@ -271,6 +271,7 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-background-color`** : A color to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0`.
  * **`text-background-shape`** : The shape to use for the label background, can be rectangle or roundrectangle.
+ * **`text-border-opacity`** : The opacity of the text border.
  * **`text-border-width`** : The border width to put around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The color of the border around the label.

@@ -211,21 +211,23 @@
 
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
       var backgroundOpacity = style['text-background-opacity'].value;
-      if ((style['text-background-color'] || style['text-border-width'].pxValue > 0) && backgroundOpacity > 0) {
-        var textBorderWidth = style['text-border-width'].pxValue;
+      var borderOpacity = style['text-border-opacity'].value;
+      var textBorderWidth = style['text-border-width'].pxValue;
+      
+      if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
         var margin = 4 + textBorderWidth/2;
 
         if (element.isNode()) {
           //Move textX, textY to include the background margins
-          if (valign == 'top') {
-            textY -=margin;
-          } else if (valign == 'bottom') {
-            textY +=margin;
+          if (valign === 'top') {
+            textY -= margin;
+          } else if (valign === 'bottom') {
+            textY += margin;
           }
-          if (halign == 'left') {
-            textX -=margin;
-          } else if (halign == 'right') {
-            textX +=margin;
+          if (halign === 'left') {
+            textX -= margin;
+          } else if (halign === 'right') {
+            textX += margin;
           }
         }
 
@@ -266,7 +268,7 @@
           bgWidth += margin*2;
         }
 
-        if (style['text-background-color']) {
+        if( backgroundOpacity > 0 ){
           var textFill = context.fillStyle;
           var textBackgroundColor = style['text-background-color'].value;
 
@@ -280,13 +282,13 @@
           context.fillStyle = textFill;
         }
 
-        if (textBorderWidth > 0) {
+        if( textBorderWidth > 0 && borderOpacity > 0 ){
           var textStroke = context.strokeStyle;
           var textLineWidth = context.lineWidth;
           var textBorderColor = style['text-border-color'].value;
           var textBorderStyle = style['text-border-style'].value;
 
-          context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
+          context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
           context.lineWidth = textBorderWidth;
 
           if( context.setLineDash ){ // for very outofdate browsers

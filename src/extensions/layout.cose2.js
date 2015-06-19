@@ -3889,6 +3889,8 @@
 
   CoSELayout.prototype.runSpringEmbedder = function () {
     var lastFrame = new Date().getTime();
+    var initialAnimationPeriod = 25;
+    var animationPeriod = initialAnimationPeriod;
     do
     {
       this.totalIterations++;
@@ -3902,6 +3904,7 @@
 
         this.coolingFactor = this.initialCoolingFactor *
                 ((this.maxIterations - this.totalIterations) / this.maxIterations);
+        animationPeriod = Math.ceil(initialAnimationPeriod * Math.sqrt(this.coolingFactor));
 
       }
       this.totalDisplacement = 0;
@@ -3911,7 +3914,7 @@
       this.calcGravitationalForces();
       this.moveNodes();
       this.animate();
-      if (layoutOptionsPack.animate && this.totalIterations % 10 == 0) {
+      if (layoutOptionsPack.animate && this.totalIterations % animationPeriod == 0) {
         for (var i = 0; i < 1e7; i++) {
           if ((new Date().getTime() - lastFrame) > 25){
             break;
@@ -4111,6 +4114,7 @@
     // Traverse all neighbors of this node and recursively call this
     // function.
     var neighborEdges = [];
+    neighborEdges = neighborEdges.concat(node.getEdges());
     var childCount = neighborEdges.length;
 
     if (parentOfNode != null)
@@ -4157,7 +4161,7 @@
             i = (++i) % incEdgesCount)
     {
       var currentNeighbor =
-              neighborEdges.get(i).getOtherEnd(node);
+              neighborEdges[i].getOtherEnd(node);
 
       // Don't back traverse to root node in current tree.
       if (currentNeighbor == parentOfNode)
@@ -4169,7 +4173,7 @@
               (startAngle + branchCount * stepAngle) % 360;
       var childEndAngle = (childStartAngle + stepAngle) % 360;
 
-      this.branchRadialLayout(currentNeighbor,
+      CoSELayout.branchRadialLayout(currentNeighbor,
               node,
               childStartAngle, childEndAngle,
               distance + radialSeparation, radialSeparation);
@@ -4286,7 +4290,7 @@
     animate: true
   };
 
-  var layout = new CoSELayout();
+  _CoSELayout.layout = new CoSELayout();
   function _CoSELayout(options) {
 
     this.options = $$.util.extend({}, defaults, options);
@@ -4295,38 +4299,22 @@
   }
 
   _CoSELayout.prototype.run = function () {
-    _CoSELayout.allChildren = [];
     _CoSELayout.idToLNode = {};
     _CoSELayout.toBeTiled = {};
-    layout = new CoSELayout();
+    _CoSELayout.layout = new CoSELayout();
     this.cy = this.options.cy; 
     var after = this;
 
     this.cy.trigger('layoutstart');
 
-    var gm = layout.newGraphManager();
+    var gm = _CoSELayout.layout.newGraphManager();
     this.gm = gm;
 
-    this.cy.nodes();
     var nodes = this.cy.nodes();
-    ;
     var edges = this.cy.edges();
 
     this.root = gm.addRoot();
-    this.orphans = [];
-    for (var i = 0; i < nodes.length; i++) {
-      var theNode = nodes[i];
-      var p_id = theNode.data("parent");
-      if (p_id != null) {
-        if (_CoSELayout.allChildren[p_id] == null) {
-          _CoSELayout.allChildren[p_id] = [];
-        }
-        _CoSELayout.allChildren[p_id].push(theNode);
-      }
-      else {
-        this.orphans.push(theNode);
-      }
-    }
+    this.orphans = nodes.orphans();
 
     if (!this.options.tile) {
       this.processChildrenList(this.root, this.orphans);
@@ -4345,7 +4333,7 @@
       var edge = edges[i];
       var sourceNode = _CoSELayout.idToLNode[edge.data("source")];
       var targetNode = _CoSELayout.idToLNode[edge.data("target")];
-      var e1 = gm.add(layout.newEdge(), sourceNode, targetNode);
+      var e1 = gm.add(_CoSELayout.layout.newEdge(), sourceNode, targetNode);
     }
 
 
@@ -5097,7 +5085,7 @@
 
       if (theChild.width() != null
               && theChild.height() != null) {
-        theNode = parent.add(new CoSENode(layout.graphManager,
+        theNode = parent.add(new CoSENode(_CoSELayout.layout.graphManager,
                 new PointD(theChild.position('x'), theChild.position('y')),
                 new DimensionD(parseFloat(theChild.width()),
                         parseFloat(theChild.height()))));
@@ -5118,7 +5106,7 @@
 
       if (children_of_children != null && children_of_children.length > 0) {
         var theNewGraph;
-        theNewGraph = layout.getGraphManager().add(layout.newGraph(), theNode);
+        theNewGraph = _CoSELayout.layout.getGraphManager().add(_CoSELayout.layout.newGraph(), theNode);
         this.processChildrenList(theNewGraph, children_of_children);
       }
     }

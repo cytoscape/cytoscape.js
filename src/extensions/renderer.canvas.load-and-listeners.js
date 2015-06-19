@@ -116,10 +116,10 @@
         inDragLayer: opts.inDragLayer
       } );
     };
-    
+
     var freeDraggedElements = function( draggedElements ){
       if( !draggedElements ){ return; }
-      
+
       for (var i=0; i < draggedElements.length; i++) {
 
         var dEi_p = draggedElements[i]._private;
@@ -221,9 +221,11 @@
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
       r.invalidateContainerClientCoordsCache();
 
-      r.matchCanvasSize(r.data.container);
-      r.data.canvasNeedsRedraw[CR.NODE] = true;
-      r.redraw();
+      setTimeout(function(){
+        r.matchCanvasSize(r.data.container);
+        r.data.canvasNeedsRedraw[CR.NODE] = true;
+        r.redraw();
+      }, 1);
     }, 100 ) );
 
     var invalCtnrBBOnScroll = function(domEle){
@@ -268,7 +270,7 @@
       var draggedElements = r.dragData.possibleDragElements;
 
       r.hoverData.mdownPos = pos;
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       var checkForTaphold = function(){
@@ -988,10 +990,10 @@
         // Cancel drag pan
         if( r.hoverData.dragging ){
           r.hoverData.dragging = false;
-          
+
           needsRedraw[CR.SELECT_BOX] = true;
           needsRedraw[CR.NODE] = true;
-          
+
           r.redraw();
         }
 
@@ -1382,7 +1384,7 @@
       var cy = r.data.cy;
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       var zoom = cy.zoom();
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -1582,7 +1584,7 @@
 
             if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
               var dEi_p = draggedEles[i]._private;
-              
+
               dEi_p.grabbed = false;
               dEi_p.rscratch.inDragLayer = false;
             } }
@@ -1645,7 +1647,7 @@
 
                 if( justStartedDrag ){
                   addNodeToDrag( draggedEle, { inDragLayer: true } );
-                  
+
                   needsRedraw[CR.NODE] = true;
 
                   var dragDelta = r.touchData.dragDelta;
@@ -1843,7 +1845,7 @@
       var zoom = cy.zoom();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -1952,18 +1954,18 @@
 
         r.data.bgActivePosistion = undefined;
         needsRedraw[CR.SELECT_BOX] = true;
-        
+
         var draggedEles = r.dragData.touchDragEles;
 
         if (start != null ) {
 
           var startWasGrabbed = start._private.grabbed;
-          
+
           freeDraggedElements( draggedEles );
 
           needsRedraw[CR.DRAG] = true;
           needsRedraw[CR.NODE] = true;
-          
+
           if( startWasGrabbed ){
             start.trigger('free');
           }

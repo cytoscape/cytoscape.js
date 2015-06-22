@@ -1027,6 +1027,12 @@
         var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
         var stepWeight = eStyle['control-point-weight'].value;
         var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
+        
+        var swappedDirection = edge._private.source !== src;
+
+        if( swappedDirection ){
+          stepDist *= -1;
+        }
 
         var srcX1 = rs.lastSrcCtlPtX;
         var srcX2 = srcPos.x;
@@ -1170,7 +1176,6 @@
           var w1 = (1 - stepWeight);
           var w2 = stepWeight;
 
-          var swappedDirection = edge._private.source !== src;
           if( swappedDirection ){
             w1 = stepWeight;
             w2 = (1 - stepWeight);

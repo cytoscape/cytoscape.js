@@ -20,11 +20,11 @@
     return image;
   };
   
-  CRp.safeDrawImage = function( context, img, x, y, w, h ){
+  CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
     var r = this;
     
     try {
-      context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+      context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
     } catch(e){
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
@@ -133,7 +133,7 @@
       }
 
       // context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
-      r.safeDrawImage( context, img, x, y, w, h );
+      r.safeDrawImage( context, img, 0, 0, img.width, img.height, x, y, w, h );
 
       if( shouldClip ){
         context.restore();

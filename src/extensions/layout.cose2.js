@@ -1,4 +1,4 @@
-§;
+;
 (function ($$) { 'use strict';
   function DimensionD(width, height) {
     this.width = 0;
@@ -550,7 +550,7 @@
   Integer.MAX_VALUE = 2147483647;
   Integer.MIN_VALUE = -2147483648;
 
-  /*
+  /* 
    *This class is the javascript implementation of the Point.java class in jdk
    */
   function Point(x, y, p) {
@@ -2577,7 +2577,7 @@
 //      this.update(edge);
       }
 
-      // recursively update nodes
+      // recursively update nodes 
       var node;
       var nodes = this.graphManager.getRoot().getNodes();
       for (var i = 0; i < nodes.length; i++)
@@ -2615,7 +2615,7 @@
         // cast to Updatable without any type check
         var vNode = node.vGraphObject;
 
-        // call the update method of the interface
+        // call the update method of the interface 
         vNode.update(node);
       }
     }
@@ -2630,7 +2630,7 @@
         // cast to Updatable without any type check
         var vEdge = edge.vGraphObject;
 
-        // call the update method of the interface
+        // call the update method of the interface 
         vEdge.update(edge);
       }
     }
@@ -2645,7 +2645,7 @@
         // cast to Updatable without any type check
         var vGraph = graph.vGraphObject;
 
-        // call the update method of the interface
+        // call the update method of the interface 
         vGraph.update(graph);
       }
     }
@@ -3449,12 +3449,12 @@
       // calculate distance
 
       if (this.uniformLeafNodeSizes &&
-              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers
+              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers              
       {
         distanceX = rectB.getCenterX() - rectA.getCenterX();
         distanceY = rectB.getCenterY() - rectA.getCenterY();
       }
-      else// use clipping points
+      else// use clipping points              
       {
         IGeometry.getIntersection(rectA, rectB, clipPoints);
 
@@ -3510,7 +3510,7 @@
     absDistanceX = Math.abs(distanceX);
     absDistanceY = Math.abs(distanceY);
 
-    if (node.getOwner() == this.graphManager.getRoot())// in the root graph
+    if (node.getOwner() == this.graphManager.getRoot())// in the root graph           
     {
       Math.floor(80);
       estimatedSize = Math.floor(ownerGraph.getEstimatedSize() *
@@ -3522,7 +3522,7 @@
         node.gravitationForceY = -this.gravityConstant * distanceY;
       }
     }
-    else// inside a compound
+    else// inside a compound           
     {
       estimatedSize = Math.floor((ownerGraph.getEstimatedSize() *
               this.compoundGravityRangeFactor));
@@ -3646,7 +3646,7 @@
     this.startY = 0;
     this.finishY = 0;
 
-    //Geometric neighbors of this node
+    //Geometric neighbors of this node 
     this.surrounding = [];
   }
 
@@ -3929,8 +3929,8 @@
           var id = allNodes[i].id;
           pData[id] = {
             id: id,
-            x: rect.x,
-            y: rect.y,
+            x: rect.getCenterX(),
+            y: rect.getCenterY(),
             w: rect.width,
             h: rect.height
           };
@@ -4243,7 +4243,7 @@
   CoSEConstants.DEFAULT_USE_MULTI_LEVEL_SCALING = false;
   CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
   CoSEConstants.DEFAULT_COMPONENT_SEPERATION = 60;
-
+  
   _CoSELayout.allChildren = [];
   _CoSELayout.idToLNode = {};
   _CoSELayout.toBeTiled = {};
@@ -4255,20 +4255,14 @@
     // Called on `layoutstop`
     stop: function () {
     },
-    // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-    refresh: 0,
     // Whether to fit the network view after when done
     fit: true,
     // Padding on fit
     padding: 10,
-    // Whether to enable randomize mode, reverse of incremental
+    // Whether to enable incremental mode
     randomize: false,
-    // Whether to use the JS console to print debug messages
-    debug: false,
     // Node repulsion (non overlapping) multiplier
     nodeRepulsion: 4500,
-    // Node repulsion (overlapping) multiplier
-    nodeOverlap: 10,
     // Ideal edge (non nested) length
     idealEdgeLength: 50,
     // Divisor to compute edge forces
@@ -4279,12 +4273,6 @@
     gravity: 0.4,
     // Maximum number of iterations to perform
     numIter: 2500,
-    // Initial temperature (maximum node displacement)
-    initialTemp: 200,
-    // Cooling factor (how the temperature is reduced between consecutive iterations
-    coolingFactor: 0.95,
-    // Lower temperature threshold (below this point the layout will end)
-    minTemp: 1,
     // For enabling tiling
     tile: true,
     //whether to make animation while performing the layout
@@ -4303,7 +4291,7 @@
     _CoSELayout.idToLNode = {};
     _CoSELayout.toBeTiled = {};
     _CoSELayout.layout = new CoSELayout();
-    this.cy = this.options.cy;
+    this.cy = this.options.cy; 
     var after = this;
 
     this.cy.trigger('layoutstart');
@@ -4311,8 +4299,8 @@
     var gm = _CoSELayout.layout.newGraphManager();
     this.gm = gm;
 
-    var nodes = this.cy.nodes();
-    var edges = this.cy.edges();
+    var nodes = this.options.eles.nodes();
+    var edges = this.options.eles.edges();
 
     this.root = gm.addRoot();
     this.orphans = nodes.orphans();
@@ -4370,8 +4358,8 @@
     t1.require(CoSELayout);
     t1.require(CoSENode);
 
-    var nodes = this.cy.nodes();
-    var edges = this.cy.edges();
+    var nodes = this.options.eles.nodes();
+    var edges = this.options.eles.edges();
 
     // First I need to create the data structure to pass to the worker
     var pData = {
@@ -4557,10 +4545,10 @@
         // Repopulate members
         after.repopulateZeroDegreeMembers(tiledZeroDegreeNodes);
         after.repopulateComplexes(tiledMemberPack);
-        after.cy.nodes().updateCompoundBounds();
+        after.options.eles.nodes().updateCompoundBounds();
       }
 
-      after.cy.nodes().positions(function (i, ele) {
+      after.options.eles.nodes().positions(function (i, ele) {
         var theId = ele.data('id');
         var lNode = _CoSELayout.idToLNode[theId];
 
@@ -4593,7 +4581,7 @@
       }
       var pData = e.message.pData;
       if (pData != null) {
-        after.cy.nodes().positions(function (i, ele) {
+        after.options.eles.nodes().positions(function (i, ele) {
           var theId = ele.data('id');
           var pNode = pData[theId];
           if (pNode == null) {
@@ -4663,12 +4651,12 @@
   }
 
   _CoSELayout.prototype.groupZeroDegreeMembers = function () {
-    // array of [parent_id x oneDegreeNode_id]
+    // array of [parent_id x oneDegreeNode_id] 
     var tempMemberGroups = [];
     var memberGroups = [];
 
     // Find all zero degree nodes which aren't covered by a complex
-    var zeroDegree = this.cy.nodes().filter(function (i, ele) {
+    var zeroDegree = this.options.eles.nodes().filter(function (i, ele) {
       if (this.degree(false) == 0 && ele.parent().length > 0 && !getToBeTiled(ele.parent()[0]))
         return true;
       else
@@ -4713,7 +4701,7 @@
     var complexOrder = [];
 
     // Find roots
-    var roots = this.options.cy.filter(function (i, ele) {
+    var roots = this.options.eles.filter(function (i, ele) {
       if (ele.isParent() == true)
         return true;
       return false;
@@ -4743,7 +4731,7 @@
 
       childGraphMap[complexOrder[i].id()] = complexOrder[i].children();
 
-      // Remove children of complexes
+      // Remove children of complexes 
       lComplexNode.child = null;
     }
 
@@ -4790,7 +4778,7 @@
   };
 
   /**
-   * This method places each zero degree member wrt given (x,y) coordinates (top left).
+   * This method places each zero degree member wrt given (x,y) coordinates (top left). 
    */
   _CoSELayout.prototype.adjustLocations = function (organization, x, y) {
     x += organization.complexMargin;
@@ -5080,7 +5068,7 @@
     var size = children.length;
     for (var i = 0; i < size; i++) {
       var theChild = children[i];
-      this.cy.nodes().length;
+      this.options.eles.nodes().length;
       var children_of_children = theChild.children();
       var theNode;
 

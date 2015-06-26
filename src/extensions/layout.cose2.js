@@ -1,4 +1,4 @@
-;
+§;
 (function ($$) { 'use strict';
   function DimensionD(width, height) {
     this.width = 0;
@@ -550,7 +550,7 @@
   Integer.MAX_VALUE = 2147483647;
   Integer.MIN_VALUE = -2147483648;
 
-  /* 
+  /*
    *This class is the javascript implementation of the Point.java class in jdk
    */
   function Point(x, y, p) {
@@ -2577,7 +2577,7 @@
 //      this.update(edge);
       }
 
-      // recursively update nodes 
+      // recursively update nodes
       var node;
       var nodes = this.graphManager.getRoot().getNodes();
       for (var i = 0; i < nodes.length; i++)
@@ -2615,7 +2615,7 @@
         // cast to Updatable without any type check
         var vNode = node.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vNode.update(node);
       }
     }
@@ -2630,7 +2630,7 @@
         // cast to Updatable without any type check
         var vEdge = edge.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vEdge.update(edge);
       }
     }
@@ -2645,7 +2645,7 @@
         // cast to Updatable without any type check
         var vGraph = graph.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vGraph.update(graph);
       }
     }
@@ -3449,12 +3449,12 @@
       // calculate distance
 
       if (this.uniformLeafNodeSizes &&
-              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers              
+              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers
       {
         distanceX = rectB.getCenterX() - rectA.getCenterX();
         distanceY = rectB.getCenterY() - rectA.getCenterY();
       }
-      else// use clipping points              
+      else// use clipping points
       {
         IGeometry.getIntersection(rectA, rectB, clipPoints);
 
@@ -3510,7 +3510,7 @@
     absDistanceX = Math.abs(distanceX);
     absDistanceY = Math.abs(distanceY);
 
-    if (node.getOwner() == this.graphManager.getRoot())// in the root graph           
+    if (node.getOwner() == this.graphManager.getRoot())// in the root graph
     {
       Math.floor(80);
       estimatedSize = Math.floor(ownerGraph.getEstimatedSize() *
@@ -3522,7 +3522,7 @@
         node.gravitationForceY = -this.gravityConstant * distanceY;
       }
     }
-    else// inside a compound           
+    else// inside a compound
     {
       estimatedSize = Math.floor((ownerGraph.getEstimatedSize() *
               this.compoundGravityRangeFactor));
@@ -3591,7 +3591,8 @@
       FDLayoutConstants.DEFAULT_GRAVITY_STRENGTH = options.gravity;
     if (options.numIter != null)
       FDLayoutConstants.MAX_ITERATIONS = options.numIter;
-    
+
+    layoutOptionsPack.incremental = !(options.randomize);
     layoutOptionsPack.animate = options.animate;
   }
 
@@ -3645,7 +3646,7 @@
     this.startY = 0;
     this.finishY = 0;
 
-    //Geometric neighbors of this node 
+    //Geometric neighbors of this node
     this.surrounding = [];
   }
 
@@ -4242,7 +4243,7 @@
   CoSEConstants.DEFAULT_USE_MULTI_LEVEL_SCALING = false;
   CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
   CoSEConstants.DEFAULT_COMPONENT_SEPERATION = 60;
-  
+
   _CoSELayout.allChildren = [];
   _CoSELayout.idToLNode = {};
   _CoSELayout.toBeTiled = {};
@@ -4260,8 +4261,8 @@
     fit: true,
     // Padding on fit
     padding: 10,
-    // Whether to enable incremental mode
-    incremental: false,
+    // Whether to enable randomize mode, reverse of incremental
+    randomize: false,
     // Whether to use the JS console to print debug messages
     debug: false,
     // Node repulsion (non overlapping) multiplier
@@ -4302,7 +4303,7 @@
     _CoSELayout.idToLNode = {};
     _CoSELayout.toBeTiled = {};
     _CoSELayout.layout = new CoSELayout();
-    this.cy = this.options.cy; 
+    this.cy = this.options.cy;
     var after = this;
 
     this.cy.trigger('layoutstart');
@@ -4662,7 +4663,7 @@
   }
 
   _CoSELayout.prototype.groupZeroDegreeMembers = function () {
-    // array of [parent_id x oneDegreeNode_id] 
+    // array of [parent_id x oneDegreeNode_id]
     var tempMemberGroups = [];
     var memberGroups = [];
 
@@ -4742,7 +4743,7 @@
 
       childGraphMap[complexOrder[i].id()] = complexOrder[i].children();
 
-      // Remove children of complexes 
+      // Remove children of complexes
       lComplexNode.child = null;
     }
 
@@ -4789,7 +4790,7 @@
   };
 
   /**
-   * This method places each zero degree member wrt given (x,y) coordinates (top left). 
+   * This method places each zero degree member wrt given (x,y) coordinates (top left).
    */
   _CoSELayout.prototype.adjustLocations = function (organization, x, y) {
     x += organization.complexMargin;

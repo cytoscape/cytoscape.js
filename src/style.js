@@ -441,7 +441,7 @@
           'selection-box-border-width': 1,
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
-          'active-bg-size': $$.is.touch() ? 40 : 15,
+          'active-bg-size': 30,
           'outside-texture-bg-color': '#000',
           'outside-texture-bg-opacity': 0.125
         })

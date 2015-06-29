@@ -130,7 +130,7 @@ var cy = cytoscape({
   panningEnabled: true,
   userPanningEnabled: true,
   boxSelectionEnabled: false,
-  selectionType: (isTouchDevice ? 'additive' : 'single'),
+  selectionType: 'single',
   touchTapThreshold: 8,
   desktopTapThreshold: 4,
   autolock: false,
@@ -189,7 +189,7 @@ var cy = cytoscape({
 
 **`boxSelectionEnabled`** : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled, the user must taphold to pan the graph.
 
-**`selectionType`** : A string indicating the selection behaviour from user input.  By default, this is set automatically for you based on the type of input device detected.  On touch devices, `'additive'` is default &mdash; a new selection made by the user adds to the set of currenly selected elements.  On mouse-input devices, `'single'` is default &mdash; a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
+**`selectionType`** : A string indicating the selection behaviour from user input.  For `'additive'`, a new selection made by the user adds to the set of currently selected elements.  For `'single'`, a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).
 
 **`touchTapThreshold`** & **`desktopTapThreshold`** : A nonnegative integer that indicates the maximum allowable distance that a user may move during a tap gesture, on touch devices and desktop devices respectively.  This makes tapping easier for users.  These values have sane defaults, so it is not advised to change these options unless you have very good reason for doing so.  Larger values will almost certainly have undesirable consequences.
 

@@ -114,15 +114,16 @@
     this.minMbLowQualFrames = 4;
     this.fullQualityMb = false;
     this.clearedForMotionBlur = [];
-    this.tapThreshold = options.tapThreshold;
-    this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.desktopTapThreshold = options.desktopTapThreshold;
+    this.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
+    this.touchTapThreshold = options.touchTapThreshold;
+    this.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
     this.tapholdDuration = 500;
 
     this.load();
   }
 
   CanvasRenderer.panOrBoxSelectDelay = 400;
-  CanvasRenderer.isTouch = $$.is.touch();
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';

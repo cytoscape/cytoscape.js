@@ -29,11 +29,10 @@
   };
 
   // Find nearest element
-  CRp.findNearestElement = function(x, y, visibleElementsOnly){
+  CRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     var self = this;
     var eles = this.getCachedZSortedEles();
     var near = [];
-    var isTouch = CanvasRenderer.isTouch;
     var zoom = this.data.cy.zoom();
     var hasCompounds = this.data.cy.hasCompoundNodes();
     var edgeThreshold = (isTouch ? 24 : 8) / zoom;

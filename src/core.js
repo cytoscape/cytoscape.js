@@ -1,7 +1,5 @@
 ;(function($$, window){ 'use strict';
 
-  var isTouch = $$.is.touch();
-
   var defaults = {
   };
   
@@ -105,11 +103,7 @@
     if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
       // then set default
 
-      if( isTouch ){
-        _p.selectionType = 'additive';
-      } else {
-        _p.selectionType = 'single';
-      }
+      _p.selectionType = 'single';
     } else {
       _p.selectionType = selType;
     }
@@ -162,7 +156,8 @@
         motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
         motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
         pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
-        tapThreshold: defVal( $$.is.touch() ? 8 : 4, $$.is.touch() ? options.touchTapThreshold : options.desktopTapThreshold )
+        desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
+        touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
       }, options.renderer) );
 
       // trigger the passed function for the `initrender` event

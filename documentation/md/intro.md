@@ -46,6 +46,14 @@ The library was developed at the [Donnelly Centre](http://thedonnellycentre.utor
 
 
 
+## Packages
+
+ * npm : `npm install cytoscape`
+ * bower : `bower install cytoscape`
+ * spm : `spm install cytoscape`
+ * meteor : `meteor add maxkfranz:cytoscape`
+
+
 ## Cytoscape.js & Cytoscape
 
 Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/), Cytoscape.js is not exactly the same as Cytoscape desktop.  Cytoscape.js is a JavaScript library for _programmers_.  It is not an app for end-users, and developers need to write code around Cytoscape.js to build graphcentric apps.

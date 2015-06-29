@@ -264,7 +264,7 @@
       var cy = r.data.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements;
 
       r.hoverData.mdownPos = pos;
@@ -499,7 +499,7 @@
 
       var near = null;
       if( !r.hoverData.draggingEles ){
-        near = r.findNearestElement(pos[0], pos[1], true);
+        near = r.findNearestElement(pos[0], pos[1], true, false);
       }
       var last = r.hoverData.last;
       var down = r.hoverData.down;
@@ -647,7 +647,7 @@
           && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CR.panOrBoxSelectDelay) )
           //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
           && !r.hoverData.selecting
-          && rdist2 >= r.tapThreshold2
+          && rdist2 >= r.desktopTapThreshold2
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
         r.hoverData.dragging = true;
@@ -699,7 +699,7 @@
 
         if( down && down.isNode() && r.nodeIsDraggable(down) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then drag
+          if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
 
             var justStartedDrag = !r.dragData.didDrag;
 
@@ -778,7 +778,7 @@
       r.hoverData.capture = false;
 
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var shiftDown = e.shiftKey;
       var needsRedraw = r.data.canvasNeedsRedraw;
@@ -1193,8 +1193,8 @@
         var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
         if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
 
-          var near1 = r.findNearestElement(now[0], now[1], true);
-          var near2 = r.findNearestElement(now[2], now[3], true);
+          var near1 = r.findNearestElement(now[0], now[1], true, true);
+          var near2 = r.findNearestElement(now[2], now[3], true, true);
 
           //console.log(distance1)
 
@@ -1249,7 +1249,7 @@
       } else if (e.touches[1]) {
 
       } else if (e.touches[0]) {
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if (near != null) {
           near.activate();
@@ -1452,7 +1452,7 @@
 
         //console.log('cxtdrag')
 
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
 
@@ -1623,11 +1623,11 @@
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);
+        var near = near || r.findNearestElement(now[0], now[1], true, true);
 
         if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then dragging can happen
+          if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
             var draggedEles = r.dragData.touchDragEles;
 
             for( var k = 0; k < draggedEles.length; k++ ){
@@ -1777,7 +1777,7 @@
               y: disp[1] * zoom
             });
 
-          } else if( rdist2 >= r.tapThreshold2 ){
+          } else if( rdist2 >= r.touchTapThreshold2 ){
             r.swipePanning = true;
 
             cy.panBy({
@@ -1988,7 +1988,7 @@
           r.touchData.start = null;
 
         } else {
-          var near = r.findNearestElement(now[0], now[1], true);
+          var near = r.findNearestElement(now[0], now[1], true, true);
 
           if (near != null) {
             near
@@ -2036,7 +2036,7 @@
         if (start != null
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable
-            && rdist2 < r.tapThreshold2
+            && rdist2 < r.touchTapThreshold2
             && !r.pinching // pinch to zoom should not affect selection
         ) {
 

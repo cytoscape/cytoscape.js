@@ -143,7 +143,7 @@
     },
 
     khtmlEtc: function(){
-      return $$.is.khtml() || $$.is.webkit() || $$.is.blink();
+      return $$.is.khtml() || $$.is.webkit() || $$.is.chromium();
     },
 
     trident: function(){

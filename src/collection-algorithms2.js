@@ -1258,6 +1258,7 @@
     // options => options object
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
     //   directed // default false
+    //   harmonic // use harmonic mean instead of arithmetic mean
     // retObj => returned object by function
     //   closeness : function(node) // Returns the normalized closeness of the given node
     closenessCentralityNormalized: function (options) {
@@ -1279,22 +1280,38 @@
 
       // logDebug("Starting closeness centrality...");
 
+      var harmonic = options.harmonic;
+      if( harmonic === undefined ){
+        harmonic = true;
+      }
+ 
       var closenesses = {};
       var maxCloseness = 0;
       var nodes = this.nodes();
-      var fw = this.floydWarshall({weight: options.weight, directed: options.directed});
+      var fw = this.floydWarshall({ weight: options.weight, directed: options.directed });
 
       // Compute closeness for every node and find the maximum closeness
       for(var i = 0; i < nodes.length; i++){
         var currCloseness = 0;
         for (var j = 0; j < nodes.length; j++) {
           if (i != j) {
-            currCloseness += 1 / fw.distance(nodes[i], nodes[j]);
+            var d = fw.distance(nodes[i], nodes[j]);
+            
+            if( harmonic ){
+              currCloseness += 1 / d;
+            } else {
+              currCloseness += d;
+            }
           }
         }
+        
+        if( !harmonic ){
+          currCloseness = 1 / currCloseness;
+        }
 
-        if (maxCloseness < currCloseness)
+        if (maxCloseness < currCloseness){
           maxCloseness = currCloseness;
+        }
 
         closenesses[nodes[i].id()] = currCloseness;
       }
@@ -1365,6 +1382,11 @@
       } else {
         var directed = false;
       }
+      
+      var harmonic = options.harmonic;
+      if( harmonic === undefined ){
+        harmonic = true;
+      }
 
       // we need distance from this node to every other node
       var dijkstra = this.dijkstra({
@@ -1375,11 +1397,19 @@
       var totalDistance = 0;
 
       var nodes = this.nodes();
-      for (var i = 0; i < nodes.length; i++)
-        if (nodes[i].id() != root.id())
-          totalDistance += 1 / dijkstra.distanceTo(nodes[i]);
+      for (var i = 0; i < nodes.length; i++){
+        if (nodes[i].id() != root.id()){
+          var d = dijkstra.distanceTo(nodes[i]);
+          
+          if( harmonic ){
+            totalDistance += 1 / d; 
+          } else {
+            totalDistance += d;
+          }
+        }
+      }
 
-      return totalDistance;
+      return harmonic ? totalDistance : 1 / totalDistance;
     }, // closenessCentrality
 
     // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes

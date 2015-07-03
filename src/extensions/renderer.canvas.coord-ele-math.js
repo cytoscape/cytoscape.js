@@ -35,12 +35,12 @@
     var near = [];
     var zoom = this.data.cy.zoom();
     var hasCompounds = this.data.cy.hasCompoundNodes();
-    var edgeThreshold = (isTouch ? 256 : 32) / zoom;
-    var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
+    var edgeThreshold = (isTouch ? 24 : 8) / zoom;
+    var nodeThreshold = (isTouch ? 8 : 2) / zoom;
 
     function checkNode(node){
-      var width = node.outerWidth();
-      var height = node.outerHeight();
+      var width = node.outerWidth() + 2*nodeThreshold;
+      var height = node.outerHeight() + 2*nodeThreshold;
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
@@ -61,9 +61,9 @@
         var borderWO = node._private.style['border-width'].pxValue / 2;
 
         if(
-          shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+          shape.checkPoint(x, y, 0, width, height, pos.x, pos.y)
         ){
-            near.push( node );
+          near.push( node );
         }
 
       }
@@ -72,12 +72,13 @@
     function checkEdge(edge){
       var rs = edge._private.rscratch;
       var style = edge._private.style;
-      var width = style['width'].pxValue;
+      var width = style['width'].pxValue/2 + edgeThreshold; // more like a distance radius from centre
       var widthSq = width * width;
       var width2 = width * 2;
       var src = edge._private.source;
       var tgt = edge._private.target;
       var inEdgeBB = false;
+      var sqDist;
 
       // exit early if invisible edge and must be visible
       var passedVisibilityCheck;
@@ -106,13 +107,13 @@
             (
               (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
                 && passesVisibilityCheck() &&
-              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY) )
+              ( widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY)) )
             )
               ||
             (
               (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
                 && passesVisibilityCheck() &&
-              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY) )
+              ( widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY)) )
             )
         ){
           near.push( edge );
@@ -137,7 +138,7 @@
         if( 
           (inEdgeBB = $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2))
             && passesVisibilityCheck() &&
-          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY )
+          widthSq > ( sqDist = $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY ) )
         ){
           near.push( edge );
         }
@@ -146,7 +147,7 @@
         if(
           (inEdgeBB = $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
             && passesVisibilityCheck() &&
-          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
+          widthSq > ( sqDist = $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY) )
         ){
           near.push( edge );
         }
@@ -155,12 +156,13 @@
         if(
           (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
             && passesVisibilityCheck() &&
-          (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
+          (widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY)) )
         ){
           near.push( edge );
         }
       }
       
+      // if we're close to the edge but didn't hit it, maybe we hit its arrows
       if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
         var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
         var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
@@ -179,15 +181,15 @@
 
         if(
           (
-            srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+            srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
               && 
-            srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+            srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
           )
             ||
           (
-            tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+            tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
               &&
-            tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+            tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
           )
         ){
           near.push( edge );

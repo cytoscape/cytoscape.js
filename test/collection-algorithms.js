@@ -194,6 +194,32 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       }
     }
   });
+  
+  it('eles.dijkstra() disconnected infinity', function(){
+    var cy = cytoscape({
+      elements: [
+        {
+          group: 'nodes',
+          data: { id: 'a' }
+        },
+        
+        {
+          group: 'nodes',
+          data: { id: 'b' }
+        }
+      ],
+      headless: true
+    });
+    
+    var di = cy.elements().dijkstra({
+      root: '#a', 
+      weight: function(){
+        return this.data('weight');
+      }
+    });
+
+    expect( di.distanceTo('#b') ).to.equal(Infinity);
+  });
 
   it('eles.dijkstra() directed', function(){
     var di = cy.elements().dijkstra({

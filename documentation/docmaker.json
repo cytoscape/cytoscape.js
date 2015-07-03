@@ -2855,7 +2855,8 @@
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) for which the centrality calculation is made." },
                       { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
-                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true },
+                      { "name": "harmonic", "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.", "optional": true }
                     ] }
                   ]
                 }
@@ -2872,7 +2873,8 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
-                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true },
+                      { "name": "harmonic", "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.", "optional": true }
                     ] }
                   ]
                 }

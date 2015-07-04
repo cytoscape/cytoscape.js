@@ -4584,12 +4584,11 @@
         after.options.eles.nodes().positions(function (i, ele) {
           var theId = ele.data('id');
           var pNode = pData[theId];
-          if (pNode == null) {
-            var parent = this.parent()[0];
-            return{
-              x: parent.position("x"),
-              y: parent.position("y")
-            }
+          var temp = this;
+          while (pNode == null) {
+            temp = temp.parent()[0];
+            pNode = pData[temp.id()];
+            pData[theId] = pNode;
           }
           return {
             x: pNode.x,

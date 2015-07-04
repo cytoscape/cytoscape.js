@@ -4708,7 +4708,7 @@
     });
 
     // Perform dfs to get the inner complex first
-    this.cy.elements().dfs(roots, function (i, depth) {
+    this.options.eles.nodes().dfs(roots, function (i, depth) {
       if (getToBeTiled(this)) {
         complexOrder.push(this);
       }
@@ -4722,6 +4722,7 @@
 
     // Get complex ordering by finding the inner one first
     var complexOrder = this.performDFSOnComplexes(options);
+    _CoSELayout.complexOrder = complexOrder;
 
     this.processChildrenList(this.root, this.orphans);
 
@@ -4757,10 +4758,11 @@
   };
 
   _CoSELayout.prototype.repopulateComplexes = function (tiledMemberPack) {
-    for (var i in tiledMemberPack) {
-      var lComplexNode = _CoSELayout.idToLNode[i];
+    for (var i = _CoSELayout.complexOrder.length - 1; i >= 0; i--) {
+      var id = _CoSELayout.complexOrder[i].id();
+      var lComplexNode = _CoSELayout.idToLNode[id];
 
-      this.adjustLocations(tiledMemberPack[i], lComplexNode.rect.x, lComplexNode.rect.y);
+      this.adjustLocations(tiledMemberPack[id], lComplexNode.rect.x, lComplexNode.rect.y);
     }
   };
 
@@ -4801,7 +4803,6 @@
           y: y + lnode.rect.height / 2
         });
 
-        this.moveChildren(lnode, x - lnode.rect.x, y - lnode.rect.y);
         lnode.rect.x = x;// + lnode.rect.width / 2;
         lnode.rect.y = y;// + lnode.rect.height / 2;
 
@@ -4814,17 +4815,6 @@
       y += maxHeight + organization.verticalPadding;
     }
   };
-  
-  _CoSELayout.prototype.moveChildren = function(lnode, dx, dy){
-    var children = cy.getElementById(lnode.id).children();
-    for(var i = 0; i < children.length; i++){
-      var child = children[i];
-      var lchild = _CoSELayout.idToLNode[child.id()];
-      lchild.rect.x += dx;
-      lchild.rect.y += dy;
-      this.moveChildren(lchild, dx, dy);
-    }
-  }
 
   _CoSELayout.prototype.tileComplexMembers = function (childGraphMap) {
     var tiledMemberPack = [];

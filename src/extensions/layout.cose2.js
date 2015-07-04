@@ -4801,6 +4801,7 @@
           y: y + lnode.rect.height / 2
         });
 
+        this.moveChildren(lnode, x - lnode.rect.x, y - lnode.rect.y);
         lnode.rect.x = x;// + lnode.rect.width / 2;
         lnode.rect.y = y;// + lnode.rect.height / 2;
 
@@ -4813,6 +4814,17 @@
       y += maxHeight + organization.verticalPadding;
     }
   };
+  
+  _CoSELayout.prototype.moveChildren = function(lnode, dx, dy){
+    var children = cy.getElementById(lnode.id).children();
+    for(var i = 0; i < children.length; i++){
+      var child = children[i];
+      var lchild = _CoSELayout.idToLNode[child.id()];
+      lchild.rect.x += dx;
+      lchild.rect.y += dy;
+      this.moveChildren(lchild, dx, dy);
+    }
+  }
 
   _CoSELayout.prototype.tileComplexMembers = function (childGraphMap) {
     var tiledMemberPack = [];

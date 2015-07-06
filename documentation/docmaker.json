@@ -18,7 +18,9 @@
     "renderedPosition": "#notation/position",
     "pan": "#notation/position",
     "panBy": "#notation/position",
-    "css": "#style"
+    "css": "#style",
+    "style": "#style",
+    "stylesheet": "#style"
   },
 
   "sections": [
@@ -796,7 +798,7 @@
                   "args": [
                     {
                       "name": "stylesheet",
-                      "descr": "Either a `cytoscape.Stylesheet` object, a string stylesheet, or a JSON stylesheet (the same formats accepted for `options.style` at initialisation)."
+                      "descr": "Either a `cytoscape.stylesheet()` object, a string stylesheet, or a JSON stylesheet (the same formats accepted for `options.style` at initialisation)."
                     }
                   ]
                 }
@@ -2668,7 +2670,7 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                      { "name": "visit: function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                      { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                         { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
                         { "name": "v", "descr": "The current node." },
@@ -2682,7 +2684,7 @@
                 {
                   "args": [
                     { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
+                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                       { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                       { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
                       { "name": "v", "descr": "The current node." },

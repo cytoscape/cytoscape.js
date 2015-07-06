@@ -199,7 +199,7 @@ button:active {
 	z-index: 1;
 	padding: 0 0.5em;
 	overflow-y: auto;
-	overflow-x: auto;
+	/*overflow-x: hidden;*/
 	-webkit-overflow-scrolling: touch;
 	white-space: nowrap;
 	background: #fff;
@@ -227,6 +227,8 @@ button:active {
 	margin-left: 2em;
 	font-size: 0.7em;
 	font-family: Consolas, "Liberation Mono", Courier, monospace;
+	word-break: break-all;
+	white-space: normal;
 }
 
 #navigation .expander {
@@ -683,6 +685,8 @@ pre code {
 
 .function > .name {
 	font-size: 1.25em;
+	word-break: break-all;
+	white-space: normal;
 }
 
 .function .pure-aliases {

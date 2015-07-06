@@ -5,7 +5,7 @@ You can use this function to gain access to the visual style (stylesheet) after 
 Sets a new style by reference:
 
 ```js
-// here a string stylesheet is used, but you could also use json or a cytoscape.Stylesheet object
+// here a string stylesheet is used, but you could also use json or a cytoscape.stylesheet() object
 var stringStylesheet = 'node { background-color: cyan; }';
 cy.style( stringStylesheet );
 ```

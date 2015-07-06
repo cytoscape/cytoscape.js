@@ -21,7 +21,7 @@
     // fill in missing layout functions in the prototype
     if( type === 'layout' ){
       var layoutProto = registrant.prototype;
-      var optLayoutFns = ['stop'];
+      var optLayoutFns = [];
 
       for( var i = 0; i < optLayoutFns.length; i++ ){
         var fnName = optLayoutFns[i];
@@ -34,6 +34,18 @@
         layoutProto.run = function(){ this.start(); return this; };
       } else if( !layoutProto.start && layoutProto.run ){
         layoutProto.start = function(){ this.run(); return this; };
+      }
+      
+      if( !layoutProto.stop ){
+        layoutProto.stop = function(){
+          var opts = this.options;
+          
+          if( opts && opts.animate ){
+            opts.eles.stop();
+          }
+          
+          return this;
+        };
       }
 
       layoutProto.on = $$.define.on({ layout: true });

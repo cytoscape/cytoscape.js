@@ -1,5 +1,6 @@
 ;
-(function ($$) { 'use strict';
+(function ($$) {
+  'use strict';
   function DimensionD(width, height) {
     this.width = 0;
     this.height = 0;
@@ -3917,7 +3918,7 @@
       this.animate();
       if (layoutOptionsPack.animate && this.totalIterations % animationPeriod == 0) {
         for (var i = 0; i < 1e7; i++) {
-          if ((new Date().getTime() - lastFrame) > 25){
+          if ((new Date().getTime() - lastFrame) > 25) {
             break;
           }
         }
@@ -4243,7 +4244,7 @@
   CoSEConstants.DEFAULT_USE_MULTI_LEVEL_SCALING = false;
   CoSEConstants.DEFAULT_RADIAL_SEPARATION = FDLayoutConstants.DEFAULT_EDGE_LENGTH;
   CoSEConstants.DEFAULT_COMPONENT_SEPERATION = 60;
-  
+
   _CoSELayout.allChildren = [];
   _CoSELayout.idToLNode = {};
   _CoSELayout.toBeTiled = {};
@@ -4291,7 +4292,7 @@
     _CoSELayout.idToLNode = {};
     _CoSELayout.toBeTiled = {};
     _CoSELayout.layout = new CoSELayout();
-    this.cy = this.options.cy; 
+    this.cy = this.options.cy;
     var after = this;
 
     this.cy.trigger('layoutstart');
@@ -4699,21 +4700,20 @@
   _CoSELayout.prototype.performDFSOnComplexes = function (options) {
     var complexOrder = [];
 
-    // Find roots
-    var roots = this.options.eles.filter(function (i, ele) {
-      if (ele.isParent() == true)
-        return true;
-      return false;
-    });
-
-    // Perform dfs to get the inner complex first
-    this.options.eles.nodes().dfs(roots, function (i, depth) {
-      if (getToBeTiled(this)) {
-        complexOrder.push(this);
-      }
-    }, options.directed);
+    var roots = this.options.eles.nodes().orphans();
+    this.fillCompexOrderByDFS(complexOrder, roots);
 
     return complexOrder;
+  };
+
+  _CoSELayout.prototype.fillCompexOrderByDFS = function (complexOrder, children) {
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      this.fillCompexOrderByDFS(complexOrder, child.children());
+      if (getToBeTiled(child)) {
+        complexOrder.push(child);
+      }
+    }
   };
 
   _CoSELayout.prototype.clearComplexes = function (options) {
@@ -4796,7 +4796,7 @@
         var lnode = row[j];
 
         var node = this.cy.getElementById(lnode.id);
-
+        console.log(lnode.id);
         node.position({
           x: x + lnode.rect.width / 2,
           y: y + lnode.rect.height / 2

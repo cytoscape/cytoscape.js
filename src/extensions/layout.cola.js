@@ -146,22 +146,27 @@
       }
 
       var adaptor = layout.adaptor = cola.adaptor({
-        trigger: function( e ){ // on sim event
+        trigger: function( e ){ // on sim event      
+          var TICK = cola.EventType ? cola.EventType.tick : null;
+          var END = cola.EventType ? cola.EventType.end : null;
+          
           switch( e.type ){
             case 'tick':
+            case TICK:
               if( options.animate ){
                 updateNodePositions();
               }
               break;
 
-            case 'end': 
+            case 'end':
+            case END:
               updateNodePositions();
               if( !options.infinite ){ onDone(); }           
               break;
           }
         },
 
-        kick: function( tick ){ // kick off the simulation
+        kick: function(){ // kick off the simulation
           var skip = 0;
 
           var inftick = function(){
@@ -171,7 +176,7 @@
               return true;
             }
             
-            var ret = tick();
+            var ret = adaptor.tick();
 
             if( ret && options.infinite ){ // resume layout if done
               adaptor.resume(); // resume => new kick

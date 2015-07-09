@@ -14,14 +14,14 @@ $(function(){
   
   // get exported json from cytoscape desktop via ajax
   var graphP = $.ajax({
-    url: 'https://cdn.rawgit.com/maxkfranz/934042c1ecc464a8de85/raw/', // tokyo-railways.json
+    url: 'https://cdn.rawgit.com/maxkfranz/934042c1ecc464a8de85/raw', // tokyo-railways.json
     type: 'GET',
     dataType: 'json'
   });
   
   // also get style via ajax
   var styleP = $.ajax({
-    url: 'https://cdn.rawgit.com/maxkfranz/2c23fe9a23d0cc8d43af/raw/', // tokyo-railways-style.cycss
+    url: 'https://cdn.rawgit.com/maxkfranz/2c23fe9a23d0cc8d43af/raw', // tokyo-railways-style.cycss
     type: 'GET',
     dataType: 'text'
   });

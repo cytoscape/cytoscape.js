@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.2.
+ * This file is part of Cytoscape.js 2.4.3.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.2';
+  $$.version = '2.4.3';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -434,7 +434,7 @@ this.cytoscape = cytoscape;
     },
 
     khtmlEtc: function(){
-      return $$.is.khtml() || $$.is.webkit() || $$.is.blink();
+      return $$.is.khtml() || $$.is.webkit() || $$.is.chromium();
     },
 
     trident: function(){
@@ -2920,7 +2920,7 @@ this.cytoscape = cytoscape;
     // fill in missing layout functions in the prototype
     if( type === 'layout' ){
       var layoutProto = registrant.prototype;
-      var optLayoutFns = ['stop'];
+      var optLayoutFns = [];
 
       for( var i = 0; i < optLayoutFns.length; i++ ){
         var fnName = optLayoutFns[i];
@@ -2933,6 +2933,18 @@ this.cytoscape = cytoscape;
         layoutProto.run = function(){ this.start(); return this; };
       } else if( !layoutProto.start && layoutProto.run ){
         layoutProto.start = function(){ this.run(); return this; };
+      }
+      
+      if( !layoutProto.stop ){
+        layoutProto.stop = function(){
+          var opts = this.options;
+          
+          if( opts && opts.animate ){
+            opts.eles.stop();
+          }
+          
+          return this;
+        };
       }
 
       layoutProto.on = $$.define.on({ layout: true });
@@ -4957,6 +4969,7 @@ this.cytoscape = cytoscape;
       { name: 'text-opacity', type: t.zeroOneNumber },
       { name: 'text-background-color', type: t.color },
       { name: 'text-background-opacity', type: t.zeroOneNumber },
+      { name: 'text-border-opacity', type: t.zeroOneNumber },
       { name: 'text-border-color', type: t.color },
       { name: 'text-border-width', type: t.size },
       { name: 'text-border-style', type: t.borderStyle },
@@ -5125,6 +5138,7 @@ this.cytoscape = cytoscape;
           'text-max-width': textMaxWidth,
           'text-background-color': '#000',
           'text-background-opacity': 0,
+          'text-border-opacity': 0,
           'text-border-width': 0,
           'text-border-style': 'solid',
           'text-border-color':'#000',
@@ -5288,7 +5302,7 @@ this.cytoscape = cytoscape;
           'selection-box-border-width': 1,
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
-          'active-bg-size': $$.is.touch() ? 40 : 15,
+          'active-bg-size': 30,
           'outside-texture-bg-color': '#000',
           'outside-texture-bg-opacity': 0.125
         })
@@ -7632,8 +7646,6 @@ this.cytoscape = cytoscape;
 
 ;(function($$, window){ 'use strict';
 
-  var isTouch = $$.is.touch();
-
   var defaults = {
   };
   
@@ -7737,11 +7749,7 @@ this.cytoscape = cytoscape;
     if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
       // then set default
 
-      if( isTouch ){
-        _p.selectionType = 'additive';
-      } else {
-        _p.selectionType = 'single';
-      }
+      _p.selectionType = 'single';
     } else {
       _p.selectionType = selType;
     }
@@ -7794,7 +7802,8 @@ this.cytoscape = cytoscape;
         motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
         motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
         pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
-        tapThreshold: defVal( $$.is.touch() ? 8 : 4, $$.is.touch() ? options.touchTapThreshold : options.desktopTapThreshold )
+        desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
+        touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
       }, options.renderer) );
 
       // trigger the passed function for the `initrender` event
@@ -10433,10 +10442,9 @@ this.cytoscape = cytoscape;
       }
 
       var cy = this._private.cy;
-      directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
-      var source = $$.is.string(root) ? this.filter(root).eq(0) : root.eq(0);
+      var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
       var knownDist = {};
@@ -10511,13 +10519,13 @@ this.cytoscape = cytoscape;
 
       return {
         distanceTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
 
           return knownDist[ target.id() ];
         },
 
         pathTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
           var S = [];
           var u = target;
 
@@ -10547,6 +10555,7 @@ this.cytoscape = cytoscape;
   $$.elesfn.stdDfs = $$.elesfn.stdDepthFirstSearch;
   
 })( cytoscape );
+
 ;(function($$) { 
   'use strict';
 
@@ -11807,6 +11816,7 @@ this.cytoscape = cytoscape;
     // options => options object
     //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
     //   directed // default false
+    //   harmonic // use harmonic mean instead of arithmetic mean
     // retObj => returned object by function
     //   closeness : function(node) // Returns the normalized closeness of the given node
     closenessCentralityNormalized: function (options) {
@@ -11828,22 +11838,38 @@ this.cytoscape = cytoscape;
 
       // logDebug("Starting closeness centrality...");
 
+      var harmonic = options.harmonic;
+      if( harmonic === undefined ){
+        harmonic = true;
+      }
+ 
       var closenesses = {};
       var maxCloseness = 0;
       var nodes = this.nodes();
-      var fw = this.floydWarshall({weight: options.weight, directed: options.directed});
+      var fw = this.floydWarshall({ weight: options.weight, directed: options.directed });
 
       // Compute closeness for every node and find the maximum closeness
       for(var i = 0; i < nodes.length; i++){
         var currCloseness = 0;
         for (var j = 0; j < nodes.length; j++) {
           if (i != j) {
-            currCloseness += 1 / fw.distance(nodes[i], nodes[j]);
+            var d = fw.distance(nodes[i], nodes[j]);
+            
+            if( harmonic ){
+              currCloseness += 1 / d;
+            } else {
+              currCloseness += d;
+            }
           }
         }
+        
+        if( !harmonic ){
+          currCloseness = 1 / currCloseness;
+        }
 
-        if (maxCloseness < currCloseness)
+        if (maxCloseness < currCloseness){
           maxCloseness = currCloseness;
+        }
 
         closenesses[nodes[i].id()] = currCloseness;
       }
@@ -11914,6 +11940,11 @@ this.cytoscape = cytoscape;
       } else {
         var directed = false;
       }
+      
+      var harmonic = options.harmonic;
+      if( harmonic === undefined ){
+        harmonic = true;
+      }
 
       // we need distance from this node to every other node
       var dijkstra = this.dijkstra({
@@ -11924,11 +11955,19 @@ this.cytoscape = cytoscape;
       var totalDistance = 0;
 
       var nodes = this.nodes();
-      for (var i = 0; i < nodes.length; i++)
-        if (nodes[i].id() != root.id())
-          totalDistance += 1 / dijkstra.distanceTo(nodes[i]);
+      for (var i = 0; i < nodes.length; i++){
+        if (nodes[i].id() != root.id()){
+          var d = dijkstra.distanceTo(nodes[i]);
+          
+          if( harmonic ){
+            totalDistance += 1 / d; 
+          } else {
+            totalDistance += d;
+          }
+        }
+      }
 
-      return totalDistance;
+      return harmonic ? totalDistance : 1 / totalDistance;
     }, // closenessCentrality
 
     // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
@@ -15342,15 +15381,16 @@ this.cytoscape = cytoscape;
     this.minMbLowQualFrames = 4;
     this.fullQualityMb = false;
     this.clearedForMotionBlur = [];
-    this.tapThreshold = options.tapThreshold;
-    this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.desktopTapThreshold = options.desktopTapThreshold;
+    this.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
+    this.touchTapThreshold = options.touchTapThreshold;
+    this.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
     this.tapholdDuration = 500;
 
     this.load();
   }
 
   CanvasRenderer.panOrBoxSelectDelay = 400;
-  CanvasRenderer.isTouch = $$.is.touch();
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';
@@ -15919,19 +15959,18 @@ this.cytoscape = cytoscape;
   };
 
   // Find nearest element
-  CRp.findNearestElement = function(x, y, visibleElementsOnly){
+  CRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     var self = this;
     var eles = this.getCachedZSortedEles();
     var near = [];
-    var isTouch = CanvasRenderer.isTouch;
     var zoom = this.data.cy.zoom();
     var hasCompounds = this.data.cy.hasCompoundNodes();
-    var edgeThreshold = (isTouch ? 256 : 32) / zoom;
-    var nodeThreshold = (isTouch ? 16 : 0) /  zoom;
+    var edgeThreshold = (isTouch ? 24 : 8) / zoom;
+    var nodeThreshold = (isTouch ? 8 : 2) / zoom;
 
     function checkNode(node){
-      var width = node.outerWidth();
-      var height = node.outerHeight();
+      var width = node.outerWidth() + 2*nodeThreshold;
+      var height = node.outerHeight() + 2*nodeThreshold;
       var hw = width/2;
       var hh = height/2;
       var pos = node._private.position;
@@ -15952,9 +15991,9 @@ this.cytoscape = cytoscape;
         var borderWO = node._private.style['border-width'].pxValue / 2;
 
         if(
-          shape.checkPoint(x, y, borderWO, width + nodeThreshold, height + nodeThreshold, pos.x, pos.y)
+          shape.checkPoint(x, y, 0, width, height, pos.x, pos.y)
         ){
-            near.push( node );
+          near.push( node );
         }
 
       }
@@ -15963,12 +16002,13 @@ this.cytoscape = cytoscape;
     function checkEdge(edge){
       var rs = edge._private.rscratch;
       var style = edge._private.style;
-      var width = style['width'].pxValue;
+      var width = style['width'].pxValue/2 + edgeThreshold; // more like a distance radius from centre
       var widthSq = width * width;
       var width2 = width * 2;
       var src = edge._private.source;
       var tgt = edge._private.target;
       var inEdgeBB = false;
+      var sqDist;
 
       // exit early if invisible edge and must be visible
       var passedVisibilityCheck;
@@ -15997,13 +16037,13 @@ this.cytoscape = cytoscape;
             (
               (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
                 && passesVisibilityCheck() &&
-              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY) )
+              ( widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY)) )
             )
               ||
             (
               (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
                 && passesVisibilityCheck() &&
-              ( widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY) )
+              ( widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY)) )
             )
         ){
           near.push( edge );
@@ -16028,7 +16068,7 @@ this.cytoscape = cytoscape;
         if( 
           (inEdgeBB = $$.math.inLineVicinity(x, y, startX, startY, endX, endY, width2))
             && passesVisibilityCheck() &&
-          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY )
+          widthSq > ( sqDist = $$.math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY ) )
         ){
           near.push( edge );
         }
@@ -16037,7 +16077,7 @@ this.cytoscape = cytoscape;
         if(
           (inEdgeBB = $$.math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
             && passesVisibilityCheck() &&
-          widthSq + edgeThreshold > $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY)
+          widthSq > ( sqDist = $$.math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY) )
         ){
           near.push( edge );
         }
@@ -16046,12 +16086,13 @@ this.cytoscape = cytoscape;
         if(
           (inEdgeBB = $$.math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
             && passesVisibilityCheck() &&
-          (widthSq + edgeThreshold > $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY))
+          (widthSq > (sqDist = $$.math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY)) )
         ){
           near.push( edge );
         }
       }
       
+      // if we're close to the edge but didn't hit it, maybe we hit its arrows
       if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
         var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
         var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
@@ -16070,15 +16111,15 @@ this.cytoscape = cytoscape;
 
         if(
           (
-            srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+            srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
               && 
-            srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], 0)
+            srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
           )
             ||
           (
-            tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+            tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
               &&
-            tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], 0)
+            tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
           )
         ){
           near.push( edge );
@@ -16917,6 +16958,12 @@ this.cytoscape = cytoscape;
         var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
         var stepWeight = eStyle['control-point-weight'].value;
         var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
+        
+        var swappedDirection = edge._private.source !== src;
+
+        if( swappedDirection ){
+          stepDist *= -1;
+        }
 
         var srcX1 = rs.lastSrcCtlPtX;
         var srcX2 = srcPos.x;
@@ -17060,7 +17107,6 @@ this.cytoscape = cytoscape;
           var w1 = (1 - stepWeight);
           var w2 = stepWeight;
 
-          var swappedDirection = edge._private.source !== src;
           if( swappedDirection ){
             w1 = stepWeight;
             w2 = (1 - stepWeight);
@@ -17919,7 +17965,22 @@ this.cytoscape = cytoscape;
     
     return image;
   };
+  
+  CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
+    var r = this;
     
+    try {
+      context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
+    } catch(e){
+      r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+      r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+      
+      r.drawingImage = true;
+      
+      r.redraw();
+    }
+  };
+  
   CRp.drawInscribedImage = function(context, img, node) {
     var r = this;
     var nodeX = node._private.position.x;
@@ -18021,7 +18082,8 @@ this.cytoscape = cytoscape;
         }
       }
 
-      context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+      // context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+      r.safeDrawImage( context, img, 0, 0, img.width, img.height, x, y, w, h );
 
       if( shouldClip ){
         context.restore();
@@ -18046,6 +18108,7 @@ this.cytoscape = cytoscape;
 
   
 })( cytoscape );
+
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
@@ -18259,21 +18322,23 @@ this.cytoscape = cytoscape;
 
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
       var backgroundOpacity = style['text-background-opacity'].value;
-      if ((style['text-background-color'] || style['text-border-width'].pxValue > 0) && backgroundOpacity > 0) {
-        var textBorderWidth = style['text-border-width'].pxValue;
+      var borderOpacity = style['text-border-opacity'].value;
+      var textBorderWidth = style['text-border-width'].pxValue;
+      
+      if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
         var margin = 4 + textBorderWidth/2;
 
         if (element.isNode()) {
           //Move textX, textY to include the background margins
-          if (valign == 'top') {
-            textY -=margin;
-          } else if (valign == 'bottom') {
-            textY +=margin;
+          if (valign === 'top') {
+            textY -= margin;
+          } else if (valign === 'bottom') {
+            textY += margin;
           }
-          if (halign == 'left') {
-            textX -=margin;
-          } else if (halign == 'right') {
-            textX +=margin;
+          if (halign === 'left') {
+            textX -= margin;
+          } else if (halign === 'right') {
+            textX += margin;
           }
         }
 
@@ -18314,7 +18379,7 @@ this.cytoscape = cytoscape;
           bgWidth += margin*2;
         }
 
-        if (style['text-background-color']) {
+        if( backgroundOpacity > 0 ){
           var textFill = context.fillStyle;
           var textBackgroundColor = style['text-background-color'].value;
 
@@ -18328,13 +18393,13 @@ this.cytoscape = cytoscape;
           context.fillStyle = textFill;
         }
 
-        if (textBorderWidth > 0) {
+        if( textBorderWidth > 0 && borderOpacity > 0 ){
           var textStroke = context.strokeStyle;
           var textLineWidth = context.lineWidth;
           var textBorderColor = style['text-border-color'].value;
           var textBorderStyle = style['text-border-style'].value;
 
-          context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
+          context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
           context.lineWidth = textBorderWidth;
 
           if( context.setLineDash ){ // for very outofdate browsers
@@ -19973,7 +20038,7 @@ this.cytoscape = cytoscape;
       var cy = r.data.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements;
 
       r.hoverData.mdownPos = pos;
@@ -20208,7 +20273,7 @@ this.cytoscape = cytoscape;
 
       var near = null;
       if( !r.hoverData.draggingEles ){
-        near = r.findNearestElement(pos[0], pos[1], true);
+        near = r.findNearestElement(pos[0], pos[1], true, false);
       }
       var last = r.hoverData.last;
       var down = r.hoverData.down;
@@ -20356,7 +20421,7 @@ this.cytoscape = cytoscape;
           && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CR.panOrBoxSelectDelay) )
           //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
           && !r.hoverData.selecting
-          && rdist2 >= r.tapThreshold2
+          && rdist2 >= r.desktopTapThreshold2
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
         r.hoverData.dragging = true;
@@ -20408,7 +20473,7 @@ this.cytoscape = cytoscape;
 
         if( down && down.isNode() && r.nodeIsDraggable(down) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then drag
+          if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
 
             var justStartedDrag = !r.dragData.didDrag;
 
@@ -20487,7 +20552,7 @@ this.cytoscape = cytoscape;
       r.hoverData.capture = false;
 
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var shiftDown = e.shiftKey;
       var needsRedraw = r.data.canvasNeedsRedraw;
@@ -20902,8 +20967,8 @@ this.cytoscape = cytoscape;
         var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
         if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
 
-          var near1 = r.findNearestElement(now[0], now[1], true);
-          var near2 = r.findNearestElement(now[2], now[3], true);
+          var near1 = r.findNearestElement(now[0], now[1], true, true);
+          var near2 = r.findNearestElement(now[2], now[3], true, true);
 
           //console.log(distance1)
 
@@ -20958,7 +21023,7 @@ this.cytoscape = cytoscape;
       } else if (e.touches[1]) {
 
       } else if (e.touches[0]) {
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if (near != null) {
           near.activate();
@@ -21161,7 +21226,7 @@ this.cytoscape = cytoscape;
 
         //console.log('cxtdrag')
 
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
 
@@ -21332,11 +21397,11 @@ this.cytoscape = cytoscape;
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);
+        var near = near || r.findNearestElement(now[0], now[1], true, true);
 
         if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then dragging can happen
+          if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
             var draggedEles = r.dragData.touchDragEles;
 
             for( var k = 0; k < draggedEles.length; k++ ){
@@ -21486,7 +21551,7 @@ this.cytoscape = cytoscape;
               y: disp[1] * zoom
             });
 
-          } else if( rdist2 >= r.tapThreshold2 ){
+          } else if( rdist2 >= r.touchTapThreshold2 ){
             r.swipePanning = true;
 
             cy.panBy({
@@ -21697,7 +21762,7 @@ this.cytoscape = cytoscape;
           r.touchData.start = null;
 
         } else {
-          var near = r.findNearestElement(now[0], now[1], true);
+          var near = r.findNearestElement(now[0], now[1], true, true);
 
           if (near != null) {
             near
@@ -21745,7 +21810,7 @@ this.cytoscape = cytoscape;
         if (start != null
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable
-            && rdist2 < r.tapThreshold2
+            && rdist2 < r.touchTapThreshold2
             && !r.pinching // pinch to zoom should not affect selection
         ) {
 
@@ -23192,22 +23257,27 @@ this.cytoscape = cytoscape;
       }
 
       var adaptor = layout.adaptor = cola.adaptor({
-        trigger: function( e ){ // on sim event
+        trigger: function( e ){ // on sim event      
+          var TICK = cola.EventType ? cola.EventType.tick : null;
+          var END = cola.EventType ? cola.EventType.end : null;
+          
           switch( e.type ){
             case 'tick':
+            case TICK:
               if( options.animate ){
                 updateNodePositions();
               }
               break;
 
-            case 'end': 
+            case 'end':
+            case END:
               updateNodePositions();
               if( !options.infinite ){ onDone(); }           
               break;
           }
         },
 
-        kick: function( tick ){ // kick off the simulation
+        kick: function(){ // kick off the simulation
           var skip = 0;
 
           var inftick = function(){
@@ -23217,7 +23287,7 @@ this.cytoscape = cytoscape;
               return true;
             }
             
-            var ret = tick();
+            var ret = adaptor.tick();
 
             if( ret && options.infinite ){ // resume layout if done
               adaptor.resume(); // resume => new kick

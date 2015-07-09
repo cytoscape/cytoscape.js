@@ -84,6 +84,15 @@
   CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
     var zoom = this.data.cy.zoom();
 
+    var cache = this.paintCache(context);
+    
+    // don't make expensive changes to the shadow style if it's not used
+    if( cache.shadowOpacity === 0 && opacity === 0 ){
+      return;
+    }
+
+    cache.shadowOpacity = opacity;
+
     if (opacity > 0) {
       context.shadowBlur = blur * zoom;
       context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";

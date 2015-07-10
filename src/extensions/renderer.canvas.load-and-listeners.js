@@ -780,7 +780,7 @@
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
-      var shiftDown = e.shiftKey;
+      var multSelKeyDown = e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if( r.data.bgActivePosistion ){
@@ -933,14 +933,14 @@
 
             if( r.hoverData.dragging ){
               // if panning, don't change selection state
-            } else if( cy.selectionType() === 'additive' || shiftDown ){
+            } else if( cy.selectionType() === 'additive' || multSelKeyDown ){
               if( near.selected() ){
                 near.unselect();
               } else {
                 near.select();
               }
             } else {
-              if( !shiftDown ){
+              if( !multSelKeyDown ){
                 cy.$(':selected').unmerge( near ).unselect();
                 near.select();
               }
@@ -973,7 +973,7 @@
           if( cy.selectionType() === 'additive' ){
             newlySelCol.select();
           } else {
-            if( !shiftDown ){
+            if( !multSelKeyDown ){
               cy.$(':selected').unmerge( newlySelCol ).unselect();
             }
 

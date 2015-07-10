@@ -1031,7 +1031,7 @@
         
         var swappedDirection = edge._private.source !== src;
 
-        if( swappedDirection ){
+        if( swappedDirection && edgeIsUnbundled ){
           stepDist *= -1;
         }
 

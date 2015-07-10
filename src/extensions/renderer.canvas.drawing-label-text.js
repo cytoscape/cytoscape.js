@@ -30,20 +30,10 @@
 
     var style = edge._private.style;
     var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
-    var theta, dx, dy;
+    var theta;
 
     if( autorotate ){
-      switch( rs.edgeType ){
-        case 'haystack':
-          dx = rs.haystackPts[2] - rs.haystackPts[0];
-          dy = rs.haystackPts[3] - rs.haystackPts[1];
-          break;
-        default:
-          dx = rs.endX - rs.startX;
-          dy = rs.endY - rs.startY;
-      }
-
-      theta = Math.atan( dy / dx );
+      theta = rs.labelAngle;
 
       context.translate(rs.labelX, rs.labelY);
       context.rotate(theta);

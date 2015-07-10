@@ -613,7 +613,7 @@
           var labelX = rstyle.labelX;
           var labelY = rstyle.labelY;
 
-          if( includedEle && includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+          if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
             var lh = labelHeight;
             var lw = labelWidth;
             var lx1, lx2, ly1, ly2;

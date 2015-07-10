@@ -276,6 +276,7 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The color of the border around the label.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
+ * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. 
 
 These properties can only be used on node labels:
 

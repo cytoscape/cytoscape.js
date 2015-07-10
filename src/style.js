@@ -61,6 +61,7 @@
       bgFit: { enums: ['none', 'contain', 'cover'] },
       bgClip: { enums: ['none', 'node'] },
       color: { color: true },
+      bool: { enums: ['yes', 'no'] },
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
       curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
@@ -117,6 +118,7 @@
       { name: 'text-transform', type: t.textTransform },
       { name: 'text-wrap', type: t.textWrap },
       { name: 'text-max-width', type: t.size },
+      { name: 'text-events', type: t.bool },
 
       // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
@@ -264,6 +266,7 @@
     this
       .selector('node, edge') // common properties
         .css({
+          'text-events': 'no',
           'text-valign': 'top',
           'text-halign': 'center',
           'color': color,

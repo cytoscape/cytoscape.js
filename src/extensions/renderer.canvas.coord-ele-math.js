@@ -37,6 +37,7 @@
     var hasCompounds = this.data.cy.hasCompoundNodes();
     var edgeThreshold = (isTouch ? 24 : 8) / zoom;
     var nodeThreshold = (isTouch ? 8 : 2) / zoom;
+    var labelThreshold = (isTouch ? 8 : 2) / zoom;
 
     function checkNode(node){
       var width = node.outerWidth() + 2*nodeThreshold;
@@ -202,17 +203,69 @@
         checkNode( tgt );
       }
     }
+    
+    function checkLabel(ele){
+      var _p = ele._private;
+      var bb = ele.boundingBox({
+        includeLabels: true,
+        includeNodes: false,
+        includeEdges: false
+      });
+      var th = labelThreshold;
+      
+      // adjust bb w/ threshold
+      bb.x1 -= th;
+      bb.y1 -= th;
+      bb.x2 += th;
+      bb.y2 += th;
+      bb.w = bb.x2 - bb.x1;
+      bb.h = bb.y2 - bb.y1;
+      
+      // adjust bb w/ angle
+      // TODO fix this
+      if( false && _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
+        var theta = -1 * _p.rscratch.labelAngle;
+        
+        // rotate (x, y) with -label and see if inside normal bb
+        
+        var lctr = {
+          x: (bb.x1 + bb.x2)/2,
+          y: (bb.y1 + bb.y2)/2
+        };
+        
+        x -= lctr.x;
+        y -= lctr.y;
+        
+        var xRot = x * Math.cos(theta) - y * Math.sin(theta);
+        var yRot = x * Math.sin(theta) + y * Math.cos(theta);
+        
+        x = xRot;
+        y = yRot;
+        
+        x += lctr.x;
+        y += lctr.y;
+      }
+      
+      if( $$.math.inBoundingBox( bb, x, y ) ){
+        near.push( ele );
+      }
+    }
 
     for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence
       var ele = eles[i];
+      var _p = ele._private;
 
       if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
 
-      if( ele._private.group === 'nodes' ){ 
-        checkNode( eles[i] );
+      if( _p.group === 'nodes' ){ 
+        checkNode( ele );
 
       } else  { // then edge
-        checkEdge( eles[i] );
+        checkEdge( ele );
+      }
+      
+      if( _p.style['text-events'].strValue === 'yes' ){
+        checkLabel( ele );
       }
 
     }
@@ -864,6 +917,7 @@
     var hashTable = {};
     var pairIds = [];
     var haystackEdges = [];
+    var autorotateEdges = [];
 
     // create a table of edge (src, tgt) => list of edges between them
     var pairId;
@@ -876,6 +930,10 @@
       // they shouldn't take up space
       if( style.display.value === 'none' ){
         continue;
+      }
+      
+      if( style['edge-text-rotation'].strValue === 'autorotate' ){
+        autorotateEdges.push( edge );
       }
 
       if( style['curve-style'].value === 'haystack' ){
@@ -1355,6 +1413,23 @@
       rscratch.haystack = true;
 
       this.recalculateEdgeLabelProjection( edge );
+    }
+    
+    for( var i = 0 ; i < autorotateEdges.length; i++ ){
+      var edge = autorotateEdges[i];
+      var rs = edge._private.rscratch;
+      
+      switch( rs.edgeType ){
+        case 'haystack':
+          dx = rs.haystackPts[2] - rs.haystackPts[0];
+          dy = rs.haystackPts[3] - rs.haystackPts[1];
+          break;
+        default:
+          dx = rs.endX - rs.startX;
+          dy = rs.endY - rs.startY;
+      }
+
+      rs.labelAngle = Math.atan( dy / dx );
     }
 
     return hashTable;

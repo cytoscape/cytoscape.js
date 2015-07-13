@@ -118,6 +118,17 @@
       var cellWidth = bb.w / cols;
       var cellHeight = bb.h / rows;
 
+      // cellHeight fits the tallest node
+      if (options.autoCellHeight) {
+        var maxHeight = 0;
+        for (var i = 0; i < nodes.length; i++) {
+          var node = nodes[i];
+          var h = node.boundingBox({ includeNodes: true, includeLabels: true }).h;
+          maxHeight = Math.max(maxHeight, h);
+        }
+        var cellHeight = maxHeight;
+      }
+
       if( options.avoidOverlap ){
         for( var i = 0; i < nodes.length; i++ ){
           var node = nodes[i];

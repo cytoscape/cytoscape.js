@@ -120,7 +120,7 @@ $(function(){
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
-    motionBlur: false,
+    // motionBlur: false,
     // pixelRatio: 'auto',
     // motionBlurOpacity: 0.5,
     renderer: {

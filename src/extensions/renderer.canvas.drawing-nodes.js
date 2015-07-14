@@ -65,9 +65,9 @@
       var borderColor = style['border-color'].value;
       var borderStyle = style['border-style'].value;
 
-      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
+      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * parentOpacity);
       
-      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
       
       var shadowBlur = style['shadow-blur'].pxValue;
       var shadowOpacity = style['shadow-opacity'].value;
@@ -155,7 +155,7 @@
       var borderWidth = style['border-width'].pxValue;
 
       if( this.hasPie(node) ){
-        this.drawPie(context, node);
+        this.drawPie( context, node, parentOpacity );
 
         // redraw path for blacken and border
         if( darkness !== 0 || borderWidth !== 0 ){
@@ -252,14 +252,16 @@
     return node._private.hasPie;
   };
 
-  CRp.drawPie = function(context, node){
+  CRp.drawPie = function( context, node, nodeOpacity ){
     node = node[0]; // ensure ele ref
 
-    var pieSize = node._private.style['pie-size'];
+    var _p = node._private;
+    var style = _p.style;
+    var pieSize = style['pie-size'];
     var nodeW = this.getNodeWidth( node );
     var nodeH = this.getNodeHeight( node );
-    var x = node._private.position.x;
-    var y = node._private.position.y;
+    var x = _p.position.x;
+    var y = _p.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
     var usePaths = CanvasRenderer.usePaths();
@@ -276,9 +278,9 @@
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-      var size = node._private.style['pie-' + i + '-background-size'].value;
-      var color = node._private.style['pie-' + i + '-background-color'].value;
-      var opacity = node._private.style['pie-' + i + '-background-opacity'].value;
+      var size = style['pie-' + i + '-background-size'].value;
+      var color = style['pie-' + i + '-background-color'].value;
+      var opacity = style['pie-' + i + '-background-opacity'].value * nodeOpacity;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;

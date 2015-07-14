@@ -576,9 +576,9 @@
         var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
         var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
-        if( needDraw[CR.DRAG] && needDraw[CR.NODE] ){
-          clear = true;
-        }
+        // if( needDraw[CR.DRAG] && needDraw[CR.NODE] ){
+        //   clear = true;
+        // }
 
         setContextTransform( context, clear );
         drawElements(eles.nondrag, context);

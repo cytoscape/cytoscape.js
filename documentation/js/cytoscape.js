@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.3.
+ * This file is part of Cytoscape.js 2.4.4.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.3';
+  $$.version = '2.4.4';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -16961,7 +16961,7 @@ this.cytoscape = cytoscape;
         
         var swappedDirection = edge._private.source !== src;
 
-        if( swappedDirection ){
+        if( swappedDirection && edgeIsUnbundled ){
           stepDist *= -1;
         }
 
@@ -18558,9 +18558,9 @@ this.cytoscape = cytoscape;
       var borderColor = style['border-color'].value;
       var borderStyle = style['border-style'].value;
 
-      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
+      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * parentOpacity);
       
-      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
       
       var shadowBlur = style['shadow-blur'].pxValue;
       var shadowOpacity = style['shadow-opacity'].value;
@@ -18648,7 +18648,7 @@ this.cytoscape = cytoscape;
       var borderWidth = style['border-width'].pxValue;
 
       if( this.hasPie(node) ){
-        this.drawPie(context, node);
+        this.drawPie( context, node, parentOpacity );
 
         // redraw path for blacken and border
         if( darkness !== 0 || borderWidth !== 0 ){
@@ -18745,14 +18745,16 @@ this.cytoscape = cytoscape;
     return node._private.hasPie;
   };
 
-  CRp.drawPie = function(context, node){
+  CRp.drawPie = function( context, node, nodeOpacity ){
     node = node[0]; // ensure ele ref
 
-    var pieSize = node._private.style['pie-size'];
+    var _p = node._private;
+    var style = _p.style;
+    var pieSize = style['pie-size'];
     var nodeW = this.getNodeWidth( node );
     var nodeH = this.getNodeHeight( node );
-    var x = node._private.position.x;
-    var y = node._private.position.y;
+    var x = _p.position.x;
+    var y = _p.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
     var usePaths = CanvasRenderer.usePaths();
@@ -18769,9 +18771,9 @@ this.cytoscape = cytoscape;
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-      var size = node._private.style['pie-' + i + '-background-size'].value;
-      var color = node._private.style['pie-' + i + '-background-color'].value;
-      var opacity = node._private.style['pie-' + i + '-background-opacity'].value;
+      var size = style['pie-' + i + '-background-size'].value;
+      var color = style['pie-' + i + '-background-color'].value;
+      var opacity = style['pie-' + i + '-background-opacity'].value * nodeOpacity;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
@@ -18887,6 +18889,15 @@ this.cytoscape = cytoscape;
   
   CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
     var zoom = this.data.cy.zoom();
+
+    var cache = this.paintCache(context);
+    
+    // don't make expensive changes to the shadow style if it's not used
+    if( cache.shadowOpacity === 0 && opacity === 0 ){
+      return;
+    }
+
+    cache.shadowOpacity = opacity;
 
     if (opacity > 0) {
       context.shadowBlur = blur * zoom;
@@ -19371,9 +19382,9 @@ this.cytoscape = cytoscape;
         var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ CR.MOTIONBLUR_BUFFER_NODE ] : data.contexts[CR.NODE] );
         var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
-        if( needDraw[CR.DRAG] && needDraw[CR.NODE] ){
-          clear = true;
-        }
+        // if( needDraw[CR.DRAG] && needDraw[CR.NODE] ){
+        //   clear = true;
+        // }
 
         setContextTransform( context, clear );
         drawElements(eles.nondrag, context);

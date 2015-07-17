@@ -276,12 +276,13 @@
       adaptor.nodes( nonparentNodes.map(function( node, i ){
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
+        var bb = node.boundingBox();
 
         var struct = node._private.scratch.cola = {
           x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
           y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
-          width: node.outerWidth() + 2*padding,
-          height: node.outerHeight() + 2*padding,
+          width: bb.w + 2*padding,
+          height: bb.h + 2*padding,
           index: i
         };
 

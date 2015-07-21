@@ -294,8 +294,6 @@
           height: nbb.h + 2*padding,
           index: i
         };
-        
-        console.log(struct)
 
         return struct;
       }) );

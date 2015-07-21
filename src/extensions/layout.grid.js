@@ -118,15 +118,30 @@
       var cellWidth = bb.w / cols;
       var cellHeight = bb.h / rows;
 
-      // cellHeight fits the tallest node
-      if (options.autoCellHeight) {
-        var maxHeight = 0;
+      // option to set all cell sizes to the size of the biggest cell
+      if (options.autoCellSize) {
+        cellWidth = 0;
+        cellHeight = 0;
+        var cellPaddingX = 20;
+        var cellPaddingY = 20;
+
         for (var i = 0; i < nodes.length; i++) {
           var node = nodes[i];
-          var h = node.boundingBox({ includeNodes: true, includeLabels: true }).h;
-          maxHeight = Math.max(maxHeight, h);
+
+          // During position calculation, requesting for bouding box will fail when node does not have position, fix 0, 0
+          if (!node._private.position.x) {
+            node._private.position.x = 0;
+          }
+
+          if (!node._private.position.y) {
+            node._private.position.y = 0;
+          }
+
+          var nodeBb = node.boundingBox({ includeNodes: true, includeLabels: true });
+
+          cellWidth = Math.max(cellWidth, nodeBb.w + cellPaddingX);
+          cellHeight = Math.max(cellHeight, nodeBb.h + cellPaddingY);
         }
-        var cellHeight = maxHeight;
       }
 
       if( options.avoidOverlap ){

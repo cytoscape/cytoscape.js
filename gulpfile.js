@@ -19,12 +19,16 @@ var runSequence = require('run-sequence');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var benchmark = require('gulp-benchmark');
-var download = require("gulp-download");
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del) };
 var decompress = require('gulp-decompress');
 var rename = require("gulp-rename");
+var unzip = require('gulp-unzip');
+var request = require('request');
+var download = require("gulp-download");
+// var download = function(url){ return request.get(url); };
+var docmaker = require('./documentation/docmaker.json');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -455,43 +459,27 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
   } );
 });
 
-var demoGistUrls = function(){
-  var demos = require('./documentation/docmaker.json').sections.filter(function(s){
+gulp.task('docsdemodl', function(){
+  var demos = docmaker.sections.filter(function(s){
     return s.demos != null;
   })[0].demos.map(function(d){
     return 'https://gist.github.com/' + d.id + '/download';
   });
   
-  return demos;
-}
-
-gulp.task('docsdemodl', function(){
-  var demos = demoGistUrls();
-  
-  return download( demos )
-    .pipe( decompress() )
+  return download( demos )    
+    .pipe( unzip() )
     
-    .pipe( rename(function( path ){
-      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
+    .pipe( rename(function( path ){  
+      // console.log(path)
+      
+      var match = path.dirname.match(/^(.+)\-master$/);
+      
+      if( match ){
+        path.dirname = match[1];
+      }
     }) )
     
     .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
-    
-    .pipe( gulp.dest('documentation/demos') )
-  ;
-});
-
-gulp.task('docsdemodltest', function(){
-  var demos = demoGistUrls();
-  
-  return download( demos )
-    .pipe( decompress() )
-    
-    .pipe( rename(function( path ){
-      path.dirname = path.dirname.match(/^gist(.+)\-/)[1]
-    }) )
-    
-    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../../build/cytoscape.js"') )
     
     .pipe( gulp.dest('documentation/demos') )
   ;

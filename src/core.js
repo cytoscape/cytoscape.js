@@ -217,7 +217,11 @@
       var domEle = this.container();
       var parEle = domEle.parentNode;
       if( parEle ){
-        parEle.removeChild( domEle );
+        try{
+          parEle.removeChild( domEle );
+        } catch(e){
+          // ie10 issue #1014
+        }
       }
 
       return this;

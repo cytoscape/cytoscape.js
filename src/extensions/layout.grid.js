@@ -5,6 +5,8 @@
     padding: 30, // padding used on fit
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+    avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
+    condense: false, // uses all available space on false, uses minimal space on true
     rows: undefined, // force num of rows in the grid
     columns: undefined, // force num of cols in the grid
     position: function( node ){}, // returns { row, col } for element
@@ -117,13 +119,28 @@
       
       var cellWidth = bb.w / cols;
       var cellHeight = bb.h / rows;
+      
+      if( options.condense ){
+        cellWidth = 0;
+        cellHeight = 0;
+      }
 
       if( options.avoidOverlap ){
         for( var i = 0; i < nodes.length; i++ ){
           var node = nodes[i];
-          var w = node.outerWidth();
-          var h = node.outerHeight();
-
+          var pos = node._private.position;
+          
+          if( pos.x == null || pos.y == null ){ // for bb
+            pos.x = 0;
+            pos.y = 0;
+          }
+          
+          var nbb = node.boundingBox();
+          var p = options.avoidOverlapPadding;
+          
+          var w = nbb.w + p;
+          var h = nbb.h + p;
+          
           cellWidth = Math.max( cellWidth, w );
           cellHeight = Math.max( cellHeight, h );
         }

@@ -192,7 +192,11 @@
     }
 
     if( this.labelCalcDiv ){
-      document.body.removeChild(this.labelCalcDiv);
+      try{
+        document.body.removeChild(this.labelCalcDiv);
+      } catch(e){
+        // ie10 issue #1014
+      }
     }
   };
 

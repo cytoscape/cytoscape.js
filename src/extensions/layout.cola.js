@@ -84,6 +84,15 @@
 
           y.min = Math.min( y.min, scratch.y || 0 );
           y.max = Math.max( y.max, scratch.y || 0 );
+          
+          // update node dims
+          if( !scratch.updatedDims ){
+            var nbb = node.boundingBox();
+            var padding = getOptVal( options.nodeSpacing, node );
+            
+            scratch.width = nbb.w + 2*padding;
+            scratch.height = nbb.h + 2*padding;
+          }
         }
 
         nodes.positions(function(i, node){
@@ -276,15 +285,17 @@
       adaptor.nodes( nonparentNodes.map(function( node, i ){
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
-        var bb = node.boundingBox();
+        var nbb = node.boundingBox();
 
         var struct = node._private.scratch.cola = {
-          x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
-          y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
-          width: bb.w + 2*padding,
-          height: bb.h + 2*padding,
+          x: options.randomize || pos.x === undefined ? Math.round( Math.random() * bb.w ) : pos.x,
+          y: options.randomize || pos.y === undefined ? Math.round( Math.random() * bb.h ) : pos.y,
+          width: nbb.w + 2*padding,
+          height: nbb.h + 2*padding,
           index: i
         };
+        
+        console.log(struct)
 
         return struct;
       }) );
@@ -343,8 +354,19 @@
       adaptor.groups( nodes.stdFilter(function( node ){
         return node.isParent();
       }).map(function( node, i ){ // add basic group incl leaf nodes
+        var style = node._private.style;
+        
+        var optPadding = getOptVal( options.nodeSpacing, node );
+        
+        var pleft = style['padding-left'].pxValue + optPadding;
+        var pright = style['padding-right'].pxValue + optPadding;
+        var ptop = style['padding-top'].pxValue + optPadding;
+        var pbottom = style['padding-bottom'].pxValue + optPadding;
+        
         node._private.scratch.cola = {
           index: i,
+          
+          padding: Math.max( pleft, pright, ptop, pbottom ),
 
           leaves: node.descendants().stdFilter(function( child ){
             return !child.isParent();

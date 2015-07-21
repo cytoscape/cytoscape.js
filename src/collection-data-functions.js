@@ -667,6 +667,19 @@
         } // style enabled
       } // for
 
+      var noninf = function(x){
+        if( x === Infinity || x === -Infinity ){
+          return 0;
+        }
+        
+        return x;
+      };
+
+      x1 = noninf(x1);
+      x2 = noninf(x2);
+      y1 = noninf(y1);
+      y2 = noninf(y2);
+
       return {
         x1: x1,
         x2: x2,

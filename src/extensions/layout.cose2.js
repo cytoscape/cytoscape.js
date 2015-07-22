@@ -4796,7 +4796,6 @@
         var lnode = row[j];
 
         var node = this.cy.getElementById(lnode.id);
-        console.log(lnode.id);
         node.position({
           x: x + lnode.rect.width / 2,
           y: y + lnode.rect.height / 2

@@ -519,8 +519,11 @@
 
   CRp.projectBezier = function(edge){
     var qbezierAt = $$.math.qbezierAt;
-    var rs = edge._private.rscratch;
-    var bpts = edge._private.rstyle.bezierPts = [];
+    var _p = edge._private;
+    var rs = _p.rscratch;
+    var bpts = _p.rstyle.bezierPts = _p.rstyle.bezierPts || [];
+    
+    bpts.splice( 0, bpts.length ); // empty array for reuse
 
     function pushBezierPts(pts){
       bpts.push({

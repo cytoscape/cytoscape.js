@@ -85,6 +85,48 @@
 
   arrowShapes['triangle'] = arrowShapes['arrow'];
   
+  arrowShapes['open-arrowhead'] = {
+    _points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      0, 0,
+      0, -0.3
+    ],
+
+    leavePathOpen: true,
+
+    collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+      var points = arrowShapes['open-arrowhead']._points;
+
+//      console.log("collide(): " + direction);
+
+      return $$.math.pointInsidePolygon(
+        x, y, points, centerX, centerY, width, height, direction, padding);
+    },
+
+    roughCollide: bbCollide,
+
+    draw: function(context, size, angle, translation) {
+      var points = arrowShapes['open-arrowhead']._points;
+
+      for (var i = 0; i < points.length / 2; i++) {
+        var pt = transform( points[i * 2], points[i * 2 + 1], size, angle, translation );
+
+        context.lineTo(pt.x, pt.y);
+      }
+
+    },
+
+    spacing: function(edge) {
+      return 0;
+    },
+
+    gap: function(edge) {
+      return edge._private.style['width'].pxValue * 2;
+    }
+  };
+
   arrowShapes['triangle-backcurve'] = {
     _ctrlPt: [ 0, -0.15 ],
 

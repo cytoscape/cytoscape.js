@@ -6,7 +6,7 @@
 // Draw edge
   CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     var rs = edge._private.rscratch;
-    var usePaths = CanvasRenderer.usePaths();
+    var usePaths = this.usePaths();
 
     // if bezier ctrl pts can not be calculated, then die
     if( rs.badBezier || ( (rs.edgeType === 'bezier' || rs.edgeType === 'straight') && isNaN(rs.startX)) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
@@ -149,7 +149,7 @@
     var canvasCxt = context;
     var path;
     var pathCacheHit = false;
-    var usePaths = CanvasRenderer.usePaths();
+    var usePaths = this.usePaths();
 
 
     if( usePaths ){
@@ -336,7 +336,7 @@
   
   // Draw arrowshape
   CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
-    var usePaths = CanvasRenderer.usePaths();
+    var usePaths = this.usePaths();
     var rs = edge._private.rscratch;
     var pathCacheHit = false;
     var path;

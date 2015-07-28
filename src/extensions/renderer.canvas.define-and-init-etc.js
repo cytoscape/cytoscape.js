@@ -6,17 +6,20 @@
 
 (function($$) { 'use strict';
 
-  CanvasRenderer.CANVAS_LAYERS = 3;
-  //
-  CanvasRenderer.SELECT_BOX = 0;
-  CanvasRenderer.DRAG = 1;
-  CanvasRenderer.NODE = 2;
+  var CR = CanvasRenderer;
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.BUFFER_COUNT = 3;
+  CR.CANVAS_LAYERS = 3;
   //
-  CanvasRenderer.TEXTURE_BUFFER = 0;
-  CanvasRenderer.MOTIONBLUR_BUFFER_NODE = 1;
-  CanvasRenderer.MOTIONBLUR_BUFFER_DRAG = 2;
+  CR.SELECT_BOX = 0;
+  CR.DRAG = 1;
+  CR.NODE = 2;
+
+  CR.BUFFER_COUNT = 3;
+  //
+  CR.TEXTURE_BUFFER = 0;
+  CR.MOTIONBLUR_BUFFER_NODE = 1;
+  CR.MOTIONBLUR_BUFFER_DRAG = 2;
 
   function CanvasRenderer(options) {  
 
@@ -27,12 +30,12 @@
       select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
       renderer: this, cy: options.cy, container: options.cy.container(),
       
-      canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
-      contexts: new Array(CanvasRenderer.CANVAS_LAYERS),
-      canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
+      canvases: new Array(CR.CANVAS_LAYERS),
+      contexts: new Array(CR.CANVAS_LAYERS),
+      canvasNeedsRedraw: new Array(CR.CANVAS_LAYERS),
       
-      bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT),
-      bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS)
+      bufferCanvases: new Array(CR.BUFFER_COUNT),
+      bufferContexts: new Array(CR.CANVAS_LAYERS)
 
     };
     
@@ -74,23 +77,23 @@
 
     this.data.container.appendChild( this.data.canvasContainer );
 
-    for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
+    for (var i = 0; i < CR.CANVAS_LAYERS; i++) {
       this.data.canvases[i] = document.createElement('canvas');
       this.data.contexts[i] = this.data.canvases[i].getContext('2d');
       this.data.canvases[i].style.position = 'absolute';
       this.data.canvases[i].setAttribute('data-id', 'layer' + i);
-      this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
+      this.data.canvases[i].style.zIndex = String(CR.CANVAS_LAYERS - i);
       this.data.canvasContainer.appendChild(this.data.canvases[i]);
       
       this.data.canvasNeedsRedraw[i] = false;
     }
     this.data.topCanvas = this.data.canvases[0];
 
-    this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
-    this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
-    this.data.canvases[CanvasRenderer.DRAG].setAttribute('data-id', 'layer' + CanvasRenderer.DRAG + '-drag');
+    this.data.canvases[CR.NODE].setAttribute('data-id', 'layer' + CR.NODE + '-node');
+    this.data.canvases[CR.SELECT_BOX].setAttribute('data-id', 'layer' + CR.SELECT_BOX + '-selectbox');
+    this.data.canvases[CR.DRAG].setAttribute('data-id', 'layer' + CR.DRAG + '-drag');
     
-    for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
+    for (var i = 0; i < CR.BUFFER_COUNT; i++) {
       this.data.bufferCanvases[i] = document.createElement('canvas');
       this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
       this.data.bufferCanvases[i].style.position = 'absolute';
@@ -120,18 +123,29 @@
     this.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
     this.tapholdDuration = 500;
 
+    this.pathsEnabled = true;
+
     this.load();
   }
 
-  CanvasRenderer.panOrBoxSelectDelay = 400;
+  CR.panOrBoxSelectDelay = 400;
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';
-  CanvasRenderer.usePaths = function(){
-    return pathsImpld;
+  
+  CRp.path2dEnabled = function( on ){
+    if( on === undefined ){
+      return this.pathsEnabled;
+    }
+    
+    this.pathsEnabled = on ? true : false;
+  };
+  
+  CRp.usePaths = function(){
+    return pathsImpld && this.pathsEnabled;
   };
 
-  CanvasRenderer.prototype.notify = function(params) {
+  CRp.notify = function(params) {
     var types;
 
     if( $$.is.array( params.type ) ){
@@ -177,7 +191,7 @@
     this.redraw();
   };
 
-  CanvasRenderer.prototype.destroy = function(){
+  CRp.destroy = function(){
     this.destroyed = true;
 
     for( var i = 0; i < this.bindings.length; i++ ){
@@ -207,7 +221,7 @@
   // and this makes sure things work just in case a ref was missed in refactoring
   // TODO remove this eventually
   for( var fnName in $$.math ){
-    CanvasRenderer.prototype[ fnName ] = $$.math[ fnName ];
+    CRp[ fnName ] = $$.math[ fnName ];
   }
   
   

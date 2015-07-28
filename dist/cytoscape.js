@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.4.
+ * This file is part of Cytoscape.js snapshot-429d2b83b2-1438054926063.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.4';
+  $$.version = 'snapshot-429d2b83b2-1438054926063';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -4935,7 +4935,7 @@ this.cytoscape = cytoscape;
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid'] },
       compoundIncludeLabels: { enums: ['include', 'exclude'] },
-      arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
+      arrowShape: { enums: ['tee', 'open-arrowhead', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
       visibility: { enums: ['hidden', 'visible'] },
@@ -7863,7 +7863,11 @@ this.cytoscape = cytoscape;
       var domEle = this.container();
       var parEle = domEle.parentNode;
       if( parEle ){
-        parEle.removeChild( domEle );
+        try{
+          parEle.removeChild( domEle );
+        } catch(e){
+          // ie10 issue #1014
+        }
       }
 
       return this;
@@ -13155,6 +13159,19 @@ this.cytoscape = cytoscape;
         } // style enabled
       } // for
 
+      var noninf = function(x){
+        if( x === Infinity || x === -Infinity ){
+          return 0;
+        }
+        
+        return x;
+      };
+
+      x1 = noninf(x1);
+      x2 = noninf(x2);
+      y1 = noninf(y1);
+      y2 = noninf(y2);
+
       return {
         x1: x1,
         x2: x2,
@@ -15459,7 +15476,11 @@ this.cytoscape = cytoscape;
     }
 
     if( this.labelCalcDiv ){
-      document.body.removeChild(this.labelCalcDiv);
+      try{
+        document.body.removeChild(this.labelCalcDiv);
+      } catch(e){
+        // ie10 issue #1014
+      }
     }
   };
 
@@ -15565,6 +15586,48 @@ this.cytoscape = cytoscape;
 
   arrowShapes['triangle'] = arrowShapes['arrow'];
   
+  arrowShapes['open-arrowhead'] = {
+    _points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      0, 0,
+      0, -0.3
+    ],
+
+    leavePathOpen: true,
+
+    collide: function(x, y, centerX, centerY, width, height, direction, padding) {
+      var points = arrowShapes['open-arrowhead']._points;
+
+//      console.log("collide(): " + direction);
+
+      return $$.math.pointInsidePolygon(
+        x, y, points, centerX, centerY, width, height, direction, padding);
+    },
+
+    roughCollide: bbCollide,
+
+    draw: function(context, size, angle, translation) {
+      var points = arrowShapes['open-arrowhead']._points;
+
+      for (var i = 0; i < points.length / 2; i++) {
+        var pt = transform( points[i * 2], points[i * 2 + 1], size, angle, translation );
+
+        context.lineTo(pt.x, pt.y);
+      }
+
+    },
+
+    spacing: function(edge) {
+      return 0;
+    },
+
+    gap: function(edge) {
+      return edge._private.style['width'].pxValue * 2;
+    }
+  };
+
   arrowShapes['triangle-backcurve'] = {
     _ctrlPt: [ 0, -0.15 ],
 
@@ -23206,6 +23269,15 @@ this.cytoscape = cytoscape;
 
           y.min = Math.min( y.min, scratch.y || 0 );
           y.max = Math.max( y.max, scratch.y || 0 );
+          
+          // update node dims
+          if( !scratch.updatedDims ){
+            var nbb = node.boundingBox();
+            var padding = getOptVal( options.nodeSpacing, node );
+            
+            scratch.width = nbb.w + 2*padding;
+            scratch.height = nbb.h + 2*padding;
+          }
         }
 
         nodes.positions(function(i, node){
@@ -23398,12 +23470,13 @@ this.cytoscape = cytoscape;
       adaptor.nodes( nonparentNodes.map(function( node, i ){
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
+        var nbb = node.boundingBox();
 
         var struct = node._private.scratch.cola = {
-          x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
-          y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
-          width: node.outerWidth() + 2*padding,
-          height: node.outerHeight() + 2*padding,
+          x: options.randomize || pos.x === undefined ? Math.round( Math.random() * bb.w ) : pos.x,
+          y: options.randomize || pos.y === undefined ? Math.round( Math.random() * bb.h ) : pos.y,
+          width: nbb.w + 2*padding,
+          height: nbb.h + 2*padding,
           index: i
         };
 
@@ -23464,8 +23537,19 @@ this.cytoscape = cytoscape;
       adaptor.groups( nodes.stdFilter(function( node ){
         return node.isParent();
       }).map(function( node, i ){ // add basic group incl leaf nodes
+        var style = node._private.style;
+        
+        var optPadding = getOptVal( options.nodeSpacing, node );
+        
+        var pleft = style['padding-left'].pxValue + optPadding;
+        var pright = style['padding-right'].pxValue + optPadding;
+        var ptop = style['padding-top'].pxValue + optPadding;
+        var pbottom = style['padding-bottom'].pxValue + optPadding;
+        
         node._private.scratch.cola = {
           index: i,
+          
+          padding: Math.max( pleft, pright, ptop, pbottom ),
 
           leaves: node.descendants().stdFilter(function( child ){
             return !child.isParent();

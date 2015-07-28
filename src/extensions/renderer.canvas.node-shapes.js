@@ -2,7 +2,6 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var renderer = CanvasRenderer.prototype;
-  var usePaths = CanvasRenderer.usePaths();
 
   // Node shape contract:
   //
@@ -33,37 +32,22 @@
     
     drawPath: function(context, centerX, centerY, width, height) {
       
-      if( usePaths ){
-        if( context.beginPath ){ context.beginPath(); }
+      if( context.beginPath ){ context.beginPath(); }
 
-        var xPos, yPos;
-        var rw = width/2;
-        var rh = height/2;
-        for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
-            xPos = centerX - (rw * sin[i]) * sin0 + (rw * cos[i]) * cos0;
-            yPos = centerY + (rh * cos[i]) * sin0 + (rh * sin[i]) * cos0;
+      var xPos, yPos;
+      var rw = width/2;
+      var rh = height/2;
+      for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
+          xPos = centerX - (rw * sin[i]) * sin0 + (rw * cos[i]) * cos0;
+          yPos = centerY + (rh * cos[i]) * sin0 + (rh * sin[i]) * cos0;
 
-            if (i === 0) {
-                context.moveTo(xPos, yPos);
-            } else {
-                context.lineTo(xPos, yPos);
-            }
-        }
-        context.closePath();
-
-      } else {
-
-        if( context.beginPath ){ context.beginPath(); }
-        context.translate(centerX, centerY);
-        context.scale(width / 2, height / 2);
-        // At origin, radius 1, 0 to 2pi
-        context.arc(0, 0, 1, 0, Math.PI * 2 * 0.999, false); // *0.999 b/c chrome rendering bug on full circle
-        context.closePath();
-
-        context.scale(2/width, 2/height);
-        context.translate(-centerX, -centerY);
-
+          if (i === 0) {
+              context.moveTo(xPos, yPos);
+          } else {
+              context.lineTo(xPos, yPos);
+          }
       }
+      context.closePath();
       
     },
     

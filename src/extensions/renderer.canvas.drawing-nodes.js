@@ -12,7 +12,7 @@
     var rs = node._private.rscratch;
     var _p = node._private;
     
-    var usePaths = CanvasRenderer.usePaths();
+    var usePaths = this.usePaths();
     var canvasContext = context;
     var path;
     var pathCacheHit = false;
@@ -264,7 +264,7 @@
     var y = _p.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
-    var usePaths = CanvasRenderer.usePaths();
+    var usePaths = this.usePaths();
 
     if( usePaths ){
       x = 0;

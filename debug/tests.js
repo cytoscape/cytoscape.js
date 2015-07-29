@@ -151,16 +151,27 @@ $(function(){
 				cy.elements().unbind("click").css("*", "");
 			}
 		});
+
 		
 		test({
 			name: "labelWithWeight",
 			displayName: "Labels with weight",
-			description: "Show weight in node labels",
+			description: "Show weight in element labels",
 			setup: function(){
-				cy.elements().css("content", "data(weight)");
+				cy.style()
+					.selector('*')
+						.css({
+							'content': 'data(weight)'
+						})
+						
+					.update()
+				;
 			},
+
 			teardown: function(){
-				cy.elements().css("*" ,"");
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
 			}
 		});
 
@@ -499,7 +510,7 @@ $(function(){
 			},
 
 			teardown: function(){
-				cy.off('click', 'node');
+				cy.off('mouseover', 'node');
 			}
 		});
 

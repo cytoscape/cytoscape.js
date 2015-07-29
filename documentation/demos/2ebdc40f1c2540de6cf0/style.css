@@ -39,3 +39,8 @@ p {
   width: 3em;
   margin-right: 0.25em;
 }
+
+a,
+a:hover {
+  color: #62daea;
+}

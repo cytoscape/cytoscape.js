@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.4.
+ * This file is part of Cytoscape.js 2.4.5.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -29,7 +29,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.4';
+  $$.version = '2.4.5';
   
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -7863,7 +7863,11 @@ this.cytoscape = cytoscape;
       var domEle = this.container();
       var parEle = domEle.parentNode;
       if( parEle ){
-        parEle.removeChild( domEle );
+        try{
+          parEle.removeChild( domEle );
+        } catch(e){
+          // ie10 issue #1014
+        }
       }
 
       return this;
@@ -13155,6 +13159,19 @@ this.cytoscape = cytoscape;
         } // style enabled
       } // for
 
+      var noninf = function(x){
+        if( x === Infinity || x === -Infinity ){
+          return 0;
+        }
+        
+        return x;
+      };
+
+      x1 = noninf(x1);
+      x2 = noninf(x2);
+      y1 = noninf(y1);
+      y2 = noninf(y2);
+
       return {
         x1: x1,
         x2: x2,
@@ -15459,7 +15476,11 @@ this.cytoscape = cytoscape;
     }
 
     if( this.labelCalcDiv ){
-      document.body.removeChild(this.labelCalcDiv);
+      try{
+        document.body.removeChild(this.labelCalcDiv);
+      } catch(e){
+        // ie10 issue #1014
+      }
     }
   };
 
@@ -23206,6 +23227,15 @@ this.cytoscape = cytoscape;
 
           y.min = Math.min( y.min, scratch.y || 0 );
           y.max = Math.max( y.max, scratch.y || 0 );
+          
+          // update node dims
+          if( !scratch.updatedDims ){
+            var nbb = node.boundingBox();
+            var padding = getOptVal( options.nodeSpacing, node );
+            
+            scratch.width = nbb.w + 2*padding;
+            scratch.height = nbb.h + 2*padding;
+          }
         }
 
         nodes.positions(function(i, node){
@@ -23398,12 +23428,13 @@ this.cytoscape = cytoscape;
       adaptor.nodes( nonparentNodes.map(function( node, i ){
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
+        var nbb = node.boundingBox();
 
         var struct = node._private.scratch.cola = {
-          x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
-          y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
-          width: node.outerWidth() + 2*padding,
-          height: node.outerHeight() + 2*padding,
+          x: options.randomize || pos.x === undefined ? Math.round( Math.random() * bb.w ) : pos.x,
+          y: options.randomize || pos.y === undefined ? Math.round( Math.random() * bb.h ) : pos.y,
+          width: nbb.w + 2*padding,
+          height: nbb.h + 2*padding,
           index: i
         };
 
@@ -23464,8 +23495,19 @@ this.cytoscape = cytoscape;
       adaptor.groups( nodes.stdFilter(function( node ){
         return node.isParent();
       }).map(function( node, i ){ // add basic group incl leaf nodes
+        var style = node._private.style;
+        
+        var optPadding = getOptVal( options.nodeSpacing, node );
+        
+        var pleft = style['padding-left'].pxValue + optPadding;
+        var pright = style['padding-right'].pxValue + optPadding;
+        var ptop = style['padding-top'].pxValue + optPadding;
+        var pbottom = style['padding-bottom'].pxValue + optPadding;
+        
         node._private.scratch.cola = {
           index: i,
+          
+          padding: Math.max( pleft, pright, ptop, pbottom ),
 
           leaves: node.descendants().stdFilter(function( child ){
             return !child.isParent();

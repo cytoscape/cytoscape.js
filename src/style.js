@@ -129,6 +129,9 @@
       { name: 'min-zoomed-font-size', type: t.size },
       { name: 'edge-text-rotation', type: t.textRotation },
 
+      // behaviour
+      { name: 'events', type: t.bool },
+
       // visibility
       { name: 'display', type: t.display },
       { name: 'visibility', type: t.visibility },
@@ -266,6 +269,7 @@
     this
       .selector('node, edge') // common properties
         .css({
+          'events': 'yes',
           'text-events': 'no',
           'text-valign': 'top',
           'text-halign': 'center',

@@ -257,6 +257,9 @@
 
       if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
 
+      // skip elements for which events are disabled
+      if( _p.style['events'].strValue !== 'yes' ){ continue; }
+
       if( _p.group === 'nodes' ){
         checkNode( ele );
 

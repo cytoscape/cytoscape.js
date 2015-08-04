@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // the padding on fit
@@ -21,20 +21,20 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function ConcentricLayout( options ){
     this.options = $$.util.extend({}, defaults, options);
   }
-  
+
   ConcentricLayout.prototype.run = function(){
     var params = this.options;
     var options = params;
-    
+
     var cy = params.cy;
-    
+
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
-    
+
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
@@ -43,7 +43,7 @@
       x: bb.x1 + bb.w/2,
       y: bb.y1 + bb.h/2
     };
-    
+
     var nodeValues = []; // { node, value }
     var theta = options.startAngle;
     var maxNodeSize = 0;
@@ -51,7 +51,7 @@
     for( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
       var value;
-      
+
       // calculate the node value
       value = options.concentric.apply(node, [ node ]);
       nodeValues.push({
@@ -69,8 +69,9 @@
     // calculate max size now based on potentially updated mappers
     for( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
+      var nbb = node.boundingBox();
 
-      maxNodeSize = Math.max( maxNodeSize, node.outerWidth(), node.outerHeight() );
+      maxNodeSize = Math.max( maxNodeSize, nbb.w, nbb.h );
     }
 
     // sort node values in descreasing order
@@ -137,8 +138,8 @@
       }
 
       r += minDist;
-      
-    } 
+
+    }
 
     // position the nodes
     nodes.layoutPositions(this, options, function(){
@@ -146,10 +147,10 @@
 
       return pos[id];
     });
-  
+
     return this; // chaining
   };
-  
+
   $$('layout', 'concentric', ConcentricLayout);
-  
+
 })( cytoscape );

@@ -551,7 +551,7 @@
   Integer.MAX_VALUE = 2147483647;
   Integer.MIN_VALUE = -2147483648;
 
-  /* 
+  /*
    *This class is the javascript implementation of the Point.java class in jdk
    */
   function Point(x, y, p) {
@@ -2578,7 +2578,7 @@
 //      this.update(edge);
       }
 
-      // recursively update nodes 
+      // recursively update nodes
       var node;
       var nodes = this.graphManager.getRoot().getNodes();
       for (var i = 0; i < nodes.length; i++)
@@ -2616,7 +2616,7 @@
         // cast to Updatable without any type check
         var vNode = node.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vNode.update(node);
       }
     }
@@ -2631,7 +2631,7 @@
         // cast to Updatable without any type check
         var vEdge = edge.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vEdge.update(edge);
       }
     }
@@ -2646,7 +2646,7 @@
         // cast to Updatable without any type check
         var vGraph = graph.vGraphObject;
 
-        // call the update method of the interface 
+        // call the update method of the interface
         vGraph.update(graph);
       }
     }
@@ -3450,12 +3450,12 @@
       // calculate distance
 
       if (this.uniformLeafNodeSizes &&
-              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers              
+              nodeA.getChild() == null && nodeB.getChild() == null)// simply base repulsion on distance of node centers
       {
         distanceX = rectB.getCenterX() - rectA.getCenterX();
         distanceY = rectB.getCenterY() - rectA.getCenterY();
       }
-      else// use clipping points              
+      else// use clipping points
       {
         IGeometry.getIntersection(rectA, rectB, clipPoints);
 
@@ -3511,7 +3511,7 @@
     absDistanceX = Math.abs(distanceX);
     absDistanceY = Math.abs(distanceY);
 
-    if (node.getOwner() == this.graphManager.getRoot())// in the root graph           
+    if (node.getOwner() == this.graphManager.getRoot())// in the root graph
     {
       Math.floor(80);
       estimatedSize = Math.floor(ownerGraph.getEstimatedSize() *
@@ -3523,7 +3523,7 @@
         node.gravitationForceY = -this.gravityConstant * distanceY;
       }
     }
-    else// inside a compound           
+    else// inside a compound
     {
       estimatedSize = Math.floor((ownerGraph.getEstimatedSize() *
               this.compoundGravityRangeFactor));
@@ -3647,7 +3647,7 @@
     this.startY = 0;
     this.finishY = 0;
 
-    //Geometric neighbors of this node 
+    //Geometric neighbors of this node
     this.surrounding = [];
   }
 
@@ -4372,10 +4372,11 @@
             function (i, node) {
               var nodeId = this._private.data.id;
               var parentId = node.parent().id();
-              var w = node.width();
+              var nodeBb = node.boundingBox();
+              var w = nodeBb.w;
               var posX = node.position('x');
               var posY = node.position('y');
-              var h = node.height();
+              var h = nodeBb.h;
 
               var temp = node.parent()[0];
 
@@ -4651,7 +4652,7 @@
   }
 
   _CoSELayout.prototype.groupZeroDegreeMembers = function () {
-    // array of [parent_id x oneDegreeNode_id] 
+    // array of [parent_id x oneDegreeNode_id]
     var tempMemberGroups = [];
     var memberGroups = [];
 
@@ -4731,7 +4732,7 @@
 
       childGraphMap[complexOrder[i].id()] = complexOrder[i].children();
 
-      // Remove children of complexes 
+      // Remove children of complexes
       lComplexNode.child = null;
     }
 
@@ -4779,7 +4780,7 @@
   };
 
   /**
-   * This method places each zero degree member wrt given (x,y) coordinates (top left). 
+   * This method places each zero degree member wrt given (x,y) coordinates (top left).
    */
   _CoSELayout.prototype.adjustLocations = function (organization, x, y) {
     x += organization.complexMargin;

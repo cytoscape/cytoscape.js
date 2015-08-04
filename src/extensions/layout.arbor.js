@@ -7,6 +7,7 @@
     padding: 30, // padding around the simulation
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
+    randomize: false, // uses random initial node positions on true
 
     // callbacks on layout events
     ready: undefined, // callback on layoutready
@@ -264,6 +265,13 @@
         var mass = calculateValueForElement(node, options.nodeMass);
         var locked = node._private.locked;
         var nPos = node.position();
+
+        if( options.randomize ){
+          nPos = {
+            x: Math.round( bb.x1 + (bb.x2 - bb.x1) * Math.random() ),
+            x: Math.round( bb.y1 + (bb.y2 - bb.y1) * Math.random() )
+          };
+        }
 
         var pos = sys.fromScreen({
           x: nPos.x,

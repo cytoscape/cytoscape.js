@@ -7,7 +7,7 @@
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // padding on fit
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-    random: false, // whether to use random initial positions
+    randomize: false, // whether to use random initial positions
     infinite: false, // overrides all other options for a forces-all-the-time mode
     ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
@@ -33,6 +33,8 @@
     var layout = this;
     var self = this;
     var options = this.options;
+
+    options.random = options.randomize; // backwards compatibility
 
     $$.util.require('Springy', function(Springy){
 

@@ -24,7 +24,8 @@
     // number of nodes
     maxFruchtermanReingoldIterations: 50, // Maximum number of initial force-directed iterations
     maxExpandIterations: 4, // Maximum number of expanding iterations
-    boundingBox: undefined // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    boundingBox: undefined, // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+    randomize: false // uses random initial node positions on true
   };
 
   function SpreadLayout( options ) {
@@ -157,11 +158,20 @@
 
       nodes.each(
         function( i, node ) {
-          var nodeId = this._private.data.id;
+          var nodeId = node.id();
+          var pos = node.position();
+
+          if( options.randomize ){
+            pos = {
+              x: Math.round( simBB.x1 + (simBB.x2 - simBB.x1) * Math.random() ),
+              x: Math.round( simBB.y1 + (simBB.y2 - simBB.y1) * Math.random() )
+            };
+          }
+
           pData[ 'vertices' ].push( {
             id: nodeId,
-            x: 0,
-            y: 0
+            x: pos.x,
+            y: pos.y
           } );
         } );
 

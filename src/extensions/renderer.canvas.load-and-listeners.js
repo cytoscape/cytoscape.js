@@ -31,6 +31,10 @@
   CRp.load = function() {
     var r = this;
 
+    var isMultSelKeyDown = function( e ){
+      return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
+    };
+
     var getDragListIds = function(opts){
       var listHasId;
 
@@ -405,47 +409,23 @@
 
         }
 
-        // Selection box
-        if ( near == null || near.isEdge() ) {
+        if ( near == null ) {
           select[4] = 1;
-          var timeUntilActive = Math.max( 0, CR.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
 
-          clearTimeout( r.bgActiveTimeout );
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
 
-          if( cy.boxSelectionEnabled() || ( near && near.isEdge() ) ){
-            r.bgActiveTimeout = setTimeout(function(){
-              if( near ){
-                near.unactivate();
-              }
+          //r.hoverData.dragging = true;
 
-              r.data.bgActivePosistion = {
-                x: pos[0],
-                y: pos[1]
-              };
+          //checkForTaphold();
 
-              r.hoverData.dragging = true;
+          needsRedraw[CR.SELECT_BOX] = true;
 
-              //checkForTaphold();
-
-              needsRedraw[CR.SELECT_BOX] = true;
-
-              r.redraw();
-            }, timeUntilActive);
-          } else {
-            r.data.bgActivePosistion = {
-              x: pos[0],
-              y: pos[1]
-            };
-
-            //r.hoverData.dragging = true;
-
-            //checkForTaphold();
-
-            needsRedraw[CR.SELECT_BOX] = true;
-
-            r.redraw();
-          }
-
+          r.redraw();
+        } else if( near.isEdge() ){
+          select[4] = 1; // for future pan
         }
 
         checkForTaphold();
@@ -514,6 +494,8 @@
       var dy2 = dy * dy;
       var dist2 = dx2 + dy2;
       var rdist2 = dist2 * zoom * zoom;
+
+      var multSelKeyDown = isMultSelKeyDown( e );
 
       r.hoverData.tapholdCancelled = true;
 
@@ -644,28 +626,37 @@
       // Checks primary button down & out of time & mouse not moved much
       } else if(
           select[4] == 1 && (down == null || down.isEdge())
-          && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CR.panOrBoxSelectDelay) )
-          //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
-          && !r.hoverData.selecting
-          && rdist2 >= r.desktopTapThreshold2
-          && cy.panningEnabled() && cy.userPanningEnabled()
       ){
-        r.hoverData.dragging = true;
-        r.hoverData.selecting = false;
-        r.hoverData.justStartedPan = true;
-        select[4] = 0;
 
-      } else {
-        // deactivate bg on box selection
-        if (cy.boxSelectionEnabled() && !r.hoverData.dragging && Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]){
-          clearTimeout( r.bgActiveTimeout );
+        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && multSelKeyDown ){
           r.data.bgActivePosistion = undefined;
           r.hoverData.selecting = true;
+          //select[4] = 0;
+
+          // console.log( 'select' );
 
           needsRedraw[CR.SELECT_BOX] = true;
           r.redraw();
+
+        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+          r.hoverData.dragging = true;
+          r.hoverData.justStartedPan = true;
+          select[4] = 0;
+
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
+
+          needsRedraw[CR.SELECT_BOX] = true;
+          r.redraw();
+
+          // console.log( 'pan' );
         }
 
+        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
+      } else {
         if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
         if (near != last) {
@@ -780,7 +771,7 @@
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
       var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
-      var multSelKeyDown = e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
+      var multSelKeyDown = isMultSelKeyDown( e );
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if( r.data.bgActivePosistion ){
@@ -791,7 +782,6 @@
       r.hoverData.tapholdCancelled = true;
 
       r.data.bgActivePosistion = undefined; // not active bg now
-      clearTimeout( r.bgActiveTimeout );
 
       if( down ){
         down.unactivate();

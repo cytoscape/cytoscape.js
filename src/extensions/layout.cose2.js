@@ -4289,6 +4289,8 @@
   }
 
   _CoSELayout.prototype.run = function () {
+    var layout = this;
+
     _CoSELayout.idToLNode = {};
     _CoSELayout.toBeTiled = {};
     _CoSELayout.layout = new CoSELayout();
@@ -4327,37 +4329,42 @@
     }
 
 
-    var t1 = $$.Thread();
-    t1.require(DimensionD);
-    t1.require(HashMap);
-    t1.require(HashSet);
-    t1.require(IGeometry);
-    t1.require(IMath);
-    t1.require(Integer);
-    t1.require(Point);
-    t1.require(PointD);
-    t1.require(RandomSeed);
-    t1.require(RectangleD);
-    t1.require(Transform);
-    t1.require(UniqueIDGeneretor);
-    t1.require(LGraphObject);
-    t1.require(LGraph);
-    t1.require(LEdge);
-    t1.require(LGraphManager);
-    t1.require(LNode);
-    t1.require(Layout);
-    t1.require(LayoutConstants);
-    t1.require(layoutOptionsPack);
-    t1.require(FDLayout);
-    t1.require(FDLayoutConstants);
-    t1.require(FDLayoutEdge);
-    t1.require(FDLayoutNode);
-    t1.require(CoSEConstants);
-    t1.require(CoSEEdge);
-    t1.require(CoSEGraph);
-    t1.require(CoSEGraphManager);
-    t1.require(CoSELayout);
-    t1.require(CoSENode);
+    var t1 = layout.thread;
+
+    if( !t1 || t1.stopped() ){ // try to reuse threads
+      t1 = layout.thread = $$.Thread();
+
+      t1.require(DimensionD);
+      t1.require(HashMap);
+      t1.require(HashSet);
+      t1.require(IGeometry);
+      t1.require(IMath);
+      t1.require(Integer);
+      t1.require(Point);
+      t1.require(PointD);
+      t1.require(RandomSeed);
+      t1.require(RectangleD);
+      t1.require(Transform);
+      t1.require(UniqueIDGeneretor);
+      t1.require(LGraphObject);
+      t1.require(LGraph);
+      t1.require(LEdge);
+      t1.require(LGraphManager);
+      t1.require(LNode);
+      t1.require(Layout);
+      t1.require(LayoutConstants);
+      t1.require(layoutOptionsPack);
+      t1.require(FDLayout);
+      t1.require(FDLayoutConstants);
+      t1.require(FDLayoutEdge);
+      t1.require(FDLayoutNode);
+      t1.require(CoSEConstants);
+      t1.require(CoSEEdge);
+      t1.require(CoSEGraph);
+      t1.require(CoSEGraphManager);
+      t1.require(CoSELayout);
+      t1.require(CoSENode);
+    }
 
     var nodes = this.options.eles.nodes();
     var edges = this.options.eles.edges();
@@ -5060,7 +5067,19 @@
    * @brief : called on continuous layouts to stop them before they finish
    */
   _CoSELayout.prototype.stop = function () {
-    this.stopped = true;
+    if( this.thread ){
+      this.thread.stop();
+    }
+
+    this.trigger('layoutstop');
+
+    return this; // chaining
+  };
+
+  _CoSELayout.prototype.destroy = function () {
+    if( this.thread ){
+      this.thread.stop();
+    }
 
     return this; // chaining
   };

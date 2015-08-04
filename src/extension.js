@@ -48,6 +48,12 @@
         };
       }
 
+      if( !layoutProto.destroy ){
+        layoutProto.destroy = function(){
+          return this;
+        };
+      }
+
       layoutProto.on = $$.define.on({ layout: true });
       layoutProto.one = $$.define.on({ layout: true, unbindSelfOnTrigger: true });
       layoutProto.once = $$.define.on({ layout: true, unbindAllBindersOnTrigger: true });

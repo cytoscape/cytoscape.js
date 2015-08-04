@@ -186,16 +186,22 @@
         } );
 
       //Decleration
-      var t1 = $$.Thread();
-      // And to add the required scripts
-      //EXTERNAL 1
-      t1.require( foograph, 'foograph' );
-      //EXTERNAL 2
-      t1.require( Voronoi );
+      var t1 = layout.thread;
 
-      //Local function
-      t1.require( sitesDistance );
-      t1.require( cellCentroid );
+      // reuse old thread if possible
+      if( !t1 || t1.stopped() ){
+        t1 = layout.thread = $$.Thread();
+
+        // And to add the required scripts
+        //EXTERNAL 1
+        t1.require( foograph, 'foograph' );
+        //EXTERNAL 2
+        t1.require( Voronoi );
+
+        //Local function
+        t1.require( sitesDistance );
+        t1.require( cellCentroid );
+      }
 
       function setPositions( pData ){ //console.log('set posns')
         // First we retrieve the important data
@@ -472,7 +478,19 @@
     return this;
   }; // run
 
-  SpreadLayout.prototype.stop = function() {};
+  SpreadLayout.prototype.stop = function(){
+    if( this.thread ){
+      this.thread.stop();
+    }
+
+    this.trigger('layoutstop');
+  };
+
+  SpreadLayout.prototype.destroy = function(){
+    if( this.thread ){
+      this.thread.stop();
+    }
+  };
 
   $$( 'layout', 'spread', SpreadLayout );
 

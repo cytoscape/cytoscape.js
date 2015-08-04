@@ -1028,7 +1028,7 @@
     }, false);
 
     var wheelHandler = function(e) {
-      console.log( 'wheelHandler' );
+      // console.log( 'wheelHandler' );
 
       if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 

@@ -2115,7 +2115,7 @@
 
       var pointers = [];
 
-      function makeTouch( e ){
+      var makeTouch = function( e ){
         return {
           clientX: e.clientX,
           clientY: e.clientY,
@@ -2131,18 +2131,18 @@
         };
       }
 
-      function makePointer( e ){
+      var makePointer = function( e ){
         return {
           event: e,
           touch: makeTouch(e)
         };
       }
 
-      function addPointer( e ){
+      var addPointer = function( e ){
         pointers.push( makePointer(e) );
       }
 
-      function removePointer( e ){
+      var removePointer = function( e ){
         for( var i = 0; i < pointers.length; i++ ){
           var p = pointers[i];
 
@@ -2153,7 +2153,7 @@
         }
       }
 
-      function updatePointer( e ){
+      var updatePointer = function( e ){
         var p = pointers.filter(function( p ){
           return p.event.pointerId === e.pointerId;
         })[0];
@@ -2162,7 +2162,7 @@
         p.touch = makeTouch(e);
       }
 
-      function addTouchesToEvent( e ){
+      var addTouchesToEvent = function( e ){
         e.touches = pointers.map(function( p ){
           return p.touch;
         });

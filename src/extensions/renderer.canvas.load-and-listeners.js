@@ -116,10 +116,10 @@
         inDragLayer: opts.inDragLayer
       } );
     };
-    
+
     var freeDraggedElements = function( draggedElements ){
       if( !draggedElements ){ return; }
-      
+
       for (var i=0; i < draggedElements.length; i++) {
 
         var dEi_p = draggedElements[i]._private;
@@ -268,7 +268,7 @@
       var draggedElements = r.dragData.possibleDragElements;
 
       r.hoverData.mdownPos = pos;
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       var checkForTaphold = function(){
@@ -988,10 +988,10 @@
         // Cancel drag pan
         if( r.hoverData.dragging ){
           r.hoverData.dragging = false;
-          
+
           needsRedraw[CR.SELECT_BOX] = true;
           needsRedraw[CR.NODE] = true;
-          
+
           r.redraw();
         }
 
@@ -1028,6 +1028,8 @@
     }, false);
 
     var wheelHandler = function(e) {
+      console.log( 'wheelHandler' );
+
       if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
       var cy = r.data.cy;
@@ -1121,9 +1123,10 @@
       return (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1);
     };
 
-    r.registerBinding(r.data.container, 'touchstart', function(e) {
+    var touchstartHandler;
+    r.registerBinding(r.data.container, 'touchstart', touchstartHandler = function(e) {
 
-      clearTimeout( this.threeFingerSelectTimeout );
+      clearTimeout( r.threeFingerSelectTimeout );
 
       if( e.target !== r.data.link ){
         e.preventDefault();
@@ -1373,7 +1376,8 @@
 
 // console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
-    r.registerBinding(window, 'touchmove', $$.util.throttle(function(e) {
+    var touchmoveHandler;
+    r.registerBinding(window, 'touchmove', touchmoveHandler = $$.util.throttle(function(e) {
 
       var select = r.data.select;
       var capture = r.touchData.capture; //if (!capture) { return; };
@@ -1382,7 +1386,7 @@
       var cy = r.data.cy;
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       var zoom = cy.zoom();
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -1582,7 +1586,7 @@
 
             if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
               var dEi_p = draggedEles[i]._private;
-              
+
               dEi_p.grabbed = false;
               dEi_p.rscratch.inDragLayer = false;
             } }
@@ -1645,7 +1649,7 @@
 
                 if( justStartedDrag ){
                   addNodeToDrag( draggedEle, { inDragLayer: true } );
-                  
+
                   needsRedraw[CR.NODE] = true;
 
                   var dragDelta = r.touchData.dragDelta;
@@ -1812,7 +1816,8 @@
 
     }, 1000/30, { trailing: true }), false);
 
-    r.registerBinding(window, 'touchcancel', function(e) {
+    var touchcancelHandler;
+    r.registerBinding(window, 'touchcancel', touchcancelHandler = function(e) {
       var start = r.touchData.start;
 
       r.touchData.capture = false;
@@ -1822,7 +1827,8 @@
       }
     });
 
-    r.registerBinding(window, 'touchend', function(e) {
+    var touchendHandler;
+    r.registerBinding(window, 'touchend', touchendHandler = function(e) {
       var start = r.touchData.start;
 
       var capture = r.touchData.capture;
@@ -1843,7 +1849,7 @@
       var zoom = cy.zoom();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
-      
+
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
@@ -1952,18 +1958,18 @@
 
         r.data.bgActivePosistion = undefined;
         needsRedraw[CR.SELECT_BOX] = true;
-        
+
         var draggedEles = r.dragData.touchDragEles;
 
         if (start != null ) {
 
           var startWasGrabbed = start._private.grabbed;
-          
+
           freeDraggedElements( draggedEles );
 
           needsRedraw[CR.DRAG] = true;
           needsRedraw[CR.NODE] = true;
-          
+
           if( startWasGrabbed ){
             start.trigger('free');
           }
@@ -2111,6 +2117,118 @@
       //r.redraw();
 
     }, false);
+
+    // compatibility layer for ms pointer events
+    if( typeof TouchEvent === 'undefined' ){
+
+      var pointers = [];
+
+      function makeTouch( e ){
+        return {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          force: 1,
+          identifier: e.pointerId,
+          pageX: e.pageX,
+          pageY: e.pageY,
+          radiusX: e.width/2,
+          radiusY: e.height/2,
+          screenX: e.screenX,
+          screenY: e.screenY,
+          target: e.target
+        };
+      }
+
+      function makePointer( e ){
+        return {
+          event: e,
+          touch: makeTouch(e)
+        };
+      }
+
+      function addPointer( e ){
+        pointers.push( makePointer(e) );
+      }
+
+      function removePointer( e ){
+        for( var i = 0; i < pointers.length; i++ ){
+          var p = pointers[i];
+
+          if( p.event.pointerId === e.pointerId ){
+            pointers.splice( i, 1 );
+            return;
+          }
+        }
+      }
+
+      function updatePointer( e ){
+        var p = pointers.filter(function( p ){
+          return p.event.pointerId === e.pointerId;
+        })[0];
+
+        p.event = e;
+        p.touch = makeTouch(e);
+      }
+
+      function addTouchesToEvent( e ){
+        e.touches = pointers.map(function( p ){
+          return p.touch;
+        });
+      }
+
+      r.registerBinding(r.data.container, 'pointerdown', function(e){
+        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+        // console.log('pdown')
+        // console.log(e)
+
+        e.preventDefault();
+
+        addPointer( e );
+
+        addTouchesToEvent( e );
+        touchstartHandler( e );
+      });
+
+      r.registerBinding(r.data.container, 'pointerup', function(e){
+        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+        // console.log('pup')
+        // console.log(e)
+
+        removePointer( e );
+
+        addTouchesToEvent( e );
+        touchendHandler( e );
+      });
+
+      r.registerBinding(r.data.container, 'pointercancel', function(e){
+        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+        // console.log('pcancel')
+        // console.log(e)
+
+        removePointer( e );
+
+        addTouchesToEvent( e );
+        touchcancelHandler( e );
+      });
+
+      r.registerBinding(r.data.container, 'pointermove', function(e){
+        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+        // console.log('pmove')
+        // console.log(e)
+
+        e.preventDefault();
+
+        updatePointer( e );
+
+        addTouchesToEvent( e );
+        touchmoveHandler( e );
+      });
+
+    }
   };
 
 })( cytoscape );

@@ -788,6 +788,8 @@
         r.redraw();
       }
 
+      r.hoverData.tapholdCancelled = true;
+
       r.data.bgActivePosistion = undefined; // not active bg now
       clearTimeout( r.bgActiveTimeout );
 

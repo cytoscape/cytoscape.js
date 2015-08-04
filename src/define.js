@@ -12,7 +12,7 @@
 
     // access data field
     data: function( params ){
-      var defaults = { 
+      var defaults = {
         field: 'data',
         bindingEvent: 'data',
         allowBinding: false,
@@ -46,7 +46,7 @@
               ret = single._private[ p.field ][ name ];
             }
             return ret;
-          
+
           // .data('foo', 'bar')
           } else if( p.allowSetting && value !== undefined ) { // set
             var valid = !p.immutableKeys[name];
@@ -86,7 +86,7 @@
               }
             }
           }
-          
+
           // update mappers if asked
           if( p.updateStyle ){ self.updateStyle(); }
 
@@ -96,12 +96,12 @@
           if( p.settingTriggersEvent ){
             self[ p.triggerFnName ]( p.settingEvent );
           }
-        
+
         // .data(function(){ ... })
         } else if( p.allowBinding && $$.is.fn(name) ){ // bind to event
           var fn = name;
           self.bind( p.bindingEvent, fn );
-        
+
         // .data()
         } else if( p.allowGetting && name === undefined ){ // get whole object
           var ret;
@@ -117,7 +117,7 @@
 
     // remove data field
     removeData: function( params ){
-      var defaults = { 
+      var defaults = {
         field: 'data',
         event: 'data',
         triggerFnName: 'trigger',
@@ -131,7 +131,7 @@
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
         var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-        
+
         // .removeData('foo bar')
         if( $$.is.string(names) ){ // then get the list of keys, and delete them
           var keys = names.split(/\s+/);
@@ -158,7 +158,7 @@
 
           for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
             var _privateFields = all[ i_a ]._private[ p.field ];
-            
+
             for( var key in _privateFields ){
               var validKeyToDelete = !p.immutableKeys[ key ];
 
@@ -191,7 +191,7 @@
         unbindAllBindersOnTrigger: false
       };
       params = $$.util.extend({}, defaults, params);
-      
+
       return function onImpl(events, selector, data, callback){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
@@ -267,7 +267,7 @@
             }
           } // for events array
         } // for events map
-        
+
         return self; // maintain chaining
       }; // function
     }, // on
@@ -303,7 +303,7 @@
       var defaults = {
       };
       params = $$.util.extend({}, defaults, params);
-      
+
       return function(events, selector, callback){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
@@ -368,7 +368,7 @@
           } // for events array
 
         } // for events map
-        
+
         return self; // maintain chaining
       }; // function
     }, // off
@@ -376,7 +376,7 @@
     trigger: function( params ){
       var defaults = {};
       params = $$.util.extend({}, defaults, params);
-      
+
       return function triggerImpl(events, extraParams, fnToTrigger){
         var self = this;
         var selfIsArrayLike = self.length !== undefined;
@@ -420,7 +420,7 @@
 
         for( var i = 0; i < events.length; i++ ){ // trigger each event in order
           var evtObj = events[i];
-          
+
           for( var j = 0; j < all.length; j++ ){ // for each
             var triggerer = all[j];
             var listeners = triggerer._private.listeners = triggerer._private.listeners || [];
@@ -432,7 +432,7 @@
 
             if( eventsIsEvent ){ // then just get the object
               evt = evtObj;
-              
+
               evt.cyTarget = evt.cyTarget || triggerer;
               evt.cy = evt.cy || cy;
 
@@ -546,7 +546,7 @@
 
           } // for each of all
         } // for each event
-        
+
         return self; // maintain chaining
       }; // function
     }, // trigger
@@ -630,7 +630,7 @@
         var callTime = +new Date();
         var style = cy.style();
         var q;
-        
+
         if( params === undefined ){
           params = {};
         }
@@ -638,7 +638,7 @@
         if( params.duration === undefined ){
           params.duration = 400;
         }
-        
+
         switch( params.duration ){
         case 'slow':
           params.duration = 600;
@@ -647,7 +647,7 @@
           params.duration = 200;
           break;
         }
-        
+
         var propertiesEmpty = true;
         if( properties ){ for( var i in properties ){
           propertiesEmpty = false;
@@ -707,7 +707,7 @@
 
         for( var i = 0; i < all.length; i++ ){
           var ele = all[i];
-         
+
           if( ele.animated() && (params.queue === undefined || params.queue) ){
             q = ele._private.animation.queue;
           } else {
@@ -747,14 +747,14 @@
           var anis = ele._private.animation.current;
 
           for( var j = 0; j < anis.length; j++ ){
-            var animation = anis[j];    
+            var animation = anis[j];
             if( jumpToEnd ){
               // next iteration of the animation loop, the animation
               // will go straight to the end and be removed
-              animation.duration = 0; 
+              animation.duration = 0;
             }
           }
-          
+
           // clear the queue of future animations
           if( clearQueue ){
             ele._private.animation.queue = [];
@@ -764,18 +764,18 @@
             ele._private.animation.current = [];
           }
         }
-        
+
         // we have to notify (the animation loop doesn't do it for us on `stop`)
         cy.notify({
           collection: this,
           type: 'draw'
         });
-        
+
         return this;
       };
     } // stop
 
   }; // define
 
-  
+
 })( cytoscape );

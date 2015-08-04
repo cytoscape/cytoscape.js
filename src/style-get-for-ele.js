@@ -51,11 +51,11 @@
   $$.styfn.getValueStyle = function( ele, opts ){
     opts = opts || {};
 
-    var rstyle = opts.array ? [] : {}; 
+    var rstyle = opts.array ? [] : {};
     var style;
 
     if( $$.is.element(ele) ){
-      style = ele._private.style;    
+      style = ele._private.style;
     } else {
       style = ele; // just passed the style itself
     }

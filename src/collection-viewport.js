@@ -6,5 +6,5 @@
     center: function(){}
 
   });
-  
+
 })( cytoscape );

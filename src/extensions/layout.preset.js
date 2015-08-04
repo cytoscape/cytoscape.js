@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
     zoom: undefined, // the zoom level to set (prob want fit = false if set)
@@ -11,11 +11,11 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function PresetLayout( options ){
     this.options = $$.util.extend(true, {}, defaults, options);
   }
-  
+
   PresetLayout.prototype.run = function(){
     var options = this.options;
     var eles = options.eles;
@@ -31,29 +31,29 @@
       if( posIsFn ){
         return options.positions.apply( node, [ node ] );
       }
-      
+
       var pos = options.positions[node._private.data.id];
 
       if( pos == null ){
         return null;
       }
-      
+
       return pos;
     }
-    
+
     nodes.layoutPositions(this, options, function(i, node){
       var position = getPosition(node);
-      
+
       if( node.locked() || position == null ){
         return false;
       }
-      
+
       return position;
     });
-        
+
     return this; // chaining
   };
-  
+
   $$('layout', 'preset', PresetLayout);
-  
+
 })(cytoscape);

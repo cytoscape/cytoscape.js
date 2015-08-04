@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   $$.fn.core({
 
     autolock: function(bool){
@@ -8,7 +8,7 @@
       } else {
         return this._private.autolock;
       }
-      
+
       return this; // chaining
     },
 
@@ -18,7 +18,7 @@
       } else {
         return this._private.autoungrabify;
       }
-      
+
       return this; // chaining
     },
 
@@ -28,7 +28,7 @@
       } else {
         return this._private.autounselectify;
       }
-      
+
       return this; // chaining
     },
 
@@ -38,7 +38,7 @@
       } else {
         return this._private.panningEnabled;
       }
-      
+
       return this; // chaining
     },
 
@@ -48,17 +48,17 @@
       } else {
         return this._private.userPanningEnabled;
       }
-      
+
       return this; // chaining
     },
-    
+
     zoomingEnabled: function( bool ){
       if( bool !== undefined ){
         this._private.zoomingEnabled = bool ? true : false;
       } else {
         return this._private.zoomingEnabled;
       }
-      
+
       return this; // chaining
     },
 
@@ -68,7 +68,7 @@
       } else {
         return this._private.userZoomingEnabled;
       }
-      
+
       return this; // chaining
     },
 
@@ -78,10 +78,10 @@
       } else {
         return this._private.boxSelectionEnabled;
       }
-      
+
       return this; // chaining
     },
-    
+
     pan: function(){
       var args = arguments;
       var pan = this._private.pan;
@@ -91,7 +91,7 @@
       case 0: // .pan()
         return pan;
 
-      case 1: 
+      case 1:
 
         if( $$.is.string( args[0] ) ){ // .pan('x')
           dim = args[0];
@@ -143,7 +143,7 @@
 
       return this; // chaining
     },
-    
+
     panBy: function(params){
       var args = arguments;
       var pan = this._private.pan;
@@ -154,7 +154,7 @@
       }
 
       switch( args.length ){
-      case 1: 
+      case 1:
 
         if( $$.is.plainObject( args[0] ) ) { // .panBy({ x: 0, y: 100 })
           dims = args[0];
@@ -194,7 +194,7 @@
 
       return this; // chaining
     },
-    
+
     fit: function( elements, padding ){
       var viewportState = this.getFitViewport( elements, padding );
 
@@ -265,14 +265,14 @@
         };
 
         return {
-          zoom: zoom, 
+          zoom: zoom,
           pan: pan
         };
       }
 
       return;
     },
-    
+
     minZoom: function( zoom ){
       if( zoom === undefined ){
         return this._private.minZoom;
@@ -340,7 +340,7 @@
         var pan1 = this._private.pan;
         var zoom1 = this._private.zoom;
         var zoom2 = zoom;
-        
+
         var pan2 = {
           x: -zoom2/zoom1 * (pos.x - pan1.x) + pos.x,
           y: -zoom2/zoom1 * (pos.y - pan1.y) + pos.y
@@ -351,7 +351,7 @@
 
         var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
         this.trigger(' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
-      
+
       } else { // just set the zoom
         this._private.zoom = zoom;
         this.trigger('zoom viewport');
@@ -364,7 +364,7 @@
       return this; // chaining
     },
 
-    viewport: function( opts ){ 
+    viewport: function( opts ){
       var _p = this._private;
       var zoomDefd = true;
       var panDefd = true;
@@ -419,7 +419,7 @@
 
       return this; // chaining
     },
-    
+
     center: function( elements ){
       var pan = this.getCenterPan( elements );
 
@@ -457,10 +457,10 @@
         x: (w - zoom*( bb.x1 + bb.x2 ))/2,
         y: (h - zoom*( bb.y1 + bb.y2 ))/2
       };
-      
+
       return pan;
     },
-    
+
     reset: function(){
       if( !this._private.panningEnabled || !this._private.zoomingEnabled ){
         return this;
@@ -470,7 +470,7 @@
         pan: { x: 0, y: 0 },
         zoom: 1
       });
-      
+
       return this; // chaining
     },
 

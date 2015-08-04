@@ -7,7 +7,7 @@
     var buffer = document.createElement('canvas');
     buffer.width = w;
     buffer.height = h;
-    
+
     return [buffer, buffer.getContext('2d')];
   };
 
@@ -92,12 +92,12 @@
     }
 
     return buffCanvas;
-  }; 
+  };
 
   CRp.png = function( options ){
     return this.bufferCanvasImage( options ).toDataURL('image/png');
   };
-  
+
   CRp.jpg = function( options ){
     return this.bufferCanvasImage( options ).toDataURL('image/jpeg');
   };

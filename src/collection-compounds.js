@@ -16,7 +16,7 @@
           parents.push( parent );
         }
       }
-      
+
       return new $$.Collection( cy, parents, { unique: true } ).filter( selector );
     },
 
@@ -42,7 +42,7 @@
       for( var i = 0; i < this.length; i++ ){
         var ele = this[i];
         var parents = ele.parents();
-        
+
         ancestors = ancestors || parents;
 
         ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
@@ -117,5 +117,5 @@
 
   // aliases
   $$.elesfn.ancestors = $$.elesfn.parents;
-  
+
 })( cytoscape );

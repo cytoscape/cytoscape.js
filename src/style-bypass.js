@@ -5,7 +5,7 @@
   $$.styfn.applyBypass = function( eles, name, value, updateTransitions ){
     var props = [];
     var isBypass = true;
-    
+
     // put all the properties (can specify one or many) in an array after parsing them
     if( name === "*" || name === "**" ){ // apply to all property names
 
@@ -15,7 +15,7 @@
           var name = prop.name;
 
           var parsedProp = this.parse(name, value, true);
-          
+
           if( parsedProp ){
             props.push( parsedProp );
           }
@@ -43,7 +43,7 @@
 
         if( value !== undefined ){
           var parsedProp = this.parse(name, value, true);
-          
+
           if( parsedProp ){
             props.push( parsedProp );
           }

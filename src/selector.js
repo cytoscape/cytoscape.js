@@ -8,25 +8,25 @@
   };
 
   $$.Selector = function(onlyThisGroup, selector){
-    
+
     if( !(this instanceof $$.Selector) ){
       return new $$.Selector(onlyThisGroup, selector);
     }
-  
+
     if( selector === undefined && onlyThisGroup !== undefined ){
       selector = onlyThisGroup;
       onlyThisGroup = undefined;
     }
-    
+
     var self = this;
-    
+
     self._private = {
       selectorText: null,
       invalid: true
     };
-    
+
     if( !selector || ( $$.is.string(selector) && selector.match(/^\s*$/) ) ){
-      
+
       if( onlyThisGroup == null ){
         // ignore
         self.length = 0;
@@ -35,33 +35,33 @@
         self[0].group = onlyThisGroup;
         self.length = 1;
       }
-              
+
     } else if( $$.is.element( selector ) ){
       var collection = new $$.Collection(self.cy(), [ selector ]);
-      
+
       self[0] = newQuery();
       self[0].collection = collection;
       self.length = 1;
-      
+
     } else if( $$.is.collection( selector ) ){
       self[0] = newQuery();
       self[0].collection = selector;
       self.length = 1;
-      
+
     } else if( $$.is.fn( selector ) ) {
       self[0] = newQuery();
       self[0].filter = selector;
       self.length = 1;
-      
+
     } else if( $$.is.string( selector ) ){
 
       // the current subject in the query
       var currentSubject = null;
-      
+
       // storage for parsed queries
       var newQuery = function(){
         return {
-          classes: [], 
+          classes: [],
           colonSelectors: [],
           data: [],
           group: null,
@@ -109,7 +109,7 @@
           return $1;
         });
       };
-      
+
       // add @ variants to comparatorOp
       var ops = tokens.comparatorOp.split('|');
       for( var i = 0; i < ops.length; i++ ){
@@ -141,7 +141,7 @@
             this.group = group == "*" ? group : group + 's';
           }
         },
-        
+
         state: {
           query: true,
           // NB: if one colon selector is a substring of another from its start, place the longer one first
@@ -151,7 +151,7 @@
             this.colonSelectors.push( state );
           }
         },
-        
+
         id: {
           query: true,
           regex: '\\#('+ tokens.id +')',
@@ -159,7 +159,7 @@
             this.ids.push( cleanMetaChars(id) );
           }
         },
-        
+
         className: {
           query: true,
           regex: '\\.('+ tokens.className +')',
@@ -167,7 +167,7 @@
             this.classes.push( cleanMetaChars(className) );
           }
         },
-        
+
         dataExists: {
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
@@ -177,11 +177,11 @@
             });
           }
         },
-        
+
         dataCompare: {
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
-          populate: function( variable, comparatorOp, value ){ 
+          populate: function( variable, comparatorOp, value ){
             var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
 
             if( valueIsString ){
@@ -197,7 +197,7 @@
             });
           }
         },
-        
+
         dataBool: {
           query: true,
           regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
@@ -208,7 +208,7 @@
             });
           }
         },
-        
+
         metaCompare: {
           query: true,
           regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
@@ -287,13 +287,13 @@
       self._private.selectorText = selector;
       var remaining = selector;
       var i = 0;
-      
+
       // of all the expressions, find the first match in the remaining text
       var consumeExpr = function( expectation ){
         var expr;
         var match;
         var name;
-        
+
         for( var j = 0; j < exprs.length; j++ ){
           var e = exprs[j];
           var n = e.name;
@@ -302,42 +302,42 @@
           if( $$.is.fn( expectation ) && !expectation(n, e) ){ continue; }
 
           var m = remaining.match(new RegExp( '^' + e.regex ));
-          
+
           if( m != null ){
             match = m;
             expr = e;
             name = n;
-            
+
             var consumed = m[0];
-            remaining = remaining.substring( consumed.length );                
-            
+            remaining = remaining.substring( consumed.length );
+
             break; // we've consumed one expr, so we can return now
           }
         }
-        
+
         return {
           expr: expr,
           match: match,
           name: name
         };
       };
-      
+
       // consume all leading whitespace
       var consumeWhitespace = function(){
         var match = remaining.match(/^\s+/);
-        
+
         if( match ){
           var consumed = match[0];
           remaining = remaining.substring( consumed.length );
         }
       };
-      
+
       self[0] = newQuery(); // get started
 
       consumeWhitespace(); // get rid of leading whitespace
-      for(;;){        
+      for(;;){
         var check = consumeExpr();
-        
+
         if( check.expr == null ){
           $$.util.error('The selector `'+ selector +'`is invalid');
           return;
@@ -346,19 +346,19 @@
           for(var j = 1; j < check.match.length; j++){
             args.push( check.match[j] );
           }
-          
+
           // let the token populate the selector object (i.e. in self[i])
           var ret = check.expr.populate.apply( self[i], args );
 
           if( ret === false ){ return; } // exit if population failed
         }
-        
+
         // we're done when there's nothing left to parse
         if( remaining.match(/^\s*$/) ){
           break;
         }
       }
-      
+
       self.length = i + 1;
 
       // adjust references for subject
@@ -407,31 +407,31 @@
           self[j].group = onlyThisGroup; // set to implicit group
         }
       }
-      
+
     } else {
       $$.util.error('A selector must be created from a string; found ' + selector);
       return;
     }
 
     self._private.invalid = false;
-    
+
   };
 
   $$.selfn = $$.Selector.prototype;
-  
+
   $$.selfn.size = function(){
     return this.length;
   };
-  
+
   $$.selfn.eq = function(i){
     return this[i];
   };
-  
+
   // get elements from the core and then filter them
   $$.selfn.find = function(){
     // TODO impl if we decide to use a DB for storing elements
   };
-  
+
   var queryMatches = function(query, element){
     // check group
     if( query.group != null && query.group != '*' && query.group != element._private.group ){
@@ -439,12 +439,12 @@
     }
 
     var cy = element.cy();
-    
+
     // check colon selectors
     var allColonSelectorsMatch = true;
     for(var k = 0; k < query.colonSelectors.length; k++){
       var sel = query.colonSelectors[k];
-      
+
       switch(sel){
       case ':selected':
         allColonSelectorsMatch = element.selected();
@@ -529,34 +529,34 @@
         allColonSelectorsMatch = !element.backgrounding();
         break;
       }
-      
+
       if( !allColonSelectorsMatch ) break;
     }
     if( !allColonSelectorsMatch ) return false;
-    
+
     // check id
     var allIdsMatch = true;
     for(var k = 0; k < query.ids.length; k++){
       var id = query.ids[k];
       var actualId = element._private.data.id;
-      
+
       allIdsMatch = allIdsMatch && (id == actualId);
-      
+
       if( !allIdsMatch ) break;
     }
     if( !allIdsMatch ) return false;
-    
+
     // check classes
     var allClassesMatch = true;
     for(var k = 0; k < query.classes.length; k++){
       var cls = query.classes[k];
-      
+
       allClassesMatch = allClassesMatch && element.hasClass(cls);
-      
+
       if( !allClassesMatch ) break;
     }
     if( !allClassesMatch ) return false;
-    
+
     // generic checking for data/metadata
     var operandsMatch = function(params){
       var allDataMatches = true;
@@ -566,18 +566,18 @@
         var value = data.value;
         var field = data.field;
         var matches;
-        
+
         if( operator != null && value != null ){
-          
+
           var fieldVal = params.fieldValue(field);
           var fieldStr = !$$.is.string(fieldVal) && !$$.is.number(fieldVal) ? '' : '' + fieldVal;
           var valStr = '' + value;
-          
+
           var caseInsensitive = false;
           if( operator.indexOf('@') >= 0 ){
             fieldStr = fieldStr.toLowerCase();
             valStr = valStr.toLowerCase();
-            
+
             operator = operator.replace('@', '');
             caseInsensitive = true;
           }
@@ -588,7 +588,7 @@
             operator = operator.replace('!', '');
             notExpr = true;
           }
-          
+
           // if we're doing a case insensitive comparison, then we're using a STRING comparison
           // even if we're comparing numbers
           if( caseInsensitive ){
@@ -631,7 +631,7 @@
           default:
             matches = false;
             break;
-            
+
           }
         } else if( operator != null ){
           switch(operator){
@@ -645,7 +645,7 @@
             matches = params.fieldUndefined(field);
             break;
           }
-        } else {   
+        } else {
           matches = !params.fieldUndefined(field);
         }
 
@@ -653,16 +653,16 @@
           matches = !matches;
           handledNotExpr = true;
         }
-        
+
         if( !matches ){
           allDataMatches = false;
           break;
         }
       } // for
-      
+
       return allDataMatches;
     }; // operandsMatch
-    
+
     // check data matches
     var allDataMatches = operandsMatch({
       name: 'data',
@@ -682,11 +682,11 @@
         return false;
       }
     });
-    
+
     if( !allDataMatches ){
       return false;
     }
-    
+
     // check metadata matches
     var allMetaMatches = operandsMatch({
       name: 'meta',
@@ -706,25 +706,25 @@
         return false;
       }
     });
-    
+
     if( !allMetaMatches ){
       return false;
     }
-    
+
     // check collection
     if( query.collection != null ){
       var matchesAny = query.collection._private.ids[ element.id() ] != null;
-      
+
       if( !matchesAny ){
         return false;
       }
     }
-    
+
     // check filter function
     if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
       return false;
     }
-    
+
 
     // check parent/child relations
     var confirmRelations = function( query, elements ){
@@ -775,65 +775,65 @@
   $$.selfn.filter = function(collection){
     var self = this;
     var cy = collection.cy();
-    
+
     // don't bother trying if it's invalid
     if( self._private.invalid ){
       return new $$.Collection( cy );
     }
-  
+
     var selectorFunction = function(i, element){
       for(var j = 0; j < self.length; j++){
         var query = self[j];
-        
+
         if( queryMatches(query, element) ){
           return true;
         }
       }
-      
+
       return false;
     };
-    
+
     if( self._private.selectorText == null ){
       selectorFunction = function(){ return true; };
     }
-    
+
     var filteredCollection = collection.filter( selectorFunction );
-    
+
     return filteredCollection;
   }; // filter
 
   // does selector match a single element?
   $$.selfn.matches = function(ele){
     var self = this;
-    
+
     // don't bother trying if it's invalid
     if( self._private.invalid ){
       return false;
     }
-  
+
     for(var j = 0; j < self.length; j++){
       var query = self[j];
-      
+
       if( queryMatches(query, ele) ){
         return true;
       }
     }
-    
+
     return false;
   }; // filter
-  
+
   // ith query to string
   $$.selfn.toString = $$.selfn.selector = function(){
-    
+
     var str = '';
-    
+
     var clean = function(obj, isValue){
       if( $$.is.string(obj) ){
         return isValue ? '"' + obj + '"' : obj;
-      } 
+      }
       return '';
     };
-    
+
     var queryToString = function(query){
       var str = '';
 
@@ -843,10 +843,10 @@
 
       var group = clean(query.group);
       str += group.substring(0, group.length - 1);
-      
+
       for(var j = 0; j < query.data.length; j++){
         var data = query.data[j];
-        
+
         if( data.value ){
           str += '[' + data.field + clean(data.operator) + clean(data.value, true) + ']';
         } else {
@@ -858,36 +858,36 @@
         var meta = query.meta[j];
         str += '[[' + meta.field + clean(meta.operator) + clean(meta.value, true) + ']]';
       }
-      
+
       for(var j = 0; j < query.colonSelectors.length; j++){
         var sel = query.colonSelectors[i];
         str += sel;
       }
-      
+
       for(var j = 0; j < query.ids.length; j++){
         var sel = '#' + query.ids[i];
         str += sel;
       }
-      
+
       for(var j = 0; j < query.classes.length; j++){
         var sel = '.' + query.classes[i];
         str += sel;
       }
 
       if( query.parent != null ){
-        str = queryToString( query.parent ) + ' > ' + str; 
+        str = queryToString( query.parent ) + ' > ' + str;
       }
 
       if( query.ancestor != null ){
-        str = queryToString( query.ancestor ) + ' ' + str; 
+        str = queryToString( query.ancestor ) + ' ' + str;
       }
 
       if( query.child != null ){
-        str += ' > ' + queryToString( query.child ); 
+        str += ' > ' + queryToString( query.child );
       }
 
       if( query.descendant != null ){
-        str += ' ' + queryToString( query.descendant ); 
+        str += ' ' + queryToString( query.descendant );
       }
 
       return str;
@@ -895,15 +895,15 @@
 
     for(var i = 0; i < this.length; i++){
       var query = this[i];
-      
+
       str += queryToString( query );
-      
+
       if( this.length > 1 && i < this.length - 1 ){
         str += ', ';
       }
     }
-    
+
     return str;
   };
-  
+
 })( cytoscape );

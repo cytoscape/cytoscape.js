@@ -97,7 +97,7 @@
 
         protoreq( val, subname ); // subobject with prototype
       }
-  
+
     }
 
     // pull in properties for obj/fns
@@ -121,7 +121,7 @@
 
     return req;
   };
-  
+
   var isPathStr = function( str ){
     return $$.is.string(str) && str.match(/\.js$/);
   };
@@ -131,10 +131,10 @@
     require: function( fn, as ){
       if( isPathStr(fn) ){
         this._private.files.push( fn );
-        
+
         return this;
       }
-        
+
       if( as ){
         if( $$.is.fn(fn) ){
           // disabled b/c doesn't work with forced names on functions w/ prototypes
@@ -174,7 +174,7 @@
           return self.run( fn, pass );
         });
       }
-      
+
       var useWW = window != null;
       var useNode = typeof module !== 'undefined';
 
@@ -201,7 +201,7 @@
               }
               return file;
             };
-            
+
             return 'importScripts("' + wwifyFile(f) + '");';
           } else if( useNode ) {
             return 'eval( require("fs").readFileSync("' + f + '", { encoding: "utf8" }) );';
@@ -234,12 +234,12 @@
               '      fn( m.data );',
               '    }',
               '  });',
-              '};', 
+              '};',
               'self.addEventListener("message", function(m){  if( m.data.$$eval ){ eval( m.data.$$eval ); }  });',
-              'function resolve(v){ postMessage({ $$resolve: v }); };', 
+              'function resolve(v){ postMessage({ $$resolve: v }); };',
               'function reject(v){ postMessage({ $$reject: v }); };'
             ].join('\n');
-          
+
             fnStr += fnPre;
 
             fnBlob = new Blob([ fnStr ], {
@@ -260,7 +260,7 @@
           var cb;
           ww.addEventListener('message', cb = function( m ){
             var isObject = $$.is.object(m) && $$.is.object( m.data );
-            
+
             if( isObject && ('$$resolve' in m.data) ){
               ww.removeEventListener('message', cb); // done listening b/c resolve()
 
@@ -335,7 +335,7 @@
 
       if( _p.child ){
         _p.child.send( m );
-      } 
+      }
 
       return this; // chaining
     },
@@ -349,7 +349,7 @@
 
       if( _p.child ){
         _p.child.kill();
-      } 
+      }
 
       _p.stopped = true;
 
@@ -377,7 +377,7 @@
 
       this.require( fnStr );
 
-      return this.run( [ 
+      return this.run( [
         'function( data ){',
         '  var origResolve = resolve;',
         '  var res = [];',
@@ -416,10 +416,10 @@
   $$.fn.thread({
     on: $$.define.on(),
     one: $$.define.on({ unbindSelfOnTrigger: true }),
-    off: $$.define.off(), 
+    off: $$.define.off(),
     trigger: $$.define.trigger()
   });
 
   $$.define.eventAliasesOn( $$.thdfn );
-  
+
 })( cytoscape, typeof window === 'undefined' ? null : window );

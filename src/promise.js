@@ -4,7 +4,7 @@
 // NB: you must use `new $$.Promise`, because you may have native promises that don't autonew for you
 
 ;(function($$){ 'use strict';
-  
+
   /*  promise states [Promises/A+ 2.1]  */
   var STATE_PENDING   = 0;                                         /*  [Promises/A+ 2.1.1]  */
   var STATE_FULFILLED = 1;                                         /*  [Promises/A+ 2.1.2]  */

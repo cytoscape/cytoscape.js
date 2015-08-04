@@ -40,14 +40,14 @@
   // constructor
   // options : object containing layout options
   function ColaLayout( options ){
-    this.options = $$.util.extend(true, {}, defaults, options); 
+    this.options = $$.util.extend(true, {}, defaults, options);
   }
 
   // runs the layout
   ColaLayout.prototype.run = function(){
     var layout = this;
     var options = this.options;
-    
+
     layout.manuallyStopped = false;
 
     $$.util.require('cola', function(cola){
@@ -57,7 +57,7 @@
       var nodes = eles.nodes();
       var edges = eles.edges();
       var ready = false;
-      
+
       var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
         x1: 0, y1: 0, w: cy.width(), h: cy.height()
       } );
@@ -84,12 +84,12 @@
 
           y.min = Math.min( y.min, scratch.y || 0 );
           y.max = Math.max( y.max, scratch.y || 0 );
-          
+
           // update node dims
           if( !scratch.updatedDims ){
             var nbb = node.boundingBox();
             var padding = getOptVal( options.nodeSpacing, node );
-            
+
             scratch.width = nbb.w + 2*padding;
             scratch.height = nbb.h + 2*padding;
           }
@@ -155,10 +155,10 @@
       }
 
       var adaptor = layout.adaptor = cola.adaptor({
-        trigger: function( e ){ // on sim event      
+        trigger: function( e ){ // on sim event
           var TICK = cola.EventType ? cola.EventType.tick : null;
           var END = cola.EventType ? cola.EventType.end : null;
-          
+
           switch( e.type ){
             case 'tick':
             case TICK:
@@ -170,7 +170,7 @@
             case 'end':
             case END:
               updateNodePositions();
-              if( !options.infinite ){ onDone(); }           
+              if( !options.infinite ){ onDone(); }
               break;
           }
         },
@@ -181,16 +181,16 @@
           var inftick = function(){
             if( layout.manuallyStopped ){
               onDone();
-              
+
               return true;
             }
-            
+
             var ret = adaptor.tick();
 
             if( ret && options.infinite ){ // resume layout if done
               adaptor.resume(); // resume => new kick
             }
-            
+
             return ret; // allow regular finish b/c of new kick
           };
 
@@ -262,14 +262,14 @@
             adaptor.dragend( scrCola );
             break;
         }
-        
+
       });
 
       var lockHandler;
       nodes.on('lock unlock', lockHandler = function(e){
         var node = this;
         var scrCola = node._private.scratch.cola;
-      
+
         if( node.locked() ){
           adaptor.dragstart( scrCola );
         } else {
@@ -343,7 +343,7 @@
             offsets: offsetsY
           });
         }
-        
+
         adaptor.constraints( constraints );
 
       }
@@ -353,17 +353,17 @@
         return node.isParent();
       }).map(function( node, i ){ // add basic group incl leaf nodes
         var style = node._private.style;
-        
+
         var optPadding = getOptVal( options.nodeSpacing, node );
-        
+
         var pleft = style['padding-left'].pxValue + optPadding;
         var pright = style['padding-right'].pxValue + optPadding;
         var ptop = style['padding-top'].pxValue + optPadding;
         var pbottom = style['padding-bottom'].pxValue + optPadding;
-        
+
         node._private.scratch.cola = {
           index: i,
-          
+
           padding: Math.max( pleft, pright, ptop, pbottom ),
 
           leaves: node.descendants().stdFilter(function( child ){

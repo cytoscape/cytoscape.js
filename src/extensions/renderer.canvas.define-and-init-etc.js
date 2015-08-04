@@ -21,54 +21,54 @@
   CR.MOTIONBLUR_BUFFER_NODE = 1;
   CR.MOTIONBLUR_BUFFER_DRAG = 2;
 
-  function CanvasRenderer(options) {  
+  function CanvasRenderer(options) {
 
     this.options = options;
 
     this.data = {
-        
-      select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
+
+      select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag
       renderer: this, cy: options.cy, container: options.cy.container(),
-      
+
       canvases: new Array(CR.CANVAS_LAYERS),
       contexts: new Array(CR.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CR.CANVAS_LAYERS),
-      
+
       bufferCanvases: new Array(CR.BUFFER_COUNT),
       bufferContexts: new Array(CR.CANVAS_LAYERS)
 
     };
-    
+
     //--Pointer-related data
-    this.hoverData = {down: null, last: null, 
-        downTime: null, triggerMode: null, 
-        dragging: false, 
+    this.hoverData = {down: null, last: null,
+        downTime: null, triggerMode: null,
+        dragging: false,
         initialPan: [null, null], capture: false};
-    
+
     this.timeoutData = {panTimeout: null};
-    
+
     this.dragData = {possibleDragElements: []};
-    
+
     this.touchData = {start: null, capture: false,
         // These 3 fields related to tap, taphold events
         startPosition: [null, null, null, null, null, null],
         singleTouchStartTime: null,
         singleTouchMoved: true,
-        
-        
-        now: [null, null, null, null, null, null], 
+
+
+        now: [null, null, null, null, null, null],
         earlier: [null, null, null, null, null, null] };
     //--
-    
-    //--Wheel-related data 
+
+    //--Wheel-related data
     this.zoomData = {freeToZoom: false, lastPointerX: null};
     //--
-    
+
     this.redraws = 0;
     this.showFps = options.showFps;
 
     this.bindings = [];
-    
+
     this.data.canvasContainer = document.createElement('div');
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
@@ -84,7 +84,7 @@
       this.data.canvases[i].setAttribute('data-id', 'layer' + i);
       this.data.canvases[i].style.zIndex = String(CR.CANVAS_LAYERS - i);
       this.data.canvasContainer.appendChild(this.data.canvases[i]);
-      
+
       this.data.canvasNeedsRedraw[i] = false;
     }
     this.data.topCanvas = this.data.canvases[0];
@@ -92,7 +92,7 @@
     this.data.canvases[CR.NODE].setAttribute('data-id', 'layer' + CR.NODE + '-node');
     this.data.canvases[CR.SELECT_BOX].setAttribute('data-id', 'layer' + CR.SELECT_BOX + '-selectbox');
     this.data.canvases[CR.DRAG].setAttribute('data-id', 'layer' + CR.DRAG + '-drag');
-    
+
     for (var i = 0; i < CR.BUFFER_COUNT; i++) {
       this.data.bufferCanvases[i] = document.createElement('canvas');
       this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
@@ -132,15 +132,15 @@
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';
-  
+
   CRp.path2dEnabled = function( on ){
     if( on === undefined ){
       return this.pathsEnabled;
     }
-    
+
     this.pathsEnabled = on ? true : false;
   };
-  
+
   CRp.usePaths = function(){
     return pathsImpld && this.pathsEnabled;
   };
@@ -184,7 +184,7 @@
         this.matchCanvasSize(this.data.container);
       }
     } // for
-    
+
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
     this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
@@ -214,7 +214,7 @@
     }
   };
 
-  
+
 
   // copy the math functions into the renderer prototype
   // unfortunately these functions are used interspersed t/o the code
@@ -223,8 +223,8 @@
   for( var fnName in $$.math ){
     CRp[ fnName ] = $$.math[ fnName ];
   }
-  
-  
+
+
   $$('renderer', 'canvas', CanvasRenderer);
-  
+
 })( cytoscape );

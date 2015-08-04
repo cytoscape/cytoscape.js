@@ -1,15 +1,15 @@
 ;(function( $$ ){ 'use strict';
-  
+
   $$.fn.eles({
     addClass: function(classes){
       classes = classes.split(/\s+/);
       var self = this;
       var changed = [];
-      
+
       for( var i = 0; i < classes.length; i++ ){
         var cls = classes[i];
         if( $$.is.emptyString(cls) ){ continue; }
-        
+
         for( var j = 0; j < self.length; j++ ){
           var ele = self[j];
           var hasClass = ele._private.classes[cls];
@@ -20,7 +20,7 @@
           }
         }
       }
-      
+
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
         new $$.Collection(this._private.cy, changed)
@@ -41,7 +41,7 @@
       var classes = classesStr.split(/\s+/);
       var self = this;
       var changed = []; // eles who had classes changed
-      
+
       for( var i = 0, il = self.length; i < il; i++ ){
         var ele = self[i];
 
@@ -49,7 +49,7 @@
           var cls = classes[j];
 
           if( $$.is.emptyString(cls) ){ continue; }
-          
+
           var hasClass = ele._private.classes[cls];
           var shouldAdd = toggle || (toggle === undefined && !hasClass);
 
@@ -65,7 +65,7 @@
 
         } // for j classes
       } // for i eles
-      
+
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
         new $$.Collection(this._private.cy, changed)
@@ -97,7 +97,7 @@
           }
         }
       }
-      
+
       // trigger update style on those eles that had class changes
       if( changed.length > 0 ){
         new $$.Collection(self._private.cy, changed).updateStyle();
@@ -124,5 +124,5 @@
       return self;
     }
   });
-  
+
 })( cytoscape );

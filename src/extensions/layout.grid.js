@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // padding used on fit
@@ -16,15 +16,15 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function GridLayout( options ){
     this.options = $$.util.extend({}, defaults, options);
   }
-  
+
   GridLayout.prototype.run = function(){
     var params = this.options;
     var options = params;
-    
+
     var cy = params.cy;
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
@@ -32,7 +32,7 @@
     if( options.sort ){
       nodes = nodes.sort( options.sort );
     }
-    
+
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
@@ -41,9 +41,9 @@
       nodes.layoutPositions(this, options, function(){
         return { x: bb.x1, y: bb.y1 };
       });
-      
+
     } else {
-      
+
       // width/height * splits^2 = cells where splits is number of times to split width
       var cells = nodes.size();
       var splits = Math.sqrt( cells * bb.h/bb.w );
@@ -62,7 +62,7 @@
           }
         }
       };
-      
+
       var large = function(val){
         if( val == null ){
           return Math.max(rows, cols);
@@ -75,7 +75,7 @@
           }
         }
       };
-      
+
       // if rows or columns were set in options, use those values
       if( options.rows != null && options.columns != null ){
         rows = options.rows;
@@ -87,27 +87,27 @@
         cols = options.columns;
         rows = Math.ceil( cells / cols );
       }
-      
+
       // otherwise use the automatic values and adjust accordingly
-      
+
       // if rounding was up, see if we can reduce rows or columns
       else if( cols * rows > cells ){
         var sm = small();
         var lg = large();
-        
+
         // reducing the small side takes away the most cells, so try it first
         if( (sm - 1) * lg >= cells ){
           small(sm - 1);
         } else if( (lg - 1) * sm >= cells ){
           large(lg - 1);
-        } 
+        }
       } else {
-        
+
         // if rounding was too low, add rows or columns
         while( cols * rows < cells ){
           var sm = small();
           var lg = large();
-          
+
           // try to add to larger side first (adds less in multiplication)
           if( (lg + 1) * sm >= cells ){
             large(lg + 1);
@@ -116,10 +116,10 @@
           }
         }
       }
-      
+
       var cellWidth = bb.w / cols;
       var cellHeight = bb.h / rows;
-      
+
       if( options.condense ){
         cellWidth = 0;
         cellHeight = 0;
@@ -129,29 +129,29 @@
         for( var i = 0; i < nodes.length; i++ ){
           var node = nodes[i];
           var pos = node._private.position;
-          
+
           if( pos.x == null || pos.y == null ){ // for bb
             pos.x = 0;
             pos.y = 0;
           }
-          
+
           var nbb = node.boundingBox();
           var p = options.avoidOverlapPadding;
-          
+
           var w = nbb.w + p;
           var h = nbb.h + p;
-          
+
           cellWidth = Math.max( cellWidth, w );
           cellHeight = Math.max( cellHeight, h );
         }
       }
-      
+
       var cellUsed = {}; // e.g. 'c-0-2' => true
-      
+
       var used = function(row, col){
         return cellUsed['c-' + row + '-' + col] ? true : false;
       };
-      
+
       var use = function(row, col){
         cellUsed['c-' + row + '-' + col] = true;
       };
@@ -210,9 +210,9 @@
         if( rcPos ){
           x = rcPos.col * cellWidth + cellWidth/2 + bb.x1;
           y = rcPos.row * cellHeight + cellHeight/2 + bb.y1;
-        
+
         } else { // otherwise set automatically
-        
+
           while( used(row, col) ){
             moveToNextCell();
           }
@@ -220,21 +220,21 @@
           x = col * cellWidth + cellWidth/2 + bb.x1;
           y = row * cellHeight + cellHeight/2 + bb.y1;
           use( row, col );
-          
+
           moveToNextCell();
         }
-        
+
         return { x: x, y: y };
-        
+
       };
 
       nodes.layoutPositions( this, options, getPos );
     }
 
     return this; // chaining
-    
+
   };
-  
+
   $$('layout', 'grid', GridLayout);
-  
+
 })( cytoscape );

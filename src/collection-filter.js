@@ -15,7 +15,7 @@
 
     filter: function( filter ){
       var cy = this._private.cy;
-      
+
       if( $$.is.fn(filter) ){
         var elements = [];
 
@@ -26,12 +26,12 @@
             elements.push(ele);
           }
         }
-        
+
         return new $$.Collection(cy, elements);
-      
+
       } else if( $$.is.string(filter) || $$.is.elementOrCollection(filter) ){
         return new $$.Selector(filter).filter(this);
-      
+
       } else if( filter === undefined ){
         return this;
       }
@@ -45,13 +45,13 @@
       if( !toRemove ){
         return this;
       } else {
-      
+
         if( $$.is.string( toRemove ) ){
           toRemove = this.filter( toRemove );
         }
-        
+
         var elements = [];
-        
+
         for( var i = 0; i < this.length; i++ ){
           var element = this[i];
 
@@ -60,10 +60,10 @@
             elements.push( element );
           }
         }
-        
+
         return new $$.Collection( cy, elements );
       }
-      
+
     },
 
     absoluteComplement: function(){
@@ -74,13 +74,13 @@
 
     intersect: function( other ){
       var cy = this._private.cy;
-      
+
       // if a selector is specified, then filter by it instead
       if( $$.is.string(other) ){
         var selector = other;
         return this.filter( selector );
       }
-      
+
       var elements = [];
       var col1 = this;
       var col2 = other;
@@ -88,7 +88,7 @@
       // var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
       var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
       var col = col1Smaller ? col1 : col2;
-      
+
       for( var i = 0; i < col.length; i++ ){
         var id = col[i]._private.data.id;
         var ele = ids2[ id ];
@@ -97,7 +97,7 @@
           elements.push( ele );
         }
       }
-      
+
       return new $$.Collection( cy, elements );
     },
 
@@ -111,14 +111,14 @@
       var elements = [];
       var col1 = this;
       var col2 = other;
-      
+
       var add = function( col, other ){
 
         for( var i = 0; i < col.length; i++ ){
           var ele = col[i];
           var id = ele._private.data.id;
           var inOther = other._private.ids[ id ];
-          
+
           if( !inOther ){
             elements.push( ele );
           }
@@ -130,7 +130,7 @@
       add( col2, col1 );
 
       return new $$.Collection( cy, elements );
-    },  
+    },
 
     diff: function( other ){
       var cy = this._private.cy;
@@ -151,7 +151,7 @@
           var ele = col[i];
           var id = ele._private.data.id;
           var inOther = other._private.ids[ id ];
-          
+
           if( inOther ){
             both.push( ele );
           } else {
@@ -172,17 +172,17 @@
     },
 
     add: function( toAdd ){
-      var cy = this._private.cy;    
-      
+      var cy = this._private.cy;
+
       if( !toAdd ){
         return this;
       }
-      
+
       if( $$.is.string(toAdd) ){
         var selector = toAdd;
         toAdd = cy.elements(selector);
       }
-      
+
       var elements = [];
 
       for( var i = 0; i < this.length; i++ ){
@@ -196,19 +196,19 @@
           elements.push( toAdd[i] );
         }
       }
-      
+
       return new $$.Collection(cy, elements);
     },
 
     // in place merge on calling collection
     merge: function( toAdd ){
       var _p = this._private;
-      var cy = _p.cy;    
-      
+      var cy = _p.cy;
+
       if( !toAdd ){
         return this;
       }
-      
+
       if( $$.is.string(toAdd) ){
         var selector = toAdd;
         toAdd = cy.elements(selector);
@@ -227,7 +227,7 @@
           _p.indexes[ id ] = index;
         }
       }
-      
+
       return this; // chaining
     },
 
@@ -268,8 +268,8 @@
 
     // remove eles in place on calling collection
     unmerge: function( toRemove ){
-      var cy = this._private.cy;    
-      
+      var cy = this._private.cy;
+
       if( !toRemove ){
         return this;
       }
@@ -282,7 +282,7 @@
       for( var i = 0; i < toRemove.length; i++ ){
         this.unmergeOne( toRemove[i] );
       }
-      
+
       return this; // chaining
     },
 
@@ -368,5 +368,5 @@
   fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
   fn.fnFilter = fn.filterFn = fn.stdFilter;
   fn.complement = fn.abscomp = fn.absoluteComplement;
-  
+
 })( cytoscape );

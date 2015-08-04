@@ -10,31 +10,31 @@
     if( imageCache[url] && imageCache[url].image ){
       return imageCache[url].image;
     }
-    
+
     var cache = imageCache[url] = imageCache[url] || {};
 
     var image = cache.image = new Image();
     image.addEventListener('load', onLoad);
     image.src = url;
-    
+
     return image;
   };
-  
+
   CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
     var r = this;
-    
+
     try {
       context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
     } catch(e){
       r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
       r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-      
+
       r.drawingImage = true;
-      
+
       r.redraw();
     }
   };
-  
+
   CRp.drawInscribedImage = function(context, img, node) {
     var r = this;
     var nodeX = node._private.position.x;
@@ -50,10 +50,10 @@
     var clip = style['background-clip'].value;
     var shouldClip = clip === 'node';
     var imgOpacity = style['background-image-opacity'].value;
-    
+
     var w = img.width;
     var h = img.height;
-    
+
     if( w === 0 || h === 0 ){
       return; // no point in drawing empty image (and chrome is broken in this case)
     }
@@ -125,7 +125,7 @@
         } else {
           CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
             context,
-            nodeX, nodeY, 
+            nodeX, nodeY,
             nodeW, nodeH);
 
           context.clip();
@@ -144,7 +144,7 @@
 
       CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
           context,
-          nodeX, nodeY, 
+          nodeX, nodeY,
           nodeW, nodeH);
 
         context.translate(x, y);
@@ -153,8 +153,8 @@
     }
 
     context.globalAlpha = gAlpha;
-    
+
   };
 
-  
+
 })( cytoscape );

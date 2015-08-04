@@ -58,5 +58,5 @@
   });
 
   $$.elesfn.allAreNeighbours = $$.elesfn.allAreNeighbors;
-  
+
 })( cytoscape );

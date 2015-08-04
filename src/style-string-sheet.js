@@ -49,7 +49,7 @@
 
           // skip this selector and block
           removeSelAndBlockFromRemaining();
-          continue; 
+          continue;
         }
       }
 
@@ -121,7 +121,7 @@
 
   $$.style.fromString = function( cy, string ){
     var style = new $$.Style(cy);
-    
+
     $$.style.applyFromString( style, string );
 
     return style;

@@ -84,6 +84,7 @@
     "gulp-inject": "^0.4.1",
     "gulp-jshint": "^1.5.5",
     "gulp-mocha": "^2.0.1",
+    "gulp-prompt": "^0.1.2",
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.2.0",
     "gulp-shell": "^0.2.4",

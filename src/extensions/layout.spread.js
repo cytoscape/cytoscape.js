@@ -164,7 +164,7 @@
           if( options.randomize ){
             pos = {
               x: Math.round( simBB.x1 + (simBB.x2 - simBB.x1) * Math.random() ),
-              x: Math.round( simBB.y1 + (simBB.y2 - simBB.y1) * Math.random() )
+              y: Math.round( simBB.y1 + (simBB.y2 - simBB.y1) * Math.random() )
             };
           }
 

@@ -269,7 +269,7 @@
         if( options.randomize ){
           nPos = {
             x: Math.round( bb.x1 + (bb.x2 - bb.x1) * Math.random() ),
-            x: Math.round( bb.y1 + (bb.y2 - bb.y1) * Math.random() )
+            y: Math.round( bb.y1 + (bb.y2 - bb.y1) * Math.random() )
           };
         }
 

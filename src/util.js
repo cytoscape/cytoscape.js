@@ -301,9 +301,9 @@
     clone: function( obj ){
       var target = {};
       for (var i in obj) {
-        if ( obj.hasOwnProperty(i) ) { // TODO is this hasOwnProperty() call necessary for our use?
+        //if( obj.hasOwnProperty(i) ){ // TODO is this hasOwnProperty() call necessary for our use?
           target[i] = obj[i];
-        }
+        //}
       }
       return target;
     },
@@ -464,52 +464,6 @@
       }
 
       return str.charAt(0).toUpperCase() + str.substring(1);
-    },
-
-    camel2dash: function( str ){
-      var ret = [];
-
-      for( var i = 0; i < str.length; i++ ){
-        var ch = str[i];
-        var chLowerCase = ch.toLowerCase();
-        var isUpperCase = ch !== chLowerCase;
-
-        if( isUpperCase ){
-          ret.push( '-' );
-          ret.push( chLowerCase );
-        } else {
-          ret.push( ch );
-        }
-      }
-
-      var noUpperCases = ret.length === str.length;
-      if( noUpperCases ){ return str; } // cheaper than .join()
-
-      return ret.join('');
-    },
-
-    dash2camel: function( str ){
-      var ret = [];
-      var nextIsUpper = false;
-
-      for( var i = 0; i < str.length; i++ ){
-        var ch = str[i];
-        var isDash = ch === '-';
-
-        if( isDash ){
-          nextIsUpper = true;
-        } else {
-          if( nextIsUpper ){
-            ret.push( ch.toUpperCase() );
-          } else {
-            ret.push( ch );
-          }
-
-          nextIsUpper = false;
-        }
-      }
-
-      return ret.join('');
     },
 
     // strip spaces from beginning of string and end of string
@@ -829,9 +783,88 @@
       whitesmoke:        [245,245,245],
       yellow:          [255,255,0],
       yellowgreen:      [154,205,50]
+    },
+
+    memoize: function( fn, keyFn ){
+      var self = this;
+      var cache = {};
+
+      if( !keyFn ){
+        keyFn = function(){
+          if( arguments.length === 1 ){
+            return arguments[0];
+          }
+
+          var args = [];
+
+          for( var i = 0; i < arguments.length; i++ ){
+            args.push( arguments[i] );
+          }
+
+          return args.join('$');
+        }
+      }
+
+      return function memoizedFn(){
+        var args = arguments;
+        var ret;
+        var k = keyFn.apply( self, args );
+
+        if( !(ret = cache[k]) ){
+          ret = cache[k] = fn.apply( self, args );
+        }
+
+        return ret;
+      };
     }
 
   };
+
+  $$.util.camel2dash = $$.util.memoize( function( str ){
+    var ret = [];
+
+    for( var i = 0; i < str.length; i++ ){
+      var ch = str[i];
+      var chLowerCase = ch.toLowerCase();
+      var isUpperCase = ch !== chLowerCase;
+
+      if( isUpperCase ){
+        ret.push( '-' );
+        ret.push( chLowerCase );
+      } else {
+        ret.push( ch );
+      }
+    }
+
+    var noUpperCases = ret.length === str.length;
+    if( noUpperCases ){ return str; } // cheaper than .join()
+
+    return ret.join('');
+  } );
+
+  $$.util.dash2camel = $$.util.memoize( function( str ){
+    var ret = [];
+    var nextIsUpper = false;
+
+    for( var i = 0; i < str.length; i++ ){
+      var ch = str[i];
+      var isDash = ch === '-';
+
+      if( isDash ){
+        nextIsUpper = true;
+      } else {
+        if( nextIsUpper ){
+          ret.push( ch.toUpperCase() );
+        } else {
+          ret.push( ch );
+        }
+
+        nextIsUpper = false;
+      }
+    }
+
+    return ret.join('');
+  } );
 
   $$.util.regex = {};
 

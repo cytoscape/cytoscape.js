@@ -48,13 +48,12 @@
   };
 
   // gets the value style for an element (useful for things like animations)
-  $$.styfn.getValueStyle = function( ele, opts ){
-    opts = opts || {};
-
-    var rstyle = opts.array ? [] : {};
+  $$.styfn.getValueStyle = function( ele ){
+    var rstyle = {};
     var style;
+    var isEle = $$.is.element(ele);
 
-    if( $$.is.element(ele) ){
+    if( isEle ){
       style = ele._private.style;
     } else {
       style = ele; // just passed the style itself
@@ -70,13 +69,27 @@
         }
 
         if( styleProp ){
-          if( opts.array ){
-            rstyle.push( styleProp );
-          } else {
-            rstyle[ prop.name ] = styleProp;
-            rstyle[ $$.util.dash2camel(prop.name) ] = styleProp;
-          }
+          rstyle[ prop.name ] = styleProp;
+          rstyle[ $$.util.dash2camel(prop.name) ] = styleProp;
         }
+      }
+    }
+
+    return rstyle;
+  };
+
+  $$.styfn.getPropsList = function( propsObj ){
+    var rstyle = [];
+    var style = propsObj;
+    var props = $$.style.properties;
+
+    if( style ){
+      for( var name in style ){
+        var val = style[name];
+        var prop = props[name] || props[ $$.util.camel2dash(name) ];
+        var styleProp = this.parse( prop.name, val );
+
+        rstyle.push( styleProp );
       }
     }
 

@@ -659,7 +659,7 @@
         }
 
         if( properties.css && isEles ){
-          properties.css = style.getValueStyle( properties.css, { array: true } );
+          properties.css = style.getPropsList( properties.css );
         }
 
         if( properties.renderedPosition && isEles ){

@@ -493,14 +493,18 @@
       //console.time('cachezorder')
 
       for( var i = 0; i < nodes.length; i++ ){
-        if( nodes[i].visible() && !nodes[i].transparent() ){
-          eles.push( nodes[i] );
+        var n = nodes[i];
+
+        if( n.visible() && !n.transparent() ){
+          eles.push( n );
         }
       }
 
       for( var i = 0; i < edges.length; i++ ){
-        if( edges[i].visible() && !edges[i].transparent() ){
-          eles.push( edges[i] );
+        var e = edges[i];
+
+        if( e.visible() && !e.transparent() ){
+          eles.push( e );
         }
       }
 

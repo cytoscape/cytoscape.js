@@ -473,13 +473,27 @@
     return this._private.coreStyle;
   };
 
+  // a caching layer for property parsing
+  $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
+    var argHash = [ name, value, propIsBypass, propIsFlat ].join('$');
+    var propCache = this.propCache = this.propCache || {};
+    var ret;
+
+    if( !(ret = propCache[argHash]) ){
+      ret = propCache[argHash] = this.parseImpl( name, value, propIsBypass, propIsFlat );
+    }
+
+    // always need a copy since props are mutated later in their lifecycles
+    return $$.util.copy( ret );
+  };
+
   // parse a property; return null on invalid; return parsed property otherwise
   // fields :
   // - name : the name of the property
   // - value : the parsed, native-typed value of the property
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
-  $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
+  $$.styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];

@@ -282,6 +282,12 @@
       var color = style['pie-' + i + '-background-color'].value;
       var opacity = style['pie-' + i + '-background-opacity'].value * nodeOpacity;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
+
+      // percent can't push beyond 1
+      if( percent + lastPercent > 1 ){
+        percent = 1 - lastPercent;
+      }
+
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
       var angleEnd = angleStart + angleDelta;

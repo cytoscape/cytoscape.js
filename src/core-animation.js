@@ -41,6 +41,7 @@
 
         var eles = cy._private.aniEles;
         var doneEles = [];
+        var startedSomeAniThisTick = false;
 
         function handleElement( ele, isCore ){
           var current = ele._private.animation.current;
@@ -63,7 +64,10 @@
             var ani = current[i];
 
             // start if need be
-            if( !ani.started ){ startAnimation( ele, ani ); }
+            if( !ani.started ){
+              startAnimation( ele, ani );
+              startedSomeAniThisTick = true;
+            }
 
             step( ele, ani, now, isCore );
 
@@ -113,7 +117,7 @@
           }
 
           cy.notify({
-            type: 'draw',
+            type: startedSomeAniThisTick ? 'style' : 'draw',
             collection: toNotify
           });
         }

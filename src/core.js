@@ -2,7 +2,7 @@
 
   var defaults = {
   };
-  
+
   var origDefaults = $$.util.copy( defaults );
 
   $$.defaults = function( opts ){
@@ -15,7 +15,7 @@
       $$.Core.prototype[ name ] = fn;
     }
   };
-  
+
   $$.Core = function( opts ){
     if( !(this instanceof $$.Core) ){
       return new $$.Core(opts);
@@ -28,20 +28,20 @@
     var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
     reg = reg || {};
 
-    if( reg && reg.cy ){ 
+    if( reg && reg.cy ){
       if( container ){
         while( container.firstChild ){ // clean the container
           container.removeChild( container.firstChild );
         }
       }
-      
+
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
       reg = {}; // old instance => replace reg completely
     }
 
     var readies = reg.readies = reg.readies || [];
-    
+
     if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
@@ -49,7 +49,7 @@
     var options = opts;
     options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
     options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
-    
+
     var defVal = function( def, val, altVal ){
       if( val !== undefined ){
         return val;
@@ -141,7 +141,7 @@
     loadExtData(function( thens ){
       var initStyle = thens[0];
       var initEles = thens[1];
-   
+
       // init style
       if( _p.styleEnabled ){
         cy.setStyle( initStyle );
@@ -184,7 +184,7 @@
           cy.on('ready', fn);
         }
         if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
-        
+
         cy.trigger('ready');
       }, options.done);
 
@@ -192,7 +192,7 @@
   };
 
   $$.corefn = $$.Core.prototype; // short alias
-  
+
 
   $$.fn.core({
     isReady: function(){
@@ -303,19 +303,19 @@
     options: function(){
       return $$.util.copy( this._private.options );
     },
-    
+
     json: function(params){
       var json = {};
       var cy = this;
-      
+
       json.elements = {};
       cy.elements().each(function(i, ele){
         var group = ele.group();
-        
+
         if( !json.elements[group] ){
           json.elements[group] = [];
         }
-        
+
         json.elements[group].push( ele.json() );
       });
 
@@ -339,7 +339,7 @@
       json.textureOnViewport = cy._private.options.textureOnViewport;
       json.wheelSensitivity = cy._private.options.wheelSensitivity;
       json.motionBlur = cy._private.options.motionBlur;
-      
+
       return json;
     },
 
@@ -361,7 +361,7 @@
         }, 0);
       }
     }
-    
-  });  
-  
+
+  });
+
 })( cytoscape, typeof window === 'undefined' ? null : window );

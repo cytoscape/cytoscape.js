@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
@@ -9,17 +9,17 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function RandomLayout( options ){
     this.options = $$.util.extend(true, {}, defaults, options);
   }
-  
+
   RandomLayout.prototype.run = function(){
     var options = this.options;
     var cy = options.cy;
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
-    
+
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
@@ -35,12 +35,12 @@
 
     return this; // chaining
   };
-  
+
   // register the layout
   $$(
     'layout', // we're registering a layout
     'random', // the layout name
     RandomLayout // the layout prototype
   );
-  
+
 })(cytoscape);

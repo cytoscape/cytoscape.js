@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
@@ -15,20 +15,20 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function BreadthFirstLayout( options ){
     this.options = $$.util.extend({}, defaults, options);
   }
-  
+
   BreadthFirstLayout.prototype.run = function(){
     var params = this.options;
     var options = params;
-    
+
     var cy = params.cy;
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
     var graph = eles;
-    
+
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
@@ -81,7 +81,7 @@
 
           roots = roots.add( compRoots );
         }
-        
+
       }
     }
 
@@ -114,7 +114,7 @@
         if( pNode ){
           var prevId = pNode.id();
           var succ = successors[ prevId ] = successors[ prevId ] || [];
-          
+
           succ.push( node );
         }
       }
@@ -177,7 +177,7 @@
         if( depths.length === 0 ){
           depths.push([]);
         }
-        
+
         depths[0].push( node );
       }
     }
@@ -242,7 +242,7 @@
         }
       }
 
-      for( var i = 0; i < elesToMove.length; i++ ){ 
+      for( var i = 0; i < elesToMove.length; i++ ){
         var ele = elesToMove[i];
         var info = ele._private.scratch.breadthfirst;
         var intEle = info.intEle;
@@ -270,7 +270,7 @@
       for( var i = 0; i < nodes.length; i++ ){
         var w = nodes[i].outerWidth();
         var h = nodes[i].outerHeight();
-        
+
         minDistance = Math.max(minDistance, w, h);
       }
       minDistance *= options.spacingFactor; // just to have some nice spacing
@@ -340,7 +340,7 @@
       x: bb.x1 + bb.w/2,
       y: bb.x1 + bb.h/2
     };
-   
+
     var getPosition = function( ele, isBottomDepth ){
       var info = ele._private.scratch.breadthfirst;
       var depth = info.depth;
@@ -353,7 +353,7 @@
       radiusStepSize = Math.max( radiusStepSize, minDistance );
 
       if( !options.circle ){
-        
+
         var epos = {
           x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
           y: (depth + 1) * distanceY
@@ -366,13 +366,13 @@
         // var succs = successors[ ele.id() ];
         // if( succs ){
         //   epos.x = 0;
-        // 
+        //
         //   for( var i = 0 ; i < succs.length; i++ ){
         //     var spos = pos[ succs[i].id() ];
-        //     
+        //
         //     epos.x += spos.x;
         //   }
-        // 
+        //
         //   epos.x /= succs.length;
         // } else {
         //   //debugger;
@@ -401,7 +401,7 @@
           };
         }
       }
-      
+
     };
 
     // get positions in reverse depth order
@@ -419,10 +419,10 @@
     nodes.layoutPositions(this, options, function(){
       return pos[ this.id() ];
     });
-    
+
     return this; // chaining
   };
-  
+
   $$('layout', 'breadthfirst', BreadthFirstLayout);
-  
+
 })( cytoscape );

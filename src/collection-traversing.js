@@ -192,13 +192,13 @@
           if( otherNode.length > 0 ){
             elements.push( otherNode[0] ); // add node 1 hop away
           }
-          
+
           // add connected edge
           elements.push( edge[0] );
         }
 
       }
-      
+
       return ( new $$.Collection( cy, elements, { unique: true } ) ).filter( selector );
     },
 
@@ -209,7 +209,7 @@
     openNeighborhood: function(selector){
       return this.neighborhood( selector );
     }
-  });  
+  });
 
   // aliases
   $$.elesfn.neighbourhood = $$.elesfn.neighborhood;
@@ -251,7 +251,7 @@
       attr: 'target'
     })
   });
-  
+
   function defineSourceFunction( params ){
     return function( selector ){
       var sources = [];
@@ -265,7 +265,7 @@
           sources.push( src );
         }
       }
-      
+
       return new $$.Collection( cy, sources, { unique: true } ).filter( selector );
     };
   }
@@ -277,9 +277,9 @@
       thisIs: 'source'
     })
   });
-  
+
   function defineEdgesWithFunction( params ){
-    
+
     return function(otherNodes){
       var elements = [];
       var cy = this._private.cy;
@@ -289,13 +289,13 @@
       if( $$.is.string(otherNodes) ){
         otherNodes = cy.$( otherNodes );
       }
-      
+
       var thisIds = this._private.ids;
       var otherIds = otherNodes._private.ids;
-      
+
       for( var h = 0; h < otherNodes.length; h++ ){
         var edges = otherNodes[h]._private.edges;
-        
+
         for( var i = 0; i < edges.length; i++ ){
           var edge = edges[i];
           var foundId;
@@ -308,23 +308,23 @@
 
           if( p.thisIs ){
             if( p.thisIs === 'source' && !thisToOther ){ continue; }
-            
+
             if( p.thisIs === 'target' && !otherToThis ){ continue; }
           }
-          
+
           elements.push( edge );
         }
       }
-      
+
       return new $$.Collection( cy, elements, { unique: true } );
     };
   }
-  
+
   $$.fn.eles({
     connectedEdges: function( selector ){
       var retEles = [];
       var cy = this._private.cy;
-      
+
       var eles = this;
       for( var i = 0; i < eles.length; i++ ){
         var node = eles[i];
@@ -333,11 +333,11 @@
         var edges = node._private.edges;
 
         for( var j = 0; j < edges.length; j++ ){
-          var edge = edges[j];          
+          var edge = edges[j];
           retEles.push( edge );
         }
       }
-      
+
       return new $$.Collection( cy, retEles, { unique: true } ).filter( selector );
     },
 
@@ -363,13 +363,13 @@
       codirected: true
     })
   });
-  
+
   function defineParallelEdgesFunction(params){
     var defaults = {
       codirected: false
     };
     params = $$.util.extend({}, defaults, params);
-    
+
     return function( selector ){
       var cy = this._private.cy;
       var elements = [];
@@ -394,17 +394,17 @@
 
           var codirected = tgtid2 === tgtid1 && srcid2 === srcid1;
           var oppdirected = srcid1 === tgtid2 && tgtid1 === srcid2;
-          
+
           if( (p.codirected && codirected) || (!p.codirected && (codirected || oppdirected)) ){
             elements.push( edge2 );
           }
         }
       }
-      
+
       return new $$.Collection( cy, elements, { unique: true } ).filter( selector );
     };
-  
+
   }
 
-  
+
 })( cytoscape );

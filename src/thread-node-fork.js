@@ -17,7 +17,7 @@ function listen( fn ){
     } else {
       fn( m );
     }
-  });  
+  });
 }
 
 function resolve( v ){
@@ -36,4 +36,4 @@ process.on('message', function( m ){
   if( typeof m === 'object' && m.$$eval ){
     eval( m.$$eval );
   }
-}); 
+});

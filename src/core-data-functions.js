@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   $$.fn.core({
     data: $$.define.data({
       field: 'data',
@@ -32,5 +32,5 @@
       triggerEvent: false
     })
   });
-  
+
 })( cytoscape );

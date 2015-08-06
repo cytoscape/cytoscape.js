@@ -24,7 +24,7 @@
 
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    
+
     var rs = edge._private.rscratch;
     if( !$$.is.number( rs.labelX ) || !$$.is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
@@ -213,7 +213,7 @@
       var backgroundOpacity = style['text-background-opacity'].value;
       var borderOpacity = style['text-border-opacity'].value;
       var textBorderWidth = style['text-border-width'].pxValue;
-      
+
       if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
         var margin = 4 + textBorderWidth/2;
 

@@ -7,5 +7,5 @@
     animate: $$.define.animate(),
     stop: $$.define.stop()
   });
-  
-})( cytoscape );  
+
+})( cytoscape );

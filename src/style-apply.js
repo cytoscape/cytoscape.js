@@ -510,16 +510,20 @@
         var fromProp = prevProp;
         var toProp = diffProp.next != null ? diffProp.next : styProp;
         var diff = false;
+        var initVal;
+        var initDt = 0.000001; // delta time % value for initVal (allows animating out of init zero opacity)
 
         if( !fromProp ){ continue; }
 
         // consider px values
         if( $$.is.number( fromProp.pxValue ) && $$.is.number( toProp.pxValue ) ){
-          diff = fromProp.pxValue !== toProp.pxValue;
+          diff = toProp.pxValue - fromProp.pxValue; // nonzero is truthy
+          initVal = fromProp.pxValue + initDt * diff;
 
         // consider numerical values
         } else if( $$.is.number( fromProp.value ) && $$.is.number( toProp.value ) ){
-          diff = fromProp.value !== toProp.value;
+          diff = toProp.value - fromProp.value; // nonzero is truthy
+          initVal = fromProp.value + initDt * diff;
 
         // consider colour values
         } else if( $$.is.array( fromProp.value ) && $$.is.array( toProp.value ) ){
@@ -527,12 +531,14 @@
             || fromProp.value[1] !== toProp.value[1]
             || fromProp.value[2] !== toProp.value[2]
           ;
+
+          initVal = fromProp.strValue;
         }
 
         // the previous value is good for an animation only if it's different
         if( diff ){
           css[ prop ] = toProp.strValue; // to val
-          this.applyBypass(ele, prop, fromProp.strValue); // from val
+          this.applyBypass( ele, prop, initVal ); // from val
           anyPrev = true;
         }
 

@@ -495,7 +495,7 @@
       for( var i = 0; i < nodes.length; i++ ){
         var n = nodes[i];
 
-        if( n.visible() && !n.transparent() ){
+        if( n.animated() || (n.visible() && !n.transparent()) ){
           eles.push( n );
         }
       }
@@ -503,7 +503,7 @@
       for( var i = 0; i < edges.length; i++ ){
         var e = edges[i];
 
-        if( e.visible() && !e.transparent() ){
+        if( e.animated() || (e.visible() && !e.transparent()) ){
           eles.push( e );
         }
       }

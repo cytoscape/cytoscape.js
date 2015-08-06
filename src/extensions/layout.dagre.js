@@ -9,7 +9,7 @@
     rankDir: undefined, // 'TB' for top to bottom flow, 'LR' for left to right
     minLen: function( edge ){ return 1; }, // number of ranks to keep between the source and target of the edge
     edgeWeight: function( edge ){ return 1; }, // higher weight edges are generally made shorter and straighter than lower weight edges
-    
+
     // general layout options
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
@@ -23,7 +23,7 @@
   // constructor
   // options : object containing layout options
   function DagreLayout( options ){
-    this.options = $$.util.extend(true, {}, defaults, options); 
+    this.options = $$.util.extend(true, {}, defaults, options);
   }
 
   // runs the layout
@@ -55,7 +55,7 @@
           gObj[ name ] = val;
         }
       };
-      
+
       setGObj( 'nodesep', options.nodeSep );
       setGObj( 'edgesep', options.edgeSep );
       setGObj( 'ranksep', options.rankSep );

@@ -11,7 +11,7 @@
     var style = node._private.style;
     var rs = node._private.rscratch;
     var _p = node._private;
-    
+
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;
@@ -30,7 +30,7 @@
 
     nodeWidth = this.getNodeWidth(node);
     nodeHeight = this.getNodeHeight(node);
-    
+
     context.lineWidth = style['border-width'].pxValue;
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
@@ -40,24 +40,24 @@
       var image;
 
       if (url !== undefined) {
-        
+
         // get image, and if not loaded then ask to redraw when later loaded
         image = this.getCachedImage(url, function(){
           r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
           r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          
+
           r.drawingImage = true;
-          
+
           r.redraw();
         });
-        
+
         var prevBging = _p.backgrounding;
         _p.backgrounding = !image.complete;
 
         if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
           node.updateStyle( false );
         }
-      } 
+      }
 
       // Node color & opacity
 
@@ -66,9 +66,9 @@
       var borderStyle = style['border-style'].value;
 
       this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * parentOpacity);
-      
+
       this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
-      
+
       var shadowBlur = style['shadow-blur'].pxValue;
       var shadowOpacity = style['shadow-opacity'].value;
       var shadowColor = style['shadow-color'].value;
@@ -96,7 +96,7 @@
         }
       }
 
-      
+
       var styleShape = style['shape'].strValue;
 
       var pos = node._private.position;
@@ -149,8 +149,8 @@
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
-      } 
-      
+      }
+
       var darkness = style['background-blacken'].value;
       var borderWidth = style['border-width'].pxValue;
 
@@ -179,10 +179,10 @@
         } else {
           context.fill();
         }
-        
+
       } else if( darkness < 0 ){
         this.fillStyle(context, 255, 255, 255, -darkness);
-        
+
         if( usePaths ){
           context.fill( path );
         } else {
@@ -248,7 +248,7 @@
   // does the node have at least one pie piece?
   CRp.hasPie = function(node){
     node = node[0]; // ensure ele ref
-    
+
     return node._private.hasPie;
   };
 
@@ -308,5 +308,5 @@
 
   };
 
-  
+
 })( cytoscape );

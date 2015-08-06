@@ -9,7 +9,7 @@
   // constructor
   // options : object containing layout options
   function NullLayout( options ){
-    this.options = $$.util.extend(true, {}, defaults, options); 
+    this.options = $$.util.extend(true, {}, defaults, options);
   }
 
   // runs the layout

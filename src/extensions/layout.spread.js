@@ -82,7 +82,7 @@
       var simulationBounds = options.boundingBox ? $$.util.makeBoundingBox( options.boundingBox ) : null;
       var padding = options.padding;
       var simBBFactor = Math.max( 1, Math.log(nodes.length) * 0.8 );
-      
+
       if( nodes.length < 100 ){
         simBBFactor /= 2;
       }
@@ -243,10 +243,10 @@
       layout.one( "layoutready", options.ready );
 
       t1.pass( pData ).run( function( pData ) {
-        
+
         foograph = eval('foograph');
         Voronoi = eval('Voronoi');
-        
+
         // I need to retrieve the important data
         var lWidth = pData[ 'width' ];
         var lHeight = pData[ 'height' ];

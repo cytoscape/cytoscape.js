@@ -23,49 +23,49 @@
 
     // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
     refresh             : 4,
-    
+
     // Whether to fit the network view after when done
-    fit                 : true, 
+    fit                 : true,
 
     // Padding on fit
-    padding             : 30, 
+    padding             : 30,
 
     // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     boundingBox         : undefined,
 
     // Whether to randomize node positions on the beginning
     randomize           : true,
-    
+
     // Whether to use the JS console to print debug messages
     debug               : false,
 
     // Node repulsion (non overlapping) multiplier
     nodeRepulsion       : 400000,
-    
+
     // Node repulsion (overlapping) multiplier
     nodeOverlap         : 10,
-    
+
     // Ideal edge (non nested) length
     idealEdgeLength     : 10,
-    
+
     // Divisor to compute edge forces
     edgeElasticity      : 100,
-    
+
     // Nesting factor (multiplier) to compute ideal edge length for nested edges
-    nestingFactor       : 5, 
-    
+    nestingFactor       : 5,
+
     // Gravity force (constant)
-    gravity             : 250, 
-    
+    gravity             : 250,
+
     // Maximum number of iterations to perform
     numIter             : 100,
-    
+
     // Initial temperature (maximum node displacement)
     initialTemp         : 200,
-    
+
     // Cooling factor (how the temperature is reduced between consecutive iterations
-    coolingFactor       : 0.95, 
-    
+    coolingFactor       : 0.95,
+
     // Lower temperature threshold (below this point the layout will end)
     minTemp             : 1.0
   };
@@ -76,7 +76,7 @@
    * @arg options : object containing layout options
    */
   function CoseLayout(options) {
-    this.options = $$.util.extend({}, defaults, options); 
+    this.options = $$.util.extend({}, defaults, options);
   }
 
 
@@ -104,7 +104,7 @@
 
     // Initialize layout info
     var layoutInfo = createLayoutInfo(cy, layout, options);
-    
+
     // Show LayoutInfo contents if debugging
     if (DEBUG) {
       printLayoutInfo(layoutInfo);
@@ -125,7 +125,7 @@
 
       // Do one step in the phisical simulation
       step(layoutInfo, cy, options, i);
-      
+
       // Update temperature
       layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
       // logDebug("New temperature: " + layoutInfo.temperature);
@@ -145,7 +145,7 @@
       if (true === options.fit) {
         cy.fit( options.padding );
       }
-      
+
       // Get end time
       var endTime = new Date();
 
@@ -190,7 +190,7 @@
 
       done();
     }
-   
+
     return this; // chaining
   };
 
@@ -218,11 +218,11 @@
 
     var layoutInfo   = {
       layout       : layout,
-      layoutNodes  : [], 
+      layoutNodes  : [],
       idToIndex    : {},
       nodeSize     : nodes.size(),
       graphSet     : [],
-      indexToGraph : [], 
+      indexToGraph : [],
       layoutEdges  : [],
       edgeSize     : edges.size(),
       temperature  : options.initialTemp,
@@ -231,17 +231,17 @@
       boundingBox  : $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
                        x1: 0, y1: 0, w: cy.width(), h: cy.height()
                      } )
-    }; 
-    
+    };
+
     // Iterate over all nodes, creating layout nodes
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var tempNode        = {};
       tempNode.id         = nodes[i].data('id');
-      tempNode.parentId   = nodes[i].data('parent');      
+      tempNode.parentId   = nodes[i].data('parent');
       tempNode.children   = [];
       tempNode.positionX  = nodes[i].position('x');
       tempNode.positionY  = nodes[i].position('y');
-      tempNode.offsetX    = 0;      
+      tempNode.offsetX    = 0;
       tempNode.offsetY    = 0;
       tempNode.height     = nodes[i].height();
       tempNode.width      = nodes[i].width();
@@ -253,7 +253,7 @@
       tempNode.padRight   = nodes[i]._private.style['padding-right'].pxValue;
       tempNode.padTop     = nodes[i]._private.style['padding-top'].pxValue;
       tempNode.padBottom  = nodes[i]._private.style['padding-bottom'].pxValue;
-      
+
       // Add new node
       layoutInfo.layoutNodes.push(tempNode);
       // Add entry to id-index map
@@ -267,7 +267,7 @@
 
     var tempGraph = [];
 
-    // Second pass to add child information and 
+    // Second pass to add child information and
     // initialize queue for hierarchical traversal
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
@@ -279,14 +279,14 @@
       } else {
       // If a node doesn't have a parent, then it's in the root graph
       queue[++end] = n.id;
-      tempGraph.push(n.id);    
+      tempGraph.push(n.id);
       }
     }
-    
+
     // Add root graph to graphSet
     layoutInfo.graphSet.push(tempGraph);
 
-    // Traverse the graph, level by level, 
+    // Traverse the graph, level by level,
     while (start <= end) {
       // Get the node to visit and remove it from queue
       var node_id  = queue[start++];
@@ -304,18 +304,18 @@
     }
 
     // Create indexToGraph map
-    for (var i = 0; i < layoutInfo.graphSet.length; i++) {      
+    for (var i = 0; i < layoutInfo.graphSet.length; i++) {
       var graph = layoutInfo.graphSet[i];
       for (var j = 0; j < graph.length; j++) {
       var index = layoutInfo.idToIndex[graph[j]];
       layoutInfo.indexToGraph[index] = i;
       }
     }
-    
+
     // Iterate over all edges, creating Layout Edges
     for (var i = 0; i < layoutInfo.edgeSize; i++) {
       var e = edges[i];
-      var tempEdge = {};      
+      var tempEdge = {};
       tempEdge.id       = e.data('id');
       tempEdge.sourceId = e.data('source');
       tempEdge.targetId = e.data('target');
@@ -351,8 +351,8 @@
         depth++;
       }
 
-      // logDebug('LCA of nodes ' + tempEdge.sourceId + ' and ' + tempEdge.targetId +  
-        //  ". Index: " + lca + " Contents: " + lcaGraph.toString() + 
+      // logDebug('LCA of nodes ' + tempEdge.sourceId + ' and ' + tempEdge.targetId +
+        //  ". Index: " + lca + " Contents: " + lcaGraph.toString() +
         //  ". Depth: " + depth);
 
       // Update idealLength
@@ -368,10 +368,10 @@
     return layoutInfo;
   };
 
-  
+
   /**
-   * @brief : This function finds the index of the lowest common 
-   *          graph ancestor between 2 nodes in the subtree 
+   * @brief : This function finds the index of the lowest common
+   *          graph ancestor between 2 nodes in the subtree
    *          (from the graph hierarchy induced tree) whose
    *          root is graphIx
    *
@@ -384,7 +384,7 @@
     // Find their common ancester, starting from the root graph
     var res = findLCA_aux(node1, node2, 0, layoutInfo);
     if (2 > res.count) {
-      // If aux function couldn't find the common ancester, 
+      // If aux function couldn't find the common ancester,
       // then it is the root graph
       return 0;
     } else {
@@ -395,16 +395,16 @@
 
   /**
    * @brief          : Auxiliary function used for LCA computation
-   * 
+   *
    * @arg node1      : node1's ID
    * @arg node2      : node2's ID
    * @arg graphIx    : subgraph index
    * @arg layoutInfo : layoutInfo object
    *
    * @return         : object of the form {count: X, graph: Y}, where:
-   *                   X is the number of ancesters (max: 2) found in 
+   *                   X is the number of ancesters (max: 2) found in
    *                   graphIx (and it's subgraphs),
-   *                   Y is the graph index of the lowest graph containing 
+   *                   Y is the graph index of the lowest graph containing
    *                   all X nodes
    */
   var findLCA_aux = function(node1, node2, graphIx, layoutInfo) {
@@ -441,16 +441,16 @@
       } else {
       // Both nodes are present in this subgraph
       return result;
-      }      
+      }
     }
-    
+
     return {count:c, graph:graphIx};
   };
 
 
   /**
    * @brief: printsLayoutInfo into js console
-   *         Only used for debbuging 
+   *         Only used for debbuging
    */
   var printLayoutInfo = function(layoutInfo) {
     if (!DEBUG) {
@@ -459,23 +459,23 @@
     console.debug("layoutNodes:");
     for (var i = 0; i < layoutInfo.nodeSize; i++) {
       var n = layoutInfo.layoutNodes[i];
-      var s = 
-      "\nindex: "     + i + 
-      "\nId: "        + n.id + 
-      "\nChildren: "  + n.children.toString() +  
-      "\nparentId: "  + n.parentId  + 
-      "\npositionX: " + n.positionX + 
+      var s =
+      "\nindex: "     + i +
+      "\nId: "        + n.id +
+      "\nChildren: "  + n.children.toString() +
+      "\nparentId: "  + n.parentId  +
+      "\npositionX: " + n.positionX +
       "\npositionY: " + n.positionY +
-      "\nOffsetX: " + n.offsetX + 
-      "\nOffsetY: " + n.offsetY + 
-      "\npadLeft: " + n.padLeft + 
-      "\npadRight: " + n.padRight + 
-      "\npadTop: " + n.padTop + 
+      "\nOffsetX: " + n.offsetX +
+      "\nOffsetY: " + n.offsetY +
+      "\npadLeft: " + n.padLeft +
+      "\npadRight: " + n.padRight +
+      "\npadTop: " + n.padTop +
       "\npadBottom: " + n.padBottom;
 
-      console.debug(s);    
-    }  
-    
+      console.debug(s);
+    }
+
     console.debug('idToIndex');
     for (var i in layoutInfo.idToIndex) {
       console.debug("Id: " + i + "\nIndex: " + layoutInfo.idToIndex[i]);
@@ -485,7 +485,7 @@
     var set = layoutInfo.graphSet;
     for (var i = 0; i < set.length; i ++) {
       console.debug("Set : " + i + ": " + set[i].toString());
-    } 
+    }
 
     var s = 'IndexToGraph';
     for (var i = 0; i < layoutInfo.indexToGraph.length; i ++) {
@@ -496,8 +496,8 @@
     s = 'Layout Edges';
     for (var i = 0; i < layoutInfo.layoutEdges.length; i++) {
       var e = layoutInfo.layoutEdges[i];
-      s += "\nEdge Index: " + i + " ID: " + e.id + 
-      " SouceID: " + e.sourceId + " TargetId: " + e.targetId + 
+      s += "\nEdge Index: " + i + " ID: " + e.id +
+      " SouceID: " + e.sourceId + " TargetId: " + e.targetId +
       " Ideal Length: " + e.idealLength;
     }
     console.debug(s);
@@ -528,14 +528,14 @@
     }
   };
 
-  
+
   /**
    * @brief          : Updates the positions of nodes in the network
    * @arg layoutInfo : LayoutInfo object
    * @arg cy         : Cytoscape object
    * @arg options    : Layout options
    */
-  var refreshPositions = function(layoutInfo, cy, options) {  
+  var refreshPositions = function(layoutInfo, cy, options) {
     // var s = 'Refreshing positions';
     // logDebug(s);
 
@@ -543,7 +543,7 @@
     var nodes = options.eles.nodes();
     var bb = layoutInfo.boundingBox;
     var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
-    
+
     if( options.boundingBox ){
       nodes.forEach(function( node ){
         var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[node.data('id')]];
@@ -561,7 +561,7 @@
 
     nodes.positions(function(i, ele) {
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
-      // s = "Node: " + lnode.id + ". Refreshed position: (" + 
+      // s = "Node: " + lnode.id + ". Refreshed position: (" +
       // lnode.positionX + ", " + lnode.positionY + ").";
       // logDebug(s);
 
@@ -598,7 +598,7 @@
    * @arg cy         : Cytoscape object
    * @arg options    : Layout options
    */
-  var step = function(layoutInfo, cy, options, step) {  
+  var step = function(layoutInfo, cy, options, step) {
     // var s = "\n\n###############################";
     // s += "\nSTEP: " + step;
     // s += "\n###############################\n";
@@ -616,7 +616,7 @@
     updatePositions(layoutInfo, cy, options);
   };
 
-  
+
   /**
    * @brief : Computes the node repulsion forces
    */
@@ -632,16 +632,16 @@
       // s = "Set: " + graph.toString();
       // logDebug(s);
 
-      // Now get all the pairs of nodes 
+      // Now get all the pairs of nodes
       // Only get each pair once, (A, B) = (B, A)
       for (var j = 0; j < numNodes; j++) {
       var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
       for (var k = j + 1; k < numNodes; k++) {
         var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
         nodeRepulsion(node1, node2, layoutInfo, cy, options);
-      } 
       }
-    } 
+      }
+    }
   };
 
 
@@ -663,11 +663,11 @@
     }
 
     var overlap = nodesOverlap(node1, node2, directionX, directionY);
-    
+
     if (overlap > 0) {
       // s += "\nNodes DO overlap.";
       // s += "\nOverlap: " + overlap;
-      // If nodes overlap, repulsion force is proportional 
+      // If nodes overlap, repulsion force is proportional
       // to the overlap
       var force    = options.nodeOverlap * overlap;
 
@@ -679,7 +679,7 @@
 
     } else {
       // s += "\nNodes do NOT overlap.";
-      // If there's no overlap, force is inversely proportional 
+      // If there's no overlap, force is inversely proportional
       // to squared distance
 
       // Get clipping points for both nodes
@@ -713,8 +713,8 @@
 
 
   /**
-   * @brief : Finds the point in which an edge (direction dX, dY) intersects 
-   *          the rectangular bounding box of it's source/target node 
+   * @brief : Finds the point in which an edge (direction dX, dY) intersects
+   *          the rectangular bounding box of it's source/target node
    */
   var findClippingPoint = function(node, dX, dY) {
 
@@ -726,10 +726,10 @@
     var dirSlope     = dY / dX;
     var nodeSlope    = H / W;
 
-    // var s = 'Computing clipping point of node ' + node.id + 
-    //   " . Height:  " + H + ", Width: " + W + 
-    //   "\nDirection " + dX + ", " + dY; 
-    // 
+    // var s = 'Computing clipping point of node ' + node.id +
+    //   " . Height:  " + H + ", Width: " + W +
+    //   "\nDirection " + dX + ", " + dY;
+    //
     // Compute intersection
     var res = {};
     do {
@@ -747,11 +747,11 @@
         res.y = Y + H / 2;
         // s += "\nDown direction";
         break;
-      }      
+      }
 
       // Case: Intersects the right border
-      if (0 < dX && 
-      -1 * nodeSlope <= dirSlope && 
+      if (0 < dX &&
+      -1 * nodeSlope <= dirSlope &&
       dirSlope <= nodeSlope) {
         res.x = X + W / 2;
         res.y = Y + (W * dY / 2 / dX);
@@ -760,8 +760,8 @@
       }
 
       // Case: Intersects the left border
-      if (0 > dX && 
-      -1 * nodeSlope <= dirSlope && 
+      if (0 > dX &&
+      -1 * nodeSlope <= dirSlope &&
       dirSlope <= nodeSlope) {
         res.x = X - W / 2;
         res.y = Y - (W * dY / 2 / dX);
@@ -770,7 +770,7 @@
       }
 
       // Case: Intersects the top border
-      if (0 < dY && 
+      if (0 < dY &&
       ( dirSlope <= -1 * nodeSlope ||
         dirSlope >= nodeSlope )) {
         res.x = X + (H * dX / 2 / dY);
@@ -780,7 +780,7 @@
       }
 
       // Case: Intersects the bottom border
-      if (0 > dY && 
+      if (0 > dY &&
       ( dirSlope <= -1 * nodeSlope ||
         dirSlope >= nodeSlope )) {
         res.x = X - (H * dX / 2 / dY);
@@ -821,8 +821,8 @@
       return 0;
     }
   };
-    
-  
+
+
   /**
    * @brief : Calculates all edge forces
    */
@@ -839,7 +839,7 @@
       // Get direction of line connecting both node centers
       var directionX = target.positionX - source.positionX;
       var directionY = target.positionY - source.positionY;
-      
+
       // If both centers are the same, do nothing.
       // A random force has already been applied as node repulsion
       if (0 === directionX && 0 === directionY) {
@@ -855,7 +855,7 @@
       var ly = point2.y - point1.y;
       var l  = Math.sqrt(lx * lx + ly * ly);
 
-      var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity; 
+      var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity;
 
       if (0 !== l) {
         var forceX = force * lx / l;
@@ -890,11 +890,11 @@
 
       // s = "Set: " + graph.toString();
       // logDebug(s);
-          
+
       // Compute graph center
       if (0 === i) {
         var centerX   = layoutInfo.clientHeight / 2;
-        var centerY   = layoutInfo.clientWidth  / 2;    
+        var centerY   = layoutInfo.clientWidth  / 2;
       } else {
         // Get Parent node for this graph, and use its position as center
         var temp    = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
@@ -928,13 +928,13 @@
 
 
   /**
-   * @brief          : This function propagates the existing offsets from 
+   * @brief          : This function propagates the existing offsets from
    *                   parent nodes to its descendents.
    * @arg layoutInfo : layoutInfo Object
    * @arg cy         : cytoscape Object
    * @arg options    : Layout options
    */
-  var propagateForces = function(layoutInfo, cy, options) {  
+  var propagateForces = function(layoutInfo, cy, options) {
     // Inline implementation of a queue, used for traversing the graph in BFS order
     var queue = [];
     var start = 0;   // Points to the start the queue
@@ -946,7 +946,7 @@
     queue.push.apply(queue, layoutInfo.graphSet[0]);
     end += layoutInfo.graphSet[0].length;
 
-    // Traverse the graph, level by level, 
+    // Traverse the graph, level by level,
     while (start <= end) {
       // Get the node to visit and remove it from queue
       var nodeId    = queue[start++];
@@ -955,15 +955,15 @@
       var children  = node.children;
 
       // We only need to process the node if it's compound
-      if (0 < children.length) {    
+      if (0 < children.length) {
       var offX = node.offsetX;
       var offY = node.offsetY;
 
-      // var s = "Propagating offset from parent node : " + node.id + 
+      // var s = "Propagating offset from parent node : " + node.id +
       //   ". OffsetX: " + offX + ". OffsetY: " + offY;
       // s += "\n Children: " + children.toString();
       // logDebug(s);
-      
+
       for (var i = 0; i < children.length; i++) {
         var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]];
         // Propagate offset
@@ -972,18 +972,18 @@
         // Add children to queue to be visited
         queue[++end] = children[i];
       }
-      
+
       // Reset parent offsets
       node.offsetX = 0;
       node.offsetY = 0;
       }
-      
+
     }
   };
 
 
   /**
-   * @brief : Updates the layout model positions, based on 
+   * @brief : Updates the layout model positions, based on
    *          the accumulated forces
    */
   var updatePositions = function(layoutInfo, cy, options) {
@@ -1009,19 +1009,19 @@
         // logDebug("Skipping position update of node: " + n.id);
         continue;
       }
-      // s = "Node: " + n.id + " Previous position: (" + 
-      // n.positionX + ", " + n.positionY + ")."; 
+      // s = "Node: " + n.id + " Previous position: (" +
+      // n.positionX + ", " + n.positionY + ").";
 
       // Limit displacement in order to improve stability
       var tempForce = limitForce(n.offsetX, n.offsetY, layoutInfo.temperature);
-      n.positionX += tempForce.x; 
+      n.positionX += tempForce.x;
       n.positionY += tempForce.y;
       n.offsetX = 0;
       n.offsetY = 0;
-      n.minX    = n.positionX - n.width; 
-      n.maxX    = n.positionX + n.width; 
-      n.minY    = n.positionY - n.height; 
-      n.maxY    = n.positionY + n.height; 
+      n.minX    = n.positionX - n.width;
+      n.maxX    = n.positionX + n.width;
+      n.minY    = n.positionY - n.height;
+      n.maxY    = n.positionY + n.height;
       // s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
       // logDebug(s);
 
@@ -1042,14 +1042,14 @@
         // s += "\nWidth: " + n.width + ", Height: " + n.height;
         // logDebug(s);
       }
-    }  
+    }
   };
 
 
   /**
-   * @brief : Limits a force (forceX, forceY) to be not 
-   *          greater (in modulo) than max. 
-   8          Preserves force direction. 
+   * @brief : Limits a force (forceX, forceY) to be not
+   *          greater (in modulo) than max.
+   8          Preserves force direction.
    */
   var limitForce = function(forceX, forceY, max) {
     // var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
@@ -1059,7 +1059,7 @@
       var res = {
       x : max * forceX / force,
       y : max * forceY / force
-      };      
+      };
 
     } else {
       var res = {
@@ -1076,7 +1076,7 @@
 
 
   /**
-   * @brief : Function used for keeping track of compound node 
+   * @brief : Function used for keeping track of compound node
    *          sizes, since they should bound all their subnodes.
    */
   var updateAncestryBoundaries = function(node, layoutInfo) {
@@ -1125,9 +1125,9 @@
     if (flag) {
       // logDebug(s);
       return updateAncestryBoundaries(p, layoutInfo);
-    } 
+    }
 
-    // s += ". No changes in boundaries/position of parent node " + p.id;  
+    // s += ". No changes in boundaries/position of parent node " + p.id;
     // logDebug(s);
     return;
   };

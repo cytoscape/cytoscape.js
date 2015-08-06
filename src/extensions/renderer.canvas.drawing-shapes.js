@@ -17,30 +17,30 @@
     for (var i = 1; i < points.length / 2; i++) {
       context.lineTo( x + halfW * points[i * 2], y + halfH * points[i * 2 + 1] );
     }
-    
+
     context.closePath();
   };
-  
+
   CRp.drawPolygon = function(
     context, x, y, width, height, points) {
 
     // Draw path
     this.drawPolygonPath(context, x, y, width, height, points);
-    
+
     // Fill path
     context.fill();
   };
-  
+
   // Round rectangle drawing
   CRp.drawRoundRectanglePath = function(
     context, x, y, width, height, radius) {
-    
+
     var halfWidth = width / 2;
     var halfHeight = height / 2;
     var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
-    
+
     if( context.beginPath ){ context.beginPath(); }
-    
+
     // Start at top middle
     context.moveTo(x, y - halfHeight);
     // Arc from middle top to right side
@@ -53,16 +53,16 @@
     context.arcTo(x - halfWidth, y - halfHeight, x, y - halfHeight, cornerRadius);
     // Join line
     context.lineTo(x, y - halfHeight);
-    
-    
+
+
     context.closePath();
   };
-  
+
   CRp.drawRoundRectangle = function(
     context, x, y, width, height, radius) {
-    
+
     this.drawRoundRectanglePath(context, x, y, width, height, radius);
-    
+
     context.fill();
   };
 

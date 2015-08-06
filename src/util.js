@@ -1,5 +1,5 @@
 ;(function($$, window){ 'use strict';
-  
+
   // utility functions only for internal use
 
   $$.util = {
@@ -115,7 +115,7 @@
         if( typeof define !== 'undefined' && define.amd && require ){ // detected amd env w/ defined module
           require([ name ], function( nameImpl ){
             ret = nameImpl;
-            
+
             if( ret !== undefined ){ fulfil(ret); }
             if( next ){ next(); }
           });
@@ -143,7 +143,7 @@
         }
 
         // otherwise, all got all impls => done
-        callback.apply( callback, impls ); 
+        callback.apply( callback, impls );
       };
 
       for( var i = 0; i < names.length; i++ ){ (function(){ // w/scope
@@ -296,7 +296,7 @@
       } else {
         throw msg;
       }
-    },    
+    },
 
     clone: function( obj ){
       var target = {};
@@ -320,7 +320,7 @@
         return obj;
       }
     },
-    
+
     // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
     makeBoundingBox: function( bb ){
       if( bb.x1 != null && bb.y1 != null ){
@@ -343,7 +343,7 @@
             h: bb.h
           };
         }
-      } 
+      }
     },
 
     // has anything been set in the map
@@ -388,12 +388,12 @@
         }
 
         if( i < keys.length - 1 ){
-          
+
           // extend the map if necessary
           if( obj[key] == null ){
             obj[key] = {};
           }
-          
+
           obj = obj[key];
         } else {
           // set the value
@@ -401,13 +401,13 @@
         }
       }
     },
-    
+
     // gets the value in a map even if it's not built in places
     getMap: function( options ){
       var obj = options.map;
       var keys = options.keys;
       var l = keys.length;
-      
+
       for(var i = 0; i < l; i++){
         var key = keys[i];
 
@@ -416,12 +416,12 @@
         }
 
         obj = obj[key];
-        
+
         if( obj == null ){
           return obj;
         }
       }
-      
+
       return obj;
     },
 
@@ -431,7 +431,7 @@
       var keys = options.keys;
       var l = keys.length;
       var keepChildren = options.keepChildren;
-      
+
       for(var i = 0; i < l; i++){
         var key = keys[i];
 
@@ -441,7 +441,7 @@
 
         var lastKey = i === options.keys.length - 1;
         if( lastKey ){
-          
+
           if( keepChildren ){ // then only delete child fields not in keepChildren
             for( var child in obj ){
               if( !keepChildren[child] ){
@@ -457,12 +457,12 @@
         }
       }
     },
-    
+
     capitalize: function(str){
       if( $$.is.emptyString(str) ){
         return str;
       }
-      
+
       return str.charAt(0).toUpperCase() + str.substring(1);
     },
 
@@ -517,7 +517,7 @@
       if( m ){
 
         // get hue
-        h = parseInt( m[1] ); 
+        h = parseInt( m[1] );
         if( h < 0 ){
           h = ( 360 - (-1*h % 360) ) % 360;
         } else if( h > 360 ){
@@ -606,7 +606,7 @@
     },
 
     color2tuple: function( color ){
-      return ( $$.is.array(color) ? color : null ) 
+      return ( $$.is.array(color) ? color : null )
         || $$.util.colorname2tuple(color)
         || $$.util.hex2tuple(color)
         || $$.util.rgb2tuple(color)
@@ -817,7 +817,7 @@
         return ret;
       };
     }
-      
+
   };
 
   $$.util.camel2dash = $$.util.memoize( function( str ){
@@ -867,19 +867,19 @@
   } );
 
   $$.util.regex = {};
-  
+
   $$.util.regex.number = "(?:[-]?\\d*\\.\\d+|[-]?\\d+|[-]?\\d*\\.\\d+[eE]\\d+)";
-  
+
   $$.util.regex.rgba = "rgb[a]?\\(("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*("+ $$.util.regex.number +"))?\\)";
   $$.util.regex.rgbaNoBackRefs = "rgb[a]?\\((?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*(?:"+ $$.util.regex.number +"))?\\)";
-  
+
   $$.util.regex.hsla = "hsl[a]?\\(("+ $$.util.regex.number +")\\s*,\\s*("+ $$.util.regex.number +"[%])\\s*,\\s*("+ $$.util.regex.number +"[%])(?:\\s*,\\s*("+ $$.util.regex.number +"))?\\)";
   $$.util.regex.hslaNoBackRefs = "hsl[a]?\\((?:"+ $$.util.regex.number +")\\s*,\\s*(?:"+ $$.util.regex.number +"[%])\\s*,\\s*(?:"+ $$.util.regex.number +"[%])(?:\\s*,\\s*(?:"+ $$.util.regex.number +"))?\\)";
-  
+
   $$.util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
   $$.util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 
-  var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+  var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
   raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };

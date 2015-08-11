@@ -11,6 +11,11 @@
     var style = node._private.style;
     var rs = node._private.rscratch;
     var _p = node._private;
+    var pos = _p.position;
+
+    if( pos.x === undefined || pos.y === undefined ){
+      return; // can't draw node with undefined position
+    }
 
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
@@ -98,8 +103,6 @@
 
 
       var styleShape = style['shape'].strValue;
-
-      var pos = node._private.position;
 
       if( usePaths ){
         var pathCacheKey = styleShape + '$' + nodeWidth +'$' + nodeHeight;

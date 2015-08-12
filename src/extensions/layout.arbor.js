@@ -274,8 +274,8 @@
           element: node,
           mass: mass,
           fixed: locked,
-          x: locked ? pos.x : undefined,
-          y: locked ? pos.y : undefined
+          x: locked && pos ? pos.x : undefined,
+          y: locked && pos ? pos.y : undefined
         });
       }
 

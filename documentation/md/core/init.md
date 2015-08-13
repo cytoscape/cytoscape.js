@@ -61,7 +61,7 @@ var cy = cytoscape({
 
 If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option `options.headless` is `true`, the null renderer is used by default.
 
-You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery: 
+You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery:
 
 ```js
 $('#cy').cytoscape({ // for some div with id 'cy'
@@ -75,14 +75,16 @@ $('#cy').cytoscape({ // for some div with id 'cy'
 });
 ```
 
+The jQuery Cytoscape.js plugin is automatically registered for you on the global `jQuery` instance.  If that's unavailable, you can manually register via `cytoscape.registerJquery( jQuery )`.
+
 This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
 
-For example, 
+For example,
 
 ```js
 $('#cy').cytoscape(options)
   .css('background', 'red')
-  .css('border-color', 'black'); // can use jquery functions on 'cy' div 
+  .css('border-color', 'black'); // can use jquery functions on 'cy' div
 ```
 
 Because this style doesn't give you access to the `cy` object outside of the callback function, there is an option to get the `cy` object from a jQuery selector.
@@ -112,7 +114,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 ```js
 var cy = cytoscape({
   // very commonly used options:
-  container: undefined, 
+  container: undefined,
   elements: [ /* ... */ ],
   style: [ /* ... */ ],
   layout: { name: 'grid' /* , ... */ },
@@ -121,7 +123,7 @@ var cy = cytoscape({
   // initial viewport state:
   zoom: 1,
   pan: { x: 0, y: 0 },
-  
+
   // interaction options:
   minZoom: 1e-50,
   maxZoom: 1e50,
@@ -181,7 +183,7 @@ var cy = cytoscape({
 
 **`zoomingEnabled`** : Whether zooming the graph is enabled, both by user events and programmatically.
 
-**`userZoomingEnabled`** : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option. 
+**`userZoomingEnabled`** : Whether user events (e.g. mouse wheel, pinch-to-zoom) are allowed to zoom the graph.  Programmatic changes to zoom are unaffected by this option.
 
 **`panningEnabled`** : Whether panning the graph is enabled, both by user events and programmatically.
 

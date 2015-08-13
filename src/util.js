@@ -99,7 +99,9 @@
 
       var checkCommonJs = function( next ){
         if( typeof module !== 'undefined' && module.exports && require ){ // detected commonjs env
-          ret = require( name ); // regular require
+          try {
+            ret = require( name ); // regular require
+          } catch( err ){}
         }
 
         if( ret !== undefined ){ fulfil(ret); }
@@ -117,6 +119,8 @@
             ret = nameImpl;
 
             if( ret !== undefined ){ fulfil(ret); }
+            if( next ){ next(); }
+          }, function( err ){
             if( next ){ next(); }
           });
         }

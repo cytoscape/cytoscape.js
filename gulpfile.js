@@ -460,11 +460,18 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
 });
 
 gulp.task('docsdemodl', function(){
+  
   var demos = docmaker.sections.filter(function(s){
-    return s.demos != null;
-  })[0].demos.map(function(d){
-    return 'https://gist.github.com/' + d.id + '/download';
-  });
+    return s.demos != null || s.demo != null;
+  }).map(function( s ){
+    return s.demos || [ s.demo ];
+  }).map(function( ds ){
+    return ds.map(function(d){
+      return 'https://gist.github.com/' + d.id + '/download';
+    });
+  }).reduce(function(prevDs, currDs){
+    return prevDs.concat( currDs );
+  }, []);
   
   return download( demos )    
     .pipe( unzip() )

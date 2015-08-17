@@ -806,7 +806,7 @@
           }
 
           return args.join('$');
-        }
+        };
       }
 
       return function memoizedFn(){

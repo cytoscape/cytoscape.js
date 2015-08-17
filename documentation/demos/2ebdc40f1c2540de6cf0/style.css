@@ -1,5 +1,13 @@
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
 body { 
   font: 14px helvetica neue, helvetica, arial, sans-serif;
+  width: 100%;
+  height: 100%;
 }
 
 #cy {
@@ -43,4 +51,12 @@ p {
 a,
 a:hover {
   color: #62daea;
+}
+
+.label {
+  display: inline-block;
+}
+
+.slider {
+  display: block;
 }

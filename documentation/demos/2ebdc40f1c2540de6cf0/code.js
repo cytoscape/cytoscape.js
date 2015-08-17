@@ -12,8 +12,8 @@ $(function(){ // on dom ready
 
   var params = {
     name: 'cola',
-    nodeSpacing: 20,
-    edgeLengthVal: 10,
+    nodeSpacing: 10,
+    edgeLengthVal: 35,
     animate: true,
     randomize: false,
     maxSimulationTime: 1500
@@ -94,13 +94,13 @@ $(function(){ // on dom ready
       min: opts.min,
       max: opts.max,
       value: params[ opts.param ]
-    }).on('slide', _.debounce( function(){
+    }).on('slide', _.throttle( function(){
       params[ opts.param ] = p.getValue();
 
       layout.stop();
       layout = makeLayout();
       layout.run();
-    }, 50 ) ).data('slider');
+    }, 16 ) ).data('slider');
   }
 
   function makeButton( opts ){
@@ -117,6 +117,40 @@ $(function(){ // on dom ready
       layout.run();
     });
   }
+
+  cy.nodes().forEach(function(n){
+    var g = n.data('name');
+
+    n.qtip({
+      content: [
+        {
+          name: 'GeneCard',
+          url: 'http://www.genecards.org/cgi-bin/carddisp.pl?gene=' + g
+        },
+        {
+          name: 'UniProt search',
+          url: 'http://www.uniprot.org/uniprot/?query='+ g +'&fil=organism%3A%22Homo+sapiens+%28Human%29+%5B9606%5D%22&sort=score'
+        },
+        {
+          name: 'GeneMANIA',
+          url: 'http://genemania.org/search/human/' + g
+        }
+      ].map(function( link ){
+        return '<a target="_blank" href="' + link.url + '">' + link.name + '</a>';
+      }).join('<br />\n'),
+      position: {
+        my: 'top center',
+        at: 'bottom center'
+      },
+      style: {
+        classes: 'qtip-bootstrap',
+        tip: {
+          width: 16,
+          height: 8
+        }
+      }
+    });
+  });
 
 }); // on dom ready
 

@@ -364,6 +364,10 @@
       // set id and validate
       if( data.id === undefined ){
         data.id = idFactory.generate( cy, ele );
+
+      } else if( $$.is.number(data.id) ){
+        data.id = '' + data.id; // now it's a string
+
       } else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
         $$.util.error('Can not create element with invalid string ID `' + data.id + '`');
 
@@ -388,6 +392,10 @@
 
           var field = fields[j];
           var val = data[field];
+
+          if( $$.is.number(val) ){
+            val = data[field] = '' + data[field]; // now string
+          }
 
           if( val == null || val === '' ){
             // can't create if source or target is not defined properly
@@ -428,7 +436,12 @@
       var node = elements[i];
       var data = node._private.data;
 
-      var parentId = node._private.data.parent;
+      if( $$.is.number(data.parent) ){ // then automake string
+        data.parent = '' + data.parent;
+      }
+
+      var parentId = data.parent;
+
       var specifiedParent = parentId != null;
 
       if( specifiedParent ){

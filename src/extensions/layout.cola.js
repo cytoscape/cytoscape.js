@@ -243,15 +243,9 @@
         var scrCola = node._private.scratch.cola;
         var pos = node._private.position;
 
-        if( node.grabbed() ){
-          scrCola.x = pos.x - bb.x1;
-          scrCola.y = pos.y - bb.y1;
-
-          adaptor.dragstart( scrCola );
-        } else if( $$.is.number(scrCola.x) && $$.is.number(scrCola.y) ){
-          pos.x = scrCola.x + bb.x1;
-          pos.y = scrCola.y + bb.y1;
-        }
+        // update cola pos obj
+        scrCola.x = pos.x - bb.x1;
+        scrCola.y = pos.y - bb.y1;
 
         switch( e.type ){
           case 'grab':

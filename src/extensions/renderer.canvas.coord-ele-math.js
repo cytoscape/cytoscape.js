@@ -1,7 +1,8 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
-  var CRp = CanvasRenderer.prototype;
+  var CR = CanvasRenderer;
+  var CRp = CR.prototype;
 
   // Project mouse
   CRp.projectIntoViewport = function(clientX, clientY) {
@@ -58,7 +59,7 @@
           return;
         }
 
-        var shape = CanvasRenderer.nodeShapes[ self.getNodeShape(node) ];
+        var shape = CR.nodeShapes[ self.getNodeShape(node) ];
         var borderWO = node._private.style['border-width'].pxValue / 2;
 
         if(
@@ -165,8 +166,8 @@
 
       // if we're close to the edge but didn't hit it, maybe we hit its arrows
       if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
-        var srcShape = CanvasRenderer.arrowShapes[ style['source-arrow-shape'].value ];
-        var tgtShape = CanvasRenderer.arrowShapes[ style['target-arrow-shape'].value ];
+        var srcShape = CR.arrowShapes[ style['source-arrow-shape'].value ];
+        var tgtShape = CR.arrowShapes[ style['target-arrow-shape'].value ];
 
         var src = src || edge._private.source;
         var tgt = tgt || edge._private.target;
@@ -206,49 +207,72 @@
 
     function checkLabel(ele){
       var _p = ele._private;
-      var bb = ele.boundingBox({
-        includeLabels: true,
-        includeNodes: false,
-        includeEdges: false
-      });
       var th = labelThreshold;
 
-      // adjust bb w/ threshold
-      bb.x1 -= th;
-      bb.y1 -= th;
-      bb.x2 += th;
-      bb.y2 += th;
-      bb.w = bb.x2 - bb.x1;
-      bb.h = bb.y2 - bb.y1;
-
       // adjust bb w/ angle
-      // TODO fix this
-      if( false && _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
-        var theta = -1 * _p.rscratch.labelAngle;
-
-        // rotate (x, y) with -label and see if inside normal bb
-
-        var lctr = {
-          x: (bb.x1 + bb.x2)/2,
-          y: (bb.y1 + bb.y2)/2
+      if( _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
+        
+        var rstyle = _p.rstyle;
+        var lw = rstyle.labelWidth + 2*th;
+        var lh = rstyle.labelHeight + 2*th;
+        var lx = rstyle.labelX;
+        var ly = rstyle.labelY;
+        
+        var theta = _p.rscratch.labelAngle;
+        var cos = Math.cos( theta );
+        var sin = Math.sin( theta );
+        
+        var rotate = function( x, y ){
+          x = x - lx;
+          y = y - ly;
+          
+          return {
+            x: x*cos - y*sin + lx,
+            y: x*sin + y*cos + ly
+          };
         };
+        
+        var lx1 = lx - lw/2;
+        var lx2 = lx + lw/2;
+        var ly1 = ly - lh/2;
+        var ly2 = ly + lh/2;
+        
+        var px1y1 = rotate( lx1, ly1 );
+        var px1y2 = rotate( lx1, ly2 );
+        var px2y1 = rotate( lx2, ly1 );
+        var px2y2 = rotate( lx2, ly2 );
+        
+        var points = [
+          px1y1.x, px1y1.y, 
+          px2y1.x, px2y1.y, 
+          px2y2.x, px2y2.y,
+          px1y2.x, px1y2.y 
+        ];
 
-        x -= lctr.x;
-        y -= lctr.y;
+        if( $$.math.pointInsidePoints( x, y, points ) ){
+          near.push( ele );
+        }
+        
+      } else {
+        var bb = ele.boundingBox({
+          includeLabels: true,
+          includeNodes: false,
+          includeEdges: false
+        });
 
-        var xRot = x * Math.cos(theta) - y * Math.sin(theta);
-        var yRot = x * Math.sin(theta) + y * Math.cos(theta);
-
-        x = xRot;
-        y = yRot;
-
-        x += lctr.x;
-        y += lctr.y;
+        // adjust bb w/ threshold
+        bb.x1 -= th;
+        bb.y1 -= th;
+        bb.x2 += th;
+        bb.y2 += th;
+        bb.w = bb.x2 - bb.x1;
+        bb.h = bb.y2 - bb.y1;
+        
+        if( $$.math.inBoundingBox( bb, x, y ) ){
+          near.push( ele );
+        }
       }
 
-      if( $$.math.inBoundingBox( bb, x, y ) ){
-        near.push( ele );
-      }
     }
 
     for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence
@@ -305,7 +329,7 @@
       var w = this.getNodeWidth(nodes[i]);
       var h = this.getNodeHeight(nodes[i]);
       var border = nodes[i]._private.style['border-width'].pxValue / 2;
-      var shapeObj = CanvasRenderer.nodeShapes[ nShape ];
+      var shapeObj = CR.nodeShapes[ nShape ];
 
       if ( shapeObj.intersectBox(x1, y1, x2, y2, w, h, pos.x, pos.y, border) ){
         box.push(nodes[i]);
@@ -315,7 +339,7 @@
     for ( var i = 0; i < edges.length; i++ ){
       var rs = edges[i]._private.rscratch;
 
-      if (edges[i]._private.rscratch.edgeType == 'self') {
+      if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
         if ((heur = $$.math.boxInBezierVicinity(x1, y1, x2, y2,
             rs.startX, rs.startY,
             rs.cp2ax, rs.cp2ay,
@@ -420,16 +444,10 @@
    * @param node          a node
    * @return {String}     shape of the node
    */
-  CRp.getNodeShape = function(node)
-  {
-    // TODO only allow rectangle for a compound node?
-//    if (node._private.style['width'].value == 'auto' ||
-//        node._private.style['height'].value == 'auto')
-//    {
-//      return 'rectangle';
-//    }
+  CRp.getNodeShape = function( node ){
 
-    var shape = node._private.style['shape'].value;
+    var style = node._private.style;
+    var shape = style['shape'].value;
 
     if( node.isParent() ){
       if( shape === 'rectangle' || shape === 'roundrectangle' ){
@@ -437,6 +455,12 @@
       } else {
         return 'rectangle';
       }
+    }
+    
+    if( shape === 'polygon' ){
+      var points = style['shape-polygon-points'].value;
+      
+      return CR.nodeShapes.makePolygon( points ).name;
     }
 
     return shape;
@@ -1009,8 +1033,8 @@
       tgtW = this.getNodeWidth(tgt);
       tgtH = this.getNodeHeight(tgt);
 
-      srcShape = CanvasRenderer.nodeShapes[ this.getNodeShape(src) ];
-      tgtShape = CanvasRenderer.nodeShapes[ this.getNodeShape(tgt) ];
+      srcShape = CR.nodeShapes[ this.getNodeShape(src) ];
+      tgtShape = CR.nodeShapes[ this.getNodeShape(tgt) ];
 
       srcBorder = src._private.style['border-width'].pxValue;
       tgtBorder = tgt._private.style['border-width'].pxValue;
@@ -1272,7 +1296,7 @@
         var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
 
         var minCpADistFactor = 3;
-        var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CanvasRenderer.arrowShapeHeight;
+        var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CR.arrowShapeHeight;
         var minCpADist = minCpADistFactor * arrowW;
         var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
@@ -1463,7 +1487,7 @@
 
       var cp = [rs.cp2cx, rs.cp2cy];
 
-      intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
+      intersect = CR.nodeShapes[this.getNodeShape(target)].intersectLine(
         target._private.position.x,
         target._private.position.y,
         this.getNodeWidth(target),
@@ -1474,9 +1498,9 @@
       );
 
       var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
+        CR.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
+        CR.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1486,7 +1510,7 @@
 
       var cp = [rs.cp2ax, rs.cp2ay];
 
-      intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
+      intersect = CR.nodeShapes[this.getNodeShape(source)].intersectLine(
         source._private.position.x,
         source._private.position.y,
         this.getNodeWidth(source),
@@ -1497,9 +1521,9 @@
       );
 
       var arrowStart = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[srcArShape].spacing(edge));
+        CR.arrowShapes[srcArShape].spacing(edge));
       var edgeStart = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[srcArShape].gap(edge));
+        CR.arrowShapes[srcArShape].gap(edge));
 
       rs.startX = edgeStart[0];
       rs.startY = edgeStart[1];
@@ -1510,7 +1534,7 @@
 
     } else if (rs.edgeType == 'straight') {
 
-      intersect = CanvasRenderer.nodeShapes[this.getNodeShape(target)].intersectLine(
+      intersect = CR.nodeShapes[this.getNodeShape(target)].intersectLine(
         target._private.position.x,
         target._private.position.y,
         this.getNodeWidth(target),
@@ -1528,10 +1552,10 @@
 
       var arrowEnd = $$.math.shortenIntersection(intersect,
         [source.position().x, source.position().y],
-        CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
+        CR.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect,
         [source.position().x, source.position().y],
-        CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
+        CR.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1539,7 +1563,7 @@
       rs.arrowEndX = arrowEnd[0];
       rs.arrowEndY = arrowEnd[1];
 
-      intersect = CanvasRenderer.nodeShapes[this.getNodeShape(source)].intersectLine(
+      intersect = CR.nodeShapes[this.getNodeShape(source)].intersectLine(
         source._private.position.x,
         source._private.position.y,
         this.getNodeWidth(source),
@@ -1557,15 +1581,15 @@
 
       /*
       console.log("1: "
-        + CanvasRenderer.arrowShapes[srcArShape],
+        + CR.arrowShapes[srcArShape],
           srcArShape);
       */
       var arrowStart = $$.math.shortenIntersection(intersect,
         [target.position().x, target.position().y],
-        CanvasRenderer.arrowShapes[srcArShape].spacing(edge));
+        CR.arrowShapes[srcArShape].spacing(edge));
       var edgeStart = $$.math.shortenIntersection(intersect,
         [target.position().x, target.position().y],
-        CanvasRenderer.arrowShapes[srcArShape].gap(edge));
+        CR.arrowShapes[srcArShape].gap(edge));
 
       rs.startX = edgeStart[0];
       rs.startY = edgeStart[1];
@@ -1583,7 +1607,7 @@
       // if( window.badArrow) debugger;
       var cp = [rs.cp2x, rs.cp2y];
 
-      intersect = CanvasRenderer.nodeShapes[
+      intersect = CR.nodeShapes[
         this.getNodeShape(target)].intersectLine(
         target._private.position.x,
         target._private.position.y,
@@ -1596,13 +1620,13 @@
 
       /*
       console.log("2: "
-        + CanvasRenderer.arrowShapes[srcArShape],
+        + CR.arrowShapes[srcArShape],
           srcArShape);
       */
       var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[tgtArShape].spacing(edge));
+        CR.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-        CanvasRenderer.arrowShapes[tgtArShape].gap(edge));
+        CR.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1610,7 +1634,7 @@
       rs.arrowEndX = arrowEnd[0];
       rs.arrowEndY = arrowEnd[1];
 
-      intersect = CanvasRenderer.nodeShapes[
+      intersect = CR.nodeShapes[
         this.getNodeShape(source)].intersectLine(
         source._private.position.x,
         source._private.position.y,
@@ -1624,12 +1648,12 @@
       var arrowStart = $$.math.shortenIntersection(
         intersect,
         cp,
-        CanvasRenderer.arrowShapes[srcArShape].spacing(edge)
+        CR.arrowShapes[srcArShape].spacing(edge)
       );
       var edgeStart = $$.math.shortenIntersection(
         intersect,
         cp,
-        CanvasRenderer.arrowShapes[srcArShape].gap(edge)
+        CR.arrowShapes[srcArShape].gap(edge)
       );
 
       rs.startX = edgeStart[0];

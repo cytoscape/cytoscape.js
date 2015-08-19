@@ -25,6 +25,8 @@
   }
 
   nodeShapes['ellipse'] = {
+    name: 'ellipse',
+    
     draw: function(context, centerX, centerY, width, height) {
       nodeShapes['ellipse'].drawPath(context, centerX, centerY, width, height);
       context.fill();
@@ -85,27 +87,29 @@
   };
 
   function generatePolygon( name, points ){
-    nodeShapes[name] = {
+    return ( nodeShapes[name] = {
+      name: name,
+      
       points: points,
 
       draw: function(context, centerX, centerY, width, height) {
         renderer.drawPolygon(context,
           centerX, centerY,
           width, height,
-          nodeShapes[name].points);
+          this.points);
       },
 
       drawPath: function(context, centerX, centerY, width, height) {
         renderer.drawPolygonPath(context,
           centerX, centerY,
           width, height,
-          nodeShapes[name].points);
+          this.points);
       },
 
       intersectLine: function(nodeX, nodeY, width, height, x, y, padding) {
         return $$.math.polygonIntersectLine(
             x, y,
-            nodeShapes[name].points,
+            this.points,
             nodeX,
             nodeY,
             width / 2, height / 2,
@@ -117,11 +121,9 @@
         width, height, centerX,
         centerY, padding) {
 
-        var points = nodeShapes[name].points;
-
         return $$.math.boxIntersectPolygon(
           x1, y1, x2, y2,
-          points, width, height, centerX,
+          this.points, width, height, centerX,
           centerY, [0, -1], padding);
       },
 
@@ -131,7 +133,7 @@
         return $$.math.pointInsidePolygon(x, y, nodeShapes[name].points,
           centerX, centerY, width, height, [0, -1], padding);
       }
-    };
+    } );
   }
 
   generatePolygon( 'triangle', $$.math.generateUnitNgonPointsFitToSquare(3, 0) );
@@ -140,6 +142,8 @@
   nodeShapes['rectangle'] = nodeShapes['square'];
 
   nodeShapes['roundrectangle'] = {
+    name: 'roundrectangle',
+    
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 
     draw: function(context, centerX, centerY, width, height) {
@@ -313,5 +317,21 @@
     1, 1,
     -0.333, 1
   ] );
-
+  
+  nodeShapes.makePolygon = function( points ){
+    
+    // use caching on user-specified polygons so they are as fast as native shapes
+    
+    var key = points.join('$');
+    var name = 'polygon-' + key;
+    var shape;
+    
+    if( (shape = nodeShapes[name]) ){ // got cached shape
+      return shape;
+    }
+    
+    // create and cache new shape
+    return generatePolygon( name, points );  
+  };
+  
 })( cytoscape );

@@ -73,7 +73,7 @@
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
       textWrap: { enums: ['none', 'wrap'] },
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid'] },
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'] },
       compoundIncludeLabels: { enums: ['include', 'exclude'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
@@ -92,7 +92,8 @@
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
       propList: { propList: true },
       angle: { number: true, units: 'deg|rad' },
-      textRotation: { enums: ['none', 'autorotate'] }
+      textRotation: { enums: ['none', 'autorotate'] },
+      polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 }
     };
 
     // define visual style properties
@@ -166,6 +167,7 @@
       { name: 'height', type: t.autoSize },
       { name: 'width', type: t.autoSize },
       { name: 'shape', type: t.nodeShape },
+      { name: 'shape-polygon-points', type: t.polygonPointList },
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
       { name: 'background-blacken', type: t.nOneOneNumber },
@@ -338,6 +340,7 @@
           'height': 30,
           'width': 30,
           'shape': 'ellipse',
+          'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
 
           // compound props
           'padding-top': 0,
@@ -753,13 +756,39 @@
         }
 
         if( props.length === 0 ){ return null; }
-
       }
-
+      
       return {
         name: name,
         value: props,
         strValue: props.length === 0 ? 'none' : props.join(', '),
+        bypass: propIsBypass
+      };
+
+    } else if( type.numberList ){
+      var nums = value.split(',');
+      var parsedNums = [];
+
+      if( type.evenNumberList && nums.length % 2 !== 0 ){
+        return null;
+      }
+
+      for( var i = 0; i < nums.length; i++ ){
+        var num = parseFloat( nums[i].trim() );
+        
+        if( isNaN(num) ){ return null; }
+        
+        if( type.min !== undefined && num < type.min ){ return null; }
+        
+        if( type.max !== undefined && num > type.max ){ return null; }
+          
+        parsedNums.push( num );
+      }
+
+      return {
+        name: name,
+        value: parsedNums,
+        strValue: parsedNums.join(', '),
         bypass: propIsBypass
       };
 

@@ -602,8 +602,9 @@
 
         if( styleEnabled ){
 
-          var style = ele._private.style;
-          var rstyle = ele._private.rstyle;
+          var _p = ele._private;
+          var style = _p.style;
+          var rstyle = _p.rstyle;
           var label = style['content'].strValue;
           var fontSize = style['font-size'];
           var halign = style['text-halign'];
@@ -612,17 +613,45 @@
           var labelHeight = rstyle.labelHeight;
           var labelX = rstyle.labelX;
           var labelY = rstyle.labelY;
+          var isEdge = ele.isEdge();
+          var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
 
           if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
             var lh = labelHeight;
             var lw = labelWidth;
             var lx1, lx2, ly1, ly2;
 
-            if( ele.isEdge() ){
+            if( isEdge ){
               lx1 = labelX - lw/2;
               lx2 = labelX + lw/2;
               ly1 = labelY - lh/2;
               ly2 = labelY + lh/2;
+              
+              if( autorotate ){
+                var theta = _p.rscratch.labelAngle;
+                var cos = Math.cos( theta );
+                var sin = Math.sin( theta );
+                
+                var rotate = function( x, y ){
+                  x = x - labelX;
+                  y = y - labelY;
+                  
+                  return {
+                    x: x*cos - y*sin + labelX,
+                    y: x*sin + y*cos + labelY
+                  };
+                };
+                
+                var px1y1 = rotate( lx1, ly1 );
+                var px1y2 = rotate( lx1, ly2 );
+                var px2y1 = rotate( lx2, ly1 );
+                var px2y2 = rotate( lx2, ly2 );
+                
+                lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+                lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+                ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+                ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+              }
             } else {
               switch( halign.value ){
                 case 'left':
@@ -664,7 +693,7 @@
             y1 = ly1 < y1 ? ly1 : y1;
             y2 = ly2 > y2 ? ly2 : y2;
           }
-        } // style enabled
+        } // style enabled for labels
       } // for
 
       var noninf = function(x){

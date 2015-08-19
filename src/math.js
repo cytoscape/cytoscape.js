@@ -820,51 +820,7 @@
     return hypSq - adjSq;
   };
 
-  $$.math.pointInsidePolygon = function(
-    x, y, basePoints, centerX, centerY, width, height, direction, padding) {
-
-    //var direction = arguments[6];
-    var transformedPoints = new Array(basePoints.length);
-
-    // Gives negative angle
-    var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0]
-      + direction[1] * direction[1])));
-
-    if (direction[0] < 0) {
-      angle = angle + Math.PI / 2;
-    } else {
-      angle = -angle - Math.PI / 2;
-    }
-
-    var cos = Math.cos(-angle);
-    var sin = Math.sin(-angle);
-
-//    console.log("base: " + basePoints);
-    for (var i = 0; i < transformedPoints.length / 2; i++) {
-      transformedPoints[i * 2] =
-        width / 2 * (basePoints[i * 2] * cos
-          - basePoints[i * 2 + 1] * sin);
-
-      transformedPoints[i * 2 + 1] =
-        height / 2 * (basePoints[i * 2 + 1] * cos
-          + basePoints[i * 2] * sin);
-
-      transformedPoints[i * 2] += centerX;
-      transformedPoints[i * 2 + 1] += centerY;
-    }
-
-    var points;
-
-    if (padding > 0) {
-      var expandedLineSet = this.expandPolygon(
-        transformedPoints,
-        -padding);
-
-      points = this.joinLines(expandedLineSet);
-    } else {
-      points = transformedPoints;
-    }
-
+  $$.math.pointInsidePoints = function(x, y, points){
     var x1, y1, x2, y2;
     var y3;
 
@@ -919,6 +875,53 @@
     } else {
       return true;
     }
+  };
+  
+  $$.math.pointInsidePolygon = function(
+    x, y, basePoints, centerX, centerY, width, height, direction, padding) {
+
+    //var direction = arguments[6];
+    var transformedPoints = new Array(basePoints.length);
+
+    // Gives negative angle
+    var angle = Math.atan(direction[1] / direction[0]);
+
+    if (direction[0] < 0) {
+      angle = angle + Math.PI / 2;
+    } else {
+      angle = -angle - Math.PI / 2;
+    }
+
+    var cos = Math.cos(-angle);
+    var sin = Math.sin(-angle);
+
+//    console.log("base: " + basePoints);
+    for (var i = 0; i < transformedPoints.length / 2; i++) {
+      transformedPoints[i * 2] =
+        width / 2 * (basePoints[i * 2] * cos
+          - basePoints[i * 2 + 1] * sin);
+
+      transformedPoints[i * 2 + 1] =
+        height / 2 * (basePoints[i * 2 + 1] * cos
+          + basePoints[i * 2] * sin);
+
+      transformedPoints[i * 2] += centerX;
+      transformedPoints[i * 2 + 1] += centerY;
+    }
+
+    var points;
+
+    if (padding > 0) {
+      var expandedLineSet = this.expandPolygon(
+        transformedPoints,
+        -padding);
+
+      points = this.joinLines(expandedLineSet);
+    } else {
+      points = transformedPoints;
+    }
+
+    return $$.math.pointInsidePoints( x, y, points );
   };
 
   $$.math.joinLines = function(lineSet) {

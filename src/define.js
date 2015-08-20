@@ -657,9 +657,11 @@
         if( propertiesEmpty ){
           return this; // nothing to animate
         }
-
-        if( properties.css && isEles ){
-          properties.css = style.getPropsList( properties.css );
+        
+        if( isEles ){
+          properties.style = style.getPropsList( properties.style || properties.css );
+          
+          properties.css = undefined;
         }
 
         if( properties.renderedPosition && isEles ){

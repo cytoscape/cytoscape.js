@@ -47,14 +47,22 @@
     startBatch: function(){
       var _p = this._private;
 
-      _p.batchingStyle = _p.batchingNotify = true;
-      _p.batchStyleEles = [];
-      _p.batchNotifyEles = [];
-      _p.batchNotifyTypes = [];
+      if( _p.batchCount == null ){
+        _p.batchCount = 0;
+      }
 
-      _p.batchStyleEles.ids = {};
-      _p.batchNotifyEles.ids = {};
-      _p.batchNotifyTypes.ids = {};
+      if( _p.batchCount === 0 ){
+        _p.batchingStyle = _p.batchingNotify = true;
+        _p.batchStyleEles = [];
+        _p.batchNotifyEles = [];
+        _p.batchNotifyTypes = [];
+
+        _p.batchStyleEles.ids = {};
+        _p.batchNotifyEles.ids = {};
+        _p.batchNotifyTypes.ids = {};
+      }
+
+      _p.batchCount++;
 
       return this;
     },
@@ -62,16 +70,20 @@
     endBatch: function(){
       var _p = this._private;
 
-      // update style for dirty eles
-      _p.batchingStyle = false;
-      new $$.Collection(this, _p.batchStyleEles).updateStyle();
+      _p.batchCount--;
 
-      // notify the renderer of queued eles and event types
-      _p.batchingNotify = false;
-      this.notify({
-        type: _p.batchNotifyTypes,
-        collection: _p.batchNotifyEles
-      });
+      if( _p.batchCount === 0 ){
+        // update style for dirty eles
+        _p.batchingStyle = false;
+        new $$.Collection(this, _p.batchStyleEles).updateStyle();
+
+        // notify the renderer of queued eles and event types
+        _p.batchingNotify = false;
+        this.notify({
+          type: _p.batchNotifyTypes,
+          collection: _p.batchNotifyEles
+        });
+      }
 
       return this;
     },

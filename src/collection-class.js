@@ -1,23 +1,52 @@
 ;(function( $$ ){ 'use strict';
 
   $$.fn.eles({
-    addClass: function(classes){
-      classes = classes.split(/\s+/);
+    classes: function( classes ){
+      classes = classes.match(/\S+/g) || [];
       var self = this;
       var changed = [];
+      var classesMap = {};
 
+      // fill in classes map
       for( var i = 0; i < classes.length; i++ ){
         var cls = classes[i];
-        if( $$.is.emptyString(cls) ){ continue; }
 
-        for( var j = 0; j < self.length; j++ ){
-          var ele = self[j];
-          var hasClass = ele._private.classes[cls];
-          ele._private.classes[cls] = true;
+        classesMap[ cls ] = true;
+      }
 
-          if( !hasClass ){ // if didn't already have, add to list of changed
-            changed.push( ele );
+      // check and update each ele
+      for( var j = 0; j < self.length; j++ ){
+        var ele = self[j];
+        var _p = ele._private;
+        var eleClasses = _p.classes;
+        var changedEle = false;
+
+        // check if ele has all of the passed classes
+        for( var i = 0; i < classes.length; i++ ){
+          var cls = classes[i];
+          var eleHasClass = eleClasses[ cls ];
+
+          if( !eleHasClass ){
+            changedEle = true;
+            break;
           }
+        }
+
+        // check if ele has classes outside of those passed
+        if( !changedEle ){ for( var eleCls in eleClasses ){
+          var eleHasClass = eleClasses[ eleCls ];
+          var specdClass = classesMap[ eleCls ]; // i.e. this class is passed to the function
+
+          if( eleHasClass && !specdClass ){
+            changedEle = true;
+            break;
+          }
+        } }
+
+        if( changedEle ){
+          _p.classes = $$.util.copy( classesMap );
+
+          changed.push( ele );
         }
       }
 
@@ -32,35 +61,44 @@
       return self;
     },
 
-    hasClass: function(className){
+    addClass: function( classes ){
+      return this.toggleClass( classes, true );
+    },
+
+    hasClass: function( className ){
       var ele = this[0];
       return ( ele != null && ele._private.classes[className] ) ? true : false;
     },
 
-    toggleClass: function(classesStr, toggle){
-      var classes = classesStr.split(/\s+/);
+    toggleClass: function( classesStr, toggle ){
+      var classes = classesStr.match(/\S+/g) || [];
       var self = this;
       var changed = []; // eles who had classes changed
 
       for( var i = 0, il = self.length; i < il; i++ ){
         var ele = self[i];
+        var changedEle = false;
 
         for( var j = 0; j < classes.length; j++ ){
           var cls = classes[j];
-
-          if( $$.is.emptyString(cls) ){ continue; }
-
-          var hasClass = ele._private.classes[cls];
+          var eleClasses = ele._private.classes;
+          var hasClass = eleClasses[cls];
           var shouldAdd = toggle || (toggle === undefined && !hasClass);
 
           if( shouldAdd ){
-            ele._private.classes[cls] = true;
+            eleClasses[cls] = true;
 
-            if( !hasClass ){ changed.push(ele); }
+            if( !hasClass && !changedEle ){
+              changed.push(ele);
+              changedEle = true;
+            }
           } else { // then remove
-            ele._private.classes[cls] = false;
+            eleClasses[cls] = false;
 
-            if( hasClass ){ changed.push(ele); }
+            if( hasClass && !changedEle ){
+              changed.push(ele);
+              changedEle = true;
+            }
           }
 
         } // for j classes
@@ -77,37 +115,11 @@
       return self;
     },
 
-    removeClass: function(classes){
-      classes = classes.split(/\s+/);
-      var self = this;
-      var changed = [];
-
-      for( var i = 0; i < self.length; i++ ){
-        var ele = self[i];
-
-        for( var j = 0; j < classes.length; j++ ){
-          var cls = classes[j];
-          if( !cls || cls === '' ){ continue; }
-
-          var hasClass = ele._private.classes[cls];
-          ele._private.classes[cls] = undefined;
-
-          if( hasClass ){ // then we changed its set of classes
-            changed.push( ele );
-          }
-        }
-      }
-
-      // trigger update style on those eles that had class changes
-      if( changed.length > 0 ){
-        new $$.Collection(self._private.cy, changed).updateStyle();
-      }
-
-      self.trigger('class');
-      return self;
+    removeClass: function( classes ){
+      return this.toggleClass( classes, false );
     },
 
-    flashClass: function(classes, duration){
+    flashClass: function( classes, duration ){
       var self = this;
 
       if( duration == null ){

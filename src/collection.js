@@ -255,39 +255,84 @@
     return ele ? ele : $$.Collection(cy); // get ele or empty collection
   };
 
-  $$.elesfn.json = function(){
+  $$.elesfn.json = function( obj ){
     var ele = this.element();
-    if( ele == null ){ return undefined; }
+    var cy = this.cy();
+
+    if( ele == null && obj ){ return this; } // can't set to no eles
+
+    if( ele == null ){ return undefined; } // can't get from no eles
 
     var p = ele._private;
 
-    var json = $$.util.copy({
-      data: p.data,
-      position: p.position,
-      group: p.group,
-      bypass: p.bypass,
-      removed: p.removed,
-      selected: p.selected,
-      selectable: p.selectable,
-      locked: p.locked,
-      grabbed: p.grabbed,
-      grabbable: p.grabbable,
-      classes: ''
-    });
+    if( obj ){ // set
 
-    var classes = [];
-    for( var cls in p.classes ){
-      if( p.classes[cls] ){
-        classes.push(cls);
+      cy.startBatch();
+
+      if( obj.data ){
+        this.data( obj.data );
       }
-    }
 
-    for( var i = 0; i < classes.length; i++ ){
-      var cls = classes[i];
-      json.classes += cls + ( i < classes.length - 1 ? ' ' : '' );
-    }
+      if( obj.position ){
+        this.position( obj.position );
+      }
 
-    return json;
+      // ignore group -- immutable
+
+      var checkSwitch = function( k, trueFnName, falseFnName ){
+        var obj_k = obj[k];
+
+        if( obj_k != null && obj_k !== p[k] ){
+          if( obj_k ){
+            this[ trueFnName ]();
+          } else {
+            this[ falseFnName ]();
+          }
+        }
+      };
+
+      checkSwitch( 'removed', 'remove', 'restore' );
+
+      checkSwitch( 'selected', 'select', 'unselect' );
+
+      checkSwitch( 'selectable', 'selectify', 'unselectify' );
+
+      checkSwitch( 'locked', 'lock', 'unlock' );
+
+      checkSwitch( 'grabbable', 'grabify', 'ungrabify' );
+
+      if( obj.classes != null ){
+        this.classes( obj.classes );
+      }
+
+      cy.endBatch();
+
+      return this;
+
+    } else { // get
+
+      var json = {
+        data: $$.util.copy( p.data ),
+        position: $$.util.copy( p.position ),
+        group: p.group,
+        removed: p.removed,
+        selected: p.selected,
+        selectable: p.selectable,
+        locked: p.locked,
+        grabbable: p.grabbable,
+        classes: null
+      };
+
+      var classes = [];
+      for( var cls in p.classes ){
+        if( p.classes[cls] ){
+          classes.push(cls);
+        }
+      }
+      json.classes = classes.join(' ');
+
+      return json;
+    }
   };
 
   $$.elesfn.jsons = function(){

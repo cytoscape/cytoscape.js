@@ -551,7 +551,6 @@
       }; // function
     }, // trigger
 
-
     animated: function( fnParams ){
       var defaults = {};
       fnParams = $$.util.extend({}, defaults, fnParams);
@@ -613,6 +612,26 @@
       };
     }, // delay
 
+    delayPromise: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function delayPromiseImpl( time, complete ){
+        var cy = this._private.cy || this;
+        var self = this;
+
+        if( !cy.styleEnabled() ){ return $$.Promise.resolve(); }
+
+        return new $$.Promise(function( resolve ){
+          self.delay( time, function(){
+            if( complete ){ complete(); }
+
+            resolve();
+          } );
+        });
+      };
+    }, // delay
+
     animate: function( fnParams ){
       var defaults = {};
       fnParams = $$.util.extend({}, defaults, fnParams);
@@ -657,10 +676,10 @@
         if( propertiesEmpty ){
           return this; // nothing to animate
         }
-        
+
         if( isEles ){
           properties.style = style.getPropsList( properties.style || properties.css );
-          
+
           properties.css = undefined;
         }
 
@@ -731,6 +750,32 @@
         return this; // chaining
       };
     }, // animate
+
+    animatePromise: function( fnParams ){
+      var defaults = {};
+      fnParams = $$.util.extend({}, defaults, fnParams);
+
+      return function animatePromiseImpl( properties, params ){
+        var cy = this._private.cy || this;
+        var self = this;
+
+        params = params || {};
+
+        if( !cy.styleEnabled() ){ return $$.Promise.resolve(); }
+
+        return new $$.Promise(function( resolve ){
+          var specifiedComplete = params.complete;
+
+          params.complete = function(){
+            if( specifiedComplete ){ specifiedComplete(); }
+
+            resolve();
+          };
+
+          self.animate( properties, params );
+        });
+      };
+    }, // delay
 
     stop: function( fnParams ){
       var defaults = {};

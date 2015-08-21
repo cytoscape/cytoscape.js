@@ -712,6 +712,52 @@
             },
 
             {
+              "name": "cy.animatePromise",
+              "descr": "Animate the viewport, and return a promise that is fulfilled upon completion.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "anis",
+                      "descr": "An object containing the details of the animation.",
+                      "fields": [
+                        { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
+                        { "name": "pan", "descr": "A panning position to which the graph will be animated." },
+                        { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
+                        {
+                          "name": "fit",
+                          "descr": "An object containing fitting options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be fitted." },
+                            { "name": "padding", "descr": "Padding to use with the fitting." }
+                          ]
+                        },
+                        {
+                          "name": "center",
+                          "descr": "An object containing centring options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
+                          ]
+                        }
+                      ]
+                    },
+
+                    {
+                      "name": "options",
+                      "descr": "An object containing animation options.",
+                      "fields": [
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "cy.delay",
               "descr": "Add a delay between animations for the viewport.",
               "formats": [
@@ -723,6 +769,19 @@
                 }
               ],
               "md": "core/delay"
+            },
+
+            {
+              "name": "cy.delayPromise",
+              "descr": "Add a delay between animations for the viewport, and return a promise that is fulfilled when the delay finishes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
+                    { "name": "complete", "descr": "A function to call when the delay is complete." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -836,7 +895,7 @@
               ],
               "md": "core/png"
             },
-            
+
             {
               "name": "cy.jpg",
               "pureAliases": ["cy.jpeg"],
@@ -1825,6 +1884,37 @@
             },
 
             {
+              "name": "eles.animatePromise",
+              "descr": "Animate the elements, and return a promise that is fulfilled upon completion.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "anis",
+                      "descr": "An object containing the details of the animation.",
+                      "fields": [
+                        { "name": "position", "descr": "A position to which the elements will be animated." },
+                        { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
+                      ]
+                    },
+
+                    {
+                      "name": "options",
+                      "descr": "An object containing animation options.",
+                      "fields": [
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "eles.delay",
               "descr": "Add a delay between animations for the elements.",
               "formats": [
@@ -1836,6 +1926,19 @@
                 }
               ],
               "md": "collection/delay"
+            },
+
+            {
+              "name": "eles.delayPromise",
+              "descr": "Add a delay between animations for the elements, and return a promise that is fulfilled when the delay finishes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
+                    { "name": "complete", "descr": "A function to call when the delay is complete." }
+                  ]
+                }
+              ]
             },
 
             {

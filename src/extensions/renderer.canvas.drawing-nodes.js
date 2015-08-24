@@ -33,8 +33,8 @@
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
-    nodeWidth = this.getNodeWidth(node);
-    nodeHeight = this.getNodeHeight(node);
+    nodeWidth = node.width();
+    nodeHeight = node.height();
 
     context.lineWidth = style['border-width'].pxValue;
 
@@ -261,8 +261,8 @@
     var _p = node._private;
     var style = _p.style;
     var pieSize = style['pie-size'];
-    var nodeW = this.getNodeWidth( node );
-    var nodeH = this.getNodeHeight( node );
+    var nodeW = node.width();
+    var nodeH = node.height();
     var x = _p.position.x;
     var y = _p.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node

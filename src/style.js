@@ -171,6 +171,10 @@
       { name: 'background-color', type: t.color },
       { name: 'background-opacity', type: t.zeroOneNumber },
       { name: 'background-blacken', type: t.nOneOneNumber },
+      { name: 'padding-left', type: t.size },
+      { name: 'padding-right', type: t.size },
+      { name: 'padding-top', type: t.size },
+      { name: 'padding-bottom', type: t.size },
 
       // node border
       { name: 'border-color', type: t.color },
@@ -190,10 +194,6 @@
       { name: 'background-height', type: t.bgWH },
 
       // compound props
-      { name: 'padding-left', type: t.size },
-      { name: 'padding-right', type: t.size },
-      { name: 'padding-top', type: t.size },
-      { name: 'padding-bottom', type: t.size },
       { name: 'position', type: t.position },
       { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
 

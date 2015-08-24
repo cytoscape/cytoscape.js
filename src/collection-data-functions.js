@@ -605,7 +605,7 @@
           var _p = ele._private;
           var style = _p.style;
           var rstyle = _p.rstyle;
-          var label = style['content'].strValue;
+          var label = style['label'].strValue;
           var fontSize = style['font-size'];
           var halign = style['text-halign'];
           var valign = style['text-valign'];

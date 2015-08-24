@@ -20,7 +20,7 @@ $(function(){
 
       .selector('node')
         .css({
-          'content': 'data(id)',
+          'label': 'data(id)',
           'border-width': 3,
           'background-color': '#DDD',
           'border-color': '#555',

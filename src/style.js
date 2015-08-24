@@ -103,7 +103,7 @@
       { name: 'text-valign', type: t.valign },
       { name: 'text-halign', type: t.halign },
       { name: 'color', type: t.color },
-      { name: 'content', type: t.text },
+      { name: 'label', type: t.text },
       { name: 'text-outline-color', type: t.color },
       { name: 'text-outline-width', type: t.size },
       { name: 'text-outline-opacity', type: t.zeroOneNumber },
@@ -231,6 +231,11 @@
       { name: 'outside-texture-bg-color', type: t.color },
       { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
     ];
+    
+    // define aliases
+    var aliases = $$.style.aliases = [
+      { name: 'content', pointsTo: 'label' }
+    ];
 
     // pie backgrounds for nodes
     $$.style.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
@@ -246,6 +251,22 @@
       var prop = props[i];
 
       props[ prop.name ] = prop; // allow lookup by name
+    }
+    
+    // map aliases
+    for( var i = 0; i < aliases.length; i++ ){
+      var alias = aliases[i];
+      var pointsToProp = props[ alias.pointsTo ];
+      var aliasProp = {
+        name: alias.name,
+        alias: true,
+        pointsTo: pointsToProp
+      };
+      
+      // add alias prop for parsing
+      props.push( aliasProp );
+
+      props[ alias.name ] = aliasProp; // allow lookup by name
     }
   })();
 
@@ -302,7 +323,7 @@
           'display': 'element',
           'opacity': 1,
           'z-index': 0,
-          'content': '',
+          'label': '',
           'overlay-opacity': 0,
           'overlay-color': '#000',
           'overlay-padding': 10,
@@ -506,7 +527,15 @@
   $$.styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
+    
     var property = $$.style.properties[ name ];
+  
+    // the property may be an alias
+    if( property.alias ){
+      property = property.pointsTo;
+      name = property.name;
+    }
+    
     var passedValue = value;
     var types = $$.style.types;
 

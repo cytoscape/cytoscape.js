@@ -206,7 +206,7 @@
     _p.hasPie = hasPie;
 
     var transform = style['text-transform'].strValue;
-    var content = style['content'].strValue;
+    var content = style['label'].strValue;
     var fStyle = style['font-style'].strValue;
     var size = style['font-size'].pxValue + 'px';
     var family = style['font-family'].strValue;

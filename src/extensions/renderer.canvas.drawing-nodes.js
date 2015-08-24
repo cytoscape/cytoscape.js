@@ -33,8 +33,8 @@
     var parentOpacity = node.effectiveOpacity();
     if( parentOpacity === 0 ){ return; }
 
-    nodeWidth = node.width();
-    nodeHeight = node.height();
+    nodeWidth = node.width() + style['padding-left'].pxValue + style['padding-right'].pxValue;
+    nodeHeight = node.height() + style['padding-top'].pxValue + + style['padding-bottom'].pxValue;
 
     context.lineWidth = style['border-width'].pxValue;
 

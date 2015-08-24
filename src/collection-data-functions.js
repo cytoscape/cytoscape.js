@@ -1,8 +1,5 @@
 ;(function($$){ 'use strict';
 
-  var borderWidthMultiplier = 2 * 0.5;
-  var borderWidthAdjustment = 0;
-
   $$.fn.eles({
 
     data: $$.define.data({
@@ -174,13 +171,13 @@
         var didUpdate = false;
 
         if( style['width'].value === 'auto' ){
-          parent._private.autoWidth = bb.w + padding.left + padding.right;
+          parent._private.autoWidth = bb.w;
           pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
           didUpdate = true;
         }
 
         if( style['height'].value === 'auto' ){
-          parent._private.autoHeight = bb.h + padding.top + padding.bottom;
+          parent._private.autoHeight = bb.h;
           pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
           didUpdate = true;
         }
@@ -343,9 +340,10 @@
         if( styleEnabled ){
           var style = ele._private.style;
           var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
-          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+          var border = style['border-width'].pxValue;
+          var padding = style['padding-left'].pxValue + style['padding-right'].pxValue;
 
-          return width + border;
+          return width + border + padding;
         } else {
           return 1;
         }
@@ -395,9 +393,10 @@
         if( styleEnabled ){
           var style = ele._private.style;
           var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
-          var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+          var border = style['border-width'].pxValue;
+          var padding = style['padding-top'].pxValue + style['padding-bottom'].pxValue;
         
-          return height + border;
+          return height + border + padding;
         } else {
           return 1;
         }

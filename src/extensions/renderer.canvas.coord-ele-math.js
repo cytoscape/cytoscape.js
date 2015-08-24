@@ -612,7 +612,7 @@
   };
 
   CRp.recalculateNodeLabelProjection = function( node ){
-    var content = node._private.style['content'].strValue;
+    var content = node._private.style['label'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;
@@ -659,7 +659,7 @@
   };
 
   CRp.recalculateEdgeLabelProjection = function( edge ){
-    var content = edge._private.style['content'].strValue;
+    var content = edge._private.style['label'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
     var textX, textY;
@@ -717,7 +717,7 @@
 
   CRp.getLabelText = function( ele ){
     var style = ele._private.style;
-    var text = ele._private.style['content'].strValue;
+    var text = ele._private.style['label'].strValue;
     var textTransform = style['text-transform'].value;
     var rscratch = ele._private.rscratch;
 

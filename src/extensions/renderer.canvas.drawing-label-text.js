@@ -5,7 +5,7 @@
 
   // Draw edge text
   CRp.drawEdgeText = function(context, edge) {
-    var text = edge._private.style['content'].strValue;
+    var text = edge._private.style['label'].strValue;
 
     if( !text || text.match(/^\s+$/) ){
       return;
@@ -50,7 +50,7 @@
 
   // Draw node text
   CRp.drawNodeText = function(context, node) {
-    var text = node._private.style['content'].strValue;
+    var text = node._private.style['label'].strValue;
 
     if ( !text || text.match(/^\s+$/) ) {
       return;

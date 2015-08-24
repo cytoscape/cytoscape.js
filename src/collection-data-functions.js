@@ -318,13 +318,22 @@
     // convenience function to get a numerical value for the width of the node/edge
     width: function(){
       var ele = this[0];
-      var cy = ele._private.cy;
+      var _p = ele._private;
+      var cy = _p.cy;
       var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
         if( styleEnabled ){
-          var w = ele._private.style.width;
-          return w.strValue === 'auto' ? ele._private.autoWidth : w.pxValue;
+          var w = _p.style.width;
+          
+          switch( w.strValue ){
+            case 'auto':
+              return _p.autoWidth;
+            case 'label':
+              return _p.rstyle.labelWidth || 1;
+            default:
+              return w.pxValue;
+          }
         } else {
           return 1;
         }
@@ -333,13 +342,14 @@
 
     outerWidth: function(){
       var ele = this[0];
-      var cy = ele._private.cy;
+      var _p = ele._private;
+      var cy = _p.cy;
       var styleEnabled = cy._private.styleEnabled;
 
       if( ele ){
         if( styleEnabled ){
-          var style = ele._private.style;
-          var width = style.width.strValue === 'auto' ? ele._private.autoWidth : style.width.pxValue;
+          var style = _p.style;
+          var width = ele.width();
           var border = style['border-width'].pxValue;
           var padding = style['padding-left'].pxValue + style['padding-right'].pxValue;
 
@@ -371,13 +381,22 @@
     // convenience function to get a numerical value for the height of the node
     height: function(){
       var ele = this[0];
-      var cy = ele._private.cy;
+      var _p = ele._private;
+      var cy = _p.cy;
       var styleEnabled = cy._private.styleEnabled;
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele && _p.group === 'nodes' ){
         if( styleEnabled ){
-          var h = ele._private.style.height;
-          return h.strValue === 'auto' ? ele._private.autoHeight : h.pxValue;
+          var h = _p.style.height;
+          
+          switch( h.strValue ){
+            case 'auto':
+              return _p.autoHeight;
+            case 'label':
+              return _p.rstyle.labelHeight || 1;
+            default:
+              return h.pxValue;
+          }
         } else {
           return 1;
         }
@@ -386,13 +405,14 @@
 
     outerHeight: function(){
       var ele = this[0];
-      var cy = ele._private.cy;
+      var _p = ele._private;
+      var cy = _p.cy;
       var styleEnabled = cy._private.styleEnabled;
 
-      if( ele && ele._private.group === 'nodes' ){
+      if( ele && _p.group === 'nodes' ){
         if( styleEnabled ){
-          var style = ele._private.style;
-          var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
+          var style = _p.style;
+          var height = ele.height();
           var border = style['border-width'].pxValue;
           var padding = style['padding-top'].pxValue + style['padding-bottom'].pxValue;
         

@@ -51,7 +51,7 @@
       nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
       nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
       position: { enums: ['parent', 'origin'] },
-      autoSize: { number: true, min: 0, enums: ['auto'] },
+      nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
       number: { number: true },
       size: { number: true, min: 0 },
       bgSize: { number: true, min: 0, allowPercent: true },
@@ -164,8 +164,8 @@
       { name: 'transition-delay', type: t.time },
 
       // node body
-      { name: 'height', type: t.autoSize },
-      { name: 'width', type: t.autoSize },
+      { name: 'height', type: t.nodeSize },
+      { name: 'width', type: t.nodeSize },
       { name: 'shape', type: t.nodeShape },
       { name: 'shape-polygon-points', type: t.polygonPointList },
       { name: 'background-color', type: t.color },

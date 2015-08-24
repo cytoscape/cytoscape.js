@@ -396,11 +396,11 @@
           var style = ele._private.style;
           var height = style.height.strValue === 'auto' ? ele._private.autoHeight : style.height.pxValue;
           var border = style['border-width'] ? style['border-width'].pxValue * borderWidthMultiplier + borderWidthAdjustment : 0;
+        
+          return height + border;
         } else {
           return 1;
         }
-
-        return height + border;
       }
     },
 

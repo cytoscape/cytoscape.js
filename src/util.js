@@ -4,6 +4,12 @@
 
   $$.util = {
 
+    falsify: function(){ return false; },
+
+    zeroify: function(){ return 0; },
+
+    noop: function(){},
+
     // the jquery extend() function
     // NB: modified to use $$.is etc since we can't use jquery functions
     extend: function() {

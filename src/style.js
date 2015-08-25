@@ -75,7 +75,7 @@
       textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
       nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'] },
       compoundIncludeLabels: { enums: ['include', 'exclude'] },
-      arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
+      arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
       visibility: { enums: ['hidden', 'visible'] },
@@ -231,7 +231,7 @@
       { name: 'outside-texture-bg-color', type: t.color },
       { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
     ];
-    
+
     // define aliases
     var aliases = $$.style.aliases = [
       { name: 'content', pointsTo: 'label' }
@@ -252,7 +252,7 @@
 
       props[ prop.name ] = prop; // allow lookup by name
     }
-    
+
     // map aliases
     for( var i = 0; i < aliases.length; i++ ){
       var alias = aliases[i];
@@ -262,7 +262,7 @@
         alias: true,
         pointsTo: pointsToProp
       };
-      
+
       // add alias prop for parsing
       props.push( aliasProp );
 
@@ -527,15 +527,15 @@
   $$.styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
-    
+
     var property = $$.style.properties[ name ];
-  
+
     // the property may be an alias
     if( property.alias ){
       property = property.pointsTo;
       name = property.name;
     }
-    
+
     var passedValue = value;
     var types = $$.style.types;
 
@@ -786,7 +786,7 @@
 
         if( props.length === 0 ){ return null; }
       }
-      
+
       return {
         name: name,
         value: props,
@@ -804,13 +804,13 @@
 
       for( var i = 0; i < nums.length; i++ ){
         var num = parseFloat( nums[i].trim() );
-        
+
         if( isNaN(num) ){ return null; }
-        
+
         if( type.min !== undefined && num < type.min ){ return null; }
-        
+
         if( type.max !== undefined && num > type.max ){ return null; }
-          
+
         parsedNums.push( num );
       }
 

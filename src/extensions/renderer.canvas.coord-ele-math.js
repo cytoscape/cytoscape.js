@@ -211,48 +211,48 @@
 
       // adjust bb w/ angle
       if( _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
-        
+
         var rstyle = _p.rstyle;
         var lw = rstyle.labelWidth + 2*th;
         var lh = rstyle.labelHeight + 2*th;
         var lx = rstyle.labelX;
         var ly = rstyle.labelY;
-        
+
         var theta = _p.rscratch.labelAngle;
         var cos = Math.cos( theta );
         var sin = Math.sin( theta );
-        
+
         var rotate = function( x, y ){
           x = x - lx;
           y = y - ly;
-          
+
           return {
             x: x*cos - y*sin + lx,
             y: x*sin + y*cos + ly
           };
         };
-        
+
         var lx1 = lx - lw/2;
         var lx2 = lx + lw/2;
         var ly1 = ly - lh/2;
         var ly2 = ly + lh/2;
-        
+
         var px1y1 = rotate( lx1, ly1 );
         var px1y2 = rotate( lx1, ly2 );
         var px2y1 = rotate( lx2, ly1 );
         var px2y2 = rotate( lx2, ly2 );
-        
+
         var points = [
-          px1y1.x, px1y1.y, 
-          px2y1.x, px2y1.y, 
+          px1y1.x, px1y1.y,
+          px2y1.x, px2y1.y,
           px2y2.x, px2y2.y,
-          px1y2.x, px1y2.y 
+          px1y2.x, px1y2.y
         ];
 
         if( $$.math.pointInsidePoints( x, y, points ) ){
           near.push( ele );
         }
-        
+
       } else {
         var bb = ele.boundingBox({
           includeLabels: true,
@@ -267,7 +267,7 @@
         bb.y2 += th;
         bb.w = bb.x2 - bb.x1;
         bb.h = bb.y2 - bb.y1;
-        
+
         if( $$.math.inBoundingBox( bb, x, y ) ){
           near.push( ele );
         }
@@ -437,10 +437,10 @@
         return 'rectangle';
       }
     }
-    
+
     if( shape === 'polygon' ){
       var points = style['shape-polygon-points'].value;
-      
+
       return CR.nodeShapes.makePolygon( points ).name;
     }
 
@@ -947,7 +947,7 @@
       }
     }
 
-    var src, tgt, src_p, tgt_p, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcBorder, tgtBorder;
+    var src, tgt, src_p, tgt_p, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape;
     var vectorNormInverse;
     var badBezier;
 
@@ -964,7 +964,7 @@
 
       src = pairEdges[0]._private.source;
       tgt = pairEdges[0]._private.target;
-      
+
       src_p = src._private;
       tgt_p = tgt._private;
 
@@ -988,9 +988,6 @@
       srcShape = CR.nodeShapes[ this.getNodeShape(src) ];
       tgtShape = CR.nodeShapes[ this.getNodeShape(tgt) ];
 
-      srcBorder = src_p.style['border-width'].pxValue;
-      tgtBorder = tgt_p.style['border-width'].pxValue;
-
       badBezier = false;
 
 
@@ -1004,7 +1001,7 @@
           srcH,
           tgtPos.x,
           tgtPos.y,
-          srcBorder / 2
+          0
         );
 
         // pt outside tgt shape to calc distance/displacement from src to tgt
@@ -1015,7 +1012,7 @@
           tgtH,
           srcPos.x,
           srcPos.y,
-          tgtBorder / 2
+          0
         );
 
         var midptSrcPts = {
@@ -1045,8 +1042,8 @@
 
         // if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
         if(
-          tgtShape.checkPoint( srcOutside[0], srcOutside[1], tgtBorder/2, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
-          srcShape.checkPoint( tgtOutside[0], tgtOutside[1], srcBorder/2, srcW, srcH, srcPos.x, srcPos.y )
+          tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
+          srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
         ){
           vectorNormInverse = {};
           badBezier = true;
@@ -1287,7 +1284,7 @@
               srcH,
               cpProj.x,
               cpProj.y,
-              srcBorder / 2
+              0
             );
 
             if( closeStartACp ){
@@ -1326,7 +1323,7 @@
               tgtH,
               cpProj.x,
               cpProj.y,
-              tgtBorder / 2
+              0
             );
 
             if( closeEndACp ){
@@ -1428,7 +1425,7 @@
 
     var source = edge.source()[0];
     var target = edge.target()[0];
-    
+
     var src_p = source._private;
     var tgt_p = target._private;
 
@@ -1437,9 +1434,6 @@
 
     var tgtArShape = edge._private.style['target-arrow-shape'].value;
     var srcArShape = edge._private.style['source-arrow-shape'].value;
-
-    var tgtBorderW = tgt_p.style['border-width'].pxValue;
-    var srcBorderW = src_p.style['border-width'].pxValue;
 
     var rs = edge._private.rscratch;
 
@@ -1454,7 +1448,7 @@
         target.outerHeight(),
         cp[0],
         cp[1],
-        tgtBorderW / 2
+        0
       );
 
       var arrowEnd = $$.math.shortenIntersection(intersect, cp,
@@ -1477,7 +1471,7 @@
         source.outerHeight(),
         cp[0], //halfPointX,
         cp[1], //halfPointY
-        srcBorderW / 2
+        0
       );
 
       var arrowStart = $$.math.shortenIntersection(intersect, cp,
@@ -1501,7 +1495,7 @@
         target.outerHeight(),
         srcPos.x,
         srcPos.y,
-        tgtBorderW / 2);
+        0);
 
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
@@ -1530,7 +1524,7 @@
         source.outerHeight(),
         target.position().x,
         target.position().y,
-        srcBorderW / 2);
+        0);
 
       if (intersect.length === 0) {
         rs.noArrowPlacement = true;
@@ -1570,12 +1564,12 @@
       intersect = CR.nodeShapes[
         this.getNodeShape(target)].intersectLine(
         tgtPos.x,
-        target._private.position.y,
+        tgtPos.y,
         target.outerWidth(),
         target.outerHeight(),
         cp[0], //halfPointX,
         cp[1], //halfPointY
-        tgtBorderW / 2
+        0
       );
 
       /*
@@ -1596,13 +1590,13 @@
 
       intersect = CR.nodeShapes[
         this.getNodeShape(source)].intersectLine(
-        source._private.position.x,
-        source._private.position.y,
+        srcPos.x,
+        srcPos.y,
         source.outerWidth(),
         source.outerHeight(),
         cp[0], //halfPointX,
         cp[1], //halfPointY
-        srcBorderW / 2
+        0
       );
 
       var arrowStart = $$.math.shortenIntersection(

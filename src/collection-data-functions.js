@@ -1,5 +1,7 @@
 ;(function($$){ 'use strict';
 
+  var fn = $$.elesfn;
+
   $$.fn.eles({
 
     data: $$.define.data({
@@ -315,132 +317,6 @@
       return this; // chaining
     },
 
-    // convenience function to get a numerical value for the width of the node/edge
-    width: function(){
-      var ele = this[0];
-      var _p = ele._private;
-      var cy = _p.cy;
-      var styleEnabled = cy._private.styleEnabled;
-
-      if( ele ){
-        if( styleEnabled ){
-          var w = _p.style.width;
-          
-          switch( w.strValue ){
-            case 'auto':
-              return _p.autoWidth;
-            case 'label':
-              return _p.rstyle.labelWidth || 1;
-            default:
-              return w.pxValue;
-          }
-        } else {
-          return 1;
-        }
-      }
-    },
-
-    outerWidth: function(){
-      var ele = this[0];
-      var _p = ele._private;
-      var cy = _p.cy;
-      var styleEnabled = cy._private.styleEnabled;
-
-      if( ele ){
-        if( styleEnabled ){
-          var style = _p.style;
-          var width = ele.width();
-          var border = style['border-width'].pxValue;
-          var padding = style['padding-left'].pxValue + style['padding-right'].pxValue;
-
-          return width + border + padding;
-        } else {
-          return 1;
-        }
-      }
-    },
-
-    renderedWidth: function(){
-      var ele = this[0];
-
-      if( ele ){
-        var width = ele.width();
-        return width * this.cy().zoom();
-      }
-    },
-
-    renderedOuterWidth: function(){
-      var ele = this[0];
-
-      if( ele ){
-        var owidth = ele.outerWidth();
-        return owidth * this.cy().zoom();
-      }
-    },
-
-    // convenience function to get a numerical value for the height of the node
-    height: function(){
-      var ele = this[0];
-      var _p = ele._private;
-      var cy = _p.cy;
-      var styleEnabled = cy._private.styleEnabled;
-
-      if( ele && _p.group === 'nodes' ){
-        if( styleEnabled ){
-          var h = _p.style.height;
-          
-          switch( h.strValue ){
-            case 'auto':
-              return _p.autoHeight;
-            case 'label':
-              return _p.rstyle.labelHeight || 1;
-            default:
-              return h.pxValue;
-          }
-        } else {
-          return 1;
-        }
-      }
-    },
-
-    outerHeight: function(){
-      var ele = this[0];
-      var _p = ele._private;
-      var cy = _p.cy;
-      var styleEnabled = cy._private.styleEnabled;
-
-      if( ele && _p.group === 'nodes' ){
-        if( styleEnabled ){
-          var style = _p.style;
-          var height = ele.height();
-          var border = style['border-width'].pxValue;
-          var padding = style['padding-top'].pxValue + style['padding-bottom'].pxValue;
-        
-          return height + border + padding;
-        } else {
-          return 1;
-        }
-      }
-    },
-
-    renderedHeight: function(){
-      var ele = this[0];
-
-      if( ele && ele._private.group === 'nodes' ){
-        var height = ele.height();
-        return height * this.cy().zoom();
-      }
-    },
-
-    renderedOuterHeight: function(){
-      var ele = this[0];
-
-      if( ele && ele._private.group === 'nodes' ){
-        var oheight = ele.outerHeight();
-        return oheight * this.cy().zoom();
-      }
-    },
-
     renderedBoundingBox: function( options ){
       var bb = this.boundingBox( options );
       var cy = this.cy();
@@ -645,27 +521,27 @@
               lx2 = labelX + lw/2;
               ly1 = labelY - lh/2;
               ly2 = labelY + lh/2;
-              
+
               if( autorotate ){
                 var theta = _p.rscratch.labelAngle;
                 var cos = Math.cos( theta );
                 var sin = Math.sin( theta );
-                
+
                 var rotate = function( x, y ){
                   x = x - labelX;
                   y = y - labelY;
-                  
+
                   return {
                     x: x*cos - y*sin + labelX,
                     y: x*sin + y*cos + labelY
                   };
                 };
-                
+
                 var px1y1 = rotate( lx1, ly1 );
                 var px1y2 = rotate( lx1, ly2 );
                 var px2y1 = rotate( lx2, ly1 );
                 var px2y2 = rotate( lx2, ly2 );
-                
+
                 lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
                 lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
                 ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
@@ -739,8 +615,87 @@
     }
   });
 
+  var defineDimFns = function( opts ){
+    opts.uppercaseName = $$.util.capitalize( opts.name );
+    opts.autoName = 'auto' + opts.uppercaseName;
+    opts.labelName = 'label' + opts.uppercaseName;
+    opts.outerName = 'outer' + opts.uppercaseName;
+    opts.uppercaseOuterName = $$.util.capitalize( opts.outerName );
+
+    fn[ opts.name ] = function dimImpl(){
+      var ele = this[0];
+      var _p = ele._private;
+      var cy = _p.cy;
+      var styleEnabled = cy._private.styleEnabled;
+
+      if( ele ){
+        if( styleEnabled ){
+          var d = _p.style[ opts.name ];
+
+          switch( d.strValue ){
+            case 'auto':
+              return _p[ opts.autoName ] || 0;
+            case 'label':
+              return _p.rstyle[ opts.labelName ] || 0;
+            default:
+              return d.pxValue;
+          }
+        } else {
+          return 1;
+        }
+      }
+    };
+
+    fn[ 'outer' + opts.uppercaseName ] = function outerDimImpl(){
+      var ele = this[0];
+      var _p = ele._private;
+      var cy = _p.cy;
+      var styleEnabled = cy._private.styleEnabled;
+
+      if( ele ){
+        if( styleEnabled ){
+          var style = _p.style;
+          var dim = ele[ opts.name ]();
+          var border = style['border-width'].pxValue;
+          var padding = style[ opts.paddings[0] ].pxValue + style[ opts.paddings[1] ].pxValue;
+
+          return dim + border + padding;
+        } else {
+          return 1;
+        }
+      }
+    };
+
+    fn[ 'rendered' + opts.uppercaseName ] = function renderedDimImpl(){
+      var ele = this[0];
+
+      if( ele ){
+        var d = ele[ opts.name ]();
+        return d * this.cy().zoom();
+      }
+    };
+
+    fn[ 'rendered' + opts.uppercaseOuterName ] = function renderedOuterDimImpl(){
+      var ele = this[0];
+
+      if( ele ){
+        var od = ele[ opts.outerName ]();
+        return owidth * this.cy().zoom();
+      }
+    };
+  };
+
+  defineDimFns({
+    name: 'width',
+    paddings: ['padding-left', 'padding-right']
+  });
+
+  defineDimFns({
+    name: 'height',
+    paddings: ['padding-top', 'padding-bottom']
+  });
+
   // aliases
-  var fn = $$.elesfn;
   fn.attr = fn.data;
   fn.removeAttr = fn.removeData;
   fn.modelPosition = fn.point = fn.position;

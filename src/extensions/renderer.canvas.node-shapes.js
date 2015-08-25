@@ -26,9 +26,10 @@
 
   nodeShapes['ellipse'] = {
     name: 'ellipse',
-    
+
     draw: function(context, centerX, centerY, width, height) {
-      nodeShapes['ellipse'].drawPath(context, centerX, centerY, width, height);
+      this.drawPath(context, centerX, centerY, width, height);
+
       context.fill();
     },
 
@@ -49,6 +50,7 @@
               context.lineTo(xPos, yPos);
           }
       }
+      
       context.closePath();
 
     },
@@ -89,7 +91,7 @@
   function generatePolygon( name, points ){
     return ( nodeShapes[name] = {
       name: name,
-      
+
       points: points,
 
       draw: function(context, centerX, centerY, width, height) {
@@ -143,7 +145,7 @@
 
   nodeShapes['roundrectangle'] = {
     name: 'roundrectangle',
-    
+
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 
     draw: function(context, centerX, centerY, width, height) {
@@ -317,21 +319,21 @@
     1, 1,
     -0.333, 1
   ] );
-  
+
   nodeShapes.makePolygon = function( points ){
-    
+
     // use caching on user-specified polygons so they are as fast as native shapes
-    
+
     var key = points.join('$');
     var name = 'polygon-' + key;
     var shape;
-    
+
     if( (shape = nodeShapes[name]) ){ // got cached shape
       return shape;
     }
-    
+
     // create and cache new shape
-    return generatePolygon( name, points );  
+    return generatePolygon( name, points );
   };
-  
+
 })( cytoscape );

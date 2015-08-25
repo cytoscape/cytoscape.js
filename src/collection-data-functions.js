@@ -413,6 +413,13 @@
           //////////////////////////////////////////////
 
           var rstyle = _p.rstyle || {};
+          var w = 0;
+          var wHalf = 0;
+
+          if( styleEnabled ){
+            w = style['width'].pxValue;
+            wHalf = w/2;
+          }
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
@@ -431,6 +438,12 @@
             ey2 = temp;
           }
 
+          // take into account edge width
+          ex1 -= wHalf;
+          ex2 += wHalf;
+          ey1 -= wHalf;
+          ey2 += wHalf;
+
           x1 = ex1 < x1 ? ex1 : x1;
           x2 = ex2 > x2 ? ex2 : x2;
           y1 = ey1 < y1 ? ey1 : y1;
@@ -441,9 +454,6 @@
 
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
-
-            var w = style['width'].pxValue;
-            var wHalf = w/2;
 
             for( var j = 0; j < bpts.length; j++ ){
               var bpt = bpts[j];

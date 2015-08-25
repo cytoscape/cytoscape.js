@@ -66,7 +66,7 @@
       roughCollide: bbCollide,
 
       draw: function( context, size, angle, translation ){
-        var points = arrowShapes['arrow'].points;
+        var points = this.points;
 
         for( var i = 0; i < points.length / 2; i++ ){
           var pt = transform( points[i * 2], points[i * 2 + 1], size, angle, translation );
@@ -133,6 +133,10 @@
       var ctrlPtTrans = transform( ctrlPt[0], ctrlPt[1], size, angle, translation );
 
       context.quadraticCurveTo( ctrlPtTrans.x, ctrlPtTrans.y, firstPt.x, firstPt.y );
+    },
+
+    gap: function( edge ){
+      return edge._private.style['width'].pxValue;
     }
   } );
 
@@ -179,6 +183,19 @@
 
         context.lineTo( pt.x, pt.y );
       }
+    }
+  } );
+
+  defineArrowShape( 'vee', {
+    points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      0, -0.15,
+    ],
+
+    gap: function( edge ){
+      return edge._private.style['width'].pxValue;
     }
   } );
 

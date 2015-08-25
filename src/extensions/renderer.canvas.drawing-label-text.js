@@ -199,6 +199,19 @@
       valign = 'center';
     }
 
+    if( element.isNode() ){
+      var pLeft = style['padding-left'].pxValue;
+      var pRight = style['padding-right'].pxValue;
+      var pTop = style['padding-top'].pxValue;
+      var pBottom = style['padding-bottom'].pxValue;
+
+      textX += pLeft/2;
+      textX -= pRight/2;
+
+      textY += pTop/2;
+      textY -= pBottom/2;
+    }
+
     if ( text != null && !isNaN(textX) && !isNaN(textY)) {
       var backgroundOpacity = style['text-background-opacity'].value;
       var borderOpacity = style['text-border-opacity'].value;

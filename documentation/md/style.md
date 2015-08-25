@@ -145,8 +145,8 @@ In addition to specifying the value of a property outright, the developer may al
 
 These properties affect the style of a node's body:
 
- * **`width`** : The width of the node's body.
- * **`height`** : The height of the node's body.
+ * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
+ * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
  * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`, `diamond`, `vee`, `rhomboid`, or `polygon` (custom polygon specified via `shape-polygon-points`).  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
  * **`shape-polygon-points`** : A comma-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1, y1,   x2, y2,   x3, y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
  * **`background-color`** : The colour of the node's body.
@@ -157,12 +157,15 @@ These properties affect the style of a node's body:
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
+These are padding properties.  A padding defines an addition to a node's dimension.  For example, `padding-left` adds to a node's outer (i.e. total) width.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+
+* **`padding-left`** : The amount of left padding.
+* **`padding-right`** : The amount of right padding.
+* **`padding-top`** : The amount of top padding.
+* **`padding-bottom`** : The amount of bottom padding.
+
 These node body properties only apply to compound nodes (i.e. nodes who have embedded children):
 
- * **`padding-left`** : The size of the area on the left of the compound node that can not be occupied by child nodes.
- * **`padding-right`** : The size of the area on the right of the compound node that can not be occupied by child nodes.
- * **`padding-top`** : The size of the area on the top of the compound node that can not be occupied by child nodes.
- * **`padding-bottom`** : The size of the area on the bottom of the compound node that can not be occupied by child nodes.
  * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
 
 

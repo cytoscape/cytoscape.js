@@ -64,8 +64,12 @@
         var prop = $$.style.properties[i];
         var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
 
-        if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
-          styleProp = this.parse(prop.name, styleProp);
+        if( styleProp !== undefined ){ // then make a prop of it
+          if( $$.is.plainObject( styleProp ) ){
+            styleProp = this.parse( prop.name, styleProp.strValue );
+          } else {
+            styleProp = this.parse( prop.name, styleProp );
+          }
         }
 
         if( styleProp ){

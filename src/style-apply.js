@@ -488,8 +488,8 @@
   // diffProps : { name => { prev, next } }
   $$.styfn.updateTransitions = function( ele, diffProps, isBypass ){
     var self = this;
-    var style = ele._private.style;
-
+    var _p = ele._private;
+    var style = _p.style;
     var props = style['transition-property'].value;
     var duration = style['transition-duration'].msValue;
     var delay = style['transition-delay'].msValue;
@@ -547,7 +547,7 @@
       // can't transition if there's nothing previous to transition from
       if( !anyPrev ){ return; }
 
-      ele._private.transitioning = true;
+      _p.transitioning = true;
 
       ele.stop();
 
@@ -559,22 +559,23 @@
         css: css
       }, {
         duration: duration,
+        easing: style['transition-timing-function'].value,
         queue: false,
         complete: function(){
           if( !isBypass ){
             self.removeBypasses( ele, props );
           }
 
-          ele._private.transitioning = false;
+          _p.transitioning = false;
         }
       });
 
-    } else if( ele._private.transitioning ){
+    } else if( _p.transitioning ){
       ele.stop();
 
       this.removeBypasses( ele, props );
 
-      ele._private.transitioning = false;
+      _p.transitioning = false;
     }
   };
 

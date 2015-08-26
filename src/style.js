@@ -93,7 +93,21 @@
       propList: { propList: true },
       angle: { number: true, units: 'deg|rad' },
       textRotation: { enums: ['none', 'autorotate'] },
-      polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 }
+      polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 },
+      easing: {
+        regex: '^(?:(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\))',
+        enums: [
+          'linear',
+          'ease', 'ease-in', 'ease-out', 'ease-in-out',
+          'ease-in-sine', 'ease-out-sine', 'ease-in-out-sine',
+          'ease-in-quad', 'ease-out-quad', 'ease-in-out-quad',
+          'ease-in-cubic', 'ease-out-cubic', 'ease-in-out-cubic',
+          'ease-in-quart', 'ease-out-quart', 'ease-in-out-quart',
+          'ease-in-quint', 'ease-out-quint', 'ease-in-out-quint',
+          'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo',
+          'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ'
+        ]
+      }
     };
 
     // define visual style properties
@@ -162,6 +176,7 @@
       { name: 'transition-property', type: t.propList },
       { name: 'transition-duration', type: t.time },
       { name: 'transition-delay', type: t.time },
+      { name: 'transition-timing-function', type: t.easing },
 
       // node body
       { name: 'height', type: t.nodeSize },
@@ -525,22 +540,20 @@
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
   $$.styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
-
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
 
     var property = $$.style.properties[ name ];
+    var passedValue = value;
+    var types = $$.style.types;
+
+    if( !property ){ return null; } // return null on property of unknown name
+    if( value === undefined || value === null ){ return null; } // can't assign null
 
     // the property may be an alias
     if( property.alias ){
       property = property.pointsTo;
       name = property.name;
     }
-
-    var passedValue = value;
-    var types = $$.style.types;
-
-    if( !property ){ return null; } // return null on property of unknown name
-    if( value === undefined || value === null ){ return null; } // can't assign null
 
     var valueIsString = $$.is.string(value);
     if( valueIsString ){ // trim the value to make parsing easier
@@ -673,6 +686,24 @@
       };
     }
 
+    // several types also allow enums
+    var checkEnums = function(){
+      for( var i = 0; i < type.enums.length; i++ ){
+        var en = type.enums[i];
+
+        if( en === value ){
+          return {
+            name: name,
+            value: value,
+            strValue: '' + value,
+            bypass: propIsBypass
+          };
+        }
+      }
+
+      return null;
+    };
+
     // check the type and return the appropriate object
     if( type.number ){
       var units;
@@ -714,20 +745,7 @@
       if( isNaN(value) && type.enums !== undefined ){
         value = passedValue;
 
-        for( var i = 0; i < type.enums.length; i++ ){
-          var en = type.enums[i];
-
-          if( en === value ){
-            return {
-              name: name,
-              value: value,
-              strValue: '' + value,
-              bypass: propIsBypass
-            };
-          }
-        }
-
-        return null; // failed on enum after failing on number
+        return checkEnums();
       }
 
       // check if value must be an integer
@@ -833,22 +851,6 @@
         bypass: propIsBypass
       };
 
-    } else if( type.enums ){
-      for( var i = 0; i < type.enums.length; i++ ){
-        var en = type.enums[i];
-
-        if( en === value ){
-          return {
-            name: name,
-            value: value,
-            strValue: '' + value,
-            bypass: propIsBypass
-          };
-        }
-      }
-
-      return null;
-
     } else if( type.regex ){
       var regex = new RegExp( type.regex ); // make a regex from the type
       var m = regex.exec( value );
@@ -860,7 +862,11 @@
           strValue: '' + value,
           bypass: propIsBypass
         };
-      } else { // regex doesn't match
+
+      } else if( type.enums ){
+        return checkEnums();
+
+      } else { // regex & enums don't match
         return null; // didn't match the regex so the value is bogus
       }
 
@@ -872,6 +878,9 @@
         strValue: '' + value,
         bypass: propIsBypass
       };
+
+    } else if( type.enums ){ // check enums last because it's a combo type in others
+      return checkEnums();
 
     } else {
       return null; // not a type we can handle

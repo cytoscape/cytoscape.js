@@ -20,7 +20,8 @@
     "panBy": "#notation/position",
     "css": "#style",
     "style": "#style",
-    "stylesheet": "#style"
+    "stylesheet": "#style",
+    "easing": "#style/transition-animation"
   },
 
   "sections": [
@@ -702,7 +703,8 @@
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." },
+                        { "name": "easing", "descr": "An easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
@@ -1874,7 +1876,8 @@
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." },
+                        { "name": "easing", "descr": "An easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]

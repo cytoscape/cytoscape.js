@@ -805,6 +805,12 @@
 
   };
 
+  $$.util._staticEmptyObject = {};
+
+  $$.util.staticEmptyObject = function(){
+    return $$.util._staticEmptyObject;
+  };
+
   $$.util.camel2dash = $$.util.memoize( function( str ){
     var ret = [];
 

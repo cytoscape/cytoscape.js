@@ -212,9 +212,13 @@
     },
 
     destroy: function(){
-      this.notify({ type: 'destroy' }); // destroy the renderer
+      var cy = this;
 
-      var domEle = this.container();
+      cy.stopAnimationLoop();
+
+      cy.notify({ type: 'destroy' }); // destroy the renderer
+
+      var domEle = cy.container();
       var parEle = domEle.parentNode;
       if( parEle ){
         try{
@@ -224,7 +228,7 @@
         }
       }
 
-      return this;
+      return cy;
     },
 
     getElementById: function( id ){

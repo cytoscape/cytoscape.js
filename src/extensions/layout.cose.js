@@ -228,7 +228,7 @@
       temperature  : options.initialTemp,
       clientWidth  : cy.width(),
       clientHeight : cy.width(),
-      boundingBox  : $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      boundingBox  : $$.math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
                        x1: 0, y1: 0, w: cy.width(), h: cy.height()
                      } )
     };

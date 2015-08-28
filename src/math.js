@@ -1,8 +1,8 @@
 ;(function($$){ 'use strict';
 
-  $$.math = {};
+  var $$m = $$.math = {};
 
-  $$.math.signum = function(x){
+  $$m.signum = function(x){
     if( x > 0 ){
       return 1;
     } else if( x < 0 ){
@@ -12,26 +12,55 @@
     }
   };
 
-  $$.math.distance = function( p1, p2 ){
+  $$m.distance = function( p1, p2 ){
+    return Math.sqrt( $$m.sqDistance(p1, p2) );
+  };
+
+  $$m.sqDistance = function( p1, p2 ){
     var dx = p2.x - p1.x;
     var dy = p2.y - p1.y;
 
-    return Math.sqrt( dx*dx + dy*dy );
+    return dx*dx + dy*dy;
   };
 
   // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-  $$.math.qbezierAt = function(p0, p1, p2, t){
+  $$m.qbezierAt = function(p0, p1, p2, t){
     return (1 - t)*(1 - t)*p0 + 2*(1 - t)*t*p1 + t*t*p2;
   };
 
-  $$.math.qbezierPtAt = function(p0, p1, p2, t){
+  $$m.qbezierPtAt = function(p0, p1, p2, t){
     return {
-      x: $$.math.qbezierAt( p0.x, p1.x, p2.x, t ),
-      y: $$.math.qbezierAt( p0.y, p1.y, p2.y, t )
+      x: $$m.qbezierAt( p0.x, p1.x, p2.x, t ),
+      y: $$m.qbezierAt( p0.y, p1.y, p2.y, t )
     };
   };
 
-  $$.math.boundingBoxesIntersect = function( bb1, bb2 ){
+  // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
+  $$m.makeBoundingBox = function( bb ){
+    if( bb.x1 != null && bb.y1 != null ){
+      if( bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1 ){
+        return {
+          x1: bb.x1,
+          y1: bb.y1,
+          x2: bb.x2,
+          y2: bb.y2,
+          w: bb.x2 - bb.x1,
+          h: bb.y2 - bb.y1
+        };
+      } else if( bb.w != null && bb.h != null && bb.w >= 0 && bb.h >= 0 ){
+        return {
+          x1: bb.x1,
+          y1: bb.y1,
+          x2: bb.x1 + bb.w,
+          y2: bb.y1 + bb.h,
+          w: bb.w,
+          h: bb.h
+        };
+      }
+    }
+  };
+
+  $$m.boundingBoxesIntersect = function( bb1, bb2 ){
     // case: one bb to right of other
     if( bb1.x1 > bb2.x2 ){ return false; }
     if( bb2.x1 > bb1.x2 ){ return false; }
@@ -52,15 +81,15 @@
     return true;
   };
 
-  $$.math.inBoundingBox = function( bb, x, y ){
+  $$m.inBoundingBox = function( bb, x, y ){
     return bb.x1 <= x && x <= bb.x2 && bb.y1 <= y && y <= bb.y2;
   };
 
-  $$.math.pointInBoundingBox = function( bb, pt ){
+  $$m.pointInBoundingBox = function( bb, pt ){
     return this.inBoundingBox( bb, pt.x, pt.y );
   };
 
-  $$.math.roundRectangleIntersectLine = function(
+  $$m.roundRectangleIntersectLine = function(
     x, y, nodeX, nodeY, width, height, padding) {
 
     var cornerRadius = this.getRoundRectangleRadius(width, height);
@@ -201,169 +230,7 @@
     return []; // if nothing
   };
 
-  $$.math.roundRectangleIntersectBox = function(
-    boxX1, boxY1, boxX2, boxY2, width, height, centerX, centerY, padding) {
-
-    // We have the following shpae
-
-    //    _____
-    //  _|     |_
-    // |         |
-    // |_       _|
-    //   |_____|
-    //
-    // With a quarter circle at each corner.
-
-    var cornerRadius = this.getRoundRectangleRadius(width, height);
-
-    var hBoxTopLeftX = centerX - width / 2 - padding;
-    var hBoxTopLeftY = centerY - height / 2 + cornerRadius - padding;
-    var hBoxBottomRightX = centerX + width / 2 + padding;
-    var hBoxBottomRightY = centerY + height / 2 - cornerRadius + padding;
-
-    var vBoxTopLeftX = centerX - width / 2 + cornerRadius - padding;
-    var vBoxTopLeftY = centerY - height / 2 - padding;
-    var vBoxBottomRightX = centerX + width / 2 - cornerRadius + padding;
-    var vBoxBottomRightY = centerY + height / 2 + padding;
-
-    // Check if the box is out of bounds
-    var boxMinX = Math.min(boxX1, boxX2);
-    var boxMaxX = Math.max(boxX1, boxX2);
-    var boxMinY = Math.min(boxY1, boxY2);
-    var boxMaxY = Math.max(boxY1, boxY2);
-
-    if (boxMaxX < hBoxTopLeftX) {
-      return false;
-    } else if (boxMinX > hBoxBottomRightX) {
-      return false;
-    }
-
-    if (boxMaxY < vBoxTopLeftY) {
-      return false;
-    } else if (boxMinY > vBoxBottomRightY) {
-      return false;
-    }
-
-    // Check if an hBox point is in given box
-    if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
-        && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
-      return true;
-    }
-
-    if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
-        && hBoxTopLeftY >= boxMinY && hBoxTopLeftY <= boxMaxY) {
-      return true;
-    }
-
-    if (hBoxBottomRightX >= boxMinX && hBoxBottomRightX <= boxMaxX
-        && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
-      return true;
-    }
-
-    if (hBoxTopLeftX >= boxMinX && hBoxTopLeftX <= boxMaxX
-        && hBoxBottomRightY >= boxMinY && hBoxBottomRightY <= boxMaxY) {
-      return true;
-    }
-
-    // Check if a given point box is in the hBox
-    if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
-      && boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
-      && boxMinY >= hBoxTopLeftY && boxMinY <= hBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMaxX >= hBoxTopLeftX && boxMaxX <= hBoxBottomRightX
-      && boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMinX >= hBoxTopLeftX && boxMinX <= hBoxBottomRightX
-      && boxMaxY >= hBoxTopLeftY && boxMaxY <= hBoxBottomRightY) {
-      return true;
-    }
-
-    // Check if an vBox point is in given box
-    if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
-        && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
-      return true;
-    }
-
-    if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
-        && vBoxTopLeftY >= boxMinY && vBoxTopLeftY <= boxMaxY) {
-      return true;
-    }
-
-    if (vBoxBottomRightX >= boxMinX && vBoxBottomRightX <= boxMaxX
-        && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
-      return true;
-    }
-
-    if (vBoxTopLeftX >= boxMinX && vBoxTopLeftX <= boxMaxX
-        && vBoxBottomRightY >= boxMinY && vBoxBottomRightY <= boxMaxY) {
-      return true;
-    }
-
-    // Check if a given point box is in the vBox
-    if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
-      && boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
-      && boxMinY >= vBoxTopLeftY && boxMinY <= vBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMaxX >= vBoxTopLeftX && boxMaxX <= vBoxBottomRightX
-      && boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
-      return true;
-    }
-
-    if (boxMinX >= vBoxTopLeftX && boxMinX <= vBoxBottomRightX
-      && boxMaxY >= vBoxTopLeftY && boxMaxY <= vBoxBottomRightY) {
-      return true;
-    }
-
-    // Lastly, check if one of the ellipses coincide with the box
-
-    if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-        cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
-      return true;
-    }
-
-    if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-        cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxTopLeftY + padding)) {
-      return true;
-    }
-
-    if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-        cornerRadius * 2, cornerRadius * 2, vBoxBottomRightX - padding, hBoxBottomRightY - padding)) {
-      return true;
-    }
-
-    if (this.boxIntersectEllipse(boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-        cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxBottomRightY - padding)) {
-      return true;
-    }
-
-    return false;
-  };
-
-  // @O Approximate collision functions
-  $$.math.checkInBoundingCircle = function(
-    x, y, farthestPointSqDistance, padding, width, height, centerX, centerY) {
-
-    x = (x - centerX) / (width + padding);
-    y = (y - centerY) / (height + padding);
-
-    return (x * x + y * y) <= farthestPointSqDistance;
-  };
-
-  $$.math.boxInBezierVicinity = function(
+  $$m.boxInBezierVicinity = function(
     x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 
     // Return values:
@@ -414,12 +281,12 @@
     return 1;
   };
 
-  $$.math.checkBezierInBox = function(
+  $$m.checkBezierInBox = function(
     x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
 
     function sampleInBox(t){
-      var x = $$.math.qbezierAt(x1, x2, x3, t);
-      var y = $$.math.qbezierAt(y1, y2, y3, t);
+      var x = $$m.qbezierAt(x1, x2, x3, t);
+      var y = $$m.qbezierAt(y1, y2, y3, t);
 
       return x1box <= x && x <= x2box
         && y1box <= y && y <= y2box
@@ -435,7 +302,7 @@
     return true;
   };
 
-  $$.math.checkStraightEdgeInBox = function(
+  $$m.checkStraightEdgeInBox = function(
     x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
 
     return x1box <= x1 && x1 <= x2box
@@ -445,176 +312,8 @@
     ;
   };
 
-  $$.math.checkStraightEdgeCrossesBox = function(
-    x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
 
-   //console.log(arguments);
-
-    var boxMinX = Math.min(x1box, x2box) - tolerance;
-    var boxMinY = Math.min(y1box, y2box) - tolerance;
-    var boxMaxX = Math.max(x1box, x2box) + tolerance;
-    var boxMaxY = Math.max(y1box, y2box) + tolerance;
-
-    // Check left + right bounds
-    var aX = x2 - x1;
-    var bX = x1;
-    var yValue;
-
-    // Top and bottom
-    var aY = y2 - y1;
-    var bY = y1;
-    var xValue;
-
-    if (Math.abs(aX) < 0.0001) {
-      return (x1 >= boxMinX && x1 <= boxMaxX
-        && Math.min(y1, y2) <= boxMinY
-        && Math.max(y1, y2) >= boxMaxY);
-    }
-
-    var tLeft = (boxMinX - bX) / aX;
-    if (tLeft > 0 && tLeft <= 1) {
-      yValue = aY * tLeft + bY;
-      if (yValue >= boxMinY && yValue <= boxMaxY) {
-        return true;
-      }
-    }
-
-    var tRight = (boxMaxX - bX) / aX;
-    if (tRight > 0 && tRight <= 1) {
-      yValue = aY * tRight + bY;
-      if (yValue >= boxMinY && yValue <= boxMaxY) {
-        return true;
-      }
-    }
-
-    var tTop = (boxMinY - bY) / aY;
-    if (tTop > 0 && tTop <= 1) {
-      xValue = aX * tTop + bX;
-      if (xValue >= boxMinX && xValue <= boxMaxX) {
-        return true;
-      }
-    }
-
-    var tBottom = (boxMaxY - bY) / aY;
-    if (tBottom > 0 && tBottom <= 1) {
-      xValue = aX * tBottom + bX;
-      if (xValue >= boxMinX && xValue <= boxMaxX) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  $$.math.checkBezierCrossesBox = function(
-    x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-
-    var boxMinX = Math.min(x1box, x2box) - tolerance;
-    var boxMinY = Math.min(y1box, y2box) - tolerance;
-    var boxMaxX = Math.max(x1box, x2box) + tolerance;
-    var boxMaxY = Math.max(y1box, y2box) + tolerance;
-
-    if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) {
-      return true;
-    } else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) {
-      return true;
-    }
-
-    var aX = x1 - 2 * x2 + x3;
-    var bX = -2 * x1 + 2 * x2;
-    var cX = x1;
-
-    var xIntervals = [];
-
-    if (Math.abs(aX) < 0.0001) {
-      var leftParam = (boxMinX - x1) / bX;
-      var rightParam = (boxMaxX - x1) / bX;
-
-      xIntervals.push(leftParam, rightParam);
-    } else {
-      // Find when x coordinate of the curve crosses the left side of the box
-      var discriminantX1 = bX * bX - 4 * aX * (cX - boxMinX);
-      var tX1, tX2;
-      if (discriminantX1 > 0) {
-        var sqrt = Math.sqrt(discriminantX1);
-        tX1 = (-bX + sqrt) / (2 * aX);
-        tX2 = (-bX - sqrt) / (2 * aX);
-
-        xIntervals.push(tX1, tX2);
-      }
-
-      var discriminantX2 = bX * bX - 4 * aX * (cX - boxMaxX);
-      var tX3, tX4;
-      if (discriminantX2 > 0) {
-        var sqrt = Math.sqrt(discriminantX2);
-        tX3 = (-bX + sqrt) / (2 * aX);
-        tX4 = (-bX - sqrt) / (2 * aX);
-
-        xIntervals.push(tX3, tX4);
-      }
-    }
-
-    xIntervals.sort(function(a, b) { return a - b; });
-
-    var aY = y1 - 2 * y2 + y3;
-    var bY = -2 * y1 + 2 * y2;
-    var cY = y1;
-
-    var yIntervals = [];
-
-    if (Math.abs(aY) < 0.0001) {
-      var topParam = (boxMinY - y1) / bY;
-      var bottomParam = (boxMaxY - y1) / bY;
-
-      yIntervals.push(topParam, bottomParam);
-    } else {
-      var discriminantY1 = bY * bY - 4 * aY * (cY - boxMinY);
-
-      var tY1, tY2;
-      if (discriminantY1 > 0) {
-        var sqrt = Math.sqrt(discriminantY1);
-        tY1 = (-bY + sqrt) / (2 * aY);
-        tY2 = (-bY - sqrt) / (2 * aY);
-
-        yIntervals.push(tY1, tY2);
-      }
-
-      var discriminantY2 = bY * bY - 4 * aY * (cY - boxMaxY);
-
-      var tY3, tY4;
-      if (discriminantY2 > 0) {
-        var sqrt = Math.sqrt(discriminantY2);
-        tY3 = (-bY + sqrt) / (2 * aY);
-        tY4 = (-bY - sqrt) / (2 * aY);
-
-        yIntervals.push(tY3, tY4);
-      }
-    }
-
-    yIntervals.sort(function(a, b) { return a - b; });
-
-    for (var index = 0; index < xIntervals.length; index += 2) {
-      for (var yIndex = 1; yIndex < yIntervals.length; yIndex += 2) {
-
-        // Check if there exists values for the Bezier curve
-        // parameter between 0 and 1 where both the curve's
-        // x and y coordinates are within the bounds specified by the box
-        if (xIntervals[index] < yIntervals[yIndex]
-          && yIntervals[yIndex] >= 0.0
-          && xIntervals[index] <= 1.0
-          && xIntervals[index + 1] > yIntervals[yIndex - 1]
-          && yIntervals[yIndex - 1] <= 1.0
-          && xIntervals[index + 1] >= 0.0) {
-
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  $$.math.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
+  $$m.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
     var t = tolerance;
 
     var x1 = Math.min(lx1, lx2);
@@ -626,7 +325,7 @@
       && y1 - t <= y && y <= y2 + t;
   };
 
-  $$.math.inBezierVicinity = function(
+  $$m.inBezierVicinity = function(
     x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
 
     var bb = {
@@ -647,7 +346,7 @@
 
   };
 
-  $$.math.solveCubic = function(a, b, c, d, result) {
+  $$m.solveCubic = function(a, b, c, d, result) {
 
     // Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
     // r is the real component, i is the imaginary component
@@ -703,7 +402,7 @@
     return;
   };
 
-  $$.math.sqDistanceToQuadraticBezier = function(
+  $$m.sqDistanceToQuadraticBezier = function(
     x, y, x1, y1, x2, y2, x3, y3) {
 
     // Find minimum distance by using the minimum of the distance
@@ -799,7 +498,7 @@
     return minDistanceSquared;
   };
 
-  $$.math.sqDistanceToFiniteLine = function(x, y, x1, y1, x2, y2) {
+  $$m.sqDistanceToFiniteLine = function(x, y, x1, y1, x2, y2) {
     var offset = [x - x1, y - y1];
     var line = [x2 - x1, y2 - y1];
 
@@ -820,7 +519,7 @@
     return hypSq - adjSq;
   };
 
-  $$.math.pointInsidePoints = function(x, y, points){
+  $$m.pointInsidePolygonPoints = function(x, y, points){
     var x1, y1, x2, y2;
     var y3;
 
@@ -840,10 +539,6 @@
         y2 = points[(i + 1 - points.length / 2) * 2 + 1];
       }
 
-//*      console.log("line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
-
-//&      console.log(x1, x, x2);
-
       if (x1 == x && x2 == x) {
 
       } else if ((x1 >= x && x >= x2)
@@ -859,16 +554,11 @@
           down++;
         }
 
-//*        console.log(y3, y);
-
       } else {
-//*        console.log('22');
         continue;
       }
 
     }
-
-//*    console.log("up: " + up + ", down: " + down);
 
     if (up % 2 === 0) {
       return false;
@@ -876,8 +566,8 @@
       return true;
     }
   };
-  
-  $$.math.pointInsidePolygon = function(
+
+  $$m.pointInsidePolygon = function(
     x, y, basePoints, centerX, centerY, width, height, direction, padding) {
 
     //var direction = arguments[6];
@@ -895,7 +585,7 @@
     var cos = Math.cos(-angle);
     var sin = Math.sin(-angle);
 
-//    console.log("base: " + basePoints);
+    //    console.log("base: " + basePoints);
     for (var i = 0; i < transformedPoints.length / 2; i++) {
       transformedPoints[i * 2] =
         width / 2 * (basePoints[i * 2] * cos
@@ -921,10 +611,10 @@
       points = transformedPoints;
     }
 
-    return $$.math.pointInsidePoints( x, y, points );
+    return $$m.pointInsidePolygonPoints( x, y, points );
   };
 
-  $$.math.joinLines = function(lineSet) {
+  $$m.joinLines = function(lineSet) {
 
     var vertices = new Array(lineSet.length / 2);
 
@@ -963,7 +653,7 @@
     return vertices;
   };
 
-  $$.math.expandPolygon = function(points, pad) {
+  $$m.expandPolygon = function(points, pad) {
 
     var expandedLineSet = new Array(points.length * 2);
 
@@ -1002,7 +692,7 @@
     return expandedLineSet;
   };
 
-  $$.math.intersectLineEllipse = function(
+  $$m.intersectLineEllipse = function(
     x, y, centerX, centerY, ellipseWradius, ellipseHradius) {
 
     var dispX = centerX - x;
@@ -1024,18 +714,8 @@
     return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
   };
 
-  $$.math.dotProduct = function(
-    vec1, vec2) {
-
-    if (vec1.length != 2 || vec2.length != 2) {
-      throw 'dot product: arguments are not vectors';
-    }
-
-    return (vec1[0] * vec2[0] + vec1[1] * vec2[1]);
-  };
-
   // Returns intersections of increasing distance from line's start point
-  $$.math.intersectLineCircle = function(
+  $$m.intersectLineCircle = function(
     x1, y1, x2, y2, centerX, centerY, radius) {
 
     // Calculate d, direction vector of line
@@ -1093,7 +773,7 @@
 
   };
 
-  $$.math.findCircleNearPoint = function(centerX, centerY,
+  $$m.findCircleNearPoint = function(centerX, centerY,
     radius, farX, farY) {
 
     var displacementX = farX - centerX;
@@ -1108,7 +788,7 @@
       centerY + unitDisplacementY * radius];
   };
 
-  $$.math.findMaxSqDistanceToOrigin = function(points) {
+  $$m.findMaxSqDistanceToOrigin = function(points) {
     var maxSqDistance = 0.000001;
     var sqDistance;
 
@@ -1125,7 +805,7 @@
     return maxSqDistance;
   };
 
-  $$.math.finiteLinesIntersect = function(
+  $$m.finiteLinesIntersect = function(
     x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines) {
 
     var ua_t = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
@@ -1175,267 +855,7 @@
     }
   };
 
-  // (boxMinX, boxMinY, boxMaxX, boxMaxY, padding,
-  //      cornerRadius * 2, cornerRadius * 2, vBoxTopLeftX + padding, hBoxTopLeftY + padding)) {
-
-  $$.math.boxIntersectEllipse = function(
-    x1, y1, x2, y2, padding, width, height, centerX, centerY) {
-
-    if (x2 < x1) {
-      var oldX1 = x1;
-      x1 = x2;
-      x2 = oldX1;
-    }
-
-    if (y2 < y1) {
-      var oldY1 = y1;
-      y1 = y2;
-      y2 = oldY1;
-    }
-
-    // 4 ortho extreme points
-    var west = [centerX - width / 2 - padding, centerY];
-    var east = [centerX + width / 2 + padding, centerY];
-    var north = [centerX, centerY - height / 2 - padding];
-    var south = [centerX, centerY + height / 2 + padding];
-
-    // out of bounds: return false
-    if (x2 < west[0]) {
-      return false;
-    }
-
-    if (x1 > east[0]) {
-      return false;
-    }
-
-    if (y1 > south[1]) {
-      return false;
-    }
-
-    if (y2 < north[1]) {
-      return false;
-    }
-
-    // 1 of 4 ortho extreme points in box: return true
-    if (x1 <= east[0] && east[0] <= x2
-        && y1 <= east[1] && east[1] <= y2) {
-      return true;
-    }
-
-    if (x1 <= west[0] && west[0] <= x2
-        && y1 <= west[1] && west[1] <= y2) {
-      return true;
-    }
-
-    if (x1 <= north[0] && north[0] <= x2
-        && y1 <= north[1] && north[1] <= y2) {
-      return true;
-    }
-
-    if (x1 <= south[0] && south[0] <= x2
-        && y1 <= south[1] && south[1] <= y2) {
-      return true;
-    }
-
-    // box corner in ellipse: return true
-    x1 = (x1 - centerX) / (width / 2 + padding);
-    x2 = (x2 - centerX) / (width / 2 + padding);
-
-    y1 = (y1 - centerY) / (height / 2 + padding);
-    y2 = (y2 - centerY) / (height / 2 + padding);
-
-    if (x1 * x1 + y1 * y1 <= 1) {
-      return true;
-    }
-
-    if (x2 * x2 + y1 * y1 <= 1) {
-      return true;
-    }
-
-    if (x2 * x2 + y2 * y2 <= 1) {
-      return true;
-    }
-
-    if (x1 * x1 + y2 * y2 <= 1) {
-      return true;
-    }
-
-    return false;
-  };
-
-  $$.math.boxIntersectPolygon = function(
-    x1, y1, x2, y2, basePoints, width, height, centerX, centerY, direction, padding) {
-
-//    console.log(arguments);
-
-    if (x2 < x1) {
-      var oldX1 = x1;
-      x1 = x2;
-      x2 = oldX1;
-    }
-
-    if (y2 < y1) {
-      var oldY1 = y1;
-      y1 = y2;
-      y2 = oldY1;
-    }
-
-    var transformedPoints = new Array(basePoints.length);
-
-    // Gives negative of angle
-    var angle = Math.asin(direction[1] / (Math.sqrt(direction[0] * direction[0]
-      + direction[1] * direction[1])));
-
-    if (direction[0] < 0) {
-      angle = angle + Math.PI / 2;
-    } else {
-      angle = -angle - Math.PI / 2;
-    }
-
-    var cos = Math.cos(-angle);
-    var sin = Math.sin(-angle);
-
-    for (var i = 0; i < transformedPoints.length / 2; i++) {
-      transformedPoints[i * 2] =
-        width / 2 * (basePoints[i * 2] * cos
-          - basePoints[i * 2 + 1] * sin);
-
-      transformedPoints[i * 2 + 1] =
-        height / 2 * (basePoints[i * 2 + 1] * cos
-          + basePoints[i * 2] * sin);
-
-      transformedPoints[i * 2] += centerX;
-      transformedPoints[i * 2 + 1] += centerY;
-    }
-
-    // Assume transformedPoints.length > 0, and check if intersection is possible
-    var minTransformedX = transformedPoints[0];
-    var maxTransformedX = transformedPoints[0];
-    var minTransformedY = transformedPoints[1];
-    var maxTransformedY = transformedPoints[1];
-
-    for (var i = 1; i < transformedPoints.length / 2; i++) {
-      if (transformedPoints[i * 2] > maxTransformedX) {
-        maxTransformedX = transformedPoints[i * 2];
-      }
-
-      if (transformedPoints[i * 2] < minTransformedX) {
-        minTransformedX = transformedPoints[i * 2];
-      }
-
-      if (transformedPoints[i * 2 + 1] > maxTransformedY) {
-        maxTransformedY = transformedPoints[i * 2 + 1];
-      }
-
-      if (transformedPoints[i * 2 + 1] < minTransformedY) {
-        minTransformedY = transformedPoints[i * 2 + 1];
-      }
-    }
-
-    if (x2 < minTransformedX - padding) {
-      return false;
-    }
-
-    if (x1 > maxTransformedX + padding) {
-      return false;
-    }
-
-    if (y2 < minTransformedY - padding) {
-      return false;
-    }
-
-    if (y1 > maxTransformedY + padding) {
-      return false;
-    }
-
-    // Continue checking with padding-corrected points
-    var points;
-
-    if (padding > 0) {
-      var expandedLineSet = $$.math.expandPolygon(
-        transformedPoints,
-        -padding);
-
-      points = $$.math.joinLines(expandedLineSet);
-    } else {
-      points = transformedPoints;
-    }
-
-    // Check if a point is in box
-    for (var i = 0; i < transformedPoints.length / 2; i++) {
-      if (x1 <= transformedPoints[i * 2]
-          && transformedPoints[i * 2] <= x2) {
-
-        if (y1 <= transformedPoints[i * 2 + 1]
-            && transformedPoints[i * 2 + 1] <= y2) {
-
-          return true;
-        }
-      }
-    }
-
-
-    // Check for intersections with the selection box
-    for (var i = 0; i < points.length / 2; i++) {
-
-      var currentX = points[i * 2];
-      var currentY = points[i * 2 + 1];
-      var nextX;
-      var nextY;
-
-      if (i < points.length / 2 - 1) {
-        nextX = points[(i + 1) * 2];
-        nextY = points[(i + 1) * 2 + 1];
-      } else {
-        nextX = points[0];
-        nextY = points[1];
-      }
-
-      // Intersection with top of selection box
-      if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x2, y1, false).length > 0) {
-        return true;
-      }
-
-      // Intersection with bottom of selection box
-      if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y2, x2, y2, false).length > 0) {
-        return true;
-      }
-
-      // Intersection with left side of selection box
-      if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x1, y1, x1, y2, false).length > 0) {
-        return true;
-      }
-
-      // Intersection with right side of selection box
-      if ($$.math.finiteLinesIntersect(currentX, currentY, nextX, nextY, x2, y1, x2, y2, false).length > 0) {
-        return true;
-      }
-    }
-
-    /*
-    // Check if box corner in the polygon
-    if ($$.math.pointInsidePolygon(
-      x1, y1, points, 0, 0, 1, 1, 0, direction)) {
-
-      return true;
-    } else if ($$.math.pointInsidePolygon(
-      x1, y2, points, 0, 0, 1, 1, 0, direction)) {
-
-      return true;
-    } else if ($$.math.pointInsidePolygon(
-      x2, y2, points, 0, 0, 1, 1, 0, direction)) {
-
-      return true;
-    } else if ($$.math.pointInsidePolygon(
-      x2, y1, points, 0, 0, 1, 1, 0, direction)) {
-
-      return true;
-    }
-    */
-    return false;
-  };
-
-  $$.math.polygonIntersectLine = function(
+  $$m.polygonIntersectLine = function(
     x, y, basePoints, centerX, centerY, width, height, padding) {
 
     var intersections = [];
@@ -1451,11 +871,11 @@
     var points;
 
     if (padding > 0) {
-      var expandedLineSet = $$.math.expandPolygon(
+      var expandedLineSet = $$m.expandPolygon(
         transformedPoints,
         -padding);
 
-      points = $$.math.joinLines(expandedLineSet);
+      points = $$m.joinLines(expandedLineSet);
     } else {
       points = transformedPoints;
     }
@@ -1489,7 +909,7 @@
     return intersections;
   };
 
-  $$.math.shortenIntersection = function(
+  $$m.shortenIntersection = function(
     intersection, offset, amount) {
 
     var disp = [intersection[0] - offset[0], intersection[1] - offset[1]];
@@ -1505,14 +925,14 @@
     return [offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1]];
   };
 
-  $$.math.generateUnitNgonPointsFitToSquare = function(sides, rotationRadians) {
-    var points = $$.math.generateUnitNgonPoints(sides, rotationRadians);
-    points = $$.math.fitPolygonToSquare(points);
+  $$m.generateUnitNgonPointsFitToSquare = function(sides, rotationRadians) {
+    var points = $$m.generateUnitNgonPoints(sides, rotationRadians);
+    points = $$m.fitPolygonToSquare(points);
 
     return points;
   };
 
-  $$.math.fitPolygonToSquare = function(points){
+  $$m.fitPolygonToSquare = function(points){
     var x, y;
     var sides = points.length/2;
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1550,12 +970,12 @@
     return points;
   };
 
-  $$.math.generateUnitNgonPoints = function(sides, rotationRadians) {
+  $$m.generateUnitNgonPoints = function(sides, rotationRadians) {
 
     var increment = 1.0 / sides * 2 * Math.PI;
     var startAngle = sides % 2 === 0 ?
       Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-//    console.log(nodeShapes['square']);
+      //    console.log(nodeShapes['square']);
     startAngle += rotationRadians;
 
     var points = new Array(sides * 2);
@@ -1571,7 +991,7 @@
     return points;
   };
 
-  $$.math.getRoundRectangleRadius = function(width, height) {
+  $$m.getRoundRectangleRadius = function(width, height) {
 
     // Set the default radius, unless half of width or height is smaller than default
     return Math.min(width / 4, height / 4, 8);

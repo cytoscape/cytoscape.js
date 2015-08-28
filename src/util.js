@@ -331,31 +331,6 @@
       }
     },
 
-    // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
-    makeBoundingBox: function( bb ){
-      if( bb.x1 != null && bb.y1 != null ){
-        if( bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1 ){
-          return {
-            x1: bb.x1,
-            y1: bb.y1,
-            x2: bb.x2,
-            y2: bb.y2,
-            w: bb.x2 - bb.x1,
-            h: bb.y2 - bb.y1
-          };
-        } else if( bb.w != null && bb.h != null && bb.w >= 0 && bb.h >= 0 ){
-          return {
-            x1: bb.x1,
-            y1: bb.y1,
-            x2: bb.x1 + bb.w,
-            y2: bb.y1 + bb.h,
-            w: bb.w,
-            h: bb.h
-          };
-        }
-      }
-    },
-
     // has anything been set in the map
     mapEmpty: function( map ){
       var empty = true;
@@ -897,5 +872,9 @@
   $$.util.requestAnimationFrame = function(fn){
     raf( fn );
   };
+
+  var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
+
+  $$.util.performanceNow = pnow;
 
 })( cytoscape, typeof window === 'undefined' ? null : window  );

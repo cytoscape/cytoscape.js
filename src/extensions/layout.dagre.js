@@ -40,7 +40,7 @@
         return $$.is.fn(val) ? val.apply( ele, [ ele ] ) : val;
       };
 
-      var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+      var bb = $$.math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
         x1: 0, y1: 0, w: cy.width(), h: cy.height()
       } );
 

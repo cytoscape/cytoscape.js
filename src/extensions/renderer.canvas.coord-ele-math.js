@@ -499,66 +499,68 @@
     return eles;
   };
 
-  CRp.projectBezier = function(edge){
+  function pushBezierPts(edge, pts){
     var qbezierAt = $$.math.qbezierAt;
     var _p = edge._private;
     var rs = _p.rscratch;
-    var bpts = _p.rstyle.bezierPts = _p.rstyle.bezierPts || [];
+    var bpts = _p.rstyle.bezierPts;
 
-    bpts.splice( 0, bpts.length ); // empty array for reuse
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
+    });
 
-    function pushBezierPts(pts){
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
-      });
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
+    });
 
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
-      });
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.4 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
+    });
 
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.4 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
-      });
+    var mid = {
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
+    };
 
-      var mid = {
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-      };
+    bpts.push( mid );
 
-      bpts.push( mid );
-
-      if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-        rs.midX = rs.selfEdgeMidX;
-        rs.midY = rs.selfEdgeMidY;
-      } else {
-        rs.midX = mid.x;
-        rs.midY = mid.y;
-      }
-
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.6 )
-      });
-
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
-      });
-
-      bpts.push({
-        x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
-        y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
-      });
+    if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+      rs.midX = rs.selfEdgeMidX;
+      rs.midY = rs.selfEdgeMidY;
+    } else {
+      rs.midX = mid.x;
+      rs.midY = mid.y;
     }
 
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.6 )
+    });
+
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
+    });
+
+    bpts.push({
+      x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
+      y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
+    });
+  }
+
+  CRp.projectBezier = function( edge ){
+    var _p = edge._private;
+    var rs = _p.rscratch;
+    var bpts = _p.rstyle.bezierPts = [];
+
     if( rs.edgeType === 'self' ){
-      pushBezierPts( [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
-      pushBezierPts( [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
+      pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
+      pushBezierPts( edge, [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
     } else if( rs.edgeType === 'bezier' ){
-      pushBezierPts( [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
+      pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
     }
   };
 

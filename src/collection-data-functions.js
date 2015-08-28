@@ -345,7 +345,7 @@
       var cy_p = cy._private;
       var styleEnabled = cy_p.styleEnabled;
 
-      options = options || {};
+      options = options || $$.util.staticEmptyObject();
 
       var includeNodes = options.includeNodes === undefined ? true : options.includeNodes;
       var includeEdges = options.includeEdges === undefined ? true : options.includeEdges;

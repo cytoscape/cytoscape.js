@@ -80,7 +80,7 @@
       var edges = cy.edges();
       var cWidth = cy.width();
       var cHeight = cy.height();
-      var simulationBounds = options.boundingBox ? $$.util.makeBoundingBox( options.boundingBox ) : null;
+      var simulationBounds = options.boundingBox ? $$.math.makeBoundingBox( options.boundingBox ) : null;
       var padding = options.padding;
       var simBBFactor = Math.max( 1, Math.log(nodes.length) * 0.8 );
 

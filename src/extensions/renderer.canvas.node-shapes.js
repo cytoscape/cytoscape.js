@@ -50,7 +50,7 @@
               context.lineTo(xPos, yPos);
           }
       }
-      
+
       context.closePath();
 
     },
@@ -64,13 +64,6 @@
         height / 2 + padding);
 
       return intersect;
-    },
-
-    intersectBox: function(
-      x1, y1, x2, y2, width, height, centerX, centerY, padding) {
-
-      return $$.math.boxIntersectEllipse(
-        x1, y1, x2, y2, padding, width, height, centerX, centerY);
     },
 
     checkPoint: function(
@@ -118,17 +111,6 @@
             padding);
       },
 
-      intersectBox: function(
-        x1, y1, x2, y2,
-        width, height, centerX,
-        centerY, padding) {
-
-        return $$.math.boxIntersectPolygon(
-          x1, y1, x2, y2,
-          this.points, width, height, centerX,
-          centerY, [0, -1], padding);
-      },
-
       checkPoint: function(
         x, y, padding, width, height, centerX, centerY) {
 
@@ -171,16 +153,6 @@
           padding);
     },
 
-    intersectBox: function(
-      x1, y1, x2, y2,
-      width, height, centerX,
-      centerY, padding) {
-
-      return $$.math.roundRectangleIntersectBox(
-        x1, y1, x2, y2,
-        width, height, centerX, centerY, padding);
-    },
-
     // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY) {
@@ -188,13 +160,13 @@
       var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
 
       // Check hBox
-      if ($$.math.pointInsidePolygon(x, y, nodeShapes['roundrectangle'].points,
+      if ($$.math.pointInsidePolygon(x, y, this.points,
         centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
         return true;
       }
 
       // Check vBox
-      if ($$.math.pointInsidePolygon(x, y, nodeShapes['roundrectangle'].points,
+      if ($$.math.pointInsidePolygon(x, y, this.points,
         centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
         return true;
       }
@@ -206,7 +178,7 @@
         x /= (width / 2 + padding);
         y /= (height / 2 + padding);
 
-        return (Math.pow(x, 2) + Math.pow(y, 2) <= 1);
+        return (x*x + y*y <= 1);
       };
 
 
@@ -218,15 +190,6 @@
 
         return true;
       }
-
-      /*
-      if (renderer.boxIntersectEllipse(x, y, x, y, padding,
-        cornerRadius * 2, cornerRadius * 2,
-        centerX - width + cornerRadius,
-        centerY - height + cornerRadius)) {
-        return true;
-      }
-      */
 
       // Check top right quarter circle
       if (checkInEllipse(x, y,

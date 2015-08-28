@@ -35,7 +35,7 @@
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
 
-    var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+    var bb = $$.math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
 

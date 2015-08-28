@@ -249,7 +249,7 @@
           px1y2.x, px1y2.y
         ];
 
-        if( $$.math.pointInsidePoints( x, y, points ) ){
+        if( $$.math.pointInsidePolygonPoints( x, y, points ) ){
           near.push( ele );
         }
 
@@ -321,18 +321,22 @@
     y1 = y1c;
     y2 = y2c;
 
+    var boxBb = $$.math.makeBoundingBox({
+      x1: x1, y1: y1,
+      x2: x2, y2: y2
+    });
+
     var heur;
 
     for ( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
-      var _p = node._private;
-      var pos = _p.position;
-      var nShape = this.getNodeShape(node);
-      var w = node.outerWidth();
-      var h = node.outerHeight();
-      var shapeObj = CR.nodeShapes[ nShape ];
+      var nodeBb = node.boundingBox({
+        includeNodes: true,
+        includeEdges: false,
+        includeLabels: false
+      });
 
-      if ( shapeObj.intersectBox(x1, y1, x2, y2, w, h, pos.x, pos.y) ){
+      if( $$.math.boundingBoxesIntersect(boxBb, nodeBb) ){
         box.push(nodes[i]);
       }
     }
@@ -1247,7 +1251,7 @@
         var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
 
         var minCpADistFactor = 3;
-        var arrowW = this.getArrowWidth( edge._private.style['width'].pxValue ) * CR.arrowShapeHeight;
+        var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * CR.arrowShapeHeight;
         var minCpADist = minCpADistFactor * arrowW;
         var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
@@ -1623,29 +1627,6 @@
     } else if (rs.isArcEdge) {
       return;
     }
-  };
-
-  // Find adjacent edges
-  CRp.findEdges = function(nodeSet) {
-
-    var edges = this.getCachedEdges();
-
-    var hashTable = {};
-    var adjacentEdges = [];
-
-    for (var i = 0; i < nodeSet.length; i++) {
-      hashTable[nodeSet[i]._private.data.id] = nodeSet[i];
-    }
-
-    for (var i = 0; i < edges.length; i++) {
-      if (hashTable[edges[i]._private.data.source]
-        || hashTable[edges[i]._private.data.target]) {
-
-        adjacentEdges.push(edges[i]);
-      }
-    }
-
-    return adjacentEdges;
   };
 
   CRp.getArrowWidth = CRp.getArrowHeight = function(edgeWidth) {

@@ -2,7 +2,7 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var CR = CanvasRenderer;
-  var CRp = CanvasRenderer.prototype;
+  var CRp = CR.prototype;
 
   // var isFirefox = typeof InstallTrigger !== 'undefined';
 
@@ -133,7 +133,7 @@
     canvasContainer.style.width = width + 'px';
     canvasContainer.style.height = height + 'px';
 
-    for (var i = 0; i < CanvasRenderer.CANVAS_LAYERS; i++) {
+    for (var i = 0; i < CR.CANVAS_LAYERS; i++) {
 
       canvas = data.canvases[i];
 
@@ -147,7 +147,7 @@
       }
     }
 
-    for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
+    for (var i = 0; i < CR.BUFFER_COUNT; i++) {
 
       canvas = data.bufferCanvases[i];
 
@@ -163,7 +163,7 @@
 
     this.textureMult = 1;
     if( pixelRatio <= 1 ){
-      canvas = data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
+      canvas = data.bufferCanvases[ CR.TEXTURE_BUFFER ];
 
       this.textureMult = 2;
       canvas.width = canvasWidth * this.textureMult;
@@ -176,7 +176,7 @@
   };
 
   CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
-    this.redraw({
+    this.render({
       forcedContext: cxt,
       forcedZoom: zoom,
       forcedPan: pan,
@@ -189,15 +189,109 @@
     return this.redrawTotalTime / this.redrawCount;
   };
 
-  CanvasRenderer.minRedrawLimit = 1000/60; // people can't see much better than 60fps
-  CanvasRenderer.maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
-  CanvasRenderer.motionBlurDelay = 100;
+  CR.minRedrawLimit = 1000/60; // people can't see much better than 60fps
+  CR.maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
+  CR.motionBlurDelay = 100;
 
-  // Redraw frame
-  CRp.redraw = function( options ) {
+  CRp.redraw = function( options ){
     options = options || {};
 
-    // console.log('redraw()');
+    // console.log('redraw()')
+
+    var r = this;
+    var forcedContext = options.forcedContext;
+
+    if( !forcedContext && r.motionBlurTimeout ){
+      clearTimeout( r.motionBlurTimeout );
+    }
+
+    if( r.averageRedrawTime === undefined ){ r.averageRedrawTime = 0; }
+    if( r.lastRedrawTime === undefined ){ r.lastRedrawTime = 0; }
+
+    var minRedrawLimit = CR.minRedrawLimit;
+    var maxRedrawLimit = CR.maxRedrawLimit;
+
+    var redrawLimit = r.lastRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
+    redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
+    redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
+
+    //console.log('--\nideal: %i; effective: %i', this.averageRedrawTime, redrawLimit);
+
+    if( r.lastDrawTime === undefined ){ r.lastDrawTime = 0; }
+
+    var nowTime = Date.now();
+    var timeElapsed = nowTime - r.lastDrawTime;
+    var callAfterLimit = timeElapsed >= redrawLimit;
+
+    if( !forcedContext && !r.clearingMotionBlur ){
+      if( !callAfterLimit || r.currentlyDrawing ){
+        // console.log('-- skip frame', redrawLimit);
+
+        r.skipFrame = true;
+        return;
+      }
+    }
+
+    // console.log('-- render next frame', redrawLimit);
+
+    r.requestedFrame = true;
+    r.currentlyDrawing = true;
+    r.renderOptions = options;
+  };
+
+  CRp.startRenderLoop = function(){
+    var r = this;
+
+    var renderFn = function(){
+      if( r.destroyed ){ return; }
+
+      if( r.requestedFrame && !r.skipFrame ){
+        var startTime = $$.util.performanceNow();
+
+        r.render( r.renderOptions );
+
+        var endTime = r.lastRedrawTime = $$.util.performanceNow();
+
+        if( r.averageRedrawTime === undefined ){
+          r.averageRedrawTime = endTime - startTime;
+        }
+
+        if( r.redrawCount === undefined ){
+          r.redrawCount = 0;
+        }
+
+        r.redrawCount++;
+
+        if( r.redrawTotalTime === undefined ){
+          r.redrawTotalTime = 0;
+        }
+
+        var duration = endTime - startTime;
+
+        r.redrawTotalTime += duration;
+        r.lastRedrawTime = duration;
+
+        // use a weighted average with a bias from the previous average so we don't spike so easily
+        r.averageRedrawTime = r.averageRedrawTime/2 + duration/2;
+        // console.log('actual: %i, average: %i', endTime - startTime, r.averageRedrawTime);
+
+        r.requestedFrame = false;
+      }
+
+      r.skipFrame = false;
+
+      $$.util.requestAnimationFrame( renderFn );
+    };
+
+    $$.util.requestAnimationFrame( renderFn );
+
+  };
+
+
+  CRp.render = function( options ) {
+    options = options || {};
+
+    // console.log('render()');
 
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
@@ -218,48 +312,6 @@
     var motionBlurFadeEffect = motionBlur;
 
     // console.log('textureDraw?', textureDraw);
-
-
-    if( !forcedContext && r.motionBlurTimeout ){
-      clearTimeout( r.motionBlurTimeout );
-    }
-
-    if( !forcedContext && this.redrawTimeout ){
-      clearTimeout( this.redrawTimeout );
-    }
-    this.redrawTimeout = null;
-
-    if( this.averageRedrawTime === undefined ){ this.averageRedrawTime = 0; }
-
-    var minRedrawLimit = CanvasRenderer.minRedrawLimit;
-    var maxRedrawLimit = CanvasRenderer.maxRedrawLimit;
-
-    var redrawLimit = this.averageRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
-    redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
-    redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
-
-    //console.log('--\nideal: %i; effective: %i', this.averageRedrawTime, redrawLimit);
-
-    if( this.lastDrawTime === undefined ){ this.lastDrawTime = 0; }
-
-    var nowTime = Date.now();
-    var timeElapsed = nowTime - this.lastDrawTime;
-    var callAfterLimit = timeElapsed >= redrawLimit;
-
-    if( !forcedContext && !r.clearingMotionBlur ){
-      if( !callAfterLimit || this.currentlyDrawing ){
-        // console.log('-- skip', redrawLimit);
-
-        // we have new things to draw but we're busy, so try again when possibly free
-        this.redrawTimeout = setTimeout(function(){
-          r.redraw();
-        }, redrawLimit);
-        return;
-      }
-
-      this.lastDrawTime = nowTime;
-      this.currentlyDrawing = true;
-    }
 
     if( motionBlur ){
       if( r.mbFrames == null ){
@@ -290,12 +342,10 @@
     }
 
 
-    var startTime = Date.now();
-
     // console.log('-- redraw --')
 
     function drawToContext(){
-      // startTime = Date.now();
+      // var startTime = Date.now();
       // console.profile('draw' + startTime)
 
       // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
@@ -424,14 +474,14 @@
 
           bb = r.textureCache.bb = cy.elements().boundingBox();
 
-          r.textureCache.texture = r.data.bufferCanvases[ CanvasRenderer.TEXTURE_BUFFER ];
+          r.textureCache.texture = r.data.bufferCanvases[ CR.TEXTURE_BUFFER ];
 
-          var cxt = r.data.bufferContexts[ CanvasRenderer.TEXTURE_BUFFER ];
+          var cxt = r.data.bufferContexts[ CR.TEXTURE_BUFFER ];
 
           cxt.setTransform(1, 0, 0, 1, 0, 0);
           cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
 
-          r.redraw({
+          r.render({
             forcedContext: cxt,
             drawOnlyNodeLayer: true,
             forcedPxRatio: pixelRatio * r.textureMult
@@ -656,7 +706,7 @@
           context.fill();
         }
 
-        var timeToRender = r.averageRedrawTime;
+        var timeToRender = r.lastRedrawTime;
         if( r.showFps && timeToRender ){
           timeToRender = Math.round( timeToRender );
           var fps = Math.round(1000/timeToRender);
@@ -723,30 +773,6 @@
         }
       }
 
-
-      var endTime = Date.now();
-
-      if( r.averageRedrawTime === undefined ){
-        r.averageRedrawTime = endTime - startTime;
-      }
-
-      if( r.redrawCount === undefined ){
-        r.redrawCount = 0;
-      }
-
-      r.redrawCount++;
-
-      if( r.redrawTotalTime === undefined ){
-        r.redrawTotalTime = 0;
-      }
-
-      r.redrawTotalTime += endTime - startTime;
-      r.lastRedrawTime = endTime - startTime;
-
-      // use a weighted average with a bias from the previous average so we don't spike so easily
-      r.averageRedrawTime = r.averageRedrawTime/2 + (endTime - startTime)/2;
-      //console.log('actual: %i, average: %i', endTime - startTime, this.averageRedrawTime);
-
       r.currentlyDrawing = false;
 
       r.prevViewport = vp;
@@ -774,18 +800,14 @@
           needDraw[CR.DRAG] = true;
 
           r.redraw();
-        }, CanvasRenderer.motionBlurDelay);
+        }, CR.motionBlurDelay);
       }
 
       r.drawingImage = false;
 
     } // draw to context
 
-    if( !forcedContext ){
-      $$.util.requestAnimationFrame(drawToContext); // makes direct renders to screen a bit more responsive
-    } else {
-      drawToContext();
-    }
+    drawToContext();
 
     if( !forcedContext && !r.initrender ){
       r.initrender = true;

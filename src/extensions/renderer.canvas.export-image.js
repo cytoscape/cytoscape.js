@@ -66,7 +66,7 @@
       buffCxt.globalCompositeOperation = 'source-over';
 
       if( options.full ){ // draw the full bounds of the graph
-        this.redraw({
+        this.render({
           forcedContext: buffCxt,
           drawAllLayers: true,
           forcedZoom: scale,
@@ -81,7 +81,7 @@
         };
         var zoom = cy.zoom() * scale;
 
-        this.redraw({
+        this.render({
           forcedContext: buffCxt,
           drawAllLayers: true,
           forcedZoom: zoom,

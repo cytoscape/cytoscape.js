@@ -188,6 +188,8 @@
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
     this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
+    this.startRenderLoop();
+
     this.redraw();
   };
 

@@ -19,8 +19,14 @@
       cy._private.aniEles.merge( eles );
     },
 
+    stopAnimationLoop: function(){
+      this._private.animationsRunning = false;
+    },
+
     startAnimationLoop: function(){
       var cy = this;
+
+      cy._private.animationsRunning = true;
 
       if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
@@ -30,6 +36,8 @@
       }
 
       function globalAnimationStep(){
+        if( !cy._private.animationsRunning ){ return; }
+
         $$.util.requestAnimationFrame(function(now){
           handleElements(now);
           globalAnimationStep();

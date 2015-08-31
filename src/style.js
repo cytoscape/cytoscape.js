@@ -355,6 +355,7 @@
           'transition-property': 'none',
           'transition-duration': 0,
           'transition-delay': 0,
+          'transition-timing-function': 'linear',
 
           // node props
           'background-blacken': 0,

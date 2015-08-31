@@ -152,6 +152,10 @@ $(function(){ // on dom ready
     });
   });
 
+  $('#config-toggle').on('click', function(){
+    $('#config').toggleClass('config-closed');
+  });
+
 }); // on dom ready
 
 $(function() {

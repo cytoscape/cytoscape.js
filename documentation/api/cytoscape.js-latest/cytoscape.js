@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.6.
+ * This file is part of Cytoscape.js 2.4.7.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -28,7 +28,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.6';
+  $$.version = '2.4.7';
 
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -3873,9 +3873,11 @@ this.cytoscape = cytoscape;
         if( propertiesEmpty ){
           return this; // nothing to animate
         }
-
-        if( properties.css && isEles ){
-          properties.css = style.getPropsList( properties.css );
+        
+        if( isEles ){
+          properties.style = style.getPropsList( properties.style || properties.css );
+          
+          properties.css = undefined;
         }
 
         if( properties.renderedPosition && isEles ){
@@ -6656,8 +6658,12 @@ this.cytoscape = cytoscape;
         var prop = $$.style.properties[i];
         var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
 
-        if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
-          styleProp = this.parse(prop.name, styleProp);
+        if( styleProp !== undefined ){ // then make a prop of it
+          if( $$.is.plainObject( styleProp ) ){
+            styleProp = this.parse( prop.name, styleProp.strValue );
+          } else {
+            styleProp = this.parse( prop.name, styleProp );
+          }
         }
 
         if( styleProp ){
@@ -9903,6 +9909,10 @@ this.cytoscape = cytoscape;
       // set id and validate
       if( data.id === undefined ){
         data.id = idFactory.generate( cy, ele );
+
+      } else if( $$.is.number(data.id) ){
+        data.id = '' + data.id; // now it's a string
+
       } else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
         $$.util.error('Can not create element with invalid string ID `' + data.id + '`');
 
@@ -9927,6 +9937,10 @@ this.cytoscape = cytoscape;
 
           var field = fields[j];
           var val = data[field];
+
+          if( $$.is.number(val) ){
+            val = data[field] = '' + data[field]; // now string
+          }
 
           if( val == null || val === '' ){
             // can't create if source or target is not defined properly
@@ -9967,7 +9981,12 @@ this.cytoscape = cytoscape;
       var node = elements[i];
       var data = node._private.data;
 
-      var parentId = node._private.data.parent;
+      if( $$.is.number(data.parent) ){ // then automake string
+        data.parent = '' + data.parent;
+      }
+
+      var parentId = data.parent;
+
       var specifiedParent = parentId != null;
 
       if( specifiedParent ){
@@ -13097,6 +13116,13 @@ this.cytoscape = cytoscape;
           //////////////////////////////////////////////
 
           var rstyle = _p.rstyle || {};
+          var w = 0;
+          var wHalf = 0;
+
+          if( styleEnabled ){
+            w = style['width'].pxValue;
+            wHalf = w/2;
+          }
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
@@ -13115,6 +13141,12 @@ this.cytoscape = cytoscape;
             ey2 = temp;
           }
 
+          // take into account edge width
+          ex1 -= wHalf;
+          ex2 += wHalf;
+          ey1 -= wHalf;
+          ey2 += wHalf;
+
           x1 = ex1 < x1 ? ex1 : x1;
           x2 = ex2 > x2 ? ex2 : x2;
           y1 = ey1 < y1 ? ey1 : y1;
@@ -13125,9 +13157,6 @@ this.cytoscape = cytoscape;
 
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
-
-            var w = style['width'].pxValue;
-            var wHalf = w/2;
 
             for( var j = 0; j < bpts.length; j++ ){
               var bpt = bpts[j];
@@ -15715,7 +15744,7 @@ this.cytoscape = cytoscape;
     },
 
     gap: function(edge) {
-      return edge._private.style['width'].pxValue * 2;
+      return edge._private.style['width'].pxValue;
     }
   };
 
@@ -23492,15 +23521,9 @@ this.cytoscape = cytoscape;
         var scrCola = node._private.scratch.cola;
         var pos = node._private.position;
 
-        if( node.grabbed() ){
-          scrCola.x = pos.x - bb.x1;
-          scrCola.y = pos.y - bb.y1;
-
-          adaptor.dragstart( scrCola );
-        } else if( $$.is.number(scrCola.x) && $$.is.number(scrCola.y) ){
-          pos.x = scrCola.x + bb.x1;
-          pos.y = scrCola.y + bb.y1;
-        }
+        // update cola pos obj
+        scrCola.x = pos.x - bb.x1;
+        scrCola.y = pos.y - bb.y1;
 
         switch( e.type ){
           case 'grab':

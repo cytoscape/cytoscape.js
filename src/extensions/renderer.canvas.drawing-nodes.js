@@ -130,7 +130,7 @@
           };
         }
 
-        CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+        r.nodeShapes[this.getNodeShape(node)].draw(
               context,
               npos.x,
               npos.y,
@@ -164,7 +164,7 @@
         if( darkness !== 0 || borderWidth !== 0 ){
 
           if( !usePaths ){
-            CanvasRenderer.nodeShapes[this.getNodeShape(node)].draw(
+            r.nodeShapes[this.getNodeShape(node)].draw(
                 context,
                 pos.x,
                 pos.y,
@@ -234,7 +234,7 @@
       if( overlayOpacity > 0 ){
         this.fillStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
 
-        CanvasRenderer.nodeShapes['roundrectangle'].draw(
+        r.nodeShapes['roundrectangle'].draw(
           context,
           node._private.position.x,
           node._private.position.y,

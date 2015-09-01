@@ -1,6 +1,7 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CR = CanvasRenderer;
   var CRp = CanvasRenderer.prototype;
 
   CRp.getCachedImage = function(url, onLoad) {
@@ -123,7 +124,7 @@
         if( rs.pathCache ){
           context.clip( rs.pathCache );
         } else {
-          CanvasRenderer.nodeShapes[r.getNodeShape(node)].draw(
+          r.nodeShapes[r.getNodeShape(node)].draw(
             context,
             nodeX, nodeY,
             nodeW, nodeH);
@@ -142,7 +143,7 @@
       var pattern = context.createPattern( img, repeat );
       context.fillStyle = pattern;
 
-      CanvasRenderer.nodeShapes[r.getNodeShape(node)].draw(
+      r.nodeShapes[r.getNodeShape(node)].draw(
           context,
           nodeX, nodeY,
           nodeW, nodeH);

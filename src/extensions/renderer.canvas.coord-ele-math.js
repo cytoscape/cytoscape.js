@@ -32,10 +32,11 @@
   // Find nearest element
   CRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     var self = this;
-    var eles = this.getCachedZSortedEles();
+    var r = this;
+    var eles = r.getCachedZSortedEles();
     var near = [];
-    var zoom = this.cy.zoom();
-    var hasCompounds = this.cy.hasCompoundNodes();
+    var zoom = r.cy.zoom();
+    var hasCompounds = r.cy.hasCompoundNodes();
     var edgeThreshold = (isTouch ? 24 : 8) / zoom;
     var nodeThreshold = (isTouch ? 8 : 2) / zoom;
     var labelThreshold = (isTouch ? 8 : 2) / zoom;
@@ -59,7 +60,7 @@
           return;
         }
 
-        var shape = CR.nodeShapes[ self.getNodeShape(node) ];
+        var shape = r.nodeShapes[ self.getNodeShape(node) ];
         var borderWO = node._private.style['border-width'].pxValue / 2;
 
         if(
@@ -445,7 +446,7 @@
     if( shape === 'polygon' ){
       var points = style['shape-polygon-points'].value;
 
-      return CR.nodeShapes.makePolygon( points ).name;
+      return r.nodeShapes.makePolygon( points ).name;
     }
 
     return shape;
@@ -899,7 +900,8 @@
   CRp.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
-    var cy = this.cy;
+    var r = this;
+    var cy = r.cy;
     var hasCompounds = cy.hasCompoundNodes();
     var hashTable = {};
     var pairIds = [];
@@ -991,8 +993,8 @@
       tgtW = tgt.outerWidth();
       tgtH = tgt.outerHeight();
 
-      srcShape = CR.nodeShapes[ this.getNodeShape(src) ];
-      tgtShape = CR.nodeShapes[ this.getNodeShape(tgt) ];
+      srcShape = r.nodeShapes[ this.getNodeShape(src) ];
+      tgtShape = r.nodeShapes[ this.getNodeShape(tgt) ];
 
       badBezier = false;
 
@@ -1426,7 +1428,8 @@
     return hashTable;
   };
 
-  CRp.findEndpoints = function(edge) {
+  CRp.findEndpoints = function( edge ){
+    var r = this;
     var intersect;
 
     var source = edge.source()[0];
@@ -1447,7 +1450,7 @@
 
       var cp = [rs.cp2cx, rs.cp2cy];
 
-      intersect = CR.nodeShapes[this.getNodeShape(target)].intersectLine(
+      intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
         tgtPos.x,
         tgtPos.y,
         target.outerWidth(),
@@ -1470,7 +1473,7 @@
 
       var cp = [rs.cp2ax, rs.cp2ay];
 
-      intersect = CR.nodeShapes[this.getNodeShape(source)].intersectLine(
+      intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
         srcPos.x,
         srcPos.y,
         source.outerWidth(),
@@ -1494,7 +1497,7 @@
 
     } else if (rs.edgeType == 'straight') {
 
-      intersect = CR.nodeShapes[this.getNodeShape(target)].intersectLine(
+      intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
         tgtPos.x,
         tgtPos.y,
         target.outerWidth(),
@@ -1523,7 +1526,7 @@
       rs.arrowEndX = arrowEnd[0];
       rs.arrowEndY = arrowEnd[1];
 
-      intersect = CR.nodeShapes[this.getNodeShape(source)].intersectLine(
+      intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
         srcPos.x,
         srcPos.y,
         source.outerWidth(),
@@ -1567,7 +1570,7 @@
       // if( window.badArrow) debugger;
       var cp = [rs.cp2x, rs.cp2y];
 
-      intersect = CR.nodeShapes[
+      intersect = r.nodeShapes[
         this.getNodeShape(target)].intersectLine(
         tgtPos.x,
         tgtPos.y,
@@ -1594,7 +1597,7 @@
       rs.arrowEndX = arrowEnd[0];
       rs.arrowEndY = arrowEnd[1];
 
-      intersect = CR.nodeShapes[
+      intersect = r.nodeShapes[
         this.getNodeShape(source)].intersectLine(
         srcPos.x,
         srcPos.y,

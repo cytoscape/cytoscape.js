@@ -13,7 +13,7 @@
     var _p = node._private;
     var pos = _p.position;
 
-    if( pos.x === undefined || pos.y === undefined ){
+    if( !$$.is.number(pos.x) || !$$.is.number(pos.y) ){
       return; // can't draw node with undefined position
     }
 

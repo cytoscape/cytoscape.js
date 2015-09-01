@@ -28,7 +28,6 @@ var unzip = require('gulp-unzip');
 var request = require('request');
 var download = require("gulp-download");
 // var download = function(url){ return request.get(url); };
-var docmaker = require('./documentation/docmaker.json');
 var prompt = require('gulp-prompt');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
@@ -469,6 +468,8 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
 });
 
 gulp.task('docsdemodl', function(){
+
+  var docmaker = require('./documentation/docmaker.json');
 
   var demos = docmaker.sections.filter(function(s){
     return s.demos != null || s.demo != null;

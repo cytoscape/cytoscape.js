@@ -22,16 +22,9 @@
   CR.MOTIONBLUR_BUFFER_DRAG = 2;
 
   function CanvasRenderer(options) {
+    var r = this;
 
-    this.options = options;
-
-    this.cy = options.cy;
-
-    this.container = options.cy.container();
-
-    this.selection = [undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
-
-    this.data = {
+    r.data = {
       canvases: new Array(CR.CANVAS_LAYERS),
       contexts: new Array(CR.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CR.CANVAS_LAYERS),
@@ -40,91 +33,60 @@
       bufferContexts: new Array(CR.CANVAS_LAYERS)
     };
 
-    //--Pointer-related data
-    this.hoverData = {down: null, last: null,
-        downTime: null, triggerMode: null,
-        dragging: false,
-        initialPan: [null, null], capture: false};
-
-    this.dragData = {possibleDragElements: []};
-
-    this.touchData = {
-        start: null, capture: false,
-
-        // These 3 fields related to tap, taphold events
-        startPosition: [null, null, null, null, null, null],
-        singleTouchStartTime: null,
-        singleTouchMoved: true,
-
-        now: [null, null, null, null, null, null],
-        earlier: [null, null, null, null, null, null]
-    };
-
-    this.redraws = 0;
-    this.showFps = options.showFps;
-
-    this.bindings = [];
-
-    this.data.canvasContainer = document.createElement('div');
-    var containerStyle = this.data.canvasContainer.style;
+    r.data.canvasContainer = document.createElement('div');
+    var containerStyle = r.data.canvasContainer.style;
     containerStyle.position = 'absolute';
     containerStyle.zIndex = '0';
     containerStyle.overflow = 'hidden';
 
-    this.container.appendChild( this.data.canvasContainer );
+    options.cy.container().appendChild( r.data.canvasContainer );
 
     for (var i = 0; i < CR.CANVAS_LAYERS; i++) {
-      this.data.canvases[i] = document.createElement('canvas');
-      this.data.contexts[i] = this.data.canvases[i].getContext('2d');
-      this.data.canvases[i].style.position = 'absolute';
-      this.data.canvases[i].setAttribute('data-id', 'layer' + i);
-      this.data.canvases[i].style.zIndex = String(CR.CANVAS_LAYERS - i);
-      this.data.canvasContainer.appendChild(this.data.canvases[i]);
+      r.data.canvases[i] = document.createElement('canvas');
+      r.data.contexts[i] = r.data.canvases[i].getContext('2d');
+      r.data.canvases[i].style.position = 'absolute';
+      r.data.canvases[i].setAttribute('data-id', 'layer' + i);
+      r.data.canvases[i].style.zIndex = String(CR.CANVAS_LAYERS - i);
+      r.data.canvasContainer.appendChild(r.data.canvases[i]);
 
-      this.data.canvasNeedsRedraw[i] = false;
+      r.data.canvasNeedsRedraw[i] = false;
     }
-    this.data.topCanvas = this.data.canvases[0];
+    r.data.topCanvas = r.data.canvases[0];
 
-    this.data.canvases[CR.NODE].setAttribute('data-id', 'layer' + CR.NODE + '-node');
-    this.data.canvases[CR.SELECT_BOX].setAttribute('data-id', 'layer' + CR.SELECT_BOX + '-selectbox');
-    this.data.canvases[CR.DRAG].setAttribute('data-id', 'layer' + CR.DRAG + '-drag');
+    r.data.canvases[CR.NODE].setAttribute('data-id', 'layer' + CR.NODE + '-node');
+    r.data.canvases[CR.SELECT_BOX].setAttribute('data-id', 'layer' + CR.SELECT_BOX + '-selectbox');
+    r.data.canvases[CR.DRAG].setAttribute('data-id', 'layer' + CR.DRAG + '-drag');
 
     for (var i = 0; i < CR.BUFFER_COUNT; i++) {
-      this.data.bufferCanvases[i] = document.createElement('canvas');
-      this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
-      this.data.bufferCanvases[i].style.position = 'absolute';
-      this.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
-      this.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-      this.data.bufferCanvases[i].style.visibility = 'hidden';
-      //this.data.canvasContainer.appendChild(this.data.bufferCanvases[i]);
+      r.data.bufferCanvases[i] = document.createElement('canvas');
+      r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
+      r.data.bufferCanvases[i].style.position = 'absolute';
+      r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
+      r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
+      r.data.bufferCanvases[i].style.visibility = 'hidden';
+      //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
     }
 
-    this.hideEdgesOnViewport = options.hideEdgesOnViewport;
-    this.hideLabelsOnViewport = options.hideLabelsOnViewport;
-    this.textureOnViewport = options.textureOnViewport;
-    this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur; // on by default
-    this.forcedPixelRatio = options.pixelRatio;
-    this.motionBlur = true; // for initial kick off
-    this.motionBlurOpacity = options.motionBlurOpacity;
-    this.motionBlurTransparency = 1 - this.motionBlurOpacity;
-    this.motionBlurPxRatio = 1;
-    this.mbPxRBlurry = 1; //0.8;
-    this.minMbLowQualFrames = 4;
-    this.fullQualityMb = false;
-    this.clearedForMotionBlur = [];
-    this.desktopTapThreshold = options.desktopTapThreshold;
-    this.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
-    this.touchTapThreshold = options.touchTapThreshold;
-    this.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
-    this.tapholdDuration = 500;
-
-    this.pathsEnabled = true;
-
-    this.load();
+    r.pathsEnabled = true;
   }
 
   CR.panOrBoxSelectDelay = 400;
+
+  CRp.redrawHint = function( group, bool ){
+    var r = this;
+
+    switch( group ){
+      case 'eles':
+        r.data.canvasNeedsRedraw[ CR.NODE ] = bool;
+        break;
+      case 'drag':
+        r.data.canvasNeedsRedraw[ CR.DRAG ] = bool;
+        break;
+      case 'select':
+        r.data.canvasNeedsRedraw[ CR.SELECT_BOX ] = bool;
+        break;
+    }
+  };
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';
@@ -162,8 +124,7 @@
         case 'add':
         case 'remove':
         case 'load':
-          this.updateNodesCache();
-          this.updateEdgesCache();
+          this.updateElementsCache();
           break;
 
         case 'viewport':

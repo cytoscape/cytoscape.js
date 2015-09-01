@@ -40,12 +40,12 @@
         return;
       }
 
-      this._private.renderer = new RendererProto(
-        $$.util.extend({}, options, {
-          cy: cy,
-          style: cy._private.style
-        })
-      );
+      var rOpts = $$.util.extend({}, options, {
+        cy: cy
+      });
+      var renderer = cy._private.renderer = new RendererProto( rOpts );
+
+      renderer.init( rOpts );
 
     },
 

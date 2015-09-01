@@ -3,8 +3,10 @@
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // the padding on fit
-    startAngle: 3/2 * Math.PI, // the position of the first node
-    counterclockwise: false, // whether the layout should go counterclockwise/anticlockwise (true) or clockwise (false)
+    startAngle: 3/2 * Math.PI, // where nodes start in radians
+    sweep: undefined, // how many radians should be between the first and last node (defaults to full circle)
+    clockwise: true, // whether the layout should go clockwise (true) or counterclockwise/anticlockwise (false)
+    equidistant: false, // whether levels have an equal radial distance betwen them, may cause bounding box overflow
     minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
     boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
@@ -29,6 +31,8 @@
   ConcentricLayout.prototype.run = function(){
     var params = this.options;
     var options = params;
+
+    var clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
 
     var cy = params.cy;
 
@@ -101,8 +105,6 @@
 
     // create positions from levels
 
-    var pos = {}; // id => position
-    var r = 0;
     var minDist = maxNodeSize + options.minNodeSpacing; // min dist between nodes
 
     if( !options.avoidOverlap ){ // then strictly constrain to bb
@@ -113,21 +115,60 @@
       minDist = Math.min( minDist, rStep );
     }
 
+    // find the metrics for each level
+    var r = 0;
     for( var i = 0; i < levels.length; i++ ){
       var level = levels[i];
-      var dTheta = 2 * Math.PI / level.length;
+      var sweep = options.sweep === undefined ? 2*Math.PI - 2*Math.PI/level.length : options.sweep;
+      var dTheta = level.dTheta = sweep / ( Math.max(1, level.length - 1) );
 
       // calculate the radius
       if( level.length > 1 && options.avoidOverlap ){ // but only if more than one node (can't overlap)
         var dcos = Math.cos(dTheta) - Math.cos(0);
         var dsin = Math.sin(dTheta) - Math.sin(0);
         var rMin = Math.sqrt( minDist * minDist / ( dcos*dcos + dsin*dsin ) ); // s.t. no nodes overlapping
-        r = Math.max( rMin, r );
+
+        level.r = r = Math.max( rMin, r );
       }
+
+      r += minDist;
+    }
+
+    if( options.equidistant ){
+      var rDeltaMax = 0;
+      var r = 0;
+
+      for( var i = 0; i < levels.length; i++ ){
+        var level = levels[i];
+        var rDelta = level.r - r;
+
+        rDeltaMax = Math.max( rDeltaMax, rDelta );
+      }
+
+      r = 0;
+      for( var i = 0; i < levels.length; i++ ){
+        var level = levels[i];
+
+        if( i === 0 ){
+          r = level.r;
+        }
+
+        level.r = r;
+
+        r += rDeltaMax;
+      }
+    }
+
+    // calculate the node positions
+    var pos = {}; // id => position
+    for( var i = 0; i < levels.length; i++ ){
+      var level = levels[i];
+      var dTheta = level.dTheta;
+      var r = level.r;
 
       for( var j = 0; j < level.length; j++ ){
         var val = level[j];
-        var theta = options.startAngle + (options.counterclockwise ? -1 : 1) * dTheta * j;
+        var theta = options.startAngle + (clockwise ? 1 : -1) * dTheta * j;
 
         var p = {
           x: center.x + r * Math.cos(theta),
@@ -136,9 +177,6 @@
 
         pos[ val.node.id() ] = p;
       }
-
-      r += minDist;
-
     }
 
     // position the nodes

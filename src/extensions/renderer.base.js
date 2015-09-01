@@ -5,7 +5,9 @@
   var BRp = BR.prototype;
 
   // TODO more functions should be defined by client
-  BRp.clientFunctions = [ 'redrawHint', 'render', 'matchCanvasSize' ];
+  BRp.clientFunctions = [ 'redrawHint', 'render', 'renderTo', 'matchCanvasSize' ];
+
+  BRp.clientProperties = [ 'nodeShapeImpl', 'arrowShapeImpl' ];
 
   BRp.init = function( options ){
     var r = this;

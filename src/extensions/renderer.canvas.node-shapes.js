@@ -28,12 +28,6 @@
     name: 'ellipse',
 
     draw: function(context, centerX, centerY, width, height) {
-      this.drawPath(context, centerX, centerY, width, height);
-
-      context.fill();
-    },
-
-    drawPath: function(context, centerX, centerY, width, height) {
 
       if( context.beginPath ){ context.beginPath(); }
 
@@ -88,13 +82,6 @@
       points: points,
 
       draw: function(context, centerX, centerY, width, height) {
-        renderer.drawPolygon(context,
-          centerX, centerY,
-          width, height,
-          this.points);
-      },
-
-      drawPath: function(context, centerX, centerY, width, height) {
         renderer.drawPolygonPath(context,
           centerX, centerY,
           width, height,
@@ -131,13 +118,6 @@
     points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 
     draw: function(context, centerX, centerY, width, height) {
-      renderer.drawRoundRectangle(context,
-        centerX, centerY,
-        width, height,
-        10);
-    },
-
-    drawPath: function(context, centerX, centerY, width, height) {
       renderer.drawRoundRectanglePath(context,
         centerX, centerY,
         width, height,

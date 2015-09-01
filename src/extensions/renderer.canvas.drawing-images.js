@@ -123,7 +123,7 @@
         if( rs.pathCache ){
           context.clip( rs.pathCache );
         } else {
-          CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+          CanvasRenderer.nodeShapes[r.getNodeShape(node)].draw(
             context,
             nodeX, nodeY,
             nodeW, nodeH);
@@ -142,7 +142,7 @@
       var pattern = context.createPattern( img, repeat );
       context.fillStyle = pattern;
 
-      CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
+      CanvasRenderer.nodeShapes[r.getNodeShape(node)].draw(
           context,
           nodeX, nodeY,
           nodeW, nodeH);

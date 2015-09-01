@@ -26,8 +26,8 @@ $(function(){
           'border-color': '#555',
           'shape': 'ellipse',
           //'shape': 'data(shape)',
-          // 'width': 'mapData(weight, 0, 100, 5, 15)',
-          // 'height': 'mapData(weight, 0, 100, 5, 15)',
+          'width': 'mapData(weight, 0, 100, 15, 50)',
+          'height': 'mapData(weight, 0, 100, 15, 50)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'

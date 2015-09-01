@@ -79,15 +79,20 @@
         rProto[ pName ] = pVal; // take impl from base
       }
 
-      var warnNotDefd = function( name ){
-        return function(){
-          $$.util.error('Renderer does not implement `renderer.' + name + '()`');
-        };
-      };
-
       bProto.clientFunctions.forEach(function( name ){
-        rProto[ name ] = rProto[ name ] || warnNotDefd( name );
+        rProto[ name ] = rProto[ name ] || function(){
+          $$.util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
+        };
       });
+
+      bProto.clientProperties.forEach(function( name ){
+        Object.defineProperty( bProto, name, {
+          get: function(){
+            $$.util.error('Renderer does not specifiy property `renderer.' + name + '` on its prototype');
+          }
+        } );
+      });
+
     }
 
     return $$.util.setMap({

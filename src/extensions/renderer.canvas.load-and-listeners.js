@@ -38,7 +38,7 @@
     var getDragListIds = function(opts){
       var listHasId;
 
-      if( opts.addToList && r.data.cy.hasCompoundNodes() ){ // only needed for compound graphs
+      if( opts.addToList && r.cy.hasCompoundNodes() ){ // only needed for compound graphs
         if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
           opts.addToList.hasId = {};
 
@@ -204,7 +204,7 @@
           if( rNodes ){ for( var j = 0; j < rNodes.length; j++ ){
             var rNode = rNodes[j];
 
-            if( rNode === r.data.container ){
+            if( rNode === r.container ){
               r.destroy();
               break;
             }
@@ -212,9 +212,9 @@
         }
       });
 
-      r.removeObserver.observe( r.data.container.parentNode, { childList: true } );
+      r.removeObserver.observe( r.container.parentNode, { childList: true } );
     } else {
-      r.registerBinding(r.data.container, 'DOMNodeRemoved', function(e){
+      r.registerBinding(r.container, 'DOMNodeRemoved', function(e){
         r.destroy();
       });
     }
@@ -225,7 +225,7 @@
     r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
       r.invalidateContainerClientCoordsCache();
 
-      r.matchCanvasSize(r.data.container);
+      r.matchCanvasSize(r.container);
       r.data.canvasNeedsRedraw[CR.NODE] = true;
       r.redraw();
     }, 100 ) );
@@ -236,7 +236,7 @@
       } );
     };
 
-    var bbCtnr = r.data.cy.container();
+    var bbCtnr = r.cy.container();
 
     for( ;; ){
 
@@ -251,23 +251,23 @@
     }
 
     // stop right click menu from appearing on cy
-    r.registerBinding(r.data.container, 'contextmenu', function(e){
+    r.registerBinding(r.container, 'contextmenu', function(e){
       e.preventDefault();
     });
 
     var inBoxSelection = function(){
-      return r.data.select[4] !== 0;
+      return r.selection[4] !== 0;
     };
 
     // Primary key
-    r.registerBinding(r.data.container, 'mousedown', function(e) {
+    r.registerBinding(r.container, 'mousedown', function(e) {
       e.preventDefault();
       r.hoverData.capture = true;
       r.hoverData.which = e.which;
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var select = r.data.select;
+      var select = r.selection;
       var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements;
 
@@ -454,7 +454,7 @@
           return;
         }
 
-        var cyContainer = r.data.container;
+        var cyContainer = r.container;
         var target = e.target;
         var tParent = target.parentNode;
         var containerIsTarget = false;
@@ -471,10 +471,10 @@
         if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
       }
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var zoom = cy.zoom();
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var select = r.data.select;
+      var select = r.selection;
       var needsRedraw = r.data.canvasNeedsRedraw;
 
       var near = null;
@@ -768,7 +768,7 @@
       if (!capture) { return; }
       r.hoverData.capture = false;
 
-      var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
+      var cy = r.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.selection;
       var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var multSelKeyDown = isMultSelKeyDown( e );
@@ -1024,7 +1024,7 @@
 
       if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var rpos = [pos[0] * cy.zoom() + cy.pan().x,
                     pos[1] * cy.zoom() + cy.pan().y];
@@ -1064,12 +1064,12 @@
 
     // Functions to help with whether mouse wheel should trigger zooming
     // --
-    r.registerBinding(r.data.container, 'wheel', wheelHandler, true);
+    r.registerBinding(r.container, 'wheel', wheelHandler, true);
 
     // disable nonstandard wheel events
-    // r.registerBinding(r.data.container, 'mousewheel', wheelHandler, true);
-    // r.registerBinding(r.data.container, 'DOMMouseScroll', wheelHandler, true);
-    // r.registerBinding(r.data.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
+    // r.registerBinding(r.container, 'mousewheel', wheelHandler, true);
+    // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
+    // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
     r.registerBinding(window, 'scroll', function(e){
       r.scrollingPage = true;
@@ -1082,19 +1082,19 @@
 
     // Functions to help with handling mouseout/mouseover on the Cytoscape container
           // Handle mouseout on Cytoscape container
-    r.registerBinding(r.data.container, 'mouseout', function(e) {
+    r.registerBinding(r.container, 'mouseout', function(e) {
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
-      r.data.cy.trigger(new $$.Event(e, {
+      r.cy.trigger(new $$.Event(e, {
         type: 'mouseout',
         cyPosition: { x: pos[0], y: pos[1] }
       }));
     }, false);
 
-    r.registerBinding(r.data.container, 'mouseover', function(e) {
+    r.registerBinding(r.container, 'mouseover', function(e) {
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
 
-      r.data.cy.trigger(new $$.Event(e, {
+      r.cy.trigger(new $$.Event(e, {
         type: 'mouseover',
         cyPosition: { x: pos[0], y: pos[1] }
       }));
@@ -1116,7 +1116,7 @@
     };
 
     var touchstartHandler;
-    r.registerBinding(r.data.container, 'touchstart', touchstartHandler = function(e) {
+    r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
 
       clearTimeout( r.threeFingerSelectTimeout );
 
@@ -1127,7 +1127,7 @@
       r.touchData.capture = true;
       r.data.bgActivePosistion = undefined;
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var nodes = r.getCachedNodes();
       var edges = r.getCachedEdges();
       var now = r.touchData.now;
@@ -1349,7 +1349,7 @@
                 cyPosition: { x: now[0], y: now[1] }
               }) );
             } else {
-              r.data.cy.trigger( new $$.Event(e, {
+              r.cy.trigger( new $$.Event(e, {
                 type: 'taphold',
                 cyPosition: { x: now[0], y: now[1] }
               }) );
@@ -1371,11 +1371,11 @@
     var touchmoveHandler;
     r.registerBinding(window, 'touchmove', touchmoveHandler = $$.util.throttle(function(e) {
 
-      var select = r.data.select;
+      var select = r.selection;
       var capture = r.touchData.capture; //if (!capture) { return; };
       if( capture ){ e.preventDefault(); }
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       var zoom = cy.zoom();
 
@@ -1832,12 +1832,12 @@
       }
 
       e.preventDefault();
-      var select = r.data.select;
+      var select = r.selection;
 
       r.swipePanning = false;
       r.hoverData.draggingEles = false;
 
-      var cy = r.data.cy;
+      var cy = r.cy;
       var zoom = cy.zoom();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
@@ -2168,7 +2168,7 @@
         });
       }
 
-      r.registerBinding(r.data.container, 'pointerdown', function(e){
+      r.registerBinding(r.container, 'pointerdown', function(e){
         if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
         // console.log('pdown')
@@ -2182,7 +2182,7 @@
         touchstartHandler( e );
       });
 
-      r.registerBinding(r.data.container, 'pointerup', function(e){
+      r.registerBinding(r.container, 'pointerup', function(e){
         if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
         // console.log('pup')
@@ -2194,7 +2194,7 @@
         touchendHandler( e );
       });
 
-      r.registerBinding(r.data.container, 'pointercancel', function(e){
+      r.registerBinding(r.container, 'pointercancel', function(e){
         if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
         // console.log('pcancel')
@@ -2206,7 +2206,7 @@
         touchcancelHandler( e );
       });
 
-      r.registerBinding(r.data.container, 'pointermove', function(e){
+      r.registerBinding(r.container, 'pointermove', function(e){
         if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
         // console.log('pmove')

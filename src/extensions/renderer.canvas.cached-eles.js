@@ -4,7 +4,7 @@
   var CRp = CanvasRenderer.prototype;
 
   CRp.getCachedNodes = function() {
-    var data = this.data; var cy = this.data.cy;
+    var data = this.data; var cy = this.cy;
 
     if (data.cache == null) {
       data.cache = {};
@@ -18,7 +18,7 @@
   };
 
   CRp.updateNodesCache = function() {
-    var data = this.data; var cy = this.data.cy;
+    var data = this.data; var cy = this.cy;
 
     if (data.cache == null) {
       data.cache = {};
@@ -28,7 +28,7 @@
   };
 
   CRp.getCachedEdges = function() {
-    var data = this.data; var cy = this.data.cy;
+    var data = this.data; var cy = this.cy;
 
     if (data.cache == null) {
       data.cache = {};
@@ -42,7 +42,7 @@
   };
 
   CRp.updateEdgesCache = function() {
-    var data = this.data; var cy = this.data.cy;
+    var data = this.data; var cy = this.cy;
 
     if (data.cache == null) {
       data.cache = {};

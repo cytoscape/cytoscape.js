@@ -21,16 +21,6 @@
     context.closePath();
   };
 
-  CRp.drawPolygon = function(
-    context, x, y, width, height, points) {
-
-    // Draw path
-    this.drawPolygonPath(context, x, y, width, height, points);
-
-    // Fill path
-    context.fill();
-  };
-
   // Round rectangle drawing
   CRp.drawRoundRectanglePath = function(
     context, x, y, width, height, radius) {
@@ -58,13 +48,12 @@
     context.closePath();
   };
 
-  CRp.drawRoundRectangle = function(
-    context, x, y, width, height, radius) {
+  CRp.drawEllipsePath = function(context, centerX, centerY, width, height){
+    if( context.beginPath ){ context.beginPath(); }
 
-    this.drawRoundRectanglePath(context, x, y, width, height, radius);
+    context.ellipse( centerX, centerY, width/2, height/2, 0, 0, 2*Math.PI );
 
-    context.fill();
+    context.closePath();
   };
-
 
 })( cytoscape );

@@ -58,6 +58,7 @@
 
     r.bindings = [];
 
+    r.registerNodeShapes();
     r.load();
   };
 

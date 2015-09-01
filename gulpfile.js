@@ -81,6 +81,8 @@ var paths = {
     'src/collection.js',
     'src/collection-*.js',
     'src/heap.js',
+    'src/extensions/renderer.base.js',
+    'src/extensions/renderer.base.*.js',
     'src/extensions/renderer.canvas.define-and-init-etc.js',
     'src/extensions/renderer.canvas.*.js',
     'src/extensions/*.js'
@@ -467,7 +469,7 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
 });
 
 gulp.task('docsdemodl', function(){
-  
+
   var demos = docmaker.sections.filter(function(s){
     return s.demos != null || s.demo != null;
   }).map(function( s ){
@@ -479,8 +481,8 @@ gulp.task('docsdemodl', function(){
   }).reduce(function(prevDs, currDs){
     return prevDs.concat( currDs );
   }, []);
-  
-  return download( demos )    
+
+  return download( demos )
     .pipe( unzip() )
 
     .pipe( rename(function( path ){

@@ -8,7 +8,7 @@
   var modules = {};
   $$.modules = modules;
 
-  function setExtension(type, name, registrant){
+  function setExtension( type, name, registrant ){
     var impl = {};
     impl[name] = registrant;
 
@@ -61,6 +61,23 @@
       layoutProto.trigger = $$.define.trigger({ layout: true });
 
       $$.define.eventAliasesOn( layoutProto );
+
+    // user registered renderers inherit from base
+    } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
+      var bProto = getExtension( 'renderer', 'base' ).prototype;
+      var rProto = registrant.prototype;
+
+      for( var pName in bProto ){
+        var pVal = bProto[ pName ];
+        var existsInR = rProto[ pName ] != null;
+
+        if( existsInR ){
+          $$.util.error('Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype');
+          return;
+        }
+        
+        rProto[ pName ] = pVal; // take impl from base
+      }
     }
 
     return $$.util.setMap({

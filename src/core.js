@@ -164,14 +164,14 @@
       if( options.initrender ){
         cy.on('initrender', options.initrender);
         cy.on('initrender', function(){
-          cy._private.initrender = true;
+          _p.initrender = true;
         });
       }
 
       // initial load
       cy.load(initEles, function(){ // onready
         cy.startAnimationLoop();
-        cy._private.ready = true;
+        _p.ready = true;
 
         // if a ready callback is specified as an option, the bind it
         if( $$.is.fn( options.ready ) ){
@@ -308,43 +308,127 @@
       return $$.util.copy( this._private.options );
     },
 
-    json: function(params){
-      var json = {};
+    json: function( obj ){
       var cy = this;
+      var _p = cy._private;
 
-      json.elements = {};
-      cy.elements().each(function(i, ele){
-        var group = ele.group();
+      if( obj ){ // set
 
-        if( !json.elements[group] ){
-          json.elements[group] = [];
+        cy.startBatch();
+
+        if( obj.elements ){
+          var idInJson = {};
+
+          var updateEles = function( jsons, gr ){
+            for( var i = 0; i < jsons.length; i++ ){
+              var json = jsons[i];
+              var id = json.data.id;
+              var ele = cy.getElementById( id );
+
+              idInJson[ id ] = true;
+
+              if( ele.length !== 0 ){ // existing element should be updated
+                ele.json( json );
+              } else { // otherwise should be added
+                cy.add( json );
+              }
+            }
+          };
+
+          if( $$.is.array(obj.elements) ){ // elements: []
+            updateEles( obj.elements );
+
+          } else { // elements: { nodes: [], edges: [] }
+            var grs = ['nodes', 'edges'];
+            for( var i = 0; i < grs.length; i++ ){
+              var gr = grs[i];
+              var elements = obj.elements[ gr ];
+
+              if( $$.is.array(elements) ){
+                updateEles( elements, gr );
+              }
+            }
+          }
+
+          // elements not specified in json should be removed
+          cy.elements().stdFilter(function( ele ){
+            return !idInJson[ ele.id() ];
+          }).remove();
         }
 
-        json.elements[group].push( ele.json() );
-      });
+        if( obj.style ){
+          cy.style( obj.style );
+        }
 
-      if( this._private.styleEnabled ){
-        json.style = cy.style().json();
+        if( obj.layout ){
+          cy.layout( obj.layout )
+        }
+
+        if( obj.zoom != null && obj.zoom !== _p.zoom ){
+          cy.zoom( obj.zoom );
+        }
+
+        if( obj.pan ){
+          if( obj.pan.x !== _p.pan.x || obj.pan.y !== _p.pan.y ){
+            cy.pan( obj.pan );
+          }
+        }
+
+        var fields = [
+          'minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled',
+          'panningEnabled', 'userPanningEnabled',
+          'boxSelectionEnabled',
+          'autolock', 'autoungrabify', 'autounselectify'
+        ];
+
+        for( var i = 0; i < fields.length; i++ ){
+          var f = fields[i];
+
+          if( obj[f] != null ){
+            cy[f]( obj[f] );
+          }
+        }
+
+        cy.endBatch();
+
+        return this; // chaining
+      } else { // get
+        var json = {};
+
+        json.elements = {};
+        cy.elements().each(function(i, ele){
+          var group = ele.group();
+
+          if( !json.elements[group] ){
+            json.elements[group] = [];
+          }
+
+          json.elements[group].push( ele.json() );
+        });
+
+        if( this._private.styleEnabled ){
+          json.style = cy.style().json();
+        }
+
+        json.zoomingEnabled = cy._private.zoomingEnabled;
+        json.userZoomingEnabled = cy._private.userZoomingEnabled;
+        json.zoom = cy._private.zoom;
+        json.minZoom = cy._private.minZoom;
+        json.maxZoom = cy._private.maxZoom;
+        json.panningEnabled = cy._private.panningEnabled;
+        json.userPanningEnabled = cy._private.userPanningEnabled;
+        json.pan = cy._private.pan;
+        json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
+        json.layout = cy._private.options.layout;
+        json.renderer = cy._private.options.renderer;
+        json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
+        json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
+        json.textureOnViewport = cy._private.options.textureOnViewport;
+        json.wheelSensitivity = cy._private.options.wheelSensitivity;
+        json.motionBlur = cy._private.options.motionBlur;
+
+        return json;
       }
-
-      json.zoomingEnabled = cy._private.zoomingEnabled;
-      json.userZoomingEnabled = cy._private.userZoomingEnabled;
-      json.zoom = cy._private.zoom;
-      json.minZoom = cy._private.minZoom;
-      json.maxZoom = cy._private.maxZoom;
-      json.panningEnabled = cy._private.panningEnabled;
-      json.userPanningEnabled = cy._private.userPanningEnabled;
-      json.pan = cy._private.pan;
-      json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
-      json.layout = cy._private.options.layout;
-      json.renderer = cy._private.options.renderer;
-      json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
-      json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
-      json.textureOnViewport = cy._private.options.textureOnViewport;
-      json.wheelSensitivity = cy._private.options.wheelSensitivity;
-      json.motionBlur = cy._private.options.motionBlur;
-
-      return json;
     },
 
     // defer execution until not busy and guarantee relative execution order of deferred functions

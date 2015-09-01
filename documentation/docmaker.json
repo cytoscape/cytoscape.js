@@ -9,6 +9,8 @@
     "eleObj": "#notation/elements-json",
     "eleObjs": "#notation/elements-json",
     "elesArray": "#notation/elements-json",
+    "elesJson": "#notation/elements-json",
+    "eleJson": "#notation/elements-json",
     "ele": "#collection",
     "eles": "#collection",
     "root": "#collection",
@@ -21,7 +23,8 @@
     "css": "#style",
     "style": "#style",
     "stylesheet": "#style",
-    "easing": "#style/transition-animation"
+    "easing": "#style/transition-animation",
+    "cyJson": "#core/initialisation"
   },
 
   "sections": [
@@ -924,7 +927,20 @@
 
             {
               "name": "cy.json",
-              "descr": "Export the graph as JSON, the same format used at initialisation.",
+              "descr": "Import or export the graph in the same JSON format used at initialisation.",
+              "formats": [
+                {
+                  "descr": "Export the graph as JSON.",
+                  "args": []
+                },
+
+                {
+                  "descr": "Import the graph as JSON, updating only the fields specified.",
+                  "args": [
+                    { "name": "cyJson", "descr": "The object with the fields corresponding to the states that should be changed." }
+                  ]
+                }
+              ],
               "md": "core/json"
             }
           ]
@@ -1236,7 +1252,20 @@
 
             {
               "name": "ele.json",
-              "descr": "Get the element's plain JavaScript object representation.",
+              "descr": "Get or mutate the element's plain JavaScript object representation.",
+              "formats": [
+                {
+                  "descr": "Get the element's JSON.",
+                  "args": []
+                },
+
+                {
+                  "descr": "Mutate the element's state as specified.",
+                  "args": [
+                    { "name": "eleJson", "For each field in the object, the element's state is mutated as specified." }
+                  ]
+                }
+              ],
               "md": "collection/json"
             },
 

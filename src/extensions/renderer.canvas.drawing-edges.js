@@ -336,6 +336,7 @@
 
   // Draw arrowshape
   CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
+    var r = this;
     var usePaths = this.usePaths();
     var rs = edge._private.rscratch;
     var pathCacheHit = false;
@@ -353,7 +354,7 @@
     }
 
     var size = this.getArrowWidth( edgeWidth );
-    var shapeImpl = CanvasRenderer.arrowShapes[shape];
+    var shapeImpl = r.arrowShapes[shape];
 
     // context.translate(x, y);
 

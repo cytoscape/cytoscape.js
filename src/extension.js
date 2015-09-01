@@ -75,9 +75,19 @@
           $$.util.error('Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype');
           return;
         }
-        
+
         rProto[ pName ] = pVal; // take impl from base
       }
+
+      var warnNotDefd = function( name ){
+        return function(){
+          $$.util.error('Renderer does not implement `renderer.' + name + '()`');
+        };
+      };
+
+      bProto.clientFunctions.forEach(function( name ){
+        rProto[ name ] = rProto[ name ] || warnNotDefd( name );
+      });
     }
 
     return $$.util.setMap({

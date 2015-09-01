@@ -1,8 +1,13 @@
 (function($$) { 'use strict';
 
   var BaseRenderer = function(){};
+  var BR = BaseRenderer;
+  var BRp = BR.prototype;
 
-  BaseRenderer.prototype.init = function( options ){
+  // TODO more functions should be defined by client
+  BRp.clientFunctions = [ 'redrawHint', 'render', 'matchCanvasSize' ];
+
+  BRp.init = function( options ){
     var r = this;
 
     r.options = options;
@@ -61,6 +66,54 @@
     r.registerNodeShapes();
     r.registerArrowShapes();
     r.load();
+  };
+
+  BRp.notify = function(params) {
+    var types;
+    var r = this;
+
+    if( $$.is.array( params.type ) ){
+      types = params.type;
+
+    } else {
+      types = [ params.type ];
+    }
+
+    for( var i = 0; i < types.length; i++ ){
+      var type = types[i];
+
+      switch( type ){
+        case 'destroy':
+          r.destroy();
+          return;
+
+        case 'add':
+        case 'remove':
+        case 'load':
+          r.updateElementsCache();
+          break;
+
+        case 'viewport':
+          r.redrawHint('select', true);
+          break;
+
+        case 'style':
+          r.updateCachedZSortedEles();
+          break;
+      }
+
+      if( type === 'load' || type === 'resize' ){
+        r.invalidateContainerClientCoordsCache();
+        r.matchCanvasSize(r.container);
+      }
+    } // for
+
+    r.redrawHint('eles', true);
+    r.redrawHint('drag', true);
+
+    this.startRenderLoop();
+
+    this.redraw();
   };
 
   $$('renderer', 'base', BaseRenderer);

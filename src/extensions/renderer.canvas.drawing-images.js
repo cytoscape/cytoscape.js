@@ -4,23 +4,6 @@
   var CR = CanvasRenderer;
   var CRp = CanvasRenderer.prototype;
 
-  CRp.getCachedImage = function(url, onLoad) {
-    var r = this;
-    var imageCache = r.imageCache = r.imageCache || {};
-
-    if( imageCache[url] && imageCache[url].image ){
-      return imageCache[url].image;
-    }
-
-    var cache = imageCache[url] = imageCache[url] || {};
-
-    var image = cache.image = new Image();
-    image.addEventListener('load', onLoad);
-    image.src = url;
-
-    return image;
-  };
-
   CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
     var r = this;
 

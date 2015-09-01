@@ -70,8 +70,6 @@
     r.pathsEnabled = true;
   }
 
-  CR.panOrBoxSelectDelay = 400;
-
   CRp.redrawHint = function( group, bool ){
     var r = this;
 
@@ -102,77 +100,6 @@
   CRp.usePaths = function(){
     return pathsImpld && this.pathsEnabled;
   };
-
-  CRp.notify = function(params) {
-    var types;
-
-    if( $$.is.array( params.type ) ){
-      types = params.type;
-
-    } else {
-      types = [ params.type ];
-    }
-
-    for( var i = 0; i < types.length; i++ ){
-      var type = types[i];
-
-      switch( type ){
-        case 'destroy':
-          this.destroy();
-          return;
-
-        case 'add':
-        case 'remove':
-        case 'load':
-          this.updateElementsCache();
-          break;
-
-        case 'viewport':
-          this.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
-          break;
-
-        case 'style':
-          this.updateCachedZSortedEles();
-          break;
-      }
-
-      if( type === 'load' || type === 'resize' ){
-        this.invalidateContainerClientCoordsCache();
-        this.matchCanvasSize(this.container);
-      }
-    } // for
-
-    this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-    this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-
-    this.startRenderLoop();
-
-    this.redraw();
-  };
-
-  CRp.destroy = function(){
-    this.destroyed = true;
-
-    for( var i = 0; i < this.bindings.length; i++ ){
-      var binding = this.bindings[i];
-      var b = binding;
-
-      b.target.removeEventListener(b.event, b.handler, b.useCapture);
-    }
-
-    if( this.removeObserver ){
-      this.removeObserver.disconnect();
-    }
-
-    if( this.labelCalcDiv ){
-      try{
-        document.body.removeChild(this.labelCalcDiv);
-      } catch(e){
-        // ie10 issue #1014
-      }
-    }
-  };
-
 
 
   // copy the math functions into the renderer prototype

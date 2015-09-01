@@ -1262,7 +1262,7 @@
                 {
                   "descr": "Mutate the element's state as specified.",
                   "args": [
-                    { "name": "eleJson", "For each field in the object, the element's state is mutated as specified." }
+                    { "name": "eleJson", "descr": "For each field in the object, the element's state is mutated as specified." }
                   ]
                 }
               ],

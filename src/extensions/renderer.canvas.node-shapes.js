@@ -2,8 +2,8 @@
 
   var CanvasRenderer = $$('renderer', 'canvas');
   var renderer = CanvasRenderer.prototype;
-  
-  renderer.drawNodeShape = {
+
+  renderer.nodeShapeImpl = {
     'ellipse': function( context, centerX, centerY, width, height ){
       renderer.drawEllipsePath( context, centerX, centerY, width, height );
     },

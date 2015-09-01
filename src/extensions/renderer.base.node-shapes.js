@@ -12,7 +12,7 @@
       name: 'ellipse',
 
       draw: function( context, centerX, centerY, width, height ){
-        renderer.drawNodeShape[ this.name ]( context, centerX, centerY, width, height );
+        renderer.nodeShapeImpl[ this.name ]( context, centerX, centerY, width, height );
       },
 
       intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
@@ -43,7 +43,7 @@
         points: points,
 
         draw: function( context, centerX, centerY, width, height ){
-          renderer.drawNodeShape['polygon']( context, centerX, centerY, width, height, this.points );
+          renderer.nodeShapeImpl['polygon']( context, centerX, centerY, width, height, this.points );
         },
 
         intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
@@ -76,7 +76,7 @@
       points: $$.math.generateUnitNgonPointsFitToSquare(4, 0),
 
       draw: function( context, centerX, centerY, width, height ){
-        renderer.drawNodeShape[ this.name ]( context, centerX, centerY, width, height );
+        renderer.nodeShapeImpl[ this.name ]( context, centerX, centerY, width, height );
       },
 
       intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){

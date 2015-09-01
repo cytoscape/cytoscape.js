@@ -167,8 +167,8 @@
 
       // if we're close to the edge but didn't hit it, maybe we hit its arrows
       if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
-        var srcShape = CR.arrowShapes[ style['source-arrow-shape'].value ];
-        var tgtShape = CR.arrowShapes[ style['target-arrow-shape'].value ];
+        var srcShape = r.arrowShapes[ style['source-arrow-shape'].value ];
+        var tgtShape = r.arrowShapes[ style['target-arrow-shape'].value ];
 
         var src = src || edge._private.source;
         var tgt = tgt || edge._private.target;
@@ -1255,7 +1255,7 @@
         var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
 
         var minCpADistFactor = 3;
-        var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * CR.arrowShapeHeight;
+        var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * CRp.arrowShapeHeight;
         var minCpADist = minCpADistFactor * arrowW;
         var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
@@ -1461,9 +1461,9 @@
       );
 
       var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[tgtArShape].spacing(edge));
+        r.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[tgtArShape].gap(edge));
+        r.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1484,9 +1484,9 @@
       );
 
       var arrowStart = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[srcArShape].spacing(edge));
+        r.arrowShapes[srcArShape].spacing(edge));
       var edgeStart = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[srcArShape].gap(edge));
+        r.arrowShapes[srcArShape].gap(edge));
 
       rs.startX = edgeStart[0];
       rs.startY = edgeStart[1];
@@ -1515,10 +1515,10 @@
 
       var arrowEnd = $$.math.shortenIntersection(intersect,
         [srcPos.x, srcPos.y],
-        CR.arrowShapes[tgtArShape].spacing(edge));
+        r.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect,
         [srcPos.x, srcPos.y],
-        CR.arrowShapes[tgtArShape].gap(edge));
+        r.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1544,15 +1544,15 @@
 
       /*
       console.log("1: "
-        + CR.arrowShapes[srcArShape],
+        + r.arrowShapes[srcArShape],
           srcArShape);
       */
       var arrowStart = $$.math.shortenIntersection(intersect,
         [target.position().x, target.position().y],
-        CR.arrowShapes[srcArShape].spacing(edge));
+        r.arrowShapes[srcArShape].spacing(edge));
       var edgeStart = $$.math.shortenIntersection(intersect,
         [target.position().x, target.position().y],
-        CR.arrowShapes[srcArShape].gap(edge));
+        r.arrowShapes[srcArShape].gap(edge));
 
       rs.startX = edgeStart[0];
       rs.startY = edgeStart[1];
@@ -1583,13 +1583,13 @@
 
       /*
       console.log("2: "
-        + CR.arrowShapes[srcArShape],
+        + r.arrowShapes[srcArShape],
           srcArShape);
       */
       var arrowEnd = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[tgtArShape].spacing(edge));
+        r.arrowShapes[tgtArShape].spacing(edge));
       var edgeEnd = $$.math.shortenIntersection(intersect, cp,
-        CR.arrowShapes[tgtArShape].gap(edge));
+        r.arrowShapes[tgtArShape].gap(edge));
 
       rs.endX = edgeEnd[0];
       rs.endY = edgeEnd[1];
@@ -1611,12 +1611,12 @@
       var arrowStart = $$.math.shortenIntersection(
         intersect,
         cp,
-        CR.arrowShapes[srcArShape].spacing(edge)
+        r.arrowShapes[srcArShape].spacing(edge)
       );
       var edgeStart = $$.math.shortenIntersection(
         intersect,
         cp,
-        CR.arrowShapes[srcArShape].gap(edge)
+        r.arrowShapes[srcArShape].gap(edge)
       );
 
       rs.startX = edgeStart[0];

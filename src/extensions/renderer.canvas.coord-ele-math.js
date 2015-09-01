@@ -13,12 +13,12 @@
     var x = clientX - offsetLeft;
     var y = clientY - offsetTop;
 
-    x -= this.data.cy.pan().x; y -= this.data.cy.pan().y; x /= this.data.cy.zoom(); y /= this.data.cy.zoom();
+    x -= this.cy.pan().x; y -= this.cy.pan().y; x /= this.cy.zoom(); y /= this.cy.zoom();
     return [x, y];
   };
 
   CRp.findContainerClientCoords = function() {
-    var container = this.data.container;
+    var container = this.container;
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
 
@@ -34,8 +34,8 @@
     var self = this;
     var eles = this.getCachedZSortedEles();
     var near = [];
-    var zoom = this.data.cy.zoom();
-    var hasCompounds = this.data.cy.hasCompoundNodes();
+    var zoom = this.cy.zoom();
+    var hasCompounds = this.cy.hasCompoundNodes();
     var edgeThreshold = (isTouch ? 24 : 8) / zoom;
     var nodeThreshold = (isTouch ? 8 : 2) / zoom;
     var labelThreshold = (isTouch ? 8 : 2) / zoom;
@@ -899,7 +899,7 @@
   CRp.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
-    var cy = this.data.cy;
+    var cy = this.cy;
     var hasCompounds = cy.hasCompoundNodes();
     var hashTable = {};
     var pairIds = [];

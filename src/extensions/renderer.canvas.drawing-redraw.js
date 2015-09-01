@@ -82,7 +82,7 @@
   };
 
   CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
-    var zoom = this.data.cy.zoom();
+    var zoom = this.cy.zoom();
 
     var cache = this.paintCache(context);
 
@@ -300,7 +300,7 @@
     var forcedPan = options.forcedPan;
     var r = this;
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
-    var cy = r.data.cy; var data = r.data;
+    var cy = r.cy; var data = r.data;
     var needDraw = data.canvasNeedsRedraw;
     var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
     var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
@@ -658,8 +658,8 @@
 
       setContextTransform( context );
 
-      if( data.select[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
-        var zoom = data.cy.zoom();
+      if( r.selection[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
+        var zoom = r.cy.zoom();
         var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
 
         context.lineWidth = borderWidth;
@@ -670,10 +670,10 @@
           + coreStyle['selection-box-opacity'].value + ")";
 
         context.fillRect(
-          data.select[0],
-          data.select[1],
-          data.select[2] - data.select[0],
-          data.select[3] - data.select[1]);
+          r.selection[0],
+          r.selection[1],
+          r.selection[2] - r.selection[0],
+          r.selection[3] - r.selection[1]);
 
         if (borderWidth > 0) {
           context.strokeStyle = "rgba("
@@ -683,15 +683,15 @@
             + coreStyle['selection-box-opacity'].value + ")";
 
           context.strokeRect(
-            data.select[0],
-            data.select[1],
-            data.select[2] - data.select[0],
-            data.select[3] - data.select[1]);
+            r.selection[0],
+            r.selection[1],
+            r.selection[2] - r.selection[0],
+            r.selection[3] - r.selection[1]);
         }
       }
 
       if( data.bgActivePosistion && !r.hoverData.selecting ){
-        var zoom = data.cy.zoom();
+        var zoom = r.cy.zoom();
         var pos = data.bgActivePosistion;
 
         context.fillStyle = "rgba("

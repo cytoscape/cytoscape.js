@@ -13,10 +13,10 @@
 
   CRp.bufferCanvasImage = function( options ){
     var data = this.data;
-    var cy = data.cy;
+    var cy = this.cy;
     var bb = cy.elements().boundingBox();
-    var width = options.full ? Math.ceil(bb.w) : this.data.container.clientWidth;
-    var height = options.full ? Math.ceil(bb.h) : this.data.container.clientHeight;
+    var width = options.full ? Math.ceil(bb.w) : this.container.clientWidth;
+    var height = options.full ? Math.ceil(bb.h) : this.container.clientHeight;
     var scale = 1;
 
     if( options.scale !== undefined ){

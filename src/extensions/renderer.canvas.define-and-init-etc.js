@@ -25,18 +25,19 @@
 
     this.options = options;
 
+    this.cy = options.cy;
+
+    this.container = options.cy.container();
+
+    this.selection = [undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
+
     this.data = {
-
-      select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag
-      renderer: this, cy: options.cy, container: options.cy.container(),
-
       canvases: new Array(CR.CANVAS_LAYERS),
       contexts: new Array(CR.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CR.CANVAS_LAYERS),
 
       bufferCanvases: new Array(CR.BUFFER_COUNT),
       bufferContexts: new Array(CR.CANVAS_LAYERS)
-
     };
 
     //--Pointer-related data
@@ -45,24 +46,19 @@
         dragging: false,
         initialPan: [null, null], capture: false};
 
-    this.timeoutData = {panTimeout: null};
-
     this.dragData = {possibleDragElements: []};
 
-    this.touchData = {start: null, capture: false,
+    this.touchData = {
+        start: null, capture: false,
+
         // These 3 fields related to tap, taphold events
         startPosition: [null, null, null, null, null, null],
         singleTouchStartTime: null,
         singleTouchMoved: true,
 
-
         now: [null, null, null, null, null, null],
-        earlier: [null, null, null, null, null, null] };
-    //--
-
-    //--Wheel-related data
-    this.zoomData = {freeToZoom: false, lastPointerX: null};
-    //--
+        earlier: [null, null, null, null, null, null]
+    };
 
     this.redraws = 0;
     this.showFps = options.showFps;
@@ -75,7 +71,7 @@
     containerStyle.zIndex = '0';
     containerStyle.overflow = 'hidden';
 
-    this.data.container.appendChild( this.data.canvasContainer );
+    this.container.appendChild( this.data.canvasContainer );
 
     for (var i = 0; i < CR.CANVAS_LAYERS; i++) {
       this.data.canvases[i] = document.createElement('canvas');
@@ -181,7 +177,7 @@
 
       if( type === 'load' || type === 'resize' ){
         this.invalidateContainerClientCoordsCache();
-        this.matchCanvasSize(this.data.container);
+        this.matchCanvasSize(this.container);
       }
     } // for
 
@@ -222,9 +218,9 @@
   // unfortunately these functions are used interspersed t/o the code
   // and this makes sure things work just in case a ref was missed in refactoring
   // TODO remove this eventually
-  for( var fnName in $$.math ){
-    CRp[ fnName ] = $$.math[ fnName ];
-  }
+  // for( var fnName in $$.math ){
+  //   CRp[ fnName ] = $$.math[ fnName ];
+  // }
 
 
   $$('renderer', 'canvas', CanvasRenderer);

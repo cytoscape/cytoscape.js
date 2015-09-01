@@ -1,11 +1,11 @@
 ;(function($$){ 'use strict';
 
-  var CanvasRenderer = $$('renderer', 'canvas');
-  var CR = CanvasRenderer;
-  var CRp = CR.prototype;
+  var BaseRenderer = $$('renderer', 'base');
+  var BR = BaseRenderer;
+  var BRp = BR.prototype;
 
   // Project mouse
-  CRp.projectIntoViewport = function(clientX, clientY) {
+  BRp.projectIntoViewport = function(clientX, clientY) {
     var offsets = this.findContainerClientCoords();
     var offsetLeft = offsets[0];
     var offsetTop = offsets[1];
@@ -17,7 +17,7 @@
     return [x, y];
   };
 
-  CRp.findContainerClientCoords = function() {
+  BRp.findContainerClientCoords = function() {
     var container = this.container;
 
     var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
@@ -25,12 +25,12 @@
     return [bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top];
   };
 
-  CRp.invalidateContainerClientCoordsCache = function(){
+  BRp.invalidateContainerClientCoordsCache = function(){
     this.containerBB = null;
   };
 
   // Find nearest element
-  CRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
+  BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     var self = this;
     var r = this;
     var eles = r.getCachedZSortedEles();
@@ -307,7 +307,7 @@
   };
 
   // 'Give me everything from this box'
-  CRp.getAllInBox = function(x1, y1, x2, y2) {
+  BRp.getAllInBox = function(x1, y1, x2, y2) {
     var nodes = this.getCachedNodes();
     var edges = this.getCachedEdges();
     var box = [];
@@ -430,7 +430,7 @@
    * @param node          a node
    * @return {String}     shape of the node
    */
-  CRp.getNodeShape = function( node ){
+  BRp.getNodeShape = function( node ){
 
     var style = node._private.style;
     var shape = style['shape'].value;
@@ -452,13 +452,13 @@
     return shape;
   };
 
-  CRp.zOrderSort = $$.Collection.zIndexSort;
+  BRp.zOrderSort = $$.Collection.zIndexSort;
 
-  CRp.updateCachedZSortedEles = function(){
+  BRp.updateCachedZSortedEles = function(){
     this.getCachedZSortedEles( true );
   };
 
-  CRp.getCachedZSortedEles = function( forceRecalc ){
+  BRp.getCachedZSortedEles = function( forceRecalc ){
     var lastNodes = this.lastZOrderCachedNodes;
     var lastEdges = this.lastZOrderCachedEdges;
     var nodes = this.getCachedNodes();
@@ -552,7 +552,7 @@
     });
   }
 
-  CRp.projectBezier = function( edge ){
+  BRp.projectBezier = function( edge ){
     var _p = edge._private;
     var rs = _p.rscratch;
     var bpts = _p.rstyle.bezierPts = [];
@@ -565,7 +565,7 @@
     }
   };
 
-  CRp.recalculateNodeLabelProjection = function( node ){
+  BRp.recalculateNodeLabelProjection = function( node ){
     var content = node._private.style['label'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -612,7 +612,7 @@
     this.applyLabelDimensions( node );
   };
 
-  CRp.recalculateEdgeLabelProjection = function( edge ){
+  BRp.recalculateEdgeLabelProjection = function( edge ){
     var content = edge._private.style['label'].strValue;
     if( !content || content.match(/^\s+$/) ){ return; }
 
@@ -655,7 +655,7 @@
     this.applyLabelDimensions( edge );
   };
 
-  CRp.applyLabelDimensions = function( ele ){
+  BRp.applyLabelDimensions = function( ele ){
     var rs = ele._private.rscratch;
     var rstyle = ele._private.rstyle;
 
@@ -669,7 +669,7 @@
     rs.labelHeight = labelDims.height;
   };
 
-  CRp.getLabelText = function( ele ){
+  BRp.getLabelText = function( ele ){
     var style = ele._private.style;
     var text = ele._private.style['label'].strValue;
     var textTransform = style['text-transform'].value;
@@ -738,7 +738,7 @@
     return text;
   };
 
-  CRp.calculateLabelDimensions = function( ele, text, extraKey ){
+  BRp.calculateLabelDimensions = function( ele, text, extraKey ){
     var r = this;
     var style = ele._private.style;
     var fStyle = style['font-style'].strValue;
@@ -802,7 +802,7 @@
     return cache[cacheKey];
   };
 
-  CRp.recalculateRenderedStyle = function( eles ){
+  BRp.recalculateRenderedStyle = function( eles ){
     var edges = [];
     var nodes = [];
     var handledEdge = {};
@@ -881,7 +881,7 @@
     this.recalculateLabelProjections( nodes, edges );
   };
 
-  CRp.recalculateLabelProjections = function( nodes, edges ){
+  BRp.recalculateLabelProjections = function( nodes, edges ){
     for( var i = 0; i < nodes.length; i++ ){
       this.recalculateNodeLabelProjection( nodes[i] );
     }
@@ -891,13 +891,13 @@
     }
   };
 
-  CRp.recalculateEdgeProjections = function( edges ){
+  BRp.recalculateEdgeProjections = function( edges ){
     this.findEdgeControlPoints( edges );
   };
 
 
   // Find edge control points
-  CRp.findEdgeControlPoints = function(edges) {
+  BRp.findEdgeControlPoints = function(edges) {
     if( !edges || edges.length === 0 ){ return; }
 
     var r = this;
@@ -1255,7 +1255,7 @@
         var badAEnd = !$$.is.number( rs.arrowEndX ) || !$$.is.number( rs.arrowEndY );
 
         var minCpADistFactor = 3;
-        var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * CRp.arrowShapeHeight;
+        var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * BRp.arrowShapeHeight;
         var minCpADist = minCpADistFactor * arrowW;
         var startACpDist = $$.math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
@@ -1428,7 +1428,7 @@
     return hashTable;
   };
 
-  CRp.findEndpoints = function( edge ){
+  BRp.findEndpoints = function( edge ){
     var r = this;
     var intersect;
 
@@ -1634,7 +1634,7 @@
     }
   };
 
-  CRp.getArrowWidth = CRp.getArrowHeight = function(edgeWidth) {
+  BRp.getArrowWidth = BRp.getArrowHeight = function(edgeWidth) {
     var cache = this.arrowWidthCache = this.arrowWidthCache || {};
 
     var cachedVal = cache[edgeWidth];

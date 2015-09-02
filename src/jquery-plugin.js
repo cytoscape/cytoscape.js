@@ -1,70 +1,72 @@
-;(function($, $$){ 'use strict';
+'use strict';
 
-  var cyReg = function( $ele ){
-    var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
+var is = require('./is');
+var util = require('./util');
+var jQuery = typeof jQuery !== 'undefined' ? jQuery : null;
 
-    return d;
-  };
+var cyReg = function( $ele ){
+  var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
 
-  $$.registerJquery = function( $ ){
-    if( !$ ){ return; } // no jquery => don't need this
+  return d;
+};
 
-    if( $.fn.cytoscape ){ return; } // already registered
+registerJquery = function( $ ){
+  if( !$ ){ return; } // no jquery => don't need this
 
-    // allow calls on a jQuery selector by proxying calls to $.cytoscape
-    // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
-    $.fn.cytoscape = function(opts){
-      var $this = $(this);
+  if( $.fn.cytoscape ){ return; } // already registered
 
-      // get object
-      if( opts === 'get' ){
-        return cyReg( $this ).cy;
+  // allow calls on a jQuery selector by proxying calls to $.cytoscape
+  // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
+  $.fn.cytoscape = function(opts){
+    var $this = $(this);
+
+    // get object
+    if( opts === 'get' ){
+      return cyReg( $this ).cy;
+    }
+
+    // bind to ready
+    else if( is.fn(opts) ){
+
+      var ready = opts;
+      var cy = cyReg( $this ).cy;
+
+      if( cy && cy.isReady() ){ // already ready so just trigger now
+        cy.trigger('ready', [], ready);
+
+      } else { // not yet ready, so add to readies list
+        var data = cyReg( $this );
+        var readies = data.readies = data.readies || [];
+
+        readies.push( ready );
       }
 
-      // bind to ready
-      else if( $$.is.fn(opts) ){
+    }
 
-        var ready = opts;
-        var cy = cyReg( $this ).cy;
-
-        if( cy && cy.isReady() ){ // already ready so just trigger now
-          cy.trigger('ready', [], ready);
-
-        } else { // not yet ready, so add to readies list
-          var data = cyReg( $this );
-          var readies = data.readies = data.readies || [];
-
-          readies.push( ready );
-        }
-
-      }
-
-      // proxy to create instance
-      else if( $$.is.plainObject(opts) ){
-        return $this.each(function(){
-          var options = $.extend({}, opts, {
-            container: $(this)[0]
-          });
-
-          cytoscape(options);
+    // proxy to create instance
+    else if( is.plainObject(opts) ){
+      return $this.each(function(){
+        var options = $.extend({}, opts, {
+          container: $(this)[0]
         });
-      }
-    };
 
-    // allow access to the global cytoscape object under jquery for legacy reasons
-    $.cytoscape = cytoscape;
-
-    // use short alias (cy) if not already defined
-    if( $.fn.cy == null && $.cy == null ){
-      $.fn.cy = $.fn.cytoscape;
-      $.cy = $.cytoscape;
+        cytoscape(options);
+      });
     }
   };
 
-  $$.registerJquery( $ ); // try to register with global jquery for convenience
+  // allow access to the global cytoscape object under jquery for legacy reasons
+  $.cytoscape = cytoscape;
 
-  $$.util.require('jquery', function( $ ){
-    $$.registerJquery( $ ); // try to register with require()d jquery
-  });
+  // use short alias (cy) if not already defined
+  if( $.fn.cy == null && $.cy == null ){
+    $.fn.cy = $.fn.cytoscape;
+    $.cy = $.cytoscape;
+  }
+};
 
-})(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);
+registerJquery( $ ); // try to register with global jquery for convenience
+
+util.require('jquery', function( $ ){
+  registerJquery( $ ); // try to register with require()d jquery
+});

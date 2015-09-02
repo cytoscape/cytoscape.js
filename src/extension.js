@@ -1,154 +1,164 @@
-;(function($$){ 'use strict';
+'use strict';
 
-  // registered extensions to cytoscape, indexed by name
-  var extensions = {};
-  $$.extensions = extensions;
+var util = require('./util');
+var define = require('./define');
+var Core = require('./core');
+var Collection = require('./collection');
+var incExts = require('./extensions');
 
-  // registered modules for extensions, indexed by name
-  var modules = {};
-  $$.modules = modules;
+// registered extensions to cytoscape, indexed by name
+var extensions = {};
 
-  function setExtension( type, name, registrant ){
-    var impl = {};
-    impl[name] = registrant;
+// registered modules for extensions, indexed by name
+var modules = {};
 
-    switch( type ){
-    case 'core':
-    case 'collection':
-      $$.fn[type]( impl );
+function setExtension( type, name, registrant ){
+
+  switch( type ){
+  case 'core':
+  case 'collection':
+    Collection.prototype[ name ] = registrant;
+  }
+
+  // fill in missing layout functions in the prototype
+  if( type === 'layout' ){
+    var layoutProto = registrant.prototype;
+    var optLayoutFns = [];
+
+    for( var i = 0; i < optLayoutFns.length; i++ ){
+      var fnName = optLayoutFns[i];
+
+      layoutProto[fnName] = layoutProto[fnName] || function(){ return this; };
     }
 
-    // fill in missing layout functions in the prototype
-    if( type === 'layout' ){
-      var layoutProto = registrant.prototype;
-      var optLayoutFns = [];
+    // either .start() or .run() is defined, so autogen the other
+    if( layoutProto.start && !layoutProto.run ){
+      layoutProto.run = function(){ this.start(); return this; };
+    } else if( !layoutProto.start && layoutProto.run ){
+      layoutProto.start = function(){ this.run(); return this; };
+    }
 
-      for( var i = 0; i < optLayoutFns.length; i++ ){
-        var fnName = optLayoutFns[i];
+    if( !layoutProto.stop ){
+      layoutProto.stop = function(){
+        var opts = this.options;
 
-        layoutProto[fnName] = layoutProto[fnName] || function(){ return this; };
-      }
-
-      // either .start() or .run() is defined, so autogen the other
-      if( layoutProto.start && !layoutProto.run ){
-        layoutProto.run = function(){ this.start(); return this; };
-      } else if( !layoutProto.start && layoutProto.run ){
-        layoutProto.start = function(){ this.run(); return this; };
-      }
-
-      if( !layoutProto.stop ){
-        layoutProto.stop = function(){
-          var opts = this.options;
-
-          if( opts && opts.animate ){
-            opts.eles.stop();
-          }
-
-          return this;
-        };
-      }
-
-      if( !layoutProto.destroy ){
-        layoutProto.destroy = function(){
-          return this;
-        };
-      }
-
-      layoutProto.on = $$.define.on({ layout: true });
-      layoutProto.one = $$.define.on({ layout: true, unbindSelfOnTrigger: true });
-      layoutProto.once = $$.define.on({ layout: true, unbindAllBindersOnTrigger: true });
-      layoutProto.off = $$.define.off({ layout: true });
-      layoutProto.trigger = $$.define.trigger({ layout: true });
-
-      $$.define.eventAliasesOn( layoutProto );
-
-    // user registered renderers inherit from base
-    } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
-      var bProto = getExtension( 'renderer', 'base' ).prototype;
-      var rProto = registrant.prototype;
-
-      for( var pName in bProto ){
-        var pVal = bProto[ pName ];
-        var existsInR = rProto[ pName ] != null;
-
-        if( existsInR ){
-          $$.util.error('Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype');
-          return;
+        if( opts && opts.animate ){
+          opts.eles.stop();
         }
 
-        rProto[ pName ] = pVal; // take impl from base
+        return this;
+      };
+    }
+
+    if( !layoutProto.destroy ){
+      layoutProto.destroy = function(){
+        return this;
+      };
+    }
+
+    layoutProto.on = define.on({ layout: true });
+    layoutProto.one = define.on({ layout: true, unbindSelfOnTrigger: true });
+    layoutProto.once = define.on({ layout: true, unbindAllBindersOnTrigger: true });
+    layoutProto.off = define.off({ layout: true });
+    layoutProto.trigger = define.trigger({ layout: true });
+
+    define.eventAliasesOn( layoutProto );
+
+  // user registered renderers inherit from base
+  } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
+    // var bProto = getExtension( 'renderer', 'base' ).prototype;
+    var bProto = { clientFunctions: [], clientProperties: [] }; // TODO refactor
+    var rProto = registrant.prototype;
+
+    for( var pName in bProto ){
+      var pVal = bProto[ pName ];
+      var existsInR = rProto[ pName ] != null;
+
+      if( existsInR ){
+        util.error('Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype');
+        return;
       }
 
-      bProto.clientFunctions.forEach(function( name ){
-        rProto[ name ] = rProto[ name ] || function(){
-          $$.util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
-        };
-      });
-
-      bProto.clientProperties.forEach(function( name ){
-        Object.defineProperty( bProto, name, {
-          get: function(){
-            $$.util.error('Renderer does not specifiy property `renderer.' + name + '` on its prototype');
-          }
-        } );
-      });
-
+      rProto[ pName ] = pVal; // take impl from base
     }
 
-    return $$.util.setMap({
-      map: extensions,
-      keys: [ type, name ],
-      value: registrant
+    bProto.clientFunctions.forEach(function( name ){
+      rProto[ name ] = rProto[ name ] || function(){
+        util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
+      };
     });
+
+    bProto.clientProperties.forEach(function( name ){
+      Object.defineProperty( bProto, name, {
+        get: function(){
+          util.error('Renderer does not specifiy property `renderer.' + name + '` on its prototype');
+        }
+      } );
+    });
+
   }
 
-  function getExtension(type, name){
-    return $$.util.getMap({
-      map: extensions,
-      keys: [ type, name ]
-    });
+  return util.setMap({
+    map: extensions,
+    keys: [ type, name ],
+    value: registrant
+  });
+}
+
+function getExtension(type, name){
+  return util.getMap({
+    map: extensions,
+    keys: [ type, name ]
+  });
+}
+
+function setModule(type, name, moduleType, moduleName, registrant){
+  return util.setMap({
+    map: modules,
+    keys: [ type, name, moduleType, moduleName ],
+    value: registrant
+  });
+}
+
+function getModule(type, name, moduleType, moduleName){
+  return util.getMap({
+    map: modules,
+    keys: [ type, name, moduleType, moduleName ]
+  });
+}
+
+var extension = function(){
+  // e.g. extension('renderer', 'svg')
+  if( arguments.length == 2 ){
+    return getExtension.apply(this, arguments);
   }
 
-  function setModule(type, name, moduleType, moduleName, registrant){
-    return $$.util.setMap({
-      map: modules,
-      keys: [ type, name, moduleType, moduleName ],
-      value: registrant
-    });
+  // e.g. extension('renderer', 'svg', { ... })
+  else if( arguments.length == 3 ){
+    return setExtension.apply(this, arguments);
   }
 
-  function getModule(type, name, moduleType, moduleName){
-    return $$.util.getMap({
-      map: modules,
-      keys: [ type, name, moduleType, moduleName ]
-    });
+  // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse')
+  else if( arguments.length == 4 ){
+    return getModule.apply(this, arguments);
   }
 
-  $$.extension = function(){
-    // e.g. $$.extension('renderer', 'svg')
-    if( arguments.length == 2 ){
-      return getExtension.apply(this, arguments);
-    }
+  // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
+  else if( arguments.length == 5 ){
+    return setModule.apply(this, arguments);
+  }
 
-    // e.g. $$.extension('renderer', 'svg', { ... })
-    else if( arguments.length == 3 ){
-      return setExtension.apply(this, arguments);
-    }
+  else {
+    util.error('Invalid extension access syntax');
+  }
 
-    // e.g. $$.extension('renderer', 'svg', 'nodeShape', 'ellipse')
-    else if( arguments.length == 4 ){
-      return getModule.apply(this, arguments);
-    }
+};
 
-    // e.g. $$.extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
-    else if( arguments.length == 5 ){
-      return setModule.apply(this, arguments);
-    }
+// included extensions
+incExts.forEach(function( group ){
+  group.extensions.forEach(function( ext ){
+    setExtension( group.type, ext.name, ext.impl );
+  });
+});
 
-    else {
-      $$.util.error('Invalid extension access syntax');
-    }
-
-  };
-
-})( cytoscape );
+module.exports = extension;

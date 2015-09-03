@@ -66,8 +66,7 @@ function setExtension( type, name, registrant ){
 
   // user registered renderers inherit from base
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
-    // var bProto = getExtension( 'renderer', 'base' ).prototype;
-    var bProto = { clientFunctions: [], clientProperties: [] }; // TODO refactor
+    var bProto = getExtension( 'renderer', 'base' ).prototype;
     var rProto = registrant.prototype;
 
     for( var pName in bProto ){
@@ -86,14 +85,6 @@ function setExtension( type, name, registrant ){
       rProto[ name ] = rProto[ name ] || function(){
         util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
       };
-    });
-
-    bProto.clientProperties.forEach(function( name ){
-      Object.defineProperty( bProto, name, {
-        get: function(){
-          util.error('Renderer does not specifiy property `renderer.' + name + '` on its prototype');
-        }
-      } );
     });
 
   }

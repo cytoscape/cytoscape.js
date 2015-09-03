@@ -227,31 +227,6 @@ ArborLayout.prototype.run = function(){
       node.scratch().arbor.fixed = node.locked();
     });
 
-    var removeHandler;
-    eles.on('remove', removeHandler = function(e){ return; // TODO enable when layout add/remove api added
-      // var ele = this;
-      // var arborEle = ele.scratch().arbor;
-
-      // if( !arborEle ){ return; }
-
-      // if( ele.isNode() ){
-      //   sys.pruneNode( arborEle );
-      // } else {
-      //   sys.pruneEdge( arborEle );
-      // }
-    });
-
-    var addHandler;
-    cy.on('add', '*', addHandler = function(){ return; // TODO enable when layout add/remove api added
-      // var ele = this;
-
-      // if( ele.isNode() ){
-      //   addNode( ele );
-      // } else {
-      //   addEdge( ele );
-      // }
-    });
-
     var resizeHandler;
     cy.on('resize', resizeHandler = function(){
       if( options.boundingBox == null && layout._private.system != null ){
@@ -329,8 +304,6 @@ ArborLayout.prototype.run = function(){
       // unbind handlers
       nodes.off('grab free position', grabHandler);
       nodes.off('lock unlock', lockHandler);
-      eles.off('remove', removeHandler);
-      cy.off('add', '*', addHandler);
       cy.off('resize', resizeHandler);
 
       // enable back grabbing if so set

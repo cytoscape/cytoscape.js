@@ -89,3 +89,5 @@ sheetfn.generateStyle = function( cy ){
 
   return style;
 };
+
+module.exports = Stylesheet;

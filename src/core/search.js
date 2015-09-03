@@ -9,7 +9,7 @@ var corefn = ({
   // - empty collection on no args
   // - collection of elements in the graph on selector arg
   // - guarantee a returned collection when elements or collection specified
-  collection: function( eles ){
+  collection: function( eles, opts ){
 
     if( is.string( eles ) ){
       return this.$( eles );
@@ -17,11 +17,11 @@ var corefn = ({
     } else if( is.elementOrCollection( eles ) ){
       return eles.collection();
 
-    } else if( is.array( eles ) ){
-      return new Collection( this, eles );
+    } else if( is.array( eles )  ){
+      return Collection( this, eles, opts );
     }
 
-    return new Collection( this );
+    return Collection( this );
   },
 
   nodes: function( selector ){

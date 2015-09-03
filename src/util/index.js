@@ -5,7 +5,7 @@ var is = require('../is');
 var performance = window ? window.performance : null;
 
 var util = {
-  
+
   falsify: function(){ return false; },
 
   zeroify: function(){ return 0; },
@@ -297,26 +297,24 @@ var util = {
   },
 
   error: function( msg ){
-    if( console ){
-      if( console.error ){
-        console.error.apply( console, arguments );
-      } else if( console.log ){
-        console.log.apply( console, arguments );
-      } else {
-        throw msg;
-      }
+    if( console.error ){
+      console.error.apply( console, arguments );
+
+      if( console.trace ){ console.trace(); }
     } else {
-      throw msg;
+      console.log.apply( console, arguments );
+
+      if( console.trace ){ console.trace(); }
     }
   },
 
   clone: function( obj ){
     var target = {};
+
     for (var i in obj) {
-      //if( obj.hasOwnProperty(i) ){ // TODO is this hasOwnProperty() call necessary for our use?
-        target[i] = obj[i];
-      //}
+      target[i] = obj[i];
     }
+
     return target;
   },
 

@@ -1,7 +1,8 @@
-;(function($$){ 'use strict';
+'use strict';
 
-  var CanvasRenderer = $$('renderer', 'canvas');
-  var CRp = CanvasRenderer.prototype;
+  var math = require('../../../math');
+
+  var CRp = {};
 
   // @O Polygon drawing
   CRp.drawPolygonPath = function(
@@ -27,7 +28,7 @@
 
     var halfWidth = width / 2;
     var halfHeight = height / 2;
-    var cornerRadius = $$.math.getRoundRectangleRadius(width, height);
+    var cornerRadius = math.getRoundRectangleRadius(width, height);
 
     if( context.beginPath ){ context.beginPath(); }
 
@@ -56,4 +57,4 @@
     context.closePath();
   };
 
-})( cytoscape );
+module.exports = CRp;

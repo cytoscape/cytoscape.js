@@ -29,6 +29,13 @@ var request = require('request');
 var download = require("gulp-download");
 // var download = function(url){ return request.get(url); };
 var prompt = require('gulp-prompt');
+var browserifyHeader = require('browserify-header');
+var vfs = require('vinyl-fs');
+var transform = require('vinyl-transform');
+var buffer = require('vinyl-buffer');
+var sourcemaps = require('gulp-sourcemaps');
+var livereload = require('gulp-livereload');
+var watchify = require('watchify');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -59,38 +66,22 @@ var weaverTestReqs = [
 var version; // used for marking builds w/ version etc
 
 var paths = {
-  sources: [
-    'src/preamble.js',
-    'src/namespace.js',
-    'src/promise.js',
-    'src/is.js',
-    'src/util.js',
-    'src/math.js',
-    'src/extension.js',
-    'src/jquery-plugin.js',
-    'src/event.js',
-    'src/define.js',
-    'src/selector.js',
-    'src/style.js',
-    'src/style-*.js',
-    'src/thread.js',
-    'src/fabric.js',
-    'src/core.js',
-    'src/core-*.js',
-    'src/collection.js',
-    'src/collection-*.js',
-    'src/heap.js',
-    'src/extensions/renderer.base.js',
-    'src/extensions/renderer.base.*.js',
-    'src/extensions/renderer.canvas.define-and-init-etc.js',
-    'src/extensions/renderer.canvas.*.js',
-    'src/extensions/*.js'
-  ],
+  sourceEntry: 'src/index.js',
+
+  preamble: 'src/preamble.js',
 
   nodethreadName: 'thread-node-fork.js',
   nodethreadSrc: [
     'src/preamble.js',
     'src/thread-node-fork.js'
+  ],
+
+  debugFiles: [
+    'build/cytoscape.js'
+  ],
+
+  testFiles: [
+    'build/cytoscape.js'
   ],
 
   docs: {
@@ -139,8 +130,8 @@ var replaceShellVars = function( cmds ){
   });
 };
 
-gulp.task('default', ['build'], function(){
-
+gulp.task('default', ['build'], function( next ){
+  next();
 });
 
 gulp.task('version', function( next ){
@@ -178,37 +169,59 @@ gulp.task('clean', function(){
   ;
 });
 
+
+
 gulp.task('concat', ['version', 'nodeworker'], function(){
-  return gulp.src( paths.sources )
+  return browserify({
+    entries: paths.sourceEntry,
+    debug: true,
+    standalone: 'cytoscape'
+  })
+    .plugin( browserifyHeader, { file: paths.preamble } )
+    .bundle()
+    .pipe( source('cytoscape.js') )
+    .pipe( buffer() )
     .pipe( replace('{{VERSION}}', version) )
-
-    .pipe( concat('cytoscape.js') )
-
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('build', ['version', 'nodeworker'], function(){
-  return gulp.src( paths.sources )
+gulp.task('build-unmin', ['version', 'nodeworker'], function(){
+  return browserify({
+    entries: paths.sourceEntry,
+    debug: true,
+    standalone: 'cytoscape'
+  })
+      .plugin( browserifyHeader, { file: paths.preamble } )
+      .bundle()
+    .pipe( source('cytoscape.js') )
+    .pipe( buffer() )
+    .pipe( sourcemaps.init({ loadMaps: true }) )
     .pipe( replace('{{VERSION}}', version) )
-
-    .pipe( concat('cytoscape.js') )
-
-    .pipe( gulp.dest('build') )
-
-    .pipe( uglify({
-      mangle: true,
-
-      preserveComments: 'some'
-    }) )
-
-    .pipe( concat('cytoscape.min.js') )
-
+    .pipe( sourcemaps.write('.') )
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('nodeworker', function(){
+gulp.task('build-min', ['version', 'nodeworker'], function(){
+  return browserify({ entries: paths.sourceEntry, debug: true, expose: 'cytoscape' })
+      .plugin( browserifyHeader, { file: paths.preamble } )
+      .bundle()
+    .pipe( source('cytoscape.min.js') )
+    .pipe( buffer() )
+    .pipe( sourcemaps.init({ loadMaps: true }) )
+    .pipe( replace('{{VERSION}}', version) )
+    .pipe( uglify({ mangle: true, preserveComments: 'some' }) )
+    .pipe( sourcemaps.write('.') )
+    .pipe( gulp.dest('build') )
+  ;
+});
+
+gulp.task('build', ['build-unmin', 'build-min'], function( next ){
+  next();
+});
+
+gulp.task('nodeworker', ['version'], function(){
   return gulp.src( paths.nodethreadSrc )
     .pipe( replace('{{VERSION}}', version) )
 
@@ -220,7 +233,7 @@ gulp.task('nodeworker', function(){
 
 gulp.task('debugrefs', function(){
   return gulp.src('debug/index.html')
-    .pipe( inject( gulp.src(paths.sources, { read: false }), {
+    .pipe( inject( gulp.src(paths.debugFiles, { read: false }), {
       addPrefix: '..',
       addRootSlash: false
     } ) )
@@ -231,7 +244,7 @@ gulp.task('debugrefs', function(){
 
 gulp.task('testrefs', function(){
   return gulp.src('test/index.html')
-    .pipe( inject( gulp.src(paths.sources, { read: false }), {
+    .pipe( inject( gulp.src(paths.testFiles, { read: false }), {
       addPrefix: '..',
       addRootSlash: false
     } ) )
@@ -258,7 +271,14 @@ gulp.task('refs', function(next){
 });
 
 gulp.task('zip', ['version', 'build'], function(){
-  return gulp.src(['build/cytoscape.js', 'build/cytoscape.min.js', 'LGPL-LICENSE.txt', 'lib/*.js'])
+  return gulp.src([
+    'build/cytoscape.js',
+    'build/cytoscape.js.map',
+    'build/cytoscape.min.js',
+    'build/cytoscape.min.js.map',
+    'LGPL-LICENSE.txt',
+    'lib/*.js'
+  ])
     .pipe( zip('cytoscape.js-' + version + '.zip') )
 
     .pipe( gulp.dest('build') )
@@ -583,10 +603,8 @@ gulp.task('unstabledocspush', function(){
 });
 
 // browserify debug build
-gulp.task('browserify', ['build'], function(){
-  var b = browserify({ debug: true, hasExports: true });
-
-  b.add('./build/cytoscape.js', { expose: "cytoscape" });
+gulp.task('browserify', function(){
+  var b = browserify(paths.sourceEntry, { debug: true, hasExports: true, expose: 'cytoscape' });
 
   return b.bundle()
     .pipe( source('cytoscape.browserify.js') )
@@ -613,27 +631,39 @@ gulp.task('spm', shell.task( replaceShellVars([
 
 
 gulp.task('watch', function(next){
-  var refWatcher = gulp.watch(paths.sources, ['testrefs','debugrefs']);
-  refWatcher.on('added deleted', function(event){
-    console.log('File ' + event.path + ' was ' + event.type + ', updating lib refs in pages...');
-  });
+  livereload.listen();
 
-  var testWatcher = gulp.watch('test/*.js', ['testlist']);
-  testWatcher.on('added deleted', function(event){
-    console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
-  });
+  gulp.watch('test/*.js', ['testlist'])
+    .on('added deleted', function( event ){
+      console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
+    })
+  ;
 
-  var watcher = gulp.watch(paths.sources, ['concat']);
-  watcher.on('change', function(event){
-    console.log('File ' + event.path + ' was changed, building...');
-  });
+  var b = watchify( browserify({
+    entries: paths.sourceEntry,
+    debug: true,
+    expose: 'cytoscape'
+  }) );
+
+  var rebuild = function(){
+    return b.bundle()
+      .pipe( source('cytoscape.js') )
+      .pipe( buffer() )
+      .pipe( gulp.dest('build') )
+      .pipe( livereload() )
+    ;
+  };
+
+  rebuild();
+
+  b.on('update', rebuild);
 
   next();
 });
 
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
-  return gulp.src( paths.sources )
+  return gulp.src( paths.sourceEntry )
     .pipe( jshint({
       funcscope: true,
       laxbreak: true,

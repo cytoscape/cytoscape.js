@@ -208,7 +208,7 @@ var elesfn = fn = ({
     }
 
     // return changed
-    return this.spwan( cy, updated );
+    return this.spawn( cy, updated );
   },
 
   // get/set the rendered (i.e. on screen) positon of the element

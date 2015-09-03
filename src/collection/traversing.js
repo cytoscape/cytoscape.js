@@ -282,7 +282,7 @@ util.extend(elesfn, {
 
 function defineEdgesWithFunction( params ){
 
-  return function(otherNodes){
+  return function edgesWithImpl( otherNodes ){
     var elements = [];
     var cy = this._private.cy;
     var p = params || {};

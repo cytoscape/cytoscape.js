@@ -110,7 +110,7 @@ styfn.instanceString = function(){
 
   // define visual style properties
   var t = Style.types;
-  var props = Style.properties = [
+  var props = Style.properties = styfn.properties = [
     // labels
     { name: 'text-valign', type: t.valign },
     { name: 'text-halign', type: t.halign },
@@ -558,7 +558,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
   var valueIsString = is.string(value);
   if( valueIsString ){ // trim the value to make parsing easier
-    value = util.trim( value );
+    value = value.trim();
   }
 
   var type = property.type;
@@ -984,14 +984,14 @@ Style.fromString = function( cy, string ){
 };
 
 [
-  './apply',
-  './bypass',
-  './container',
-  './get-for-ele',
-  './json',
-  './string-sheet'
-].forEach(function( path ){
-  util.extend( styfn, require(path) );
+  require('./apply'),
+  require('./bypass'),
+  require('./container'),
+  require('./get-for-ele'),
+  require('./json'),
+  require('./string-sheet')
+].forEach(function( props ){
+  util.extend( styfn, props );
 });
 
 module.exports = Style;

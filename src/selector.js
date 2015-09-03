@@ -1,7 +1,6 @@
 'use strict';
 
 var is = require('./is');
-var Collection = require('./collection');
 var util = require('./util');
 
 var Selector = function( onlyThisGroup, selector ){
@@ -424,11 +423,6 @@ selfn.eq = function(i){
   return this[i];
 };
 
-// get elements from the core and then filter them
-selfn.find = function(){
-  // TODO impl if we decide to use a DB for storing elements
-};
-
 var queryMatches = function(query, element){
   // check group
   if( query.group != null && query.group != '*' && query.group != element._private.group ){
@@ -775,7 +769,7 @@ selfn.filter = function(collection){
 
   // don't bother trying if it's invalid
   if( self._private.invalid ){
-    return new Collection( cy );
+    return cy.collection();
   }
 
   var selectorFunction = function(i, element){

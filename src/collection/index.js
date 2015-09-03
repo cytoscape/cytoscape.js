@@ -4,6 +4,7 @@ var util = require('../util');
 var is = require('../is');
 
 var Element = require('./element');
+var zIndexSort = require('./zsort');
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
@@ -35,7 +36,7 @@ var idFactory = {
 // represents a set of nodes, edges, or both together
 var Collection = function(cy, elements, options){
   if( !(this instanceof Collection) ){
-    return new Collection(cy, elements);
+    return new Collection(cy, elements, options);
   }
 
   if( cy === undefined || !is.core(cy) ){
@@ -121,7 +122,7 @@ elesfn.instanceString = function(){
 };
 
 elesfn.spawn = function( cy, eles, opts ){
-  return Collection( cy, eles, opts );
+  return new Collection( cy, eles, opts );
 };
 
 elesfn.cy = function(){
@@ -148,7 +149,7 @@ elesfn.getElementById = function( id ){
   var cy = this._private.cy;
   var ele = this._private.ids[ id ];
 
-  return ele ? ele : Collection(cy); // get ele or empty collection
+  return ele ? ele : new Collection(cy); // get ele or empty collection
 };
 
 elesfn.json = function( obj ){
@@ -653,25 +654,25 @@ elesfn.move = function( struct ){
 };
 
 [
-  './algorithms',
-  './algorithms2',
-  './animation',
-  './class',
-  './comparators',
-  './compounds',
-  './data-functions',
-  './degree',
-  './events',
-  './filter',
-  './group',
-  './index',
-  './iteration',
-  './layout',
-  './style',
-  './switch-functions',
-  './traversing'
-].forEach(function( path ){
-  util.extend( elesfn, require(path) );
+  require('./algorithms'),
+  require('./algorithms2'),
+  require('./animation'),
+  require('./class'),
+  require('./comparators'),
+  require('./compounds'),
+  require('./data-functions'),
+  require('./degree'),
+  require('./events'),
+  require('./filter'),
+  require('./group'),
+  require('./index'),
+  require('./iteration'),
+  require('./layout'),
+  require('./style'),
+  require('./switch-functions'),
+  require('./traversing')
+].forEach(function( props ){
+  util.extend( elesfn, props );
 });
 
 module.exports = Collection;

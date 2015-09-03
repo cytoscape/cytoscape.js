@@ -50,18 +50,6 @@ Note: Cytoscape.js does not include any of these libraries directly but allows u
 
 
 
-## Adding source files
-
-When adding source (.js) files to the repository, update the list of JS files in `gulpfile.js`.  You can update the references to these JS files in the tests and debug page et cetera with `gulp`:
-
- 1. `gulp debugrefs` : Update the JS files referenced in the debug page (`debug/index.html`).
- 1. `gulp testrefs` : Update the JS files referenced in the test page (`test/index.html`).
- 1. `gulp testlist` : Update the JS test files referenced in the test page (`test/index.html`).
-
-Or you can do them together via `gulp refs`.
-
-
-
 ## Build dependencies
 
 Install `npm` and `gulp`.  Of course, `npm install` before using `gulp`.
@@ -90,7 +78,7 @@ Run `gulp` in the console.  The main targets are:
  * `lint` : lint the JS sources via jshint
  * `benchmark` : run benchmark regression tests
  * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
- * `watch` : update JS refs in HTML files (debug page, test page) automatically when JS files are added or deleted
+ * `watch` : automatically build lib and tests for debugging
 
 **Documentation:**
  * `docs` : build the documentation template

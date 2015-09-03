@@ -1,116 +1,129 @@
 /*
-  The canvas renderer was written by Yue Dong.
+The canvas renderer was written by Yue Dong.
 
-  Modifications tracked on Github.
+Modifications tracked on Github.
 */
 
-(function($$) { 'use strict';
+'use strict';
 
-  var CR = CanvasRenderer;
-  var CRp = CanvasRenderer.prototype;
+var util = require('../../../util');
 
-  CR.CANVAS_LAYERS = 3;
-  //
-  CR.SELECT_BOX = 0;
-  CR.DRAG = 1;
-  CR.NODE = 2;
+var CR = CanvasRenderer;
+var CRp = CanvasRenderer.prototype;
 
-  CR.BUFFER_COUNT = 3;
-  //
-  CR.TEXTURE_BUFFER = 0;
-  CR.MOTIONBLUR_BUFFER_NODE = 1;
-  CR.MOTIONBLUR_BUFFER_DRAG = 2;
+CRp.CANVAS_LAYERS = 3;
+//
+CRp.SELECT_BOX = 0;
+CRp.DRAG = 1;
+CRp.NODE = 2;
 
-  function CanvasRenderer(options) {
-    var r = this;
+CRp.BUFFER_COUNT = 3;
+//
+CRp.TEXTURE_BUFFER = 0;
+CRp.MOTIONBLUR_BUFFER_NODE = 1;
+CRp.MOTIONBLUR_BUFFER_DRAG = 2;
 
-    r.data = {
-      canvases: new Array(CR.CANVAS_LAYERS),
-      contexts: new Array(CR.CANVAS_LAYERS),
-      canvasNeedsRedraw: new Array(CR.CANVAS_LAYERS),
+function CanvasRenderer(options) {
+  var r = this;
 
-      bufferCanvases: new Array(CR.BUFFER_COUNT),
-      bufferContexts: new Array(CR.CANVAS_LAYERS)
-    };
+  r.data = {
+    canvases: new Array(CRp.CANVAS_LAYERS),
+    contexts: new Array(CRp.CANVAS_LAYERS),
+    canvasNeedsRedraw: new Array(CRp.CANVAS_LAYERS),
 
-    r.data.canvasContainer = document.createElement('div');
-    var containerStyle = r.data.canvasContainer.style;
-    containerStyle.position = 'absolute';
-    containerStyle.zIndex = '0';
-    containerStyle.overflow = 'hidden';
+    bufferCanvases: new Array(CRp.BUFFER_COUNT),
+    bufferContexts: new Array(CRp.CANVAS_LAYERS)
+  };
 
-    options.cy.container().appendChild( r.data.canvasContainer );
+  r.data.canvasContainer = document.createElement('div');
+  var containerStyle = r.data.canvasContainer.style;
+  containerStyle.position = 'absolute';
+  containerStyle.zIndex = '0';
+  containerStyle.overflow = 'hidden';
 
-    for (var i = 0; i < CR.CANVAS_LAYERS; i++) {
-      r.data.canvases[i] = document.createElement('canvas');
-      r.data.contexts[i] = r.data.canvases[i].getContext('2d');
-      r.data.canvases[i].style.position = 'absolute';
-      r.data.canvases[i].setAttribute('data-id', 'layer' + i);
-      r.data.canvases[i].style.zIndex = String(CR.CANVAS_LAYERS - i);
-      r.data.canvasContainer.appendChild(r.data.canvases[i]);
+  options.cy.container().appendChild( r.data.canvasContainer );
 
-      r.data.canvasNeedsRedraw[i] = false;
-    }
-    r.data.topCanvas = r.data.canvases[0];
+  for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
+    r.data.canvases[i] = document.createElement('canvas');
+    r.data.contexts[i] = r.data.canvases[i].getContext('2d');
+    r.data.canvases[i].style.position = 'absolute';
+    r.data.canvases[i].setAttribute('data-id', 'layer' + i);
+    r.data.canvases[i].style.zIndex = String(CRp.CANVAS_LAYERS - i);
+    r.data.canvasContainer.appendChild(r.data.canvases[i]);
 
-    r.data.canvases[CR.NODE].setAttribute('data-id', 'layer' + CR.NODE + '-node');
-    r.data.canvases[CR.SELECT_BOX].setAttribute('data-id', 'layer' + CR.SELECT_BOX + '-selectbox');
-    r.data.canvases[CR.DRAG].setAttribute('data-id', 'layer' + CR.DRAG + '-drag');
+    r.data.canvasNeedsRedraw[i] = false;
+  }
+  r.data.topCanvas = r.data.canvases[0];
 
-    for (var i = 0; i < CR.BUFFER_COUNT; i++) {
-      r.data.bufferCanvases[i] = document.createElement('canvas');
-      r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
-      r.data.bufferCanvases[i].style.position = 'absolute';
-      r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
-      r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-      r.data.bufferCanvases[i].style.visibility = 'hidden';
-      //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
-    }
+  r.data.canvases[CRp.NODE].setAttribute('data-id', 'layer' + CRp.NODE + '-node');
+  r.data.canvases[CRp.SELECT_BOX].setAttribute('data-id', 'layer' + CRp.SELECT_BOX + '-selectbox');
+  r.data.canvases[CRp.DRAG].setAttribute('data-id', 'layer' + CRp.DRAG + '-drag');
 
-    r.pathsEnabled = true;
+  for (var i = 0; i < CRp.BUFFER_COUNT; i++) {
+    r.data.bufferCanvases[i] = document.createElement('canvas');
+    r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
+    r.data.bufferCanvases[i].style.position = 'absolute';
+    r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
+    r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
+    r.data.bufferCanvases[i].style.visibility = 'hidden';
+    //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
-  CRp.redrawHint = function( group, bool ){
-    var r = this;
+  r.pathsEnabled = true;
+}
 
-    switch( group ){
-      case 'eles':
-        r.data.canvasNeedsRedraw[ CR.NODE ] = bool;
-        break;
-      case 'drag':
-        r.data.canvasNeedsRedraw[ CR.DRAG ] = bool;
-        break;
-      case 'select':
-        r.data.canvasNeedsRedraw[ CR.SELECT_BOX ] = bool;
-        break;
-    }
-  };
+CRp.redrawHint = function( group, bool ){
+  var r = this;
 
-  // whether to use Path2D caching for drawing
-  var pathsImpld = typeof Path2D !== 'undefined';
+  switch( group ){
+    case 'eles':
+      r.data.canvasNeedsRedraw[ CRp.NODE ] = bool;
+      break;
+    case 'drag':
+      r.data.canvasNeedsRedraw[ CRp.DRAG ] = bool;
+      break;
+    case 'select':
+      r.data.canvasNeedsRedraw[ CRp.SELECT_BOX ] = bool;
+      break;
+  }
+};
 
-  CRp.path2dEnabled = function( on ){
-    if( on === undefined ){
-      return this.pathsEnabled;
-    }
+// whether to use Path2D caching for drawing
+var pathsImpld = typeof Path2D !== 'undefined';
 
-    this.pathsEnabled = on ? true : false;
-  };
+CRp.path2dEnabled = function( on ){
+  if( on === undefined ){
+    return this.pathsEnabled;
+  }
 
-  CRp.usePaths = function(){
-    return pathsImpld && this.pathsEnabled;
-  };
+  this.pathsEnabled = on ? true : false;
+};
 
-
-  // copy the math functions into the renderer prototype
-  // unfortunately these functions are used interspersed t/o the code
-  // and this makes sure things work just in case a ref was missed in refactoring
-  // TODO remove this eventually
-  // for( var fnName in $$.math ){
-  //   CRp[ fnName ] = $$.math[ fnName ];
-  // }
+CRp.usePaths = function(){
+  return pathsImpld && this.pathsEnabled;
+};
 
 
-  $$('renderer', 'canvas', CanvasRenderer);
+// copy the math functions into the renderer prototype
+// unfortunately these functions are used interspersed t/o the code
+// and this makes sure things work just in case a ref was missed in refactoring
+// TODO remove this eventually
+// for( var fnName in $$.math ){
+//   CRp[ fnName ] = $$.math[ fnName ];
+// }
 
-})( cytoscape );
+[
+  require('./arrow-shapes'),
+  require('./drawing-edges'),
+  require('./drawing-images'),
+  require('./drawing-label-text'),
+  require('./drawing-nodes'),
+  require('./drawing-redraw'),
+  require('./drawing-shapes'),
+  require('./export-image'),
+  require('./node-shapes')
+].forEach(function( props ){
+  util.extend( CRp, props );
+});
+
+module.exports = CR;

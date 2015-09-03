@@ -140,7 +140,7 @@ var is = {
   },
 
   khtml: function(){
-    return navigator && navigator.vendor.match(/kde/i); // TODO probably a better way to detect this...
+    return navigator && navigator.vendor.match(/kde/i); // probably a better way to detect this...
   },
 
   khtmlEtc: function(){

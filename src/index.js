@@ -1,13 +1,11 @@
-// this is put as a global var in the browser
-// or it's just a global to this module if commonjs
-
 'use strict';
 
 var window = require('./window');
 var is = require('./is');
 var Core = require('./core');
 var extension = require('./extension');
-
+var regjq = require('./jquery-plugin');
+var Stylesheet = require('./stylesheet');
 
 // the object iteself is a function that init's an instance of cytoscape
 
@@ -43,16 +41,6 @@ cytoscape.init = function( options ){
   }
 };
 
-if( typeof module !== 'undefined' && module.exports ){ // expose as a commonjs module
-  module.exports = cytoscape;
-}
-
-if( typeof define !== 'undefined' && define.amd ){ // expose as an amd/requirejs module
-  define('cytoscape', function(){
-    return cytoscape;
-  });
-}
-
 // make sure we always register in the window just in case (e.g. w/ derbyjs)
 if( window ){
   window.cytoscape = cytoscape;
@@ -61,5 +49,12 @@ if( window ){
 // TODO this isn't same w/cjs
 // extra set to `this` is necessary for meteor
 this.cytoscape = cytoscape;
+
+// try to register w/ jquery
+regjq();
+
+// expose public apis
+cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
+cytoscape.is = is;
 
 module.exports = cytoscape;

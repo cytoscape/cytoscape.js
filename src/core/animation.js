@@ -3,6 +3,7 @@
 var define = require('../define');
 var util = require('../util');
 var is = require('../is');
+var window = require('../window');
 
 var corefn = ({
 

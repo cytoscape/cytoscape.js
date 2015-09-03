@@ -9,6 +9,7 @@ var math = require('../../math');
 var is = require('../../is');
 
 var DEBUG;
+var GRAVITY_DIST_THRESHOLD = 1.0;
 
 /**
  * @brief :  default layout options
@@ -664,7 +665,7 @@ var nodeRepulsion = function(node1, node2, layoutInfo, cy, options) {
   // If both centers are the same, apply a random force
   if (0 === directionX && 0 === directionY) {
     // s += "\nNodes have the same position.";
-    return; // TODO
+    return; // TODO could be improved with random force
   }
 
   var overlap = nodesOverlap(node1, node2, directionX, directionY);
@@ -917,7 +918,7 @@ var calculateGravityForces = function(layoutInfo, cy, options) {
       var dx = centerX - node.positionX;
       var dy = centerY - node.positionY;
       var d  = Math.sqrt(dx * dx + dy * dy);
-      if (d > 1.0) { // TODO: Use global variable for distance threshold
+      if (d > GRAVITY_DIST_THRESHOLD) {
         var fx = options.gravity * dx / d;
         var fy = options.gravity * dy / d;
         node.offsetX += fx;

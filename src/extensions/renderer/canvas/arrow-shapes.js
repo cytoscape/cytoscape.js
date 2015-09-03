@@ -1,9 +1,13 @@
-;(function( $$ ){ 'use strict';
+'use strict';
 
-  var CanvasRenderer = $$('renderer', 'canvas');
-  var CRp = CanvasRenderer.prototype;
+var CRp = {};
 
-  CRp.arrowShapeImpl = {
+var impl;
+
+CRp.arrowShapeImpl = function( name ){
+  var self = this;
+
+  return ( impl || (impl = {
     'polygon': function( context, points ){
       for( var i = 0; i < points.length; i++ ){
         var pt = points[i];
@@ -50,6 +54,7 @@
     'circle': function( context, rx, ry, r ){
       context.arc(rx, ry, r, 0, Math.PI * 2, false);
     }
-  };
+  }) )[ name ];
+};
 
-})( cytoscape );
+module.exports = CRp;

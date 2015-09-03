@@ -1,2224 +1,2226 @@
-;(function($$){ 'use strict';
+'use strict';
 
-  var BaseRenderer = $$('renderer', 'base');
-  var BR = BaseRenderer;
-  var BRp = BR.prototype;
+var is = require('../../../is');
+var util = require('../../../util');
+var Event = require('../../../event');
+var Collection = require('../../../collection');
 
-  BRp.registerBinding = function(target, event, handler, useCapture){
-    this.bindings.push({
-      target: target,
-      event: event,
-      handler: handler,
-      useCapture: useCapture
-    });
+var BRp = {};
 
-    target.addEventListener(event, handler, useCapture);
+BRp.registerBinding = function(target, event, handler, useCapture){
+  this.bindings.push({
+    target: target,
+    event: event,
+    handler: handler,
+    useCapture: useCapture
+  });
+
+  target.addEventListener(event, handler, useCapture);
+};
+
+BRp.nodeIsDraggable = function(node) {
+  if (node._private.style['opacity'].value !== 0
+    && node._private.style['visibility'].value == 'visible'
+    && node._private.style['display'].value == 'element'
+    && !node.locked()
+    && node.grabbable() ) {
+
+    return true;
+  }
+
+  return false;
+};
+
+BRp.load = function() {
+  var r = this;
+
+  var isMultSelKeyDown = function( e ){
+    return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
   };
 
-  BRp.nodeIsDraggable = function(node) {
-    if (node._private.style['opacity'].value !== 0
-      && node._private.style['visibility'].value == 'visible'
-      && node._private.style['display'].value == 'element'
-      && !node.locked()
-      && node.grabbable() ) {
+  var getDragListIds = function(opts){
+    var listHasId;
 
-      return true;
+    if( opts.addToList && r.cy.hasCompoundNodes() ){ // only needed for compound graphs
+      if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
+        opts.addToList.hasId = {};
+
+        for( var i = 0; i < opts.addToList.length; i++ ){
+          var ele = opts.addToList[i];
+
+          opts.addToList.hasId[ ele.id() ] = true;
+        }
+      }
+
+      listHasId = opts.addToList.hasId;
     }
 
-    return false;
+    return listHasId || {};
   };
 
-  BRp.load = function() {
-    var r = this;
+  // helper function to determine which child nodes and inner edges
+  // of a compound node to be dragged as well as the grabbed and selected nodes
+  var addDescendantsToDrag = function(node, opts){
+    if( !node._private.cy.hasCompoundNodes() ){
+      return;
+    }
 
-    var isMultSelKeyDown = function( e ){
-      return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
-    };
+    if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
 
-    var getDragListIds = function(opts){
-      var listHasId;
+    var listHasId = getDragListIds( opts );
 
-      if( opts.addToList && r.cy.hasCompoundNodes() ){ // only needed for compound graphs
-        if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
-          opts.addToList.hasId = {};
+    var innerNodes = node.descendants();
 
-          for( var i = 0; i < opts.addToList.length; i++ ){
-            var ele = opts.addToList[i];
-
-            opts.addToList.hasId[ ele.id() ] = true;
-          }
-        }
-
-        listHasId = opts.addToList.hasId;
-      }
-
-      return listHasId || {};
-    };
-
-    // helper function to determine which child nodes and inner edges
-    // of a compound node to be dragged as well as the grabbed and selected nodes
-    var addDescendantsToDrag = function(node, opts){
-      if( !node._private.cy.hasCompoundNodes() ){
-        return;
-      }
-
-      if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
-
-      var listHasId = getDragListIds( opts );
-
-      var innerNodes = node.descendants();
-
-      // TODO do not drag hidden children & children of hidden children?
-      for( var i = 0; i < innerNodes.size(); i++ ){
-        var iNode = innerNodes[i];
-        var _p = iNode._private;
-
-        if( opts.inDragLayer ){
-          _p.rscratch.inDragLayer = true;
-        }
-
-        if( opts.addToList && !listHasId[ iNode.id() ] ){
-          opts.addToList.push( iNode );
-          listHasId[ iNode.id() ] = true;
-
-          _p.grabbed = true;
-        }
-
-        var edges = _p.edges;
-        for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
-          edges[j]._private.rscratch.inDragLayer = true;
-        }
-      }
-    };
-
-    // adds the given nodes, and its edges to the drag layer
-    var addNodeToDrag = function(node, opts){
-
-      var _p = node._private;
-      var listHasId = getDragListIds( opts );
+    for( var i = 0; i < innerNodes.size(); i++ ){
+      var iNode = innerNodes[i];
+      var _p = iNode._private;
 
       if( opts.inDragLayer ){
         _p.rscratch.inDragLayer = true;
       }
 
-      if( opts.addToList && !listHasId[ node.id() ] ){
-        opts.addToList.push( node );
-        listHasId[ node.id() ] = true;
+      if( opts.addToList && !listHasId[ iNode.id() ] ){
+        opts.addToList.push( iNode );
+        listHasId[ iNode.id() ] = true;
 
         _p.grabbed = true;
       }
 
       var edges = _p.edges;
-      for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
-        edges[i]._private.rscratch.inDragLayer = true;
+      for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
+        edges[j]._private.rscratch.inDragLayer = true;
       }
+    }
+  };
 
-      addDescendantsToDrag( node, opts ); // always add to drag
+  // adds the given nodes, and its edges to the drag layer
+  var addNodeToDrag = function(node, opts){
 
-      // also add nodes and edges related to the topmost ancestor
-      updateAncestorsInDragLayer( node, {
-        inDragLayer: opts.inDragLayer
-      } );
-    };
+    var _p = node._private;
+    var listHasId = getDragListIds( opts );
 
-    var freeDraggedElements = function( draggedElements ){
-      if( !draggedElements ){ return; }
-
-      for (var i=0; i < draggedElements.length; i++) {
-
-        var dEi_p = draggedElements[i]._private;
-
-        if(dEi_p.group === 'nodes') {
-          dEi_p.rscratch.inDragLayer = false;
-          dEi_p.grabbed = false;
-
-          var sEdges = dEi_p.edges;
-          for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
-
-          // for compound nodes, also remove related nodes and edges from the drag layer
-          updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
-
-        } else if( dEi_p.group === 'edges' ){
-          dEi_p.rscratch.inDragLayer = false;
-        }
-
-      }
-    };
-
-    // helper function to determine which ancestor nodes and edges should go
-    // to the drag layer (or should be removed from drag layer).
-    var updateAncestorsInDragLayer = function(node, opts) {
-
-      if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
-
-      // find top-level parent
-      var parent = node;
-
-      if( !node._private.cy.hasCompoundNodes() ){
-        return;
-      }
-
-      while( parent.parent().nonempty() ){
-        parent = parent.parent()[0];
-      }
-
-      // no parent node: no nodes to add to the drag layer
-      if( parent == node ){
-        return;
-      }
-
-      var nodes = parent.descendants()
-        .merge( parent )
-        .unmerge( node )
-        .unmerge( node.descendants() )
-      ;
-
-      var edges = nodes.connectedEdges();
-
-      var listHasId = getDragListIds( opts );
-
-      for( var i = 0; i < nodes.size(); i++ ){
-        if( opts.inDragLayer !== undefined ){
-          nodes[i]._private.rscratch.inDragLayer = opts.inDragLayer;
-        }
-
-        if( opts.addToList && !listHasId[ nodes[i].id() ] ){
-          opts.addToList.push( nodes[i] );
-          listHasId[ nodes[i].id() ] = true;
-
-          nodes[i]._private.grabbed = true;
-        }
-      }
-
-      for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
-        edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
-      }
-    };
-
-    if( typeof MutationObserver !== 'undefined' ){
-      r.removeObserver = new MutationObserver(function( mutns ){
-        for( var i = 0; i < mutns.length; i++ ){
-          var mutn = mutns[i];
-          var rNodes = mutn.removedNodes;
-
-          if( rNodes ){ for( var j = 0; j < rNodes.length; j++ ){
-            var rNode = rNodes[j];
-
-            if( rNode === r.container ){
-              r.destroy();
-              break;
-            }
-          } }
-        }
-      });
-
-      r.removeObserver.observe( r.container.parentNode, { childList: true } );
-    } else {
-      r.registerBinding(r.container, 'DOMNodeRemoved', function(e){
-        r.destroy();
-      });
+    if( opts.inDragLayer ){
+      _p.rscratch.inDragLayer = true;
     }
 
+    if( opts.addToList && !listHasId[ node.id() ] ){
+      opts.addToList.push( node );
+      listHasId[ node.id() ] = true;
 
+      _p.grabbed = true;
+    }
 
-    // auto resize
-    r.registerBinding(window, 'resize', $$.util.debounce( function(e) {
-      r.invalidateContainerClientCoordsCache();
+    var edges = _p.edges;
+    for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
+      edges[i]._private.rscratch.inDragLayer = true;
+    }
 
-      r.matchCanvasSize(r.container);
-      r.redrawHint('eles', true);
-      r.redraw();
-    }, 100 ) );
+    addDescendantsToDrag( node, opts ); // always add to drag
 
-    var invalCtnrBBOnScroll = function(domEle){
-      r.registerBinding(domEle, 'scroll', function(e){
-        r.invalidateContainerClientCoordsCache();
-      } );
-    };
+    // also add nodes and edges related to the topmost ancestor
+    updateAncestorsInDragLayer( node, {
+      inDragLayer: opts.inDragLayer
+    } );
+  };
 
-    var bbCtnr = r.cy.container();
+  var freeDraggedElements = function( draggedElements ){
+    if( !draggedElements ){ return; }
 
-    for( ;; ){
+    for (var i=0; i < draggedElements.length; i++) {
 
-      invalCtnrBBOnScroll( bbCtnr );
+      var dEi_p = draggedElements[i]._private;
 
-      if( bbCtnr.parentNode ){
-        bbCtnr = bbCtnr.parentNode;
-      } else {
-        break;
+      if(dEi_p.group === 'nodes') {
+        dEi_p.rscratch.inDragLayer = false;
+        dEi_p.grabbed = false;
+
+        var sEdges = dEi_p.edges;
+        for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
+
+        // for compound nodes, also remove related nodes and edges from the drag layer
+        updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
+
+      } else if( dEi_p.group === 'edges' ){
+        dEi_p.rscratch.inDragLayer = false;
       }
 
     }
+  };
 
-    // stop right click menu from appearing on cy
-    r.registerBinding(r.container, 'contextmenu', function(e){
-      e.preventDefault();
-    });
+  // helper function to determine which ancestor nodes and edges should go
+  // to the drag layer (or should be removed from drag layer).
+  var updateAncestorsInDragLayer = function(node, opts) {
 
-    var inBoxSelection = function(){
-      return r.selection[4] !== 0;
-    };
+    if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
 
-    // Primary key
-    r.registerBinding(r.container, 'mousedown', function(e) {
-      e.preventDefault();
-      r.hoverData.capture = true;
-      r.hoverData.which = e.which;
+    // find top-level parent
+    var parent = node;
 
-      var cy = r.cy;
-      var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var select = r.selection;
-      var near = r.findNearestElement(pos[0], pos[1], true, false);
-      var draggedElements = r.dragData.possibleDragElements;
+    if( !node._private.cy.hasCompoundNodes() ){
+      return;
+    }
 
-      r.hoverData.mdownPos = pos;
+    while( parent.parent().nonempty() ){
+      parent = parent.parent()[0];
+    }
 
-      var needsRedraw = r.data.canvasNeedsRedraw;
+    // no parent node: no nodes to add to the drag layer
+    if( parent == node ){
+      return;
+    }
 
-      var checkForTaphold = function(){
-        r.hoverData.tapholdCancelled = false;
+    var nodes = parent.descendants()
+      .merge( parent )
+      .unmerge( node )
+      .unmerge( node.descendants() )
+    ;
 
-        clearTimeout( r.hoverData.tapholdTimeout );
+    var edges = nodes.connectedEdges();
 
-        r.hoverData.tapholdTimeout = setTimeout(function(){
+    var listHasId = getDragListIds( opts );
 
-          if( r.hoverData.tapholdCancelled ){
-            return;
-          } else {
-            var ele = r.hoverData.down;
-
-            if( ele ){
-              ele.trigger( new $$.Event(e, {
-                type: 'taphold',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) );
-            } else {
-              cy.trigger( new $$.Event(e, {
-                type: 'taphold',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) );
-            }
-          }
-
-        }, r.tapholdDuration);
-      };
-
-      // Right click button
-      if( e.which == 3 ){
-
-        r.hoverData.cxtStarted = true;
-
-        var cxtEvt = new $$.Event(e, {
-          type: 'cxttapstart',
-          cyPosition: { x: pos[0], y: pos[1] }
-        });
-
-        if( near ){
-          near.activate();
-          near.trigger( cxtEvt );
-
-          r.hoverData.down = near;
-        } else {
-          cy.trigger( cxtEvt );
-        }
-
-        r.hoverData.downTime = (new Date()).getTime();
-        r.hoverData.cxtDragged = false;
-
-      // Primary button
-      } else if (e.which == 1) {
-
-        if( near ){
-          near.activate();
-        }
-
-        // Element dragging
-        {
-          // If something is under the cursor and it is draggable, prepare to grab it
-          if (near != null) {
-
-            if( r.nodeIsDraggable(near) ){
-
-              var grabEvent = new $$.Event(e, {
-                type: 'grab',
-                cyPosition: { x: pos[0], y: pos[1] }
-              });
-
-              if ( near.isNode() && !near.selected() ){
-
-                draggedElements = r.dragData.possibleDragElements = [];
-                addNodeToDrag( near, { addToList: draggedElements } );
-
-                near.trigger(grabEvent);
-
-              } else if ( near.isNode() && near.selected() ){
-                draggedElements = r.dragData.possibleDragElements = [  ];
-
-                var selectedNodes = cy.$(function(){ return this.isNode() && this.selected(); });
-
-                for( var i = 0; i < selectedNodes.length; i++ ){
-
-                  // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-                  if( r.nodeIsDraggable( selectedNodes[i] ) ){
-                    addNodeToDrag( selectedNodes[i], { addToList: draggedElements } );
-                  }
-                }
-
-                near.trigger( grabEvent );
-              }
-
-              r.redrawHint('eles', true);
-              r.redrawHint('drag', true);
-
-            }
-
-            near
-              .trigger(new $$.Event(e, {
-                type: 'mousedown',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapstart',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmousedown',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-            ;
-
-          } else if (near == null) {
-            cy
-              .trigger(new $$.Event(e, {
-                type: 'mousedown',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapstart',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmousedown',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }))
-            ;
-          }
-
-          r.hoverData.down = near;
-          r.hoverData.downTime = (new Date()).getTime();
-
-        }
-
-        if ( near == null ) {
-          select[4] = 1;
-
-          r.data.bgActivePosistion = {
-            x: pos[0],
-            y: pos[1]
-          };
-
-          //r.hoverData.dragging = true;
-
-          //checkForTaphold();
-
-          r.redrawHint('select', true);
-
-          r.redraw();
-        } else if( near.isEdge() ){
-          select[4] = 1; // for future pan
-        }
-
-        checkForTaphold();
-
+    for( var i = 0; i < nodes.size(); i++ ){
+      if( opts.inDragLayer !== undefined ){
+        nodes[i]._private.rscratch.inDragLayer = opts.inDragLayer;
       }
 
-      // Initialize selection box coordinates
-      select[0] = select[2] = pos[0];
-      select[1] = select[3] = pos[1];
+      if( opts.addToList && !listHasId[ nodes[i].id() ] ){
+        opts.addToList.push( nodes[i] );
+        listHasId[ nodes[i].id() ] = true;
 
-    }, false);
+        nodes[i]._private.grabbed = true;
+      }
+    }
 
-    r.registerBinding(window, 'mousemove', $$.util.throttle( function(e) {
-      var preventDefault = false;
-      var capture = r.hoverData.capture;
+    for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ) {
+      edges[j]._private.rscratch.inDragLayer = opts.inDragLayer;
+    }
+  };
 
-      // save cycles if mouse events aren't to be captured
-      if ( !capture ){
-        var containerPageCoords = r.findContainerClientCoords();
+  if( typeof MutationObserver !== 'undefined' ){
+    r.removeObserver = new MutationObserver(function( mutns ){
+      for( var i = 0; i < mutns.length; i++ ){
+        var mutn = mutns[i];
+        var rNodes = mutn.removedNodes;
 
-        if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-          && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
-        ) {
-          // inside container bounds so OK
-        } else {
-          return;
-        }
+        if( rNodes ){ for( var j = 0; j < rNodes.length; j++ ){
+          var rNode = rNodes[j];
 
-        var cyContainer = r.container;
-        var target = e.target;
-        var tParent = target.parentNode;
-        var containerIsTarget = false;
-
-        while( tParent ){
-          if( tParent === cyContainer ){
-            containerIsTarget = true;
+          if( rNode === r.container ){
+            r.destroy();
             break;
           }
-
-          tParent = tParent.parentNode;
-        }
-
-        if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
+        } }
       }
+    });
 
-      var cy = r.cy;
-      var zoom = cy.zoom();
-      var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var select = r.selection;
-      var needsRedraw = r.data.canvasNeedsRedraw;
+    r.removeObserver.observe( r.container.parentNode, { childList: true } );
+  } else {
+    r.registerBinding(r.container, 'DOMNodeRemoved', function(e){
+      r.destroy();
+    });
+  }
 
-      var near = null;
-      if( !r.hoverData.draggingEles ){
-        near = r.findNearestElement(pos[0], pos[1], true, false);
-      }
-      var last = r.hoverData.last;
-      var down = r.hoverData.down;
 
-      var disp = [pos[0] - select[2], pos[1] - select[3]];
 
-      var draggedElements = r.dragData.possibleDragElements;
+  // auto resize
+  r.registerBinding(window, 'resize', util.debounce( function(e) {
+    r.invalidateContainerClientCoordsCache();
 
-      var dx = select[2] - select[0];
-      var dx2 = dx * dx;
-      var dy = select[3] - select[1];
-      var dy2 = dy * dy;
-      var dist2 = dx2 + dy2;
-      var rdist2 = dist2 * zoom * zoom;
+    r.matchCanvasSize(r.container);
+    r.redrawHint('eles', true);
+    r.redraw();
+  }, 100 ) );
 
-      var multSelKeyDown = isMultSelKeyDown( e );
+  var invalCtnrBBOnScroll = function(domEle){
+    r.registerBinding(domEle, 'scroll', function(e){
+      r.invalidateContainerClientCoordsCache();
+    } );
+  };
 
-      r.hoverData.tapholdCancelled = true;
+  var bbCtnr = r.cy.container();
 
-      var updateDragDelta = function(){
-        var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
+  for( ;; ){
 
-        if( dragDelta.length === 0 ){
-          dragDelta.push( disp[0] );
-          dragDelta.push( disp[1] );
+    invalCtnrBBOnScroll( bbCtnr );
+
+    if( bbCtnr.parentNode ){
+      bbCtnr = bbCtnr.parentNode;
+    } else {
+      break;
+    }
+
+  }
+
+  // stop right click menu from appearing on cy
+  r.registerBinding(r.container, 'contextmenu', function(e){
+    e.preventDefault();
+  });
+
+  var inBoxSelection = function(){
+    return r.selection[4] !== 0;
+  };
+
+  // Primary key
+  r.registerBinding(r.container, 'mousedown', function(e) {
+    e.preventDefault();
+    r.hoverData.capture = true;
+    r.hoverData.which = e.which;
+
+    var cy = r.cy;
+    var pos = r.projectIntoViewport(e.clientX, e.clientY);
+    var select = r.selection;
+    var near = r.findNearestElement(pos[0], pos[1], true, false);
+    var draggedElements = r.dragData.possibleDragElements;
+
+    r.hoverData.mdownPos = pos;
+
+    var needsRedraw = r.data.canvasNeedsRedraw;
+
+    var checkForTaphold = function(){
+      r.hoverData.tapholdCancelled = false;
+
+      clearTimeout( r.hoverData.tapholdTimeout );
+
+      r.hoverData.tapholdTimeout = setTimeout(function(){
+
+        if( r.hoverData.tapholdCancelled ){
+          return;
         } else {
-          dragDelta[0] += disp[0];
-          dragDelta[1] += disp[1];
+          var ele = r.hoverData.down;
+
+          if( ele ){
+            ele.trigger( Event(e, {
+              type: 'taphold',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) );
+          } else {
+            cy.trigger( Event(e, {
+              type: 'taphold',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }) );
+          }
         }
-      };
 
+      }, r.tapholdDuration);
+    };
 
-      preventDefault = true;
+    // Right click button
+    if( e.which == 3 ){
 
-      // Mousemove event
+      r.hoverData.cxtStarted = true;
+
+      var cxtEvt = Event(e, {
+        type: 'cxttapstart',
+        cyPosition: { x: pos[0], y: pos[1] }
+      });
+
+      if( near ){
+        near.activate();
+        near.trigger( cxtEvt );
+
+        r.hoverData.down = near;
+      } else {
+        cy.trigger( cxtEvt );
+      }
+
+      r.hoverData.downTime = (new Date()).getTime();
+      r.hoverData.cxtDragged = false;
+
+    // Primary button
+    } else if (e.which == 1) {
+
+      if( near ){
+        near.activate();
+      }
+
+      // Element dragging
       {
+        // If something is under the cursor and it is draggable, prepare to grab it
         if (near != null) {
+
+          if( r.nodeIsDraggable(near) ){
+
+            var grabEvent = Event(e, {
+              type: 'grab',
+              cyPosition: { x: pos[0], y: pos[1] }
+            });
+
+            if ( near.isNode() && !near.selected() ){
+
+              draggedElements = r.dragData.possibleDragElements = [];
+              addNodeToDrag( near, { addToList: draggedElements } );
+
+              near.trigger(grabEvent);
+
+            } else if ( near.isNode() && near.selected() ){
+              draggedElements = r.dragData.possibleDragElements = [  ];
+
+              var selectedNodes = cy.$(function(){ return this.isNode() && this.selected(); });
+
+              for( var i = 0; i < selectedNodes.length; i++ ){
+
+                // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
+                if( r.nodeIsDraggable( selectedNodes[i] ) ){
+                  addNodeToDrag( selectedNodes[i], { addToList: draggedElements } );
+                }
+              }
+
+              near.trigger( grabEvent );
+            }
+
+            r.redrawHint('eles', true);
+            r.redrawHint('drag', true);
+
+          }
+
           near
-            .trigger(new $$.Event(e, {
-              type: 'mousemove',
+            .trigger(Event(e, {
+              type: 'mousedown',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
-            .trigger(new $$.Event(e, {
-              type: 'vmousemove',
+            .trigger(Event(e, {
+              type: 'tapstart',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
-            .trigger(new $$.Event(e, {
-              type: 'tapdrag',
+            .trigger(Event(e, {
+              type: 'vmousedown',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
           ;
 
         } else if (near == null) {
           cy
-            .trigger(new $$.Event(e, {
-              type: 'mousemove',
+            .trigger(Event(e, {
+              type: 'mousedown',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
-            .trigger(new $$.Event(e, {
-              type: 'vmousemove',
+            .trigger(Event(e, {
+              type: 'tapstart',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
-            .trigger(new $$.Event(e, {
-              type: 'tapdrag',
+            .trigger(Event(e, {
+              type: 'vmousedown',
               cyPosition: { x: pos[0], y: pos[1] }
             }))
           ;
         }
 
+        r.hoverData.down = near;
+        r.hoverData.downTime = (new Date()).getTime();
+
       }
 
-      // trigger context drag if rmouse down
-      if( r.hoverData.which === 3 ){
-        var cxtEvt = new $$.Event(e, {
-          type: 'cxtdrag',
-          cyPosition: { x: pos[0], y: pos[1] }
-        });
+      if ( near == null ) {
+        select[4] = 1;
 
-        if( down ){
-          down.trigger( cxtEvt );
-        } else {
-          cy.trigger( cxtEvt );
-        }
+        r.data.bgActivePosistion = {
+          x: pos[0],
+          y: pos[1]
+        };
 
-        r.hoverData.cxtDragged = true;
+        //r.hoverData.dragging = true;
 
-        if( !r.hoverData.cxtOver || near !== r.hoverData.cxtOver ){
+        //checkForTaphold();
 
-          if( r.hoverData.cxtOver ){
-            r.hoverData.cxtOver.trigger( new $$.Event(e, {
-              type: 'cxtdragout',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-
-            // console.log('cxtdragout ' + r.hoverData.cxtOver.id());
-          }
-
-          r.hoverData.cxtOver = near;
-
-          if( near ){
-            near.trigger( new $$.Event(e, {
-              type: 'cxtdragover',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-
-            // console.log('cxtdragover ' + near.id());
-          }
-
-        }
-
-      // Check if we are drag panning the entire graph
-      } else if (r.hoverData.dragging) {
-        preventDefault = true;
-
-        if( cy.panningEnabled() && cy.userPanningEnabled() ){
-          var deltaP;
-
-          if( r.hoverData.justStartedPan ){
-            var mdPos = r.hoverData.mdownPos;
-
-            deltaP = {
-              x: ( pos[0] - mdPos[0] ) * zoom,
-              y: ( pos[1] - mdPos[1] ) * zoom
-            };
-
-            r.hoverData.justStartedPan = false;
-
-          } else {
-            deltaP = {
-              x: disp[0] * zoom,
-              y: disp[1] * zoom
-            };
-
-          }
-
-          cy.panBy( deltaP );
-
-          r.hoverData.dragged = true;
-        }
-
-        // Needs reproject due to pan changing viewport
-        pos = r.projectIntoViewport(e.clientX, e.clientY);
-
-      // Checks primary button down & out of time & mouse not moved much
-      } else if(
-          select[4] == 1 && (down == null || down.isEdge())
-      ){
-
-        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && multSelKeyDown ){
-          r.data.bgActivePosistion = undefined;
-          r.hoverData.selecting = true;
-          //select[4] = 0;
-
-          // console.log( 'select' );
-
-          r.redrawHint('select', true);
-          r.redraw();
-
-        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
-          r.hoverData.dragging = true;
-          r.hoverData.justStartedPan = true;
-          select[4] = 0;
-
-          r.data.bgActivePosistion = {
-            x: pos[0],
-            y: pos[1]
-          };
-
-          r.redrawHint('select', true);
-          r.redraw();
-
-          // console.log( 'pan' );
-        }
-
-        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
-
-      } else {
-        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
-
-        if (near != last) {
-
-          if (last) {
-            last.trigger( new $$.Event(e, {
-              type: 'mouseout',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-
-            last.trigger( new $$.Event(e, {
-              type: 'tapdragout',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-          }
-
-          if (near) {
-            near.trigger( new $$.Event(e, {
-              type: 'mouseover',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-
-            near.trigger( new $$.Event(e, {
-              type: 'tapdragover',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }) );
-          }
-
-          r.hoverData.last = near;
-        }
-
-        if( down && down.isNode() && r.nodeIsDraggable(down) ){
-
-          if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
-
-            var justStartedDrag = !r.dragData.didDrag;
-
-            if( justStartedDrag ) {
-              r.redrawHint('eles', true);
-            }
-
-            r.dragData.didDrag = true; // indicate that we actually did drag the node
-
-            var toTrigger = [];
-
-            for( var i = 0; i < draggedElements.length; i++ ){
-              var dEle = draggedElements[i];
-
-              // now, add the elements to the drag layer if not done already
-              if( !r.hoverData.draggingEles ){
-                addNodeToDrag( dEle, { inDragLayer: true } );
-              }
-
-              // Locked nodes not draggable, as well as non-visible nodes
-              if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
-                var dPos = dEle._private.position;
-
-                toTrigger.push( dEle );
-
-                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
-                  dPos.x += disp[0];
-                  dPos.y += disp[1];
-
-                  if( justStartedDrag ){
-                    var dragDelta = r.hoverData.dragDelta;
-
-                    if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
-                      dPos.x += dragDelta[0];
-                      dPos.y += dragDelta[1];
-                    }
-                  }
-                }
-
-              }
-            }
-
-            r.hoverData.draggingEles = true;
-
-            var tcol = (new $$.Collection(cy, toTrigger));
-
-            tcol.updateCompoundBounds();
-            tcol.trigger('position drag');
-
-            r.redrawHint('drag', true);
-            r.redraw();
-
-          } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
-            updateDragDelta();
-          }
-        }
-
-        // prevent the dragging from triggering text selection on the page
-        preventDefault = true;
-      }
-
-      select[2] = pos[0]; select[3] = pos[1];
-
-      if( preventDefault ){
-        if(e.stopPropagation) e.stopPropagation();
-          if(e.preventDefault) e.preventDefault();
-          return false;
-        }
-    }, 1000/30, { trailing: true }), false);
-
-    r.registerBinding(window, 'mouseup', function(e) {
-      // console.log('--\nmouseup', e)
-
-      var capture = r.hoverData.capture;
-      if (!capture) { return; }
-      r.hoverData.capture = false;
-
-      var cy = r.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.selection;
-      var near = r.findNearestElement(pos[0], pos[1], true, false);
-      var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
-      var multSelKeyDown = isMultSelKeyDown( e );
-      var needsRedraw = r.data.canvasNeedsRedraw;
-
-      if( r.data.bgActivePosistion ){
         r.redrawHint('select', true);
+
         r.redraw();
+      } else if( near.isEdge() ){
+        select[4] = 1; // for future pan
       }
 
-      r.hoverData.tapholdCancelled = true;
+      checkForTaphold();
 
-      r.data.bgActivePosistion = undefined; // not active bg now
+    }
+
+    // Initialize selection box coordinates
+    select[0] = select[2] = pos[0];
+    select[1] = select[3] = pos[1];
+
+  }, false);
+
+  r.registerBinding(window, 'mousemove', util.throttle( function(e) {
+    var preventDefault = false;
+    var capture = r.hoverData.capture;
+
+    // save cycles if mouse events aren't to be captured
+    if ( !capture ){
+      var containerPageCoords = r.findContainerClientCoords();
+
+      if (e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
+        && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
+      ) {
+        // inside container bounds so OK
+      } else {
+        return;
+      }
+
+      var cyContainer = r.container;
+      var target = e.target;
+      var tParent = target.parentNode;
+      var containerIsTarget = false;
+
+      while( tParent ){
+        if( tParent === cyContainer ){
+          containerIsTarget = true;
+          break;
+        }
+
+        tParent = tParent.parentNode;
+      }
+
+      if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
+    }
+
+    var cy = r.cy;
+    var zoom = cy.zoom();
+    var pos = r.projectIntoViewport(e.clientX, e.clientY);
+    var select = r.selection;
+    var needsRedraw = r.data.canvasNeedsRedraw;
+
+    var near = null;
+    if( !r.hoverData.draggingEles ){
+      near = r.findNearestElement(pos[0], pos[1], true, false);
+    }
+    var last = r.hoverData.last;
+    var down = r.hoverData.down;
+
+    var disp = [pos[0] - select[2], pos[1] - select[3]];
+
+    var draggedElements = r.dragData.possibleDragElements;
+
+    var dx = select[2] - select[0];
+    var dx2 = dx * dx;
+    var dy = select[3] - select[1];
+    var dy2 = dy * dy;
+    var dist2 = dx2 + dy2;
+    var rdist2 = dist2 * zoom * zoom;
+
+    var multSelKeyDown = isMultSelKeyDown( e );
+
+    r.hoverData.tapholdCancelled = true;
+
+    var updateDragDelta = function(){
+      var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
+
+      if( dragDelta.length === 0 ){
+        dragDelta.push( disp[0] );
+        dragDelta.push( disp[1] );
+      } else {
+        dragDelta[0] += disp[0];
+        dragDelta[1] += disp[1];
+      }
+    };
+
+
+    preventDefault = true;
+
+    // Mousemove event
+    {
+      if (near != null) {
+        near
+          .trigger(Event(e, {
+            type: 'mousemove',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'vmousemove',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'tapdrag',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+        ;
+
+      } else if (near == null) {
+        cy
+          .trigger(Event(e, {
+            type: 'mousemove',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'vmousemove',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'tapdrag',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }))
+        ;
+      }
+
+    }
+
+    // trigger context drag if rmouse down
+    if( r.hoverData.which === 3 ){
+      var cxtEvt = Event(e, {
+        type: 'cxtdrag',
+        cyPosition: { x: pos[0], y: pos[1] }
+      });
 
       if( down ){
-        down.unactivate();
+        down.trigger( cxtEvt );
+      } else {
+        cy.trigger( cxtEvt );
       }
 
-      if( r.hoverData.which === 3 ){
-        var cxtEvt = new $$.Event(e, {
-          type: 'cxttapend',
-          cyPosition: { x: pos[0], y: pos[1] }
-        });
+      r.hoverData.cxtDragged = true;
 
-        if( down ){
-          down.trigger( cxtEvt );
-        } else {
-          cy.trigger( cxtEvt );
-        }
+      if( !r.hoverData.cxtOver || near !== r.hoverData.cxtOver ){
 
-        if( !r.hoverData.cxtDragged ){
-          var cxtTap = new $$.Event(e, {
-            type: 'cxttap',
+        if( r.hoverData.cxtOver ){
+          r.hoverData.cxtOver.trigger( Event(e, {
+            type: 'cxtdragout',
             cyPosition: { x: pos[0], y: pos[1] }
-          });
+          }) );
 
-          if( down ){
-            down.trigger( cxtTap );
-          } else {
-            cy.trigger( cxtTap );
-          }
+          // console.log('cxtdragout ' + r.hoverData.cxtOver.id());
         }
 
-        r.hoverData.cxtDragged = false;
-        r.hoverData.which = null;
+        r.hoverData.cxtOver = near;
 
-      // if not right mouse
-      } else {
+        if( near ){
+          near.trigger( Event(e, {
+            type: 'cxtdragover',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }) );
 
-        // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-        if ( (down == null) // not mousedown on node
-          && !r.dragData.didDrag // didn't move the node around
-          //&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
-          && !r.hoverData.dragged // didn't pan
-        ) {
+          // console.log('cxtdragover ' + near.id());
+        }
 
-          cy.$(function(){
-            return this.selected();
-          }).unselect();
+      }
 
-          if (draggedElements.length > 0) {
+    // Check if we are drag panning the entire graph
+    } else if (r.hoverData.dragging) {
+      preventDefault = true;
+
+      if( cy.panningEnabled() && cy.userPanningEnabled() ){
+        var deltaP;
+
+        if( r.hoverData.justStartedPan ){
+          var mdPos = r.hoverData.mdownPos;
+
+          deltaP = {
+            x: ( pos[0] - mdPos[0] ) * zoom,
+            y: ( pos[1] - mdPos[1] ) * zoom
+          };
+
+          r.hoverData.justStartedPan = false;
+
+        } else {
+          deltaP = {
+            x: disp[0] * zoom,
+            y: disp[1] * zoom
+          };
+
+        }
+
+        cy.panBy( deltaP );
+
+        r.hoverData.dragged = true;
+      }
+
+      // Needs reproject due to pan changing viewport
+      pos = r.projectIntoViewport(e.clientX, e.clientY);
+
+    // Checks primary button down & out of time & mouse not moved much
+    } else if(
+        select[4] == 1 && (down == null || down.isEdge())
+    ){
+
+      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && multSelKeyDown ){
+        r.data.bgActivePosistion = undefined;
+        r.hoverData.selecting = true;
+        //select[4] = 0;
+
+        // console.log( 'select' );
+
+        r.redrawHint('select', true);
+        r.redraw();
+
+      } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+        r.hoverData.dragging = true;
+        r.hoverData.justStartedPan = true;
+        select[4] = 0;
+
+        r.data.bgActivePosistion = {
+          x: pos[0],
+          y: pos[1]
+        };
+
+        r.redrawHint('select', true);
+        r.redraw();
+
+        // console.log( 'pan' );
+      }
+
+      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
+    } else {
+      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
+      if (near != last) {
+
+        if (last) {
+          last.trigger( Event(e, {
+            type: 'mouseout',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }) );
+
+          last.trigger( Event(e, {
+            type: 'tapdragout',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }) );
+        }
+
+        if (near) {
+          near.trigger( Event(e, {
+            type: 'mouseover',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }) );
+
+          near.trigger( Event(e, {
+            type: 'tapdragover',
+            cyPosition: { x: pos[0], y: pos[1] }
+          }) );
+        }
+
+        r.hoverData.last = near;
+      }
+
+      if( down && down.isNode() && r.nodeIsDraggable(down) ){
+
+        if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
+
+          var justStartedDrag = !r.dragData.didDrag;
+
+          if( justStartedDrag ) {
             r.redrawHint('eles', true);
           }
 
-          r.dragData.possibleDragElements = draggedElements = [];
+          r.dragData.didDrag = true; // indicate that we actually did drag the node
+
+          var toTrigger = [];
+
+          for( var i = 0; i < draggedElements.length; i++ ){
+            var dEle = draggedElements[i];
+
+            // now, add the elements to the drag layer if not done already
+            if( !r.hoverData.draggingEles ){
+              addNodeToDrag( dEle, { inDragLayer: true } );
+            }
+
+            // Locked nodes not draggable, as well as non-visible nodes
+            if( dEle.isNode() && r.nodeIsDraggable(dEle) && dEle.grabbed() ){
+              var dPos = dEle._private.position;
+
+              toTrigger.push( dEle );
+
+              if( is.number(disp[0]) && is.number(disp[1]) ){
+                dPos.x += disp[0];
+                dPos.y += disp[1];
+
+                if( justStartedDrag ){
+                  var dragDelta = r.hoverData.dragDelta;
+
+                  if( is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
+                    dPos.x += dragDelta[0];
+                    dPos.y += dragDelta[1];
+                  }
+                }
+              }
+
+            }
+          }
+
+          r.hoverData.draggingEles = true;
+
+          var tcol = (Collection(cy, toTrigger));
+
+          tcol.updateCompoundBounds();
+          tcol.trigger('position drag');
+
+          r.redrawHint('drag', true);
+          r.redraw();
+
+        } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
+          updateDragDelta();
+        }
+      }
+
+      // prevent the dragging from triggering text selection on the page
+      preventDefault = true;
+    }
+
+    select[2] = pos[0]; select[3] = pos[1];
+
+    if( preventDefault ){
+      if(e.stopPropagation) e.stopPropagation();
+        if(e.preventDefault) e.preventDefault();
+        return false;
+      }
+  }, 1000/30, { trailing: true }), false);
+
+  r.registerBinding(window, 'mouseup', function(e) {
+    // console.log('--\nmouseup', e)
+
+    var capture = r.hoverData.capture;
+    if (!capture) { return; }
+    r.hoverData.capture = false;
+
+    var cy = r.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.selection;
+    var near = r.findNearestElement(pos[0], pos[1], true, false);
+    var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
+    var multSelKeyDown = isMultSelKeyDown( e );
+    var needsRedraw = r.data.canvasNeedsRedraw;
+
+    if( r.data.bgActivePosistion ){
+      r.redrawHint('select', true);
+      r.redraw();
+    }
+
+    r.hoverData.tapholdCancelled = true;
+
+    r.data.bgActivePosistion = undefined; // not active bg now
+
+    if( down ){
+      down.unactivate();
+    }
+
+    if( r.hoverData.which === 3 ){
+      var cxtEvt = Event(e, {
+        type: 'cxttapend',
+        cyPosition: { x: pos[0], y: pos[1] }
+      });
+
+      if( down ){
+        down.trigger( cxtEvt );
+      } else {
+        cy.trigger( cxtEvt );
+      }
+
+      if( !r.hoverData.cxtDragged ){
+        var cxtTap = Event(e, {
+          type: 'cxttap',
+          cyPosition: { x: pos[0], y: pos[1] }
+        });
+
+        if( down ){
+          down.trigger( cxtTap );
+        } else {
+          cy.trigger( cxtTap );
+        }
+      }
+
+      r.hoverData.cxtDragged = false;
+      r.hoverData.which = null;
+
+    // if not right mouse
+    } else {
+
+      // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+      if ( (down == null) // not mousedown on node
+        && !r.dragData.didDrag // didn't move the node around
+        //&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
+        && !r.hoverData.dragged // didn't pan
+      ) {
+
+        cy.$(function(){
+          return this.selected();
+        }).unselect();
+
+        if (draggedElements.length > 0) {
+          r.redrawHint('eles', true);
         }
 
+        r.dragData.possibleDragElements = draggedElements = [];
+      }
 
-        // Mouseup event
-        {
-          // console.log('trigger mouseup et al');
 
+      // Mouseup event
+      {
+        // console.log('trigger mouseup et al');
+
+        if (near != null) {
+          near
+            .trigger(Event(e, {
+              type: 'mouseup',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'tapend',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'vmouseup',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+          ;
+        } else if (near == null) {
+          cy
+            .trigger(Event(e, {
+              type: 'mouseup',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'tapend',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'vmouseup',
+              cyPosition: { x: pos[0], y: pos[1] }
+            }))
+          ;
+        }
+      }
+
+      // Click event
+      {
+        // console.log('trigger click et al');
+
+        if(
+          //Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0
+          !r.dragData.didDrag // didn't move a node around
+          && !r.hoverData.dragged // didn't pan
+        ){
           if (near != null) {
             near
-              .trigger(new $$.Event(e, {
-                type: 'mouseup',
+              .trigger( Event(e, {
+                type: 'click',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapend',
+              }) )
+              .trigger( Event(e, {
+                type: 'tap',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmouseup',
+              }) )
+              .trigger( Event(e, {
+                type: 'vclick',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
+              }) )
             ;
           } else if (near == null) {
             cy
-              .trigger(new $$.Event(e, {
-                type: 'mouseup',
+              .trigger( Event(e, {
+                type: 'click',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapend',
+              }) )
+              .trigger( Event(e, {
+                type: 'tap',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmouseup',
+              }) )
+              .trigger( Event(e, {
+                type: 'vclick',
                 cyPosition: { x: pos[0], y: pos[1] }
-              }))
+              }) )
             ;
           }
         }
+      }
 
-        // Click event
-        {
-          // console.log('trigger click et al');
+      // Single selection
+      if (near == down && !r.dragData.didDrag) {
+        if (near != null && near._private.selectable) {
 
-          if(
-            //Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0
-            !r.dragData.didDrag // didn't move a node around
-            && !r.hoverData.dragged // didn't pan
-          ){
-            if (near != null) {
-              near
-                .trigger( new $$.Event(e, {
-                  type: 'click',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-                .trigger( new $$.Event(e, {
-                  type: 'tap',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-                .trigger( new $$.Event(e, {
-                  type: 'vclick',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-              ;
-            } else if (near == null) {
-              cy
-                .trigger( new $$.Event(e, {
-                  type: 'click',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-                .trigger( new $$.Event(e, {
-                  type: 'tap',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-                .trigger( new $$.Event(e, {
-                  type: 'vclick',
-                  cyPosition: { x: pos[0], y: pos[1] }
-                }) )
-              ;
-            }
-          }
-        }
+          // console.log('single selection')
 
-        // Single selection
-        if (near == down && !r.dragData.didDrag) {
-          if (near != null && near._private.selectable) {
-
-            // console.log('single selection')
-
-            if( r.hoverData.dragging ){
-              // if panning, don't change selection state
-            } else if( cy.selectionType() === 'additive' || multSelKeyDown ){
-              if( near.selected() ){
-                near.unselect();
-              } else {
-                near.select();
-              }
+          if( r.hoverData.dragging ){
+            // if panning, don't change selection state
+          } else if( cy.selectionType() === 'additive' || multSelKeyDown ){
+            if( near.selected() ){
+              near.unselect();
             } else {
-              if( !multSelKeyDown ){
-                cy.$(':selected').unmerge( near ).unselect();
-                near.select();
-              }
+              near.select();
             }
-
-            r.redrawHint('eles', true);
-
-          }
-
-        }
-
-        if ( r.hoverData.selecting && cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
-          var newlySelected = [];
-          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
-
-          r.redrawHint('select', true);
-
-          if( box.length > 0 ) {
-            r.redrawHint('eles', true);
-          }
-
-          for( var i = 0; i < box.length; i++ ){
-            if( box[i]._private.selectable ){
-              newlySelected.push( box[i] );
-            }
-          }
-
-          var newlySelCol = new $$.Collection( cy, newlySelected );
-
-          if( cy.selectionType() === 'additive' ){
-            newlySelCol.select();
           } else {
             if( !multSelKeyDown ){
-              cy.$(':selected').unmerge( newlySelCol ).unselect();
+              cy.$(':selected').unmerge( near ).unselect();
+              near.select();
             }
-
-            newlySelCol.select();
           }
 
-          // always need redraw in case eles unselectable
-          r.redraw();
-
-        }
-
-        // Cancel drag pan
-        if( r.hoverData.dragging ){
-          r.hoverData.dragging = false;
-
-          r.redrawHint('select', true);
           r.redrawHint('eles', true);
 
-          r.redraw();
         }
 
-        if (!select[4]) {
-          // console.log('free at end', draggedElements)
+      }
 
-          r.redrawHint('drag', true);
+      if ( r.hoverData.selecting && cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
+        var newlySelected = [];
+        var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
+
+        r.redrawHint('select', true);
+
+        if( box.length > 0 ) {
           r.redrawHint('eles', true);
-
-          freeDraggedElements( draggedElements );
-
-          if( down ){ down.trigger('free'); }
-
-  //        draggedElements = r.dragData.possibleDragElements = [];
-
         }
 
-      } // else not right mouse
+        for( var i = 0; i < box.length; i++ ){
+          if( box[i]._private.selectable ){
+            newlySelected.push( box[i] );
+          }
+        }
 
-      select[4] = 0; r.hoverData.down = null;
+        var newlySelCol = Collection( cy, newlySelected );
+
+        if( cy.selectionType() === 'additive' ){
+          newlySelCol.select();
+        } else {
+          if( !multSelKeyDown ){
+            cy.$(':selected').unmerge( newlySelCol ).unselect();
+          }
+
+          newlySelCol.select();
+        }
+
+        // always need redraw in case eles unselectable
+        r.redraw();
+
+      }
+
+      // Cancel drag pan
+      if( r.hoverData.dragging ){
+        r.hoverData.dragging = false;
+
+        r.redrawHint('select', true);
+        r.redrawHint('eles', true);
+
+        r.redraw();
+      }
+
+      if (!select[4]) {
+        // console.log('free at end', draggedElements)
+
+        r.redrawHint('drag', true);
+        r.redrawHint('eles', true);
+
+        freeDraggedElements( draggedElements );
+
+        if( down ){ down.trigger('free'); }
+
+//        draggedElements = r.dragData.possibleDragElements = [];
+
+      }
+
+    } // else not right mouse
+
+    select[4] = 0; r.hoverData.down = null;
 
 //      console.log('mu', pos[0], pos[1]);
 //      console.log('ss', select);
 
-      r.hoverData.cxtStarted = false;
-      r.hoverData.draggingEles = false;
-      r.hoverData.selecting = false;
-      r.dragData.didDrag = false;
-      r.hoverData.dragged = false;
-      r.hoverData.dragDelta = [];
+    r.hoverData.cxtStarted = false;
+    r.hoverData.draggingEles = false;
+    r.hoverData.selecting = false;
+    r.dragData.didDrag = false;
+    r.hoverData.dragged = false;
+    r.hoverData.dragDelta = [];
 
-    }, false);
+  }, false);
 
-    var wheelHandler = function(e) {
-      // console.log( 'wheelHandler' );
+  var wheelHandler = function(e) {
+    // console.log( 'wheelHandler' );
 
-      if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
+    if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
-      var cy = r.cy;
-      var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var rpos = [pos[0] * cy.zoom() + cy.pan().x,
-                    pos[1] * cy.zoom() + cy.pan().y];
+    var cy = r.cy;
+    var pos = r.projectIntoViewport(e.clientX, e.clientY);
+    var rpos = [pos[0] * cy.zoom() + cy.pan().x,
+                  pos[1] * cy.zoom() + cy.pan().y];
 
-      if( r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
-        e.preventDefault();
-        return;
+    if( r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
+      e.preventDefault();
+      return;
+    }
+
+    if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
+      e.preventDefault();
+
+      r.data.wheelZooming = true;
+      clearTimeout( r.data.wheelTimeout );
+      r.data.wheelTimeout = setTimeout(function(){
+        r.data.wheelZooming = false;
+
+        r.redrawHint('eles', true);
+        r.redraw();
+      }, 150);
+
+      var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
+      diff = diff * r.wheelSensitivity;
+
+      var needsWheelFix = e.deltaMode === 1;
+      if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows
+        diff *= 33;
       }
 
-      if( cy.panningEnabled() && cy.userPanningEnabled() && cy.zoomingEnabled() && cy.userZoomingEnabled() ){
-        e.preventDefault();
+      cy.zoom({
+        level: cy.zoom() * Math.pow(10, diff),
+        renderedPosition: { x: rpos[0], y: rpos[1] }
+      });
+    }
 
-        r.data.wheelZooming = true;
-        clearTimeout( r.data.wheelTimeout );
-        r.data.wheelTimeout = setTimeout(function(){
-          r.data.wheelZooming = false;
+  };
+
+  // Functions to help with whether mouse wheel should trigger zooming
+  // --
+  r.registerBinding(r.container, 'wheel', wheelHandler, true);
+
+  // disable nonstandard wheel events
+  // r.registerBinding(r.container, 'mousewheel', wheelHandler, true);
+  // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
+  // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
+
+  r.registerBinding(window, 'scroll', function(e){
+    r.scrollingPage = true;
+
+    clearTimeout( r.scrollingPageTimeout );
+    r.scrollingPageTimeout = setTimeout(function(){
+      r.scrollingPage = false;
+    }, 250);
+  }, true);
+
+  // Functions to help with handling mouseout/mouseover on the Cytoscape container
+        // Handle mouseout on Cytoscape container
+  r.registerBinding(r.container, 'mouseout', function(e) {
+    var pos = r.projectIntoViewport(e.clientX, e.clientY);
+
+    r.cy.trigger(Event(e, {
+      type: 'mouseout',
+      cyPosition: { x: pos[0], y: pos[1] }
+    }));
+  }, false);
+
+  r.registerBinding(r.container, 'mouseover', function(e) {
+    var pos = r.projectIntoViewport(e.clientX, e.clientY);
+
+    r.cy.trigger(Event(e, {
+      type: 'mouseover',
+      cyPosition: { x: pos[0], y: pos[1] }
+    }));
+  }, false);
+
+  var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
+  var distance1, distance1Sq; // initial distance between finger 1 and finger 2 for pinch-to-zoom
+  var center1, modelCenter1; // center point on start pinch to zoom
+  var offsetLeft, offsetTop;
+  var containerWidth, containerHeight;
+  var twoFingersStartInside;
+
+  var distance = function(x1, y1, x2, y2){
+    return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
+  };
+
+  var distanceSq = function(x1, y1, x2, y2){
+    return (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1);
+  };
+
+  var touchstartHandler;
+  r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
+
+    clearTimeout( r.threeFingerSelectTimeout );
+
+    if( e.target !== r.data.link ){
+      e.preventDefault();
+    }
+
+    r.touchData.capture = true;
+    r.data.bgActivePosistion = undefined;
+
+    var cy = r.cy;
+    var nodes = r.getCachedNodes();
+    var edges = r.getCachedEdges();
+    var now = r.touchData.now;
+    var earlier = r.touchData.earlier;
+    var needsRedraw = r.data.canvasNeedsRedraw;
+
+    if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+    if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+    if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
+
+
+    // record starting points for pinch-to-zoom
+    if( e.touches[1] ){
+
+      // anything in the set of dragged eles should be released
+      var release = function( eles ){
+        for( var i = 0; i < eles.length; i++ ){
+          eles[i]._private.grabbed = false;
+          eles[i]._private.rscratch.inDragLayer = false;
+          if( eles[i].active() ){ eles[i].unactivate(); }
+        }
+      };
+      release(nodes);
+      release(edges);
+
+      var offsets = r.findContainerClientCoords();
+      offsetLeft = offsets[0];
+      offsetTop = offsets[1];
+      containerWidth = offsets[2];
+      containerHeight = offsets[3];
+
+      f1x1 = e.touches[0].clientX - offsetLeft;
+      f1y1 = e.touches[0].clientY - offsetTop;
+
+      f2x1 = e.touches[1].clientX - offsetLeft;
+      f2y1 = e.touches[1].clientY - offsetTop;
+
+      twoFingersStartInside =
+           0 <= f1x1 && f1x1 <= containerWidth
+        && 0 <= f2x1 && f2x1 <= containerWidth
+        && 0 <= f1y1 && f1y1 <= containerHeight
+        && 0 <= f2y1 && f2y1 <= containerHeight
+      ;
+
+      var pan = cy.pan();
+      var zoom = cy.zoom();
+
+      distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
+      distance1Sq = distanceSq( f1x1, f1y1, f2x1, f2y1 );
+      center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
+      modelCenter1 = [
+        (center1[0] - pan.x) / zoom,
+        (center1[1] - pan.y) / zoom
+      ];
+
+      // consider context tap
+      var cxtDistThreshold = 200;
+      var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
+      if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
+
+        var near1 = r.findNearestElement(now[0], now[1], true, true);
+        var near2 = r.findNearestElement(now[2], now[3], true, true);
+
+        //console.log(distance1)
+
+        if( near1 && near1.isNode() ){
+          near1.activate().trigger( Event(e, {
+            type: 'cxttapstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+          r.touchData.start = near1;
+
+        } else if( near2 && near2.isNode() ){
+          near2.activate().trigger( Event(e, {
+            type: 'cxttapstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+          r.touchData.start = near2;
+
+        } else {
+          cy.trigger( Event(e, {
+            type: 'cxttapstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+          r.touchData.start = null;
+        }
+
+        if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+        r.touchData.cxt = true;
+        r.touchData.cxtDragged = false;
+        r.data.bgActivePosistion = undefined;
+
+        //console.log('cxttapstart')
+
+        r.redraw();
+        return;
+
+      }
+
+      // console.log(center1);
+      // console.log('touchstart ptz');
+      // console.log(offsetLeft, offsetTop);
+      // console.log(f1x1, f1y1);
+      // console.log(f2x1, f2y1);
+      // console.log(distance1);
+      // console.log(center1);
+    }
+
+    // console.log('another tapstart')
+
+
+    if (e.touches[2]) {
+
+    } else if (e.touches[1]) {
+
+    } else if (e.touches[0]) {
+      var near = r.findNearestElement(now[0], now[1], true, true);
+
+      if (near != null) {
+        near.activate();
+
+        r.touchData.start = near;
+
+        if( near.isNode() && r.nodeIsDraggable(near) ){
+
+          var draggedEles = r.dragData.touchDragEles = [];
 
           r.redrawHint('eles', true);
-          r.redraw();
-        }, 150);
+          r.redrawHint('drag', true);
 
-        var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
-        diff = diff * r.wheelSensitivity;
+          if( near.selected() ){
+            // reset drag elements, since near will be added again
 
-        var needsWheelFix = e.deltaMode === 1;
-        if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows
-          diff *= 33;
+            var selectedNodes = cy.$(function(){
+              return this.isNode() && this.selected();
+            });
+
+            for( var k = 0; k < selectedNodes.length; k++ ){
+              var selectedNode = selectedNodes[k];
+
+              if( r.nodeIsDraggable(selectedNode) ){
+                addNodeToDrag( selectedNode, { addToList: draggedEles } );
+              }
+            }
+          } else {
+            addNodeToDrag( near, { addToList: draggedEles } );
+          }
+
+          near.trigger( Event(e, {
+            type: 'grab',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
         }
 
-        cy.zoom({
-          level: cy.zoom() * Math.pow(10, diff),
-          renderedPosition: { x: rpos[0], y: rpos[1] }
-        });
-      }
-
-    };
-
-    // Functions to help with whether mouse wheel should trigger zooming
-    // --
-    r.registerBinding(r.container, 'wheel', wheelHandler, true);
-
-    // disable nonstandard wheel events
-    // r.registerBinding(r.container, 'mousewheel', wheelHandler, true);
-    // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
-    // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
-
-    r.registerBinding(window, 'scroll', function(e){
-      r.scrollingPage = true;
-
-      clearTimeout( r.scrollingPageTimeout );
-      r.scrollingPageTimeout = setTimeout(function(){
-        r.scrollingPage = false;
-      }, 250);
-    }, true);
-
-    // Functions to help with handling mouseout/mouseover on the Cytoscape container
-          // Handle mouseout on Cytoscape container
-    r.registerBinding(r.container, 'mouseout', function(e) {
-      var pos = r.projectIntoViewport(e.clientX, e.clientY);
-
-      r.cy.trigger(new $$.Event(e, {
-        type: 'mouseout',
-        cyPosition: { x: pos[0], y: pos[1] }
-      }));
-    }, false);
-
-    r.registerBinding(r.container, 'mouseover', function(e) {
-      var pos = r.projectIntoViewport(e.clientX, e.clientY);
-
-      r.cy.trigger(new $$.Event(e, {
-        type: 'mouseover',
-        cyPosition: { x: pos[0], y: pos[1] }
-      }));
-    }, false);
-
-    var f1x1, f1y1, f2x1, f2y1; // starting points for pinch-to-zoom
-    var distance1, distance1Sq; // initial distance between finger 1 and finger 2 for pinch-to-zoom
-    var center1, modelCenter1; // center point on start pinch to zoom
-    var offsetLeft, offsetTop;
-    var containerWidth, containerHeight;
-    var twoFingersStartInside;
-
-    var distance = function(x1, y1, x2, y2){
-      return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
-    };
-
-    var distanceSq = function(x1, y1, x2, y2){
-      return (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1);
-    };
-
-    var touchstartHandler;
-    r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
-
-      clearTimeout( r.threeFingerSelectTimeout );
-
-      if( e.target !== r.data.link ){
-        e.preventDefault();
-      }
-
-      r.touchData.capture = true;
-      r.data.bgActivePosistion = undefined;
-
-      var cy = r.cy;
-      var nodes = r.getCachedNodes();
-      var edges = r.getCachedEdges();
-      var now = r.touchData.now;
-      var earlier = r.touchData.earlier;
-      var needsRedraw = r.data.canvasNeedsRedraw;
-
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
-
-
-      // record starting points for pinch-to-zoom
-      if( e.touches[1] ){
-
-        // anything in the set of dragged eles should be released
-        var release = function( eles ){
-          for( var i = 0; i < eles.length; i++ ){
-            eles[i]._private.grabbed = false;
-            eles[i]._private.rscratch.inDragLayer = false;
-            if( eles[i].active() ){ eles[i].unactivate(); }
-          }
-        };
-        release(nodes);
-        release(edges);
-
-        var offsets = r.findContainerClientCoords();
-        offsetLeft = offsets[0];
-        offsetTop = offsets[1];
-        containerWidth = offsets[2];
-        containerHeight = offsets[3];
-
-        f1x1 = e.touches[0].clientX - offsetLeft;
-        f1y1 = e.touches[0].clientY - offsetTop;
-
-        f2x1 = e.touches[1].clientX - offsetLeft;
-        f2y1 = e.touches[1].clientY - offsetTop;
-
-        twoFingersStartInside =
-             0 <= f1x1 && f1x1 <= containerWidth
-          && 0 <= f2x1 && f2x1 <= containerWidth
-          && 0 <= f1y1 && f1y1 <= containerHeight
-          && 0 <= f2y1 && f2y1 <= containerHeight
+        near
+          .trigger(Event(e, {
+            type: 'touchstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'tapstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'vmousdown',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+        ;
+      } if (near == null) {
+        cy
+          .trigger(Event(e, {
+            type: 'touchstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'tapstart',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'vmousedown',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
         ;
 
-        var pan = cy.pan();
-        var zoom = cy.zoom();
+        r.data.bgActivePosistion = {
+          x: pos[0],
+          y: pos[1]
+        };
 
-        distance1 = distance( f1x1, f1y1, f2x1, f2y1 );
-        distance1Sq = distanceSq( f1x1, f1y1, f2x1, f2y1 );
-        center1 = [ (f1x1 + f2x1)/2, (f1y1 + f2y1)/2 ];
-        modelCenter1 = [
-          (center1[0] - pan.x) / zoom,
-          (center1[1] - pan.y) / zoom
-        ];
-
-        // consider context tap
-        var cxtDistThreshold = 200;
-        var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
-        if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
-
-          var near1 = r.findNearestElement(now[0], now[1], true, true);
-          var near2 = r.findNearestElement(now[2], now[3], true, true);
-
-          //console.log(distance1)
-
-          if( near1 && near1.isNode() ){
-            near1.activate().trigger( new $$.Event(e, {
-              type: 'cxttapstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-            r.touchData.start = near1;
-
-          } else if( near2 && near2.isNode() ){
-            near2.activate().trigger( new $$.Event(e, {
-              type: 'cxttapstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-            r.touchData.start = near2;
-
-          } else {
-            cy.trigger( new $$.Event(e, {
-              type: 'cxttapstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-            r.touchData.start = null;
-          }
-
-          if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
-          r.touchData.cxt = true;
-          r.touchData.cxtDragged = false;
-          r.data.bgActivePosistion = undefined;
-
-          //console.log('cxttapstart')
-
-          r.redraw();
-          return;
-
-        }
-
-        // console.log(center1);
-        // console.log('touchstart ptz');
-        // console.log(offsetLeft, offsetTop);
-        // console.log(f1x1, f1y1);
-        // console.log(f2x1, f2y1);
-        // console.log(distance1);
-        // console.log(center1);
+        r.redrawHint('select', true);
+        r.redraw();
       }
 
-      // console.log('another tapstart')
 
+      // Tap, taphold
+      // -----
 
-      if (e.touches[2]) {
+      for (var i=0; i<now.length; i++) {
+        earlier[i] = now[i];
+        r.touchData.startPosition[i] = now[i];
+      }
 
-      } else if (e.touches[1]) {
+      r.touchData.singleTouchMoved = false;
+      r.touchData.singleTouchStartTime = +new Date();
 
-      } else if (e.touches[0]) {
-        var near = r.findNearestElement(now[0], now[1], true, true);
+      clearTimeout( r.touchData.tapholdTimeout );
+      r.touchData.tapholdTimeout = setTimeout(function() {
+        if(
+            r.touchData.singleTouchMoved === false
+            && !r.pinching // if pinching, then taphold unselect shouldn't take effect
 
-        if (near != null) {
-          near.activate();
-
-          r.touchData.start = near;
-
-          if( near.isNode() && r.nodeIsDraggable(near) ){
-
-            var draggedEles = r.dragData.touchDragEles = [];
-
-            r.redrawHint('eles', true);
-            r.redrawHint('drag', true);
-
-            if( near.selected() ){
-              // reset drag elements, since near will be added again
-
-              var selectedNodes = cy.$(function(){
-                return this.isNode() && this.selected();
-              });
-
-              for( var k = 0; k < selectedNodes.length; k++ ){
-                var selectedNode = selectedNodes[k];
-
-                if( r.nodeIsDraggable(selectedNode) ){
-                  addNodeToDrag( selectedNode, { addToList: draggedEles } );
-                }
-              }
-            } else {
-              addNodeToDrag( near, { addToList: draggedEles } );
-            }
-
-            near.trigger( new $$.Event(e, {
-              type: 'grab',
+            // This time double constraint prevents multiple quick taps
+            // followed by a taphold triggering multiple taphold events
+            //&& Date.now() - r.touchData.singleTouchStartTime > 250
+        ){
+          if (r.touchData.start) {
+            r.touchData.start.trigger( Event(e, {
+              type: 'taphold',
               cyPosition: { x: now[0], y: now[1] }
             }) );
+          } else {
+            r.cy.trigger( Event(e, {
+              type: 'taphold',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
+
+            cy.$(':selected').unselect();
           }
-
-          near
-            .trigger(new $$.Event(e, {
-              type: 'touchstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(new $$.Event(e, {
-              type: 'tapstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(new $$.Event(e, {
-              type: 'vmousdown',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-        } if (near == null) {
-          cy
-            .trigger(new $$.Event(e, {
-              type: 'touchstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(new $$.Event(e, {
-              type: 'tapstart',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(new $$.Event(e, {
-              type: 'vmousedown',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-
-          r.data.bgActivePosistion = {
-            x: pos[0],
-            y: pos[1]
-          };
-
-          r.redrawHint('select', true);
-          r.redraw();
-        }
-
-
-        // Tap, taphold
-        // -----
-
-        for (var i=0; i<now.length; i++) {
-          earlier[i] = now[i];
-          r.touchData.startPosition[i] = now[i];
-        }
-
-        r.touchData.singleTouchMoved = false;
-        r.touchData.singleTouchStartTime = +new Date();
-
-        clearTimeout( r.touchData.tapholdTimeout );
-        r.touchData.tapholdTimeout = setTimeout(function() {
-          if(
-              r.touchData.singleTouchMoved === false
-              && !r.pinching // if pinching, then taphold unselect shouldn't take effect
-
-              // This time double constraint prevents multiple quick taps
-              // followed by a taphold triggering multiple taphold events
-              //&& Date.now() - r.touchData.singleTouchStartTime > 250
-          ){
-            if (r.touchData.start) {
-              r.touchData.start.trigger( new $$.Event(e, {
-                type: 'taphold',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-            } else {
-              r.cy.trigger( new $$.Event(e, {
-                type: 'taphold',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-
-              cy.$(':selected').unselect();
-            }
 
 //            console.log('taphold');
-          }
-        }, r.tapholdDuration);
-      }
+        }
+      }, r.tapholdDuration);
+    }
 
-      //r.redraw();
+    //r.redraw();
 
-    }, false);
+  }, false);
 
 // console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
-    var touchmoveHandler;
-    r.registerBinding(window, 'touchmove', touchmoveHandler = $$.util.throttle(function(e) {
+  var touchmoveHandler;
+  r.registerBinding(window, 'touchmove', touchmoveHandler = util.throttle(function(e) {
 
-      var select = r.selection;
-      var capture = r.touchData.capture; //if (!capture) { return; };
-      if( capture ){ e.preventDefault(); }
+    var select = r.selection;
+    var capture = r.touchData.capture; //if (!capture) { return; };
+    if( capture ){ e.preventDefault(); }
 
-      var cy = r.cy;
-      var now = r.touchData.now; var earlier = r.touchData.earlier;
-      var zoom = cy.zoom();
+    var cy = r.cy;
+    var now = r.touchData.now; var earlier = r.touchData.earlier;
+    var zoom = cy.zoom();
 
-      var needsRedraw = r.data.canvasNeedsRedraw;
+    var needsRedraw = r.data.canvasNeedsRedraw;
 
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
-      var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
+    if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+    if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+    if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
+    var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
 
-      var startPos = r.touchData.startPosition;
+    var startPos = r.touchData.startPosition;
 
-      var dx = now[0] - startPos[0];
-      var dx2 = dx * dx;
-      var dy = now[1] - startPos[1];
-      var dy2 = dy * dy;
-      var dist2 = dx2 + dy2;
-      var rdist2 = dist2 * zoom * zoom;
+    var dx = now[0] - startPos[0];
+    var dx2 = dx * dx;
+    var dy = now[1] - startPos[1];
+    var dy2 = dy * dy;
+    var dist2 = dx2 + dy2;
+    var rdist2 = dist2 * zoom * zoom;
 
-      if( capture && r.touchData.cxt ){
-        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
-        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
-        // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
-        var factorSq = distance2Sq / distance1Sq;
+    if( capture && r.touchData.cxt ){
+      var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+      var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
+      // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+      var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
+      var factorSq = distance2Sq / distance1Sq;
 
-        var distThreshold = 150;
-        var distThresholdSq = distThreshold * distThreshold;
-        var factorThreshold = 1.5;
-        var factorThresholdSq = factorThreshold * factorThreshold;
+      var distThreshold = 150;
+      var distThresholdSq = distThreshold * distThreshold;
+      var factorThreshold = 1.5;
+      var factorThresholdSq = factorThreshold * factorThreshold;
 
-        //console.log(factor, distance2)
+      //console.log(factor, distance2)
 
-        // cancel ctx gestures if the distance b/t the fingers increases
-        if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
-          r.touchData.cxt = false;
-          if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
-          r.data.bgActivePosistion = undefined;
-          r.redrawHint('select', true);
-
-          var cxtEvt = new $$.Event(e, {
-            type: 'cxttapend',
-            cyPosition: { x: now[0], y: now[1] }
-          });
-          if( r.touchData.start ){
-            r.touchData.start.trigger( cxtEvt );
-          } else {
-            cy.trigger( cxtEvt );
-          }
-        }
-
-      }
-
-      if( capture && r.touchData.cxt ){
-        var cxtEvt = new $$.Event(e, {
-          type: 'cxtdrag',
-          cyPosition: { x: now[0], y: now[1] }
-        });
+      // cancel ctx gestures if the distance b/t the fingers increases
+      if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
+        r.touchData.cxt = false;
+        if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
         r.data.bgActivePosistion = undefined;
         r.redrawHint('select', true);
 
+        var cxtEvt = Event(e, {
+          type: 'cxttapend',
+          cyPosition: { x: now[0], y: now[1] }
+        });
         if( r.touchData.start ){
           r.touchData.start.trigger( cxtEvt );
         } else {
           cy.trigger( cxtEvt );
         }
+      }
 
-        if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
-        r.touchData.cxtDragged = true;
+    }
 
-        //console.log('cxtdrag')
+    if( capture && r.touchData.cxt ){
+      var cxtEvt = Event(e, {
+        type: 'cxtdrag',
+        cyPosition: { x: now[0], y: now[1] }
+      });
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint('select', true);
 
-        var near = r.findNearestElement(now[0], now[1], true, true);
+      if( r.touchData.start ){
+        r.touchData.start.trigger( cxtEvt );
+      } else {
+        cy.trigger( cxtEvt );
+      }
 
-        if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
+      if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+      r.touchData.cxtDragged = true;
 
-          if( r.touchData.cxtOver ){
-            r.touchData.cxtOver.trigger( new $$.Event(e, {
-              type: 'cxtdragout',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
+      //console.log('cxtdrag')
 
-            // console.log('cxtdragout');
-          }
+      var near = r.findNearestElement(now[0], now[1], true, true);
 
-          r.touchData.cxtOver = near;
+      if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
 
-          if( near ){
-            near.trigger( new $$.Event(e, {
-              type: 'cxtdragover',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
+        if( r.touchData.cxtOver ){
+          r.touchData.cxtOver.trigger( Event(e, {
+            type: 'cxtdragout',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
 
-            // console.log('cxtdragover');
-          }
-
+          // console.log('cxtdragout');
         }
 
-      } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
-        r.data.bgActivePosistion = undefined;
-        clearTimeout( this.threeFingerSelectTimeout );
-        this.lastThreeTouch = +new Date();
-        r.touchData.selecting = true;
+        r.touchData.cxtOver = near;
 
-        r.redrawHint('select', true);
+        if( near ){
+          near.trigger( Event(e, {
+            type: 'cxtdragover',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
 
-        if( !select || select.length === 0 || select[0] === undefined ){
-          select[0] = (now[0] + now[2] + now[4])/3;
-          select[1] = (now[1] + now[3] + now[5])/3;
-          select[2] = (now[0] + now[2] + now[4])/3 + 1;
-          select[3] = (now[1] + now[3] + now[5])/3 + 1;
-        } else {
-          select[2] = (now[0] + now[2] + now[4])/3;
-          select[3] = (now[1] + now[3] + now[5])/3;
+          // console.log('cxtdragover');
         }
 
-        select[4] = 1;
-        r.touchData.selecting = true;
+      }
 
-        r.redraw();
+    } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      r.data.bgActivePosistion = undefined;
+      clearTimeout( this.threeFingerSelectTimeout );
+      this.lastThreeTouch = +new Date();
+      r.touchData.selecting = true;
 
-      } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
-        r.data.bgActivePosistion = undefined;
-        r.redrawHint('select', true);
+      r.redrawHint('select', true);
 
-        var draggedEles = r.dragData.touchDragEles;
-        if( draggedEles ){
+      if( !select || select.length === 0 || select[0] === undefined ){
+        select[0] = (now[0] + now[2] + now[4])/3;
+        select[1] = (now[1] + now[3] + now[5])/3;
+        select[2] = (now[0] + now[2] + now[4])/3 + 1;
+        select[3] = (now[1] + now[3] + now[5])/3 + 1;
+      } else {
+        select[2] = (now[0] + now[2] + now[4])/3;
+        select[3] = (now[1] + now[3] + now[5])/3;
+      }
+
+      select[4] = 1;
+      r.touchData.selecting = true;
+
+      r.redraw();
+
+    } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint('select', true);
+
+      var draggedEles = r.dragData.touchDragEles;
+      if( draggedEles ){
+        r.redrawHint('drag', true);
+
+        for( var i = 0; i < draggedEles.length; i++ ){
+          draggedEles[i]._private.grabbed = false;
+          draggedEles[i]._private.rscratch.inDragLayer = false;
+        }
+      }
+
+      // console.log('touchmove ptz');
+
+      // (x2, y2) for fingers 1 and 2
+      var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
+      var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
+
+      // console.log( f1x2, f1y2 )
+      // console.log( f2x2, f2y2 )
+
+      var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
+      // var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
+      // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
+      var factor = distance2 / distance1;
+
+      // console.log(distance2)
+      // console.log(factor)
+
+      if( factor != 1 && twoFingersStartInside){
+
+        // console.log(factor)
+        // console.log(distance2 + ' / ' + distance1);
+        // console.log('--');
+
+        // delta finger1
+        var df1x = f1x2 - f1x1;
+        var df1y = f1y2 - f1y1;
+
+        // delta finger 2
+        var df2x = f2x2 - f2x1;
+        var df2y = f2y2 - f2y1;
+
+        // translation is the normalised vector of the two fingers movement
+        // i.e. so pinching cancels out and moving together pans
+        var tx = (df1x + df2x)/2;
+        var ty = (df1y + df2y)/2;
+
+        // adjust factor by the speed multiplier
+        // var speed = 1.5;
+        // if( factor > 1 ){
+        //   factor = (factor - 1) * speed + 1;
+        // } else {
+        //   factor = 1 - (1 - factor) * speed;
+        // }
+
+        // now calculate the zoom
+        var zoom1 = cy.zoom();
+        var zoom2 = zoom1 * factor;
+        var pan1 = cy.pan();
+
+        // the model center point converted to the current rendered pos
+        var ctrx = modelCenter1[0] * zoom1 + pan1.x;
+        var ctry = modelCenter1[1] * zoom1 + pan1.y;
+
+        var pan2 = {
+          x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
+          y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
+        };
+
+        // console.log(pan2);
+        // console.log(zoom2);
+
+        // remove dragged eles
+        if( r.touchData.start ){
+          var draggedEles = r.dragData.touchDragEles;
+
+          if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
+            var dEi_p = draggedEles[i]._private;
+
+            dEi_p.grabbed = false;
+            dEi_p.rscratch.inDragLayer = false;
+          } }
+
+          var start_p = r.touchData.start._private;
+          start_p.active = false;
+          start_p.grabbed = false;
+          start_p.rscratch.inDragLayer = false;
+
           r.redrawHint('drag', true);
 
-          for( var i = 0; i < draggedEles.length; i++ ){
-            draggedEles[i]._private.grabbed = false;
-            draggedEles[i]._private.rscratch.inDragLayer = false;
-          }
+          r.touchData.start
+            .trigger('free')
+            .trigger('unactivate')
+          ;
         }
 
-        // console.log('touchmove ptz');
+        cy.viewport({
+          zoom: zoom2,
+          pan: pan2,
+          cancelOnFailedZoom: true
+        });
 
-        // (x2, y2) for fingers 1 and 2
-        var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
-        var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
+        distance1 = distance2;
+        f1x1 = f1x2;
+        f1y1 = f1y2;
+        f2x1 = f2x2;
+        f2y1 = f2y2;
 
-        // console.log( f1x2, f1y2 )
-        // console.log( f2x2, f2y2 )
+        r.pinching = true;
+      }
 
-        var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
-        // var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
-        // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
-        var factor = distance2 / distance1;
+      // Re-project
+      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
 
-        // console.log(distance2)
-        // console.log(factor)
+    } else if (e.touches[0]) {
+      var start = r.touchData.start;
+      var last = r.touchData.last;
+      var near = near || r.findNearestElement(now[0], now[1], true, true);
 
-        if( factor != 1 && twoFingersStartInside){
+      if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          // console.log(factor)
-          // console.log(distance2 + ' / ' + distance1);
-          // console.log('--');
+        if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
+          var draggedEles = r.dragData.touchDragEles;
 
-          // delta finger1
-          var df1x = f1x2 - f1x1;
-          var df1y = f1y2 - f1y1;
+          for( var k = 0; k < draggedEles.length; k++ ){
+            var draggedEle = draggedEles[k];
 
-          // delta finger 2
-          var df2x = f2x2 - f2x1;
-          var df2y = f2y2 - f2y1;
+            if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
+              r.dragData.didDrag = true;
+              var dPos = draggedEle._private.position;
+              var justStartedDrag = !r.hoverData.draggingEles;
 
-          // translation is the normalised vector of the two fingers movement
-          // i.e. so pinching cancels out and moving together pans
-          var tx = (df1x + df2x)/2;
-          var ty = (df1y + df2y)/2;
+              if( is.number(disp[0]) && is.number(disp[1]) ){
+                dPos.x += disp[0];
+                dPos.y += disp[1];
+              }
 
-          // adjust factor by the speed multiplier
-          // var speed = 1.5;
-          // if( factor > 1 ){
-          //   factor = (factor - 1) * speed + 1;
-          // } else {
-          //   factor = 1 - (1 - factor) * speed;
-          // }
+              if( justStartedDrag ){
+                addNodeToDrag( draggedEle, { inDragLayer: true } );
 
-          // now calculate the zoom
-          var zoom1 = cy.zoom();
-          var zoom2 = zoom1 * factor;
-          var pan1 = cy.pan();
+                r.redrawHint('eles', true);
 
-          // the model center point converted to the current rendered pos
-          var ctrx = modelCenter1[0] * zoom1 + pan1.x;
-          var ctry = modelCenter1[1] * zoom1 + pan1.y;
+                var dragDelta = r.touchData.dragDelta;
 
-          var pan2 = {
-            x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
-            y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
-          };
-
-          // console.log(pan2);
-          // console.log(zoom2);
-
-          // remove dragged eles
-          if( r.touchData.start ){
-            var draggedEles = r.dragData.touchDragEles;
-
-            if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
-              var dEi_p = draggedEles[i]._private;
-
-              dEi_p.grabbed = false;
-              dEi_p.rscratch.inDragLayer = false;
-            } }
-
-            var start_p = r.touchData.start._private;
-            start_p.active = false;
-            start_p.grabbed = false;
-            start_p.rscratch.inDragLayer = false;
-
-            r.redrawHint('drag', true);
-
-            r.touchData.start
-              .trigger('free')
-              .trigger('unactivate')
-            ;
-          }
-
-          cy.viewport({
-            zoom: zoom2,
-            pan: pan2,
-            cancelOnFailedZoom: true
-          });
-
-          distance1 = distance2;
-          f1x1 = f1x2;
-          f1y1 = f1y2;
-          f2x1 = f2x2;
-          f2y1 = f2y2;
-
-          r.pinching = true;
-        }
-
-        // Re-project
-        if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
-        if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
-        if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
-
-      } else if (e.touches[0]) {
-        var start = r.touchData.start;
-        var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true, true);
-
-        if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
-
-          if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
-            var draggedEles = r.dragData.touchDragEles;
-
-            for( var k = 0; k < draggedEles.length; k++ ){
-              var draggedEle = draggedEles[k];
-
-              if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
-                r.dragData.didDrag = true;
-                var dPos = draggedEle._private.position;
-                var justStartedDrag = !r.hoverData.draggingEles;
-
-                if( $$.is.number(disp[0]) && $$.is.number(disp[1]) ){
-                  dPos.x += disp[0];
-                  dPos.y += disp[1];
+                if( is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
+                  dPos.x += dragDelta[0];
+                  dPos.y += dragDelta[1];
                 }
 
-                if( justStartedDrag ){
-                  addNodeToDrag( draggedEle, { inDragLayer: true } );
-
-                  r.redrawHint('eles', true);
-
-                  var dragDelta = r.touchData.dragDelta;
-
-                  if( $$.is.number(dragDelta[0]) && $$.is.number(dragDelta[1]) ){
-                    dPos.x += dragDelta[0];
-                    dPos.y += dragDelta[1];
-                  }
-
-                }
               }
             }
+          }
 
-            var tcol = new $$.Collection(cy, draggedEle);
+          var tcol = Collection(cy, draggedEle);
 
-            tcol.updateCompoundBounds();
-            tcol.trigger('position drag');
+          tcol.updateCompoundBounds();
+          tcol.trigger('position drag');
 
-            r.hoverData.draggingEles = true;
+          r.hoverData.draggingEles = true;
 
-            r.redrawHint('drag', true);
+          r.redrawHint('drag', true);
 
-            if(
-                 r.touchData.startPosition[0] == earlier[0]
-              && r.touchData.startPosition[1] == earlier[1]
-            ){
+          if(
+               r.touchData.startPosition[0] == earlier[0]
+            && r.touchData.startPosition[1] == earlier[1]
+          ){
 
-              r.redrawHint('eles', true);
-            }
+            r.redrawHint('eles', true);
+          }
 
-            r.redraw();
-          } else { // otherise keep track of drag delta for later
-            var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
+          r.redraw();
+        } else { // otherise keep track of drag delta for later
+          var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
-            if( dragDelta.length === 0 ){
-              dragDelta.push( disp[0] );
-              dragDelta.push( disp[1] );
-            } else {
-              dragDelta[0] += disp[0];
-              dragDelta[1] += disp[1];
-            }
+          if( dragDelta.length === 0 ){
+            dragDelta.push( disp[0] );
+            dragDelta.push( disp[1] );
+          } else {
+            dragDelta[0] += disp[0];
+            dragDelta[1] += disp[1];
           }
         }
+      }
 
-        // Touchmove event
-        {
+      // Touchmove event
+      {
 
-          if (start != null) {
-            start.trigger( new $$.Event(e, {
+        if (start != null) {
+          start.trigger( Event(e, {
+            type: 'touchmove',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+
+          start.trigger( Event(e, {
+            type: 'tapdrag',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+
+          start.trigger( Event(e, {
+            type: 'vmousemove',
+            cyPosition: { x: now[0], y: now[1] }
+          }) );
+        }
+
+        if (start == null) {
+
+          if (near != null) {
+            near.trigger( Event(e, {
               type: 'touchmove',
               cyPosition: { x: now[0], y: now[1] }
             }) );
 
-            start.trigger( new $$.Event(e, {
+            near.trigger( Event(e, {
               type: 'tapdrag',
               cyPosition: { x: now[0], y: now[1] }
             }) );
 
-            start.trigger( new $$.Event(e, {
+            near.trigger( Event(e, {
               type: 'vmousemove',
               cyPosition: { x: now[0], y: now[1] }
             }) );
           }
 
-          if (start == null) {
+          if (near == null) {
+            cy.trigger( Event(e, {
+              type: 'touchmove',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
 
-            if (near != null) {
-              near.trigger( new $$.Event(e, {
-                type: 'touchmove',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
+            cy.trigger( Event(e, {
+              type: 'tapdrag',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
 
-              near.trigger( new $$.Event(e, {
-                type: 'tapdrag',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-
-              near.trigger( new $$.Event(e, {
-                type: 'vmousemove',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-            }
-
-            if (near == null) {
-              cy.trigger( new $$.Event(e, {
-                type: 'touchmove',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-
-              cy.trigger( new $$.Event(e, {
-                type: 'tapdrag',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-
-              cy.trigger( new $$.Event(e, {
-                type: 'vmousemove',
-                cyPosition: { x: now[0], y: now[1] }
-              }) );
-            }
-          }
-
-          if (near != last) {
-            if (last) { last.trigger(new $$.Event(e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } })); }
-            if (near) { near.trigger(new $$.Event(e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } })); }
-          }
-
-          r.touchData.last = near;
-        }
-
-        // Check to cancel taphold
-        for (var i=0;i<now.length;i++) {
-          if (now[i]
-            && r.touchData.startPosition[i]
-            && Math.abs(now[i] - r.touchData.startPosition[i]) > 4) {
-
-            r.touchData.singleTouchMoved = true;
+            cy.trigger( Event(e, {
+              type: 'vmousemove',
+              cyPosition: { x: now[0], y: now[1] }
+            }) );
           }
         }
 
-        if(
-            capture
-            && ( start == null || start.isEdge() )
-            && cy.panningEnabled() && cy.userPanningEnabled()
-        ){
+        if (near != last) {
+          if (last) { last.trigger(Event(e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } })); }
+          if (near) { near.trigger(Event(e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } })); }
+        }
 
-          if( r.swipePanning ){
-            cy.panBy({
-              x: disp[0] * zoom,
-              y: disp[1] * zoom
-            });
+        r.touchData.last = near;
+      }
 
-          } else if( rdist2 >= r.touchTapThreshold2 ){
-            r.swipePanning = true;
+      // Check to cancel taphold
+      for (var i=0;i<now.length;i++) {
+        if (now[i]
+          && r.touchData.startPosition[i]
+          && Math.abs(now[i] - r.touchData.startPosition[i]) > 4) {
 
-            cy.panBy({
-              x: dx * zoom,
-              y: dy * zoom
-            });
-          }
-
-          if( start ){
-            start.unactivate();
-
-            if( !r.data.bgActivePosistion ){
-              r.data.bgActivePosistion = {
-                x: now[0],
-                y: now[1]
-              };
-            }
-
-            r.redrawHint('select', true);
-
-            r.touchData.start = null;
-          }
-
-          // Re-project
-          var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-          now[0] = pos[0]; now[1] = pos[1];
+          r.touchData.singleTouchMoved = true;
         }
       }
 
-      for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
-      //r.redraw();
+      if(
+          capture
+          && ( start == null || start.isEdge() )
+          && cy.panningEnabled() && cy.userPanningEnabled()
+      ){
 
-    }, 1000/30, { trailing: true }), false);
+        if( r.swipePanning ){
+          cy.panBy({
+            x: disp[0] * zoom,
+            y: disp[1] * zoom
+          });
 
-    var touchcancelHandler;
-    r.registerBinding(window, 'touchcancel', touchcancelHandler = function(e) {
-      var start = r.touchData.start;
+        } else if( rdist2 >= r.touchTapThreshold2 ){
+          r.swipePanning = true;
 
+          cy.panBy({
+            x: dx * zoom,
+            y: dy * zoom
+          });
+        }
+
+        if( start ){
+          start.unactivate();
+
+          if( !r.data.bgActivePosistion ){
+            r.data.bgActivePosistion = {
+              x: now[0],
+              y: now[1]
+            };
+          }
+
+          r.redrawHint('select', true);
+
+          r.touchData.start = null;
+        }
+
+        // Re-project
+        var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
+        now[0] = pos[0]; now[1] = pos[1];
+      }
+    }
+
+    for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
+    //r.redraw();
+
+  }, 1000/30, { trailing: true }), false);
+
+  var touchcancelHandler;
+  r.registerBinding(window, 'touchcancel', touchcancelHandler = function(e) {
+    var start = r.touchData.start;
+
+    r.touchData.capture = false;
+
+    if( start ){
+      start.unactivate();
+    }
+  });
+
+  var touchendHandler;
+  r.registerBinding(window, 'touchend', touchendHandler = function(e) {
+    var start = r.touchData.start;
+
+    var capture = r.touchData.capture;
+
+    if( capture ){
       r.touchData.capture = false;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    var select = r.selection;
+
+    r.swipePanning = false;
+    r.hoverData.draggingEles = false;
+
+    var cy = r.cy;
+    var zoom = cy.zoom();
+    var now = r.touchData.now;
+    var earlier = r.touchData.earlier;
+
+    var needsRedraw = r.data.canvasNeedsRedraw;
+
+    if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
+    if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
+    if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
+
+    if( start ){
+      start.unactivate();
+    }
+
+    var ctxTapend;
+    if( r.touchData.cxt ){
+      ctxTapend = Event(e, {
+        type: 'cxttapend',
+        cyPosition: { x: now[0], y: now[1] }
+      });
 
       if( start ){
-        start.unactivate();
-      }
-    });
-
-    var touchendHandler;
-    r.registerBinding(window, 'touchend', touchendHandler = function(e) {
-      var start = r.touchData.start;
-
-      var capture = r.touchData.capture;
-
-      if( capture ){
-        r.touchData.capture = false;
+        start.trigger( ctxTapend );
       } else {
-        return;
+        cy.trigger( ctxTapend );
       }
 
-      e.preventDefault();
-      var select = r.selection;
+      //console.log('cxttapend')
 
-      r.swipePanning = false;
-      r.hoverData.draggingEles = false;
-
-      var cy = r.cy;
-      var zoom = cy.zoom();
-      var now = r.touchData.now;
-      var earlier = r.touchData.earlier;
-
-      var needsRedraw = r.data.canvasNeedsRedraw;
-
-      if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
-      if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
-      if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
-
-      if( start ){
-        start.unactivate();
-      }
-
-      var ctxTapend;
-      if( r.touchData.cxt ){
-        ctxTapend = new $$.Event(e, {
-          type: 'cxttapend',
+      if( !r.touchData.cxtDragged ){
+        var ctxTap = Event(e, {
+          type: 'cxttap',
           cyPosition: { x: now[0], y: now[1] }
         });
 
         if( start ){
-          start.trigger( ctxTapend );
+          start.trigger( ctxTap );
         } else {
-          cy.trigger( ctxTapend );
+          cy.trigger( ctxTap );
         }
 
-        //console.log('cxttapend')
+        //console.log('cxttap')
+      }
 
-        if( !r.touchData.cxtDragged ){
-          var ctxTap = new $$.Event(e, {
-            type: 'cxttap',
-            cyPosition: { x: now[0], y: now[1] }
-          });
+      if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
+      r.touchData.cxt = false;
+      r.touchData.start = null;
 
-          if( start ){
-            start.trigger( ctxTap );
-          } else {
-            cy.trigger( ctxTap );
+      r.redraw();
+      return;
+    }
+
+    // no more box selection if we don't have three fingers
+    if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
+      r.touchData.selecting = false;
+      clearTimeout( this.threeFingerSelectTimeout );
+      //this.threeFingerSelectTimeout = setTimeout(function(){
+        var newlySelected = [];
+        var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
+
+        select[0] = undefined;
+        select[1] = undefined;
+        select[2] = undefined;
+        select[3] = undefined;
+        select[4] = 0;
+
+        r.redrawHint('select', true);
+
+        // console.log(box);
+        for( var i = 0; i< box.length; i++ ) {
+          if( box[i]._private.selectable ){
+            newlySelected.push( box[i] );
           }
-
-          //console.log('cxttap')
         }
 
-        if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
-        r.touchData.cxt = false;
+        var newlySelCol = Collection( cy, newlySelected );
+
+        if( cy.selectionType() === 'single' ){
+          cy.$(':selected').unmerge( newlySelCol ).unselect();
+        }
+
+        newlySelCol.select();
+
+        if( newlySelCol.length > 0 ) {
+          r.redrawHint('eles', true);
+        } else {
+          r.redraw();
+        }
+
+      //}, 100);
+    }
+
+    var updateStartStyle = false;
+
+    if( start != null ){
+      start._private.active = false;
+      updateStartStyle = true;
+      start.unactivate();
+    }
+
+    if (e.touches[2]) {
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint('select', true);
+    } else if (e.touches[1]) {
+
+    } else if (e.touches[0]) {
+
+    // Last touch released
+    } else if (!e.touches[0]) {
+
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint('select', true);
+
+      var draggedEles = r.dragData.touchDragEles;
+
+      if (start != null ) {
+
+        var startWasGrabbed = start._private.grabbed;
+
+        freeDraggedElements( draggedEles );
+
+        r.redrawHint('drag', true);
+        r.redrawHint('eles', true);
+
+        if( startWasGrabbed ){
+          start.trigger('free');
+        }
+
+        start
+          .trigger(Event(e, {
+            type: 'touchend',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'tapend',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+          .trigger(Event(e, {
+            type: 'vmouseup',
+            cyPosition: { x: now[0], y: now[1] }
+          }))
+        ;
+
+        start.unactivate();
+
         r.touchData.start = null;
 
-        r.redraw();
-        return;
-      }
+      } else {
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
-      // no more box selection if we don't have three fingers
-      if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
-        r.touchData.selecting = false;
-        clearTimeout( this.threeFingerSelectTimeout );
-        //this.threeFingerSelectTimeout = setTimeout(function(){
-          var newlySelected = [];
-          var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
-
-          select[0] = undefined;
-          select[1] = undefined;
-          select[2] = undefined;
-          select[3] = undefined;
-          select[4] = 0;
-
-          r.redrawHint('select', true);
-
-          // console.log(box);
-          for( var i = 0; i< box.length; i++ ) {
-            if( box[i]._private.selectable ){
-              newlySelected.push( box[i] );
-            }
-          }
-
-          var newlySelCol = new $$.Collection( cy, newlySelected );
-
-          if( cy.selectionType() === 'single' ){
-            cy.$(':selected').unmerge( newlySelCol ).unselect();
-          }
-
-          newlySelCol.select();
-
-          if( newlySelCol.length > 0 ) {
-            r.redrawHint('eles', true);
-          } else {
-            r.redraw();
-          }
-
-        //}, 100);
-      }
-
-      var updateStartStyle = false;
-
-      if( start != null ){
-        start._private.active = false;
-        updateStartStyle = true;
-        start.unactivate();
-      }
-
-      if (e.touches[2]) {
-        r.data.bgActivePosistion = undefined;
-        r.redrawHint('select', true);
-      } else if (e.touches[1]) {
-
-      } else if (e.touches[0]) {
-
-      // Last touch released
-      } else if (!e.touches[0]) {
-
-        r.data.bgActivePosistion = undefined;
-        r.redrawHint('select', true);
-
-        var draggedEles = r.dragData.touchDragEles;
-
-        if (start != null ) {
-
-          var startWasGrabbed = start._private.grabbed;
-
-          freeDraggedElements( draggedEles );
-
-          r.redrawHint('drag', true);
-          r.redrawHint('eles', true);
-
-          if( startWasGrabbed ){
-            start.trigger('free');
-          }
-
-          start
-            .trigger(new $$.Event(e, {
+        if (near != null) {
+          near
+            .trigger(Event(e, {
               type: 'touchend',
               cyPosition: { x: now[0], y: now[1] }
             }))
-            .trigger(new $$.Event(e, {
+            .trigger(Event(e, {
               type: 'tapend',
               cyPosition: { x: now[0], y: now[1] }
             }))
-            .trigger(new $$.Event(e, {
+            .trigger(Event(e, {
               type: 'vmouseup',
               cyPosition: { x: now[0], y: now[1] }
             }))
           ;
+        }
 
-          start.unactivate();
+        if (near == null) {
+          cy
+            .trigger(Event(e, {
+              type: 'touchend',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'tapend',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'vmouseup',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+          ;
+        }
+      }
 
-          r.touchData.start = null;
+      var dx = r.touchData.startPosition[0] - now[0];
+      var dx2 = dx * dx;
+      var dy = r.touchData.startPosition[1] - now[1];
+      var dy2 = dy * dy;
+      var dist2 = dx2 + dy2;
+      var rdist2 = dist2 * zoom * zoom;
 
+      // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+      if (start != null
+          && !r.dragData.didDrag // didn't drag nodes around
+          && start._private.selectable
+          && rdist2 < r.touchTapThreshold2
+          && !r.pinching // pinch to zoom should not affect selection
+      ) {
+
+        if( cy.selectionType() === 'single' ){
+          cy.$(':selected').unmerge( start ).unselect();
+          start.select();
         } else {
-          var near = r.findNearestElement(now[0], now[1], true, true);
-
-          if (near != null) {
-            near
-              .trigger(new $$.Event(e, {
-                type: 'touchend',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapend',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmouseup',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-            ;
-          }
-
-          if (near == null) {
-            cy
-              .trigger(new $$.Event(e, {
-                type: 'touchend',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'tapend',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vmouseup',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-            ;
-          }
-        }
-
-        var dx = r.touchData.startPosition[0] - now[0];
-        var dx2 = dx * dx;
-        var dy = r.touchData.startPosition[1] - now[1];
-        var dy2 = dy * dy;
-        var dist2 = dx2 + dy2;
-        var rdist2 = dist2 * zoom * zoom;
-
-        // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
-        if (start != null
-            && !r.dragData.didDrag // didn't drag nodes around
-            && start._private.selectable
-            && rdist2 < r.touchTapThreshold2
-            && !r.pinching // pinch to zoom should not affect selection
-        ) {
-
-          if( cy.selectionType() === 'single' ){
-            cy.$(':selected').unmerge( start ).unselect();
+          if( start.selected() ){
+            start.unselect();
+          } else {
             start.select();
-          } else {
-            if( start.selected() ){
-              start.unselect();
-            } else {
-              start.select();
-            }
           }
-
-          updateStartStyle = true;
-
-
-          r.redrawHint('eles', true);
         }
 
-        // Tap event, roughly same as mouse click event for touch
-        if ( r.touchData.singleTouchMoved === false ) {
+        updateStartStyle = true;
 
-          if (start) {
-            start
-              .trigger(new $$.Event(e, {
-                type: 'tap',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vclick',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-            ;
-          } else {
-            cy
-              .trigger(new $$.Event(e, {
-                type: 'tap',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-              .trigger(new $$.Event(e, {
-                type: 'vclick',
-                cyPosition: { x: now[0], y: now[1] }
-              }))
-            ;
-          }
+
+        r.redrawHint('eles', true);
+      }
+
+      // Tap event, roughly same as mouse click event for touch
+      if ( r.touchData.singleTouchMoved === false ) {
+
+        if (start) {
+          start
+            .trigger(Event(e, {
+              type: 'tap',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'vclick',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+          ;
+        } else {
+          cy
+            .trigger(Event(e, {
+              type: 'tap',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+            .trigger(Event(e, {
+              type: 'vclick',
+              cyPosition: { x: now[0], y: now[1] }
+            }))
+          ;
+        }
 
 //          console.log('tap');
-        }
-
-        r.touchData.singleTouchMoved = true;
       }
 
-      for( var j = 0; j < now.length; j++ ){ earlier[j] = now[j]; }
-
-      r.dragData.didDrag = false; // reset for next mousedown
-
-      if( e.touches.length === 0 ){
-        r.touchData.dragDelta = [];
-      }
-
-      if( updateStartStyle && start ){
-        start.updateStyle(false);
-      }
-
-      if( e.touches.length < 2 ){
-        r.pinching = false;
-        r.redrawHint('eles', true);
-        r.redraw();
-      }
-
-      //r.redraw();
-
-    }, false);
-
-    // compatibility layer for ms pointer events
-    if( typeof TouchEvent === 'undefined' ){
-
-      var pointers = [];
-
-      var makeTouch = function( e ){
-        return {
-          clientX: e.clientX,
-          clientY: e.clientY,
-          force: 1,
-          identifier: e.pointerId,
-          pageX: e.pageX,
-          pageY: e.pageY,
-          radiusX: e.width/2,
-          radiusY: e.height/2,
-          screenX: e.screenX,
-          screenY: e.screenY,
-          target: e.target
-        };
-      }
-
-      var makePointer = function( e ){
-        return {
-          event: e,
-          touch: makeTouch(e)
-        };
-      }
-
-      var addPointer = function( e ){
-        pointers.push( makePointer(e) );
-      }
-
-      var removePointer = function( e ){
-        for( var i = 0; i < pointers.length; i++ ){
-          var p = pointers[i];
-
-          if( p.event.pointerId === e.pointerId ){
-            pointers.splice( i, 1 );
-            return;
-          }
-        }
-      }
-
-      var updatePointer = function( e ){
-        var p = pointers.filter(function( p ){
-          return p.event.pointerId === e.pointerId;
-        })[0];
-
-        p.event = e;
-        p.touch = makeTouch(e);
-      }
-
-      var addTouchesToEvent = function( e ){
-        e.touches = pointers.map(function( p ){
-          return p.touch;
-        });
-      }
-
-      r.registerBinding(r.container, 'pointerdown', function(e){
-        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
-
-        // console.log('pdown')
-        // console.log(e)
-
-        e.preventDefault();
-
-        addPointer( e );
-
-        addTouchesToEvent( e );
-        touchstartHandler( e );
-      });
-
-      r.registerBinding(r.container, 'pointerup', function(e){
-        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
-
-        // console.log('pup')
-        // console.log(e)
-
-        removePointer( e );
-
-        addTouchesToEvent( e );
-        touchendHandler( e );
-      });
-
-      r.registerBinding(r.container, 'pointercancel', function(e){
-        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
-
-        // console.log('pcancel')
-        // console.log(e)
-
-        removePointer( e );
-
-        addTouchesToEvent( e );
-        touchcancelHandler( e );
-      });
-
-      r.registerBinding(r.container, 'pointermove', function(e){
-        if( e.pointerType === 'mouse' ){ return; } // mouse already handled
-
-        // console.log('pmove')
-        // console.log(e)
-
-        e.preventDefault();
-
-        updatePointer( e );
-
-        addTouchesToEvent( e );
-        touchmoveHandler( e );
-      });
-
+      r.touchData.singleTouchMoved = true;
     }
-  };
 
-})( cytoscape );
+    for( var j = 0; j < now.length; j++ ){ earlier[j] = now[j]; }
+
+    r.dragData.didDrag = false; // reset for next mousedown
+
+    if( e.touches.length === 0 ){
+      r.touchData.dragDelta = [];
+    }
+
+    if( updateStartStyle && start ){
+      start.updateStyle(false);
+    }
+
+    if( e.touches.length < 2 ){
+      r.pinching = false;
+      r.redrawHint('eles', true);
+      r.redraw();
+    }
+
+    //r.redraw();
+
+  }, false);
+
+  // compatibility layer for ms pointer events
+  if( typeof TouchEvent === 'undefined' ){
+
+    var pointers = [];
+
+    var makeTouch = function( e ){
+      return {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        force: 1,
+        identifier: e.pointerId,
+        pageX: e.pageX,
+        pageY: e.pageY,
+        radiusX: e.width/2,
+        radiusY: e.height/2,
+        screenX: e.screenX,
+        screenY: e.screenY,
+        target: e.target
+      };
+    }
+
+    var makePointer = function( e ){
+      return {
+        event: e,
+        touch: makeTouch(e)
+      };
+    }
+
+    var addPointer = function( e ){
+      pointers.push( makePointer(e) );
+    }
+
+    var removePointer = function( e ){
+      for( var i = 0; i < pointers.length; i++ ){
+        var p = pointers[i];
+
+        if( p.event.pointerId === e.pointerId ){
+          pointers.splice( i, 1 );
+          return;
+        }
+      }
+    }
+
+    var updatePointer = function( e ){
+      var p = pointers.filter(function( p ){
+        return p.event.pointerId === e.pointerId;
+      })[0];
+
+      p.event = e;
+      p.touch = makeTouch(e);
+    }
+
+    var addTouchesToEvent = function( e ){
+      e.touches = pointers.map(function( p ){
+        return p.touch;
+      });
+    }
+
+    r.registerBinding(r.container, 'pointerdown', function(e){
+      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+      // console.log('pdown')
+      // console.log(e)
+
+      e.preventDefault();
+
+      addPointer( e );
+
+      addTouchesToEvent( e );
+      touchstartHandler( e );
+    });
+
+    r.registerBinding(r.container, 'pointerup', function(e){
+      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+      // console.log('pup')
+      // console.log(e)
+
+      removePointer( e );
+
+      addTouchesToEvent( e );
+      touchendHandler( e );
+    });
+
+    r.registerBinding(r.container, 'pointercancel', function(e){
+      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+      // console.log('pcancel')
+      // console.log(e)
+
+      removePointer( e );
+
+      addTouchesToEvent( e );
+      touchcancelHandler( e );
+    });
+
+    r.registerBinding(r.container, 'pointermove', function(e){
+      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+
+      // console.log('pmove')
+      // console.log(e)
+
+      e.preventDefault();
+
+      updatePointer( e );
+
+      addTouchesToEvent( e );
+      touchmoveHandler( e );
+    });
+
+  }
+};
+
+module.exports = BRp;

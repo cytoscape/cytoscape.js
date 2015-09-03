@@ -2,7 +2,8 @@
 
 var is = require('./is');
 var util = require('./util');
-var jQuery = typeof jQuery !== 'undefined' ? jQuery : null;
+var window = require('./window');
+var jQuery = window ? window.jQuery : null;
 
 var cyReg = function( $ele ){
   var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
@@ -10,7 +11,7 @@ var cyReg = function( $ele ){
   return d;
 };
 
-registerJquery = function( $ ){
+var registerJquery = function( $ ){
   if( !$ ){ return; } // no jquery => don't need this
 
   if( $.fn.cytoscape ){ return; } // already registered
@@ -65,8 +66,10 @@ registerJquery = function( $ ){
   }
 };
 
-registerJquery( $ ); // try to register with global jquery for convenience
+module.exports = function tryToRegisterJquery(){
+  registerJquery( jQuery ); // try to register with global jquery for convenience
 
-util.require('jquery', function( $ ){
-  registerJquery( $ ); // try to register with require()d jquery
-});
+  util.require('jquery', function( $ ){
+    registerJquery( $ ); // try to register with require()d jquery
+  });
+};

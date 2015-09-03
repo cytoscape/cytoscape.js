@@ -1,20 +1,6 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-function MockRenderer(){
-  this.notifications = 0;
-}
-
-MockRenderer.prototype.notify = function(){
-  this.notifications++;
-};
-
-MockRenderer.prototype.numNotifications = function(){
-  return this.notifications;
-};
-
-cytoscape('renderer', 'mock', MockRenderer);
-
 describe('Collection data', function(){
 
   var cy;
@@ -23,7 +9,7 @@ describe('Collection data', function(){
   beforeEach(function(done){
     cytoscape({
       renderer: {
-        name: 'mock'
+        name: 'null'
       },
 
       elements: {
@@ -34,7 +20,7 @@ describe('Collection data', function(){
             { data: { id: "n4", parent: "n5", foo: "bar" } },
             { data: { id: "n5" } }
         ],
-        
+
         edges: [
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" },
@@ -71,7 +57,7 @@ describe('Collection data', function(){
 
       var nodes = cy.nodes().data('foo', 'bar');
       for( var i = 0; i < nodes.length; i++ ){
-        expect( nodes[i].data('foo') ).to.equal('bar'); 
+        expect( nodes[i].data('foo') ).to.equal('bar');
       }
     });
 
@@ -198,7 +184,7 @@ describe('Collection data', function(){
   describe('eles.batch()', function(){
 
     it('limits notifications to 1', function(){
-      var numNots = cy.renderer().numNotifications();
+      var numNots = cy.renderer().notifications;
 
       cy.batch(function(){
         cy.$('#n1')
@@ -209,11 +195,11 @@ describe('Collection data', function(){
         ;
       });
 
-      expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+      expect( cy.renderer().notifications ).to.equal( numNots + 1 );
     });
 
     it('can also be used async style', function(done){
-      var numNots = cy.renderer().numNotifications();
+      var numNots = cy.renderer().notifications;
 
       cy.startBatch();
 
@@ -224,10 +210,10 @@ describe('Collection data', function(){
           .data('foo', 'bar')
           .select()
         ;
-        
+
         cy.endBatch();
 
-        expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+        expect( cy.renderer().notifications ).to.equal( numNots + 1 );
 
         done();
       }, 10);

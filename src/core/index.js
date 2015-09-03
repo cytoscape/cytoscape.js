@@ -422,43 +422,24 @@ util.extend(corefn, {
 
       return json;
     }
-  },
-
-  // defer execution until not busy and guarantee relative execution order of deferred functions
-  defer: function( fn ){
-    var cy = this;
-    var _p = cy._private;
-    var q = _p.deferredExecQueue;
-
-    q.push( fn );
-
-    if( !_p.deferredTimeout ){
-      _p.deferredTimeout = setTimeout(function(){
-        while( q.length > 0 ){
-          ( q.shift() )();
-        }
-
-        _p.deferredTimeout = null;
-      }, 0);
-    }
   }
 
 });
 
 [
-  './add-remove',
-  './animation',
-  './data-functions',
-  './events',
-  './export',
-  './layout',
-  './notification',
-  './renderer',
-  './search',
-  './style',
-  './viewport'
-].forEach(function( path ){
-  util.extend( corefn, require(path) );
+  require('./add-remove'),
+  require('./animation'),
+  require('./data-functions'),
+  require('./events'),
+  require('./export'),
+  require('./layout'),
+  require('./notification'),
+  require('./renderer'),
+  require('./search'),
+  require('./style'),
+  require('./viewport')
+].forEach(function( props ){
+  util.extend( corefn, props );
 });
 
 module.exports = Core;

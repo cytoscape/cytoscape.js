@@ -1,13 +1,15 @@
 'use strict';
 
 var is = require('../is');
+var util = require('../util');
+var Heap = require('../heap');
 
 // search, spanning trees, etc
 var elesfn = ({
 
   // std functional ele first callback style
   stdBreadthFirstSearch: function( options ){
-    options = $$.util.extend( {}, options, {
+    options = util.extend( {}, options, {
       std: true
     } );
 
@@ -111,14 +113,14 @@ var elesfn = ({
     }
 
     return {
-      path: new $$.Collection( cy, connectedEles, { unique: true } ),
-      found: new $$.Collection( cy, found, { unique: true } )
+      path: cy.collection( connectedEles, { unique: true } ),
+      found: cy.collection( found )
     };
   },
 
   // std functional ele first callback style
   stdDepthFirstSearch: function( options ){
-    options = $$.util.extend( {}, options, {
+    options = util.extend( {}, options, {
       std: true
     } );
 
@@ -224,14 +226,16 @@ var elesfn = ({
     }
 
     return {
-      path: new $$.Collection( cy, connectedEles, { unique: true } ),
-      found: new $$.Collection( cy, found, { unique: true } )
+      path: cy.collection( connectedEles, { unique: true } ),
+      found: cy.collection( found )
     };
   },
 
   // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
   // implemented from pseudocode from wikipedia
   kruskal: function( weightFn ){
+    var cy = this.cy();
+
     weightFn = is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
     function findSet(ele){
@@ -247,7 +251,7 @@ var elesfn = ({
       }
     }
 
-    var A = new $$.Collection(this._private.cy, []);
+    var A = cy.collection(cy, []);
     var forest = [];
     var nodes = this.nodes();
 
@@ -302,20 +306,27 @@ var elesfn = ({
 
     var edges = this.edges().filter(function(){ return !this.isLoop(); });
     var nodes = this.nodes();
-    var Q = [];
 
-    for( var i = 0; i < nodes.length; i++ ){
-      dist[ nodes[i].id() ] = nodes[i].same( source ) ? 0 : Infinity;
-      Q.push( nodes[i] );
-    }
-
-    var valueFn = function(node) {
+    var getDist = function(node){
       return dist[ node.id() ];
     };
 
-    Q = new $$.Collection(cy, Q);
+    var setDist = function(node, d){
+      dist[ node.id() ] = d;
 
-    var heap = $$.Minheap(cy, Q, valueFn);
+      Q.updateItem( node );
+    };
+
+    var Q = new Heap(function( a, b ){
+      return getDist(a) - getDist(b);
+    });
+
+    for( var i = 0; i < nodes.length; i++ ){
+      var node = nodes[i];
+
+      dist[ node.id() ] = node.same( source ) ? 0 : Infinity;
+      Q.push( node );
+    }
 
     var distBetween = function(u, v){
       var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
@@ -338,11 +349,10 @@ var elesfn = ({
       };
     };
 
-    while(heap.size() > 0){
-      var smallestEl = heap.pop(),
-      smalletsDist = smallestEl.value,
-      uid = smallestEl.id,
-      u = cy.getElementById(uid);
+    while( Q.size() > 0 ){
+      var u = Q.pop();
+      var smalletsDist = getDist(u);
+      var uid = u.id();
 
       knownDist[uid] = smalletsDist;
 
@@ -358,8 +368,9 @@ var elesfn = ({
 
         var alt = smalletsDist + vDist.dist;
 
-        if( alt < heap.getValueById(vid) ){
-          heap.edit(vid, alt);
+        if( alt < getDist(v) ){
+          setDist(v, alt);
+
           prev[ vid ] = {
             node: u,
             edge: vDist.edge
@@ -393,7 +404,7 @@ var elesfn = ({
           }
         }
 
-        return new $$.Collection( cy, S );
+        return cy.collection( S );
       }
     };
   }

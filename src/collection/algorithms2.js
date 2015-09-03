@@ -264,7 +264,7 @@ var elesfn = ({
     // }
     // logDebug("Starting floydWarshall...");
 
-    var cy = this._private.cy;
+    var cy = this.cy();
 
     // Weight function - optional
     if (options.weight != null && is.fn(options.weight)) {
@@ -437,7 +437,7 @@ var elesfn = ({
                       position2id,
                       edgeNext);
 
-        return new Collection( cy, pathArr );
+        return cy.collection( pathArr );
       },
     };
 
